@@ -105,6 +105,8 @@ object Constant {
   // System property for minimum size of buffer to consider for compression.
   val COMPRESSION_MIN_SIZE: String = PROPERTY_PREFIX + "compression.minSize"
 
+  val LOW_LATENCY_POOL: String = "lowlatency"
+
   val CHAR_TYPE_BASE_PROP = "base"
 
   val CHAR_TYPE_SIZE_PROP = "size"
@@ -156,6 +158,9 @@ object Constant {
     "TO_UNIX_TIMESTAMP" -> Seq(1), "FROM_UNIX_TIMESTAMP" -> Seq(1),
     "TO_UTC_TIMESTAMP" -> Seq(1), "FROM_UTC_TIMESTAMP" -> Seq(1),
     "TRUNC" -> Seq(1), "NEXT_DAY" -> Seq(1),
+    "FIRST" -> Seq(1), "LAST" -> Seq(1),
+    "WINDOW" -> Seq(1, 2, 3), "RAND" -> Seq(0), "RANDN" -> Seq(0),
+    "PARSE_URL" -> Seq(0, 1, 2),
     "LIKE" -> Seq(1), "RLIKE" -> Seq(1)))
 }
 

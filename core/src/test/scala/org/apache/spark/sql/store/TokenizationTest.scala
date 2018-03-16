@@ -25,7 +25,8 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.ParamLiteral
+import org.apache.spark.sql.catalyst.expressions.{DynamicInSet, ParamLiteral}
+import org.apache.spark.sql.internal.SQLConf
 
 /**
   * Tests for column tables in GFXD.
@@ -187,9 +188,9 @@ class TokenizationTest
     }
   }
 
-  def getAllValidKeys(): Int = {
+  def getAllValidKeys: Int = {
     val cacheMap = SnappySession.getPlanCache.asMap()
-    cacheMap.keySet().toArray().filter(_.asInstanceOf[CachedKey].valid).length
+    cacheMap.keySet().toArray().length
   }
 
   test("Test no tokenize for round functions") {
@@ -233,31 +234,55 @@ class TokenizationTest
     val df = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01 12:00:00') > a")
     var foundCount = 0
     df.queryExecution.logical.transformAllExpressions {
-      case pl @ ParamLiteral(_, _, _) => {
+      case pl: ParamLiteral =>
         foundCount += 1
         pl
-      }
     }
     assert(foundCount == 1, "did not expect num ParamLiteral other than 1")
 
     val df2 = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01', 'yyyy-mm-dd') > a")
     foundCount = 0
     df2.queryExecution.logical.transformAllExpressions {
-      case pl @ ParamLiteral(_, _, _) => {
+      case pl: ParamLiteral =>
         foundCount += 1
         pl
-      }
     }
     assert(foundCount == 1, "did not expect num ParamLiteral other than 1 in logical plan")
 
     cacheMap.clear()
-    snc.sql("SELECT json_tuple('{\"f1\": \"value1\", \"f2\": \"value2\"}','f1')"
-    ).collect().foreach(println)
 
-    snc.sql("SELECT json_tuple('{\"f1\": \"value11\", \"f2\": \"value22\"}','f1')"
-    ).collect().foreach(println)
+    // check caching for non-code generated JsonTuple
 
-    assert(cacheMap.size() == 0) // no caching since JsonTuple is not code-generated
+    checkAnswer(snc.sql(
+      """
+        |SELECT json_tuple(json, 'f1', 'f2')
+        |FROM (SELECT '{"f1": "value1", "f2": 12}' json) test
+      """.stripMargin), Row("value1", "12") :: Nil)
+    checkAnswer(snc.sql(
+      """
+        |SELECT json_tuple(json, 'f2', 'f1')
+        |FROM (SELECT '{"f1": "value1", "f2": 12}' json) test
+      """.stripMargin), Row("12", "value1") :: Nil)
+    checkAnswer(snc.sql(
+      """
+        |SELECT json_tuple(json, 'f1', 'f2')
+        |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
+      """.stripMargin), Row("value2", "10") :: Nil)
+
+    assert(cacheMap.size() == 1)
+
+    checkAnswer(snc.sql(
+      """
+        |SELECT json_tuple(json, 'f1')
+        |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
+      """.stripMargin), Row("value2") :: Nil)
+    checkAnswer(snc.sql(
+      """
+        |SELECT json_tuple(json, 'f2')
+        |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
+      """.stripMargin), Row("10") :: Nil)
+
+    assert(cacheMap.size() == 2)
   }
 
   test("Test external tables no plan caching") {
@@ -435,7 +460,7 @@ class TokenizationTest
       res1 = snc.sql(query).collect()
       assert( cacheMap.size() == 6)
 
-      assert( getAllValidKeys() == 6)
+      assert( getAllValidKeys == 6)
       // new plan should not be generated so size should be same
       query = s"select * from $table where a in (5, 7)"
       res2 = snc.sql(query).collect()
@@ -473,29 +498,25 @@ class TokenizationTest
       // fire a join query
       query = s"select * from $table t1, $table2 t2 where t1.a = 0"
       res1 = snc.sql(query).collect()
-      assert( cacheMap.size() == 1)
+      assert(cacheMap.size() == 0) // no caching for NLJ
 
       query = s"select * from $table t1, $table2 t2 where t1.a = 5"
       res2 = snc.sql(query).collect()
-      assert( cacheMap.size() == 1)
+      assert(cacheMap.size() == 0)
       assert(!(res1.sameElements(res2)))
 
       query = s"select * from $table t1, $table2 t2 where t2.a = 5"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 2)
+      assert(cacheMap.size() == 0)
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.a"
       snc.sql(query).collect()
       // broadcast join not cached
-      assert( cacheMap.size() == 2)
+      assert(cacheMap.size() == 0)
 
       query = s"select * from $table t1, $table2 t2 where t1.a = t2.b"
       snc.sql(query).collect()
-      assert( cacheMap.size() == 2)
-
-      // let us clear the plan cache
-      snc.clear()
-      assert( cacheMap.size() == 0)
+      assert(cacheMap.size() == 0)
 
       // let us test for having
       query = s"select t1.b, SUM(t1.a) from $table t1 group by t1.b having SUM(t1.a) > 0"
@@ -726,8 +747,7 @@ class TokenizationTest
 
   val colTableName = "airlineColTable"
 
-  test("Test broadcast hash joins and scalar sub-queries") {
-    try {
+  test("Test broadcast hash joins, scalar sub-queries, updates/deletes") {
       val ddlStr = "(YearI INT," + // NOT NULL
           "MonthI INT," + // NOT NULL
           "DayOfMonth INT," + // NOT NULL
@@ -761,7 +781,6 @@ class TokenizationTest
 
       val hfile: String = getClass.getResource("/2015.parquet").getPath
       val snContext = snc
-      snContext.sql("set spark.sql.shuffle.partitions=6")
 
       val airlineDF = snContext.read.load(hfile)
       val airlineparquetTable = "airlineparquetTable"
@@ -769,10 +788,11 @@ class TokenizationTest
 
       // val colTableName = "airlineColTable"
 
-      snc.sql(s"CREATE TABLE $colTableName $ddlStr" +
-          "USING column options()")
+      snc.sql(s"CREATE TABLE $colTableName $ddlStr USING column")
 
       airlineDF.write.insertInto(colTableName)
+
+      snc.conf.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, 100000000L)
 
       val rs0 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
           s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
@@ -793,7 +813,7 @@ class TokenizationTest
       // rows1.foreach(println)
 
       val cacheMap = SnappySession.getPlanCache.asMap()
-      assert(cacheMap.size() == 1)
+      assert(cacheMap.size() == 0)
 
       val rs11 = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
           s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
@@ -803,7 +823,7 @@ class TokenizationTest
 
       val rows11 = rs11.collect()
       assert(!rows11.sameElements(rows1))
-      assert(cacheMap.size() == 1)
+      assert(cacheMap.size() == 0)
 
     // Test broadcast hash joins and scalar sub-queries - 2
 
@@ -813,7 +833,7 @@ class TokenizationTest
         s" where distance = 100 group by dest having count ( * ) > 100) group by dest order " +
         s" by avgTaxiTime desc")
     // df.explain(true)
-    val res1 = df.collect()
+    var res1 = df.collect()
     val r1 = normalizeRow(res1)
     df = snc.sql("select avg(taxiin + taxiout) avgTaxiTime, count( * ) numFlights, " +
         s"dest, avg(arrDelay) arrivalDelay from $colTableName " +
@@ -824,6 +844,89 @@ class TokenizationTest
     val r2 = normalizeRow(res2)
     assert(!r1.sameElements(r2))
     // assert( SnappySession.getPlanCache.asMap().size() == 1)
+
+    // check for out of order collects on two queries that are cached
+    var query1 = "select avg(taxiin + taxiout) avgTaxiTime, count(*) numFlights, " +
+        s"avg(arrDelay) arrivalDelay from $colTableName " +
+        s"where (taxiin > 20 or taxiout > 20)"
+    var query2 = "select avg(taxiin + taxiout) avgTaxiTime, count(*) numFlights, " +
+        s"avg(arrDelay) arrivalDelay from $colTableName " +
+        s"where (taxiin > 40 or taxiout > 40)"
+
+    val spark = new SparkSession(sc)
+    val colTable = snc.table(colTableName)
+    spark.internalCreateDataFrame(colTable.queryExecution.toRdd, colTable.schema)
+        .createOrReplaceTempView(colTableName)
+
+    res1 = spark.sql(query1).collect()
+    res2 = spark.sql(query2).collect()
+    var df1 = snc.sql(query1)
+    var df2 = snc.sql(query2)
+
+    assert(cacheMap.size() == 1)
+
+    checkAnswer(df1, res1)
+    checkAnswer(df2, res2)
+
+    // check for IN set case (> 10 elements)
+    assert(cacheMap.size() == 1)
+    query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('YV', 'AQ', 'VX', 'WN', 'US', 'EV', 'MQ', 'DL', 'OO', 'XE', 'NW', 'UA', 'F9', 'B6')"
+    query2 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('MQ', 'DL', 'OO', 'XE', 'NW', 'UA', 'F9', 'B6', 'AA', 'FL', 'HA', 'AS', 'NK', '9E')"
+
+    res1 = spark.sql(query1).collect()
+    res2 = spark.sql(query2).collect()
+    df1 = snc.sql(query1)
+    df2 = snc.sql(query2)
+
+    def checkDynInSet(df: DataFrame, present: Boolean = true): Unit = {
+      assert(df.queryExecution.executedPlan.find(
+        _.expressions.exists(_.isInstanceOf[DynamicInSet])).isDefined === present)
+    }
+
+    checkAnswer(df1, res1)
+    checkAnswer(df2, res2)
+    checkDynInSet(df1)
+    checkDynInSet(df2)
+
+    assert(cacheMap.size() == 2)
+
+    // check with null values and constant expressions
+    query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('YV', 'AQ', 'VX', null, 'US', 'EV', 'MQ', concat('D', 'L'), 'OO', 'XE', 'NW', 'UA')"
+    query2 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('MQ', 'DL', 'OO', null, 'NW', 'UA', 'F9', concat('B', '6'), 'AA', 'FL', 'HA', 'AS')"
+
+    res1 = spark.sql(query1).collect()
+    res2 = spark.sql(query2).collect()
+    df1 = snc.sql(query1)
+    df2 = snc.sql(query2)
+
+    checkAnswer(df1, res1)
+    checkAnswer(df2, res2)
+    checkDynInSet(df1)
+    checkDynInSet(df2)
+
+    assert(cacheMap.size() == 3)
+
+    // check for non-constant expressions
+    query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('YV', 'AQ', 'VX', null, 'US', 'EV', 'MQ', cast(rand() as string), 'OO', 'XE', 'NW')"
+    query2 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('MQ', 'DL', 'OO', null, 'NW', 'UA', 'F9', cast(rand() as string), 'AA', 'FL', 'HA')"
+
+    res1 = spark.sql(query1).collect()
+    res2 = spark.sql(query2).collect()
+    df1 = snc.sql(query1)
+    df2 = snc.sql(query2)
+
+    checkAnswer(df1, res1)
+    checkAnswer(df2, res2)
+    checkDynInSet(df1, present = false)
+    checkDynInSet(df2, present = false)
+
+    assert(cacheMap.size() == 4)
 
     // also check partial delete followed by a full delete
     val count = snc.table(colTableName).count()
@@ -884,11 +987,10 @@ class TokenizationTest
     assert(snc.table(colTableName).collect().length === 0)
     assert(snc.sql(s"select * from $colTableName").collect().length === 0)
 
-    snc.dropTable(colTableName)
+    snc.conf.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD,
+      SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValue.get)
 
-    }
-    finally {
-    }
+    snc.dropTable(colTableName)
   }
 
   test("Test BUG SNAP-1642") {

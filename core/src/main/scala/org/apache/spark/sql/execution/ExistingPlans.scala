@@ -26,7 +26,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetri
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
+import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
@@ -91,7 +91,7 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(this).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
@@ -183,11 +183,10 @@ private[sql] object PartitionedPhysicalScan {
           r.sqlContext.conf.caseSensitiveAnalysis)
     }
 
-  def getSparkPlanInfo(fullPlan: SparkPlan): SparkPlanInfo = {
+  def getSparkPlanInfo(fullPlan: SparkPlan,
+      paramLiterals: Array[ParamLiteral] = Array.empty): SparkPlanInfo = {
     val plan = fullPlan match {
-      case CodegenSparkFallback(CachedPlanHelperExec(child)) => child
       case CodegenSparkFallback(child) => child
-      case CachedPlanHelperExec(child) => child
       case _ => fullPlan
     }
     val children = plan match {
@@ -198,8 +197,18 @@ private[sql] object PartitionedPhysicalScan {
       new SQLMetricInfo(metric.name.getOrElse(key), metric.id, metric.metricType)
     }
 
-    new SparkPlanInfo(plan.nodeName, plan.simpleString,
-      children.map(getSparkPlanInfo), plan.metadata, metrics)
+    val simpleString = if (paramLiterals.length == 0) plan.simpleString
+    else SnappySession.replaceParamLiterals(plan.simpleString, paramLiterals)
+    new SparkPlanInfo(plan.nodeName, simpleString,
+      children.map(getSparkPlanInfo(_, paramLiterals)), plan.metadata, metrics)
+  }
+
+  private[sql] def updatePlanInfo(planInfo: SparkPlanInfo,
+      paramLiterals: Array[ParamLiteral]): SparkPlanInfo = {
+    val newString = SnappySession.replaceParamLiterals(planInfo.simpleString, paramLiterals)
+    new SparkPlanInfo(planInfo.nodeName, newString,
+      planInfo.children.map(p => updatePlanInfo(p, paramLiterals)),
+      planInfo.metadata, planInfo.metrics)
   }
 }
 
@@ -212,27 +221,11 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   override def output: Seq[Attribute] = child.output
 
+  override def nodeName: String = "ExecutePlan"
+
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
     preAction()
-    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val (queryStringShortForm, queryString, planInfo) = session.currentKey match {
-      case null =>
-        val callSite = sqlContext.sparkContext.getCallSite()
-        (callSite.shortForm, callSite.longForm,
-            PartitionedPhysicalScan.getSparkPlanInfo(child))
-      case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
-          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key), null))
-    }
-    val sc = session.sparkContext
-    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
-    if (oldExecutionId eq null) {
-      CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-        queryString, child.treeString(verbose = true), planInfo) {
-        child.executeCollect()
-      }
-    } else {
-      child.executeCollect()
-    }
+    child.executeCollect()
   }
 
   override def executeCollect(): Array[InternalRow] = sideEffectResult
@@ -335,10 +328,27 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   }
 
   override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(this).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output
+}
+
+/**
+ * Extends Spark's ScalarSubquery to avoid emitting a constant in generated
+ * code rather pass as a reference object using [[TokenLiteral]] to enable
+ * generated code re-use.
+ */
+final class TokenizedScalarSubquery(_plan: SubqueryExec, _exprId: ExprId)
+    extends ScalarSubquery(_plan, _exprId) {
+
+  override def withNewPlan(query: SubqueryExec): ScalarSubquery =
+    new TokenizedScalarSubquery(query, exprId)
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val result = CatalystTypeConverters.convertToCatalyst(super.eval(null))
+    new TokenLiteral(result, dataType).doGenCode(ctx, ev)
+  }
 }
 
 class StratumInternalRow(val weight: Long) extends InternalRow {

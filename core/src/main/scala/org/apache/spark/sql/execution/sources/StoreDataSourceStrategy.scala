@@ -155,7 +155,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     }
 
     val mappedProjects = projects.map(_.toAttribute)
-    if (mappedProjects == projects &&
+    val projectOnlyAttributes = mappedProjects == projects
+    if (projectOnlyAttributes &&
         projectSet.size == projects.size &&
         filterSet.subsetOf(projectSet)) {
       // When it is possible to just use column pruning to get the right projection and
@@ -217,8 +218,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             baseRelation, UnknownPartitioning(0), getMetadata,
             relation.catalogTable.map(_.identifier))
       }
-      execution.ProjectExec(projects,
-        filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
+      if (projectOnlyAttributes || allDeterministic || filterCondition.isEmpty) {
+        execution.ProjectExec(projects,
+          filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
+      } else {
+        execution.FilterExec(filterCondition.get, execution.ProjectExec(projects, scan))
+      }
     }
   }
 
@@ -259,14 +264,17 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case expressions.LessThanOrEqual(LiteralValue(v), a: Attribute) =>
         Some(sources.GreaterThanOrEqual(a.name, v))
 
-      // TODO: SW: need a different plan from InSet that allows for ParamLiterals
       case expressions.InSet(a: Attribute, set) =>
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
         Some(sources.In(a.name, set.toArray.map(toScala)))
 
+      case expressions.DynamicInSet(a: Attribute, set) =>
+        val hSet = set.map(e => e.eval(EmptyRow))
+        val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
+        Some(sources.In(a.name, hSet.toArray.map(toScala)))
+
       // Because we only convert In to InSet in Optimizer when there are more than certain
-      // items. So it is possible we still get an In expression here that needs to be pushed
-      // down.
+      // items. So it is possible we still get an In expression here that needs to be pushed down.
       case expressions.In(a: Attribute, list) if !list.exists(!LiteralValue.isConstant(_)) =>
         val hSet = list.map(e => e.eval(EmptyRow))
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
@@ -319,7 +327,7 @@ object PhysicalScan extends PredicateHelper {
 
   def unapply(plan: LogicalPlan): Option[ReturnType] = {
     val (fields, filters, child, _) = collectProjectsAndFilters(plan)
-    Some((fields.getOrElse(child.output), filters.filter(_.deterministic), child))
+    Some((fields.getOrElse(child.output), filters, child))
   }
 
   /**

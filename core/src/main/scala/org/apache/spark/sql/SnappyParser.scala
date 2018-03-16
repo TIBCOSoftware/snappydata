@@ -18,7 +18,6 @@ package org.apache.spark.sql
 
 import java.util.function.BiConsumer
 
-import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -33,6 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
@@ -44,10 +44,9 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   private[this] final var _input: ParserInput = _
 
-  protected var _questionMarkCounter: Int = _
-  protected var _paramCounter: Int = _
-  protected var _isPreparePhase: Boolean = _
-  protected var _parameterValueSet: Option[_] = None
+  protected final var _questionMarkCounter: Int = _
+  protected final var _isPreparePhase: Boolean = _
+  protected final var _parameterValueSet: Option[_] = None
 
   override final def input: ParserInput = _input
 
@@ -56,7 +55,6 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
-    _paramCounter = 0
     _questionMarkCounter = 0
     tokenize = false
   }
@@ -71,15 +69,15 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   protected final type JoinRuleType = (Option[JoinType], LogicalPlan,
       Option[Expression])
 
-  private def toDecimalLiteral(s: String, checkExactNumeric: Boolean): Literal = {
+  private def toDecimalLiteral(s: String, checkExactNumeric: Boolean): Expression = {
     val decimal = BigDecimal(s)
     if (checkExactNumeric) {
       try {
-        return Literal(decimal.toIntExact, IntegerType)
+        return newTokenizedLiteral(decimal.toIntExact, IntegerType)
       } catch {
         case _: ArithmeticException =>
           try {
-            return Literal(decimal.toLongExact, LongType)
+            return newTokenizedLiteral(decimal.toLongExact, LongType)
           } catch {
             case _: ArithmeticException =>
           }
@@ -90,13 +88,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     val sysDefaultType = DecimalType.SYSTEM_DEFAULT
     if (precision == sysDefaultType.precision &&
         scale == sysDefaultType.scale) {
-      Literal(Decimal(decimal), sysDefaultType)
+      newTokenizedLiteral(Decimal(decimal), sysDefaultType)
     } else {
-      Literal(Decimal(decimal), DecimalType(Math.max(precision, scale), scale))
+      newTokenizedLiteral(Decimal(decimal), DecimalType(Math.max(precision, scale), scale))
     }
   }
 
-  private def toNumericLiteral(s: String): Literal = {
+  private def toNumericLiteral(s: String): Expression = {
     // quick pass through the string to check for floats
     var noDecimalPoint = true
     var index = 0
@@ -104,11 +102,14 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     // use double if ending with D/d, float for F/f and long for L/l
     s.charAt(len - 1) match {
       case 'D' | 'd' =>
-        return Literal(java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
+        return newTokenizedLiteral(
+          java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
       case 'F' | 'f' =>
-        return Literal(java.lang.Float.parseFloat(s.substring(0, len - 1)), FloatType)
+        return newTokenizedLiteral(
+          java.lang.Float.parseFloat(s.substring(0, len - 1)), FloatType)
       case 'L' | 'l' =>
-        return Literal(java.lang.Long.parseLong(s.substring(0, len - 1)), LongType)
+        return newTokenizedLiteral(
+          java.lang.Long.parseLong(s.substring(0, len - 1)), LongType)
       case _ =>
     }
     while (index < len) {
@@ -118,7 +119,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       } else if (c == 'e' || c == 'E') {
         // follow the behavior in MS SQL Server
         // https://msdn.microsoft.com/en-us/library/ms179899.aspx
-        return Literal(java.lang.Double.parseDouble(s), DoubleType)
+        return newTokenizedLiteral(java.lang.Double.parseDouble(s), DoubleType)
       }
       index += 1
     }
@@ -128,9 +129,9 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       try {
         val longValue = java.lang.Long.parseLong(s)
         if (longValue >= Int.MinValue && longValue <= Int.MaxValue) {
-          Literal(longValue.toInt, IntegerType)
+          newTokenizedLiteral(longValue.toInt, IntegerType)
         } else {
-          Literal(longValue, LongType)
+          newTokenizedLiteral(longValue, LongType)
         }
       } catch {
         case _: NumberFormatException =>
@@ -164,25 +165,25 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     }
   }
 
-  protected final def booleanLiteral: Rule1[Literal] = rule {
-    TRUE ~> (() => Literal.create(true, BooleanType)) |
-    FALSE ~> (() => Literal.create(false, BooleanType))
+  protected final def booleanLiteral: Rule1[Expression] = rule {
+    TRUE ~> (() => newTokenizedLiteral(true, BooleanType)) |
+    FALSE ~> (() => newTokenizedLiteral(false, BooleanType))
   }
 
-  protected final def numericLiteral: Rule1[Literal] = rule {
+  protected final def numericLiteral: Rule1[Expression] = rule {
     capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
         plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.?) ~
         delimiter ~> ((s: String) => toNumericLiteral(s))
   }
 
-  protected final def literal: Rule1[Literal] = rule {
-    stringLiteral ~> ((s: String) => Literal.create(s, StringType)) |
+  protected final def literal: Rule1[Expression] = rule {
+    stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
     numericLiteral |
     booleanLiteral |
-    NULL ~> (() => Literal.create(null, NullType))
+    NULL ~> (() => newTokenizedLiteral(null, NullType))
   }
 
-  protected final def paramLiteralQuestionMark: Rule1[ParamLiteral] = rule {
+  protected final def paramLiteralQuestionMark: Rule1[Expression] = rule {
     questionMark ~> (() => {
       _questionMarkCounter += 1
       if (_isPreparePhase) {
@@ -193,42 +194,17 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         val (scalaTypeVal, dataType) = session.getParameterValue(
           _questionMarkCounter, _parameterValueSet.get)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
-        _paramCounter += 1
-        val p = ParamLiteral(catalystTypeVal, dataType, _paramCounter)
-        addParamLiteralToContext(p)
-        p
+        newTokenizedLiteral(catalystTypeVal, dataType)
       }
     })
   }
 
-  def addParamLiteralToContext(p: ParamLiteral): Unit =
-    session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
-      Consts.WRAPPED_CONSTANTS_KEY) match {
-      case Some(list) => list += p
-      case None => session.addContextObject(Consts.WRAPPED_CONSTANTS_KEY,
-        mutable.ArrayBuffer(p))
-    }
-
-  def removeParamLiteralFromContext(p: ParamLiteral): Unit =
-    session.getContextObject[mutable.ArrayBuffer[ParamLiteral]](
-      Consts.WRAPPED_CONSTANTS_KEY) match {
-      case Some(list) => list -= p
-      case None =>
-    }
-
-  private def handleParamLiteral(l: Literal): ParamLiteral = {
-    _paramCounter += 1
-    val p = ParamLiteral(l.value, l.dataType, _paramCounter)
-    addParamLiteralToContext(p)
-    p
+  protected final def newTokenizedLiteral(v: Any, dataType: DataType): Expression = {
+    if (tokenize) session.addTokenizedLiteral(v, dataType) else Literal(v, dataType)
   }
 
-  protected final def paramOrLiteral: Rule1[Literal] = rule {
-    literal ~> ((l: Literal) => if (tokenize) handleParamLiteral(l) else l)
-  }
-
-  protected final def paramIntervalLiteral: Rule1[Literal] = rule {
-    intervalLiteral ~> ((l: Literal) => if (tokenize) handleParamLiteral(l) else l)
+  protected final def newLiteral(v: Any, dataType: DataType): Expression = {
+    if (tokenize) new TokenLiteral(v, dataType).markFoldable(true) else Literal(v, dataType)
   }
 
   protected final def month: Rule1[Int] = rule {
@@ -267,25 +243,25 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     integral ~ WEEK ~> ((num: String) => num.toLong)
   }
 
-  protected def intervalLiteral: Rule1[Literal] = rule {
+  protected def intervalLiteral: Rule1[Expression] = rule {
     INTERVAL ~ (
         stringLiteral ~ (
-            YEAR ~ TO ~ MONTH ~> ((s: String) =>
-              Literal(CalendarInterval.fromYearMonthString(s))) |
-            DAY ~ TO ~ (SECS | SECOND) ~> ((s: String) =>
-              Literal(CalendarInterval.fromDayTimeString(s))) |
-            YEAR ~> ((s: String) =>
-              Literal(CalendarInterval.fromSingleUnitString("year", s))) |
-            MONTH ~> ((s: String) =>
-              Literal(CalendarInterval.fromSingleUnitString("month", s))) |
-            DAY ~> ((s: String) =>
-              Literal(CalendarInterval.fromSingleUnitString("day", s))) |
-            HOUR ~> ((s: String) =>
-              Literal(CalendarInterval.fromSingleUnitString("hour", s))) |
-            (MINS | MINUTE) ~> ((s: String) =>
-              Literal(CalendarInterval.fromSingleUnitString("minute", s))) |
-            (SECS | SECOND) ~> ((s: String) =>
-              Literal(CalendarInterval.fromSingleUnitString("second", s)))
+            YEAR ~ TO ~ MONTH ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromYearMonthString(s), CalendarIntervalType)) |
+            DAY ~ TO ~ (SECS | SECOND) ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromDayTimeString(s), CalendarIntervalType)) |
+            YEAR ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromSingleUnitString("year", s), CalendarIntervalType)) |
+            MONTH ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromSingleUnitString("month", s), CalendarIntervalType)) |
+            DAY ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromSingleUnitString("day", s), CalendarIntervalType)) |
+            HOUR ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromSingleUnitString("hour", s), CalendarIntervalType)) |
+            (MINS | MINUTE) ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromSingleUnitString("minute", s), CalendarIntervalType)) |
+            (SECS | SECOND) ~> ((s: String) => newTokenizedLiteral(
+              CalendarInterval.fromSingleUnitString("second", s), CalendarIntervalType))
         ) |
         year.? ~ month.? ~ week.? ~ day.? ~ hour.? ~ minute.? ~
             second.? ~ millisecond.? ~ microsecond.? ~> { (y: Any, m: Any,
@@ -313,7 +289,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             second.map(_ * CalendarInterval.MICROS_PER_SECOND).getOrElse(0L) +
             millis.map(_ * CalendarInterval.MICROS_PER_MILLI).getOrElse(0L) +
             micros.getOrElse(0L)
-          Literal(new CalendarInterval(months, microseconds))
+          newTokenizedLiteral(new CalendarInterval(months, microseconds), CalendarIntervalType)
         }
     )
   }
@@ -394,36 +370,45 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     )
   }
 
-  protected final def likeExpression(left: Expression, right: ParamLiteral): Expression = {
-    val pattern = right.toString()
-    val size = pattern.length
+  protected final def likeExpression(left: Expression, right: TokenizedLiteral): Expression = {
+    val pattern = right.valueString
+    session.removeIfParamLiteralFromContext(right)
     if (Consts.optimizableLikePattern.matcher(pattern).matches()) {
-      var newRight: ParamLiteral = null
+      val size = pattern.length
       val expression = if (pattern.charAt(0) == '%') {
         if (pattern.charAt(size - 1) == '%') {
-          newRight = ParamLiteral(UTF8String.fromString(pattern.substring(1, size - 1)),
-            StringType, right.pos)
-          Contains(left, newRight)
+          Contains(left, session.addTokenizedLiteral(
+            UTF8String.fromString(pattern.substring(1, size - 1)), StringType))
         } else {
-          newRight = ParamLiteral(UTF8String.fromString(pattern.substring(1)),
-            StringType, right.pos)
-          EndsWith(left, newRight)
+          EndsWith(left, session.addTokenizedLiteral(
+            UTF8String.fromString(pattern.substring(1)), StringType))
         }
       } else if (pattern.charAt(size - 1) == '%') {
-        newRight = ParamLiteral(UTF8String.fromString(pattern.substring(0, size - 1)),
-          StringType, right.pos)
-        StartsWith(left, newRight)
+        StartsWith(left, session.addTokenizedLiteral(
+          UTF8String.fromString(pattern.substring(0, size - 1)), StringType))
       } else {
-        // no wildcards
-        newRight = ParamLiteral(UTF8String.fromString(pattern), StringType, right.pos)
-        EqualTo(left, newRight)
+        // check for startsWith and endsWith
+        val wildcardIndex = pattern.indexOf('%')
+        if (wildcardIndex != -1) {
+          val prefix = pattern.substring(0, wildcardIndex)
+          val postfix = pattern.substring(wildcardIndex + 1)
+          val prefixLiteral = session.addTokenizedLiteral(
+            UTF8String.fromString(prefix), StringType)
+          val suffixLiteral = session.addTokenizedLiteral(
+            UTF8String.fromString(postfix), StringType)
+          And(GreaterThanOrEqual(Length(left),
+            session.addParamLiteralToContext(prefix.length + postfix.length, IntegerType)),
+            And(StartsWith(left, prefixLiteral), EndsWith(left, suffixLiteral)))
+        } else {
+          // no wildcards
+          EqualTo(left, session.addTokenizedLiteral(
+            UTF8String.fromString(pattern), StringType))
+        }
       }
-      removeParamLiteralFromContext(right)
-      addParamLiteralToContext(newRight)
       expression
     } else {
-      removeParamLiteralFromContext(right)
-      Like(left, Literal(right.value, right.dataType))
+      LikeEscapeSimplification.simplifyLike(session,
+        Like(left, newLiteral(right.value, right.dataType)), left, pattern)
     }
   }
 
@@ -436,7 +421,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       Expression :: HNil] = rule {
     LIKE ~ termExpression ~>
         ((e1: Expression, e2: Expression) => e2 match {
-          case pl: ParamLiteral if !pl.value.isInstanceOf[Row] => likeExpression(e1, pl)
+          case l: TokenizedLiteral if !l.value.isInstanceOf[Row] => likeExpression(e1, l)
           case _ => Like(e1, e2)
         }) |
     IN ~ '(' ~ ws ~ (
@@ -450,9 +435,9 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
     (RLIKE | REGEXP) ~ termExpression ~>
         ((e1: Expression, e2: Expression) => e2 match {
-          case pl: ParamLiteral if !pl.value.isInstanceOf[Row] =>
-            removeParamLiteralFromContext(pl)
-            RLike(e1, Literal.create(pl.value, pl.dataType))
+          case l: TokenizedLiteral if !l.value.isInstanceOf[Row] =>
+            session.removeIfParamLiteralFromContext(l)
+            RLike(e1, newLiteral(l.value, l.dataType))
           case _ => RLike(e1, e2)
         })
   }
@@ -483,9 +468,18 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
               s"unexpected operation '$c'")
           }) |
         '[' ~ ws ~ baseExpression ~ ']' ~ ws ~> ((base: Expression,
-            ordinal: Expression) => UnresolvedExtractValue(base, ordinal)) |
+            extraction: Expression) => {
+          // extraction should be a literal if type is string (integer can be ParamLiteral)
+          val ord = extraction match {
+            case l: TokenizedLiteral if l.dataType == StringType =>
+              session.removeIfParamLiteralFromContext(l)
+              newLiteral(l.value, l.dataType)
+            case o => o
+          }
+          UnresolvedExtractValue(base, ord)
+        }) |
         '.' ~ ws ~ identifier ~> ((base: Expression, fieldName: String) =>
-          UnresolvedExtractValue(base, Literal(fieldName)))
+          UnresolvedExtractValue(base, newLiteral(UTF8String.fromString(fieldName), StringType)))
     ).*
   }
 
@@ -782,25 +776,25 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
-      n1: String): Seq[Expression] = if (!_isPreparePhase) {
-    Constant.FOLDABLE_FUNCTIONS.get(n1) match {
+      fnName: String): Seq[Expression] = if (!_isPreparePhase) {
+    Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
       case null => exprs
       case args =>
-        exprs.zipWithIndex.collect {
-          case (pl: ParamLiteral, index) if args.contains(index) ||
+        exprs.indices.map(index => exprs(index) match {
+          case l: TokenizedLiteral if args.contains(index) ||
               // all args          // all odd args
               (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
               // all even args
               (args.head == -2 && (index & 0x1) == 0) =>
-            removeParamLiteralFromContext(pl)
-            Literal.create(pl.value, pl.dataType)
-          case (ex: Expression, _) => ex
-        }
+            session.removeIfParamLiteralFromContext(l)
+            newLiteral(l.value, l.dataType)
+          case e => e
+        })
     }
   } else exprs
 
   protected final def primary: Rule1[Expression] = rule {
-    paramIntervalLiteral |
+    intervalLiteral |
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
@@ -841,7 +835,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         ) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
-    paramOrLiteral | paramLiteralQuestionMark |
+    literal | paramLiteralQuestionMark |
     '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
       (fn: FunctionIdentifier, e: Any) =>
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
@@ -1049,11 +1043,11 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize && session.wholeStageEnabled)
+    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
-    MATCH ~> {() => tokenize = false}
+    MATCH ~> (() => tokenize = false)
   }
 
   protected final def ENABLE_TOKENIZE: Rule0 = rule {
@@ -1065,8 +1059,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ctes | ddl | set | cache | uncache | desc))
+    (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
+        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | cache | uncache | desc))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {

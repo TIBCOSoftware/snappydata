@@ -26,13 +26,12 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Colocation
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
-import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
+import org.apache.spark.sql.catalyst.expressions.{EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -48,7 +47,9 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.types.{DecimalType, StringType}
+import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
 
@@ -123,8 +124,7 @@ class SnappySessionState(snappySession: SnappySession)
         case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
           insertedSnappyOpts += 1
           val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
-          Batch(batch.name, batch.strategy, left ++ Some(ResolveIndex()) ++ right
-              : _*)
+          Batch(batch.name, batch.strategy, (left :+ ResolveIndex()) ++ right: _*)
         case b => b
       }
 
@@ -133,33 +133,58 @@ class SnappySessionState(snappySession: SnappySession)
       }
 
       modified :+
-          Batch("Like escape simplification", Once, LikeEscapeSimplification) :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
-          Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets(conf)) :+
-          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
+          Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets) :+
+          Batch("TokenizedLiteral Folding Optimization", Once, TokenizedLiteralFolding)
     }
   }
 
   // copy of ConstantFolding that will turn a constant up/down cast into
   // a static value.
-  object ParamLiteralFolding extends Rule[LogicalPlan] {
+  object TokenizedLiteralFolding extends Rule[LogicalPlan] {
+
+    private def foldExpression(e: Expression): DynamicFoldableExpression = {
+      // lets mark child params foldable false so that nested expression doesn't
+      // attempt to wrap.
+      e.foreach {
+        case p: TokenizedLiteral => p.markFoldable(false)
+        case _ =>
+      }
+      DynamicFoldableExpression(e)
+    }
+
     def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case p: ParamLiteral => p.markFoldable(true)
+      case p: TokenizedLiteral => p.markFoldable(true)
         p
+      // also mark linking for scalar/predicate subqueries and disable plan caching
+      case s@(_: ScalarSubquery | _: PredicateSubquery) =>
+        snappySession.linkPartitionsToBuckets(flag = true)
+        snappySession.planCaching = false
+        s
     } transform {
       case q: LogicalPlan => q transformExpressionsDown {
-        // ignore leaf ParamLiteral & Literal
-        case p: ParamLiteral => p
-        case l: Literal => l
+        // ignore leaf literals
+        case l@(_: Literal | _: ParamLiteral) => l
         // Wrap expressions that are foldable.
-        case e if e.foldable =>
-          // lets mark child params foldable false so that nested expression doesn't
-          // attempt to wrap.
-          e.foreach {
-            case p: ParamLiteral => p.markFoldable(false)
-            case _ =>
+        case e if e.foldable => foldExpression(e)
+        // Like Spark's OptimizeIn but uses DynamicInSet to allow for tokenized literals
+        // to be optimized too.
+        case expr@In(v, l) if !disableStoreOptimizations =>
+          val list = l.collect {
+            case l@(_: Literal | _: ParamLiteral) => l
+            case e if e.foldable => foldExpression(e)
           }
-          DynamicFoldableExpression(e)
+          if (list.length == l.length) {
+            val newList = ExpressionSet(list).toVector
+            if (newList.size > conf.optimizerInSetConversionThreshold) {
+              DynamicInSet(v, newList)
+            } else if (newList.size < list.size) {
+              expr.copy(list = newList)
+            } else {
+              // newList.length == list.length
+              expr
+            }
+          } else expr
       }
     }
   }
@@ -194,7 +219,7 @@ class SnappySessionState(snappySession: SnappySession)
    * be created for tables to be the same as number of buckets. This will avoid
    * exchange on one side of a non-collocated join in many cases.
    */
-  final class LinkPartitionsToBuckets(conf: SQLConf) extends Rule[LogicalPlan] {
+  final class LinkPartitionsToBuckets extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan.foreach {
         case _ if Property.ForceLinkPartitionsToBuckets.get(conf) =>
@@ -393,16 +418,16 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
+  override def planner: DefaultPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
 
   protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
     python.ExtractPythonUDFs,
-    PlanSubqueries(snappySession),
+    TokenizeSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
-    InsertCachedPlanHelper(snappySession, topLevel),
+    InsertCachedPlanFallback(snappySession, topLevel),
     ReuseExchange(snappySession.sessionState.conf))
 
   protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {
@@ -541,11 +566,7 @@ class SnappyConf(@transient val session: SnappySession)
       }
       session.clearPlanCache()
 
-    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => value match {
-      case Some(b) => session.wholeStageEnabled = b.toString.toBoolean
-      case None => session.wholeStageEnabled = SQLConf.WHOLESTAGE_CODEGEN_ENABLED.defaultValue.get
-    }
-      session.clearPlanCache()
+    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
 
     case _ => // ignore others
   }
@@ -1078,11 +1099,17 @@ private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources
  * Does not deal with startsAndEndsWith equivalent of Spark's LikeSimplification
  * so 'a%b' kind of pattern with additional escaped chars will not be optimized.
  */
-object LikeEscapeSimplification extends Rule[LogicalPlan] {
-  // TODO: SW: change Literal to ParamLiteral (or TokenLiteral)
-  def simplifyLike(expr: Expression, left: Expression, pattern: String): Expression = {
+object LikeEscapeSimplification {
+
+  private def addTokenizedLiteral(session: SnappySession, s: String): Expression = {
+    if (session ne null) session.addTokenizedLiteral(s, StringType)
+    else Literal(UTF8String.fromString(s), StringType)
+  }
+
+  def simplifyLike(session: SnappySession, expr: Expression,
+      left: Expression, pattern: String): Expression = {
     val len_1 = pattern.length - 1
-    if (len_1 == -1) return EqualTo(left, Literal(""))
+    if (len_1 == -1) return EqualTo(left, addTokenizedLiteral(session, ""))
     val str = new StringBuilder(pattern.length)
     var wildCardStart = false
     var i = 0
@@ -1097,8 +1124,8 @@ object LikeEscapeSimplification extends Rule[LogicalPlan] {
           str.append(c)
           // if next character is last one then it is literal
           if (i == len_1 - 1) {
-            if (wildCardStart) return EndsWith(left, Literal(str.toString))
-            else return EqualTo(left, Literal(str.toString))
+            if (wildCardStart) return EndsWith(left, addTokenizedLiteral(session, str.toString))
+            else return EqualTo(left, addTokenizedLiteral(session, str.toString))
           }
           i += 1
         case '%' if i == 0 => wildCardStart = true
@@ -1109,17 +1136,22 @@ object LikeEscapeSimplification extends Rule[LogicalPlan] {
     }
     pattern.charAt(len_1) match {
       case '%' =>
-        if (wildCardStart) Contains(left, Literal(str.toString))
-        else StartsWith(left, Literal(str.toString))
+        if (wildCardStart) Contains(left, addTokenizedLiteral(session, str.toString))
+        else StartsWith(left, addTokenizedLiteral(session, str.toString))
       case '_' | '\\' => expr
       case c =>
         str.append(c)
-        if (wildCardStart) EndsWith(left, Literal(str.toString))
-        else EqualTo(left, Literal(str.toString))
+        if (wildCardStart) EndsWith(left, addTokenizedLiteral(session, str.toString))
+        else EqualTo(left, addTokenizedLiteral(session, str.toString))
     }
   }
 
   def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-    case l@Like(left, Literal(pattern, StringType)) => simplifyLike(l, left, pattern.toString)
+    case l@Like(left, Literal(pattern, StringType)) =>
+      val session = SparkSession.getActiveSession match {
+        case Some(s: SnappySession) => s
+        case _ => null
+      }
+      simplifyLike(session, l, left, pattern.toString)
   }
 }
