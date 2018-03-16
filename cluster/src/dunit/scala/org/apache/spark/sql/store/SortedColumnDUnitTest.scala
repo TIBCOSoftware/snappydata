@@ -16,16 +16,16 @@
  */
 package org.apache.spark.sql.store
 
+import scala.concurrent.duration.{FiniteDuration, MINUTES}
 import io.snappydata.cluster.ClusterManagerTestBase
-
 import org.apache.spark.sql.SnappyContext
 
 /**
- * Some basic column table tests.
+ * SortedColumnTests and SortedColumnPerformanceTests in DUnit.
  */
-class SortedColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  def testBasicInsert(): Unit = {
+  def disabled_testBasicInsert(): Unit = {
     val snc = SnappyContext(sc).snappySession
     val colTableName = "colDeltaTable"
     val numElements = 551
@@ -34,5 +34,55 @@ class SortedColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     SortedColumnTests.verfiyInsertDataExists(snc, numElements)
     SortedColumnTests.verfiyUpdateDataExists(snc, numElements)
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
+  }
+
+  def disabled_testInsertPerformance() {
+    val snc = SnappyContext(sc).snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 9999551
+    val numBuckets = SortedColumnPerformanceTests.cores
+    val numIters = 2
+
+    SortedColumnPerformanceTests.benchmarkInsert(snc, colTableName, numBuckets, numElements,
+      numIters, "insert")
+  }
+
+  def disabled_testPointQueryPerformance() {
+    val snc = SnappyContext(sc).snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 999551
+    val numBuckets = SortedColumnPerformanceTests.cores
+    val numIters = 100
+    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+      numIters, "PointQuery", numTimesInsert = 10,
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery)
+    // while (true) {}
+  }
+
+  def testPointQueryPerformanceMultithreaded() {
+    val snc = SnappyContext(sc).snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 999551
+    val numBuckets = SortedColumnPerformanceTests.cores
+    val numIters = 100
+    val totalNumThreads = SortedColumnPerformanceTests.cores
+    val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
+    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+      numIters, "PointQuery multithreaded", numTimesInsert = 10, isMultithreaded = true,
+      doVerifyFullSize = false, totalThreads = totalNumThreads,
+      runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery)
+    // while (true) {}
+  }
+
+  def disabled_testRangeQueryPerformance() {
+    val snc = SnappyContext(sc).snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 999551
+    val numBuckets = SortedColumnPerformanceTests.cores
+    val numIters = 21
+    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+      numIters, "RangeQuery", numTimesInsert = 10,
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery)
+    // while (true) {}
   }
 }
