@@ -60,8 +60,12 @@ trait JoinQueryPlanning {
 
   private def allPartColumnsPresent(keyOrder: Seq[Int],
       partitioning: Seq[NamedExpression]): Boolean = {
-    partitioning.zipWithIndex.forall { case (_ , i) =>
-      keyOrder.contains(i)
+    if (partitioning.isEmpty) {
+      false
+    } else {
+      partitioning.zipWithIndex.forall { case (_, i) =>
+        keyOrder.contains(i)
+      }
     }
   }
 }
