@@ -818,7 +818,7 @@ object SnappyUnifiedMemoryManager extends Logging {
    * considered for invocation before failing a direct buffer allocation
    * request for the case when too many references are lying around uncollected.
    */
-  private val EXPLICIT_GC_LIMIT = 10L * 1024 * 1024 * 1024
+  private val EXPLICIT_GC_LIMIT = 16L * 1024 * 1024 * 1024
 
   private val testCallbacks = mutable.ArrayBuffer.empty[MemoryEventListener]
 

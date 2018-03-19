@@ -20,7 +20,6 @@ import java.nio.ByteBuffer
 import java.sql.SQLException
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -57,7 +56,6 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int],
     val rddId: Int, val hasLocalCollectProcessing: Boolean,
     val allLiterals: Array[LiteralValue] = Array.empty,
-    val allbcplans: mutable.Map[SparkPlan, ArrayBuffer[Any]] = mutable.Map.empty,
     val queryHints: java.util.Map[String, String] = java.util.Collections.emptyMap(),
     var planProcessingTime: Long = 0,
     var currentExecutionId: Option[Long] = None)
@@ -72,8 +70,19 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       planProcessingTime: Long, currentExecutionId: Option[Long]) = {
     // scalastyle:on
     this(ds.sparkSession, ds.queryExecution, ds.exprEnc, queryString, cachedRDD,
-      shuffleDependencies, rddId, hasLocalCollectProcessing, allLiterals, mutable.Map.empty,
+      shuffleDependencies, rddId, hasLocalCollectProcessing, allLiterals,
       queryHints, planProcessingTime, currentExecutionId)
+  }
+
+  private var lastExecRDD: RDD[InternalRow] = cachedRDD
+
+  private def getExecRDD: RDD[InternalRow] = if (cachedRDD ne null) cachedRDD else {
+    if (lastExecRDD ne null) lastExecRDD
+    else {
+      val rdd = queryExecution.executedPlan.execute()
+      lastExecRDD = rdd
+      rdd
+    }
   }
 
   /**
@@ -89,7 +98,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
   private lazy val queryExecutionString: String = queryExecution.toString()
 
   private lazy val isLowLatencyQuery: Boolean =
-    (cachedRDD ne null) && cachedRDD.getNumPartitions <= 2 /* some small number */
+    getExecRDD.getNumPartitions <= 2 /* some small number */
 
   private lazy val lastShuffleCleanups = new Array[Future[Unit]](
     shuffleDependencies.length)
@@ -119,7 +128,10 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     }
   }
 
-  private[sql] def reset(): Unit = clearPartitions(Seq(cachedRDD))
+  private[sql] def reset(): Unit = {
+    if (lastExecRDD ne null) clearPartitions(Seq(lastExecRDD))
+    lastExecRDD = cachedRDD
+  }
   private lazy val rdd_partitions_ = {
     val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
     _f.setAccessible(true)
@@ -303,7 +315,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
       }
       val results = executedPlan match {
         case plan: CollectLimitExec =>
-          CachedDataFrame.executeTake(cachedRDD, plan.limit, processPartition,
+          CachedDataFrame.executeTake(getExecRDD, plan.limit, processPartition,
             resultHandler, decodeResult, schema, sparkSession)
         /* TODO: SW: optimize this case too
         case plan: TakeOrderedAndProjectExec =>
@@ -312,6 +324,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
         */
 
         case plan: CollectAggregateExec =>
+          lastExecRDD = plan.childRDD
           if (skipLocalCollectProcessing) {
             // special case where caller will do processing of the blocks
             // (returns a AggregatePartialDataIterator)
@@ -339,12 +352,11 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
           }
 
         case _ =>
+          val rdd = getExecRDD
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
-            val rdd = if (cachedRDD ne null) cachedRDD
-            else queryExecution.executedPlan.execute()
             val numPartitions = rdd.getNumPartitions
             val results = new Array[R](numPartitions)
             sc.runJob(rdd, processPartition, 0 until numPartitions,
@@ -577,7 +589,7 @@ object CachedDataFrame
         allLiterals.foreach(x => {
           val pl = paramLiterals.get(x.position)
           if (pl != null) {
-            pl.currentValue = x.value
+            pl.updateValue(x.value)
           }
         })
       }
