@@ -18,3 +18,10 @@ io/snappydata/hydra/storeTests/sql/testGFEWithAccessor.conf
     A=locator locatorHosts=2 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=3 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+
+//single vm operations
+io/snappydata/hydra/storeTests/sql/concMultiTablesUniq.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=1 storeVMsPerHost=1 storeThreadsPerVM=20
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+
