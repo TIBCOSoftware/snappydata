@@ -277,7 +277,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // GenerateUnsafeProjection will automatically split stats expressions into separate
     // methods if required so no need to add separate functions explicitly.
     // Count is hardcoded as zero which will change for "insert" index deltas.
-    val statsEv = ColumnWriter.genStatsRow(ctx, "0", stats, statsSchema)
+    val statsEv = ColumnWriter.genStatsRow(ctx, batchOrdinal, stats, statsSchema)
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
