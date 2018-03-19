@@ -5,15 +5,14 @@ Support for hive compatible LATERAL VIEW. It works with a table generating funct
 
 ## Syntax
 
-```
+```no-highlight
 FROM baseTable (lateralView)*
 lateralView: LATERAL VIEW function([expressions]) tableAlias [AS columnAlias (',' columnAlias)*]
-
 ```
 
 ## Example
 
-```
+```no-highlight
 "id": 1
 "purpose": "business"
 "type": sales

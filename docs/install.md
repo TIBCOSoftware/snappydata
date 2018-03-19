@@ -49,13 +49,13 @@ The following installation options are available:
 
 * [Building from Source](install/building_from_source.md)<a id="building-from-source"></a>
 
-!!! Note:  
+**Note**:</br>
 	**Configuring the limit for open files and threads/processes** </br> 
     On a Linux system, you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. 
     </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. 
     </br>A typical configuration used for SnappyData servers and leads can look like:
 
-```
+```no-highlight
 snappydata          hard    nofile      81920
 snappydata          soft    nofile      8192
 snappydata          hard    nproc       unlimited

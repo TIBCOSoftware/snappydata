@@ -43,6 +43,7 @@ import org.apache.spark.sql.execution.aggregate.{HashAggregateExec, SnappyHashAg
 import org.apache.spark.sql.functions.rand
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
+
 class SnappySQLQuerySuite extends SnappyFunSuite {
 
   private lazy val session: SnappySession = snc.snappySession
@@ -222,6 +223,38 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     } finally {
       session.sql(s"set ${Property.HashAggregateSize} = 0")
     }
+  }
+
+  test("Double exists") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row ")
+    snc.sql("create table r2(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row")
+
+    snc.sql("create table r3(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using row")
+
+    snc.insert("r1", Row(1, "1", "1", 100))
+    snc.insert("r1", Row(2, "2", "2", 2))
+    snc.insert("r1", Row(4, "4", "4", 4))
+    snc.insert("r1", Row(7, "7", "7", 4))
+
+    snc.insert("r2", Row(1, "1", "1", 1))
+    snc.insert("r2", Row(2, "2", "2", 2))
+    snc.insert("r2", Row(3, "3", "3", 3))
+
+    snc.insert("r3", Row(1, "1", "1", 1))
+    snc.insert("r3", Row(2, "2", "2", 2))
+    snc.insert("r3", Row(4, "4", "4", 4))
+
+    val df = snc.sql("select * from r1 where " +
+        "(exists (select col1 from r2 where r2.col1=r1.col1) " +
+        "or exists(select col1 from r3 where r3.col1=r1.col1))")
+
+    val result = df.collect()
+    checkAnswer(df, Seq(Row(1, "1", "1", 100),
+      Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
   }
 }
 

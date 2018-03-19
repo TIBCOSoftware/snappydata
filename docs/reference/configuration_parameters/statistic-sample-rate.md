@@ -2,8 +2,7 @@
 
 ## Description
 
-Boot property that specifies how often to sample statistics, in milliseconds.
-
+Boot property that specifies how often to sample statistics, in milliseconds.</br>
 Valid values are in the range 1000..60000.
 
 !!! Note
