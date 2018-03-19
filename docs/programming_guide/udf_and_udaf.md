@@ -17,7 +17,7 @@ The number of the interfaces (UDF1 to UDF22) signifies the number of parameters 
 !!! Note: 
 	Currently, any UDF which can take more than 22 parameters is not supported.
 
-```scala
+```no-highlight
 package some.package
 import org.apache.spark.sql.api.java.UDF1
 
@@ -34,13 +34,13 @@ class StringLengthUDF extends UDF1[String, Int] {
     
 After defining a UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
 
-```scala
+```no-highlight
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'
 ```
 
 For example:
 
-```scala
+```no-highlight
 CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USING JAR '/path/to/file/udf.jar'
 ```
 
@@ -68,7 +68,7 @@ You can write a JAVA or SCALA class to write a UDF implementation.
 
 ## Use a User Defined Function
 
-```scala
+```no-highlight
 select strnglen(string_column) from <table>
 ```
 
@@ -77,13 +77,13 @@ If you try to use a UDF on a different type of column, for example, an **Int** c
 
 #### Drop the Function
 
-```scala
+```no-highlight
 DROP FUNCTION IF EXISTS udf_name
 ```
 
 For example:
 
-```scala
+```no-highlight
 DROP FUNCTION IF EXISTS app.strnglen
 ```
 

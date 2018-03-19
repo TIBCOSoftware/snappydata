@@ -7,7 +7,7 @@ The SnappyData embedded cluster uses its own cluster manager and as such cannot 
 
 You need to set the following environment variables:
 
-```scala
+```no-highlight
 export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
@@ -18,7 +18,7 @@ Start a SnappyData default cluster using the `./sbin/snappy-start-all.sh` comman
 
 To run SnappyData quickstart example using YARN, do the following:
 
-```scala
+```no-highlight
 ./bin/spark-shell --master yarn  --conf spark.snappydata.connection=localhost:1527 --conf spark.ui.port=4041 -i $SNAPPY_HOME/quickstart/scripts/Quickstart.scala
 ```
 
@@ -29,12 +29,9 @@ To run SnappyData quickstart example using YARN, do the following:
 
 1. Create the required tables in the SnappyData cluster
 
-```scala
-./bin/snappy-job.sh submit --lead localhost:8090 --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
-```
+		./bin/snappy-job.sh submit --lead localhost:8090 --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
 
 2. Run queries on the tables created from CreateAndLoadAirlineDataJob.
 
-```scala
-./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master yarn --conf spark.snappydata.connection=localhost:1527 --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
-```
+		./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master yarn --conf spark.snappydata.connection=localhost:1527 --conf spark.ui.port=4041 $SNAPPY_HOME/examples/jars/quickstart.jar
+

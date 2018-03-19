@@ -5,13 +5,12 @@ SnappyData comes bundled with the libraries to access HDFS (Apache compatible). 
 
 ## Example - Loading data from CSV file using SQL
 
-```scala
+```no-highlight
 -- Create an external table based on CSV file
 CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 USING csv OPTIONS (path '../../quickstart/src/main/resources/customer_with_headers.csv', header 'true', inferSchema 'true');
 
 -- create a snappydata table and load data into CUSTOMER table
 CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_1);
-
 ```
 
 !!!Tip:
@@ -22,7 +21,7 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 
 The example below demonstrates how you can read CSV files from HDFS using an API:
 
-```scala
+```no-highlight
 val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv'")
 
 // drop table if exist
@@ -35,7 +34,7 @@ dataDF.write.saveAsTable("CUSTOMER")
 ## Example - Loading and Enriching CSV Data from HDFS 
 
 The example below demonstrates how you can load and enrich CSV Data from HDFS:
-```scala
+```no-highlight
 val dataDF = snappy.read.option("header", "true")
     .csv("../examples/src/main/resources/customer_with_headers.csv")
 
@@ -66,7 +65,7 @@ dataDF.select($"C_CUSTKEY",
 As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with **enableHiveSupport** set to **true**). 
 Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. 
 
-```scala
+```no-highlight
 val ds = spark.table("hiveTable")
 val rdd = ds.rdd
 val session = new SnappySession(sparkContext)
@@ -139,7 +138,7 @@ The example below demonstrates how you can load data from a NoSQL store:
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->
 
-```scala
+```no-highlight
 
 val df = snc.read.format("org.apache.spark.sql.cassandra").options(Map( "table" -> "CUSTOMER", "keyspace" -> "test")) .load
 df.write.format("column").mode(SaveMode.Append).saveAsTable("CUSTOMER")

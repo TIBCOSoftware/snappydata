@@ -5,9 +5,7 @@ SnappyData supports transaction isolation levels when using JDBC or ODBC connect
 SnappyData also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of the transaction's semantics in SnappyData can be found in the [Overview of SnappyData Distributed Transactions](../consistency/transactions_about.md) section.
 
 !!! Note:
-	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br>Queries on column tables are supported when isolation level is set to `READ_COMMITTED` or `REPEATABLE_READ` and autocommit is set to **true**.
-
-    Queries on row tables are supported when **autocommit** is set to **false** and isolation level is set to other `READ_COMMITTED` or `REPEATABLE_READ`.
+	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br>Queries on column tables are supported when isolation level is set to `NONE`. SnappyData internally sets autocommit to `true`.</br>Queries on row tables are supported when **autocommit** is set to **false** and isolation level is set to other `READ_COMMITTED` or `REPEATABLE_READ`.
 
 ## Examples
 
@@ -21,7 +19,7 @@ The following examples provide JDBC example code snippets that explain how to us
 
 For row tables, **autocommit** can be set to **false** or **true**
 
-```
+```no-highlight
 import java.sql.{Connection, Statement}
 
 ...
@@ -70,7 +68,7 @@ conn1.close()
 
 For column tables, **autocommit** must be set to **true**, otherwise, an error is reported when the query is executed.
 
-```
+```no-highlight
 val conn2 = DriverManager.getConnection(url)
 val stmt2 = conn2.createStatement()
 
@@ -103,7 +101,7 @@ rs2.close()
 
 #### Unsupported operations when **autocommit** is set to false for column tables
 
-```
+```no-highlight
 // if autocommit is set to false, queries throw an error if column tables are involved
 conn2.setAutoCommit(false)
 // invalid query
