@@ -1032,13 +1032,3 @@ object ToolsCallbackInit extends Logging {
     }
   }
 }
-
-object OrderlessHashPartitioningExtract {
-  def unapply(partitioning: Partitioning): Option[(Seq[Expression],
-      Seq[Seq[Attribute]], Int, Int, Int)] = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks ne null) {
-      callbacks.checkOrderlessHashPartitioning(partitioning)
-    } else None
-  }
-}
