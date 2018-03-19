@@ -165,7 +165,7 @@ object CodeGeneration extends Logging {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+          _ => s"$encoderVar = new $encoderClass();")
         s"""
            |final ArrayData $arr = ${ev.value};
            |if ($arr instanceof $serArrayClass) {
@@ -185,7 +185,7 @@ object CodeGeneration extends Logging {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+          _ => s"$encoderVar = new $encoderClass();")
         s"""
            |final MapData $map = ${ev.value};
            |if ($map instanceof $serMapClass) {
@@ -204,7 +204,7 @@ object CodeGeneration extends Logging {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+          _ => s"$encoderVar = new $encoderClass();")
         s"""
            |final InternalRow $struct = ${ev.value};
            |if ($struct instanceof $serRowClass) {

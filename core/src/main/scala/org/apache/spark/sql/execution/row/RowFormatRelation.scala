@@ -292,7 +292,7 @@ class RowFormatRelation(
   override def recoverDependentRelations(properties: Map[String, String]): Unit = {
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val sncCatalog = snappySession.sessionState.catalog
+    val sncCatalog = snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
     var dependentRelations: Array[String] = Array()
     if (properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
@@ -321,7 +321,7 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
     ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = CaseInsensitiveMap(parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"

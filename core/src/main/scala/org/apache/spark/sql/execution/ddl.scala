@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
@@ -40,8 +41,8 @@ private[sql] case class CreateMetastoreTableUsing(
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    snc.createTable(snc.sessionState.catalog
-        .newQualifiedTableName(tableIdent), provider, userSpecifiedSchema,
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider, userSpecifiedSchema,
       schemaDDL, mode, snc.addBaseTableOption(baseTable, options), isBuiltIn)
     Nil
   }
@@ -61,7 +62,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, partitionColumns, mode,
       snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
@@ -74,9 +75,9 @@ private[sql] case class DropTableOrViewCommand(isView: Boolean, ifExists: Boolea
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     // check for table/view
-    val qualifiedName = catalog.newQualifiedTableName(tableIdent)
+    val qualifiedName = catalog.asInstanceOf[SnappyStoreHiveCatalog].newQualifiedTableName(tableIdent)
     if (isView) {
       if (!catalog.isView(qualifiedName) && !catalog.isTemporaryTable(qualifiedName)) {
         throw new AnalysisException(
@@ -96,7 +97,7 @@ private[sql] case class TruncateManagedTableCommand(ifExists: Boolean,
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
       ifExists, ignoreIfUnsupported = false)
     Nil
@@ -108,7 +109,7 @@ private[sql] case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     snc.alterTable(catalog.newQualifiedTableName(tableIdent), isAddColumn = true, addColumn)
     Nil
   }
@@ -119,7 +120,7 @@ private[sql] case class AlterTableDropColumnCommand(
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     val plan = try {
       snc.sessionCatalog.lookupRelation(tableIdent)
     } catch {
@@ -145,7 +146,7 @@ private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     val tableIdent = catalog.newQualifiedTableName(baseTable)
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.createIndex(indexIdent, tableIdent, indexColumns, options)
@@ -159,7 +160,7 @@ private[sql] case class DropIndexCommand(
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.dropIndex(indexIdent, ifExists)
     Nil

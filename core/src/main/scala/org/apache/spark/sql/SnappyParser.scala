@@ -546,18 +546,18 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           case None =>
             val optAlias = alias.asInstanceOf[Option[String]]
             updatePerTableQueryHint(tableIdent, optAlias)
-            UnresolvedRelation(tableIdent, optAlias)
+            UnresolvedRelation(tableIdent)
           case Some(win) =>
             val optAlias = alias.asInstanceOf[Option[String]]
             updatePerTableQueryHint(tableIdent, optAlias)
             WindowLogicalPlan(win._1, win._2,
-              UnresolvedRelation(tableIdent, optAlias))
+              UnresolvedRelation(tableIdent))
         }) |
     '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
         (AS ~ identifier | strictIdentifier).? ~> { (child: LogicalPlan, w: Any, alias: Any) =>
       val aliasPlan = alias.asInstanceOf[Option[String]] match {
         case None => child
-        case Some(name) => SubqueryAlias(name, child, None)
+        case Some(name) => SubqueryAlias(name, child)
       }
       w.asInstanceOf[Option[(Duration, Option[Duration])]] match {
         case None =>
@@ -678,7 +678,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
     DISTRIBUTE ~ BY ~ (expression + commaSep) ~> ((e: Seq[Expression]) =>
-      (l: LogicalPlan) => RepartitionByExpression(e, l))
+      (l: LogicalPlan) => RepartitionByExpression(e, l,
+        session.sessionState.conf.numShufflePartitions))
   }
 
   protected final def windowSpec: Rule1[WindowSpec] = rule {
@@ -982,7 +983,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     INSERT ~ ((OVERWRITE ~ push(true)) | (INTO ~ push(false))) ~
     TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => new Insert(r, Map.empty[String,
-        Option[String]], s, OverwriteOptions(o), ifNotExists = false))
+        Option[String]], s, o, ifNotExists = false))
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
@@ -1027,7 +1028,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + commaSep) ~
         (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
-        With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2, None)))))
+        With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2)))))
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
@@ -1063,7 +1064,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
     session.clearQueryData()
-    session.sessionState.clearExecutionData()
+    session.clearExecutionData()
     caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
     parseSQL(sqlText, parseRule)
   }

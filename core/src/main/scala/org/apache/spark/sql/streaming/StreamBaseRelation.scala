@@ -38,7 +38,7 @@ abstract class StreamBaseRelation(opts: Map[String, String])
     SnappyStreamingContext.getInstance().getOrElse(
       throw new IllegalStateException("No initialized streaming context"))
 
-  protected val options = new CaseInsensitiveMap[String](opts)
+  protected val options = CaseInsensitiveMap(opts)
 
   @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
 
@@ -81,7 +81,8 @@ abstract class StreamBaseRelation(opts: Map[String, String])
       val stream = createRowStream()
       // search for existing dependents in the catalog (these may still not
       //   have been initialized e.g. after recovery, so add explicitly)
-      val catalog = context.snappySession.sessionState.catalog
+      val catalog = context.snappySession.sessionState
+        .catalog.asInstanceOf[SnappyStoreHiveCatalog]
       val initDependents = catalog.getDataSourceTables(Nil,
         Some(tableName)).map(_.toString())
       (stream, initDependents)

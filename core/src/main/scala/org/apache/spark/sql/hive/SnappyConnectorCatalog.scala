@@ -20,6 +20,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
 import org.apache.spark.sql.catalyst.catalog.{FunctionResourceLoader, GlobalTempViewManager}
+import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.hive.client.HiveClient
 import org.apache.spark.sql.internal.SQLConf
 
@@ -30,16 +31,18 @@ class SnappyConnectorCatalog(externalCatalog: SnappyExternalCatalog,
     snappySession: SnappySession,
     metadataHive: HiveClient,
     globalTempViewManager: GlobalTempViewManager,
-    functionResourceLoader: FunctionResourceLoader,
     functionRegistry: FunctionRegistry,
     sqlConf: SQLConf,
-    hadoopConf: Configuration)
+    hadoopConf: Configuration,
+    sQLParser: ParserInterface,
+    resourceLoader: FunctionResourceLoader)
     extends SnappyStoreHiveCatalog(
       externalCatalog: SnappyExternalCatalog,
       snappySession: SnappySession,
       metadataHive: HiveClient,
       globalTempViewManager: GlobalTempViewManager,
-      functionResourceLoader: FunctionResourceLoader,
       functionRegistry: FunctionRegistry,
       sqlConf: SQLConf,
-      hadoopConf: Configuration) with ConnectorCatalog
+      hadoopConf: Configuration,
+      sQLParser: ParserInterface,
+      resourceLoader: FunctionResourceLoader) with ConnectorCatalog

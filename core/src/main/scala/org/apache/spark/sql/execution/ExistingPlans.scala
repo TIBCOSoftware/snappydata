@@ -17,9 +17,7 @@
 package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.internal.cache.LocalRegion
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -30,7 +28,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
+import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
@@ -54,7 +52,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     partitionColumnAliases: Seq[Seq[Attribute]],
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
-    override val metastoreTableIdentifier: Option[TableIdentifier] = None)
+    override val tableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupportOnExecutor {
 
   def getMetrics: Map[String, SQLMetric] = {
@@ -199,7 +197,7 @@ private[sql] object PartitionedPhysicalScan {
     }
 
     new SparkPlanInfo(plan.nodeName, plan.simpleString,
-      children.map(getSparkPlanInfo), plan.metadata, metrics)
+      children.map(getSparkPlanInfo), metrics)
   }
 }
 
@@ -280,7 +278,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
-  private val withShuffle = ShuffleExchange(HashPartitioning(
+  private val withShuffle = ShuffleExchangeExec(HashPartitioning(
     ClusteredDistribution(otherPartKeys)
         .clustering, inputCode.inputRDDs().head.getNumPartitions), otherPlan)
 
@@ -352,7 +350,7 @@ class StratumInternalRow(val weight: Long) extends InternalRow {
 
   def copy(): InternalRow = throw new UnsupportedOperationException("not implemented")
 
-  def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
+  override def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
 
   def isNullAt(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
 

@@ -41,7 +41,7 @@ object StoreStrategy extends Strategy {
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
 
       val optionsWithPath: Map[String, String] = if (tableDesc.storage.locationUri.isDefined) {
-        options + ("path" -> tableDesc.storage.locationUri.get)
+        options + ("path" -> tableDesc.storage.locationUri.get.getPath)
       } else options
       val (provider, isBuiltIn) = SnappyContext.getBuiltInProvider(tableDesc.provider.get)
       val cmd =

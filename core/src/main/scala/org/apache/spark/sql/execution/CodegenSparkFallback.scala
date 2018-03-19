@@ -18,9 +18,8 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.SystemFailure
-
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyConf, SnappySession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
@@ -41,7 +40,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {
       val pool = plan.sqlContext.sparkSession.asInstanceOf[SnappySession].
-        sessionState.conf.activeSchedulerPool
+        sessionState.conf.asInstanceOf[SnappyConf].activeSchedulerPool
       sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       f(plan)
     } catch {
@@ -83,7 +82,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
           case Some(exec) =>
             logInfo("SnappyData code generation failed. Falling back to Spark plans.")
-            session.sessionState.disableStoreOptimizations = true
+            session.disableStoreOptimizations = true
             try {
               val plan = exec().executedPlan
               val result = f(plan)
@@ -91,7 +90,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
               child = plan
               result
             } finally {
-              session.sessionState.disableStoreOptimizations = false
+              session.disableStoreOptimizations = false
             }
           case None => throw t
         }
