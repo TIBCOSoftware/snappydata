@@ -98,9 +98,6 @@ hydra.Prms-maxResultWaitSec           = 3600;
 hydra.Prms-maxCloseTaskResultWaitSec  = 3600;
 hydra.Prms-serialExecution            = false;
 
-hydra.CachePrms-names = defaultCache;
-sql.SQLPrms-useGfxdConfig = true;
-
 /* end task must stop snappy members because they are not stopped by Hydra */
 hydra.Prms-alwaysDoEndTasks = true;
 
@@ -115,11 +112,6 @@ hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";
 
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar;
 
-hydra.GemFirePrms-names = gemfire1;
-hydra.ClientPrms-gemfireNames = gemfire1;
-hydra.GemFirePrms-distributedSystem = ds;
-
-sql.SQLPrms-useGfxdConfig = true;
 sql.SQLPrms-hasCompanies=false; //true;
 sql.SQLPrms-companiesTableDDLExtension = "trade.companies:random";
 sql.SQLPrms-numOfWorkers = fcn "(${${C}Hosts} * ${${C}VMsPerHost} *  ${${C}ThreadsPerVM}) " ncf;
