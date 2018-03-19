@@ -155,58 +155,11 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 <a id="DeployingClusterScript"></a>
 ## Deploying SnappyData Cloud Cluster on AWS using Scripts
 
-SnappyData provides a script that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2).
+SnappyData provides a script (`snappy-ec2`) that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2).
 
-Download the script from the latest [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases).
-The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
+The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also from the latest [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases). The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
 
-### Prerequisites
-Before you begin, do the following:
-
-* Ensure that you have an existing AWS account with required permissions to launch EC2 resources.
-
-* EC2 Key Pair is created in the region where you want to launch the SnappyData cluster.
-
-* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`.
-
-	If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file. You can find this information from the AWS IAM console.
-
-	For example:<br/>
->```
-export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
-export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
->```
-
-* Ensure Python v 2.7 or later is installed on your local computer.
-
-### Launching the SnappyData Cluster
-
-In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the **aws/ec2** directory where the **snappy-cloud-tools** [repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
-
-Enter the command in the following format:
-
-```
-./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>
-```
-
-Here, `<your-key-name>` refers to the EC2 Key Pair, `<your-keyfile-path>` refers to the path to the key file and `<action>` refers to the action to be performed (for example, launch, start, stop).
- 
-By default, the script starts one instance of a locator, lead,  and server each. 
-The script identifies each cluster by the unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.
- 
-The names and details of the members are automatically derived from the provided cluster name. 
-
-For example, if you launch a cluster named **my-cluster**, the locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
-
-When running the script you can also specify properties like the number of stores and region.
-For example, using the following command, you can start a SnappyData cluster named **snappydata-cluster** with 2 stores (or servers) in the N. California (us-west-1) region on AWS. It also starts an Apache Zeppelin server on the instance where lead is running.
-
-The examples below assume that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
-
-```
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch snappydata-cluster
-```
-For a comprehensive list of command options, simply run `./snappy-ec2` in the command prompt.
+For more information on setting up the cluster using the EC2 script, refer to [Using SnappyData EC2 scripts](../install/setting_up_cluster_on_amazon_web_services.md#EC2).
 
 <a id="dataAWSS3"></a>
 ## Loading Data from AWS S3

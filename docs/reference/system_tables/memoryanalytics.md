@@ -3,7 +3,6 @@
 A SnappyData virtual table that provides information about the overhead and memory usage of user tables and indexes.
 
 You can query the SYS.MEMORYANALYTICS table to obtain details about individual tables and indexes
-<!-- See [Managing Tables in Memory](../../../concepts/tables/managing_table_in_memory/).-->
 
 |Column Name|Type|Length|Nullable|Contents|
 ------------ | ------------- | ------------|------------- |------------- |

@@ -4,7 +4,7 @@
 
 When you start SnappyData members, startup delays can occur if specific disk store files on other members are unavailable. This is part of the normal startup behavior and is designed to help ensure data consistency. For example, consider the following startup message for a locator ("locator2):
 
-``` pre
+```no-highlight
 SnappyData Locator pid: 23537 status: waiting
 Waiting for DataDictionary (DiskId: 531fc5bb-1720-4836-a468-3d738a21af63, Location: /snappydata/locator2/./datadictionary) on: 
  [DiskId: aa77785a-0f03-4441-84f7-6eb6547d7833, Location: /snappydata/server1/./datadictionary]
@@ -15,7 +15,7 @@ Here, the startup messages indicate that locator2 is waiting for the persistent 
 
 Continuing the startup by booting the server1 data store yields:
 
-``` pre
+```no-highlight
 Starting SnappyData Server using locators for peer discovery: localhost[10337],localhost[10338]
 Starting network server for SnappyData Server at address localhost/127.0.0.1[1529]
 Logs generated in /snappydata/server1/gfxdserver.log
