@@ -35,14 +35,14 @@ These properties can be set using a `SET SQL` command or using the configuration
 
 For example: Set in the snappy SQL shell
 
-```
+```no-highlight
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.column.batchSize=100k;
 ```
 This sets the property for the snappy SQL shell's session.
 
 Set in the *conf/leads* file
-```
+```no-highlight
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
 ```
@@ -65,12 +65,12 @@ The command sets the property for the current SnappySession while setting it in 
 
 For example: Set in the  Snappy SQL shell (snappy-sql)
 
-```
+```no-highlight
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.flushReservoirThreshold=20000;
 ```
 Set in the *conf/leads* file
-```
+```no-highlight
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k -spark.sql.aqp.error=0.5
 ```
