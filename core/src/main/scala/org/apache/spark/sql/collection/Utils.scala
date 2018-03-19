@@ -573,13 +573,14 @@ object Utils {
     driver
   }
 
-  /**
-   * Wrap a DataFrame action to track all Spark jobs in the body so that
-   * we can connect them with an execution.
-   */
-  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
-    df.withNewExecutionId(body)
-  }
+  // TODO_2.3_MERGE
+//  /**
+//   * Wrap a DataFrame action to track all Spark jobs in the body so that
+//   * we can connect them with an execution.
+//   */
+//  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
+//    df.withNewExecutionId(body)
+//  }
 
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
 
@@ -730,7 +731,7 @@ object Utils {
 
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
-    if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
+    if (!ctx.declareAddedFunctions().contains(TASKCONTEXT_FUNCTION)) { // TODO_2.3_MERGE
       val taskContextVar = ctx.freshName("taskContext")
       val contextClass = classOf[TaskContext].getName
       ctx.addMutableState(contextClass, taskContextVar, _ => "")

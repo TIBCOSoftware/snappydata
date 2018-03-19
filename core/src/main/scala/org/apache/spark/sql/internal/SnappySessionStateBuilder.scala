@@ -328,221 +328,6 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
     }
   }
 
-  private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
-    extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-      // Check for SchemaInsertableRelation first
-      case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
-      _, _, _), _, child, _, _) if l.resolved && child.resolved =>
-        r.insertableRelation(child.output) match {
-          case Some(ir) =>
-            val br = ir.asInstanceOf[BaseRelation]
-            val relation = LogicalRelation(br, l.catalogTable.get)
-            castAndRenameChildOutputForPut(i.copy(table = relation),
-              relation.output, br, null, child)
-          case None =>
-            throw new AnalysisException(s"$l requires that the query in the " +
-              "SELECT clause of the INSERT INTO/OVERWRITE statement " +
-              "generates the same number of columns as its schema.")
-        }
-
-      // Check for PUT
-      // Need to eliminate subqueries here. Unlike InsertIntoTable whose
-      // subqueries have already been eliminated by special check in
-      // ResolveRelations, no such special rule has been added for PUT
-      case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
-        EliminateSubqueryAliases(table) match {
-          case l@LogicalRelation(ir: RowInsertableRelation, _, _, _) =>
-            // First, make sure the data to be inserted have the same number of
-            // fields with the schema of the relation.
-            val expectedOutput = l.output
-            if (expectedOutput.size != child.output.size) {
-              throw new AnalysisException(s"$l requires that the query in the " +
-                "SELECT clause of the PUT INTO statement " +
-                "generates the same number of columns as its schema.")
-            }
-            castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
-
-          case _ => p
-        }
-
-      // Check for DELETE
-      // Need to eliminate subqueries here. Unlike InsertIntoTable whose
-      // subqueries have already been eliminated by special check in
-      // ResolveRelations, no such special rule has been added for PUT
-      case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
-        EliminateSubqueryAliases(table) match {
-          case l@LogicalRelation(dr: DeletableRelation, _, _, _) =>
-            def comp(a: Attribute, targetCol: String): Boolean = a match {
-              case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
-            }
-
-            // First, make sure the where column(s) of the delete are in schema of the relation.
-            val expectedOutput = l.output
-            if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
-              throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same column name(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-            }
-            l match {
-              case LogicalRelation(ps: PartitionedDataSourceScan, _, _, _) =>
-                if (!ps.partitionColumns.forall(a => child.output.exists(e =>
-                  comp(e, a.toUpperCase)))) {
-                  throw new AnalysisException(s"${child.output.mkString(",")}" +
-                    s" columns in the WHERE clause of the DELETE FROM statement must " +
-                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
-                }
-              case _ =>
-            }
-            castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
-
-          case l@LogicalRelation(dr: MutableRelation, _, _, _) =>
-            // First, make sure the where column(s) of the delete are in schema of the relation.
-            val expectedOutput = l.output
-            castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
-          case _ => d
-        }
-
-      // other cases handled like in PreprocessTableInsertion
-      case i@InsertIntoTable(table, _, query, _, _)
-        if table.resolved && query.resolved => table match {
-        case relation: UnresolvedCatalogRelation =>
-          val metadata = relation.tableMeta
-          preProcess(i, relation = null, metadata.identifier.quotedString,
-            metadata.partitionColumnNames)
-        case LogicalRelation(h: HadoopFsRelation, _, identifier, _) =>
-          val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-          preProcess(i, h, tblName, h.partitionSchema.map(_.name))
-        case LogicalRelation(ir: InsertableRelation, _, identifier, _) =>
-          val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-          preProcess(i, ir, tblName, Nil)
-        case _ => i
-      }
-    }
-
-    private def preProcess(
-                            insert: InsertIntoTable,
-                            relation: BaseRelation,
-                            tblName: String,
-                            partColNames: Seq[String]): InsertIntoTable = {
-
-      // val expectedColumns = insert
-
-      val normalizedPartSpec = PartitioningUtils.normalizePartitionSpec(
-        insert.partition, partColNames, tblName, conf.resolver)
-
-      val expectedColumns = {
-        val staticPartCols = normalizedPartSpec.filter(_._2.isDefined).keySet
-        insert.table.output.filterNot(a => staticPartCols.contains(a.name))
-      }
-
-      if (expectedColumns.length != insert.query.schema.length) {
-        throw new AnalysisException(
-          s"Cannot insert into table $tblName because the number of columns are different: " +
-            s"need ${expectedColumns.length} columns, " +
-            s"but query has ${insert.query.schema.length} columns.")
-      }
-      if (insert.partition.nonEmpty) {
-        // the query's partitioning must match the table's partitioning
-        // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
-        val samePartitionColumns =
-        if (conf.caseSensitiveAnalysis) {
-          insert.partition.keySet == partColNames.toSet
-        } else {
-          insert.partition.keySet.map(_.toLowerCase) == partColNames.map(_.toLowerCase).toSet
-        }
-        if (!samePartitionColumns) {
-          throw new AnalysisException(
-            s"""
-               |Requested partitioning does not match the table $tblName:
-               |Requested partitions: ${insert.partition.keys.mkString(",")}
-               |Table partitions: ${partColNames.mkString(",")}
-           """.stripMargin)
-        }
-        castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
-
-        //      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-        //        child)).getOrElse(insert)
-      } else {
-        // All partition columns are dynamic because because the InsertIntoTable
-        // command does not explicitly specify partitioning columns.
-        castAndRenameChildOutput(insert, expectedColumns)
-          .copy(partition = partColNames.map(_ -> None).toMap)
-        //      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-        //        child)).getOrElse(insert).copy(partition = partColNames
-        //          .map(_ -> None).toMap)
-      }
-    }
-
-    /**
-      * If necessary, cast data types and rename fields to the expected
-      * types and names.
-      */
-    // TODO: do we really need to rename?
-    def castAndRenameChildOutputForPut[T <: LogicalPlan](
-                                                          plan: T,
-                                                          expectedOutput: Seq[Attribute],
-                                                          relation: BaseRelation,
-                                                          newRelation: LogicalRelation,
-                                                          child: LogicalPlan): T = {
-      val newChildOutput = expectedOutput.zip(child.output).map {
-        case (expected, actual) =>
-          if (expected.dataType.sameType(actual.dataType) &&
-            expected.name == actual.name) {
-            actual
-          } else {
-            // avoid unnecessary copy+cast when inserting DECIMAL types
-            // into column table
-            actual.dataType match {
-              case _: DecimalType
-                if expected.dataType.isInstanceOf[DecimalType] &&
-                  relation.isInstanceOf[PlanInsertableRelation] => actual
-              case _ => Alias(Cast(actual, expected.dataType), expected.name)()
-            }
-          }
-      }
-
-      if (newChildOutput == child.output) {
-        plan match {
-          case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
-          case d: DeleteFromTable => d.copy(table = newRelation).asInstanceOf[T]
-          case _: InsertIntoTable => plan
-        }
-      } else plan match {
-        case p: PutIntoTable => p.copy(table = newRelation,
-          child = Project(newChildOutput, child)).asInstanceOf[T]
-        case d: DeleteFromTable => d.copy(table = newRelation,
-          child = Project(newChildOutput, child)).asInstanceOf[T]
-        case i: InsertIntoTable => i.copy(query = Project(newChildOutput,
-          child)).asInstanceOf[T]
-      }
-    }
-
-    private def castAndRenameChildOutput(
-                                          insert: InsertIntoTable,
-                                          expectedOutput: Seq[Attribute]): InsertIntoTable = {
-      val newChildOutput = expectedOutput.zip(insert.query.output).map {
-        case (expected, actual) =>
-          if (expected.dataType.sameType(actual.dataType) &&
-            expected.name == actual.name &&
-            expected.metadata == actual.metadata) {
-            actual
-          } else {
-            // Renaming is needed for handling the following cases like
-            // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
-            // 2) Target tables have column metadata
-            Alias(Cast(actual, expected.dataType), expected.name)()
-          }
-      }
-
-      if (newChildOutput == insert.query.output) insert
-      else {
-        insert.copy(query = Project(newChildOutput, insert.query))
-      }
-    }
-  }
-
   /**
     * Replaces [[UnresolvedRelation]]s if the plan is for direct query on files.
     */
@@ -578,6 +363,221 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
     }
   }
 
+}
+
+private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
+  extends Rule[LogicalPlan] {
+  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+    // Check for SchemaInsertableRelation first
+    case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
+    _, _, _), _, child, _, _) if l.resolved && child.resolved =>
+      r.insertableRelation(child.output) match {
+        case Some(ir) =>
+          val br = ir.asInstanceOf[BaseRelation]
+          val relation = LogicalRelation(br, l.catalogTable.get)
+          castAndRenameChildOutputForPut(i.copy(table = relation),
+            relation.output, br, null, child)
+        case None =>
+          throw new AnalysisException(s"$l requires that the query in the " +
+            "SELECT clause of the INSERT INTO/OVERWRITE statement " +
+            "generates the same number of columns as its schema.")
+      }
+
+    // Check for PUT
+    // Need to eliminate subqueries here. Unlike InsertIntoTable whose
+    // subqueries have already been eliminated by special check in
+    // ResolveRelations, no such special rule has been added for PUT
+    case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
+      EliminateSubqueryAliases(table) match {
+        case l@LogicalRelation(ir: RowInsertableRelation, _, _, _) =>
+          // First, make sure the data to be inserted have the same number of
+          // fields with the schema of the relation.
+          val expectedOutput = l.output
+          if (expectedOutput.size != child.output.size) {
+            throw new AnalysisException(s"$l requires that the query in the " +
+              "SELECT clause of the PUT INTO statement " +
+              "generates the same number of columns as its schema.")
+          }
+          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
+
+        case _ => p
+      }
+
+    // Check for DELETE
+    // Need to eliminate subqueries here. Unlike InsertIntoTable whose
+    // subqueries have already been eliminated by special check in
+    // ResolveRelations, no such special rule has been added for PUT
+    case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
+      EliminateSubqueryAliases(table) match {
+        case l@LogicalRelation(dr: DeletableRelation, _, _, _) =>
+          def comp(a: Attribute, targetCol: String): Boolean = a match {
+            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
+          }
+
+          // First, make sure the where column(s) of the delete are in schema of the relation.
+          val expectedOutput = l.output
+          if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
+            throw new AnalysisException(s"$l requires that the query in the " +
+              "WHERE clause of the DELETE FROM statement " +
+              "generates the same column name(s) as in its schema but found " +
+              s"${child.output.mkString(",")} instead.")
+          }
+          l match {
+            case LogicalRelation(ps: PartitionedDataSourceScan, _, _, _) =>
+              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
+                comp(e, a.toUpperCase)))) {
+                throw new AnalysisException(s"${child.output.mkString(",")}" +
+                  s" columns in the WHERE clause of the DELETE FROM statement must " +
+                  s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
+              }
+            case _ =>
+          }
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+
+        case l@LogicalRelation(dr: MutableRelation, _, _, _) =>
+          // First, make sure the where column(s) of the delete are in schema of the relation.
+          val expectedOutput = l.output
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+        case _ => d
+      }
+
+    // other cases handled like in PreprocessTableInsertion
+    case i@InsertIntoTable(table, _, query, _, _)
+      if table.resolved && query.resolved => table match {
+      case relation: UnresolvedCatalogRelation =>
+        val metadata = relation.tableMeta
+        preProcess(i, relation = null, metadata.identifier.quotedString,
+          metadata.partitionColumnNames)
+      case LogicalRelation(h: HadoopFsRelation, _, identifier, _) =>
+        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
+        preProcess(i, h, tblName, h.partitionSchema.map(_.name))
+      case LogicalRelation(ir: InsertableRelation, _, identifier, _) =>
+        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
+        preProcess(i, ir, tblName, Nil)
+      case _ => i
+    }
+  }
+
+  private def preProcess(
+                          insert: InsertIntoTable,
+                          relation: BaseRelation,
+                          tblName: String,
+                          partColNames: Seq[String]): InsertIntoTable = {
+
+    // val expectedColumns = insert
+
+    val normalizedPartSpec = PartitioningUtils.normalizePartitionSpec(
+      insert.partition, partColNames, tblName, conf.resolver)
+
+    val expectedColumns = {
+      val staticPartCols = normalizedPartSpec.filter(_._2.isDefined).keySet
+      insert.table.output.filterNot(a => staticPartCols.contains(a.name))
+    }
+
+    if (expectedColumns.length != insert.query.schema.length) {
+      throw new AnalysisException(
+        s"Cannot insert into table $tblName because the number of columns are different: " +
+          s"need ${expectedColumns.length} columns, " +
+          s"but query has ${insert.query.schema.length} columns.")
+    }
+    if (insert.partition.nonEmpty) {
+      // the query's partitioning must match the table's partitioning
+      // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
+      val samePartitionColumns =
+      if (conf.caseSensitiveAnalysis) {
+        insert.partition.keySet == partColNames.toSet
+      } else {
+        insert.partition.keySet.map(_.toLowerCase) == partColNames.map(_.toLowerCase).toSet
+      }
+      if (!samePartitionColumns) {
+        throw new AnalysisException(
+          s"""
+             |Requested partitioning does not match the table $tblName:
+             |Requested partitions: ${insert.partition.keys.mkString(",")}
+             |Table partitions: ${partColNames.mkString(",")}
+           """.stripMargin)
+      }
+      castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
+
+      //      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+      //        child)).getOrElse(insert)
+    } else {
+      // All partition columns are dynamic because because the InsertIntoTable
+      // command does not explicitly specify partitioning columns.
+      castAndRenameChildOutput(insert, expectedColumns)
+        .copy(partition = partColNames.map(_ -> None).toMap)
+      //      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
+      //        child)).getOrElse(insert).copy(partition = partColNames
+      //          .map(_ -> None).toMap)
+    }
+  }
+
+  /**
+    * If necessary, cast data types and rename fields to the expected
+    * types and names.
+    */
+  // TODO: do we really need to rename?
+  def castAndRenameChildOutputForPut[T <: LogicalPlan](
+                                                        plan: T,
+                                                        expectedOutput: Seq[Attribute],
+                                                        relation: BaseRelation,
+                                                        newRelation: LogicalRelation,
+                                                        child: LogicalPlan): T = {
+    val newChildOutput = expectedOutput.zip(child.output).map {
+      case (expected, actual) =>
+        if (expected.dataType.sameType(actual.dataType) &&
+          expected.name == actual.name) {
+          actual
+        } else {
+          // avoid unnecessary copy+cast when inserting DECIMAL types
+          // into column table
+          actual.dataType match {
+            case _: DecimalType
+              if expected.dataType.isInstanceOf[DecimalType] &&
+                relation.isInstanceOf[PlanInsertableRelation] => actual
+            case _ => Alias(Cast(actual, expected.dataType), expected.name)()
+          }
+        }
+    }
+
+    if (newChildOutput == child.output) {
+      plan match {
+        case p: PutIntoTable => p.copy(table = newRelation).asInstanceOf[T]
+        case d: DeleteFromTable => d.copy(table = newRelation).asInstanceOf[T]
+        case _: InsertIntoTable => plan
+      }
+    } else plan match {
+      case p: PutIntoTable => p.copy(table = newRelation,
+        child = Project(newChildOutput, child)).asInstanceOf[T]
+      case d: DeleteFromTable => d.copy(table = newRelation,
+        child = Project(newChildOutput, child)).asInstanceOf[T]
+      case i: InsertIntoTable => i.copy(query = Project(newChildOutput,
+        child)).asInstanceOf[T]
+    }
+  }
+
+  private def castAndRenameChildOutput(
+                                        insert: InsertIntoTable,
+                                        expectedOutput: Seq[Attribute]): InsertIntoTable = {
+    val newChildOutput = expectedOutput.zip(insert.query.output).map {
+      case (expected, actual) =>
+        if (expected.dataType.sameType(actual.dataType) &&
+          expected.name == actual.name &&
+          expected.metadata == actual.metadata) {
+          actual
+        } else {
+          // Renaming is needed for handling the following cases like
+          // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
+          // 2) Target tables have column metadata
+          Alias(Cast(actual, expected.dataType), expected.name)()
+        }
+    }
+
+    if (newChildOutput == insert.query.output) insert
+    else {
+      insert.copy(query = Project(newChildOutput, insert.query))
+    }
+  }
 }
 
 class DefaultPlanner(val session: SnappySession, conf: SQLConf,

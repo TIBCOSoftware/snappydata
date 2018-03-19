@@ -574,7 +574,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          }
       """
     }
-    val allRowWriteExprs = ctx.splitExpressions(ctx.INPUT_ROW, rowWriteExprs)
+    val allRowWriteExprs = " " //ctx.splitExpressions(ctx.INPUT_ROW, rowWriteExprs) // TODO_2.3_MERGE
+//    expressions: Seq[String],
+//    funcName: String,
+//    arguments: Seq[(String, String)],
+//    returnType: String = "void",
+//    makeSplitFunction: String => String = identity,
+//    foldFunctions: Seq[String] => String = _.mkString("", ";\n", ";")): String = {
     ctx.INPUT_ROW = mutableRow
 
     val rowReadExprs = schema.zipWithIndex.map { case (field, ordinal) =>

@@ -440,6 +440,10 @@ case class SnappyHashAggregateExec(
   @transient private var dictionaryArrayTerm: String = _
   @transient private var dictionaryArrayInit: String = _
 
+  // The child could change `needCopyResult` to true, but we had already
+  // consumed all the rows, so `needCopyResult` should be reset to `false`.
+  override def needCopyResult: Boolean = false
+
   /**
    * Generate the code for output.
    */
@@ -550,9 +554,10 @@ case class SnappyHashAggregateExec(
       groupingExpressions.length)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
+    // TODO_2.3_MERGE
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
-    ctx.copyResult = false
+    // ctx.copyResult = false
 
     val aggTime = metricTerm(ctx, "aggTime")
     val beforeAgg = ctx.freshName("beforeAgg")

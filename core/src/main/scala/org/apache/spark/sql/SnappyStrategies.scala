@@ -390,11 +390,12 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
                 "operator containing aggregate functions which don't " +
                 "support partial aggregation.")
           } else {
-            aggregate.AggUtils.planAggregateWithoutPartial(
-              groupingExpressions,
-              aggregateExpressions,
-              resultExpressions,
-              planLater(child))
+            sys.error("TODO_2.3_MERGE")
+//            aggregate.AggUtils.planAggregateWithoutPartial(
+//              groupingExpressions,
+//              aggregateExpressions,
+//              resultExpressions,
+//              planLater(child))
           }
         } else if (functionsWithDistinct.isEmpty) {
           planAggregateWithoutDistinct(
