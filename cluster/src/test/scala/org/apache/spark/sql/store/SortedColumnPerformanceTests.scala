@@ -171,7 +171,8 @@ object SortedColumnPerformanceTests {
       // Now verify
       if (doVerifyFullSize) {
         execute()
-        SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+        SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
+          numTimesInsert = 1, numTimesUpdate = 1)
       }
     } finally {
       session.sql(s"drop table $colTableName")
@@ -185,12 +186,13 @@ object SortedColumnPerformanceTests {
   var lastFailedIteration: Int = Int.MinValue
 
   def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param = if (iterCount != lastFailedIteration) {
       getParam(iterCount, params)
     } else QueryBenchmark.firstRandomValue
     val query = s"select * from $colTableName where id = $param"
-    val expectedNumResults = if (param % 10 < 6) 10 else 1
+    val expectedNumResults = if (param % 10 < 6) numTimesInsert else numTimesUpdate
     val result = session.sql(query).collect()
     val passed = isMultithreaded || result.length == expectedNumResults
     if (!passed && iterCount != -1) {
@@ -204,7 +206,8 @@ object SortedColumnPerformanceTests {
   }
 
   def executeQuery_RangeQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean): Boolean = {
+      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param1 = if (iterCount != lastFailedIteration) {
       getParam(iterCount, params1)
     } else QueryBenchmark.firstRandomValue
@@ -231,7 +234,7 @@ object SortedColumnPerformanceTests {
       doVerifyFullSize: Boolean = false, numTimesInsert: Int = 1, numTimesUpdate: Int = 1,
       totalThreads: Int = 1, runTime: FiniteDuration = 2.seconds)
       // scalastyle:on
-      (f : (SnappySession, String, Int, Int, Int, Int, Boolean) => Boolean): Unit = {
+      (f : (SnappySession, String, Int, Int, Int, Int, Boolean, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
       outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
@@ -241,9 +244,9 @@ object SortedColumnPerformanceTests {
     val sessionArray = new Array[SnappySession](totalThreads)
     sessionArray.indices.foreach(i => {
       sessionArray(i) = session.newSession()
-      sessionArray(i).conf.set(Property.ColumnMaxDeltaRows.name, "100")
       sessionArray(i).conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       sessionArray(i).conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+      sessionArray(i).conf.set(Property.ForceLinkPartitionsToBuckets.name, "true")
     })
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
@@ -254,15 +257,26 @@ object SortedColumnPerformanceTests {
       def prepare(): Unit = {
         params.foreach { case (k, v) => session.conf.set(k, v) }
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
-        insertDF.write.insertInto(colTableName)
         try {
+          session.conf.set(Property.ColumnBatchSize.name, "24M") // default
+          session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+          session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+          session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+          session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
           ColumnTableScan.setCaseOfSortedInsertValue(true)
+          insertDF.write.insertInto(colTableName)
           updateDF.write.putInto(colTableName)
+          if (doVerifyFullSize) {
+            SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
+              numTimesInsert, numTimesUpdate)
+          }
         } finally {
           ColumnTableScan.setCaseOfSortedInsertValue(false)
-        }
-        if (doVerifyFullSize) {
-          SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true)
+          session.conf.unset(Property.ColumnBatchSize.name)
+          session.conf.unset(Property.ColumnMaxDeltaRows.name)
+          session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+          session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+          session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
         }
         doGC()
       }
@@ -270,10 +284,9 @@ object SortedColumnPerformanceTests {
       def cleanup(): Unit = {
         sessionArray.indices.foreach(i => {
           sessionArray(i).clear()
-          session.conf.unset(Property.ColumnBatchSize.name)
-          session.conf.unset(Property.ColumnMaxDeltaRows.name)
           session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
           session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+          session.conf.unset(Property.ForceLinkPartitionsToBuckets.name)
         })
         SnappySession.clearAllCache()
         defaults.foreach { case (k, v) => session.conf.set(k, v) }
@@ -287,13 +300,13 @@ object SortedColumnPerformanceTests {
       addCaseWithCleanup(benchmark, name, numIters, prepare,
         cleanup, testCleanup, isMultithreaded) { (iteratorIndex, threadId) =>
         f(sessionArray(threadId), colTableName, numIters, iteratorIndex, totalThreads, threadId,
-          isMultithreaded)}
+          isMultithreaded, numTimesInsert, numTimesUpdate)}
     }
 
     try {
-      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
       session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+      session.conf.set(Property.ForceLinkPartitionsToBuckets.name, "true")
 
       // Get numbers
       addBenchmark(s"$queryMark", Map.empty)
@@ -304,10 +317,9 @@ object SortedColumnPerformanceTests {
       } catch {
         case _: Throwable =>
       }
-      session.conf.unset(Property.ColumnBatchSize.name)
-      session.conf.unset(Property.ColumnMaxDeltaRows.name)
       session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
       session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+      session.conf.unset(Property.ForceLinkPartitionsToBuckets.name)
     }
   }
 

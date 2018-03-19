@@ -16,89 +16,65 @@
  */
 package io.snappydata.impl
 
-import java.sql.{Connection, ResultSet, SQLException, Statement}
+import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import java.util.Collections
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 import com.gemstone.gemfire.internal.SocketCreator
+import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 import io.snappydata.collection.ObjectObjectHashMap
-import io.snappydata.thrift.internal.ClientStatement
+import io.snappydata.thrift.internal.ClientPreparedStatement
 
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.SmartExecutorBucketPartition
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.types.StructType
 
 final class SmartConnectorRDDHelper {
 
-  var useLocatorURL: Boolean = false
+  private var useLocatorURL: Boolean = _
 
-  def getSQLStatement(resolvedTableName: String,
-      partitionId: Int, requiredColumns: Array[String],
-      schema: StructType): (String, String) = {
-
-    val schemaWithIndex = schema.zipWithIndex
-    // To fetch columns create an IN query on columnIndex
-    // with other two columns fixed (uuid and partitionId).
-    // (select data, columnIndex from table where
-    //  partitionId = 1 and uuid = ? and columnIndex in (1, 2, -3, ...))
-    // Store QueryInfo has been enhanced to convert such queries
-    // to getAll for best performance (and also enable remote
-    //   fetch if required).
-    // Note that partitionId is required in where clause even though it
-    // is fixed and already set by BUCKETIDs list set for the scan
-    // to enable conversion to getAll since it is part of PK.
-    // Also the queries use a "select *" instead of projection since
-    // store getAll with ProjectionRow does not work for object tables
-    // and the additional columns are minuscule in size compared to data blob.
-    val fetchCols = requiredColumns.toSeq.map(col => {
-      schemaWithIndex.filter(_._1.name.equalsIgnoreCase(col)).last._2 + 1
-    })
-    val fetchColString = (fetchCols ++ fetchCols.flatMap { col =>
-      val deltaCol = ColumnDelta.deltaColumnIndex(col - 1 /* zero based */, 0)
-      deltaCol until(deltaCol - ColumnDelta.MAX_DEPTH, -1)
-    } :+ ColumnFormatEntry.DELETE_MASK_COL_INDEX).mkString(
-      s"select * from ${quotedName(resolvedTableName)} where " +
-          s"partitionId = $partitionId and uuid = ? and columnIndex in (", ",", ")")
-    // fetch stats query and fetch columns query
-    (s"select * from ${quotedName(resolvedTableName)} where columnIndex = " +
-        s"${ColumnFormatEntry.STATROW_COL_INDEX}", fetchColString)
-  }
-
-  def executeQuery(conn: Connection, tableName: String, partition: SmartExecutorBucketPartition,
-      query: String, relDestroyVersion: Int): (Statement, ResultSet, String) = {
-    val statement = conn.createStatement()
+  def prepareScan(conn: Connection, columnTable: String, projection: Array[Int],
+      serializedFilters: Array[Byte], partition: SmartExecutorBucketPartition,
+      relDestroyVersion: Int): (PreparedStatement, ResultSet, String) = {
+    val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?)")
+    pstmt.setString(1, columnTable)
+    pstmt.setString(2, projection.mkString(","))
+    // serialize the filters
+    if ((serializedFilters ne null) && serializedFilters.length > 0) {
+      pstmt.setBlob(3, new HarmonySerialBlob(serializedFilters))
+    } else {
+      pstmt.setNull(3, java.sql.Types.BLOB)
+    }
     val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
       case "" => null
       case id => id
     }
-    statement match {
-      case clientStmt: ClientStatement =>
+    pstmt match {
+      case clientStmt: ClientPreparedStatement =>
         val bucketSet = Collections.singleton(Int.box(partition.bucketId))
-        clientStmt.setLocalExecutionBucketIds(bucketSet, tableName, true)
+        clientStmt.setLocalExecutionBucketIds(bucketSet, columnTable, true)
         clientStmt.setMetadataVersion(relDestroyVersion)
         clientStmt.setSnapshotTransactionId(txId)
       case _ =>
-        statement.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
-            s"'$tableName', '${partition.bucketId}', $relDestroyVersion)")
+        pstmt.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
+            s"'$columnTable', '${partition.bucketId}', $relDestroyVersion)")
         if (txId ne null) {
-          statement.execute(s"call sys.USE_SNAPSHOT_TXID('$txId')")
+          pstmt.execute(s"call sys.USE_SNAPSHOT_TXID('$txId')")
         }
     }
 
-    val rs = statement.executeQuery(query)
-    (statement, rs, txId)
+    val rs = pstmt.executeQuery()
+    (pstmt, rs, txId)
   }
 
   def getConnection(connectionProperties: ConnectionProperties,
@@ -166,13 +142,29 @@ object SmartConnectorRDDHelper {
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
     hostList.isEmpty
 
-  def setBucketToServerMappingInfo(
-      bucketToServerMappingStr: String): Array[ArrayBuffer[(String, String)]] = {
+  private def preferHostName(session: SnappySession): Boolean = {
+    // check if Spark executors are using IP addresses or host names
+    Utils.executorsListener(session.sparkContext) match {
+      case Some(l) =>
+        val preferHost = l.activeStorageStatusList.collectFirst {
+          case status if status.blockManagerId.executorId != "driver" =>
+            val host = status.blockManagerId.host
+            host.indexOf('.') == -1 && host.indexOf("::") == -1
+        }
+        preferHost.isDefined && preferHost.get
+      case _ => false
+    }
+  }
+
+  def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
+      session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
     if (bucketToServerMappingStr != null) {
+      // check if Spark executors are using IP addresses or host names
+      val preferHost = preferHostName(session)
       val arr: Array[String] = bucketToServerMappingStr.split(":")
       var orphanBuckets: ArrayBuffer[Int] = null
       val noOfBuckets = arr(0).toInt
@@ -185,10 +177,11 @@ object SmartConnectorRDDHelper {
         val aBucketInfo: Array[String] = x.split(";")
         val bid: Int = aBucketInfo(0).toInt
         if (!(aBucketInfo(1) == "null")) {
-          // get (addr,host,port)
+          // get (host,addr,port)
           val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
-          val host = hostAddressPort._1
-          val netUrl = urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix
+          val hostName = hostAddressPort._1
+          val host = if (preferHost) hostName else hostAddressPort._2
+          val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
           val netUrls = new ArrayBuffer[(String, String)](1)
           netUrls += host -> netUrl
           allNetUrls(bid) = netUrls
@@ -220,8 +213,10 @@ object SmartConnectorRDDHelper {
     Array.empty
   }
 
-  def setReplicasToServerMappingInfo(
-      replicaNodesStr: String): Array[ArrayBuffer[(String, String)]] = {
+  def setReplicasToServerMappingInfo(replicaNodesStr: String,
+      session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
+    // check if Spark executors are using IP addresses or host names
+    val preferHost = preferHostName(session)
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
@@ -230,8 +225,10 @@ object SmartConnectorRDDHelper {
     val netUrls = ArrayBuffer.empty[(String, String)]
     for (host <- hostInfo) {
       val hostAddressPort = returnHostPortFromServerString(host)
-      netUrls += hostAddressPort._1 ->
-          (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+      val hostName = hostAddressPort._1
+      val h = if (preferHost) hostName else hostAddressPort._2
+      netUrls += h ->
+          (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
     }
     Array(netUrls)
   }
@@ -255,10 +252,14 @@ object SmartConnectorRDDHelper {
       (null, null, null)
     } else {
       val host: String = matcher.group(1)
-      // val address: String = matcher.group(2)
+      var address = matcher.group(2)
+      if ((address ne null) && address.length > 0) {
+        address = address.substring(1)
+      } else {
+        address = host
+      }
       val portStr: String = matcher.group(3)
-      // (address, host, portStr)
-      (host, host, portStr)
+      (host, address, portStr)
     }
   }
 }

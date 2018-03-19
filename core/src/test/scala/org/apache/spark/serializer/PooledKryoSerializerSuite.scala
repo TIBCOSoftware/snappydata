@@ -21,13 +21,12 @@ import io.snappydata.SnappyFunSuite
 
 class PooledKryoSerializerSuite extends SnappyFunSuite {
 
-  test("Test borrow-reset-release"){
-    //Borrow from one thread
+  test("Test borrow-reset-release") {
+    // Borrow from one thread
     val serzr = KryoSerializerPool.borrow()
     // Other thread might reset the pool by resetting the setDefaultClassLoader
     KryoSerializerPool.clear()
     // The 1st thread should not see any problem
     KryoSerializerPool.release(serzr)
   }
-
 }

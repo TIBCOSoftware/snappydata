@@ -14,13 +14,13 @@ SnappyData relies on the Spark SQL Data Sources API to parallelly load data from
 **Load using Spark API or SQL** </br> You can use SQL to point to any data source or use the native Spark Scala/Java API to load. 
 For instance, you can first [create an external table](../reference/sql_reference/create-external-table.md). 
 
-```scala
+```no-highlight
 create external table <tablename> using <any-data-source-supported> options <options>
 ```
 
 Next, use it in any SQL query or DDL. For example,
 
-```scala
+```no-highlight
 CREATE EXTERNAL TABLE STAGING_CUSTOMER USING parquet OPTIONS(path 'quickstart/src/main/resources/customerparquet')
 
 CREATE TABLE CUSTOMER USING column OPTIONS(buckets '8') AS ( SELECT * FROM STAGING_CUSTOMER)
@@ -30,7 +30,7 @@ CREATE TABLE CUSTOMER USING column OPTIONS(buckets '8') AS ( SELECT * FROM STAGI
 
 You can either explicitly define the schema or infer the schema and the column data types. To infer the column names, we need the CSV header to specify the names. In this example we don't have the names, so we explicitly define the schema. 
 
-```scala
+```no-highlight
     // Get a SnappySession in a local cluster
     val spark: SparkSession = SparkSession
         .builder
@@ -43,7 +43,7 @@ You can either explicitly define the schema or infer the schema and the column d
 
 We explicitly define the table definition first ....
 
-```scala
+```no-highlight
     snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +
@@ -58,7 +58,7 @@ We explicitly define the table definition first ....
 
 **Load data in the CUSTOMER table from a CSV file by using Data Sources API**
 
-```scala
+```no-highlight
     val tableSchema = snSession.table("CUSTOMER").schema
     val customerDF = snSession.read.schema(schema = tableSchema).csv(s"$dataFolder/customer.csv")
     customerDF.write.insertInto("CUSTOMER")
@@ -68,7 +68,7 @@ The [Spark SQL programming guide](https://spark.apache.org/docs/2.1.1/sql-progra
 
 **Example - Load from Parquet files**
 
-```scala
+```no-highlight
 val customerDF = snSession.read.parquet(s"$dataDir/customer_parquet")
 customerDF.write.insertInto("CUSTOMER")
 ```
@@ -77,7 +77,7 @@ customerDF.write.insertInto("CUSTOMER")
 
 A schema for the table can be inferred from the data file. Data is first introspected to learn the schema (column names and types) without requring this input from the user. The example below illustrates reading a parquet data source and creates a new columnar table in SnappyData. The schema is automatically defined when the Parquet data files are read. 
 
-```scala
+```no-highlight
     val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
@@ -87,7 +87,7 @@ A schema for the table can be inferred from the data file. Data is first introsp
 
 In the code snippet below a schema is inferred from a CSV file. Column names are derived from the header in the file.
 
-```scala
+```no-highlight
     val customer_csv_DF = snSession.read.option("header", "true")
         .option("inferSchema", "true").csv("quickstart/src/main/resources/customer_with_headers.csv")
 

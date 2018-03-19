@@ -18,12 +18,12 @@
 package org.apache.spark.sql.store
 
 import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.ColumnUpdateDeleteTests
 import io.snappydata.cluster.PreparedQueryRoutingSingleNodeSuite
-import io.snappydata.{ColumnUpdateDeleteTests, Property}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{Row, SnappySession}
 
 /**
  * Tests for updates/deletes on column table.
@@ -58,6 +58,10 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     ColumnUpdateDeleteTests.testBasicUpdate(this.snc.snappySession)
   }
 
+  test("stats check after updates") {
+    ColumnUpdateDeleteTests.testDeltaStats(this.snc.snappySession)
+  }
+
   test("basic delete") {
     ColumnUpdateDeleteTests.testBasicDelete(this.snc.snappySession)
   }
@@ -76,14 +80,6 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
   test("SNAP-2124 update missed") {
     ColumnUpdateDeleteTests.testSNAP2124(this.snc.snappySession, checkPruning = true)
-  }
-
-  ignore("test update for all types") {
-    val session = this.snc.snappySession
-    // reduced size to ensure both column table and row buffer have data
-    session.conf.set(Property.ColumnBatchSize.name, "100k")
-    runAllTypesTest(session)
-    session.conf.unset(Property.ColumnBatchSize.name)
   }
 
   test("SNAP-1985: update delete on string type") {

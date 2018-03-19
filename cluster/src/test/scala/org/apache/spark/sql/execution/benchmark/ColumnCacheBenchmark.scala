@@ -48,7 +48,7 @@ import org.apache.spark.util.Benchmark
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
-  private val cores = math.min(8, Runtime.getRuntime.availableProcessors())
+  private val cores = math.min(16, Runtime.getRuntime.availableProcessors())
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -69,6 +69,10 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
+  }
+
+  test("cache with randomized keys - query") {
+    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
   ignore("PutInto Vs Insert") {
@@ -209,10 +213,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key,
       SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
-  }
-
-  test("cache with randomized keys - query") {
-    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
   test("PutInto wide column table") {
