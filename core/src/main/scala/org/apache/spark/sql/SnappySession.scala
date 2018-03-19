@@ -78,7 +78,7 @@ import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfig
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 
 class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
@@ -1198,6 +1198,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         case _ =>
           // Check if the specified data source match the data source
           // of the existing table.
+          // TODO_2.3_MERGE
           val plan = new PreprocessTableInsertOrPut(sessionState.conf).apply(
             sessionState.catalog.lookupRelation(tableIdent))
           EliminateSubqueryAliases(plan) match {
@@ -1890,7 +1891,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         new java.util.function.Function[PartitionedRegion, Array[Partition]] {
           override def apply(pr: PartitionedRegion): Array[Partition] = {
             val linkPartitionsToBuckets = hasLinkPartitionsToBuckets
-            val preferPrimaries = preferPrimaries
             if (linkPartitionsToBuckets || preferPrimaries) {
               // also set the default shuffle partitions for this execution
               // to minimize exchange
@@ -2253,8 +2253,9 @@ object SnappySession extends Logging {
           s
         case e: Exists =>
           e.copy(exprId = ExprId(0))
-        case p: PredicateSubquery =>
-          p.copy(exprId = ExprId(0))
+          // TODO_2.3_MERGE
+//        case p: PredicateSubquery =>
+//          p.copy(exprId = ExprId(0))
         case a: AttributeReference =>
           AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
         case a: Alias =>
@@ -2620,11 +2621,11 @@ object SQLConfigEntry {
         s"Unknown type of configuration key: $c")
     }
   }
-
+// TODO_2.3_MERGE
 //  def apply[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
 //                         isPublic: Boolean = true): SQLConfigEntry = {
 //    classTag[T] match {
-//      case ClassTag.Int => handleDefault[Int](SQLConfigBuilder(key)
+//      case ClassTag.Int => handleDefault[Int](SConfigBuilder(key)
 //        .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
 //      case ClassTag.Long => handleDefault[Long](SQLConfigBuilder(key)
 //        .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])

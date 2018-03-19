@@ -159,7 +159,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       case _ => throw new UnsupportedOperationException(
         s"Expected a child supporting code generation. Got: $child")
     }
-    if (!ctx.addedFunctions.contains("shouldStop")) {
+    if (!ctx.declareAddedFunctions().contains("shouldStop")) { // TODO_2.3_MERGE
       // no need to stop in iteration at any point
       ctx.addNewFunction("shouldStop",
         s"""

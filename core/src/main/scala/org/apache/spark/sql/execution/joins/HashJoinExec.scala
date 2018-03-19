@@ -330,6 +330,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
   }
 
+  // The child could change `needCopyResult` to true, but we had already
+  // consumed all the rows, so `needCopyResult` should be reset to `false`.
+  override def needCopyResult: Boolean = false
+
   override def doProduce(ctx: CodegenContext): String = {
     startProducing()
     val initMap = ctx.freshName("initMap")
@@ -455,11 +459,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     // clear the parent by reflection if plan is serialized by operators like Sort
     TypeUtilities.parentSetter.invoke(buildPlan, null)
-
+    // TODO_2.3_MERGE
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
-    ctx.copyResult = false
-
+    // ctx.copyResult = false
     val buildTime = metricTerm(ctx, "buildTime")
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     // initialization of min/max for integral keys

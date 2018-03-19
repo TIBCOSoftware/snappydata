@@ -281,8 +281,9 @@ object CodeGeneration extends Logging {
     evaluator.setParentClassLoader(getClass.getClassLoader)
     evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
-      s"$javaType $name;$separator${init.replace("this.", "")}"
+
+    val varDeclarations = ctx.inlinedMutableStates.distinct.map { case (javaType, variableName) =>
+      s"private $javaType $variableName;"
     }
     val expression = s"""
       ${varDeclarations.mkString(separator)}

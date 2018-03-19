@@ -18,18 +18,10 @@ package org.apache.spark.sql
 
 import java.util.function.BiConsumer
 
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.{Failure, Success, Try}
-
 import io.snappydata.{Constant, Property, QueryHint}
-import org.parboiled2._
-import shapeless.{::, HNil}
-
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
@@ -40,6 +32,12 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+import org.parboiled2._
+import shapeless.{::, HNil}
+
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 
 class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
@@ -498,14 +496,8 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       aggregations: Seq[NamedExpression],
       groupByExprs: Seq[Expression],
       groupingSets: Seq[Seq[Expression]]): GroupingSets = {
-    val keyMap = groupByExprs.zipWithIndex.toMap
-    val numExpressions = keyMap.size
-    val mask = (1 << numExpressions) - 1
-    val bitmasks: Seq[Int] = groupingSets.map(set => set.foldLeft(mask)((bitmap, col) => {
-      require(keyMap.contains(col), s"$col doesn't show up in the GROUP BY list")
-      bitmap & ~(1 << (numExpressions - 1 - keyMap(col)))
-    }))
-    GroupingSets(bitmasks, groupByExprs, child, aggregations)
+    // TODO_2.3_MERGE
+    GroupingSets(groupingSets, groupByExprs, child, aggregations)
   }
 
   protected final def groupingSetExpr: Rule1[Seq[Expression]] = rule {
@@ -697,21 +689,21 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   protected final def windowFrame: Rule1[SpecifiedWindowFrame] = rule {
     (RANGE ~> (() => RangeFrame) | ROWS ~> (() => RowFrame)) ~ (
         BETWEEN ~ frameBound ~ AND ~ frameBound ~> ((t: FrameType,
-            s: FrameBoundary, e: FrameBoundary) => SpecifiedWindowFrame(t, s, e)) |
-        frameBound ~> ((t: FrameType, s: FrameBoundary) =>
+            s: SpecialFrameBoundary, e: SpecialFrameBoundary) => SpecifiedWindowFrame(t, s, e)) |
+        frameBound ~> ((t: FrameType, s: SpecialFrameBoundary) =>
           SpecifiedWindowFrame(t, s, CurrentRow))
     )
   }
 
-  protected final def frameBound: Rule1[FrameBoundary] = rule {
+  protected final def frameBound: Rule1[SpecialFrameBoundary] = rule {
     UNBOUNDED ~ (
         PRECEDING ~> (() => UnboundedPreceding) |
         FOLLOWING ~> (() => UnboundedFollowing)
     ) |
     CURRENT ~ ROW ~> (() => CurrentRow) |
     integral ~ (
-        PRECEDING ~> ((num: String) => ValuePreceding(num.toInt)) |
-        FOLLOWING ~> ((num: String) => ValueFollowing(num.toInt))
+        PRECEDING ~> ((num: String) => UnboundedPreceding) |
+        FOLLOWING ~> ((num: String) => UnboundedFollowing) // TODO_2.3_MERGE
     )
   }
 
@@ -732,7 +724,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           val ur = lp.asInstanceOf[UnresolvedRelation]
           val fname = org.apache.spark.sql.collection.Utils.toLowerCase(
             ur.tableIdentifier.identifier)
-          UnresolvedTableValuedFunction(fname, exprs)
+          UnresolvedTableValuedFunction(fname, exprs, Nil) // TODO_2.3_MERGE
       }
     })
   }
@@ -792,88 +784,89 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     }
   } else exprs
 
-  protected final def primary: Rule1[Expression] = rule {
-    paramIntervalLiteral |
-    identifier ~ (
-      ('.' ~ identifier).? ~ '(' ~ ws ~ (
-        '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
-          if (n1.equalsIgnoreCase("COUNT") && n2.isEmpty) {
-            AggregateExpression(Count(Literal(1, IntegerType)),
-              mode = Complete, isDistinct = false)
-          } else {
-            val n2str = if (n2.isEmpty) "" else s".${n2.get}"
-            throw Utils.analysisException(s"invalid expression $n1$n2str(*)")
-          }) |
-          (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
-            (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
-            val f2 = n2.asInstanceOf[Option[String]]
-            val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
-            val allExprs = e.asInstanceOf[Seq[Expression]]
-            val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
-            val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
-              UnresolvedFunction(udfName, exprs, isDistinct = false)
-            } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
-              aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
-            } else {
-              UnresolvedFunction(udfName, exprs, isDistinct = true)
-            }
-            w.asInstanceOf[Option[WindowSpec]] match {
-              case None => function
-              case Some(spec: WindowSpecDefinition) =>
-                WindowExpression(function, spec)
-              case Some(ref: WindowSpecReference) =>
-                UnresolvedWindowExpression(function, ref)
-            }
-          }
-        ) |
-        '.' ~ ws ~ (
-            identifier. +('.' ~ ws) ~> ((i1: String, rest: Any) =>
-              UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]])) |
-            (identifier ~ '.' ~ ws).* ~ '*' ~ ws ~> ((i1: String, rest: Any) =>
-              UnresolvedStar(Option(i1 +: rest.asInstanceOf[Seq[String]])))
-        ) |
-        MATCH ~> UnresolvedAttribute.quoted _
-    ) |
-    paramOrLiteral | paramLiteralQuestionMark |
-    '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
-      (fn: FunctionIdentifier, e: Any) =>
-        val allExprs = e.asInstanceOf[Seq[Expression]].toList
-        val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
-        fn match {
-          case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
-            assert(exprs.length == 3)
-            assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
-                exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
-            DateAdd(exprs(2), exprs(1))
-          case f => UnresolvedFunction(f, exprs, isDistinct = false)
-        }
-    } |
-    CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
-    CASE ~ (
-        whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
-        keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
-    ) |
-    EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
-    CURRENT_DATE ~> CurrentDate |
-    CURRENT_TIMESTAMP ~> CurrentTimestamp |
-    '(' ~ ws ~ (
-        (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
-          if (exprs.length == 1) exprs.head else CreateStruct(exprs)
-        ) |
-        query ~ ')' ~ ws ~> (ScalarSubquery(_))
-    ) |
-    signedPrimary |
-    '~' ~ ws ~ expression ~> BitwiseNot
-  }
+  // TODO_2.3_MERGE
+//  protected final def primary: Rule1[Expression] = rule {
+//    paramIntervalLiteral |
+//    identifier ~ (
+//      ('.' ~ identifier).? ~ '(' ~ ws ~ (
+//        '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
+//          if (n1.equalsIgnoreCase("COUNT") && n2.isEmpty) {
+//            AggregateExpression(Count(Literal(1, IntegerType)),
+//              mode = Complete, isDistinct = false)
+//          } else {
+//            val n2str = if (n2.isEmpty) "" else s".${n2.get}"
+//            throw Utils.analysisException(s"invalid expression $n1$n2str(*)")
+//          }) |
+//          (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
+//            (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
+//            val f2 = n2.asInstanceOf[Option[String]]
+//            val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
+//            val allExprs = e.asInstanceOf[Seq[Expression]]
+//            val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
+//            val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
+//              UnresolvedFunction(udfName, exprs, isDistinct = false)
+//            } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
+//              aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
+//            } else {
+//              UnresolvedFunction(udfName, exprs, isDistinct = true)
+//            }
+//            w.asInstanceOf[Option[WindowSpec]] match {
+//              case None => function
+//              case Some(spec: WindowSpecDefinition) =>
+//                WindowExpression(function, spec)
+//              case Some(ref: WindowSpecReference) =>
+//                UnresolvedWindowExpression(function, ref)
+//            }
+//          }
+//        ) |
+//        '.' ~ ws ~ (
+//            identifier. +('.' ~ ws) ~> ((i1: String, rest: Any) =>
+//              UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]])) |
+//            (identifier ~ '.' ~ ws).* ~ '*' ~ ws ~> ((i1: String, rest: Any) =>
+//              UnresolvedStar(Option(i1 +: rest.asInstanceOf[Seq[String]])))
+//        ) |
+//        MATCH ~> UnresolvedAttribute.quoted _
+//    ) |
+//    paramOrLiteral | paramLiteralQuestionMark |
+//    '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
+//      (fn: FunctionIdentifier, e: Any) =>
+//        val allExprs = e.asInstanceOf[Seq[Expression]].toList
+//        val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
+//        fn match {
+//          case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
+//            assert(exprs.length == 3)
+//            assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
+//                exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
+//            DateAdd(exprs(2), exprs(1))
+//          case f => UnresolvedFunction(f, exprs, isDistinct = false)
+//        }
+//    } |
+//    CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
+//    CASE ~ (
+//        whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
+//        keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
+//    ) |
+//    EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
+//    CURRENT_DATE ~> CurrentDate |
+//    CURRENT_TIMESTAMP ~> CurrentTimestamp |
+//    '(' ~ ws ~ (
+//        (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
+//          if (exprs.length == 1) exprs.head else CreateStruct(exprs)
+//        ) |
+//        query ~ ')' ~ ws ~> (ScalarSubquery(_))
+//    ) |
+//    signedPrimary |
+//    '~' ~ ws ~ expression ~> None // TODO_2.3_MERGE
+//  }
 
-  protected final def signedPrimary: Rule1[Expression] = rule {
-    capture(plusOrMinus) ~ ws ~ primary ~> ((s: String, e: Expression) =>
-      if (s.charAt(0) == '-') UnaryMinus(e) else e)
-  }
+//  protected final def signedPrimary: Rule1[Expression] = rule {
+//    capture(plusOrMinus) ~ ws ~ primary ~> ((s: String, e: Expression) =>
+//      if (s.charAt(0) == '-') UnaryMinus(e) else e)
+//  }
 
   protected final def baseExpression: Rule1[Expression] = rule {
-    '*' ~ ws ~> (() => UnresolvedStar(None)) |
-    primary
+    '*' ~ ws ~> (() => UnresolvedStar(None))
+    // |primary
   }
 
   protected def select: Rule1[LogicalPlan] = rule {
@@ -885,9 +878,9 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     (HAVING ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
     queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
-      val base = f match {
+      val base: LogicalPlan = f match {
         case Some(plan) => plan.asInstanceOf[LogicalPlan]
-        case _ => OneRowRelation
+        case _ => OneRowRelation()
       }
       val withFilter = w match {
         case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
@@ -973,7 +966,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
             case Some(s) => s.map(UnresolvedAttribute.apply)
             case None => Nil
           }
-          Generate(UnresolvedGenerator(functionName, expressions), join = true,
+          Generate(UnresolvedGenerator(functionName, expressions), unrequiredChildIndex = Nil,
             outer = o.asInstanceOf[Option[Boolean]].isDefined, Some(tableName),
             columnNames, child)
         })

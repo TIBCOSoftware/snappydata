@@ -521,7 +521,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     UNCACHE ~ TABLE ~ ifExists ~ tableIdentifier ~>
         ((ifExists: Boolean, tableIdent: TableIdentifier) =>
           UncacheTableCommand(tableIdent, ifExists)) |
-    CLEAR ~ CACHE ~> (() => ClearCacheCommand)
+    CLEAR ~ CACHE ~> (() => ClearCacheCommand())
   }
 
   protected def set: Rule1[LogicalPlan] = rule {
