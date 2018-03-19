@@ -11,7 +11,7 @@ Row tables, unlike column tables, are laid out one row at a time in contiguous m
 Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 
 ### DDL and DML Syntax for Tables
-```scala
+```no-highlight
 CREATE TABLE [IF NOT EXISTS] table_name
    (
   COLUMN_DEFINITION
@@ -39,7 +39,7 @@ Refer to the [How-Tos](../howto.md) section for more information on partitioning
 
 You can also define complex types (Map, Array and StructType) as columns for column tables.
 
-```
+```no-highlight
 snappy.sql("CREATE TABLE tableName (
 col1 INT , 
 col2 Array<Decimal>, 
@@ -61,7 +61,7 @@ To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://
 
 Create a SnappyStore table using Spark APIs
 
-```scala
+```no-highlight
     val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
     case class Data(col1: Int, col2: Int, col3: Int)
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -136,7 +136,7 @@ The below mentioned DDL extensions are required to configure a table based on us
 
 ### DML Operations on Tables
 
-```scala
+```no-highlight
 INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
@@ -149,7 +149,7 @@ TRUNCATE TABLE tablename1;
 ### API Extensions Provided in SnappyContext
 Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
 
-```scala
+```no-highlight
 //  Applicable for both row and column tables
 def insert(tableName: String, rows: Row*): Int .
 
@@ -162,7 +162,7 @@ def delete(tableName: String, filterExpr: String): Int
 
 **Usage SnappySession.insert()**: Insert one or more [[org.apache.spark.sql.Row]] into an existing table
 
-```scala
+```no-highlight
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =>
@@ -172,7 +172,7 @@ data.map { r =>
 
 **Usage SnappySession.put()**: Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
 
-```scala
+```no-highlight
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =>
@@ -182,14 +182,14 @@ data.map { r =>
 
 Usage SnappySession.update(): Update all rows in table that match passed filter expression
 
-```scala
+```no-highlight
 snappy.update(tableName, "ITEMREF = 3" , Row(99) , "ITEMREF" )
 ```
 
 
 **Usage SnappySession.delete()**: Delete all rows in table that match passed filter expression
 
-```scala
+```no-highlight
 snappy.delete(tableName, "ITEMREF = 3")
 ```
 
@@ -198,12 +198,12 @@ snappy.delete(tableName, "ITEMREF = 3")
 SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as product stores its data in CLOB format internally.
 
 **Create a table with columns of CHAR and VARCHAR datatype using SQL**:
-```Scala
+```no-highlight
 CREATE TABLE tableName (Col1 char(25), Col2 varchar(100)) using row;
 ```
 
 **Create a table with columns of CHAR and VARCHAR datatype using API**:
-```Scala
+```no-highlight
     import org.apache.spark.sql.collection.Utils
     import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 
@@ -228,16 +228,17 @@ To ensure optimal performance for SELECT queries executed over JDBC connection (
 
 Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
 
-```
+```no-highlight
 bin/snappy leader start -locators:localhost:10334 -J-Dspark-string-as-clob=true
 ```
 
 Defining the column(s) itself as CLOB, either using SQL or API. In the example below, column 'Col2' is defined as CLOB.
 
-```
+```no-highlight
 CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
 ```
-```scala
+
+```no-highlight
     import org.apache.spark.sql.collection.Utils
     import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
@@ -254,11 +255,12 @@ CREATE TABLE tableName (Col1 INT, Col2 CLOB, Col3 STRING, Col4 STRING);
 
 Using the query-hint `columnsAsClob in the SELECT query.
 
-```
+```no-highlight
 SELECT * FROM tableName --+ columnsAsClob(*)
 ```
+
 The usage of `*` above causes all the STRING columns in the table to be rendered as CLOB. You can also provide comma-separated specific column name(s) instead of `*` above so that data of only those column(s) is returned as CLOB.
-```
+```no-highlight
 SELECT * FROM tableName --+ columnsAsClob(Col3,Col4)
 ```
 -->

@@ -46,14 +46,14 @@ If no prefix is specified, use only the indicated property name in all circumsta
 
 You can specify Unicode (non-ASCII) characters in SnappyData property files by using a `\uXXXX` escape sequence. For a supplementary character, you need two escape sequences, one for each of the two UTF-16 code units. The XXXX denotes the 4 hexadecimal digits for the value of the UTF-16 code unit. For example, a properties file might have the following entries:
 
-``` pre
+```no-highlight
 s1=hello there
 s2=\u3053\u3093\u306b\u3061\u306f
 ```
 
 For example, in `gemfirexd.properties`, you might write:
 
-``` pre
+```no-highlight
 log-file=my\u00df.log
 ```
 

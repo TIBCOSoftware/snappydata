@@ -22,7 +22,8 @@ In this mode, you can execute all the components (client application, executors,
 You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:
 
 **Example: Maven dependency**
-```
+
+```no-highlight
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
 <dependency>
     <groupId>io.snappydata</groupId>
@@ -30,15 +31,31 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
     <version>1.0.1</version>
 </dependency>
 ```
+
 **Example: SBT dependency**
 
-```
+```no-highlight
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
-
 ```
-**Create SnappySession**: To start SnappyData store you need to create a SnappySession in your program
-```scala
+
+**Note**:</br>
+If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
+
+```no-highlight
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
+
+**Create SnappySession**:
+
+To start SnappyData store you need to create a SnappySession in your program:
+
+```no-highlight
  val spark: SparkSession = SparkSession
          .builder
          .appName("SparkApp")
@@ -50,9 +67,9 @@ libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
   
   
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
+
 If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
-```bash
+
+```no-highlight
 ./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
 ```
-
-
