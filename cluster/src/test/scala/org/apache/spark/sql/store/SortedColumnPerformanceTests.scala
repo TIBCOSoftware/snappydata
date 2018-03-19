@@ -224,9 +224,9 @@ object SortedColumnPerformanceTests {
     val sessionArray = new Array[SnappySession](totalThreads)
     sessionArray.indices.foreach(i => {
       sessionArray(i) = session.newSession()
-      sessionArray(i).conf.set(Property.ColumnMaxDeltaRows.name, "100")
       sessionArray(i).conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       sessionArray(i).conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+      sessionArray(i).conf.set(Property.ForceLinkPartitionsToBuckets.name, "true")
     })
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
@@ -237,11 +237,24 @@ object SortedColumnPerformanceTests {
       def prepare(): Unit = {
         params.foreach { case (k, v) => session.conf.set(k, v) }
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
-        insertDF.write.insertInto(colTableName)
-        updateDF.write.putInto(colTableName)
-        if (doVerifyFullSize) {
-          SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
-            numTimesInsert, numTimesUpdate)
+        try {
+          session.conf.set(Property.ColumnBatchSize.name, "24M") // default
+          session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+          session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+          session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+          session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+          insertDF.write.insertInto(colTableName)
+          updateDF.write.putInto(colTableName)
+          if (doVerifyFullSize) {
+            SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
+              numTimesInsert, numTimesUpdate)
+          }
+        } finally {
+          session.conf.unset(Property.ColumnBatchSize.name)
+          session.conf.unset(Property.ColumnMaxDeltaRows.name)
+          session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+          session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+          session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
         }
         doGC()
       }
@@ -249,10 +262,9 @@ object SortedColumnPerformanceTests {
       def cleanup(): Unit = {
         sessionArray.indices.foreach(i => {
           sessionArray(i).clear()
-          session.conf.unset(Property.ColumnBatchSize.name)
-          session.conf.unset(Property.ColumnMaxDeltaRows.name)
           session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
           session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+          session.conf.unset(Property.ForceLinkPartitionsToBuckets.name)
         })
         SnappySession.clearAllCache()
         defaults.foreach { case (k, v) => session.conf.set(k, v) }
@@ -270,9 +282,9 @@ object SortedColumnPerformanceTests {
     }
 
     try {
-      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
       session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+      session.conf.set(Property.ForceLinkPartitionsToBuckets.name, "true")
 
       // Get numbers
       addBenchmark(s"$queryMark", Map.empty)
@@ -283,10 +295,9 @@ object SortedColumnPerformanceTests {
       } catch {
         case _: Throwable =>
       }
-      session.conf.unset(Property.ColumnBatchSize.name)
-      session.conf.unset(Property.ColumnMaxDeltaRows.name)
       session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
       session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+      session.conf.unset(Property.ForceLinkPartitionsToBuckets.name)
     }
   }
 
