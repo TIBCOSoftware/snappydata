@@ -429,12 +429,12 @@ private[sql] final case class ColumnTableScan(
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
           isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex,
-          numDeltaRows)
+          numFullRows, numDeltaRows)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
           isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex,
-          numDeltaRows)
+          numFullRows, numDeltaRows)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -632,7 +632,6 @@ private[sql] final case class ColumnTableScan(
        |    $assignBatchId
        |    $batchConsume
        |    $deletedDeclaration
-       |    final int $numRows = $numBatchRows$deletedCountCheck + $numDeltaRows;
        |    $isCaseOfSortedInsert = ${ordinalIdTerm ne null} &&
        |      ${ColumnTableScan.getCaseOfSortedInsertValue};
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
@@ -684,7 +683,8 @@ private[sql] final case class ColumnTableScan(
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDeltaIsInsert: String,
       isCaseOfSortedInsert: String, numRows: String, colInput: String, inputIsRow: String,
-      batchIndex: String, batchDeltaIndex: String, numDeltaRows: String): ExprCode = {
+      batchIndex: String, batchDeltaIndex: String, numFullRows: String,
+      numDeltaRows: String): ExprCode = {
     // scalastyle:on
     val nonNullPosition = if (attr.nullable) {
       s"$batchOrdinal - $numNullsVar - $batchDeltaIndex"
@@ -781,6 +781,7 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDeltaIndex=" + $batchDeltaIndex +
+           |      " ,numFullRows=" + $numFullRows +
            |      " ,numDeltaRows=" + $numDeltaRows +
            |      " ,numRows=" + $numRows +
            |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
@@ -804,6 +805,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,batchIndex=" + $batchIndex +
            |    " ,batchDeltaIndex=" + $batchDeltaIndex +
+           |    " ,numFullRows=" + $numFullRows +
            |    " ,numDeltaRows=" + $numDeltaRows +
            |    " ,numRows=" + $numRows +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
