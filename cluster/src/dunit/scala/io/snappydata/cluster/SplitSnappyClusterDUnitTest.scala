@@ -262,6 +262,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = true
     try {
       ColumnUpdateDeleteTests.testBasicUpdate(session)
+      ColumnUpdateDeleteTests.testDeltaStats(session)
       ColumnUpdateDeleteTests.testBasicDelete(session)
       ColumnUpdateDeleteTests.testSNAP1925(session)
       ColumnUpdateDeleteTests.testSNAP1926(session)

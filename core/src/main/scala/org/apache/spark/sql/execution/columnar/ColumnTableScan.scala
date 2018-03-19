@@ -259,6 +259,8 @@ private[sql] final case class ColumnTableScan(
     val deletedDecoderClass = classOf[ColumnDeleteDecoder].getName
     val batch = ctx.freshName("batch")
     val numBatchRows = s"${batch}NumRows"
+    val numFullRows = s"${batch}NumFullRows"
+    val numDeltaRows = s"${batch}NumDeltaRows"
     val batchIndex = s"${batch}Index"
     val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
@@ -471,11 +473,12 @@ private[sql] final case class ColumnTableScan(
     val filterFunction = if (embedded) ColumnTableScan.generateStatPredicate(ctx,
       relation.isInstanceOf[BaseColumnFormatRelation], schemaAttributes,
       allFilters, numBatchRows, metricTerm, metricAdd) else ""
-    val unsafeRow = ctx.freshName("unsafeRow")
+    val statsRow = ctx.freshName("statsRow")
+    val deltaStatsRow = ctx.freshName("deltaStatsRow")
     val colNextBytes = ctx.freshName("colNextBytes")
     val numTableColumns = if (ordinalIdTerm eq null) relationSchema.size
     else relationSchema.size - ColumnDelta.mutableKeyNames.length // for update/delete
-    val numColumnsInStatBlob = numTableColumns * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+    val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(numTableColumns)
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(s"$numBatchRows - $deletedCount")};"
@@ -492,9 +495,16 @@ private[sql] final case class ColumnTableScan(
     val batchAssign =
       s"""
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
-        UnsafeRow $unsafeRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
+        UnsafeRow $statsRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
+        UnsafeRow $deltaStatsRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
+          $colInput.getCurrentDeltaStats(), $numColumnsInStatBlob);
+        final int $numFullRows = $statsRow.getInt($countIndexInSchema);
+        int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
+          $countIndexInSchema) : 0;
+        $numBatchRows = $numFullRows + $numDeltaRows;
+        // TODO: don't have the update count here (only insert count)
+        $numDeltaRows = $numBatchRows;
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -502,7 +512,10 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          if ($colInput.hasUpdatedColumns() || $filterFunction($unsafeRow, $numBatchRows)) {
+          // check the delta stats after full stats (null columns will be treated as failure
+          // which is what is required since it means that only full stats check should be done)
+          if ($filterFunction($statsRow, $numFullRows, $deltaStatsRow == null) ||
+              ($deltaStatsRow != null && $filterFunction($deltaStatsRow, $numDeltaRows, true))) {
             break;
           }
           if (!$colInput.hasNext()) return false;
@@ -785,7 +798,9 @@ object ColumnTableScan extends Logging {
     val numBatchRows = NumBatchRows(numRowsTerm)
     val (columnBatchStatsMap, columnBatchStats) = if (isColumnTable) {
       val allStats = schemaAttrs.map(a => a ->
-          ColumnStatsSchema(a.name, a.dataType))
+          // nullCount as nullable works for both full stats and delta stats
+          // though former will never be null (latter can be for non-updated columns)
+          ColumnStatsSchema(a.name, a.dataType, nullCountNullable = true))
       (AttributeMap(allStats),
           ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
     } else (null, Nil)
@@ -853,13 +868,16 @@ object ColumnTableScan extends Logging {
         // ordering (else two different runs can generate different code)
         val orderedFilters = new ArrayBuffer[(Class[_], ArrayBuffer[Expression])](2)
         allFilters.foreach { f =>
-          orderedFilters.collectFirst {
-            case p if p._1 == f.getClass => p._2
-          }.getOrElse {
-            val newBuffer = new ArrayBuffer[Expression](2)
-            orderedFilters += f.getClass -> newBuffer
-            newBuffer
-          } += f
+          if (f.dataType.isInstanceOf[DecimalType] ||
+              ColumnWriter.SUPPORTED_STATS_TYPES.contains(f.dataType)) {
+            orderedFilters.find(_._1 == f.getClass) match {
+              case Some(p) => p._2 += f
+              case None =>
+                val newBuffer = new ArrayBuffer[Expression](2)
+                newBuffer += f
+                orderedFilters += f.getClass -> newBuffer
+            }
+          }
         }
         orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
             .sorted.mkString(","))).flatMap { p =>
@@ -898,13 +916,17 @@ object ColumnTableScan extends Logging {
     val filterFunction = ctx.freshName("columnBatchFilter")
     ctx.addNewFunction(filterFunction,
       s"""
-         |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm) {
+         |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm,
+         |    boolean isLastStatsRow) {
          |  // Skip the column batches based on the predicate
          |  ${predicateEval.code}
          |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
          |    return true;
          |  } else {
-         |    $addBatchMetric
+         |    // add to skipped metric only if both stats say so
+         |    if (isLastStatsRow) {
+         |      $addBatchMetric
+         |    }
          |    return false;
          |  }
          |}
