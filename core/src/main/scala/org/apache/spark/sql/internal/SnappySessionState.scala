@@ -935,12 +935,26 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(dr: DeletableRelation, _, _) =>
+          def comp(a: Attribute, targetCol: String): Boolean = a match {
+            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
+          }
+
           val expectedOutput = l.output
-          if (child.output.length != expectedOutput.length) {
+          if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
             throw new AnalysisException(s"$l requires that the query in the " +
                 "WHERE clause of the DELETE FROM statement " +
-                "generates the same number of column(s) as in its schema but found " +
+                "generates the same column name(s) as in its schema but found " +
                 s"${child.output.mkString(",")} instead.")
+          }
+          l match {
+            case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
+              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
+                comp(e, a.toUpperCase)))) {
+                throw new AnalysisException(s"${child.output.mkString(",")}" +
+                    s" columns in the WHERE clause of the DELETE FROM statement must " +
+                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
+              }
+            case _ =>
           }
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 

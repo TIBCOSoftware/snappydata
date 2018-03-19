@@ -746,7 +746,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
     val df2 = snc.createDataFrame(rdd2)
 
     snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
@@ -763,7 +763,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
     val df2 = snc.createDataFrame(rdd2)
 
     snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
@@ -780,7 +780,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
     val df2 = snc.createDataFrame(rdd2)
 
     snc.createTable("row_table", "row",
