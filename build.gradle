@@ -264,7 +264,7 @@ subprojects {
     // spawn separate JVMs
     maxParallelForks = 1
     minHeapSize '4g'
-    maxHeapSize '4g'
+    maxHeapSize '8g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
     // for benchmarking
@@ -345,10 +345,10 @@ subprojects {
     dependsOn ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
-    maxHeapSize '1536m'
+    maxHeapSize '4096m'
 
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
-               '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
+               '-XX:+UseParNewGC', '-XX:MaxNewSize=2g', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
