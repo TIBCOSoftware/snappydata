@@ -20,7 +20,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
@@ -84,7 +84,8 @@ class SnappyContextFunctions {
 
   def aqpTablePopulator(session: SnappySession): Unit = {
     // register blank tasks for the stream tables so that the streams start
-    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
+    session.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+      .getDataSourceRelations[StreamBaseRelation](Seq(
       ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 

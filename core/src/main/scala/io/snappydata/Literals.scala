@@ -23,7 +23,7 @@ import io.snappydata.collection.ObjectObjectHashMap
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
+import org.apache.spark.sql.{AltName, SQLAltName, SQLConfigEntry}
 import org.apache.spark.sql.store.CompressionCodecId
 
 /**
@@ -191,7 +191,7 @@ object Property extends Enumeration {
       defaultValue: Option[T], prefix: String = null,
       isPublic: Boolean = true): SQLValue[T] = {
     SQLValue(name, if (prefix == null) null else prefix + name,
-      SQLConfigEntry(name, doc, defaultValue, isPublic))
+      SQLConfigEntry.sparkConf(name, doc, defaultValue, isPublic))
   }
 
   def getPropertyValue(propertyName: String): Option[String] = {

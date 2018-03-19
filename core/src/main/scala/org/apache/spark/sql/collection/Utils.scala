@@ -688,11 +688,13 @@ object Utils {
     }
   }
 
-  def getJsonGenerator(dataType: DataType, columnName: String,
-      writer: java.io.Writer): AnyRef = {
+  def getJsonGenerator(dataType: DataType,
+                       columnName: String, writer: java.io.Writer): AnyRef = {
     val schema = StructType(Seq(StructField(columnName, dataType)))
     JacksonUtils.verifySchema(schema)
-    new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String]))
+    val conf = SparkSession.getDefaultSession.get.sessionState.conf
+    new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String],
+      conf.sessionLocalTimeZone, conf.columnNameOfCorruptRecord))
   }
 
   def generateJson(gen: AnyRef, row: InternalRow, columnIndex: Int,

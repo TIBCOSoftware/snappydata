@@ -17,27 +17,26 @@
 
 package org.apache.spark.sql.hive
 
+import java.net.URI
 import java.util
-
-import scala.collection.mutable
-import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
-import org.apache.thrift.TException
-
+import org.apache.hadoop.hive.ql.metadata.HiveException
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalogUtils._
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression, InterpretedPredicate}
-import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.execution.datasources.PartitioningUtils
 import org.apache.spark.sql.hive.client.HiveClient
+import org.apache.spark.sql.internal.SessionState
 import org.apache.spark.sql.types.StructType
+import org.apache.thrift.TException
+
+import scala.util.control.NonFatal
 
 private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
     extends ExternalCatalog with Logging {
@@ -131,13 +130,13 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   // Databases
   // --------------------------------------------------------------------------
 
-  override def createDatabase(
+  override protected def doCreateDatabase(
       dbDefinition: CatalogDatabase,
       ignoreIfExists: Boolean): Unit = withClient {
     withHiveExceptionHandling(client.createDatabase(dbDefinition, ignoreIfExists))
   }
 
-  override def dropDatabase(
+  override protected def doDropDatabase(
       db: String,
       ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = withClient {
@@ -150,7 +149,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
    *
    * Note: As of now, this only supports altering database properties!
    */
-  override def alterDatabase(dbDefinition: CatalogDatabase): Unit = withClient {
+  override def doAlterDatabase(dbDefinition: CatalogDatabase): Unit = withClient {
     val existingDb = getDatabase(dbDefinition.name)
     if (existingDb.properties == dbDefinition.properties) {
       logWarning(s"Request to alter database ${dbDefinition.name} is a no-op because " +
@@ -184,7 +183,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   // Tables
   // --------------------------------------------------------------------------
 
-  override def createTable(
+  override protected def doCreateTable(
       tableDefinition: CatalogTable,
       ignoreIfExists: Boolean): Unit = withClient {
     requireDbExists(tableDefinition.database)
@@ -211,12 +210,12 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       // Please refer to https://issues.apache.org/jira/browse/SPARK-15269 for more details.
       val tempPath = {
         val dbLocation = getDatabase(tableDefinition.database).locationUri
-        new Path(dbLocation, tableDefinition.identifier.table + "-__PLACEHOLDER__")
+        new Path(dbLocation.getPath, tableDefinition.identifier.table + "-__PLACEHOLDER__")
       }
 
       try {
         withHiveExceptionHandling(client.createTable(
-          tableDefinition.withNewStorage(locationUri = Some(tempPath.toString)),
+          tableDefinition.withNewStorage(locationUri = Some(new URI(tempPath.toString))),
           ignoreIfExists))
       } finally {
         FileSystem.get(tempPath.toUri, hadoopConf).delete(tempPath, true)
@@ -227,7 +226,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     SnappySession.clearAllCache()
   }
 
-  override def dropTable(
+  override protected def doDropTable(
       db: String,
       table: String,
       ignoreIfNotExists: Boolean,
@@ -237,10 +236,11 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     SnappySession.clearAllCache()
   }
 
-  override def renameTable(db: String, oldName: String, newName: String): Unit = withClient {
+  override protected def doRenameTable(db: String, oldName: String,
+                                       newName: String): Unit = withClient {
     val newTable = withHiveExceptionHandling(client.getTable(db, oldName))
         .copy(identifier = TableIdentifier(newName, Some(db)))
-    withHiveExceptionHandling(client.alterTable(oldName, newTable))
+    withHiveExceptionHandling(client.alterTable(db, oldName, newTable))
     SnappySession.clearAllCache()
   }
 
@@ -251,7 +251,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
    * Note: As of now, this only supports altering table properties, serde properties,
    * and num buckets!
    */
-  override def alterTable(tableDefinition: CatalogTable): Unit = withClient {
+  override protected def doAlterTable(tableDefinition: CatalogTable): Unit = withClient {
     requireDbMatches(tableDefinition.database, tableDefinition)
     requireTableExists(tableDefinition.database, tableDefinition.identifier.table)
     withHiveExceptionHandling(client.alterTable(tableDefinition))
@@ -279,9 +279,9 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     withHiveExceptionHandling(client.getTable(db, table))
   }
 
-  override def getTableOption(db: String, table: String): Option[CatalogTable] = withClient {
-    withHiveExceptionHandling(client.getTableOption(db, table))
-  }
+//  override def getTableOption(db: String, table: String): Option[CatalogTable] = withClient {
+//    withHiveExceptionHandling(client.getTableOption(db, table))
+//  }
 
   override def tableExists(db: String, table: String): Boolean = withClient {
     withHiveExceptionHandling(client.getTableOption(db, table).isDefined)
@@ -414,32 +414,22 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     // construct Spark's statistics from information in Hive metastore
     val statsProps = table.properties.filterKeys(_.startsWith(STATISTICS_PREFIX))
 
+    // 2.3_MERGE_YOGS_TODO - get this stats filtering reconciled
     if (statsProps.nonEmpty) {
-      val colStats = new mutable.HashMap[String, ColumnStat]
+      val tableIdent = inputTable.identifier
+      val sessionState: SessionState = sessionState
+      val db = tableIdent.database.getOrElse(sessionState.catalog.getCurrentDatabase)
+      val tableIdentWithDB = TableIdentifier(tableIdent.table, Some(db))
+      val tableMeta = sessionState.catalog.getTableMetadata(tableIdentWithDB)
+      // Compute stats for each column
 
-      // For each column, recover its column stats. Note that this is currently a O(n^2) operation,
-      // but given the number of columns it usually not enormous, this is probably OK as a start.
-      // If we want to map this a linear operation, we'd need a stronger contract between the
-      // naming convention used for serialization.
-      table.schema.foreach { field =>
-        if (statsProps.contains(columnStatKeyPropName(field.name, ColumnStat.KEY_VERSION))) {
-          // If "version" field is defined, then the column stat is defined.
-          val keyPrefix = columnStatKeyPropName(field.name, "")
-          val colStatMap = statsProps.filterKeys(_.startsWith(keyPrefix)).map { case (k, v) =>
-            (k.drop(keyPrefix.length), v)
-          }
+      // We also update table-level stats in order to keep them consistent with column-level stats.
+      val statistics = CatalogStatistics(
+        sizeInBytes = BigInt(table.properties(STATISTICS_TOTAL_SIZE)),
+        rowCount = table.properties.get(STATISTICS_NUM_ROWS).map(BigInt(_)),
+        colStats = tableMeta.stats.map(_.colStats).getOrElse(Map.empty))
 
-          ColumnStat.fromMap(table.identifier.table, field, colStatMap).foreach {
-            colStat => colStats += field.name -> colStat
-          }
-        }
-      }
-
-      table = table.copy(
-        stats = Some(Statistics(
-          sizeInBytes = BigInt(table.properties(STATISTICS_TOTAL_SIZE)),
-          rowCount = table.properties.get(STATISTICS_NUM_ROWS).map(BigInt(_)),
-          colStats = colStats.toMap)))
+      table = table.copy(stats = Some(statistics))
     }
 
     // Get the original table properties as defined by the user.
@@ -453,8 +443,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       loadPath: String,
       partition: TablePartitionSpec,
       replace: Boolean,
-      numDP: Int,
-      holdDDLTime: Boolean): Unit = {
+      numDP: Int): Unit = {
     requireTableExists(db, table)
 
     val orderedPartitionSpec = new util.LinkedHashMap[String, String]()
@@ -468,8 +457,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       table,
       orderedPartitionSpec,
       replace,
-      numDP,
-      holdDDLTime))
+      numDP))
   }
 
   override def getPartitionOption(
@@ -502,39 +490,18 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   override def listPartitionsByFilter(
       db: String,
       table: String,
-      predicates: Seq[Expression]): Seq[CatalogTablePartition] = withClient {
-    val rawTable = withHiveExceptionHandling(client.getTable(db, table))
+      predicates: Seq[Expression],
+      defaultTimeZoneId: String): Seq[CatalogTablePartition] = withClient {
+    val rawTable = getTable(db, table)
     val catalogTable = restoreTableMetadata(rawTable)
-    val partitionColumnNames = catalogTable.partitionColumnNames.toSet
-    val nonPartitionPruningPredicates = predicates.filterNot {
-      _.references.map(_.name).toSet.subsetOf(partitionColumnNames)
-    }
 
-    if (nonPartitionPruningPredicates.nonEmpty) {
-      sys.error("Expected only partition pruning predicates: " +
-          predicates.reduceLeft(And))
-    }
+    val partColNameMap = buildLowerCasePartColNameMap(catalogTable)
 
-    val partitionSchema = catalogTable.partitionSchema
-    val partColNameMap = buildLowerCasePartColNameMap(getTable(db, table))
-
-    if (predicates.nonEmpty) {
-      val clientPrunedPartitions = withHiveExceptionHandling(client.getPartitionsByFilter(
-        rawTable, predicates)).map { part =>
+    val clientPrunedPartitions =
+      client.getPartitionsByFilter(rawTable, predicates).map { part =>
         part.copy(spec = restorePartitionSpec(part.spec, partColNameMap))
       }
-      val boundPredicate =
-        InterpretedPredicate.create(predicates.reduce(And).transform {
-          case att: AttributeReference =>
-            val index = partitionSchema.indexWhere(_.name == att.name)
-            BoundReference(index, partitionSchema(index).dataType, nullable = true)
-        })
-      clientPrunedPartitions.filter { p => boundPredicate(p.toRow(partitionSchema)) }
-    } else {
-      withHiveExceptionHandling(client.getPartitions(catalogTable)).map { part =>
-        part.copy(spec = restorePartitionSpec(part.spec, partColNameMap))
-      }
-    }
+    prunePartitionsByFilter(catalogTable, clientPrunedPartitions, predicates, defaultTimeZoneId)
   }
 
   override def createPartitions(
@@ -598,7 +565,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   // Functions
   // --------------------------------------------------------------------------
 
-  override def createFunction(
+  override protected def doCreateFunction(
       db: String,
       funcDefinition: CatalogFunction): Unit = withClient {
     // Hive's metastore is case insensitive. However, Hive's createFunction does
@@ -611,12 +578,13 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     SnappySession.clearAllCache()
   }
 
-  override def dropFunction(db: String, name: String): Unit = withClient {
+  override protected def doDropFunction(db: String, name: String): Unit = withClient {
     withHiveExceptionHandling(client.dropFunction(db, name))
     SnappySession.clearAllCache()
   }
 
-  override def renameFunction(db: String, oldName: String, newName: String): Unit = withClient {
+  override protected def doRenameFunction(db: String, oldName: String,
+                                          newName: String): Unit = withClient {
     withHiveExceptionHandling(client.renameFunction(db, oldName, newName))
     SnappySession.clearAllCache()
   }
@@ -635,5 +603,21 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
 
   def close(): Unit = synchronized {
     SnappyStoreHiveCatalog.closeHive(client)
+  }
+
+  // TODO_2.3_MERGE
+  override protected def doAlterTableDataSchema(db: String, table: String,
+                                                newDataSchema: StructType): Unit = {
+    throw new UnsupportedOperationException("not implemented yet")
+  }
+  // TODO_2.3_MERGE -
+  override protected def doAlterTableStats(db: String, table: String,
+                                           stats: Option[CatalogStatistics]): Unit = {
+    throw new UnsupportedOperationException("not implemented yet")
+  }
+  // TODO_2.3_MERGE -
+  override protected def doAlterFunction(db: String,
+                                         funcDefinition: CatalogFunction): Unit = {
+    throw new UnsupportedOperationException("not implemented yet")
   }
 }

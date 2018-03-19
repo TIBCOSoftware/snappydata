@@ -18,7 +18,6 @@
 package org.apache.spark.sql.hive
 
 import org.apache.hadoop.conf.Configuration
-
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.catalog.CatalogFunction
 import org.apache.spark.sql.hive.client.HiveClient
@@ -27,7 +26,7 @@ import org.apache.spark.sql.{SnappyContext, SnappySession}
 private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
     hadoopConf: Configuration) extends SnappyExternalCatalog(cl, hadoopConf) {
 
-  override def createFunction(
+  override protected def doCreateFunction(
       db: String,
       funcDefinition: CatalogFunction): Unit = {
     val functionName = funcDefinition.identifier.funcName
@@ -40,12 +39,10 @@ private[spark] class SnappyConnectorExternalCatalog(var cl: HiveClient,
     SnappySession.clearAllCache()
   }
 
-  override def dropFunction(db: String, name: String): Unit = {
+  override protected def doDropFunction(db: String, name: String): Unit = {
     val sessionCatalog = SnappyContext(null: SparkContext).snappySession
         .sessionCatalog.asInstanceOf[ConnectorCatalog]
     sessionCatalog.connectorHelper.executeDropUDFStatement(db, name)
     SnappySession.clearAllCache()
   }
-
-  override def renameFunction(db: String, oldName: String, newName: String): Unit = {}
 }

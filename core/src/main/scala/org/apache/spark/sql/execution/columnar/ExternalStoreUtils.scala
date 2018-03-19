@@ -43,7 +43,7 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
-import org.apache.spark.sql.execution.ui.SQLListener
+//import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -205,7 +205,7 @@ object ExternalStoreUtils {
         case None => // Do nothing
       }
     })
-    new CaseInsensitiveMap[String](optMap.toMap)
+    CaseInsensitiveMap[String](optMap.toMap)
   }
 
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
@@ -745,9 +745,9 @@ object ExternalStoreUtils {
       Property.ColumnMaxDeltaRows.name)
   }
 
-  def getSQLListener: AtomicReference[SQLListener] = {
-    SparkSession.sqlListener
-  }
+//  def getSQLListener: AtomicReference[SQLListener] = {
+//    SparkSession.sqlListener
+//  }
 }
 
 object ConnectionType extends Enumeration {

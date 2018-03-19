@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PhysicalScan}
-import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
+import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
@@ -56,7 +56,7 @@ private[sql] trait SnappyStrategies {
   }
 
   def isDisabled: Boolean = {
-    snappySession.sessionState.disableStoreOptimizations
+    session.disableStoreOptimizations
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
@@ -295,7 +295,7 @@ private[sql] object JoinStrategy {
    * Matches a plan whose output should be small enough to be used in broadcast join.
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.stats.isBroadcastable ||
+    plan.stats.hints.broadcast ||
         plan.stats.sizeInBytes <= conf.autoBroadcastJoinThreshold
   }
 
@@ -383,8 +383,8 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
       }
 
       val aggregateOperator =
-        if (aggregateExpressions.map(_.aggregateFunction)
-            .exists(!_.supportsPartial)) {
+        // TODO_2.3_MERGE
+        if (false /* aggregateExpressions.map(_.aggregateFunction).exists(!_.supportsPartial) */) {
           if (functionsWithDistinct.nonEmpty) {
             sys.error("Distinct columns cannot exist in Aggregate " +
                 "operator containing aggregate functions which don't " +
@@ -700,7 +700,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
         }
       } else false
       if (addShuffle) {
-        t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
+        t.withNewChildren(Seq(ShuffleExchangeExec(HashPartitioning(
           t.requiredChildDistribution.head.asInstanceOf[ClusteredDistribution]
               .clustering, t.numBuckets), t.child)))
       } else t
@@ -718,7 +718,7 @@ case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     // or if the plan is not a top-level one e.g. a subquery or inside
     // CollectAggregateExec (only top-level plan will catch and retry
     //   with disabled optimizations)
-    if (!topLevel || session.sessionState.disableStoreOptimizations) plan
+    if (!topLevel || session.disableStoreOptimizations) plan
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
@@ -730,6 +730,6 @@ case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     case ws@WholeStageCodegenExec(CachedPlanHelperExec(_)) => ws
     case ws @ WholeStageCodegenExec(onlychild) =>
       val c = onlychild.asInstanceOf[CodegenSupport]
-      ws.copy(child = CachedPlanHelperExec(c))
+      ws.copy(child = CachedPlanHelperExec(c))(codegenStageId = 0)
   })
 }

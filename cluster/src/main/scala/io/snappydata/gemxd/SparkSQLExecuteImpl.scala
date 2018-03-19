@@ -18,9 +18,6 @@ package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
@@ -36,7 +33,6 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.{Constant, QueryHint}
-
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
@@ -45,6 +41,9 @@ import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkEnv}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.

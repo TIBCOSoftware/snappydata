@@ -534,7 +534,8 @@ class ColumnFormatRelation(
       cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+      output = relation.output ++ ColumnDelta.mutableKeyAttributes,
+      catalogTable = relation.catalogTable, isStreaming = false)
   }
 
   override def addDependent(dependent: DependentRelation,
@@ -549,7 +550,8 @@ class ColumnFormatRelation(
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    snappySession.sessionState.catalog.removeDependentRelation(tableIdent, indexIdent)
+    snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+      .removeDependentRelation(tableIdent, indexIdent)
     // Remove the actual index
     snappySession.dropTable(indexIdent, ifExists)
   }
@@ -565,7 +567,7 @@ class ColumnFormatRelation(
     }
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val sncCatalog = snappySession.sessionState.catalog
+    val sncCatalog = snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     dependentRelations.foreach(rel => {
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
         case LogicalRelation(r: DependentRelation, _, _, _) => r
@@ -644,8 +646,8 @@ class ColumnFormatRelation(
     // index. Also, there are multiple things (like implementing HiveIndexHandler)
     // that are hive specific and can create issues for us from maintenance perspective
     try {
-      snappySession.sessionState.catalog.addDependentRelation(
-        tableIdent, snappySession.getIndexTable(indexIdent))
+      snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+        .addDependentRelation(tableIdent, snappySession.getIndexTable(indexIdent))
 
       val df = Dataset.ofRows(snappySession,
         snappySession.sessionCatalog.lookupRelation(tableIdent))
@@ -725,7 +727,8 @@ class IndexColumnFormatRelation(
       cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+      output = relation.output ++ ColumnDelta.mutableKeyAttributes,
+      catalogTable = relation.catalogTable, isStreaming = false)
   }
 
   def getBaseTableRelation: ColumnFormatRelation = {
@@ -787,7 +790,7 @@ final class DefaultSource extends SchemaRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
-    val tableOptions = CaseInsensitiveMap[String](parameters.toMap)
+    val tableOptions = CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)

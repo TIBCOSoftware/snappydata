@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
 
@@ -190,7 +191,8 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        session.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+          .newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
 
     }
@@ -215,7 +217,8 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        session.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+          .newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
     }
 

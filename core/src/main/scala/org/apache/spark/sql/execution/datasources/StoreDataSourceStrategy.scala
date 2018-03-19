@@ -35,19 +35,18 @@
 
 package org.apache.spark.sql.execution.datasources
 
-import scala.collection.mutable
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToScala
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, DynamicReplacableConstant, EmptyRow, Expression, Literal, NamedExpression, PredicateHelper}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
-import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
+import org.apache.spark.sql.catalyst.plans.logical.{HintInfo, LogicalPlan, Project, ResolvedHint, Filter => LFilter}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{AnalysisException, Strategy, execution, sources}
 import org.apache.spark.unsafe.types.UTF8String
+
+import scala.collection.mutable
 
 /**
  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
@@ -117,7 +116,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       }
     }
 
-    val (unhandledPredicates, pushedFilters) =
+    val (unhandledPredicates, pushedFilters, handledFilters) =
       selectFilters(relation.relation, candidatePredicates)
 
     // A set of column attributes that are only referenced by pushed down
@@ -190,9 +189,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         case baseRelation =>
           RowDataSourceScanExec(
             mappedProjects,
+            requestedColumns.map(relation.output.indexOf),
+            pushedFilters.toSet,
+            handledFilters,
             scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
                 ._1.asInstanceOf[RDD[InternalRow]],
-            baseRelation, UnknownPartitioning(0), metadata,
+            baseRelation,
             relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
@@ -220,9 +222,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         case baseRelation =>
           RowDataSourceScanExec(
             mappedProjects,
+            requestedColumns.map(relation.output.indexOf),
+            pushedFilters.toSet,
+            handledFilters,
             scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
                 ._1.asInstanceOf[RDD[InternalRow]],
-            baseRelation, UnknownPartitioning(0), metadata,
+            baseRelation,
             relation.catalogTable.map(_.identifier))
       }
       execution.ProjectExec(projects,
@@ -412,7 +417,7 @@ object PhysicalScan extends PredicateHelper {
         val substitutedCondition = substitute(aliases)(condition)
         (fields, filters ++ splitConjunctivePredicates(substitutedCondition), other, aliases)
 
-      case BroadcastHint(child) => collectProjectsAndFilters(child)
+      case ResolvedHint(child, HintInfo(true)) => collectProjectsAndFilters(child)
 
       case other => (None, Nil, other, Map.empty)
     }
@@ -425,12 +430,12 @@ object PhysicalScan extends PredicateHelper {
     expr.transform {
       case a@Alias(ref: AttributeReference, name) =>
         aliases.get(ref)
-            .map(Alias(_, name)(a.exprId, a.qualifier, isGenerated = a.isGenerated))
+            .map(Alias(_, name)(a.exprId, a.qualifier))
             .getOrElse(a)
 
       case a: AttributeReference =>
         aliases.get(a)
-            .map(Alias(_, a.name)(a.exprId, a.qualifier, isGenerated = a.isGenerated)).getOrElse(a)
+            .map(Alias(_, a.name)(a.exprId, a.qualifier)).getOrElse(a)
     }
   }
 }

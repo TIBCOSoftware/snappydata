@@ -20,20 +20,18 @@ import java.util.concurrent.atomic.AtomicReference
 
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.Constant
-
-import scala.language.implicitConversions
-import scala.reflect.runtime.universe.TypeTag
 import org.apache.hadoop.conf.Configuration
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
-import org.apache.spark.sql.hive.ExternalTableType
-import org.apache.spark.sql.internal.{SQLConf, SnappyConf}
-import org.apache.spark.sql.streaming.StreamBaseRelation
+import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.streaming.{SchemaDStream, StreamBaseRelation, StreamSqlHelper}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappySession}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+
+import scala.language.implicitConversions
+import scala.reflect.runtime.universe.TypeTag
 
 /**
  * Main entry point for SnappyData extensions to Spark Streaming.
@@ -149,8 +147,9 @@ class SnappyStreamingContext protected[spark](
   def registerStreamTables: Unit = {
     // register dummy output transformations for the stream tables
     // so that the streaming context starts
-    snappySession.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
-                 ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
+    snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+      .getDataSourceRelations[StreamBaseRelation](Seq(ExternalTableType.Stream), None)
+      .foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 
   override def stop(stopSparkContext: Boolean,

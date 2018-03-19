@@ -42,6 +42,7 @@ import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseE
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
+import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
@@ -72,16 +73,19 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     val snappySession: SnappySession,
     metadataHive: HiveClient,
     globalTempViewManager: GlobalTempViewManager,
-    functionResourceLoader: FunctionResourceLoader,
     functionRegistry: FunctionRegistry,
     sqlConf: SQLConf,
-    hadoopConf: Configuration)
+    hadoopConf: Configuration,
+    sqlParser: ParserInterface,
+    resourceLoader: FunctionResourceLoader)
     extends SessionCatalog(
       externalCatalog,
       globalTempViewManager,
       functionRegistry,
       sqlConf,
-      hadoopConf, null, functionResourceLoader) {
+      hadoopConf,
+      sqlParser,
+      resourceLoader) {
 
   val sparkConf: SparkConf = snappySession.sparkContext.getConf
 

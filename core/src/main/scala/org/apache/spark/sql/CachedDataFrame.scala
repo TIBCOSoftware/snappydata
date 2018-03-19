@@ -146,7 +146,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
 
   private def setPoolForExecution(): Unit = {
     var pool = sparkSession.asInstanceOf[SnappySession].
-      sessionState.conf.activeSchedulerPool
+      sessionState.conf.asInstanceOf[SnappyConf].activeSchedulerPool
 
     // Check if it is pruned query, execute it automatically on the low latency pool
     if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {

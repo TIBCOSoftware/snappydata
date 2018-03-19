@@ -51,7 +51,7 @@ object StreamSqlHelper {
   }
 
   def getSchemaDStream(ssc: SnappyStreamingContext, tableName: String): SchemaDStream = {
-    val catalog = ssc.snappySession.sessionState.catalog
+    val catalog = ssc.snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(sr: StreamPlan, _, _, _) => new SchemaDStream(ssc,
         LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(ssc))

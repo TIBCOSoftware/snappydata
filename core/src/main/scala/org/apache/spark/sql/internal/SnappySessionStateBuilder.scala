@@ -17,21 +17,23 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.{Locale, Properties}
+import java.util.Locale
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
+import org.apache.spark.Partition
 import org.apache.spark.annotation.{Experimental, InterfaceStability}
-import org.apache.spark.sql._
+import org.apache.spark.sql.{SnappyStrategies, Strategy, _}
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.catalog.UnresolvedCatalogRelation
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, Cast, Contains, DynamicFoldableExpression, EndsWith, EqualTo, Expression, Like, Literal, NamedExpression, ParamLiteral, PredicateHelper, StartsWith}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.PartitionedDataSourceScan
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan, SparkPlanner}
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources._
@@ -41,29 +43,32 @@ import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.types.{DecimalType, StringType}
 import org.apache.spark.streaming.Duration
-import org.apache.spark.{Partition, SparkConf}
-
-import scala.reflect.ClassTag
 
 /**
   * Builder that produces a SnappyData-aware `SessionState`.
   */
 @Experimental
 @InterfaceStability.Unstable
-class SnappySessionStateBuilder(session: SnappySession, parentState: Option[SessionState] = None)
-  extends BaseSessionStateBuilder(session, parentState) with SnappyStrategies {
+class SnappySessionStateBuilder(sparkSession: SparkSession,
+                                parentState: Option[SessionState] = None)
+  extends BaseSessionStateBuilder(sparkSession, parentState) {
 
+  override val session = sparkSession.asInstanceOf[SnappySession]
   /**
     * Function that produces a new instance of the `BaseSessionStateBuilder`. This is used by the
     * [[SessionState]]'s clone functionality. Make sure to override this when implementing your own
     * [[SessionStateBuilder]].
     */
-  override protected def newBuilder: NewBuilder = new SnappySessionStateBuilder(session, _)
+  override protected def newBuilder: NewBuilder =
+    new SnappySessionStateBuilder(_, _)
 
-  override protected def customPlanningStrategies: Seq[Strategy] = {
-    Seq(SnappyStrategies, StoreStrategy, StreamQueryStrategy,
-      StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
-  }
+//  override protected def customPlanningStrategies: Seq[Strategy] = {
+//    Seq(StoreStrategy, StreamQueryStrategy, StoreDataSourceStrategy,
+//      SnappyAggregation, HashJoinStrategies)
+//  }
+
+  override protected def planner: SparkPlanner =
+    new DefaultPlanner(session, conf, experimentalMethods)
 
   override protected def customResolutionRules: Seq[Rule[LogicalPlan]] = {
     Seq(new PreprocessTableInsertOrPut(conf), new FindDataSourceTable(session),
@@ -99,7 +104,7 @@ class SnappySessionStateBuilder(session: SnappySession, parentState: Option[Sess
     new SnappyConf(session)
   }
 
-    /**
+  /**
     * Create a [[SnappyStoreHiveCatalog]].
     */
   override protected lazy val catalog: SnappyStoreHiveCatalog = {
@@ -402,8 +407,8 @@ class SnappySessionStateBuilder(session: SnappySession, parentState: Option[Sess
       // other cases handled like in PreprocessTableInsertion
       case i@InsertIntoTable(table, _, query, _, _)
         if table.resolved && query.resolved => table match {
-        case relation: CatalogRelation =>
-          val metadata = relation.catalogTable
+        case relation: UnresolvedCatalogRelation =>
+          val metadata = relation.tableMeta
           preProcess(i, relation = null, metadata.identifier.quotedString,
             metadata.partitionColumnNames)
         case LogicalRelation(h: HadoopFsRelation, _, identifier, _) =>
@@ -527,7 +532,7 @@ class SnappySessionStateBuilder(session: SnappySession, parentState: Option[Sess
             // Renaming is needed for handling the following cases like
             // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
             // 2) Target tables have column metadata
-            Alias(Cast(actual, expected.dataType), expected.name)
+            Alias(Cast(actual, expected.dataType), expected.name)()
           }
       }
 
@@ -575,7 +580,24 @@ class SnappySessionStateBuilder(session: SnappySession, parentState: Option[Sess
 
 }
 
+class DefaultPlanner(val session: SnappySession, conf: SQLConf,
+                     experimentalMethods: ExperimentalMethods)
+  extends SparkPlanner(session.sparkContext, conf, experimentalMethods)
+    with SnappyStrategies {
 
+  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case _ => Nil
+  }
+
+  private val storeOptimizedRules: Seq[Strategy] =
+    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
+
+  override def strategies: Seq[Strategy] =
+    Seq(SnappyStrategies,
+      StoreStrategy, StreamQueryStrategy) ++
+      storeOptimizedRules ++
+      super.strategies
+}
 
 // copy of ConstantFolding that will turn a constant up/down cast into
 // a static value.
