@@ -54,7 +54,6 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext}
 
@@ -282,11 +281,11 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("java.nio.ByteBuffer", buffers, "")
     ctx.addMutableState("int", numBatchRows, "")
     ctx.addMutableState("int", batchIndex, "")
-    ctx.addMutableState("int", batchDeltaIndex, "")
+    ctx.addMutableState("int", batchDeltaIndex, "") // TODO VB: Remove
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
-    ctx.addMutableState("boolean", isCaseOfSortedInsert, s"")
-    ctx.addMutableState("boolean", thisRowFromDeltaIsInsert, s"")
+    ctx.addMutableState("boolean", isCaseOfSortedInsert, s"") // TODO VB: Remove
+    ctx.addMutableState("boolean", thisRowFromDeltaIsInsert, s"") // TODO VB: Remove
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -428,13 +427,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
-          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex,
-          numFullRows, numDeltaRows)
+          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, thisRowFromDeltaIsInsert,
-          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex,
-          numFullRows, numDeltaRows)
+          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDeltaIndex)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -517,6 +514,11 @@ private[sql] final case class ColumnTableScan(
         int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
           $countIndexInSchema) : 0;
         $numBatchRows = $numFullRows + $numDeltaRows;
+        // TODO VB: Remove this
+        if (${ColumnTableScan.getDebugMode}) {
+          System.out.println("VB: ColumnTableScan numBatchRows=" + $numBatchRows +
+            " ,numFullRows=" + $numFullRows + " ,numDeltaRows=" + $numDeltaRows);
+        }
         // TODO: don't have the update count here (only insert count)
         $numDeltaRows = $numBatchRows;
         $incrementBatchCount
@@ -632,6 +634,7 @@ private[sql] final case class ColumnTableScan(
        |    $assignBatchId
        |    $batchConsume
        |    $deletedDeclaration
+       |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    $isCaseOfSortedInsert = ${ordinalIdTerm ne null} &&
        |      ${ColumnTableScan.getCaseOfSortedInsertValue};
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
@@ -683,8 +686,7 @@ private[sql] final case class ColumnTableScan(
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, thisRowFromDeltaIsInsert: String,
       isCaseOfSortedInsert: String, numRows: String, colInput: String, inputIsRow: String,
-      batchIndex: String, batchDeltaIndex: String, numFullRows: String,
-      numDeltaRows: String): ExprCode = {
+      batchIndex: String, batchDeltaIndex: String): ExprCode = {
     // scalastyle:on
     val nonNullPosition = if (attr.nullable) {
       s"$batchOrdinal - $numNullsVar - $batchDeltaIndex"
@@ -781,8 +783,6 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDeltaIndex=" + $batchDeltaIndex +
-           |      " ,numFullRows=" + $numFullRows +
-           |      " ,numDeltaRows=" + $numDeltaRows +
            |      " ,numRows=" + $numRows +
            |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |      " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
@@ -805,8 +805,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
            |    " ,batchIndex=" + $batchIndex +
            |    " ,batchDeltaIndex=" + $batchDeltaIndex +
-           |    " ,numFullRows=" + $numFullRows +
-           |    " ,numDeltaRows=" + $numDeltaRows +
            |    " ,numRows=" + $numRows +
            |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
            |    " ,thisRowFromDeltaIsInsert=" + $thisRowFromDeltaIsInsert +
