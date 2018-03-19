@@ -11,7 +11,7 @@ Contains information about all disk stores IDs created in the SnappyData distrib
 
 For example:
 
-```
+```no-highlight
 snappy> create diskstore d1 ('D1');
 snappy> select * from sys.diskstoreids;
 
