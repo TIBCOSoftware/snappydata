@@ -73,22 +73,22 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery", numTimesInsert = 10,
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery)
-    // while (true) {}
+    // Thread.sleep(50000000)
   }
 
   test("PointQuery performance multithreaded") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
-    val numBuckets = SortedColumnPerformanceTests.cores
+    val numBuckets = 3
     val numIters = 100
-    val totalNumThreads = SortedColumnPerformanceTests.cores
+    val totalNumThreads = 4 * SortedColumnPerformanceTests.cores
     val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
-      numIters, "PointQuery multithreaded", numTimesInsert = 10, isMultithreaded = true,
+      numIters, "PointQuery multithreaded", numTimesInsert = 200, isMultithreaded = true,
       doVerifyFullSize = false, totalThreads = totalNumThreads,
       runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery)
-    // while (true) {}
+    // Thread.sleep(50000000)
   }
 
   test("RangeQuery performance") {
@@ -100,7 +100,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery)
-    // while (true) {}
+    // Thread.sleep(50000000)
   }
 }
 
@@ -194,7 +194,7 @@ object SortedColumnPerformanceTests {
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) numTimesInsert else numTimesUpdate
     val result = session.sql(query).collect()
-    val passed = isMultithreaded || result.length == expectedNumResults
+    val passed = result.length == expectedNumResults
     if (!passed && iterCount != -1) {
       lastFailedIteration = iterCount
     }
