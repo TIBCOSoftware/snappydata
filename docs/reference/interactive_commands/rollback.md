@@ -4,7 +4,7 @@ Issues a *java.sql.Connection.rollback* request.
 
 ## Syntax
 
-``` pre
+```no-highlight
 ROLLBACK 
 ```
 
@@ -15,7 +15,7 @@ Issues a *java.sql.Connection.rollback* request. Use only if auto-commit is off.
 
 ## Example
 
-``` pre
+```no-highlight
 snappy(PEERCLIENT)> set isolation read committed;
 0 rows inserted/updated/deleted
 snappy(PEERCLIENT)> values current isolation;
