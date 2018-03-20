@@ -10,7 +10,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Get a SnappySession**:
 
-```scala
+```no-highlight
     val spark: SparkSession = SparkSession
         .builder
         .appName("WorkingWithJson")
@@ -22,7 +22,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Create a DataFrame from the JSON file**:
 
-```scala
+```no-highlight
     val some_people_path = s"quickstart/src/main/resources/some_people.json"
     // Read a JSON file using Spark API
     val people = snSession.read.json(some_people_path)
@@ -31,7 +31,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Create a SnappyData table and insert the JSON data in it using the DataFrame**:
 
-```scala
+```no-highlight
     //Drop the table if it exists
     snSession.dropTable("people", ifExists = true)
 
@@ -48,7 +48,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Append more data from a second JSON file**:
 
-```scala
+```no-highlight
     // Append more people to the column table
     val more_people_path = s"quickstart/src/main/resources/more_people.json"
 
@@ -63,7 +63,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 ```
 
 **Execute queries and return the results**
-```scala
+```no-highlight
     // Query it like any other table
     val nameAndAddress = snSession.sql("SELECT " +
         "name, " +
@@ -74,5 +74,4 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
         "FROM people")
 
 nameAndAddress.toJSON.show()
-
 ```
