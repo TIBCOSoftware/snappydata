@@ -79,12 +79,12 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
-    val numBuckets = SortedColumnPerformanceTests.cores
+    val numBuckets = 3
     val numIters = 100
     val totalNumThreads = SortedColumnPerformanceTests.cores
     val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
-      numIters, "PointQuery multithreaded", numTimesInsert = 10, isMultithreaded = true,
+      numIters, "PointQuery multithreaded", numTimesInsert = 200, isMultithreaded = true,
       doVerifyFullSize = false, totalThreads = totalNumThreads,
       runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery)
     // while (true) {}
@@ -184,7 +184,7 @@ object SortedColumnPerformanceTests {
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) numTimesInsert else numTimesUpdate
     val result = session.sql(query).collect()
-    val passed = isMultithreaded || result.length == expectedNumResults
+    val passed = result.length == expectedNumResults
     // scalastyle:off
     // println(s"Query = $query result=${result.length} $expectedNumResults $iterCount" +
     //    s" $numThreads $threadId")
@@ -217,9 +217,10 @@ object SortedColumnPerformanceTests {
       (f : (SnappySession, String, Int, Int, Int, Int, Boolean, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
       outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, 1)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
-    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, numTimesInsert))
+    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, 1))
     val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements, numTimesUpdate))
     val sessionArray = new Array[SnappySession](totalThreads)
     sessionArray.indices.foreach(i => {
@@ -243,7 +244,11 @@ object SortedColumnPerformanceTests {
           session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
           session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
           session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
-          insertDF.write.insertInto(colTableName)
+          var j = 0
+          while (j < numTimesInsert) {
+            insertDF.write.insertInto(colTableName)
+            j += 1
+          }
           updateDF.write.putInto(colTableName)
           if (doVerifyFullSize) {
             SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
