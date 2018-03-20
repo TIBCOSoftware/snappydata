@@ -40,3 +40,9 @@ io/snappydata/hydra/storeTests/sql/testGFE.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=1 storeVMsPerHost=5 storeThreadsPerVM=10
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+
+//single vm operations
+io/snappydata/hydra/storeTests/sql/concGFENonUniqSingleNode.conf
+  A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+  B=store storeHosts=1 storeVMsPerHost=1 storeThreadsPerVM=100
+  C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
