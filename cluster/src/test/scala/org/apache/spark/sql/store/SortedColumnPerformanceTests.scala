@@ -25,7 +25,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{DataFrame, DataFrameReader, SnappySession}
 import org.apache.spark.util.{Benchmark, QueryBenchmark}
 import org.apache.spark.sql.snappy._
 import scala.concurrent.duration._
@@ -136,8 +136,11 @@ object SortedColumnPerformanceTests {
       numElements: Long, numIters: Int, queryMark: String,
       doVerifyFullSize: Boolean = false): Unit = {
     val benchmark = new Benchmark(s"Benchmark $queryMark", numElements, outputPerIteration = true)
-    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements))
-    val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements))
+    SortedColumnTests.verfiyInsertDataExists(session, numElements)
+    SortedColumnTests.verfiyUpdateDataExists(session, numElements)
+    val dataFrameReader : DataFrameReader = session.read
+    val insertDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements))
+    val updateDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements))
 
     def execute(): Unit = {
       insertDF.write.insertInto(colTableName)
@@ -239,8 +242,10 @@ object SortedColumnPerformanceTests {
     SortedColumnTests.verfiyInsertDataExists(session, numElements, 1)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
-    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, 1))
-    val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements, numTimesUpdate))
+    val dataFrameReader : DataFrameReader = session.read
+    val insertDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements))
+    val updateDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+      numTimesUpdate))
     val sessionArray = new Array[SnappySession](totalThreads)
     sessionArray.indices.foreach(i => {
       sessionArray(i) = session.newSession()
