@@ -72,23 +72,42 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numIters = 100
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery", numTimesInsert = 200,
-      doVerifyFullSize = false)(SortedColumnPerformanceTests.executeQuery_PointQuery)
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery)
     // Thread.sleep(50000000)
   }
 
-  test("PointQuery performance multithreaded") {
+  test("PointQuery performance multithreaded 1") {
     val snc = this.snc.snappySession
-    val colTableName = "colDeltaTable"
-    val numElements = 999551
-    val numBuckets = 3
-    val numIters = 100
+    SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, numThreads = 1)
+    // Thread.sleep(5000000)
+  }
+
+  test("PointQuery performance multithreaded 4") {
+    val snc = this.snc.snappySession
+    val totalNumThreads = SortedColumnPerformanceTests.cores
+    SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
+    // Thread.sleep(5000000)
+  }
+
+  test("PointQuery performance multithreaded 8") {
+    val snc = this.snc.snappySession
+    val totalNumThreads = 2 * SortedColumnPerformanceTests.cores
+    SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
+    // Thread.sleep(5000000)
+  }
+
+  test("PointQuery performance multithreaded 16") {
+    val snc = this.snc.snappySession
     val totalNumThreads = 4 * SortedColumnPerformanceTests.cores
-    val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
-      numIters, "PointQuery multithreaded", numTimesInsert = 200, isMultithreaded = true,
-      doVerifyFullSize = false, totalThreads = totalNumThreads,
-      runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery)
-    // Thread.sleep(50000000)
+    SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
+    // Thread.sleep(5000000)
+  }
+
+  test("PointQuery performance multithreaded 32") {
+    val snc = this.snc.snappySession
+    val totalNumThreads = 4 * SortedColumnPerformanceTests.cores
+    SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
+    // Thread.sleep(5000000)
   }
 
   test("RangeQuery performance") {
@@ -99,7 +118,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numIters = 21
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
-      doVerifyFullSize = false)(SortedColumnPerformanceTests.executeQuery_RangeQuery)
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery)
     // Thread.sleep(50000000)
   }
 }
@@ -237,9 +256,10 @@ object SortedColumnPerformanceTests {
       (f : (SnappySession, String, Int, Int, Int, Int, Boolean, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
       outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, 1)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
-    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, numTimesInsert))
+    val insertDF = session.read.load(SortedColumnTests.filePathInsert(numElements, 1))
     val updateDF = session.read.load(SortedColumnTests.filePathUpdate(numElements, numTimesUpdate))
     val sessionArray = new Array[SnappySession](totalThreads)
     sessionArray.indices.foreach(i => {
@@ -263,8 +283,9 @@ object SortedColumnPerformanceTests {
           session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
           session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
           session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
-          ColumnTableScan.setCaseOfSortedInsertValue(true)
           insertDF.write.insertInto(colTableName)
+
+          ColumnTableScan.setCaseOfSortedInsertValue(true)
           updateDF.write.putInto(colTableName)
           if (doVerifyFullSize) {
             SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
@@ -321,6 +342,18 @@ object SortedColumnPerformanceTests {
       session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
       session.conf.unset(Property.ForceLinkPartitionsToBuckets.name)
     }
+  }
+
+  def mutiThreadedPointQuery(snc: SnappySession, numThreads: Int): Unit = {
+    val colTableName = "colDeltaTable"
+    val numElements = 999551
+    val numBuckets = 3
+    val numIters = 100
+    val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
+    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+      numIters, "PointQuery multithreaded", numTimesInsert = 200, isMultithreaded = true,
+      doVerifyFullSize = false, totalThreads = numThreads,
+      runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery)
   }
 
   val params = Array  (424281, 587515, 907730, 122421, 735695, 964648, 450150, 904625, 562060,
