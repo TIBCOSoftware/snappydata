@@ -724,10 +724,10 @@ task product(type: Zip) {
       targetProject = aqpProject
     }
 
-    if(hasJdbcConnectorProject){
+    if (hasJdbcConnectorProject){
        dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
     }
-    if(hasGemFireConnectorProject){
+    if (hasGemFireConnectorProject){
        dependsOn ":gemfire-connector:product"
     }
 
