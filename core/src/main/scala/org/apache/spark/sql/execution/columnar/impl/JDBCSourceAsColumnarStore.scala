@@ -515,8 +515,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
             connProperties.hikariCP),
-          // TODO: correct to proper pruner as part of SNAP-2194
-          schema, this, parts, -1, embdClusterRelDestroyVersion, delayRollover)
+          schema, this, parts, prunePartitions , embdClusterRelDestroyVersion, delayRollover)
     }
   }
 
@@ -763,7 +762,7 @@ final class SmartConnectorColumnRDD(
     val helper = new SmartConnectorRDDHelper
     val part = split.asInstanceOf[SmartExecutorBucketPartition]
     val conn: Connection = helper.getConnection(connProperties, part)
-
+    logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
     // fetch all the column blobs pushing down the filters
     val (statement, rs, txId) = helper.prepareScan(conn, tableName, projection,
@@ -909,14 +908,16 @@ class SmartConnectorRowRDD(_session: SnappySession,
         }
       }
     }
-
+    val bucketPartition = thePart.asInstanceOf[SmartExecutorBucketPartition]
+    logDebug(s"Scanning row buffer for $tableName,partId=${bucketPartition.index}," +
+        s" bucketId = ${bucketPartition.bucketId}")
     val statement = conn.createStatement()
     val thriftConn = statement match {
       case clientStmt: ClientStatement =>
         val clientConn = clientStmt.getConnection
         if (isPartitioned) {
           clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
-            new StatementAttrs(), Collections.singleton(Int.box(thePart.index)),
+            new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
             tableName, true).setMetadataVersion(relDestroyVersion))
         }
         clientConn
@@ -926,7 +927,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val ps = conn.prepareStatement(
         s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, $relDestroyVersion)")
       ps.setString(1, tableName)
-      val bucketString = thePart.index.toString
+      val bucketString = bucketPartition.bucketId.toString
       ps.setString(2, bucketString)
       ps.executeUpdate()
       ps.close()

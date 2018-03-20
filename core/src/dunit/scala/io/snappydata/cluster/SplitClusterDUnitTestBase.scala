@@ -211,7 +211,7 @@ trait SplitClusterDUnitTestBase extends Logging {
           ColumnUpdateDeleteTests.testSNAP1925(session)
           ColumnUpdateDeleteTests.testSNAP1926(session)
           ColumnUpdateDeleteTests.testConcurrentOps(session)
-          ColumnUpdateDeleteTests.testSNAP2124(session, checkPruning = false)
+          ColumnUpdateDeleteTests.testSNAP2124(session, checkPruning = true)
         } finally {
           StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
         }
