@@ -67,10 +67,10 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
-    val numBuckets = SortedColumnPerformanceTests.cores
+    val numBuckets = 3
     val numIters = 100
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
-      numIters, "PointQuery", numTimesInsert = 10,
+      numIters, "PointQuery", numTimesInsert = 200,
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery)
     // while (true) {}
   }
@@ -94,7 +94,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
-    val numBuckets = SortedColumnPerformanceTests.cores
+    val numBuckets = 3
     val numIters = 21
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
