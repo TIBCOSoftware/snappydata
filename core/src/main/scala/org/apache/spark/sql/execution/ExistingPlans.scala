@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetri
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SnappySession}
+import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
@@ -124,6 +124,7 @@ private[sql] abstract class PartitionedPhysicalScan(
 private[sql] object PartitionedPhysicalScan {
 
   private[sql] val CT_BLOB_POSITION = 4
+  private val EMPTY_PARAMS = Array.empty[ParamLiteral]
 
   def createFromDataSource(
       output: Seq[Attribute],
@@ -145,7 +146,7 @@ private[sql] object PartitionedPhysicalScan {
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(() => Array.empty,
-          a.map(_.name).toArray, f.toArray, useResultSet = false)
+          a.map(_.name).toArray, f.toArray, useResultSet = false, projection = null)
 
         def resolveCol(left: Attribute, right: AttributeReference) =
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
@@ -183,8 +184,8 @@ private[sql] object PartitionedPhysicalScan {
           r.sqlContext.conf.caseSensitiveAnalysis)
     }
 
-  def getSparkPlanInfo(fullPlan: SparkPlan,
-      paramLiterals: Array[ParamLiteral] = Array.empty): SparkPlanInfo = {
+  def getSparkPlanInfo(fullPlan: SparkPlan, paramLiterals: Array[ParamLiteral] = EMPTY_PARAMS,
+      paramsId: Int = -1): SparkPlanInfo = {
     val plan = fullPlan match {
       case CodegenSparkFallback(child) => child
       case _ => fullPlan
@@ -197,18 +198,21 @@ private[sql] object PartitionedPhysicalScan {
       new SQLMetricInfo(metric.name.getOrElse(key), metric.id, metric.metricType)
     }
 
-    val simpleString = if (paramLiterals.length == 0) plan.simpleString
-    else SnappySession.replaceParamLiterals(plan.simpleString, paramLiterals)
+    val simpleString = SnappySession.replaceParamLiterals(
+      plan.simpleString, paramLiterals, paramsId)
     new SparkPlanInfo(plan.nodeName, simpleString,
-      children.map(getSparkPlanInfo(_, paramLiterals)), plan.metadata, metrics)
+      children.map(getSparkPlanInfo(_, paramLiterals, paramsId)), plan.metadata, metrics)
   }
 
   private[sql] def updatePlanInfo(planInfo: SparkPlanInfo,
-      paramLiterals: Array[ParamLiteral]): SparkPlanInfo = {
-    val newString = SnappySession.replaceParamLiterals(planInfo.simpleString, paramLiterals)
-    new SparkPlanInfo(planInfo.nodeName, newString,
-      planInfo.children.map(p => updatePlanInfo(p, paramLiterals)),
-      planInfo.metadata, planInfo.metrics)
+      paramLiterals: Array[ParamLiteral], paramsId: Int): SparkPlanInfo = {
+    if ((paramLiterals ne null) && paramLiterals.length > 0) {
+      val newString = SnappySession.replaceParamLiterals(planInfo.simpleString,
+        paramLiterals, paramsId)
+      new SparkPlanInfo(planInfo.nodeName, newString,
+        planInfo.children.map(p => updatePlanInfo(p, paramLiterals, paramsId)),
+        planInfo.metadata, planInfo.metrics)
+    } else planInfo
   }
 }
 
@@ -223,9 +227,34 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   override def nodeName: String = "ExecutePlan"
 
+  override def simpleString: String = "ExecutePlan"
+
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
-    preAction()
-    child.executeCollect()
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val sc = session.sparkContext
+    val key = session.currentKey
+    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+    if (oldExecutionId eq null) {
+      val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
+        val callSite = sqlContext.sparkContext.getCallSite()
+        (callSite.shortForm, callSite.longForm, treeString(verbose = true),
+            PartitionedPhysicalScan.getSparkPlanInfo(this))
+      } else {
+        val paramLiterals = key.currentLiterals
+        val paramsId = key.currentParamsId
+        (key.sqlText, key.sqlText, SnappySession.replaceParamLiterals(
+          treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
+            .getSparkPlanInfo(this, paramLiterals, paramsId))
+      }
+      CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+        queryStr, queryExecStr, planInfo) {
+        preAction()
+        child.executeCollect()
+      }._1
+    } else {
+      preAction()
+      child.executeCollect()
+    }
   }
 
   override def executeCollect(): Array[InternalRow] = sideEffectResult

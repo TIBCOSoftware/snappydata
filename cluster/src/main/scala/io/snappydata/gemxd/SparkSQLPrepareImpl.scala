@@ -148,7 +148,7 @@ class SparkSQLPrepareImpl(val sql: String,
 
   def addParamLiteral(position: Int, datatype: DataType, nullable: Boolean,
       result: mutable.HashSet[ParamLiteral]): Unit = if (!result.exists(_.pos == position)) {
-    result += ParamLiteral(nullable, datatype, position)
+    result += ParamLiteral(nullable, datatype, position, execId = -1)
   }
 
   def allParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
@@ -223,7 +223,6 @@ class SparkSQLPrepareImpl(val sql: String,
 }
 
 object QuestionMark {
-
   def unapply(p: ParamLiteral): Option[Int] = {
     if (p.pos == 0 && p.dataType == NullType) {
       p.value match {

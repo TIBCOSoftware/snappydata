@@ -60,9 +60,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     private[sql] val queryPlanInfo: SparkPlanInfo,
     private[sql] var currentQueryExecutionString: String,
     private[sql] var currentQueryPlanInfo: SparkPlanInfo,
-    cachedRDD: RDD[InternalRow], shuffleDependencies: Vector[Int], encoder: Encoder[Row],
-    val rddId: Int, noSideEffects: Boolean, val queryHints: java.util.Map[String, String],
-    private[sql] var currentExecutionId: Long,
+    cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int], encoder: Encoder[Row],
+    shuffleCleanups: Array[Future[Unit]], val rddId: Int, noSideEffects: Boolean,
+    val queryHints: java.util.Map[String, String], private[sql] var currentExecutionId: Long,
     private[sql] var planStartTime: Long, private[sql] var planEndTime: Long)
     extends Dataset[Row](snappySession, queryExecution, encoder) with Logging {
 
@@ -74,6 +74,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   @transient
   private var _boundEnc: ExpressionEncoder[Row] = _
 
+  // not using lazy val so that duplicate() can copy over existing value, if any
   private def boundEnc: ExpressionEncoder[Row] = {
     if (_boundEnc ne null) _boundEnc
     else {
@@ -87,11 +88,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     isCached && cachedRDD.getNumPartitions <= 2 /* some small number */
 
   @transient
-  private lazy val lastShuffleCleanups = new Array[Future[Unit]](shuffleDependencies.length)
-
-  @transient
   private var _rowConverter: UnsafeProjection = _
 
+  // not using lazy val so that duplicate() can copy over existing value, if any
   private def rowConverter: UnsafeProjection = {
     if (_rowConverter ne null) _rowConverter
     else {
@@ -101,6 +100,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   }
 
   private[sql] var paramLiterals: Array[ParamLiteral] = _
+  private[sql] var paramsId: Int = _
 
   @transient
   private[sql] var currentLiterals: Array[ParamLiteral] = _
@@ -108,7 +108,10 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   @transient
   private[sql] var queryString: String = _
 
-  private[sql] def clearCachedShuffleDeps(sc: SparkContext): Unit = {
+  @transient
+  private var prepared: Boolean = _
+
+  private[sql] def startShuffleCleanups(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
     if (numShuffleDeps > 0) {
       sc.cleaner match {
@@ -117,7 +120,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
           while (i < numShuffleDeps) {
             val shuffleDependency = shuffleDependencies(i)
             // Cleaning the  shuffle artifacts asynchronously
-            lastShuffleCleanups(i) = Future {
+            shuffleCleanups(i) = Future {
               cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
             }
             i += 1
@@ -127,24 +130,41 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
+  private[sql] def waitForPendingShuffleCleanups(): Unit = {
+    val numShuffles = shuffleCleanups.length
+    if (numShuffles > 0) {
+      var i = 0
+      while (i < numShuffles) {
+        val cleanup = shuffleCleanups(i)
+        if (cleanup ne null) {
+          Await.ready(cleanup, Duration.Inf)
+          shuffleCleanups(i) = null
+        }
+        i += 1
+      }
+    }
+  }
+
   private[sql] def duplicate(): CachedDataFrame = {
     val cdf = new CachedDataFrame(snappySession, queryExecution, queryExecutionString,
-      queryPlanInfo, currentQueryExecutionString, currentQueryPlanInfo, cachedRDD,
-      shuffleDependencies, encoder, rddId, noSideEffects, queryHints, -1L, -1L, -1L)
+      queryPlanInfo, null, null, cachedRDD, shuffleDependencies, encoder, shuffleCleanups,
+      rddId, noSideEffects, queryHints, -1L, -1L, -1L)
     cdf.log_ = log_
     cdf.levelFlags = levelFlags
-    cdf._boundEnc = _boundEnc
+    cdf._boundEnc = boundEnc // force materialize boundEnc which is commonly used
     cdf._rowConverter = _rowConverter
     cdf.paramLiterals = paramLiterals
+    cdf.paramsId = paramsId
     cdf
   }
 
   private def reset(): Unit = clearPartitions(cachedRDD :: Nil)
 
   private def applyCurrentLiterals(): Unit = {
-    if (paramLiterals.length > 0 && (paramLiterals ne currentLiterals)) {
+    if (paramLiterals.length > 0 && (paramLiterals ne currentLiterals) &&
+        (currentLiterals ne null)) {
       for (pos <- paramLiterals.indices) {
-        paramLiterals(pos).updateValue(currentLiterals(pos).value)
+        paramLiterals(pos).value = currentLiterals(pos).value
       }
     }
   }
@@ -164,7 +184,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def setPoolForExecution(): Unit = {
     var pool = snappySession.sessionState.conf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
-    if (isLowLatencyQuery && shuffleDependencies.isEmpty && pool == "default") {
+    if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
         pool = Constant.LOW_LATENCY_POOL
       }
@@ -172,18 +192,19 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
   }
 
-  private def prepareForCollect(): Unit = {
+  private def prepareForCollect(): Boolean = {
+    if (prepared) return false
     if (isCached) {
       reset()
       applyCurrentLiterals()
     }
     setPoolForExecution()
     // update the strings in query execution and planInfo
-    if (currentLiterals.length > 0) {
+    if (currentQueryExecutionString eq null) {
       currentQueryExecutionString = SnappySession.replaceParamLiterals(
-        queryExecutionString, currentLiterals)
+        queryExecutionString, currentLiterals, paramsId)
       currentQueryPlanInfo = PartitionedPhysicalScan.updatePlanInfo(
-        queryPlanInfo, currentLiterals)
+        queryPlanInfo, currentLiterals, paramsId)
     }
     // set the query hints as would be set at the end of un-cached sql()
     snappySession.synchronized {
@@ -191,7 +212,17 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       snappySession.queryHints.putAll(queryHints)
     }
     queryExecution.executedPlan.foreach(_.resetMetrics())
-    waitForLastShuffleCleanup()
+    waitForPendingShuffleCleanups()
+    prepared = true
+    true
+  }
+
+  private def endCollect(didPrepare: Boolean): Unit = {
+    if (didPrepare) {
+      prepared = false
+      // clear the shuffle dependencies asynchronously after the execution.
+      startShuffleCleanups(snappySession.sparkContext)
+    }
   }
 
   /**
@@ -199,8 +230,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
    * then report to the user-registered callback functions.
    */
   private def withCallback[U](name: String)(action: CachedDataFrame => (U, Long)): U = {
+    var didPrepare = false
     try {
-      prepareForCollect()
+      didPrepare = prepareForCollect()
       val (result, elapsed) = action(this)
       snappySession.listenerManager.onSuccess(name, queryExecution, elapsed)
       result
@@ -209,8 +241,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
         snappySession.listenerManager.onFailure(name, queryExecution, e)
         throw e
     } finally {
-      // clear the shuffle dependencies asynchronously after the execution.
-      clearCachedShuffleDeps(snappySession.sparkContext)
+      endCollect(didPrepare)
     }
   }
 
@@ -221,7 +252,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   override def withNewExecutionId[T](body: => T): T = withNewExecutionIdTiming(body)._1
 
   private def withNewExecutionIdTiming[T](body: => T): (T, Long) = if (noSideEffects) {
+    var didPrepare = false
     try {
+      didPrepare = prepareForCollect()
       val (result, elapsedMillis) = CachedDataFrame.withNewExecutionId(snappySession,
         queryString, queryString, currentQueryExecutionString, currentQueryPlanInfo,
         currentExecutionId, planStartTime, planEndTime)(body)
@@ -232,6 +265,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
         planStartTime = -1L
         planEndTime = -1L
       }
+      endCollect(didPrepare)
     }
   } else {
     // don't create a new executionId for ExecutedCommandExec/ExecutePlan
@@ -271,21 +305,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       // execution returns an Iterator[InternalRow] itself
       collectWithHandler[InternalRow, InternalRow](null, null, null,
         skipUnpartitionedDataProcessing = true)
-    }
-  }
-
-  private[sql] def waitForLastShuffleCleanup(): Unit = {
-    val numShuffles = lastShuffleCleanups.length
-    if (numShuffles > 0) {
-      var index = 0
-      while (index < numShuffles) {
-        val cleanup = lastShuffleCleanups(index)
-        if (cleanup ne null) {
-          Await.ready(cleanup, Duration.Inf)
-          lastShuffleCleanups(index) = null
-        }
-        index += 1
-      }
     }
   }
 

@@ -38,7 +38,7 @@ package org.apache.spark.sql.execution.sources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, LiteralValue, NamedExpression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, PredicateHelper, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
@@ -234,34 +234,34 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
    */
   protected[sql] def translateToFilter(predicate: Expression): Option[Filter] = {
     predicate match {
-      case expressions.EqualTo(a: Attribute, LiteralValue(v)) =>
+      case expressions.EqualTo(a: Attribute, TokenLiteral(v)) =>
         Some(sources.EqualTo(a.name, v))
-      case expressions.EqualTo(LiteralValue(v), a: Attribute) =>
+      case expressions.EqualTo(TokenLiteral(v), a: Attribute) =>
         Some(sources.EqualTo(a.name, v))
 
-      case expressions.EqualNullSafe(a: Attribute, LiteralValue(v)) =>
+      case expressions.EqualNullSafe(a: Attribute, TokenLiteral(v)) =>
         Some(sources.EqualNullSafe(a.name, v))
-      case expressions.EqualNullSafe(LiteralValue(v), a: Attribute) =>
+      case expressions.EqualNullSafe(TokenLiteral(v), a: Attribute) =>
         Some(sources.EqualNullSafe(a.name, v))
 
-      case expressions.GreaterThan(a: Attribute, LiteralValue(v)) =>
+      case expressions.GreaterThan(a: Attribute, TokenLiteral(v)) =>
         Some(sources.GreaterThan(a.name, v))
-      case expressions.GreaterThan(LiteralValue(v), a: Attribute) =>
+      case expressions.GreaterThan(TokenLiteral(v), a: Attribute) =>
         Some(sources.LessThan(a.name, v))
 
-      case expressions.LessThan(a: Attribute, LiteralValue(v)) =>
+      case expressions.LessThan(a: Attribute, TokenLiteral(v)) =>
         Some(sources.LessThan(a.name, v))
-      case expressions.LessThan(LiteralValue(v), a: Attribute) =>
+      case expressions.LessThan(TokenLiteral(v), a: Attribute) =>
         Some(sources.GreaterThan(a.name, v))
 
-      case expressions.GreaterThanOrEqual(a: Attribute, LiteralValue(v)) =>
+      case expressions.GreaterThanOrEqual(a: Attribute, TokenLiteral(v)) =>
         Some(sources.GreaterThanOrEqual(a.name, v))
-      case expressions.GreaterThanOrEqual(LiteralValue(v), a: Attribute) =>
+      case expressions.GreaterThanOrEqual(TokenLiteral(v), a: Attribute) =>
         Some(sources.LessThanOrEqual(a.name, v))
 
-      case expressions.LessThanOrEqual(a: Attribute, LiteralValue(v)) =>
+      case expressions.LessThanOrEqual(a: Attribute, TokenLiteral(v)) =>
         Some(sources.LessThanOrEqual(a.name, v))
-      case expressions.LessThanOrEqual(LiteralValue(v), a: Attribute) =>
+      case expressions.LessThanOrEqual(TokenLiteral(v), a: Attribute) =>
         Some(sources.GreaterThanOrEqual(a.name, v))
 
       case expressions.InSet(a: Attribute, set) =>
@@ -275,7 +275,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
       // Because we only convert In to InSet in Optimizer when there are more than certain
       // items. So it is possible we still get an In expression here that needs to be pushed down.
-      case expressions.In(a: Attribute, list) if !list.exists(!LiteralValue.isConstant(_)) =>
+      case expressions.In(a: Attribute, list) if !list.exists(!TokenLiteral.isConstant(_)) =>
         val hSet = list.map(e => e.eval(EmptyRow))
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
         Some(sources.In(a.name, hSet.toArray.map(toScala)))
@@ -297,13 +297,13 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case expressions.Not(child) =>
         translateToFilter(child).map(sources.Not)
 
-      case expressions.StartsWith(a: Attribute, LiteralValue(v)) =>
+      case expressions.StartsWith(a: Attribute, TokenLiteral(v)) =>
         Some(sources.StringStartsWith(a.name, v.toString))
 
-      case expressions.EndsWith(a: Attribute, LiteralValue(v)) =>
+      case expressions.EndsWith(a: Attribute, TokenLiteral(v)) =>
         Some(sources.StringEndsWith(a.name, v.toString))
 
-      case expressions.Contains(a: Attribute, LiteralValue(v)) =>
+      case expressions.Contains(a: Attribute, TokenLiteral(v)) =>
         Some(sources.StringContains(a.name, v.toString))
 
       case _ => None

@@ -21,6 +21,7 @@ import java.util.function.BiConsumer
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import com.google.common.primitives.Ints
 import io.snappydata.{Constant, Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
@@ -40,7 +41,8 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
-class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
+class SnappyParser(session: SnappySession)
+    extends SnappyDDLParser(session) with ParamLiteralHolder {
 
   private[this] final var _input: ParserInput = _
 
@@ -55,6 +57,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   private[sql] final def input_=(in: ParserInput): Unit = {
     reset()
     _input = in
+    clearConstants()
     _questionMarkCounter = 0
     tokenize = false
   }
@@ -187,7 +190,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     questionMark ~> (() => {
       _questionMarkCounter += 1
       if (_isPreparePhase) {
-        ParamLiteral(Row(_questionMarkCounter), NullType, 0)
+        ParamLiteral(Row(_questionMarkCounter), NullType, 0, execId = -1)
       } else {
         assert(_parameterValueSet.isDefined,
           "For Prepared Statement, Parameter constants are not provided")
@@ -199,8 +202,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     })
   }
 
+  private[sql] final def addTokenizedLiteral(v: Any, dataType: DataType): TokenizedLiteral = {
+    if (session.planCaching) addParamLiteralToContext(v, dataType)
+    else new TokenLiteral(v, dataType)
+  }
+
   protected final def newTokenizedLiteral(v: Any, dataType: DataType): Expression = {
-    if (tokenize) session.addTokenizedLiteral(v, dataType) else Literal(v, dataType)
+    if (tokenize) addTokenizedLiteral(v, dataType) else Literal(v, dataType)
   }
 
   protected final def newLiteral(v: Any, dataType: DataType): Expression = {
@@ -327,6 +335,13 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
   }
 
+  protected final def expressionNoTokens: Rule1[Expression] = rule {
+    push(tokenize) ~ TOKENIZE_END ~ expression ~> { (tokenized: Boolean, e: Expression) =>
+      tokenize = tokenized
+      e
+    }
+  }
+
   protected final def andExpression: Rule1[Expression] = rule {
     notExpression ~ (AND ~ notExpression ~>
         ((e1: Expression, e2: Expression) => And(e1, e2))).*
@@ -372,19 +387,19 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected final def likeExpression(left: Expression, right: TokenizedLiteral): Expression = {
     val pattern = right.valueString
-    session.removeIfParamLiteralFromContext(right)
+    removeIfParamLiteralFromContext(right)
     if (Consts.optimizableLikePattern.matcher(pattern).matches()) {
       val size = pattern.length
       val expression = if (pattern.charAt(0) == '%') {
         if (pattern.charAt(size - 1) == '%') {
-          Contains(left, session.addTokenizedLiteral(
+          Contains(left, addTokenizedLiteral(
             UTF8String.fromString(pattern.substring(1, size - 1)), StringType))
         } else {
-          EndsWith(left, session.addTokenizedLiteral(
+          EndsWith(left, addTokenizedLiteral(
             UTF8String.fromString(pattern.substring(1)), StringType))
         }
       } else if (pattern.charAt(size - 1) == '%') {
-        StartsWith(left, session.addTokenizedLiteral(
+        StartsWith(left, addTokenizedLiteral(
           UTF8String.fromString(pattern.substring(0, size - 1)), StringType))
       } else {
         // check for startsWith and endsWith
@@ -392,22 +407,19 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         if (wildcardIndex != -1) {
           val prefix = pattern.substring(0, wildcardIndex)
           val postfix = pattern.substring(wildcardIndex + 1)
-          val prefixLiteral = session.addTokenizedLiteral(
-            UTF8String.fromString(prefix), StringType)
-          val suffixLiteral = session.addTokenizedLiteral(
-            UTF8String.fromString(postfix), StringType)
+          val prefixLiteral = addTokenizedLiteral(UTF8String.fromString(prefix), StringType)
+          val suffixLiteral = addTokenizedLiteral(UTF8String.fromString(postfix), StringType)
           And(GreaterThanOrEqual(Length(left),
-            session.addParamLiteralToContext(prefix.length + postfix.length, IntegerType)),
+            addTokenizedLiteral(prefix.length + postfix.length, IntegerType)),
             And(StartsWith(left, prefixLiteral), EndsWith(left, suffixLiteral)))
         } else {
           // no wildcards
-          EqualTo(left, session.addTokenizedLiteral(
-            UTF8String.fromString(pattern), StringType))
+          EqualTo(left, addTokenizedLiteral(UTF8String.fromString(pattern), StringType))
         }
       }
       expression
     } else {
-      LikeEscapeSimplification.simplifyLike(session,
+      LikeEscapeSimplification.simplifyLike(this,
         Like(left, newLiteral(right.value, right.dataType)), left, pattern)
     }
   }
@@ -436,7 +448,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     (RLIKE | REGEXP) ~ termExpression ~>
         ((e1: Expression, e2: Expression) => e2 match {
           case l: TokenizedLiteral if !l.value.isInstanceOf[Row] =>
-            session.removeIfParamLiteralFromContext(l)
+            removeIfParamLiteralFromContext(l)
             RLike(e1, newLiteral(l.value, l.dataType))
           case _ => RLike(e1, e2)
         })
@@ -472,7 +484,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
           // extraction should be a literal if type is string (integer can be ParamLiteral)
           val ord = extraction match {
             case l: TokenizedLiteral if l.dataType == StringType =>
-              session.removeIfParamLiteralFromContext(l)
+              removeIfParamLiteralFromContext(l)
               newLiteral(l.value, l.dataType)
             case o => o
           }
@@ -524,13 +536,19 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   protected final def groupBy: Rule1[(Seq[Expression],
       Seq[Seq[Expression]], String)] = rule {
     GROUP ~ BY ~ (expression + commaSep) ~ cubeRollUpGroupingSet.? ~>
-        ((groupingExpr: Any, crgs: Any) =>
-        {  // if cube, rollup, GrSet is not used
-          val emptyCubeRollupGrSet = (Seq(Seq[Expression]()), "")
+        ((g: Any, crgs: Any) => {
+          // change top-level tokenized literals to literals for GROUP BY 1 kind of queries
+          val groupingExprs = g.asInstanceOf[Seq[Expression]].map {
+            case p: ParamLiteral => removeParamLiteralFromContext(p); p.asLiteral
+            case l: TokenLiteral => l
+            case e => e
+          }
           val cubeRollupGrSetExprs = crgs.asInstanceOf[Option[(Seq[
-              Seq[Expression]], String)]].getOrElse(emptyCubeRollupGrSet)
-          (groupingExpr.asInstanceOf[Seq[Expression]], cubeRollupGrSetExprs._1,
-              cubeRollupGrSetExprs._2)
+              Seq[Expression]], String)]] match {
+            case None => (Seq(Nil), "")
+            case Some(e) => e
+          }
+          (groupingExprs, cubeRollupGrSetExprs._1, cubeRollupGrSetExprs._2)
         })
   }
 
@@ -570,9 +588,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
-    VALUES ~ (expression + commaSep) ~ AS.? ~ identifier.? ~
+    VALUES ~ push(tokenize) ~ TOKENIZE_BEGIN ~ (expression + commaSep) ~ AS.? ~ identifier.? ~
         ('(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~>
-        ((valuesExpr: Seq[Expression], alias: Any, identifiers: Any) => {
+        ((tokenized: Boolean, valuesExpr: Seq[Expression], alias: Any, identifiers: Any) => {
+          tokenize = tokenized
           val rows = valuesExpr.map {
             // e.g. values (1), (2), (3)
             case struct: CreateNamedStruct => struct.valExprs
@@ -620,9 +639,15 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
     ((expression ~ sortDirection.? ~ (NULLS ~ (FIRST ~ push(true) | LAST ~ push(false))).? ~>
-        ((e: Expression, d: Any, n: Any) => (e, d, n))) + commaSep) ~> ((exps: Any) =>
-      exps.asInstanceOf[Seq[(Expression, Option[SortDirection], Option[Boolean])]].map {
-        case (child, d, n) =>
+        ((e: Expression, d: Any, n: Any) => (e, d, n))) + commaSep) ~> ((exprs: Any) =>
+      exprs.asInstanceOf[Seq[(Expression, Option[SortDirection], Option[Boolean])]].map {
+        case (c, d, n) =>
+          // change top-level tokenized literals to literals for ORDER BY 1 kind of queries
+          val child = c match {
+            case p: ParamLiteral => removeParamLiteralFromContext(p); p.asLiteral
+            case l: TokenLiteral => l
+            case _ => c
+          }
           val direction = d match {
             case Some(v) => v
             case None => Ascending
@@ -649,7 +674,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         RepartitionByExpression(e, l)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
         ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
-    ((LIMIT ~ TOKENIZE_END ~ expression) | fetchExpression).? ~> {
+    ((LIMIT ~ expressionNoTokens) | fetchExpression).? ~> {
       (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
       val withOrder = o.asInstanceOf[Option[LogicalPlan => LogicalPlan]]
           .map(_ (l)).getOrElse(l)
@@ -675,7 +700,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   }
 
   protected final def fetchExpression: Rule1[Expression] = rule {
-    FETCH ~ FIRST ~ TOKENIZE_END ~ expression ~ ((ROW|ROWS) ~ ONLY) ~> ((f: Expression) => f)
+    FETCH ~ FIRST ~ expressionNoTokens ~ ((ROW|ROWS) ~ ONLY) ~> ((f: Expression) => f)
   }
 
   protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
@@ -779,14 +804,18 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       fnName: String): Seq[Expression] = if (!_isPreparePhase) {
     Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
       case null => exprs
+      case args if args.length == 0 =>
+        // disable plan caching for these functions
+        session.planCaching = false
+        exprs
       case args =>
         exprs.indices.map(index => exprs(index) match {
-          case l: TokenizedLiteral if args.contains(index) ||
+          case l: TokenizedLiteral if Ints.contains(args, index) ||
               // all args          // all odd args
-              (args.head == -10) || (args.head == -1 && (index & 0x1) == 1) ||
+              (args(0) == -10) || (args(0) == -1 && (index & 0x1) == 1) ||
               // all even args
-              (args.head == -2 && (index & 0x1) == 0) =>
-            session.removeIfParamLiteralFromContext(l)
+              (args(0) == -2 && (index & 0x1) == 0) =>
+            removeIfParamLiteralFromContext(l)
             newLiteral(l.value, l.dataType)
           case e => e
         })
@@ -861,7 +890,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
         (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
           if (exprs.length == 1) exprs.head else CreateStruct(exprs)
         ) |
-        query ~ ')' ~ ws ~> (ScalarSubquery(_))
+        query ~ ')' ~ ws ~> { (plan: LogicalPlan) =>
+          session.planCaching = false // never cache scalar subquery plans
+          ScalarSubquery(plan)
+        }
     ) |
     signedPrimary |
     '~' ~ ws ~ expression ~> BitwiseNot
@@ -881,10 +913,10 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
     SELECT ~ (DISTINCT ~ push(true)).? ~
     TOKENIZE_BEGIN ~ (namedExpression + commaSep) ~ TOKENIZE_END ~
     (FROM ~ relations).? ~
-    (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
+    TOKENIZE_BEGIN ~ (WHERE ~ expression).? ~
     groupBy.? ~
-    (HAVING ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~
-    queryOrganization ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
+    (HAVING ~ expression).? ~
+    queryOrganization ~ TOKENIZE_END ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
         q: LogicalPlan => LogicalPlan) =>
       val base = f match {
         case Some(plan) => plan.asInstanceOf[LogicalPlan]

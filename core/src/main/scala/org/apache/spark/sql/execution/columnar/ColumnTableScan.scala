@@ -820,37 +820,37 @@ object ColumnTableScan extends Logging {
         if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
         buildFilter(lhs) || buildFilter(rhs)
 
-      case EqualTo(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case EqualTo(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case EqualTo(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
 
-      case In(a: AttributeReference, l) if !l.exists(!LiteralValue.isConstant(_)) =>
+      case In(a: AttributeReference, l) if !l.exists(!TokenLiteral.isConstant(_)) =>
         statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
-      case DynamicInSet(a: AttributeReference, l) if !l.exists(!LiteralValue.isConstant(_)) =>
+      case DynamicInSet(a: AttributeReference, l) if !l.exists(!TokenLiteral.isConstant(_)) =>
         statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
 
-      case LessThan(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case LessThan(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound < l
-      case LessThan(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case LessThan(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         l < statsFor(a).upperBound
 
-      case LessThanOrEqual(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case LessThanOrEqual(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l
-      case LessThanOrEqual(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case LessThanOrEqual(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         l <= statsFor(a).upperBound
 
-      case GreaterThan(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case GreaterThan(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         l < statsFor(a).upperBound
-      case GreaterThan(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case GreaterThan(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound < l
 
-      case GreaterThanOrEqual(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case GreaterThanOrEqual(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         l <= statsFor(a).upperBound
-      case GreaterThanOrEqual(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case GreaterThanOrEqual(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l
 
-      case StartsWith(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case StartsWith(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         val stats = statsFor(a)
         val pattern = if (l.dataType == StringType) l else Cast(l, StringType)
         StartsWithForStats(stats.upperBound, stats.lowerBound, pattern)
@@ -1000,7 +1000,7 @@ case class StartsWithForStats(upper: Expression, lower: Expression,
     pattern: Expression) extends Expression {
 
   // pattern must be a string constant for stats row evaluation
-  assert(LiteralValue.isConstant(pattern))
+  assert(TokenLiteral.isConstant(pattern))
   assert(pattern.dataType == StringType)
 
   override final def children: Seq[Expression] = Seq(upper, lower, pattern)

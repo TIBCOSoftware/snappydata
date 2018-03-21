@@ -71,14 +71,16 @@ class TokenizationTest
   test("SNAP-2031 tpcds") {
     val sqlstr = s"WITH ss AS (SELECT s_store_sk, sum(ss_ext_sales_price) AS sales, " +
         s"sum(ss_net_profit) AS profit FROM store_sales, date_dim, store WHERE ss_sold_date_sk" +
-        s" = d_date_sk AND d_date BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE)" +
+        s" = d_date_sk AND d_date BETWEEN cast('2000-08-03' AS DATE) AND" +
+        s" (cast('2000-08-03' AS DATE)" +
         s" + INTERVAL 30 days) AND ss_store_sk = s_store_sk GROUP BY s_store_sk), sr AS" +
         s" (SELECT s_store_sk, sum(sr_return_amt) AS returns, sum(sr_net_loss) AS profit_loss" +
         s" FROM store_returns, date_dim, store WHERE sr_returned_date_sk = d_date_sk AND d_date" +
         s" BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE) + INTERVAL 30 days)" +
         s" AND sr_store_sk = s_store_sk GROUP BY s_store_sk), cs AS (SELECT cs_call_center_sk," +
         s" sum(cs_ext_sales_price) AS sales, sum(cs_net_profit) AS profit FROM catalog_sales," +
-        s" date_dim WHERE cs_sold_date_sk = d_date_sk AND d_date BETWEEN cast('2000-08-03' AS DATE)" +
+        s" date_dim WHERE cs_sold_date_sk = d_date_sk AND d_date BETWEEN " +
+        s"cast('2000-08-03' AS DATE)" +
         s" AND (cast('2000-08-03' AS DATE) + INTERVAL 30 days) GROUP BY cs_call_center_sk)," +
         s" cr AS (SELECT sum(cr_return_amount) AS returns, sum(cr_net_loss) AS profit_loss FROM" +
         s" catalog_returns, date_dim WHERE cr_returned_date_sk = d_date_sk AND d_date BETWEEN" +
@@ -88,17 +90,24 @@ class TokenizationTest
         s" d_date BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE)" +
         s" + INTERVAL 30 days) AND ws_web_page_sk = wp_web_page_sk GROUP BY wp_web_page_sk)," +
         s" wr AS (SELECT wp_web_page_sk, sum(wr_return_amt) AS returns, sum(wr_net_loss) " +
-        s"AS profit_loss FROM web_returns, date_dim, web_page WHERE wr_returned_date_sk = d_date_sk" +
-        s" AND d_date BETWEEN cast('2000-08-03' AS DATE) AND (cast('2000-08-03' AS DATE) + INTERVAL 30 days)" +
-        s" AND wr_web_page_sk = wp_web_page_sk GROUP BY wp_web_page_sk) SELECT channel, id, sum(sales)" +
-        s" AS sales, sum(returns) AS returns, sum(profit) AS profit FROM (SELECT  'store channel' AS channel," +
-        s"  ss.s_store_sk AS id,  sales,  coalesce(returns, 0) AS returns,  (profit - coalesce(profit_loss, 0))" +
+        s"AS profit_loss FROM web_returns, date_dim, web_page " +
+        s"WHERE wr_returned_date_sk = d_date_sk" +
+        s" AND d_date BETWEEN cast('2000-08-03' AS DATE) AND " +
+        s"(cast('2000-08-03' AS DATE) + INTERVAL 30 days)" +
+        s" AND wr_web_page_sk = wp_web_page_sk GROUP BY wp_web_page_sk) " +
+        s"SELECT channel, id, sum(sales)" +
+        s" AS sales, sum(returns) AS returns, sum(profit) AS profit FROM " +
+        s"(SELECT  'store channel' AS channel," +
+        s"  ss.s_store_sk AS id,  sales,  coalesce(returns, 0) AS returns, " +
+        s"(profit - coalesce(profit_loss, 0))" +
         s" AS profit  FROM ss  LEFT JOIN sr  ON ss.s_store_sk = sr.s_store_sk  UNION ALL " +
         s" SELECT  'catalog channel' AS channel,  cs_call_center_sk AS id,  sales,  returns," +
-        s"  (profit - profit_loss) AS profit  FROM cs, cr  UNION ALL  SELECT  'web channel' AS channel," +
-        s"  ws.wp_web_page_sk AS id,  sales,  coalesce(returns, 0) returns,  (profit - coalesce(profit_loss, 0))" +
-        s" AS profit  FROM ws  LEFT JOIN wr  ON ws.wp_web_page_sk = wr.wp_web_page_sk ) x GROUP BY ROLLUP (channel, id)" +
-        s" ORDER BY channel, id LIMIT 100"
+        s"  (profit - profit_loss) AS profit  FROM cs, cr  UNION ALL " +
+        s"SELECT  'web channel' AS channel," +
+        s"  ws.wp_web_page_sk AS id,  sales,  coalesce(returns, 0) returns," +
+        s" (profit - coalesce(profit_loss, 0))" +
+        s" AS profit  FROM ws  LEFT JOIN wr  ON ws.wp_web_page_sk = wr.wp_web_page_sk ) x " +
+        s"GROUP BY ROLLUP (channel, id) ORDER BY channel, id LIMIT 100"
     try {
       snc.sql(sqlstr)
       fail(s"this should have given TableNotFoundException")
@@ -144,7 +153,7 @@ class TokenizationTest
 
   test("like queries") {
     val numRows = 100
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
 
     {
       val q = s"select * from $table where a like '10%'"
@@ -158,7 +167,7 @@ class TokenizationTest
 
   test("same session from different thread") {
     val numRows = 2
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
 
     {
       val q = (0 until numRows) map { x =>
@@ -209,7 +218,7 @@ class TokenizationTest
 
   test("Test some more foldable expressions and limit in where clause") {
     val numRows = 10
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
     val cacheMap = SnappySession.getPlanCache.asMap()
     assert(cacheMap.size() == 0)
     var res = snc.sql(s"select * from $table where a in " +
@@ -217,7 +226,7 @@ class TokenizationTest
     assert(res.length == 2)
     // This should not be tokenized and so cachemap size should be 0
     assert( cacheMap.size() == 0)
-    createSimpleTableWithAStringColumnAndPoupulateData(100, "tab_str", true)
+    createSimpleTableWithAStringColumnAndPoupulateData(100, "tab_str")
     res = snc.sql(s"select * from tab_str where b = 'aa12bb' and b like 'aa1%'").collect()
     assert(res.length == 1)
     // this is converted to Literal by parser so plan is cached
@@ -299,7 +308,7 @@ class TokenizationTest
 
   test("Test plan caching and tokenization disabled in session") {
     val numRows = 10
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
 
     try {
       val q = (0 until numRows) map { x =>
@@ -392,13 +401,14 @@ class TokenizationTest
 
   test("Test tokenize and queryHints and noTokenize if limit or projection") {
     val numRows = 10
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
 
     try {
       val q = (0 until numRows) map { x =>
         s"select * from $table where a = $x"
       }
       val start = System.currentTimeMillis()
+      // scalastyle:off println
       q.zipWithIndex.foreach  { case (x, i) =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
@@ -411,6 +421,7 @@ class TokenizationTest
 
       // snc.sql(s"select * from $table where a = 1200").collect()
       println("Time taken = " + (end - start))
+      // scalastyle:on println
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
@@ -559,7 +570,7 @@ class TokenizationTest
       val end = System.currentTimeMillis()
 
       // snc.sql(s"select * from $table where a = 1200").collect()
-      println("Time taken = " + (end - start))
+      // println("Time taken = " + (end - start))
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
@@ -578,7 +589,7 @@ class TokenizationTest
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     snc.sql(s"set spark.sql.crossJoin.enabled=true")
     val numRows = 10
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
     createSimpleTableAndPoupulateData(numRows, s"$table2")
     var query = s"select * from $table t1, $table2 t2 where t1.a in " +
       s"( select a from $table2 where b = 5 )"
@@ -618,13 +629,15 @@ class TokenizationTest
   test("Test tokenize for joins and sub-queries") {
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     val numRows = 10
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
     createSimpleTableAndPoupulateData(numRows, s"$table2")
     var query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 5 limit 2"
     // snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
     val result1 = snc.sql(query).collect()
+    // scalastyle:off println
     result1.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
+      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+          ", " + r.get(5))
     })
     val cacheMap = SnappySession.getPlanCache.asMap()
 
@@ -633,8 +646,10 @@ class TokenizationTest
     query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 7 limit 2"
     val result2 = snc.sql(query).collect()
     result2.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) + ", " + r.get(5))
+      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+          ", " + r.get(5))
     })
+    // scalastyle:on println
     assert( cacheMap.size() == 1)
     assert(!result1.sameElements(result2))
     assert(result1.length > 0)
@@ -679,8 +694,7 @@ class TokenizationTest
       " then null else count(*) end as cnt from r where l.a = r.c) = 0").count == 4)
   }
 
-  private def createSimpleTableWithAStringColumnAndPoupulateData(numRows: Int, name: String,
-      dosleep: Boolean = false) = {
+  private def createSimpleTableWithAStringColumnAndPoupulateData(numRows: Int, name: String) = {
     val strs = (0 to numRows).map(i => s"aa${i}bb")
     val data = ((0 to numRows), (0 to numRows), strs).zipped.toArray
     val rdd = sc.parallelize(data, data.length)
@@ -691,13 +705,10 @@ class TokenizationTest
     snc.sql(s"Create Table $name (a INT, b string, c INT) " +
       "using column options()")
     dataDF.write.insertInto(s"$name")
-    // This sleep was necessary as it has some dependency on the region size
-    // collector thread frequency. Can't remember right now.
-    if (dosleep) Thread.sleep(5000)
+    SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
   }
 
-  private def createSimpleTableAndPoupulateData(numRows: Int, name: String,
-      dosleep: Boolean = false) = {
+  private def createSimpleTableAndPoupulateData(numRows: Int, name: String) = {
     val data = ((0 to numRows), (0 to numRows), (0 to numRows)).zipped.toArray
     val rdd = sc.parallelize(data, data.length)
       .map(s => Data(s._1, s._2, s._3))
@@ -707,14 +718,11 @@ class TokenizationTest
     snc.sql(s"Create Table $name (a INT, b INT, c INT) " +
       "using column options()")
     dataDF.write.insertInto(s"$name")
-    // This sleep was necessary as it has some dependency on the region size
-    // collector thread frequency. Can't remember right now.
-    if (dosleep) Thread.sleep(5000)
+    SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
   }
 
   private def createAllTypeTableAndPoupulateData(numRows: Int,
-      name: String,
-      dosleep: Boolean = false) = {
+      name: String) = {
     val ints = (0 to numRows).zipWithIndex.map {case (_, i) =>
       i
     }
@@ -725,7 +733,7 @@ class TokenizationTest
     val dates = (0 to numRows).zipWithIndex.map    { case (_, i) => 1         }
     val tstmps = (0 to numRows).zipWithIndex.map   { case (_, i) => s"abc$i"  }
 
-    val x =((((((ints, longs).zipped.toArray, floats).zipped.toArray,
+    val x = ((((((ints, longs).zipped.toArray, floats).zipped.toArray,
       decimals).zipped.toArray, strs).zipped.toArray, dates).zipped.toArray, tstmps).zipped.toArray
     val data = x map { case ((((((i, l), f), d), s), dt), ts) =>
       (i, l, f, d, s, dt, ts)
@@ -740,9 +748,7 @@ class TokenizationTest
       "using column options()")
 
     dataDF.write.insertInto(name)
-    // This sleep was necessary as it has some dependency on the region size
-    // collector thread frequency. Can't remember right now.
-    if (dosleep) Thread.sleep(5000)
+    SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
   }
 
   val colTableName = "airlineColTable"
@@ -946,11 +952,31 @@ class TokenizationTest
 
     assert(cacheMap.size() == 5)
 
-    // check for non-constant expressions
+    // check for non-deterministic expressions
+
+    // RAND should not be cached since seed will be different each time
     query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
         "('YV', 'AQ', 'VX', null, 'US', 'EV', 'MQ', cast(rand() as string), 'OO', 'XE', 'NW')"
     query2 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
         "('MQ', 'DL', 'OO', null, 'NW', 'UA', 'F9', cast(rand() as string), 'AA', 'FL', 'HA')"
+
+    res1 = spark.sql(query1).collect()
+    res2 = spark.sql(query2).collect()
+    df1 = snc.sql(query1)
+    df2 = snc.sql(query2)
+
+    checkAnswer(df1, res1)
+    checkAnswer(df2, res2)
+    checkDynInSet(df1, present = false)
+    checkDynInSet(df2, present = false)
+
+    assert(cacheMap.size() == 5)
+
+    // spark_partition_id() should be cached
+    query1 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('YV', 'AQ', 'VX', null, 'US', 'EV', 'MQ', cast(spark_partition_id() as string), 'OO')"
+    query2 = s"select avg(arrDelay) from $colTableName where uniqueCarrier in " +
+        "('MQ', 'DL', 'OO', null, 'NW', 'UA', 'F9', cast(spark_partition_id() as string), 'AA')"
 
     res1 = spark.sql(query1).collect()
     res2 = spark.sql(query2).collect()
@@ -1032,7 +1058,7 @@ class TokenizationTest
   test("Test BUG SNAP-1642") {
     val maxquery = s"select * from $table where a = (select max(a) from $table)"
     val numRows = 10
-    createSimpleTableAndPoupulateData(numRows, s"$table", true)
+    createSimpleTableAndPoupulateData(numRows, s"$table")
 
     val rs1 = snc.sql(maxquery)
     val rows1 = rs1.collect()

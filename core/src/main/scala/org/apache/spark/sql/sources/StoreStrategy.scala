@@ -178,10 +178,6 @@ final class Insert(
   override def output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil
 
-  override def makeCopy(newArgs: Array[AnyRef]): LogicalPlan = {
-    super.makeCopy(newArgs)
-  }
-
   override def copy(table: LogicalPlan = table,
       partition: Map[String, Option[String]] = partition,
       child: LogicalPlan = child,

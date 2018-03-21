@@ -38,7 +38,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, LiteralValue}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
@@ -411,12 +411,12 @@ object ExternalStoreUtils {
     case _: expressions.EqualTo | _: expressions.LessThan | _: expressions.GreaterThan |
          _: expressions.LessThanOrEqual | _: expressions.GreaterThanOrEqual =>
       val b = f.asInstanceOf[BinaryExpression]
-      !((b.left.isInstanceOf[Attribute] && LiteralValue.isConstant(b.right)) ||
-          (LiteralValue.isConstant(b.left) && b.right.isInstanceOf[Attribute]))
+      !((b.left.isInstanceOf[Attribute] && TokenLiteral.isConstant(b.right)) ||
+          (TokenLiteral.isConstant(b.left) && b.right.isInstanceOf[Attribute]))
     case expressions.IsNull(_: Attribute) | expressions.IsNotNull(_: Attribute) => false
     case _: expressions.StartsWith | _: expressions.EndsWith | _: expressions.Contains =>
       val b = f.asInstanceOf[BinaryExpression]
-      !(b.left.isInstanceOf[Attribute] && LiteralValue.isConstant(b.right))
+      !(b.left.isInstanceOf[Attribute] && TokenLiteral.isConstant(b.right))
     case _ => true
   }
 
