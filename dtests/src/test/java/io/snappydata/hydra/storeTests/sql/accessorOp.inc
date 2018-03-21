@@ -9,7 +9,6 @@ hydra.gemfirexd.GfxdHelperPrms-persistDD = fcn "hydra.TestConfigFcns.oneof(\"tru
 hydra.GemFirePrms-roles =
   fcn "hydra.TestConfigFcns.duplicate(\"gemfirexd.datastore\", ${${B}Hosts})" ncf
   fcn "hydra.TestConfigFcns.duplicate(\"gemfirexd.accessor\", ${${C}Hosts})" ncf; // setup accessor
-  & dataStore
 
 THREADGROUP locator
   totalThreads = fcn  ${${A}Hosts} * ${${A}VMsPerHost} * ${${A}ThreadsPerVM} ncf
