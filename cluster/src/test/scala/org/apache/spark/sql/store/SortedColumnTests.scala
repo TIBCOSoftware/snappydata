@@ -73,39 +73,35 @@ class SortedColumnTests extends ColumnTablesTestBase {
 object SortedColumnTests extends Logging {
   private val baseDataPath = s"/home/vivek/work/testData/local_index"
 
-  def filePathInsert(size: Long, multiple: Int = 1) : String = if (multiple > 1) {
-    s"$baseDataPath/insert${size}_$multiple"
-  } else s"$baseDataPath/insert$size"
+  def filePathInsert(size: Long, multiple: Int = 1) : String = s"$baseDataPath/insert${size}_$multiple" 
   def verfiyInsertDataExists(snc: SnappySession, size: Long, multiple: Int = 1) : Unit = {
     val dataDirInsert = new File(SortedColumnTests.filePathInsert(size, multiple))
     if (!dataDirInsert.exists()) {
       dataDirInsert.mkdir()
-      snc.sql(s"create EXTERNAL TABLE insert_table(id int, addr string, status boolean)" +
+      snc.sql(s"create EXTERNAL TABLE insert_table_$multiple(id int, addr string, status boolean)" +
           s" USING parquet OPTIONS(path '${SortedColumnTests.filePathInsert(size, multiple)}')")
       var j = 0
       while (j < multiple) {
         snc.range(size).filter(_ % 10 < 6).selectExpr("id", "concat('addr'," +
             "cast(id as string))",
-          "case when (id % 2) = 0 then true else false end").write.insertInto("insert_table")
+          "case when (id % 2) = 0 then true else false end").write.insertInto(s"insert_table_$multiple")
         j += 1
       }
     }
   }
 
-  def filePathUpdate(size: Long, multiple: Int = 1) : String = if (multiple > 1) {
-    s"$baseDataPath/update${size}_$multiple"
-  } else s"$baseDataPath/update$size"
+  def filePathUpdate(size: Long, multiple: Int = 1) : String = s"$baseDataPath/update${size}_$multiple"
   def verfiyUpdateDataExists(snc: SnappySession, size: Long, multiple: Int = 1) : Unit = {
     val dataDirUpdate = new File(SortedColumnTests.filePathUpdate(size, multiple))
     if (!dataDirUpdate.exists()) {
       dataDirUpdate.mkdir()
-      snc.sql(s"create EXTERNAL TABLE update_table(id int, addr string, status boolean)" +
+      snc.sql(s"create EXTERNAL TABLE update_table_$multiple(id int, addr string, status boolean)" +
           s" USING parquet OPTIONS(path '${SortedColumnTests.filePathUpdate(size, multiple)}')")
       var j = 0
       while (j < multiple) {
         snc.range(size).filter(_ % 10 > 5).selectExpr("id", "concat('addr'," +
             "cast(id as string))",
-          "case when (id % 2) = 0 then true else false end").write.insertInto("update_table")
+          "case when (id % 2) = 0 then true else false end").write.insertInto(s"update_table_$multiple")
         j += 1
       }
     }

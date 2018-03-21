@@ -259,11 +259,11 @@ object SortedColumnPerformanceTests {
       (f : (SnappySession, String, Int, Int, Int, Int, Boolean, Int, Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
       outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
-    SortedColumnTests.verfiyInsertDataExists(session, numElements, 1)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
     val dataFrameReader : DataFrameReader = session.read
-    val insertDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements))
+    val insertDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
+      numTimesInsert))
     val updateDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
       numTimesUpdate))
     val sessionArray = new Array[SnappySession](totalThreads)
