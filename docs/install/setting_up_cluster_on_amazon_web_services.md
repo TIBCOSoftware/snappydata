@@ -50,14 +50,13 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 
 	!!! Note: 
-	
 		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
 
 		* The SnappyData product distribution is already downloaded and extracted in the **/opt/snappydata** directory and Java 8 is installed. 
 
 13. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
 
-```bash
+```no-highlight
 ./sbin/snappy-start-all.sh
 ```
 
@@ -84,16 +83,14 @@ The scripts are available on GitHub in the [snappy-cloud-tools repository](https
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
 
 For example:
-```bash
+```no-highlight
 export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
 export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 ```
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
-### Cluster Management
-
-#### Launching SnappyData Cluster
+### Launching SnappyData Cluster
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
@@ -116,7 +113,7 @@ The  names and details of the members are automatically derived from the provide
 
 **Example**
 
-```
+```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch my-cluster
 ```
 
@@ -128,7 +125,7 @@ The example assumes that you have the key file (my-ec2-key.pem) in your home dir
 !!! Note:
 	By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region ensure that you set the region property `--region=`.
 
-#### Specifying properties
+### Specifying properties
 
 If you want to configure each of the locator, lead, or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under **aws/ec2/deploy/home/ec2-user/snappydata/**. Refer to [this SnappyData documentation page](../configuring_cluster/configuring_cluster.md#configuration-files) for example on how to configure these configuration files.</br>
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.</br>
@@ -137,14 +134,14 @@ The important difference here is that, instead of the host names of the locator,
 The sample configuration files for a cluster with 2 locators, 1 lead and 2 stores are given below:
 
 *locators*
-````
+````no-highlight
 {{LOCATOR_0}} -peer-discovery-port=9999 -heap-size=1024m
 {{LOCATOR_1}} -peer-discovery-port=9888 -heap-size=1024m
 ````
 *leads*
-````
+````no-highlight
 {{LEAD_0}} -heap-size=4096m -spark.ui.port=3333 -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -spark.executor.cores=10
-````
+````no-highlight
 *servers*
 ````
 {{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888
@@ -153,70 +150,70 @@ The sample configuration files for a cluster with 2 locators, 1 lead and 2 store
 When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/home/ec2-user/snappydata/** and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options `--locators`, `--leads` or `--stores` must match to the number of entries in their respective configuration file.
 </br>The script also reads **snappy-env.sh**, if present in this location.
 
-#### Stopping a cluster
+### Stopping the cluster
 
 When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost. However, the data saved on EBS volumes is retained, unless the spot-instances are used.
 
-````
+````no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
 ````
 
-#### Starting a cluster
+### Resuming the cluster
 
 When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches SnappyData processes on them.
-````
+````no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
 ````
 !!!Note: 
 	The start command (or launch command with `--resume` option) ignores the `--locators`, `--leads` or `--stores` options, and launches the SnappyData cluster on existing instances. The configuration files however, are read if they are present in the location mentioned above. You therefore must ensure that every time you use the `start` command, the number of entries in configuration files are equal to the number of instances in their respective security group.
 
-#### Adding servers to a cluster
+### Adding servers to the cluster
 
 This is not yet fully supported using the script. You may have to manually launch an instance with `(cluster-name)-stores` group, and then use launch command with the `--resume` option.
 
-#### Listing members of a cluster
+### Listing members of the cluster
 
 **To get the first locator's hostname:**
-````
+```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem get-locator cluster-name
-````
+```
 Use the `get-lead` command to get the first lead's hostname.
 
-#### Connecting to a cluster
+### Connecting to the cluster
 
 You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. You can then use SSH to connect to any other member of the cluster without a password. </br>
 The SnappyData product directory is located under **/home/ec2-user/snappydata/** on all the members.
-````
+```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
-````
+```
 
-#### Destroying a cluster
+### Destroying the cluster
 
 Destroying a cluster permanently destroys all the data on the local instance stores and on the attached EBS volumes.
-````
+```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem destroy cluster-name
-````
+```
 This retains the security groups created for this cluster. To delete this, use it with `--delete-` group option.
 
-#### Starting cluster with Apache Zeppelin
+### Starting cluster with Apache Zeppelin
 
 Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
 
-````
+```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin launch cluster-name
-````
+```
 
 ### More options
 
-For a complete list of options provided by the script run `./snappy-ec2`. </br>The options are also provided below for quick reference.
+For a complete list of options provided by the script run `./snappy-ec2` (available in the  snappydata-ec2-<version>.tar.gz compressed file). </br>The options are also provided below for quick reference.
 
-```pre
-Usage: `snappy-ec2 [options] <action> <cluster_name>`
+```no-highlight
+Usage: snappy-ec2 [options] <action> <cluster_name>
 
 <action> can be: launch, destroy, login, stop, start, get-locator, get-lead, reboot-cluster
 
 Options:
-  --version             show programs version number and exit
+  --version             show program's version number and exit
   -h, --help            show this help message and exit
   -s STORES, --stores=STORES
                         Number of stores to launch (default: 1)
@@ -225,7 +222,7 @@ Options:
   -w WAIT, --wait=WAIT  DEPRECATED (no longer necessary) - Seconds to wait for
                         nodes to start
   -k KEY_PAIR, --key-pair=KEY_PAIR
-                        Key pair to use on instances
+                        Name of the key pair to use on instances
   -i IDENTITY_FILE, --identity-file=IDENTITY_FILE
                         SSH private key file to use for logging into instances
   -p PROFILE, --profile=PROFILE
@@ -233,28 +230,26 @@ Options:
                         you can configure additional, named profiles by using
                         this option (default: none)
   -t INSTANCE_TYPE, --instance-type=INSTANCE_TYPE
-                        Type of instance to launch (default: m3.large).
+                        Type of instance to launch (default: m4.large).
                         WARNING: must be 64-bit; small instances won't work
   --locator-instance-type=LOCATOR_INSTANCE_TYPE
-                        Locator instance type (leave empty for same as
-                        instance-type)
+                        Locator instance type (default: t2.medium)
   -r REGION, --region=REGION
-                        EC2 region used to launch instances in or to find
+                        EC2 region used to launch instances in, or to find
                         them in (default: us-east-1)
   -z ZONE, --zone=ZONE  Availability zone to launch instances in, or 'all' to
                         spread stores across multiple (an additional $0.01/Gb
                         for bandwidthbetween zones applies) (default: a single
                         zone chosen at random)
   -a AMI, --ami=AMI     Amazon Machine Image ID to use
-  -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
-                        Version of SnappyData to use: 'X.Y.Z' (default:
-                        LATEST)
-  --with-zeppelin
-                        Launch Apache Zeppelin server with the cluster. It'll
+  --enterprise          Use SnappyData Enterprise edition AMI from AWS
+                        Marketplace to launch the cluster. Overrides --ami
+                        option. Extra charges apply. (default: False)
+  --with-zeppelin       Launch Apache Zeppelin server with the cluster. It'll
                         be launched on the same instance where lead node will
                         be running.
   --deploy-root-dir=DEPLOY_ROOT_DIR
-                        A directory to copy into/on the first master. Must
+                        A directory to copy into / on the first locator. Must
                         be absolute. Note that a trailing slash is handled as
                         per rsync: If you omit it, the last directory of the
                         --deploy-root-dir path will be created in / before
@@ -278,7 +273,7 @@ Options:
                         Which placement group to try and launch instances
                         into. Assumes placement group is already created.
   --spot-price=PRICE    If specified, launch stores as spot instances with the
-                        given a maximum price (in dollars)
+                        given maximum price (in dollars)
   -u USER, --user=USER  The SSH user you want to connect as (default:
                         ec2-user)
   --delete-groups       When destroying a cluster, delete the security groups
@@ -298,6 +293,9 @@ Options:
                         Additional tags to set on the machines; tags are
                         comma-separated, while name and value are colon
                         separated; ex: "Task:MySnappyProject,Env:production"
+  --copy-aws-credentials
+                        Add AWS credentials to hadoop configuration to allow
+                        Snappy to access S3
   --subnet-id=SUBNET_ID
                         VPC subnet to launch instances in
   --vpc-id=VPC_ID       VPC to launch instances in

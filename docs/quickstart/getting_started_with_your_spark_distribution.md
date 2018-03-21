@@ -5,7 +5,7 @@ If you are a Spark developer and already using Spark 2.1.1 the fastest way to wo
 
 Open a command terminal, go to the location of the Spark installation directory, and enter the following:
 
-```bash
+```no-highlight
 $ cd <Spark_Install_dir>
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir

@@ -99,18 +99,12 @@ private[sql] abstract class PartitionedPhysicalScan(
     if (numPartitions == 1 && numBuckets == 1) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      if (callbacks != null) {
-        // when buckets are linked to partitions then numBuckets have
-        // to be sent as zero to skip considering buckets in partitioning
-        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-        callbacks.getOrderlessHashPartitioning(partitionColumns,
-          partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets || session.preferPrimaries) 0 else numBuckets,
-          numBuckets)
-      } else {
-        HashPartitioning(partitionColumns, numPartitions)
-      }
+      // when buckets are linked to partitions then numBuckets have
+      // to be sent as zero to skip considering buckets in partitioning
+      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
+      HashPartitioning(partitionColumns, if (linkPart) numBuckets else numPartitions)
+
     } else super.outputPartitioning
   }
 
@@ -221,7 +215,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
         (callSite.shortForm, callSite.longForm,
             PartitionedPhysicalScan.getSparkPlanInfo(child))
       case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
-          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
+          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key), null))
     }
     val sc = session.sparkContext
     val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
