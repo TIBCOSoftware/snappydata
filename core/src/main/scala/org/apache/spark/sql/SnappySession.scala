@@ -2047,10 +2047,11 @@ object SnappySession extends Logging {
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
-    val plan = session.sessionState.preCacheRules.execute(parser.parsePlan(sqlText))
+    val parsed = parser.parsePlan(sqlText)
+    val planCaching = session.planCaching
+    val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
     val paramsId = parser.sqlParser.getCurrentParamsId
-    val planCaching = session.planCaching
     val key = CachedKey(session, plan, sqlText, paramLiterals, planCaching)
     var cachedDF: CachedDataFrame = if (planCaching) planCache.getIfPresent(key) else null
     if (cachedDF eq null) {
