@@ -105,5 +105,3 @@ sql.SQLPrms-useGfxdConfig = true;
 sql.SQLPrms-hasCompanies=false; //true;
 sql.SQLPrms-companiesTableDDLExtension = "trade.companies:random";
 sql.SQLPrms-numOfWorkers = fcn "(${${C}Hosts} * ${${C}VMsPerHost} *  ${${C}ThreadsPerVM}) " ncf;
-
-connectionPool.SnappyConnectionPoolPrms-url = "jdbc:snappydata:thrift://";
