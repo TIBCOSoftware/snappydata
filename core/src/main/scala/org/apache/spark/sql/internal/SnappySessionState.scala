@@ -278,57 +278,6 @@ class SnappySessionState(snappySession: SnappySession)
       Array[Partition]](16, 0.7f, 1)
 
   /**
-   * Rule to "normalize" ParamLiterals for the case of aggregation expression being used
-   * in projection. Specifically the ParamLiterals from aggregations need to be replaced
-   * into projection so that latter can be resolved successfully in plan execution
-   * because ParamLiterals will match expression only by position and not value at the
-   * time of execution. This rule is useful only before plan caching after parsing.
-   *
-   * See Spark's PhysicalAggregation rule for more details.
-   */
-  object ResolveAggregationExpressions extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-      case Aggregate(groupingExpressions, resultExpressions, child) =>
-        // Replace any ParamLiterals in the original resultExpressions with any matching ones
-        // in groupingExpressions matching on the value like a Literal rather than position.
-        val newResultExpressions = resultExpressions.map { expr =>
-          expr.transformDown {
-            case e: AggregateExpression => e
-            case expression =>
-              groupingExpressions.collectFirst {
-                case p: ParamLiteral if p.equals(expression) =>
-                  expression.asInstanceOf[ParamLiteral].tokenized = true
-                  p.tokenized = true
-                  p
-                case e if e.semanticEquals(expression) =>
-                  // collect ParamLiterals from grouping expressions and apply
-                  // to result expressions in the same order
-                  val literals = new ArrayBuffer[ParamLiteral](2)
-                  e.transformDown {
-                    case p: ParamLiteral => literals += p; p
-                  }
-                  if (literals.nonEmpty) {
-                    val iter = literals.iterator
-                    expression.transformDown {
-                      case p: ParamLiteral =>
-                        val newLiteral = iter.next()
-                        assert(newLiteral.equals(p))
-                        p.tokenized = true
-                        newLiteral.tokenized = true
-                        newLiteral
-                    }
-                  } else expression
-              } match {
-                case Some(e) => e
-                case _ => expression
-              }
-          }.asInstanceOf[NamedExpression]
-        }
-        Aggregate(groupingExpressions, newResultExpressions, child)
-    }
-  }
-
-  /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
    */
   object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
@@ -1228,5 +1177,56 @@ object LikeEscapeSimplification {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
     case l@Like(left, Literal(pattern, StringType)) =>
       simplifyLike(null, l, left, pattern.toString)
+  }
+}
+
+/**
+ * Rule to "normalize" ParamLiterals for the case of aggregation expression being used
+ * in projection. Specifically the ParamLiterals from aggregations need to be replaced
+ * into projection so that latter can be resolved successfully in plan execution
+ * because ParamLiterals will match expression only by position and not value at the
+ * time of execution. This rule is useful only before plan caching after parsing.
+ *
+ * See Spark's PhysicalAggregation rule for more details.
+ */
+object ResolveAggregationExpressions extends Rule[LogicalPlan] {
+  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+    case Aggregate(groupingExpressions, resultExpressions, child) =>
+      // Replace any ParamLiterals in the original resultExpressions with any matching ones
+      // in groupingExpressions matching on the value like a Literal rather than position.
+      val newResultExpressions = resultExpressions.map { expr =>
+        expr.transformDown {
+          case e: AggregateExpression => e
+          case expression =>
+            groupingExpressions.collectFirst {
+              case p: ParamLiteral if p.equals(expression) =>
+                expression.asInstanceOf[ParamLiteral].tokenized = true
+                p.tokenized = true
+                p
+              case e if e.semanticEquals(expression) =>
+                // collect ParamLiterals from grouping expressions and apply
+                // to result expressions in the same order
+                val literals = new ArrayBuffer[ParamLiteral](2)
+                e.transformDown {
+                  case p: ParamLiteral => literals += p; p
+                }
+                if (literals.nonEmpty) {
+                  val iter = literals.iterator
+                  expression.transformDown {
+                    case p: ParamLiteral =>
+                      val newLiteral = iter.next()
+                      assert(newLiteral.equals(p))
+                      p.tokenized = true
+                      newLiteral.tokenized = true
+                      newLiteral
+                  }
+                } else expression
+            } match {
+              case Some(e) => e
+              case _ => expression
+            }
+        }.asInstanceOf[NamedExpression]
+      }
+      Aggregate(groupingExpressions, newResultExpressions, child)
   }
 }
