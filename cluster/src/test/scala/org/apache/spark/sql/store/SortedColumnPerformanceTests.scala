@@ -120,6 +120,19 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery)
     // Thread.sleep(5000000)
   }
+
+  test("JoinQuery performance") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val jnTableName = "joinDeltaTable"
+    val numElements = 999551
+    val numBuckets = 3
+    val numIters = 1
+    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+      numIters, "JoinQuery", numTimesInsert = 200, doVerifyFullSize = true,
+      joinTableName = Some(jnTableName))(SortedColumnPerformanceTests.executeQuery_JoinQuery)
+    // Thread.sleep(5000000)
+  }
 }
 
 object SortedColumnPerformanceTests {
@@ -199,8 +212,8 @@ object SortedColumnPerformanceTests {
     }
   }
 
-  def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+  def executeQuery_PointQuery(session: SnappySession, colTableName: String, joinTableName: String,
+      numIters: Int, iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
       numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param = getParam(iterCount, params)
     val query = s"select * from $colTableName where id = $param"
@@ -214,8 +227,8 @@ object SortedColumnPerformanceTests {
     passed
   }
 
-  def executeQuery_RangeQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+  def executeQuery_RangeQuery(session: SnappySession, colTableName: String, joinTableName: String,
+      numIters: Int, iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
       numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param1 = getParam(iterCount, params1)
     val param2 = getParam(iterCount, params2)
@@ -230,16 +243,35 @@ object SortedColumnPerformanceTests {
     passed
   }
 
+  def executeQuery_JoinQuery(session: SnappySession, colTableName: String, joinTableName: String,
+      numIters: Int, iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
+    val param = getParam(iterCount, params)
+    val query = s"select * from $colTableName A inner join $joinTableName B on A.id = B.id"
+    val joinDF = session.sql(query)
+    var i = 0
+    joinDF.foreach(_ => i += 1)
+    val expectedNumResults = i
+    val result = i
+    val passed = result == expectedNumResults
+    // scalastyle:off
+    // println(s"Query = $query iterCount=$iterCount result=$result $passed $expectedNumResults")
+    // scalastyle:on
+    passed
+  }
+
   // scalastyle:off
   def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, numIters: Int, queryMark: String, isMultithreaded: Boolean = false,
       doVerifyFullSize: Boolean = false, numTimesInsert: Int = 1, numTimesUpdate: Int = 1,
-      totalThreads: Int = 1, runTime: FiniteDuration = 2.seconds)
+      totalThreads: Int = 1, runTime: FiniteDuration = 2.seconds,
+      joinTableName: Option[String] = None)
       // scalastyle:on
-      (f : (SnappySession, String, Int, Int, Int, Int, Boolean, Int, Int) => Boolean): Unit = {
+      (f : (SnappySession, String, String, Int, Int, Int, Int, Boolean, Int,
+          Int) => Boolean): Unit = {
     val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
       outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
-    SortedColumnTests.verfiyInsertDataExists(session, numElements, 1)
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, multiple = 1)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
     val dataFrameReader : DataFrameReader = session.read
@@ -251,7 +283,7 @@ object SortedColumnPerformanceTests {
       sessionArray(i) = session.newSession()
       sessionArray(i).conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       sessionArray(i).conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-      sessionArray(i).conf.set(Property.ForceLinkPartitionsToBuckets.name, "true")
+      sessionArray(i).conf.set(Property.ForceLinkPartitionsToBuckets.name, "true") // remove ?
     })
 
     def addBenchmark(name: String, params: Map[String, String] = Map()): Unit = {
@@ -262,6 +294,9 @@ object SortedColumnPerformanceTests {
       def prepare(): Unit = {
         params.foreach { case (k, v) => session.conf.set(k, v) }
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
+        if (joinTableName.isDefined) {
+          SortedColumnTests.createColumnTable(session, joinTableName.get, numBuckets, numElements)
+        }
         try {
           session.conf.set(Property.ColumnBatchSize.name, "24M") // default
           session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
@@ -271,12 +306,22 @@ object SortedColumnPerformanceTests {
           var j = 0
           while (j < numTimesInsert) {
             insertDF.write.insertInto(colTableName)
+            if (joinTableName.isDefined) {
+              insertDF.write.insertInto(joinTableName.get)
+            }
             j += 1
           }
           updateDF.write.putInto(colTableName)
+          if (joinTableName.isDefined) {
+            updateDF.write.putInto(joinTableName.get)
+          }
           if (doVerifyFullSize) {
             SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,
               numTimesInsert, numTimesUpdate)
+            if (joinTableName.isDefined) {
+              SortedColumnTests.verifyTotalRows(session, joinTableName.get, numElements,
+                finalCall = true, numTimesInsert, numTimesUpdate)
+            }
           }
         } finally {
           session.conf.unset(Property.ColumnBatchSize.name)
@@ -306,14 +351,14 @@ object SortedColumnPerformanceTests {
 
       addCaseWithCleanup(benchmark, name, numIters, prepare,
         cleanup, testCleanup, isMultithreaded) { (iteratorIndex, threadId) =>
-        f(sessionArray(threadId), colTableName, numIters, iteratorIndex, totalThreads, threadId,
-          isMultithreaded, numTimesInsert, numTimesUpdate)}
+        f(sessionArray(threadId), colTableName, joinTableName, numIters, iteratorIndex,
+          totalThreads, threadId, isMultithreaded, numTimesInsert, numTimesUpdate)}
     }
 
     try {
       session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
       session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
-      session.conf.set(Property.ForceLinkPartitionsToBuckets.name, "true")
+      session.conf.set(Property.ForceLinkPartitionsToBuckets.name, "true") // remove ?
 
       // Get numbers
       addBenchmark(s"$queryMark", Map.empty)
@@ -321,6 +366,9 @@ object SortedColumnPerformanceTests {
     } finally {
       try {
         session.sql(s"drop table $colTableName")
+        if (joinTableName != null) {
+          session.sql(s"drop table $joinTableName")
+        }
       } catch {
         case _: Throwable =>
       }
