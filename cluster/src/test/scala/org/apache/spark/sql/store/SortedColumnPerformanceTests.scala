@@ -351,8 +351,9 @@ object SortedColumnPerformanceTests {
 
       addCaseWithCleanup(benchmark, name, numIters, prepare,
         cleanup, testCleanup, isMultithreaded) { (iteratorIndex, threadId) =>
-        f(sessionArray(threadId), colTableName, joinTableName, numIters, iteratorIndex,
-          totalThreads, threadId, isMultithreaded, numTimesInsert, numTimesUpdate)}
+        f(sessionArray(threadId), colTableName, joinTableName.getOrElse("TableIsNotAvailiable"),
+          numIters, iteratorIndex, totalThreads, threadId, isMultithreaded, numTimesInsert,
+          numTimesUpdate)}
     }
 
     try {
