@@ -25,6 +25,7 @@ import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.{DataFrame, DataFrameReader, SnappySession}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.snappy._
 
@@ -116,9 +117,10 @@ object SortedColumnTests extends Logging {
     // scalastyle:off
     // println(s"verifyTotalRows = ${colDf.collect().length}")
     // scalastyle:on
-    val insDF = session.read.parquet(filePathInsert(numElements, numTimesInsert))
+    val dataFrameReader: DataFrameReader = session.read
+    val insDF = dataFrameReader.parquet(filePathInsert(numElements, numTimesInsert))
     val verifyDF = if (finalCall) {
-      insDF.union(session.read.parquet(filePathUpdate(numElements, numTimesUpdate)))
+      insDF.union(dataFrameReader.parquet(filePathUpdate(numElements, numTimesUpdate)))
     } else insDF
     val resCount = colDf.except(verifyDF).count()
     assert(resCount == 0, resCount)
@@ -138,9 +140,10 @@ object SortedColumnTests extends Logging {
     session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
     createColumnTable(session, colTableName, numBuckets, numElements)
-    val insertDF = session.read.load(filePathInsert(numElements))
+    val dataFrameReader : DataFrameReader = session.read
+    val insertDF : DataFrame = dataFrameReader.load(filePathInsert(numElements))
     insertDF.write.insertInto(colTableName)
-    val updateDF = session.read.load(filePathUpdate(numElements))
+    val updateDF : DataFrame = dataFrameReader.load(filePathUpdate(numElements))
 
     try {
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false,
