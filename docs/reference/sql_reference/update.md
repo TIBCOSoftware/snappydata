@@ -2,7 +2,7 @@
 
 Update the value of one or more columns.
 
-``` pre
+```no-highlight
 { UPDATE table-name [ [ AS ] correlation-name]
         SET column-name = value
         [, column-name = value} ]*
@@ -21,14 +21,13 @@ The UPDATE statement returns the number of rows that were updated.
 
 **value**
 
-``` pre
+```no-highlight
 expression | DEFAULT
 ```
 
 ## Example
 
-
-``` pre
+```no-highlight
 -- Change the ADDRESS and SINCE  fields to null for all customers with ID greater than 10.
 UPDATE TRADE.CUSTOMERS
   SET ADDR=NULL, SINCE=NULL
@@ -48,5 +47,3 @@ UPDATE TRADE.SELLORDERS
   SET STATUS = DEFAULT
   WHERE CID = 10;
 ```
-
-

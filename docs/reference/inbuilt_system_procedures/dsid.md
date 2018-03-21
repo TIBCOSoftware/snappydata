@@ -10,7 +10,7 @@ The DSID function returns the string form of the distributed member process iden
 
 ## Example
 
-```	
+```no-highlight	
 select count(*), dsid() from AIRLINE group by dsid();
 
 count(1)            |DSID()                      

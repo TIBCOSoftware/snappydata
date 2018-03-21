@@ -5,7 +5,7 @@ The Snappy SQL shell can be used to execute SQL on SnappyData cluster. In the ba
 **Connect to a SnappyData Cluster**: </br>
 Use the `snappy-sql` and `connect client` commands on the Snappy SQL shell as follows:
 
-```scala
+```no-highlight
 $ bin/snappy-sql
 snappy> connect client '<locatorHostName>:1527';
 ```
@@ -14,7 +14,7 @@ Here, the `<locatorHostName>` is the host name of the node on which the locator 
 
 **Execute SQL queries**:</br> Once connected, you can execute SQL queries using `snappy-sql`
 
-```scala
+```no-highlight
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
 
 snappy> INSERT INTO APP.PARTSUPP VALUES(100, 1, 5000, 100);
@@ -33,7 +33,7 @@ PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST
 **View the members of cluster**: </br>
 Use the `show members` command.
 
-```scala
+```no-highlight
 snappy> show members;
 ID                            |HOST                          |KIND                          |STATUS              |NETSERVERS                    |SERVERGROUPS                  
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ localhost(21262)<v0>:22770    |localhost                     |locator(normal)   
 **View the list tables in a schema**: </br>
 Use `show tables in <schema>` command.
 
-```scala
+```no-highlight
 snappy> show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
 -----------------------------------------------------------------------------------

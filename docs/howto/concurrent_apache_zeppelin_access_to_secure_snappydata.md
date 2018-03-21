@@ -36,8 +36,10 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 ## Configure the JDBC Interpreter
 Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](https://zeppelin.apache.org/docs/0.7.0/interpreter/jdbc.html).
 
-		Zeppelin web server is started on port 8080
-		http://<IP address>:8080/#/
+```no-highlight
+Zeppelin web server is started on port 8080
+http://<IP address>:8080/#/
+```
 
 ## Configure the Interpreter
 
