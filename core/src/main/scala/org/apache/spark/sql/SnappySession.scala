@@ -175,7 +175,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   override def sql(sqlText: String): CachedDataFrame =
-    snappyContextFunctions.sql(SnappySession.getPlan(this, sqlText))
+    snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
 
   def sqlUncached(sqlText: String): DataFrame = {
     if (planCaching) {
@@ -226,7 +226,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
 
   @transient
-  private[sql] var currentKey: SnappySession.CachedKey = _
+  private[sql] var currentKey: CachedKey = _
 
   @transient
   private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
@@ -2045,69 +2045,9 @@ object SnappySession extends Logging {
 
   def getPlanCache: Cache[CachedKey, CachedDataFrame] = planCache
 
-  final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
-      val sqlText: String, val hintHashcode: Int) {
-
-    private[sql] var currentLiterals: Array[ParamLiteral] = _
-    private[sql] var currentParamsId: Int = -1
-
-    override val hashCode: Int = {
-      var h = ClientResolverUtils.addIntToHashOpt(session.hashCode(), 42)
-      h = ClientResolverUtils.addIntToHashOpt(lp.hashCode(), h)
-      ClientResolverUtils.addIntToHashOpt(hintHashcode, h)
-    }
-
-    override def equals(obj: Any): Boolean = {
-      obj match {
-        case x: CachedKey =>
-          x.hintHashcode == hintHashcode && (x.session eq session) && x.lp == lp
-        case _ => false
-      }
-    }
-  }
-
-  object CachedKey {
-    def apply(session: SnappySession, plan: LogicalPlan, sqlText: String,
-        paramLiterals: Array[ParamLiteral], forCaching: Boolean): CachedKey = {
-
-      // TODO: SW: PERF: avoid transforming all expressions rather
-      // have a wrapper LogicalPlan having adjusted hashCode/equals
-      def normalizeExprIds: PartialFunction[Expression, Expression] = {
-        case a: AttributeReference =>
-          AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(-1))
-        case a: Alias => Alias(a.child, "none")(exprId = ExprId(-1))
-        case ae: AggregateExpression => ae.copy(resultId = ExprId(-1))
-        case s: ScalarSubquery =>
-          s.copy(plan = s.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
-        case e: Exists =>
-          e.copy(plan = e.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
-        case p: PredicateSubquery =>
-          p.copy(plan = p.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
-        case l: ListQuery =>
-          l.copy(plan = l.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
-      }
-
-      def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
-        case f@Filter(condition, child) => f.copy(
-          condition = condition.transform(normalizeExprIds),
-          child = child.transformAllExpressions(normalizeExprIds))
-        case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
-      }
-
-      // normalize lp so that two queries can be determined to be equal
-      val normalizedPlan = if (forCaching) {
-        // mark ParamLiterals as "tokenized" at this point so that comparison
-        // in the plan is based on position rather than value
-        for (l <- paramLiterals) l.tokenized = true
-        plan.transform(transformExprID)
-      } else plan
-      new CachedKey(session, normalizedPlan, sqlText, session.queryHints.hashCode())
-    }
-  }
-
-  def getPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
+  def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
-    val plan = parser.parsePlan(sqlText)
+    val plan = session.sessionState.preCacheRules.execute(parser.parsePlan(sqlText))
     val paramLiterals = parser.sqlParser.getAllLiterals
     val paramsId = parser.sqlParser.getCurrentParamsId
     val planCaching = session.planCaching
@@ -2310,5 +2250,65 @@ object SnappySession extends Logging {
       val c: Calendar = null
       d.getDate(c)
     case _ => dvd.getObject
+  }
+}
+
+final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
+    val sqlText: String, val hintHashcode: Int) {
+
+  private[sql] var currentLiterals: Array[ParamLiteral] = _
+  private[sql] var currentParamsId: Int = -1
+
+  override val hashCode: Int = {
+    var h = ClientResolverUtils.addIntToHashOpt(session.hashCode(), 42)
+    h = ClientResolverUtils.addIntToHashOpt(lp.hashCode(), h)
+    ClientResolverUtils.addIntToHashOpt(hintHashcode, h)
+  }
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case x: CachedKey =>
+        x.hintHashcode == hintHashcode && (x.session eq session) && x.lp == lp
+      case _ => false
+    }
+  }
+}
+
+object CachedKey {
+  def apply(session: SnappySession, plan: LogicalPlan, sqlText: String,
+      paramLiterals: Array[ParamLiteral], forCaching: Boolean): CachedKey = {
+
+    // TODO: SW: PERF: avoid transforming all expressions rather
+    // have a wrapper LogicalPlan having adjusted hashCode/equals
+    def normalizeExprIds: PartialFunction[Expression, Expression] = {
+      case a: AttributeReference =>
+        AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(-1))
+      case a: Alias => Alias(a.child, "none")(exprId = ExprId(-1))
+      case ae: AggregateExpression => ae.copy(resultId = ExprId(-1))
+      case s: ScalarSubquery =>
+        throw new IllegalStateException("scalar subquery should not have been present")
+      case e: Exists =>
+        e.copy(plan = e.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
+      case p: PredicateSubquery =>
+        p.copy(plan = p.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
+      case l: ListQuery =>
+        l.copy(plan = l.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
+    }
+
+    def transformExprID: PartialFunction[LogicalPlan, LogicalPlan] = {
+      case f@Filter(condition, child) => f.copy(
+        condition = condition.transform(normalizeExprIds),
+        child = child.transformAllExpressions(normalizeExprIds))
+      case q: LogicalPlan => q.transformAllExpressions(normalizeExprIds)
+    }
+
+    // normalize lp so that two queries can be determined to be equal
+    val normalizedPlan = if (forCaching) {
+      // mark ParamLiterals as "tokenized" at this point so that comparison
+      // in the plan is based on position rather than value
+      for (l <- paramLiterals) l.tokenized = true
+      plan.transform(transformExprID)
+    } else plan
+    new CachedKey(session, normalizedPlan, sqlText, session.queryHints.hashCode())
   }
 }

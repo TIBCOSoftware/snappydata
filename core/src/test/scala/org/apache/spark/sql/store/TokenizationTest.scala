@@ -23,7 +23,6 @@ import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{DynamicInSet, ParamLiteral}
 import org.apache.spark.sql.internal.SQLConf

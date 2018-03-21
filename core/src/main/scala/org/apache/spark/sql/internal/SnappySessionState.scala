@@ -124,8 +124,8 @@ class SnappySessionState(snappySession: SnappySession)
    * here so that ParamLiterals are considered as equal based of value and not position.
    */
   private[sql] lazy val preCacheRules: Analyzer = new Analyzer(catalog, conf) {
-    override lazy val batches: Seq[Batch] = Batch("Resolution", fixedPoint,
-      ResolveGroupingAnalytics :: ResolveAggregateFunctions :: Nil: _*) :: Nil
+    override lazy val batches: Seq[Batch] = Batch("Resolution", Once,
+      ResolveAggregateFunctions :: Nil: _*) :: Nil
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
