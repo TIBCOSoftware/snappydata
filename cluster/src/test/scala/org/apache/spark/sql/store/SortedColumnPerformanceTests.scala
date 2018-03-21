@@ -220,8 +220,8 @@ object SortedColumnPerformanceTests {
 
   var lastFailedIteration: Int = Int.MinValue
 
-  def executeQuery_PointQuery(session: SnappySession, colTableName: String, numIters: Int,
-      iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
+  def executeQuery_PointQuery(session: SnappySession, colTableName: String, joinTableName: String,
+      numIters: Int, iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
       numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param = if (iterCount != lastFailedIteration) {
       getParam(iterCount, params)
