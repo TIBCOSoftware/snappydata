@@ -4,7 +4,7 @@ Connects to the database indicated by the *ConnectionURLString*.
 
 ## Syntax
 
-``` pre
+```no-highlight
 CONNECT ConnectionURLString [ PROTOCOL Identifier ]
     [ AS Identifier ]
 ```
@@ -24,7 +24,7 @@ All further commands are processed against the new, current connection.
 
 ## Example
 
-``` pre
+```no-highlight
 snappy> protocol 'jdbc:derby:';
 snappy> connect '//armenia:29303/myDB;user=a;password=a' as db5Connection; 
 snappy> show connections;
