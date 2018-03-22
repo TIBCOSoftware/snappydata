@@ -41,9 +41,8 @@ trait ExternalStore extends Serializable with Logging {
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       compressionCodecId: Int, conn: Option[Connection]): Unit
 
-  def storeDelete(tableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: Long,
-      compressionCodecId: Int, conn: Option[Connection]): Unit
+  def storeDelete(tableName: String, buffer: ByteBuffer, partitionId: Int,
+      batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit
 
   def getColumnBatchRDD(tableName: String, rowBuffer: String, projection: Array[Int],
       filters: Array[Expression], prunePartitions: => Int, session: SparkSession,

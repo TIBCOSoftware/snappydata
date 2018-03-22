@@ -111,6 +111,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
     val currentBucketRegion = itr.getHostedBucketRegion
     if ((columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+        columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) &&
         !re.isDestroyedOrRemoved) {
       val statsOrDeleteVal = re.getValue(currentBucketRegion)
@@ -120,8 +121,9 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
         val buffer = statsOrDelete.getBuffer
         try {
           if (buffer.remaining() > 0) {
-            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
-              val numColumns = numColumnsInTable * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+                columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
+              val numColumns = ColumnStatsSchema.numStatsColumns(numColumnsInTable)
               val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
               unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
             } else {
@@ -140,8 +142,10 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   def getColumnIndex: Int = columnIndex
 
-  private[columnar] def withColumnIndex(columnIndex: Int): ColumnFormatKey =
-    new ColumnFormatKey(uuid, partitionId, columnIndex)
+  private[columnar] def withColumnIndex(columnIndex: Int): ColumnFormatKey = {
+    if (columnIndex != this.columnIndex) new ColumnFormatKey(uuid, partitionId, columnIndex)
+    else this
+  }
 
   // use the same hash code for all the columns in the same batch so that they
   // are gotten together by the iterator
@@ -447,7 +451,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
         if (fromDisk || (isDirect && this.refCount > 2)) return this
         // check if entry was read from disk without faultin
         val entry = this.entry
-        if ((entry ne null) && (entry._getValue() eq null)) return this
+        if ((entry ne null) && entry.isValueNull) return this
       }
 
       // replace underlying buffer if either no other thread is holding a reference
