@@ -61,8 +61,8 @@ object CodeGeneration extends Logging {
     // don't need as big a cache as Spark's CodeGenerator.cache
     val env = SparkEnv.get
     if (env ne null) {
-      env.conf.getInt("spark.sql.codegen.cacheSize", 1000) / 4
-    } else 250
+      env.conf.getInt("spark.sql.codegen.cacheSize", 2000) / 4
+    } else 500
   }
 
   /**
@@ -477,8 +477,7 @@ object CodeGeneration extends Logging {
   }
 
   def compileCode(name: String, schema: Array[StructField],
-      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass,
-      Array[Any]) = {
+      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass, Array[Any]) = {
     codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
       forIndex = false, genCode = genCode))
   }
@@ -539,23 +538,14 @@ final class ExecuteKey(val name: String,
     val forIndex: Boolean = false,
     val genCode: () => (CodeAndComment, Array[Any]) = null) {
 
-  override lazy val hashCode: Int = if (schema != null && !forIndex) {
+  override lazy val hashCode: Int = if ((schema ne null) && !forIndex) {
     MurmurHash3.listHash(name :: schema.toList, MurmurHash3.seqSeed)
   } else name.hashCode
 
   override def equals(other: Any): Boolean = other match {
-    case o: ExecuteKey => if (schema != null && o.schema != null && !forIndex) {
-      val numFields = schema.length
-      if (numFields == o.schema.length && name == o.name) {
-        var i = 0
-        while (i < numFields) {
-          if (!schema(i).equals(o.schema(i))) {
-            return false
-          }
-          i += 1
-        }
-        true
-      } else false
+    case o: ExecuteKey => if ((schema ne null) && (o.schema ne null) && !forIndex) {
+      schema.length == o.schema.length && name == o.name && java.util.Arrays.equals(
+        schema.asInstanceOf[Array[AnyRef]], o.schema.asInstanceOf[Array[AnyRef]])
     } else {
       name == o.name
     }

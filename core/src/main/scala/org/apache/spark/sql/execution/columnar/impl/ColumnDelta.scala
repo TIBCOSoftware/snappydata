@@ -23,6 +23,7 @@ import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
 import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
@@ -90,9 +91,9 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           case m => m.schema.asInstanceOf[StructType]
         }
         val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
-          decompress = true, compress = false)
+          FetchRequest.DECOMPRESS)
         val existingBuffer = oldColumnValue.getBuffer
-        val newValue = getValueRetain(decompress = true, compress = false)
+        val newValue = getValueRetain(FetchRequest.DECOMPRESS)
         try {
           new ColumnFormatValue(encoder.merge(newValue.getBuffer, existingBuffer,
             columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)),

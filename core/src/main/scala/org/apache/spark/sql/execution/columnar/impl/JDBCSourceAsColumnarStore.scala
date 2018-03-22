@@ -40,17 +40,18 @@ import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.serializer.{ConnectionPropertiesSerializer, StructTypeSerializer}
+import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{DynamicReplacableConstant, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
+import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.ConnectorCatalog
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
@@ -514,9 +515,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def getColumnBatchRDD(tableName: String,
       rowBuffer: String,
-      requiredColumns: Array[String],
       projection: Array[Int],
-      fullScan: Boolean,
+      filters: Array[Expression],
       prunePartitions: => Int,
       session: SparkSession,
       schema: StructType,
@@ -524,8 +524,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     val snappySession = session.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
-        new ColumnarStorePartitionedRDD(snappySession,
-          tableName, projection, fullScan, prunePartitions, this)
+        new ColumnarStorePartitionedRDD(snappySession, tableName, projection,
+          (filters eq null) || filters.length == 0, prunePartitions, this)
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -542,8 +542,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             s"SnappyData table scan not supported in mode: $m")
         }
 
-        new SmartConnectorColumnRDD(snappySession,
-          tableName, requiredColumns, ConnectionProperties(connProperties.url,
+        new SmartConnectorColumnRDD(snappySession, tableName, projection, filters,
+          ConnectionProperties(connProperties.url,
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
             connProperties.hikariCP),
@@ -776,7 +776,8 @@ final class ColumnarStorePartitionedRDD(
 final class SmartConnectorColumnRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
-    private var requiredColumns: Array[String],
+    private var projection: Array[Int],
+    @transient private val filters: Array[Expression],
     private var connProperties: ConnectionProperties,
     private var schema: StructType,
     @transient private val store: ExternalStore,
@@ -786,6 +787,8 @@ final class SmartConnectorColumnRDD(
     private var delayRollover: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
+  private var serializedFilters: Array[Byte] = _
+
   override def compute(split: Partition,
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SmartConnectorRDDHelper
@@ -793,13 +796,11 @@ final class SmartConnectorColumnRDD(
     val conn: Connection = helper.getConnection(connProperties, part)
     logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
-    val (fetchStatsQuery, fetchColQuery) = helper.getSQLStatement(tableName,
-      partitionId, requiredColumns, schema)
-    // fetch the stats
-    val (statement, rs, txId) = helper.executeQuery(conn, tableName, part,
-      fetchStatsQuery, relDestroyVersion)
-    val itr = new ColumnBatchIteratorOnRS(conn, requiredColumns, statement, rs,
-      context, partitionId, fetchColQuery)
+    // fetch all the column blobs pushing down the filters
+    val (statement, rs, txId) = helper.prepareScan(conn, tableName, projection,
+      serializedFilters, part, relDestroyVersion)
+    val itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
+      context, partitionId)
 
     if (context ne null) {
       context.addTaskCompletionListener { _ =>
@@ -826,6 +827,17 @@ final class SmartConnectorColumnRDD(
     itr
   }
 
+  private def serializeFilters(filters: Array[Expression]): Array[Byte] = {
+    // serialize the filters
+    if ((filters ne null) && filters.length > 0) {
+      // ship as source Filters which is public API for multiple version compatibility
+      val srcFilters = filters.flatMap(translateToFilter)
+      if (srcFilters.length > 0) {
+        KryoSerializerPool.serialize((kryo, out) => kryo.writeObject(out, srcFilters))
+      } else null
+    } else null
+  }
+
   override def getPreferredLocations(split: Partition): Seq[String] = {
     split.asInstanceOf[SmartExecutorBucketPartition].hostList.map(_._1)
   }
@@ -838,6 +850,9 @@ final class SmartConnectorColumnRDD(
   }
 
   override def getPartitions: Array[Partition] = {
+    // evaluate the filters at this point since they can change in every execution
+    // (updated values in ParamLiteral will take care of updating filters)
+    serializedFilters = serializeFilters(filters)
     val parts = getPartitionEvaluator()
     logDebug(s"$toString.getPartitions: $tableName partitions ${parts.mkString("; ")}")
     parts
@@ -847,9 +862,14 @@ final class SmartConnectorColumnRDD(
     super.write(kryo, output)
 
     output.writeString(tableName)
-    output.writeVarInt(requiredColumns.length, true)
-    for (column <- requiredColumns) {
-      output.writeString(column)
+    output.writeVarInt(projection.length, true)
+    for (column <- projection) {
+      output.writeVarInt(column, true)
+    }
+    val filterLen = if (serializedFilters ne null) serializedFilters.length else 0
+    output.writeVarInt(filterLen, true)
+    if (filterLen > 0) {
+      output.writeBytes(serializedFilters, 0, filterLen)
     }
     ConnectionPropertiesSerializer.write(kryo, output, connProperties)
     StructTypeSerializer.write(kryo, output, schema)
@@ -862,7 +882,9 @@ final class SmartConnectorColumnRDD(
 
     tableName = input.readString()
     val numColumns = input.readVarInt(true)
-    requiredColumns = Array.fill(numColumns)(input.readString())
+    projection = Array.fill(numColumns)(input.readVarInt(true))
+    val filterLen = input.readVarInt(true)
+    serializedFilters = if (filterLen > 0) input.readBytes(filterLen) else null
     connProperties = ConnectionPropertiesSerializer.read(kryo, input)
     schema = StructTypeSerializer.read(kryo, input, c = null)
     relDestroyVersion = input.readVarInt(false)
@@ -875,7 +897,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _isPartitioned: Boolean,
     _columns: Array[String],
     _connProperties: ConnectionProperties,
-    _filters: Array[Filter],
+    _filters: Array[Expression],
     _partEval: () => Array[Partition],
     private var relDestroyVersion: Int,
     _commitTx: Boolean, _delayRollover: Boolean)
@@ -947,11 +969,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args.map {
-        case pl: ParamLiteral => pl.convertedLiteral
-        case l : DynamicReplacableConstant => l.convertedLiteral
-        case v => v
-      })
+      ExternalStoreUtils.setStatementParameters(stmt, args)
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
@@ -994,6 +1012,9 @@ class SmartConnectorRowRDD(_session: SnappySession,
   }
 
   override def getPartitions: Array[Partition] = {
+    // evaluate the filter clause at this point since it can change in every execution
+    // (updated values in ParamLiteral will take care of updating filters)
+    evaluateWhereClause()
     val parts = partitionEvaluator()
     logDebug(s"$toString.getPartitions: $tableName partitions ${parts.mkString("; ")}")
     parts
