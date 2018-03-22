@@ -30,6 +30,7 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.collection.ObjectObjectHashMap
@@ -744,6 +745,7 @@ object Utils {
     context.taskMemoryManager()
 
   def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
+    if (buffer eq null) return null
     val row = new UnsafeRow(numColumns)
     if (buffer.isDirect) {
       row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
@@ -753,6 +755,15 @@ object Utils {
           buffer.arrayOffset() + buffer.position(), buffer.remaining())
     }
     row
+  }
+
+  def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
+    // need to create a copy since underlying Array[Byte] can be re-used
+    val statsLen = statsData.length
+    val statsBuffer = allocator.allocateForStorage(statsLen)
+    statsBuffer.put(statsData, 0, statsLen)
+    statsBuffer.rewind()
+    statsBuffer
   }
 
   def genTaskContextFunction(ctx: CodegenContext): String = {

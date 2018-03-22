@@ -29,8 +29,8 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
@@ -220,35 +220,22 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }(conn)
   }
 
-  override def storeDelete(columnTableName: String, buffer: ByteBuffer,
-      statsData: Array[Byte], partitionId: Int, batchId: Long,
-      compressionCodecId: Int, conn: Option[Connection]): Unit = {
-    val allocator = GemFireCacheImpl.getCurrentBufferAllocator
-    val statsBuffer = createStatsBuffer(statsData, allocator)
+  override def storeDelete(columnTableName: String, buffer: ByteBuffer, partitionId: Int,
+      batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit = {
     val value = new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed = false)
-    val statsValue = new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable[ColumnFormatKey, ColumnFormatValue](
           columnTableName, true)
-        var key = new ColumnFormatKey(batchId, partitionId,
+        val key = new ColumnFormatKey(batchId, partitionId,
           ColumnFormatEntry.DELETE_MASK_COL_INDEX)
 
         // check for full batch delete
         if (ColumnDelta.checkBatchDeleted(buffer)) {
-          ColumnDelta.deleteBatch(key, region, columnTableName, forUpdate = false)
+          ColumnDelta.deleteBatch(key, region, columnTableName)
           return
         }
-
-        val keyValues = new java.util.HashMap[ColumnFormatKey, ColumnFormatValue](2)
-        keyValues.put(key, value)
-
-        // add the stats row
-        key = new ColumnFormatKey(batchId, partitionId,
-          ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
-        keyValues.put(key, statsValue)
-
-        region.putAll(keyValues)
+        region.put(key, value)
 
       case _ =>
         tryExecute(columnTableName, closeOnSuccessOrFailure = false,
@@ -289,6 +276,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                     columnIndex - 1 /* zero based */ , depth))
                 }
               }
+              // lastly the delete delta row itself
+              addKeyToBatch(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
               stmt.executeBatch()
             } finally {
               stmt.close()
@@ -306,18 +295,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             // wrap ColumnDelete to compress transparently in socket write if required
             blob = new ClientBlob(value)
             stmt.setBlob(4, blob)
-            stmt.addBatch()
-
-            // add the stats row
-            stmt.setLong(1, batchId)
-            stmt.setInt(2, partitionId)
-            stmt.setInt(3, ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
-            // wrap ColumnDelete to compress transparently in socket write if required
-            blob = new ClientBlob(statsValue)
-            stmt.setBlob(4, blob)
-            stmt.addBatch()
-
-            stmt.executeBatch()
+            stmt.execute()
           } finally {
             // free the blob
             if (blob != null) {
@@ -351,16 +329,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }
   }
 
-  private def createStatsBuffer(statsData: Array[Byte],
-      allocator: BufferAllocator): ByteBuffer = {
-    // need to create a copy since underlying Array[Byte] can be re-used
-    val statsLen = statsData.length
-    val statsBuffer = allocator.allocateForStorage(statsLen)
-    statsBuffer.put(statsData, 0, statsLen)
-    statsBuffer.rewind()
-    statsBuffer
-  }
-
   /**
    * Insert the base entry and n column entries in Snappy. Insert the base entry
    * in the end to ensure that the partial inserts of a cached batch are ignored
@@ -389,7 +357,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       // add the stats row
       val key = new ColumnFormatKey(batchId, partitionId, statRowIndex)
       val allocator = Misc.getGemFireCache.getBufferAllocator
-      val statsBuffer = createStatsBuffer(batch.statsData, allocator)
+      val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
       val value = if (deltaUpdate) {
         new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
       } else new ColumnFormatValue(statsBuffer, compressionCodecId, isCompressed = false)
@@ -452,7 +420,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.setInt(2, partitionId)
           stmt.setInt(3, statRowIndex)
           val allocator = GemFireCacheImpl.getCurrentBufferAllocator
-          val statsBuffer = createStatsBuffer(batch.statsData, allocator)
+          val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
           // wrap in ColumnFormatValue to compress transparently in socket write if required
           val value = if (deltaUpdate) {
             new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)

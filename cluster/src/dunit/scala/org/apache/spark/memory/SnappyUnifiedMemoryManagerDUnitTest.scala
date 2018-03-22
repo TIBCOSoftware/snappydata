@@ -17,12 +17,14 @@
 package org.apache.spark.memory
 
 
+import java.sql.DriverManager
 import java.util.Properties
 import java.util.function.ObjLongConsumer
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 
@@ -30,6 +32,7 @@ import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionConfBuilder, ConnectionUtil}
 import org.apache.spark.memory.SnappyUnifiedMemoryManagerDUnitTest._
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 case class DummyData(col1: Int, col2: Int, col3: Int)
 
@@ -295,6 +298,29 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     }
   }
 
+  @throws[Exception]
+  protected def readData(tableName: String, numColumns: Int,
+      numBuckets: Int): SerializableRunnable = {
+    new SerializableRunnable() {
+      def run() {
+        assert(GemFireStore.getBootedInstance ne null)
+        val conn = DriverManager.getConnection("jdbc:snappydata:")
+        val stmt = conn.createStatement()
+        val columnTable = ColumnFormatRelation.columnBatchTableName(tableName.toUpperCase)
+        stmt.execute(s"CALL SYS.SET_BUCKETS_FOR_LOCAL_EXECUTION('$columnTable', " +
+            s"'${(0 until numBuckets).mkString(",")}', 0)")
+        val rs = stmt.executeQuery(s"CALL SYS.COLUMN_TABLE_SCAN('$columnTable', " +
+            s"'${(1 to numColumns).mkString(",")}', null)")
+        var n = 0
+        while (rs.next()) {
+          n += 1
+        }
+        rs.close()
+        assert(n > 0, s"expected non-zero batches")
+      }
+    }
+  }
+
   /**
     * This test checks row partitioned table memory usage when GII is done in a node.
     * It checks memory usage with reference to the node which was alive at the time
@@ -361,6 +387,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
     vm1.invoke(restartServerRunnable(props, port))
     vm1.invoke(waitForRegionInit(col_table))
     runOldEntriesCleanerThreadInAll
+    vm1.invoke(readData(col_table, 3, 4))
     val waitAssert = new WaitAssert(10, getClass)
     ClusterManagerTestBase.waitForCriterion(waitAssert.assertTableMemory(vm1, vm2, "col__table"),
       waitAssert.exceptionString(),
