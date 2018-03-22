@@ -52,7 +52,6 @@ import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
-import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
@@ -812,11 +811,6 @@ object ColumnTableScan extends Logging {
     // collected about this partition batch.
     // This code is picked up from InMemoryTableScanExec
 
-    // deal with LIKE patterns that can be optimized in predicate pushdown
-    @transient def convertLike(e: Expression): Expression = e.transformDown {
-      case l@Like(left, Literal(pattern, StringType)) =>
-        LikeEscapeSimplification.simplifyLike(l, left, pattern.toString)
-    }
     @transient def buildFilter: PartialFunction[Expression, Expression] = {
       case And(lhs: Expression, rhs: Expression)
         if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
@@ -826,32 +820,37 @@ object ColumnTableScan extends Logging {
         if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
         buildFilter(lhs) || buildFilter(rhs)
 
-      case EqualTo(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case EqualTo(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case EqualTo(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
 
-      case LessThan(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case In(a: AttributeReference, l) if !l.exists(!TokenLiteral.isConstant(_)) =>
+        statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
+      case DynamicInSet(a: AttributeReference, l) if !l.exists(!TokenLiteral.isConstant(_)) =>
+        statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
+
+      case LessThan(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound < l
-      case LessThan(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case LessThan(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         l < statsFor(a).upperBound
 
-      case LessThanOrEqual(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case LessThanOrEqual(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l
-      case LessThanOrEqual(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case LessThanOrEqual(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         l <= statsFor(a).upperBound
 
-      case GreaterThan(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case GreaterThan(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         l < statsFor(a).upperBound
-      case GreaterThan(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case GreaterThan(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound < l
 
-      case GreaterThanOrEqual(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case GreaterThanOrEqual(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         l <= statsFor(a).upperBound
-      case GreaterThanOrEqual(l, a: AttributeReference) if LiteralValue.isConstant(l) =>
+      case GreaterThanOrEqual(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l
 
-      case StartsWith(a: AttributeReference, l) if LiteralValue.isConstant(l) =>
+      case StartsWith(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
         val stats = statsFor(a)
         val pattern = if (l.dataType == StringType) l else Cast(l, StringType)
         StartsWithForStats(stats.upperBound, stats.lowerBound, pattern)
@@ -881,7 +880,7 @@ object ColumnTableScan extends Logging {
         }
         orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
             .sorted.mkString(","))).flatMap { p =>
-          val filter = buildFilter.lift(convertLike(p))
+          val filter = buildFilter.lift(p)
           val boundFilter = filter.map(BindReferences.bindReference(
             _, columnBatchStats, allowFailures = true))
 
@@ -1001,7 +1000,7 @@ case class StartsWithForStats(upper: Expression, lower: Expression,
     pattern: Expression) extends Expression {
 
   // pattern must be a string constant for stats row evaluation
-  assert(LiteralValue.isConstant(pattern))
+  assert(TokenLiteral.isConstant(pattern))
   assert(pattern.dataType == StringType)
 
   override final def children: Seq[Expression] = Seq(upper, lower, pattern)

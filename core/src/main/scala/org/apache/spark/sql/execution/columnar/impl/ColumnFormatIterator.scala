@@ -398,7 +398,7 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
     closing = true
     val entryMap = this.entryMap
     if ((entryMap ne null) && entryMap.size() > 0) {
-      entryMap.forEachWhile(new LongObjPredicate[AnyRef] {
+      if (GemFireCacheImpl.hasNewOffHeap) entryMap.forEachWhile(new LongObjPredicate[AnyRef] {
         override def test(i: Long, v: AnyRef): Boolean = {
           v match {
             case s: SerializedDiskBuffer => s.release()

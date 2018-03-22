@@ -66,7 +66,7 @@ case class SnappyHashAggregateExec(
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
     hasDistinct: Boolean)
-    extends UnaryExecNode with BatchConsumer with NonRecursivePlans {
+    extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
   override def nodeName: String = "SnappyHashAggregate"
 
@@ -191,10 +191,6 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
-  }
-
   // all the mode of aggregate expressions
   private val modes = aggregateExpressions.map(_.mode).distinct
 
@@ -211,7 +207,6 @@ case class SnappyHashAggregateExec(
 
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    startProducing()
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {
