@@ -831,9 +831,7 @@ final class SmartConnectorColumnRDD(
 
     output.writeString(tableName)
     output.writeVarInt(projection.length, true)
-    for (column <- projection) {
-      output.writeVarInt(column, true)
-    }
+    output.writeInts(projection, true)
     val filterLen = if (serializedFilters ne null) serializedFilters.length else 0
     output.writeVarInt(filterLen, true)
     if (filterLen > 0) {
@@ -850,7 +848,7 @@ final class SmartConnectorColumnRDD(
 
     tableName = input.readString()
     val numColumns = input.readVarInt(true)
-    projection = Array.fill(numColumns)(input.readVarInt(true))
+    projection = input.readInts(numColumns, true)
     val filterLen = input.readVarInt(true)
     serializedFilters = if (filterLen > 0) input.readBytes(filterLen) else null
     connProperties = ConnectionPropertiesSerializer.read(kryo, input)
@@ -871,7 +869,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _commitTx, _delayRollover) {
+    _filters, _partEval, _commitTx, _delayRollover, null) {
 
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],

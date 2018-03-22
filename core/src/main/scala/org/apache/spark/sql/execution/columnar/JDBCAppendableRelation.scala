@@ -112,7 +112,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Expression], prunePartitions: => Int): RDD[Any] = {
+      filters: Array[Expression], prunePartitions: => Int): (RDD[Any], Array[Int]) = {
 
     val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
     (0 until schema.length).foreach(i =>
@@ -124,7 +124,7 @@ abstract case class JDBCAppendableRelation(
     }
     readLock {
       externalStore.getColumnBatchRDD(tableName, rowBuffer = table, projection,
-        filters, prunePartitions, sqlContext.sparkSession, schema, delayRollover)
+        filters, prunePartitions, sqlContext.sparkSession, schema, delayRollover) -> projection
     }
   }
 

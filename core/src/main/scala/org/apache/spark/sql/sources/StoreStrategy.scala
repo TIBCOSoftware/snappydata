@@ -17,7 +17,6 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.execution._
@@ -25,6 +24,7 @@ import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableComm
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
 import org.apache.spark.sql.internal.PutIntoColumnTable
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
+import org.apache.spark.sql.{Strategy, _}
 
 /**
  * Support for DML and other operations on external tables.
@@ -51,7 +51,7 @@ object StoreStrategy extends Strategy {
 
     case CreateTable(tableDesc, mode, Some(query)) =>
       val userSpecifiedSchema = SparkSession.getActiveSession.get
-        .asInstanceOf[SnappySession].normalizeSchema(query.schema)
+          .asInstanceOf[SnappySession].normalizeSchema(query.schema)
       val options = Map.empty[String, String] ++ tableDesc.storage.properties
       val (provider, isBuiltIn) = SnappyContext.getBuiltInProvider(tableDesc.provider.get)
       val cmd = CreateMetastoreTableUsingSelect(tableDesc.identifier, None,
@@ -109,7 +109,7 @@ object StoreStrategy extends Strategy {
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
-    case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
+    case PutIntoColumnTable(LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
       ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
     case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
@@ -177,10 +177,6 @@ final class Insert(
 
   override def output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil
-
-  override def makeCopy(newArgs: Array[AnyRef]): LogicalPlan = {
-    super.makeCopy(newArgs)
-  }
 
   override def copy(table: LogicalPlan = table,
       partition: Map[String, Option[String]] = partition,
