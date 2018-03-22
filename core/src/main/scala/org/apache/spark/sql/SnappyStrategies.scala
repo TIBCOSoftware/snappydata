@@ -675,7 +675,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
  * Rule to insert a helper plan to collect information for other entities
  * like parameterized literals.
  */
-case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
+case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     extends Rule[SparkPlan] {
   private def addFallback(plan: SparkPlan): SparkPlan = {
     // skip fallback plan when optimizations are already disabled,
@@ -690,10 +690,24 @@ case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     }
   }
 
-  override def apply(plan: SparkPlan): SparkPlan = addFallback(plan.transformUp {
-    case ws@WholeStageCodegenExec(CachedPlanHelperExec(_)) => ws
-    case ws @ WholeStageCodegenExec(onlychild) =>
-      val c = onlychild.asInstanceOf[CodegenSupport]
-      ws.copy(child = CachedPlanHelperExec(c))
-  })
+  override def apply(plan: SparkPlan): SparkPlan = addFallback(plan)
+}
+
+/**
+ * Plans scalar subqueries like the Spark's PlanSubqueries but uses customized
+ * ScalarSubquery to insert a tokenized literal instead of literal value embedded
+ * in code to allow generated code re-use and improve performance substantially.
+ */
+case class TokenizeSubqueries(sparkSession: SparkSession) extends Rule[SparkPlan] {
+  def apply(plan: SparkPlan): SparkPlan = {
+    plan.transformAllExpressions {
+      case subquery: catalyst.expressions.ScalarSubquery =>
+        val executedPlan = new QueryExecution(sparkSession, subquery.plan).executedPlan
+        new TokenizedScalarSubquery(SubqueryExec(s"subquery${subquery.exprId.id}",
+          executedPlan), subquery.exprId)
+      case catalyst.expressions.PredicateSubquery(query, Seq(e: Expression), _, exprId) =>
+        val executedPlan = new QueryExecution(sparkSession, query).executedPlan
+        InSubquery(e, SubqueryExec(s"subquery${exprId.id}", executedPlan), exprId)
+    }
+  }
 }

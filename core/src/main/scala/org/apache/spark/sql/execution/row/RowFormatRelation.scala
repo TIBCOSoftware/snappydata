@@ -147,7 +147,7 @@ class RowFormatRelation(
           useResultSet = false,
           connProperties,
           handledFilters,
-          commitTx = true, delayRollover = false)
+          commitTx = true, delayRollover = false, projection = null)
 
       case _ =>
         new SmartConnectorRowRDD(
