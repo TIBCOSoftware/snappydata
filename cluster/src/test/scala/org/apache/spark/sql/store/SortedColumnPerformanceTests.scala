@@ -261,7 +261,11 @@ object SortedColumnPerformanceTests {
     // scalastyle:off
     if (iterCount < 0) {
       println(s"Query = $query result=${result.length}")
-      result.foreach(r => print(s"[${r.getDouble(0)}, ${r.getLong(1)}], "))
+      result.foreach(r => {
+        val avg = r.getDouble(0)
+        val count = r.getLong(1)
+        print(s"[$avg, $count], ")
+      })
       println()
     }
     // scalastyle:on
