@@ -1,181 +1,181 @@
-# backup and restore
+# Backup and Restore
+
 Creates a backup of operational disk stores for all members running in the distributed system. Each member with persistent data creates a backup of its own configuration and disk stores.
-
-!!!Note:
-	SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed.</br> 
-       If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
-
--   [Syntax](store-backup.md#syntax)
-
--   [Description](store-backup.md#description)
-
--   [Prerequisites and Best Practices](store-backup.md#prereq)
-
--   [Specifying the Backup Directory](store-backup.md#backup_directory)
-
--   [Example](store-backup.md#example)
-
--   [Output Messages from snappy backup](store-backup.md#output_messages)
-
--   [Backup Directory Structure and Its Contents](store-backup.md#directory_structure)
-
--   [Restoring an Online Backup](store-backup.md#restore_online_backup)
-
-<a id="syntax"></a>
-
-## Syntax
-
-Use the `-locator` option, on the command line to connect to the SnappyData cluster.
-
-``` pre
-snappy backup [-baseline=<baseline directory>] <target directory> [-J-D<vmprop>=<prop-value>]
- <-locators=<addresses>> [-bind-address=<address>] [-<prop-name>=<prop-value>]*
-```
-
-!!! Note
-	
-	* The <_target directory_> must be provided immediately after `- snappy backup [-baseline]` followed by the other arguments. `-baseline` is optional.
-	* -J is a generic prefix for all JVM properties.
-
-The table describes options for `snappy backup`:
-
-|Option|Description|
-|-|-|
-|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the date when the original backup command was performed, rather than the backup location you specified (for example, a valid baseline directory might resemble /export/fileServerDirectory/SnappyDataBackupLocation/2012-10-01-12-30).</br>An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option.|
-|target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](store-backup.md#backup_directory).|
-|locators| List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
-|bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|prop-name|Any other SnappyData distributed system property. </br>For example, `-locators=localhost:10334`|
-|-J-D<name>=<value>|Sets Java system property. For example: `-J-Dgemfire.ack-wait-threshold=20`|
-|-J|Prefix for any JVM property. For example `-J-Xmx4g`|
-
-<a id="description"></a>
-
-## Description
 
 An online backup saves the following:
 
--   For each member with persistent data, the backup includes disk store files for all stores containing persistent table data.
-
--   Configuration files from the member startup.
-
--   A restore script, written for the member's operating system, that copies the files back to their original locations. For example, in Windows, the file is restore.bat and in Linux, it is restore.sh.
-
-<a id="prereq"></a>
-
-## Prerequisites and Best Practices
-
--   Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
-
--   Do not try to create backup files from a running system using file copy commands. You will get incomplete and unusable copies.
-
--   Make sure the target backup directory exists and has the proper permissions for your members to write to it and create subdirectories. 
-
--   You might want to compact your disk store before running the backup.<!-- See the [compact-all-disk-stores](store-compact-all-disk-stores.md#reference_13F8B5AFCD9049E380715D2EF0E33BDC) command.-->
-
--   Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members.)
-
-<a id="backup_directory"></a>
-
-## Specifying the Backup Directory
-
-The directory you specify for backup can be used multiple times. Each backup first creates a top level directory for the backup, under the directory you specify, identified to the minute. You can use one of two formats:
-
--   Use a single physical location, such as a network file server. (For example, /export/fileServerDirectory/snappyStoreBackupLocation).
-
--   Use a directory that is local to all host machines in the system. (For example, ./snappyStoreBackupLocation).
-
-<a id="example"></a>
-
-## Example
-
-Using a backup directory that is local to all host machines in the system:
-
-``` pre
-snappy backup  ./snappyStoreBackupLocation
-  -locators=localhost:10334
-```
-<!--
-See also [Backing Up and Restoring Disk Stores](../../concepts/backup/backup_restore_disk_store.md#backup_restore_disk_store).-->
-
-To perform an incremental backup at a later time:
-
-``` pre
-snappy backup -baseline=./snappyStoreBackupLocation/2012-10-01-12-30 ./snappyStoreBackupLocation 
-  -locators=localhost:10334
-```
+- For each member with persistent data, the backup includes disk store files for all stores containing persistent table data.
+- Configuration files from the member startup.
+- A restore script (restore.sh) copies the files back to their original locations.
 
 !!! Note:
-	SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.</p>
+	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
+	- SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
 
-<a id="output_messages"></a>
+- [Guidelines](#guidelines)
 
-## Output Messages from snappy backup
+ -   [Specifying the Backup Directory](#backup-directory)
 
-When you run `snappy backup`, it reports on the outcome of the operation.
+ -   [Backup Directory Structure and Contents](#directory-structure)
 
-If any members were offline when you run `snappy backup`, you get this message:
+- [Performing a Full Backup](#full-backup)
 
-``` pre
-The backup may be incomplete. The following disk
-stores are not online: 93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]  
+- [Performing an Incremental Backup](#incremental-backup)
+
+- [List of Properties](#list-of-properties)
+
+- [Restoring your Backup](#restore-backup)
+
+- [Verify the Backup is Successful](#verify)
+
+<a id="guidelines"></a>
+## Guidelines
+
+* Run this command during a period of low activity in your system. The backup does not block system activities, but it uses file system resources on all hosts in your distributed system and can affect performance.
+
+* If you try to create backup files from a running system using file copy commands, you can get incomplete and unusable copies.
+
+* Make sure the target backup directory exists and has the proper permissions for your members to write to it and create subdirectories.
+
+* It is recommended to [compact your disk store](store-compact-disk-store.md) before running the backup.
+
+* Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members).
+
+<a id="backup-directory"></a>
+## Specifying the Backup Directory
+
+The directory you specify for backup can be used multiple times. Each backup first creates a top-level directory for the backup, under the directory you specify, identified to the minute.</br>
+You can use one of two formats:
+
+* Use a single physical location, such as a network file server. (For example, <_fileServerDirectory_>/<_SnappyBackupLocation_>).
+
+* Use a directory that is local to all host machines in the system. (For example, <_SnappyBackupLocation_>).
+
+<a id="directory-structure"></a>
+## Backup Directory Structure and Contents
+Below is the structure of files and directories backed up in a distributed system:
+
+```no-highlight
+2018-02-28-13-00-21 /:
+127_0_0_1_12755_ec_v0_5506 127_0_0_1_12893_v1_48175
+2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506:
+config diskstores README.txt restore.sh user
+2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/config:
+2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/diskstores:
+GFXD-DD-DISKSTORE_40bf5411-4fba-495b-b783-26cfc6505839
+GFXD-DEFAULT-DISKSTORE_a9b5f827-d0a8-4a3a-9031-00443a3ef535
+
+2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/user:
+2018-02-28-13-00-21/127_0_0_1_12893_v1_48175:
+config diskstores README.txt restore.sh user
+2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/config:
+2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/diskstores:
+GFXD-DD-DISKSTORE_e958efda-b6d6-473c-ae56-2327bfdca094
+GFXD-DEFAULT-DISKSTORE_0c8be336-5a6a-48bb-8b6c-372efaddb721
+2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/user:
 ```
-A complete backup can still be performed if all table data is available in the running members.
 
-The tool reports on the success of the operation. If the operation is successful, you see a message like this:
+<a id="full-backup"></a>
+## Performing a Full Backup
 
-``` pre
-Connecting to distributed system: -locators=localhost:10334
+For each member with persistent data, the backup includes:
+
+* Disk store files for all stores containing persistent tables.
+
+* Backup of all disk stores including the disk stores created for metadata as well as separate disk stores created for row buffer. 
+
+* Configuration files from the member startup (snappydata.properties). These configuration files are not automatically restored, to avoid interfering with any more recent configurations. In particular, if these are extracted from a master jar file, copying the separate files into your working area could override the files in the jar.
+
+* A restore script (restore.sh), written for the member’s operating system, that copies the files back to their original locations.
+
+To perform a full backup:
+
+1. [Start the cluster](../../howto/start_snappy_cluster.md).
+
+2. [Start the snappy-shell and connect to the cluster](../../programming_guide/using_snappydata_shell.md).
+
+3. Stop all transactions running in your distributed system, and do not execute DML statements during the backup. SnappyData does not support backing up a disk store while live transactions are taking place or when concurrent DML statements are being executed.
+
+2. Run the backup command, providing your backup directory location.
+
+    ```
+    ./bin/snappy backup <SnappyBackupLocation> -locators=localhost:<peer-discovery-address>
+    ```
+
+3. Read the message that reports on the success of the operation.
+
+If the operation is successful, you see a message like this:
+
+```no-highlight
 The following disk stores were backed up:
-93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
-	4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
+	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
+	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
+	da31492f-3234-4b7e-820b-30c6b85c19a2 [<hostname>:/<ServerLogDirectory>/snappy-internal-delta]
+	5a5d7ab2-96cf-4a73-8106-7a816a67f098 [<hostname>:/<ServerLogDirectory>/datadictionary]
+	42510800-40e3-4abf-bcc4-7b7e8c5af951 [<hostname>:/<ServerLogDirectory>]
 Backup successful.
 ```
 
-If the operation does not succeed at backing up all known members, you see a message like this:
+If the operation does not succeed, a message is displayed indicating that the backup was incomplete, and is noted in the ending status message. It leaves the file INCOMPLETE_BACKUP in its highest level backup directory. </br>
+Offline members leave nothing, so you only have this message from the backup operation itself. Although offline members cannot back up their disk stores, a complete backup can be obtained if at least one copy of the data is available in a running member.
 
-``` pre
-Connecting to distributed system: -locators=localhost:10334
+<a id="incremental-backup"></a>
+## Performing an Incremental backup
+
+An incremental backup saves the difference between the last backup and the current data. An incremental backup copies only operation logs that are not already present in the baseline directories for each member. For incremental backups, the restore script contains explicit references to operation logs in one or more previously-chained incremental backups. When the restore script is run from an incremental backup, it also restores the operation logs from previous incremental backups that are part of the backup chain.
+
+If members are missing from the baseline directory because they were offline or did not exist at the time of the baseline backup, those members place full backups of all their files into the incremental backup directory.
+
+To perform an incremental backup, execute the backup command but specify the baseline directory as well as your incremental backup directory (both can be the same directory). </br>For example:
+
+```no-highlight
+./bin/snappy backup -baseline=<SnappyBackupLocation> <SnappyBackupLocation> -locators=<peer-discovery-address>
+```
+
+The tool reports on the success of the operation. If the operation is successful, you see a message like this:
+
+```no-highlight
 The following disk stores were backed up:
-93050768-514d-4b20-99e5-c8c9c0156ae9 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/.]
-	4860bb01-4b0a-4025-80c3-17708770d933 [localhost:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-locator-1/./datadictionary]
-	9c656fdd-aa7b-4f08-926b-768424ec672a [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/./datadictionary]
-	45ddc031-ae2a-4e8a-9b28-dad4fa1fd4cf [snappy-user:/home/user1/snappydata/build-artifacts/scala-2.11/snappy/work1/localhost-server-1/.]
-The backup may be incomplete. The following disk stores are not online:
+	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
+	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
+	da31492f-3234-4b7e-820b-30c6b85c19a2 [<hostname>:/<ServerLogDirectory>/snappy-internal-delta]
+	5a5d7ab2-96cf-4a73-8106-7a816a67f098 [<hostname>:/<ServerLogDirectory>/datadictionary]
+	42510800-40e3-4abf-bcc4-7b7e8c5af951 [<hostname>:/<ServerLogDirectory>]
+Backup successful.
 ```
 
-A member that fails to complete its backup is noted in this ending status message and leaves the file INCOMPLETE_BACKUP in its highest level backup directory.
+A member that fails to complete its backup is noted in this ending status message and leaves the file INCOMPLETE_BACKUP. The next time you perform a backup operation a full backup is performed.
 
-<a id="directory_structure"></a>
+To make additional incremental backups, execute the same backup command described in this section by providing the incremental backup directory and the baseline directory.
 
-## Backup Directory Structure and Its Contents
+<a id="list-of-properties"></a>
+## List of Properties
 
-Below is the structure of files and directories backed up in a distributed system:
+| Option | Description |
+|--------|--------|
+|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the backup location you specified when the last backup was performed. (For example, a baseline directory can resemble <_fileServerDirectory_>/<_SnappyDataBackupLocation_>.). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option. Optionally, you can provide the directory with the time stamp details, to perform an incremental backup (For example, <_fileServerDirectory_>/<_SnappyDataBackupLocation_>/<_TimeStamp_>).|
+|target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
+|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the peer-discovery-port used when starting the cluster (default 10334). This is a mandatory field. For example, `-locators=localhost:10334`|
+|bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
+|-J-D=|Sets Java system property. For example: `-J-Dgemfire.ack-wait-threshold=20`|
+|-J|Prefix for any JVM property. For example `-J-Xmx4g`|
 
-``` pre
- 2011-05-02-18-10 /:
-pc15_8933_v10_10761_54522
-2011-05-02-18-10/pc15_8933_v10_10761_54522:
-config diskstores README.txt restore.sh
-2011-05-02-18-10/pc15_8933_v10_10761_54522/config:
-gemfirexd.properties
-2011-05-02-18-10/pc15_8933_v10_10761_54522/diskstores:
-GFXD_DD_DISKSTORE
-2011-05-02-18-10/pc15_8933_v10_10761_54522/diskstores/GFXD_DD_DISKSTORE:
-dir0
-2011-05-02-18-10/pc15_8933_v10_10761_54522/diskstores/GFXD_DD_DISKSTORE/dir0:
-BACKUPGFXD-DD-DISKSTORE_1.crf
-BACKUPGFXD-DD-DISKSTORE_1.drf BACKUPGFXD-DD-DISKSTORE_2.crf
-BACKUPGFXD-DD-DISKSTORE_2.drf BACKUPGFXD-DD-DISKSTORE.if
-```
+<a id="restore-backup"></a>
+## Restoring your Backup
 
-<a id="restore_online_backup"></a>
+The restore.sh script is generated for each member in the cluster in the timestamp directory. The script (restore.sh) copies files back to their original locations.
 
-## Restoring Files
+1. Navigate to the backup subdirectory with the timestamp of the backup that you want to restore. For example, if you performed multiple incremental backups, navigate to the latest backup directory in order to restore your system to the last available backup.
 
-The restore script (restore.sh restore.bat) copies files back to their original locations. You can do this manually if you wish:
+2. Run each restore script on the host where the backup originated.
+
+    	<SnappyBackupLocation>/<TimestampDirectory>/restore.sh
+
+3. Repeat this procedure as necessary for other members of the distributed system.
+
+4. After all disk stores have been restored, restart all members of the original cluster.
+
+You can also do this manually:
 
 1.  Restore your disk stores when your members are offline and the system is down.
 
@@ -183,4 +183,16 @@ The restore script (restore.sh restore.bat) copies files back to their original 
 
 3.  Run the restore scripts. Run each script on the host where the backup originated.
 
-The restore operation copies the files back to their original location.
+The restore operation copies the files back to their original location. All the disk stores including users created one and disk stores for metadata are also restored.
+
+
+<a id="verify"></a>
+## Verify the Backup is Successful
+
+To ensure that your backup is successful, you can try the following options:
+
+* Execute the `select count(*) from <TableName>;` query and verify the total number of rows.
+
+* Verify the table details in the [Snappy Pulse UI](../../monitoring/monitoring.md#table).
+
+* If you have done updates, you can verify to see if those specific updates are available.
