@@ -122,7 +122,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
     def prepare(): Unit = {
       SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
-      SortedColumnTests.createColumnTable(session, joinTableName, numBuckets, numElements)
+      SortedColumnTests.createColumnTable(session, joinTableName, numBuckets, numElements,
+        Some(colTableName))
       try {
         session.conf.set(Property.ColumnBatchSize.name, "24M") // default
         session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
@@ -256,7 +257,11 @@ object SortedColumnPerformanceTests {
     // scalastyle:off
     if (iterCount < 0) {
       println(s"Query = $query result=${result.length}")
-      result.foreach(r => print(s"[${r.getDouble(0)}, ${r.getLong(1)}], "))
+      result.foreach(r => {
+        val avg = r.getDouble(0)
+        val count = r.getLong(1)
+        print(s"[$avg, $count], ")
+      })
       println()
     }
     // scalastyle:on
@@ -276,8 +281,10 @@ object SortedColumnPerformanceTests {
     SortedColumnTests.verfiyInsertDataExists(session, numElements)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements)
     val dataFrameReader : DataFrameReader = session.read
-    val insertDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements))
-    val updateDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements))
+    val insertDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
+      multiple = 1))
+    val updateDF : DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+      multiple = 1))
 
     def execute(): Unit = {
       insertDF.write.insertInto(colTableName)
@@ -438,7 +445,8 @@ object SortedColumnPerformanceTests {
         params.foreach { case (k, v) => session.conf.set(k, v) }
         SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
         if (joinTableName.isDefined) {
-          SortedColumnTests.createColumnTable(session, joinTableName.get, numBuckets, numElements)
+          SortedColumnTests.createColumnTable(session, joinTableName.get, numBuckets, numElements,
+            Some(colTableName))
         }
         try {
           session.conf.set(Property.ColumnBatchSize.name, "24M") // default

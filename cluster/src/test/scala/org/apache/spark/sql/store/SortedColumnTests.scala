@@ -73,35 +73,39 @@ class SortedColumnTests extends ColumnTablesTestBase {
 object SortedColumnTests extends Logging {
   private val baseDataPath = s"/home/vivek/work/testData/local_index"
 
-  def filePathInsert(size: Long, multiple: Int = 1) : String = s"$baseDataPath/insert${size}_$multiple" 
+  def filePathInsert(size: Long, multiple: Int) : String = s"$baseDataPath/insert${size}_$multiple"
   def verfiyInsertDataExists(snc: SnappySession, size: Long, multiple: Int = 1) : Unit = {
     val dataDirInsert = new File(SortedColumnTests.filePathInsert(size, multiple))
     if (!dataDirInsert.exists()) {
       dataDirInsert.mkdir()
-      snc.sql(s"create EXTERNAL TABLE insert_table_$multiple(id int, addr string, status boolean)" +
+      snc.sql(s"create EXTERNAL TABLE insert_table_${size}_$multiple(id int, addr string," +
+          s" status boolean)" +
           s" USING parquet OPTIONS(path '${SortedColumnTests.filePathInsert(size, multiple)}')")
       var j = 0
       while (j < multiple) {
         snc.range(size).filter(_ % 10 < 6).selectExpr("id", "concat('addr'," +
             "cast(id as string))",
-          "case when (id % 2) = 0 then true else false end").write.insertInto(s"insert_table_$multiple")
+          "case when (id % 2) = 0 then true else false end").write.
+            insertInto(s"insert_table_${size}_$multiple")
         j += 1
       }
     }
   }
 
-  def filePathUpdate(size: Long, multiple: Int = 1) : String = s"$baseDataPath/update${size}_$multiple"
+  def filePathUpdate(size: Long, multiple: Int) : String = s"$baseDataPath/update${size}_$multiple"
   def verfiyUpdateDataExists(snc: SnappySession, size: Long, multiple: Int = 1) : Unit = {
     val dataDirUpdate = new File(SortedColumnTests.filePathUpdate(size, multiple))
     if (!dataDirUpdate.exists()) {
       dataDirUpdate.mkdir()
-      snc.sql(s"create EXTERNAL TABLE update_table_$multiple(id int, addr string, status boolean)" +
+      snc.sql(s"create EXTERNAL TABLE update_table_${size}_$multiple(id int, addr string," +
+          s" status boolean)" +
           s" USING parquet OPTIONS(path '${SortedColumnTests.filePathUpdate(size, multiple)}')")
       var j = 0
       while (j < multiple) {
         snc.range(size).filter(_ % 10 > 5).selectExpr("id", "concat('addr'," +
             "cast(id as string))",
-          "case when (id % 2) = 0 then true else false end").write.insertInto(s"update_table_$multiple")
+          "case when (id % 2) = 0 then true else false end").write.
+            insertInto(s"update_table_${size}_$multiple")
         j += 1
       }
     }
@@ -123,10 +127,15 @@ object SortedColumnTests extends Logging {
   }
 
   def createColumnTable(session: SnappySession, colTableName: String, numBuckets: Int,
-      numElements: Long): Unit = {
+      numElements: Long, colocateTableName: Option[String] = None): Unit = {
     session.sql(s"drop table if exists $colTableName")
+    if (colocateTableName.isDefined) session.sql(s"drop table if exists $colocateTableName")
+    val additionalString = if (colocateTableName.isDefined) {
+      s", COLOCATE_WITH '${colocateTableName.get}'"
+    } else ""
     session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
-        s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id')")
+        s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id' " +
+        additionalString + s")")
   }
 
   def testBasicInsert(session: SnappySession, colTableName: String, numBuckets: Int,
@@ -137,9 +146,9 @@ object SortedColumnTests extends Logging {
 
     createColumnTable(session, colTableName, numBuckets, numElements)
     val dataFrameReader : DataFrameReader = session.read
-    val insertDF : DataFrame = dataFrameReader.load(filePathInsert(numElements))
+    val insertDF : DataFrame = dataFrameReader.load(filePathInsert(numElements, multiple = 1))
     insertDF.write.insertInto(colTableName)
-    val updateDF : DataFrame = dataFrameReader.load(filePathUpdate(numElements))
+    val updateDF : DataFrame = dataFrameReader.load(filePathUpdate(numElements, multiple = 1))
 
     try {
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false,
