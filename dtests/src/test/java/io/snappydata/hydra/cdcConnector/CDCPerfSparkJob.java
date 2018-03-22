@@ -17,7 +17,7 @@ package io.snappydata.hydra.cdcConnector;
  * LICENSE file.
  */
 
-import org.scalactic.Bool;
+import hydra.Log;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -37,7 +37,7 @@ public class CDCPerfSparkJob {
 
   public static Connection getConnection() {
     Connection conn = null;
-    // System.out.println("Getting connection");
+    // Log.getLogWriter().info("Getting connection");
    // String url = "jdbc:snappydata://localhost:1527";
     String url = "jdbc:snappydata://"+hostPort;
     String driver = "io.snappydata.jdbc.ClientDriver";
@@ -45,7 +45,7 @@ public class CDCPerfSparkJob {
       Class.forName(driver);
       conn = DriverManager.getConnection(url);
     } catch (Exception ex) {
-      System.out.println("Caught exception in getConnection() method" + ex.getMessage());
+      Log.getLogWriter().info("Caught exception in getConnection() method" + ex.getMessage());
     }
     return conn;
   }
@@ -62,7 +62,7 @@ public class CDCPerfSparkJob {
     conn = getConnection();
     try {
       int queryPos = rnd.nextInt(qlist.size());
-      System.out.println(ThreadId + " warm up query = " + qlist.get(queryPos));
+      Log.getLogWriter().info(ThreadId + " warm up query = " + qlist.get(queryPos));
 
       // warm up task loop:
       for (int i = 0; i < 100; i++) {  // iterrate each query 100 times.
@@ -70,8 +70,8 @@ public class CDCPerfSparkJob {
       }
 
       threadname.add(ThreadId);
-      System.out.println(ThreadId + " executing query = " + qlist.get(queryPos));
-      System.out.println();
+      Log.getLogWriter().info(ThreadId + " executing query = " + qlist.get(queryPos));
+      Log.getLogWriter().info("");
       startTime = System.currentTimeMillis();
       ResultSet rs = conn.createStatement().executeQuery(qlist.get(queryPos));
       while (rs.next()) {
@@ -82,7 +82,7 @@ public class CDCPerfSparkJob {
       queryTimeMap.put(qlist.get(queryPos), timeTaken);
       plTimeListHashMap.put(threadname, queryTimeMap); // Hash Map contains (threadname ->(query,queryExecutionTime))
     } catch (Exception ex) {
-      System.out.println("Caught Exception in runPointLooUpQueries() method" + ex.getMessage());
+      Log.getLogWriter().info("Caught Exception in runPointLooUpQueries() method" + ex.getMessage());
     }
 
     return plTimeListHashMap;
@@ -92,7 +92,7 @@ public class CDCPerfSparkJob {
     Connection conn = null;
     long timeTaken = 0l;
     try {
-      System.out.println("Inside runQuery");
+      Log.getLogWriter().info("Inside runQuery");
       Random rnd = new Random();
       long startTime;
       long endTime;
@@ -122,11 +122,11 @@ public class CDCPerfSparkJob {
       }
       endTime = System.currentTimeMillis();
       timeTaken = (endTime - startTime);///numItr;
-      System.out.println("Query executed successfully and with " + numItr + " iterrations ,finished in " + timeTaken + " Time(ms)");
-      System.out.println("Avg time of " + numItr + " iterration is " + timeTaken / numItr + " Time(ms)");
+      Log.getLogWriter().info("Query executed successfully and with " + numItr + " iterrations ,finished in " + timeTaken + " Time(ms)");
+      Log.getLogWriter().info("Avg time of " + numItr + " iterration is " + timeTaken / numItr + " Time(ms)");
 
     } catch (Exception e) {
-      System.out.println("Caught exception " + e.getMessage());
+      Log.getLogWriter().info("Caught exception " + e.getMessage());
     } finally {
       try {
         conn.close();
@@ -138,7 +138,7 @@ public class CDCPerfSparkJob {
   }
 
   public static ArrayList getQueryArr(String fileName) {
-    System.out.println("QueryFile Name = " + fileName);
+    Log.getLogWriter().info("QueryFile Name = " + fileName);
     ArrayList<String> queries = new ArrayList<String>();
     try {
       BufferedReader br = new BufferedReader(new FileReader(fileName));
@@ -161,7 +161,7 @@ public class CDCPerfSparkJob {
 
 
   public void runConcurrencyTestJob(int threadCnt,String filePath,Boolean isScanQuery,String hostName){
-    System.out.println("Inside the actual task");
+    Log.getLogWriter().info("Inside the actual task");
     THREAD_COUNT = threadCnt;
     queryList = getQueryArr(filePath);
     hostPort = hostName;
@@ -175,7 +175,7 @@ public class CDCPerfSparkJob {
         new Thread(new Runnable() {
           public void run() {
             startBarierr.countDown();
-            System.out.println("Thread " + iterationIndex + " started");
+            Log.getLogWriter().info("Thread " + iterationIndex + " started");
             try {
               startBarierr.await();
               //if (isScanQuery.equals("false"))
@@ -185,8 +185,8 @@ public class CDCPerfSparkJob {
                 long scanTime = runScanQuery();
                 long actualTime = scanTime / 200;
                 timeList.add(actualTime);// a CopyOnWriteArray list to store the query execution time of each thread
-                System.out.println("Time returned is " + scanTime + " finaltime is = " + actualTime);
-                System.out.println("Thread " + iterationIndex + " finished ");
+                Log.getLogWriter().info("Time returned is " + scanTime + " finaltime is = " + actualTime);
+                Log.getLogWriter().info("Thread " + iterationIndex + " finished ");
               }
               finishBarierr.countDown(); //current thread finished, send mark
             } catch (InterruptedException e) {
@@ -206,12 +206,12 @@ public class CDCPerfSparkJob {
     for (int j = 0; j < plQryTimeList.size(); j++) {
       HashMap<List<Integer>, Map<String, Long>> tempHashMap = plQryTimeList.get(j);
       for (Map.Entry<List<Integer>, Map<String, Long>> entry : tempHashMap.entrySet()) {
-        System.out.println();
-        System.out.println("The thread id is " + entry.getKey());
+        Log.getLogWriter().info("");
+        Log.getLogWriter().info("The thread id is " + entry.getKey());
         Map<String, Long> queryTimeMap = entry.getValue();
         for (Map.Entry<String, Long> val : queryTimeMap.entrySet()) {
           long time = val.getValue();
-          System.out.println("Query = " + val.getKey() + " took = " + val.getValue() + " ms to execute");
+          Log.getLogWriter().info("Query = " + val.getKey() + " took = " + val.getValue() + " ms to execute");
         }
       }
     }
@@ -220,7 +220,7 @@ public class CDCPerfSparkJob {
       finalTime += timeList.get(i);
     }
 
-    System.out.println("Avg time from timeList, taken to execute a query  with  " + THREAD_COUNT + " threads is " + (finalTime / THREAD_COUNT) + " (ms)");
+    Log.getLogWriter().info("Avg time from timeList, taken to execute a query  with  " + THREAD_COUNT + " threads is " + (finalTime / THREAD_COUNT) + " (ms)");
   }
 
 
@@ -243,7 +243,7 @@ public class CDCPerfSparkJob {
       new Thread(new Runnable() {
         public void run() {
           startBarierr.countDown();
-          System.out.println("Thread " + iterationIndex + " started");
+          Log.getLogWriter().info("Thread " + iterationIndex + " started");
           try {
             startBarierr.await();
             if (isScanQuery.equals("false"))
@@ -252,8 +252,8 @@ public class CDCPerfSparkJob {
               long scanTime = runScanQuery();
               long actualTime = scanTime / 200;
               timeList.add(actualTime);// a CopyOnWriteArray list to store the query execution time of each thread
-              System.out.println("Time returned is " + scanTime + " finaltime is = " + actualTime);
-              System.out.println("Thread " + iterationIndex + " finished ");
+              Log.getLogWriter().info("Time returned is " + scanTime + " finaltime is = " + actualTime);
+              Log.getLogWriter().info("Thread " + iterationIndex + " finished ");
             }
             finishBarierr.countDown(); //current thread finished, send mark
           } catch (InterruptedException e) {
@@ -270,12 +270,12 @@ public class CDCPerfSparkJob {
     for (int j = 0; j < plQryTimeList.size(); j++) {
       HashMap<List<Integer>, Map<String, Long>> tempHashMap = plQryTimeList.get(j);
       for (Map.Entry<List<Integer>, Map<String, Long>> entry : tempHashMap.entrySet()) {
-        System.out.println();
-        System.out.println("The thread id is " + entry.getKey());
+        Log.getLogWriter().info();
+        Log.getLogWriter().info("The thread id is " + entry.getKey());
         Map<String, Long> queryTimeMap = entry.getValue();
         for (Map.Entry<String, Long> val : queryTimeMap.entrySet()) {
           long time = val.getValue();
-          System.out.println("Query = " + val.getKey() + " took = " + val.getValue() + " ms to execute");
+          Log.getLogWriter().info("Query = " + val.getKey() + " took = " + val.getValue() + " ms to execute");
         }
       }
     }
@@ -284,7 +284,7 @@ public class CDCPerfSparkJob {
       finalTime += timeList.get(i);
     }
 
-    System.out.println("Avg time from timeList, taken to execute a query  with  " + THREAD_COUNT + " threads is " + (finalTime / THREAD_COUNT) + " (ms)");
+    Log.getLogWriter().info("Avg time from timeList, taken to execute a query  with  " + THREAD_COUNT + " threads is " + (finalTime / THREAD_COUNT) + " (ms)");
 */  }
 }
 

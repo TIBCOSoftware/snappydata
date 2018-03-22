@@ -11,9 +11,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
+import hydra.Log;
+import org.apache.spark.sql.catalyst.plans.logical.Except;
 
 class cdcObject implements Runnable {
-  public String path = "/export/dev11a/users/spillai/snappydata/dtests/src/resources/scripts/cdcConnector";
+  public String path = "/home/supriya/snappy/snappydata/dtests/src/resources/scripts/cdcConnector";
   private Thread t;
   private String threadName;
   private int startRange;
@@ -232,28 +234,43 @@ class cdcObject implements Runnable {
 
   public void start () {
     System.out.println("Starting " +  threadName );
-    if (t == null) {
-      t = new Thread (this);
-      t.start ();
-      t.setName(threadName);
+    try {
+      if (t == null) {
+        t = new Thread(this);
+        t.start();
+        t.setName(threadName);
+        t.join();
+      }
     }
+    catch(Exception ex){}
   }
 }
 
 public class CDCIngestionApp {
 
-  public void runIngestionApp(int start, int end){
+ /* public void runIngestionApp(int start, int end){
+    System.out.println("Inside actual task");
     for(int i=1 ; i <= 5 ; i++){
       cdcObject obj = new cdcObject("Thread-"+i,start,end);
       obj.start();
     }
-  }
+  }*/
 
  // public static int range;
-  public static void main(String args[]) {
-    CDCIngestionApp cdcIngestionApp = new CDCIngestionApp();
-    int sRange = Integer.parseInt(args[0]);
-    int eRange = Integer.parseInt(args[1]);
-    cdcIngestionApp.runIngestionApp(sRange, eRange);
-  }
+ public static void main(String args[]) {
+   //  CDCIngestionApp cdcIngestionApp = new CDCIngestionApp();
+ try {
+     int sRange = Integer.parseInt(args[0]);
+     int eRange = Integer.parseInt(args[1]);
+     for (int i = 1; i <= 5; i++) {
+       cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange);
+       obj.start();
+    }
+     // cdcIngestionApp.runIngestionApp(sRange, eRange);
+   } catch (Exception e) {
+   } finally {
+     System.out.println("Spark ApplicationEnd: ");
+   }
+ }
+
 }

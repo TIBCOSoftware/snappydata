@@ -19,6 +19,7 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
+import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
 import io.snappydata.hydra.connectionPool.HikariConnectionPool;
 import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
 import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
@@ -227,19 +228,23 @@ public class SnappyTest implements Serializable {
 
   protected static String getUserAppJarLocation(final String jarName, String jarPath) {
     String userAppJarPath = null;
-    File baseDir = new File(jarPath);
-    try {
-      IOFileFilter filter = new WildcardFileFilter(jarName);
-      List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
-      Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
-      for (File file1 : files) {
-        if (!file1.getAbsolutePath().contains("/work/") || !file1.getAbsolutePath().contains("/scala-2.10/"))
-          userAppJarPath = file1.getAbsolutePath();
+    if (new File(jarName).exists()) {
+      return jarName;
+    } else {
+      File baseDir = new File(jarPath);
+      try {
+        IOFileFilter filter = new WildcardFileFilter(jarName);
+        List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
+        Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
+        for (File file1 : files) {
+          if (!file1.getAbsolutePath().contains("/work/") || !file1.getAbsolutePath().contains("/scala-2.10/"))
+            userAppJarPath = file1.getAbsolutePath();
+        }
+      } catch (Exception e) {
+        Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
       }
-    } catch (Exception e) {
-      Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
+      return userAppJarPath;
     }
-    return userAppJarPath;
   }
 
   public String getDataLocation(String paramName) {
@@ -1171,11 +1176,11 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
-  public static synchronized void setConnPoolType(){
-    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+  public static synchronized void setConnPoolType() {
+    if (!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
       SnappyBB.getBB().getSharedMap().put("connPoolType", SnappyConnectionPoolPrms
           .getConnPoolType(connPool));
-    connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
+    connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
   }
 
   /**
@@ -1184,17 +1189,16 @@ public class SnappyTest implements Serializable {
   public static Connection getLocatorConnection() throws SQLException {
     Connection conn = null;
 
-    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+    if (!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
       setConnPoolType();
-    else 
-      connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
-    
-    if(connPoolType == 0){
+    else
+      connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
+
+    if (connPoolType == 0) {
       conn = HikariConnectionPool.getConnection();
-    } else if (connPoolType == 1){
+    } else if (connPoolType == 1) {
       conn = TomcatConnectionPool.getConnection();
-    }
-    else {
+    } else {
       List<String> endpoints = validateLocatorEndpointData();
 
       if (!runGemXDQuery) {
@@ -1690,6 +1694,10 @@ public class SnappyTest implements Serializable {
         assert pb.redirectOutput().file() == logFile;
         assert p.getInputStream().read() == -1;
       }
+      /*if(SnappyCDCPrms.getIsCDCStream()) {
+        Log.getLogWriter().info("SP - inside executeProcess... ");
+        return;
+      }*/
       int rc = p.waitFor();
       if ((rc == 0) || (pb.command().contains("grep") && rc == 1)) {
         Log.getLogWriter().info("Executed successfully");
@@ -2051,6 +2059,8 @@ public class SnappyTest implements Serializable {
 
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
+    boolean isCDCStream = SnappyCDCPrms.getIsCDCStream();
+    Log.getLogWriter().info("SP - isCDCStream value : " + isCDCStream);
     ProcessBuilder pb = null;
     File log = null, logFile = null;
     userAppJar = SnappyPrms.getUserAppJar();
@@ -2065,23 +2075,52 @@ public class SnappyTest implements Serializable {
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
         String userAppArgs = SnappyPrms.getUserAppArgs();
-        if (SnappyPrms.hasDynamicAppProps()) {
-          userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
-        }
-        command = snappyJobScript + " --class " + userJob +
-            " --master spark://" + masterHost + ":" + masterPort + " " +
-            SnappyPrms.getExecutorMemory() + " " +
-            SnappyPrms.getSparkSubmitExtraPrms() + " " +
-            " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-            " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-            " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-            userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
-        Log.getLogWriter().info("spark-submit command is : " + command);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
         logFile = new File(dest);
+        if (SnappyPrms.hasDynamicAppProps()) {
+          userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
+        }
+        if(SnappyCDCPrms.getIsCDC())
+        {
+          String appName = SnappyCDCPrms.getAppName();
+          command = snappyJobScript + " --class " + userJob +
+              " --name " + appName +
+              " --master spark://" + masterHost + ":" + masterPort + " " +
+              SnappyPrms.getExecutorMemory() + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " +
+              " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+              " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
+              " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort +
+              " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              userAppArgs ;
+              if(SnappyCDCPrms.getIsCDCStream())
+                command = "nohup " + command + " > " + logFile + " & ";
+        }
+        else {
+          command = snappyJobScript + " --class " + userJob +
+              " --master spark://" + masterHost + ":" + masterPort + " " +
+              SnappyPrms.getExecutorMemory() + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " +
+              " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+              " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
+              " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort +
+              " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
+        }
+        Log.getLogWriter().info("spark-submit command is : " + command);
         pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
+        Log.getLogWriter().info("CDC stream is : " + SnappyCDCPrms.getIsCDCStream());
+        if(SnappyCDCPrms.getIsCDCStream()) {
+          try {
+            Thread.sleep(60000);
+          }catch (InterruptedException ie){
+
+          }
+          Log.getLogWriter().info("SP - inside getIsCDCStream : " + SnappyCDCPrms.getIsCDCStream());
+          return;
+        }
         String searchString = "Spark ApplicationEnd: ";
         String expression = "cat " + logFile + " | grep -e Exception -e '" + searchString + "' |" +
             " grep -v java.net.BindException" + " | wc -l)\"";
