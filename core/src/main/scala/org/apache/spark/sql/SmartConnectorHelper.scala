@@ -240,13 +240,14 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
         val partitionCols = getMetaDataStmt.getString(4).split(":")
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
         val allNetUrls = SmartConnectorRDDHelper.setBucketToServerMappingInfo(
-          bucketToServerMappingStr)
+          bucketToServerMappingStr, snappySession)
         val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
         (t, RelationInfo(bucketCount, isPartitioned = true, partitionCols.toSeq,
           indexCols, pkCols, partitions, embdClusterRelDestroyVersion))
       } else {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
-        val allNetUrls = SmartConnectorRDDHelper.setReplicasToServerMappingInfo(replicaToNodesInfo)
+        val allNetUrls = SmartConnectorRDDHelper.setReplicasToServerMappingInfo(
+          replicaToNodesInfo, snappySession)
         val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
         (t, RelationInfo(1, isPartitioned = false, Nil, indexCols, pkCols,
           partitions, embdClusterRelDestroyVersion))

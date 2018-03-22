@@ -90,18 +90,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def readDataType(in: ByteArrayDataInput): AnyRef = {
     // read the DataType
-    val pooled = KryoSerializerPool.borrow()
-    val input = pooled.input
-    try {
-      val initPosition = in.position()
-      input.setBuffer(in.array(), initPosition, in.available())
-      val result = StructTypeSerializer.readType(pooled.kryo, input)
+    KryoSerializerPool.deserialize(in.array(), in.position(), in.available(), (kryo, input) => {
+      val result = StructTypeSerializer.readType(kryo, input)
       // move the cursor to the new position
       in.setPosition(input.position())
       result
-    } finally {
-      KryoSerializerPool.release(pooled, clearInputBuffer = true)
-    }
+    })
   }
 
   override def getRowIterator(dvds: Array[DataValueDescriptor],
