@@ -26,7 +26,9 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.Logging
@@ -82,7 +84,7 @@ class SparkSQLPrepareImpl(val sql: String,
       val paramLiteralsAtPrepare = paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length
       if (paramCount != questionMarkCounter) {
-        throw new UnsupportedOperationException("This query is unsupported for prepared statement")
+        throw Util.generateCsSQLException(SQLState.NOT_FOR_PREPARED_STATEMENT, sql)
       }
       val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
@@ -148,11 +150,11 @@ class SparkSQLPrepareImpl(val sql: String,
 
   def addParamLiteral(position: Int, datatype: DataType, nullable: Boolean,
       result: mutable.HashSet[ParamLiteral]): Unit = if (!result.exists(_.pos == position)) {
-    result += ParamLiteral(nullable, datatype, position, execId = -1)
+    result += ParamLiteral(nullable, datatype, position, execId = -1, tokenized = true)
   }
 
   def allParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
-    def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+    val mapExpression: PartialFunction[Expression, Expression] = {
       case bl@BinaryComparison(left: Expression, QuestionMark(pos)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         bl
@@ -196,11 +198,11 @@ class SparkSQLPrepareImpl(val sql: String,
         }
         inlist
     }
-    handleSubQuery(allParams(plan), allParams)
+    handleSubQuery(plan, mapExpression)
   }
 
   def remainingParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
-    def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+    val mapExpression: PartialFunction[Expression, Expression] = {
       case c@Cast(QuestionMark(pos), castType: DataType) =>
         addParamLiteral(pos, castType, nullable = false, result)
         c
@@ -208,16 +210,17 @@ class SparkSQLPrepareImpl(val sql: String,
         handleCase(branches, elseValue, castType, nullable = false, result)
         cc
     }
-    handleSubQuery(allParams(plan), allParams)
+    handleSubQuery(plan, mapExpression)
   }
 
   def handleSubQuery(plan: LogicalPlan,
-      f: (LogicalPlan) => LogicalPlan): LogicalPlan = plan transformAllExpressions {
+      f: PartialFunction[Expression, Expression]): LogicalPlan = plan transformAllExpressions {
+    case e if f.isDefinedAt(e) => f(e)
     case sub: SubqueryExpression => sub match {
-      case l@ListQuery(query, x) => l.copy(f(query), x)
-      case e@Exists(query, x) => e.copy(f(query), x)
-      case p@PredicateSubquery(query, x, y, z) => p.copy(f(query), x, y, z)
-      case s@ScalarSubquery(query, x, y) => s.copy(f(query), x, y)
+      case l@ListQuery(query, x) => l.copy(handleSubQuery(query, f), x)
+      case e@Exists(query, x) => e.copy(handleSubQuery(query, f), x)
+      case p@PredicateSubquery(query, x, y, z) => p.copy(handleSubQuery(query, f), x, y, z)
+      case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
   }
 }

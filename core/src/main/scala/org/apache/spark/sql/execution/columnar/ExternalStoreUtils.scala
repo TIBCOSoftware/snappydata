@@ -24,7 +24,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
@@ -717,9 +717,8 @@ object ExternalStoreUtils {
   }
 
   def getExternalTableMetaData(qualifiedTable: String): ExternalTableMetaData = {
-    val region = Misc.getRegionForTable(qualifiedTable, true)
     getExternalTableMetaData(qualifiedTable,
-      region.getUserAttribute.asInstanceOf[GemFireContainer], checkColumnStore = false)
+      GemFireXDUtils.getGemFireContainer(qualifiedTable, true), checkColumnStore = false)
   }
 
   def getExternalTableMetaData(qualifiedTable: String, container: GemFireContainer,

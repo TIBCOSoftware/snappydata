@@ -177,6 +177,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   override def sql(sqlText: String): CachedDataFrame =
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
 
+  @DeveloperApi
   def sqlUncached(sqlText: String): DataFrame = {
     if (planCaching) {
       planCaching = false
@@ -217,7 +218,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   @transient
-  private[sql] val queryHints = new ConcurrentHashMap[String, String](16, 0.7f, 1)
+  private[sql] val queryHints = new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
   def getPreviousQueryHints: java.util.Map[String, String] =
     java.util.Collections.unmodifiableMap(queryHints)
@@ -385,7 +386,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def clearQueryData(): Unit = synchronized {
     queryHints.clear()
-    clearContext()
   }
 
   def clearPlanCache(): Unit = synchronized {
@@ -2020,7 +2020,6 @@ object SnappySession extends Logging {
         m.putAll(session.queryHints)
         m
       }
-      session.clearQueryData()
       hints
     }
 
@@ -2284,7 +2283,12 @@ object CachedKey {
     def normalizeExprIds: PartialFunction[Expression, Expression] = {
       case a: AttributeReference =>
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(-1))
-      case a: Alias => Alias(a.child, "none")(exprId = ExprId(-1))
+      case a: Alias =>
+        val name = if (a.name == Utils.WEIGHTAGE_COLUMN_NAME ||
+            a.name.startsWith(Utils.SKIP_ANALYSIS_PREFIX)) {
+          a.name
+        } else "none"
+        Alias(a.child, name)(exprId = ExprId(-1))
       case ae: AggregateExpression => ae.copy(resultId = ExprId(-1))
       case s: ScalarSubquery =>
         throw new IllegalStateException("scalar subquery should not have been present")
