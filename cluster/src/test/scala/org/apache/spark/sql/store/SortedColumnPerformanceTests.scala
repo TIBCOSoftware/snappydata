@@ -104,7 +104,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
   test("JoinQuery performance") {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
-    val joinTableName = "colDeltaTable"
+    val joinTableName = "joinDeltaTable"
     val numElements = 999551
     val numTimesInsert = 199
     val numTimesUpdate = 1
