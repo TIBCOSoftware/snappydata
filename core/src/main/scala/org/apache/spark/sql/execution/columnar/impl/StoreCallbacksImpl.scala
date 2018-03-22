@@ -51,6 +51,7 @@ import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
@@ -616,6 +617,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def initMemoryStats(stats: MemoryManagerStats): Unit =
     MemoryManagerCallback.memoryManager.initMemoryStats(stats)
+
+  override def clearConnectionPools(): Unit = {
+    ConnectionPool.clear()
+  }
 }
 
 trait StoreCallback extends Serializable {

@@ -4,13 +4,13 @@
 
 The syntax used for the REVOKE statement differs depending on whether you revoke privileges for a table or for a routine.
 
-``` pre
+```no-highlight
 REVOKE privilege-type ON [ TABLE ] { table-name | view-name } FROM grantees
 ```
 
 If you do not specify a column list, the statement revokes the privilege for all of the columns in the table.
 
-``` pre
+```no-highlight
 REVOKE EXECUTE ON { FUNCTION | PROCEDURE } routine-designator FROM grantees RESTRICT
 ```
 
@@ -63,7 +63,7 @@ The privileges revoked from PUBLIC and from individual users are independent pri
 <a id="routine-designator"></a>
 ## routine-designator
 
-``` pre
+```no-highlight
 { qualified-name [ signature ] }
 ```
 
@@ -95,31 +95,31 @@ When a REVOKE statement for a column-level privilege is issued for a grantee, ta
 
 To revoke the SELECT privilege on table t from the authorization IDs maria and harry:
 
-``` pre
+```no-highlight
 REVOKE SELECT ON TABLE t FROM sam,bob;
 ```
 
 To revoke the UPDATE and TRIGGER privileges on table t from the authorization IDs john and smith:
 
-``` pre
+```no-highlight
 REVOKE UPDATE, TRIGGER ON TABLE t FROM adam,richard;
 ```
 
 To revoke the SELECT privilege on table s.v from all users:
 
-``` pre
+```no-highlight
 REVOKE SELECT ON TABLE test.sample FROM PUBLIC;
 ```
 
 To revoke the UPDATE privilege on columns c1 and c2 of table s.v from all users:
 
-``` pre
+```no-highlight
 REVOKE UPDATE (c1,c2) ON TABLE test.sample FROM PUBLIC;
 ```
 
 To revoke the EXECUTE privilege on procedure p from the authorization ID george:
 
-``` pre
+```no-highlight
 REVOKE EXECUTE ON PROCEDURE p FROM richard RESTRICT;
 ```
 

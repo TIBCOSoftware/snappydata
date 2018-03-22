@@ -20,6 +20,7 @@ package org.apache.spark.sql.internal
 import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
@@ -32,8 +33,10 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.{EqualTo, _}
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
+import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
+import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -41,7 +44,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy
+import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
@@ -103,6 +106,7 @@ class SnappySessionState(snappySession: SnappySession)
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
+
   def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
     Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
   }
@@ -136,7 +140,8 @@ class SnappySessionState(snappySession: SnappySession)
           Batch("Like escape simplification", Once, LikeEscapeSimplification) :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
           Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets(conf)) :+
-          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
+          Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding) :+
+          Batch("Order join conditions ", Once, OrderJoinConditions)
     }
   }
 
@@ -240,6 +245,75 @@ class SnappySessionState(snappySession: SnappySession)
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
+    }
+  }
+
+  /**
+    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
+    */
+  object OrderJoinConditions extends Rule[LogicalPlan] with JoinQueryPlanning {
+    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+      case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, otherCondition, left, right) =>
+        prepareOrderedCondition(joinType, left, right, leftKeys, rightKeys, otherCondition)
+    }
+
+    def getPartCols(plan: LogicalPlan): Seq[NamedExpression] = {
+      plan match {
+        case PhysicalScan(_, _, child) => child match {
+          case r@LogicalRelation(scan: PartitionedDataSourceScan, _, _) =>
+            // send back numPartitions=1 for replicated table since collocated
+            if (!scan.isPartitioned) return Nil
+            val partCols = scan.partitionColumns.map(colName =>
+              r.resolveQuoted(colName, analysis.caseInsensitiveResolution)
+                  .getOrElse(throw new AnalysisException(
+                    s"""Cannot resolve column "$colName" among (${r.output})""")))
+            partCols
+          case _ => Nil
+        }
+        case _ => Nil
+      }
+    }
+
+    private def orderJoinKeys(left: LogicalPlan,
+        right: LogicalPlan,
+        leftKeys: Seq[Expression],
+        rightKeys: Seq[Expression]): (Seq[Expression], Seq[Expression]) = {
+      val leftPartCols = getPartCols(left)
+      val rightPartCols = getPartCols(right)
+      if (leftPartCols ne Nil) {
+        val (keyOrder, allPartPresent) = getKeyOrder(left, leftKeys, leftPartCols)
+        if (allPartPresent) {
+          val leftOrderedKeys = keyOrder.zip(leftKeys).sortWith(_._1 < _._1).unzip._2
+          val rightOrderedKeys = keyOrder.zip(rightKeys).sortWith(_._1 < _._1).unzip._2
+          (leftOrderedKeys, rightOrderedKeys)
+        } else {
+          (leftKeys, rightKeys)
+        }
+      } else if (rightPartCols ne Nil) {
+        val (keyOrder, allPartPresent) = getKeyOrder(right, rightKeys, rightPartCols)
+        if (allPartPresent) {
+          val leftOrderedKeys = keyOrder.zip(leftKeys).sortWith(_._1 < _._1).unzip._2
+          val rightOrderedKeys = keyOrder.zip(rightKeys).sortWith(_._1 < _._1).unzip._2
+          (leftOrderedKeys, rightOrderedKeys)
+        } else {
+          (leftKeys, rightKeys)
+        }
+      } else {
+        (leftKeys, rightKeys)
+      }
+    }
+
+    private def prepareOrderedCondition(joinType: JoinType,
+        left: LogicalPlan,
+        right: LogicalPlan,
+        leftKeys: Seq[Expression],
+        rightKeys: Seq[Expression],
+        otherCondition: Option[Expression]): LogicalPlan = {
+      val (leftOrderedKeys, rightOrderedKeys) = orderJoinKeys(left, right, leftKeys, rightKeys)
+      val joinPairs = leftOrderedKeys.zip(rightOrderedKeys)
+      val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
+      val allConditions = (newJoin ++ otherCondition).reduceOption(And)
+      Join(left, right, joinType, allConditions)
     }
   }
 
@@ -874,7 +948,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           def comp(a: Attribute, targetCol: String): Boolean = a match {
             case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
           }
-          // First, make sure the where column(s) of the delete are in schema of the relation.
+
           val expectedOutput = l.output
           if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
             throw new AnalysisException(s"$l requires that the query in the " +
@@ -895,8 +969,13 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
 
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
-          // First, make sure the where column(s) of the delete are in schema of the relation.
           val expectedOutput = l.output
+          if (child.output.length != expectedOutput.length) {
+            throw new AnalysisException(s"$l requires that the query in the " +
+                "WHERE clause of the DELETE FROM statement " +
+                "generates the same number of column(s) as in its schema but found " +
+                s"${child.output.mkString(",")} instead.")
+          }
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
         case _ => d
       }

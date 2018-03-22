@@ -34,7 +34,6 @@ if (JavaVersion.current().isJava8Compatible()) {
     }
   }
 }
-
 buildscript {
   repositories {
     maven { url 'https://plugins.gradle.org/m2' }
@@ -160,6 +159,13 @@ allprojects {
     sparkProductDir = "${sparkDistDir}/${sparkDistName}"
   }
 }
+
+
+def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
+def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
+def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
+def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists() 
+def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()
 
 def getProcessId() {
   String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
@@ -711,20 +717,22 @@ task product(type: Zip) {
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
   def targetProject = clusterProject
-  def isEnterpriseProduct = new File(rootDir, 'aqp/build.gradle').exists() &&
-      rootProject.hasProperty('snappydata.enterprise')
-  def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
-  def hasJdbcConnectorProject = new File(rootDir,
-      'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 
   if (isEnterpriseProduct) {
-    dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
-    targetProject = aqpProject
+    if (hasAqpProject) {
+      dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
+      targetProject = aqpProject
+    }
+
+    if (hasJdbcConnectorProject){
+       dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
+    }
+    if (hasGemFireConnectorProject){
+       dependsOn ":gemfire-connector:product"
+    }
+
   }
 
-  if (hasJdbcConnectorProject && rootProject.hasProperty('snappydata.enterprise')) {
-    dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
-  }
 
   // create snappydata+spark combined python zip
   destinationDir = file("${snappyProductDir}/python/lib")
@@ -843,7 +851,7 @@ task product(type: Zip) {
         exclude '.git*'
       }
     }
-    if (isEnterpriseProduct) {
+    if (isEnterpriseProduct && hasAqpProject) {
       // copy enterprise shared libraries for optimized JNI calls
       copy {
         from aqpProject.projectDir.path + '/lib'
@@ -1050,7 +1058,7 @@ def copyTestsCommonResources(def bdir) {
 task copyResourcesAll { doLast {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
-  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+  if (isEnterpriseProduct && hasAqpProject) {
     copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
 } }
@@ -1083,9 +1091,11 @@ task checkAll {
   }
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
-  if (!rootProject.hasProperty('aqp.skip') && new File(rootDir, 'aqp/build.gradle').exists()
-          && rootProject.hasProperty('snappydata.enterprise')) {
+  if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
+  }
+  if (isEnterpriseProduct && hasGemFireConnectorProject) {
+    dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
     dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:scalaTest"

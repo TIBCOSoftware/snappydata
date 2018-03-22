@@ -114,10 +114,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val rightClustered = ClusteredDistribution(rightKeys)
       val leftPartitioning = left.outputPartitioning
       val rightPartitioning = right.outputPartitioning
-      if (leftPartitioning.satisfies(leftClustered) ||
-          rightPartitioning.satisfies(rightClustered) ||
-          // if either side is broadcast then return defaults
-          leftPartitioning.isInstanceOf[BroadcastDistribution] ||
+      // if either side is broadcast then return defaults
+      if (leftPartitioning.isInstanceOf[BroadcastDistribution] ||
           rightPartitioning.isInstanceOf[BroadcastDistribution] ||
           // if both sides are unknown then return defaults too
           (leftPartitioning.isInstanceOf[UnknownPartitioning] &&
@@ -229,8 +227,18 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
       // treat as a zip of all stream side RDDs and build side RDDs and
       // use intersection of preferred locations, if possible, else union
-      val numParts = streamRDDs.head.getNumPartitions
-      val allRDDs = streamRDDs ++ buildRDDs
+
+      // Mostly with SHJ both the partition num will be equal.
+      // However, in certain cases if num partition of one side is
+      // == 1 it also qualifies for SHJ.
+      val (allRDDs, numParts) = if (buildRDDs.head.getNumPartitions == 1) {
+        (streamRDDs, streamRDDs.head.getNumPartitions)
+      } else if (streamRDDs.head.getNumPartitions == 1) {
+        (buildRDDs, buildRDDs.head.getNumPartitions)
+      } else {
+        // Equal partitions
+        ((streamRDDs ++ buildRDDs), streamRDDs.head.getNumPartitions)
+      }
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
           rdd.partitions(i)))
