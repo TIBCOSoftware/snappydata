@@ -48,7 +48,7 @@ class SnappyTempTableTest extends SnappyFunSuite
     val plan = catalog.lookupRelation(qName)
     plan match {
       case LogicalRelation(br, _, _) => fail(" A RDD based temp table " +
-          "should have been matched with LogicalPlan")
+         "should have been matched with LogicalPlan")
       case _ =>
     }
 
@@ -64,10 +64,10 @@ class SnappyTempTableTest extends SnappyFunSuite
   test("test drop table from a relational source") {
     val file = getClass.getResource("/airlineCode_Lookup.csv").getPath
     val df = snc.read
-        .format("com.databricks.spark.csv") // CSV to DF package
-        .option("header", "true") // Use first line of all files as header
-        .option("inferSchema", "true") // Automatically infer data types
-        .load(file)
+       .format("com.databricks.spark.csv") // CSV to DF package
+       .option("header", "true") // Use first line of all files as header
+       .option("inferSchema", "true") // Automatically infer data types
+       .load(file)
 
     df.createOrReplaceTempView(tableName)
     val catalog = snc.sessionState.catalog
@@ -76,7 +76,7 @@ class SnappyTempTableTest extends SnappyFunSuite
     plan match {
       case LogicalRelation(br, _, _) =>
       case _ => fail("A CSV relation temp table should have been " +
-          "matched with LogicalRelation")
+         "matched with LogicalRelation")
     }
     val scan = snc.sql(s"select * from $tableName")
     scan.count()
