@@ -34,7 +34,7 @@ import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
-import org.apache.spark.sql.catalyst.expressions.{LiteralValue, ParamLiteral, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{DynamicFoldableExpression, ParamLiteral, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep, SmartExecutorBucketPartition}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, JDBCSourceAsColumnarStore, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
@@ -148,8 +148,9 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
     kryo.register(classOf[JDBCSourceAsColumnarStore], new KryoSerializableSerializer)
+    kryo.register(classOf[TokenLiteral], new KryoSerializableSerializer)
     kryo.register(classOf[ParamLiteral], new KryoSerializableSerializer)
-    kryo.register(classOf[LiteralValue], new KryoSerializableSerializer)
+    kryo.register(classOf[DynamicFoldableExpression], new KryoSerializableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(

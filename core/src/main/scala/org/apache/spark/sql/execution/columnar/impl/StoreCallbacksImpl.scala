@@ -47,10 +47,11 @@ import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, ParamLiteral, SortDirection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, SortDirection, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
@@ -372,27 +373,27 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   private[sql] def translateFilter(filter: Filter,
       schema: Seq[AttributeReference]): Expression = filter match {
     case sources.EqualTo(a, v) =>
-      expressions.EqualTo(attr(a, schema), ParamLiteral(v, pos = -1))
+      expressions.EqualTo(attr(a, schema), TokenLiteral.newToken(v))
     case sources.EqualNullSafe(a, v) =>
-      expressions.EqualNullSafe(attr(a, schema), ParamLiteral(v, pos = -1))
+      expressions.EqualNullSafe(attr(a, schema), TokenLiteral.newToken(v))
 
     case sources.GreaterThan(a, v) =>
-      expressions.GreaterThan(attr(a, schema), ParamLiteral(v, pos = -1))
+      expressions.GreaterThan(attr(a, schema), TokenLiteral.newToken(v))
     case sources.LessThan(a, v) =>
-      expressions.LessThan(attr(a, schema), ParamLiteral(v, pos = -1))
+      expressions.LessThan(attr(a, schema), TokenLiteral.newToken(v))
 
     case sources.GreaterThanOrEqual(a, v) =>
-      expressions.GreaterThanOrEqual(attr(a, schema), ParamLiteral(v, pos = -1))
+      expressions.GreaterThanOrEqual(attr(a, schema), TokenLiteral.newToken(v))
     case sources.LessThanOrEqual(a, v) =>
-      expressions.LessThanOrEqual(attr(a, schema), ParamLiteral(v, pos = -1))
+      expressions.LessThanOrEqual(attr(a, schema), TokenLiteral.newToken(v))
 
-    case sources.In(a, v) =>
-      val set = if (v.length > 0) {
-        val l = Literal(v(0))
+    case sources.In(a, list) =>
+      val set = if (list.length > 0) {
+        val l = Literal(list(0))
         val toCatalyst = CatalystTypeConverters.createToCatalystConverter(l.dataType)
-        v.toSet.map(toCatalyst)
-      } else Set.empty[Any]
-      expressions.InSet(attr(a, schema), set)
+        list.map(v => new TokenLiteral(toCatalyst(v), l.dataType)).toVector
+      } else Vector.empty
+      expressions.DynamicInSet(attr(a, schema), set)
 
     case sources.IsNull(a) => expressions.IsNull(attr(a, schema))
     case sources.IsNotNull(a) => expressions.IsNotNull(attr(a, schema))
@@ -405,13 +406,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
     case sources.StringStartsWith(a, v) =>
       expressions.StartsWith(attr(a, schema),
-        ParamLiteral(UTF8String.fromString(v), StringType, pos = -1))
+        new TokenLiteral(UTF8String.fromString(v), StringType))
     case sources.StringEndsWith(a, v) =>
       expressions.EndsWith(attr(a, schema),
-        ParamLiteral(UTF8String.fromString(v), StringType, pos = -1))
+        new TokenLiteral(UTF8String.fromString(v), StringType))
     case sources.StringContains(a, v) =>
       expressions.Contains(attr(a, schema),
-        ParamLiteral(UTF8String.fromString(v), StringType, pos = -1))
+        new TokenLiteral(UTF8String.fromString(v), StringType))
 
     case _ => throw new IllegalStateException(s"translateFilter: unexpected filter = $filter")
   }
@@ -616,6 +617,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def initMemoryStats(stats: MemoryManagerStats): Unit =
     MemoryManagerCallback.memoryManager.initMemoryStats(stats)
+
+  override def clearConnectionPools(): Unit = {
+    ConnectionPool.clear()
+  }
 }
 
 trait StoreCallback extends Serializable {

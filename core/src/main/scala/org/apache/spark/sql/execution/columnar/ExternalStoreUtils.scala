@@ -24,7 +24,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
@@ -38,7 +38,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, LiteralValue}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
@@ -411,12 +411,12 @@ object ExternalStoreUtils {
     case _: expressions.EqualTo | _: expressions.LessThan | _: expressions.GreaterThan |
          _: expressions.LessThanOrEqual | _: expressions.GreaterThanOrEqual =>
       val b = f.asInstanceOf[BinaryExpression]
-      !((b.left.isInstanceOf[Attribute] && LiteralValue.isConstant(b.right)) ||
-          (LiteralValue.isConstant(b.left) && b.right.isInstanceOf[Attribute]))
+      !((b.left.isInstanceOf[Attribute] && TokenLiteral.isConstant(b.right)) ||
+          (TokenLiteral.isConstant(b.left) && b.right.isInstanceOf[Attribute]))
     case expressions.IsNull(_: Attribute) | expressions.IsNotNull(_: Attribute) => false
     case _: expressions.StartsWith | _: expressions.EndsWith | _: expressions.Contains =>
       val b = f.asInstanceOf[BinaryExpression]
-      !(b.left.isInstanceOf[Attribute] && LiteralValue.isConstant(b.right))
+      !(b.left.isInstanceOf[Attribute] && TokenLiteral.isConstant(b.right))
     case _ => true
   }
 
@@ -717,9 +717,8 @@ object ExternalStoreUtils {
   }
 
   def getExternalTableMetaData(qualifiedTable: String): ExternalTableMetaData = {
-    val region = Misc.getRegionForTable(qualifiedTable, true)
     getExternalTableMetaData(qualifiedTable,
-      region.getUserAttribute.asInstanceOf[GemFireContainer], checkColumnStore = false)
+      GemFireXDUtils.getGemFireContainer(qualifiedTable, true), checkColumnStore = false)
   }
 
   def getExternalTableMetaData(qualifiedTable: String, container: GemFireContainer,

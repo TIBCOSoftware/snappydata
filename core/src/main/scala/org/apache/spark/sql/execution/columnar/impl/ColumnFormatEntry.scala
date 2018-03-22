@@ -33,7 +33,8 @@ import com.gemstone.gemfire.internal.shared._
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.RegionKey
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
@@ -103,8 +104,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   override def getNumColumnsInTable(columnTableName: String): Int = {
     val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
-    val bufferRegion = Misc.getRegionForTable(bufferTable, true)
-    bufferRegion.getUserAttribute.asInstanceOf[GemFireContainer].getNumColumns - 1
+    GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
   }
 
   override def getColumnBatchRowCount(itr: PREntriesIterator[_],
