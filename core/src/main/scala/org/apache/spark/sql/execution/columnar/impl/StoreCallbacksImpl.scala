@@ -34,7 +34,7 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.sql._
@@ -183,6 +183,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     list.addAll(c)
     list
   }
+
+  override def isInternalBatchTable(tableName: String): Boolean =
+    tableName.startsWith(Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR)
+
 
   override def performConnectorOp(ctx: Object): Unit = {
 
