@@ -55,7 +55,7 @@ class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val numIters = 100
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery", numTimesInsert = 10,
-      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery)
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
     // while (true) {}
   }
 
@@ -70,7 +70,7 @@ class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery multithreaded", numTimesInsert = 10, isMultithreaded = true,
       doVerifyFullSize = false, totalThreads = totalNumThreads,
-      runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery)
+      runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
     // while (true) {}
   }
 
@@ -82,7 +82,7 @@ class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val numIters = 21
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
-      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery)
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery_mt)
     // while (true) {}
   }
 }
