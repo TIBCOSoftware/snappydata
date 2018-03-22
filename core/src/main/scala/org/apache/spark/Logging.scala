@@ -32,9 +32,9 @@ trait Logging {
 
   // Make the log field transient so that objects with Logging can
   // be serialized and used on another machine
-  @transient private var log_ : Logger = _
+  @transient protected final var log_ : Logger = _
 
-  @transient private[this] var levelFlags: Int = _
+  @transient protected final var levelFlags: Int = _
 
   // Method to get the logger name for this object
   protected def logName: String = {

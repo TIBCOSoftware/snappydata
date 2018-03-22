@@ -30,9 +30,10 @@ import kafka.server.{KafkaConfig, KafkaServer}
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
 import org.apache.commons.lang3.RandomUtils
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.{Row, SaveMode}
+import org.apache.spark.sql.{AnalysisException, Row, SaveMode}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.{KafkaCluster, KafkaUtils}
@@ -43,7 +44,6 @@ import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import twitter4j.{Status, TwitterObjectFactory}
-
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -433,15 +433,24 @@ class SnappyStreamingSuite
     })
 
     ssnc.start()
+
+    waitForCriterion(
+      try {
+        val result1 = ssnc.sql("select * from gemxdColumnTable1")
+        result1.collect().length == 30
+      } catch {
+        case _: AnalysisException => false
+      }, "data ingestion in gemxdColumnTable1", 60000, 500, throwOnTimeout = true)
+
+    waitForCriterion(
+      try {
+        val result2 = ssnc.sql("select * from gemxdColumnTable2")
+        result2.collect().length == 30
+      } catch {
+        case _: AnalysisException => false
+      }, "data ingestion in gemxdColumnTable2", 60000, 500, throwOnTimeout = true)
+
     ssnc.awaitTerminationOrTimeout(20 * 1000)
-
-    val result1 = ssnc.sql("select * from gemxdColumnTable1")
-    val r1 = result1.collect()
-    assert(r1.length == 30)
-
-    val result2 = ssnc.sql("select * from gemxdColumnTable2")
-    val r2 = result2.collect()
-    assert(r2.length == 30)
   }
 
 
@@ -519,17 +528,22 @@ class SnappyStreamingSuite
     })
 
     ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
 
 
     // Assert all values that were inserted during streaming
-    val listOfRows = snc.sql("select id from dataTable").collect() map {
-      row => row.getInt(0)
-    }
+    var listOfRows: Array[Int] = null
+    waitForCriterion({
+      listOfRows = snc.sql("select id from dataTable").collect() map {
+        row => row.getInt(0)
+      }
+      listOfRows.length == 30
+    }, "data ingestion in dataTable", 60000, 500, true)
 
-    val colValues = 1 to 30
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
+
     assert(listOfRows.length == 30)
     // Assert values
+    val colValues = 1 to 30
     colValues.foreach(v => assert(listOfRows.contains(v)))
     ssnc.sql("drop table dataTable")
 
