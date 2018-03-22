@@ -127,7 +127,6 @@ object SortedColumnTests extends Logging {
   def createColumnTable(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, colocateTableName: Option[String] = None): Unit = {
     session.sql(s"drop table if exists $colTableName")
-    if (colocateTableName.isDefined) session.sql(s"drop table if exists $colocateTableName")
     val additionalString = if (colocateTableName.isDefined) {
       s", COLOCATE_WITH '${colocateTableName.get}'"
     } else ""
