@@ -8,7 +8,7 @@ For more information on  SDE, refer to [SDE documentation](../aqp.md).
 The complete code example for SDE is in [SynopsisDataExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
 
 **Get a SnappySession**:
-```scala
+```no-highlight
     val spark: SparkSession = SparkSession
         .builder
         .appName("SynopsisDataExample")
@@ -20,7 +20,7 @@ The complete code example for SDE is in [SynopsisDataExample.scala](https://gith
 
 **The base column table(AIRLINE) is created from temporary parquet table as follows**:
 
-```scala
+```no-highlight
     // Create temporary staging table to load parquet data
     snSession.sql("CREATE EXTERNAL TABLE STAGING_AIRLINE " +
         "USING parquet OPTIONS(path " + s"'${dataFolder}/airlineParquetData')")
@@ -39,7 +39,7 @@ The complete code example for SDE is in [SynopsisDataExample.scala](https://gith
 Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on Synopsis Data Engine, refer to the [SDE documentation](../aqp.md#working-with-stratified-samples).
 
 
-```scala
+```no-highlight
 
     snSession.sql("CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS" +
         "(qcs 'UniqueCarrier, Year_, Month_', fraction '0.03')  " +
@@ -54,7 +54,7 @@ Attribute 'qcs' in the statement below specifies the columns used for stratifica
 **Execute queries that return approximate results using sample tables**:
 The query below returns airlines by number of flights in descending order. The 'with error 0.20' clause in the query below signals query engine to execute the query on the sample table instead of the base table and maximum 20% error is allowed.
 
-```scala
+```no-highlight
     var result = snSession.sql("select  count(*) flightRecCount, description AirlineName, " +
         "UniqueCarrier carrierCode ,Year_ from airline , airlineref where " +
         "airline.UniqueCarrier = airlineref.code group by " +
@@ -65,7 +65,7 @@ The query below returns airlines by number of flights in descending order. The '
 
 **Join the sample table with a reference table**:
 You can join the sample table with a reference table to execute queries. The example below illustrates how a reference table (AIRLINEREF) is created as from a parquet data file.
-```scala
+```no-highlight
     // create temporary staging table to load parquet data
     snSession.sql("CREATE EXTERNAL TABLE STAGING_AIRLINEREF USING " +
         "parquet OPTIONS(path " + s"'${dataFolder}/airportcodeParquetData')")
@@ -74,7 +74,7 @@ You can join the sample table with a reference table to execute queries. The exa
 ```
 **Join the sample table and reference table to find out which airlines arrive on schedule**:
 
-```scala
+```no-highlight
     result = snSession.sql("select AVG(ArrDelay) arrivalDelay, " +
         "relative_error(arrivalDelay) rel_err, description AirlineName, " +
         "UniqueCarrier carrier from airline, airlineref " +

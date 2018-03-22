@@ -6,7 +6,7 @@ If you have [downloaded and extracted](../install.md) the SnappyData product dis
 
 **Start the Cluster**: Run the `sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server.
 
-```bash
+```no-highlight
 $ sbin/snappy-start-all.sh
 ```
 
@@ -14,7 +14,7 @@ It may take 30 seconds or more to bootstrap the entire cluster on your local mac
 
 **Sample Output**: The sample output for `snappy-start-all.sh` is displayed as:
 
-```bash
+```no-highlight
 Starting SnappyData Locator using peer discovery on: localhost[10334]
 Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
 Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log

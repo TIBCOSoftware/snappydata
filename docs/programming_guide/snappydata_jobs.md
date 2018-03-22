@@ -4,7 +4,7 @@ To create a job that can be submitted through the job server, the job must imple
  
 **Scala**
 
-```scala
+```no-highlight
 object SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
@@ -16,7 +16,7 @@ object SnappySampleJob extends SnappySQLJob {
 ```
 
 **Java**
-```java
+```no-highlight
 class SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(SnappySession snappy, Config jobConfig) {//Implementation}
@@ -28,7 +28,7 @@ class SnappySampleJob extends SnappySQLJob {
 ```
 
 **Scala**
-```scala
+```no-highlight
 object SnappyStreamingSampleJob extends SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
@@ -39,7 +39,7 @@ object SnappyStreamingSampleJob extends SnappyStreamingJob {
 ```
 
 **Java**
-```java
+```no-highlight
 class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
@@ -71,7 +71,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/S
     
 The program must be compiled and bundled as a jar file and submitted to jobs server as shown below.
 
-```scala
+```no-highlight
 $ bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
@@ -90,7 +90,7 @@ The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id
 
 The status returned by the utility is displayed below:
 
-```scala
+```no-highlight
 {
   "status": "STARTED",
   "result": {
@@ -101,7 +101,7 @@ The status returned by the utility is displayed below:
 ```
 This Job ID can be used to query the status of the running job. 
 
-```scala
+```no-highlight
 $ bin/snappy-job.sh status  \
     --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
@@ -118,7 +118,7 @@ $ bin/snappy-job.sh status  \
 ```
 Once the tables are created, they can be queried by running another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) for implementing the job. 
 
-```scala
+```no-highlight
 $ bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
@@ -133,7 +133,7 @@ For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.1](http:/
 
 For example, gradle can be configured as:
 
-```
+```no-highlight
 compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
@@ -153,7 +153,7 @@ compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
 ## Running Python Applications
 Python users can submit a Python application using `bin/spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
 
-```scala
+```no-highlight
 bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
@@ -177,7 +177,7 @@ Alternatively, you can specify the name of an existing/pre-created streaming con
 For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) can be submitted as follows. 
 This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, and top 10 popular tweets.
 
-```scala
+```no-highlight
 $ bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
@@ -196,7 +196,7 @@ $ bin/snappy-job.sh submit  \
 ```
 To start another streaming job with a new streaming context, you need to first stop the currently running streaming job, followed by its streaming context.
 
-```scala
+```no-highlight
 $ bin/snappy-job.sh stop  \
     --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
