@@ -52,6 +52,107 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     conf
   }
 
+  test("PointQuery performance") {
+    val session = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 999551
+    val numTimesInsert = 199
+    val numTimesUpdate = 1
+
+    val totalElements = (numElements * 0.6 * numTimesUpdate +
+        numElements * 0.4 * numTimesUpdate).toLong
+    val numBuckets = 4
+    val numIters = 1000
+
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, multiple = 1)
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
+    SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
+    val dataFrameReader : DataFrameReader = session.read
+    val insertDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
+      multiple = 1))
+    val updateDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+      numTimesUpdate))
+
+    def prepare(): Unit = {
+      SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
+      try {
+        session.conf.set(Property.ColumnBatchSize.name, "24M") // default
+        session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+        var j = 0
+        while (j < numTimesInsert) {
+          insertDF.write.insertInto(colTableName)
+          j += 1
+        }
+        updateDF.write.putInto(colTableName)
+      } finally {
+        session.conf.unset(Property.ColumnBatchSize.name)
+        session.conf.unset(Property.ColumnMaxDeltaRows.name)
+      }
+    }
+
+    val benchmark = new Benchmark("PointQuery", totalElements)
+    var iter = 1
+    benchmark.addCase("Master", numIters, prepare) { _ =>
+      SortedColumnPerformanceTests.executeQuery_PointQuery(session, colTableName, iter,
+        numTimesInsert, numTimesUpdate = 1)
+      iter += 1
+    }
+    benchmark.run()
+    // Thread.sleep(50000000)
+  }
+
+  test("JoinQuery performance") {
+    val session = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val joinTableName = "colDeltaTable"
+    val numElements = 999551
+    val numTimesInsert = 199
+    val numTimesUpdate = 1
+
+    val totalElements = (numElements * 0.6 * numTimesUpdate +
+        numElements * 0.4 * numTimesUpdate).toLong
+    val numBuckets = 4
+    val numIters = 100
+
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, multiple = 1)
+    SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
+    val dataFrameReader : DataFrameReader = session.read
+    val insertDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
+      multiple = 1))
+    val updateDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+      numTimesUpdate))
+
+    def prepare(): Unit = {
+      SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
+      SortedColumnTests.createColumnTable(session, joinTableName, numBuckets, numElements)
+      try {
+        session.conf.set(Property.ColumnBatchSize.name, "24M") // default
+        session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+        var j = 0
+        while (j < numTimesInsert) {
+          insertDF.write.insertInto(colTableName)
+          insertDF.write.insertInto(joinTableName)
+          j += 1
+        }
+        updateDF.write.putInto(colTableName)
+        updateDF.write.putInto(joinTableName)
+      } finally {
+        session.conf.unset(Property.ColumnBatchSize.name)
+        session.conf.unset(Property.ColumnMaxDeltaRows.name)
+      }
+    }
+
+    val benchmark = new Benchmark("JoinQuery", totalElements)
+    var iter = 1
+    benchmark.addCase("Master", numIters, prepare) { _ =>
+      SortedColumnPerformanceTests.executeQuery_JoinQuery(session, colTableName, joinTableName,
+        iter, numTimesInsert, numTimesUpdate = 1)
+      iter += 1
+    }
+    benchmark.run()
+    // Thread.sleep(50000000)
+  }
+
   test("insert performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -63,7 +164,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       numIters, "insert")
   }
 
-  test("PointQuery performance") {
+  ignore("Old PointQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
@@ -71,7 +172,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numIters = 100
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery", numTimesInsert = 200,
-      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery)
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
     // Thread.sleep(5000000)
   }
 
@@ -109,7 +210,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // Thread.sleep(5000000)
   }
 
-  test("RangeQuery performance") {
+  ignore("Old RangeQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
@@ -117,11 +218,11 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numIters = 21
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
-      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery)
+      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery_mt)
     // Thread.sleep(5000000)
   }
 
-  test("JoinQuery performance") {
+  ignore("Old JoinQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val jnTableName = "joinDeltaTable"
@@ -130,13 +231,40 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numIters = 1
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "JoinQuery", numTimesInsert = 200, doVerifyFullSize = true,
-      joinTableName = Some(jnTableName))(SortedColumnPerformanceTests.executeQuery_JoinQuery)
+      joinTableName = Some(jnTableName))(SortedColumnPerformanceTests.executeQuery_JoinQuery_mt)
     // Thread.sleep(5000000)
   }
 }
 
 object SortedColumnPerformanceTests {
   val cores: Int = math.min(16, Runtime.getRuntime.availableProcessors())
+
+  def executeQuery_PointQuery(session: SnappySession, colTableName: String, iterCount: Int,
+      numTimesInsert: Int, numTimesUpdate: Int): Unit = {
+    val param = getParam(iterCount, params)
+    val query = s"select * from $colTableName where id = $param"
+    val expectedNumResults = if (param % 10 < 6) numTimesInsert else numTimesUpdate
+    val result = session.sql(query).collect()
+    val passed = result.length == expectedNumResults
+    // scalastyle:off
+    // println(s"Query = $query result=${result.length} $expectedNumResults $iterCount")
+    // scalastyle:on
+    passed
+  }
+
+  def executeQuery_JoinQuery(session: SnappySession, colTableName: String, joinTableName: String,
+      iterCount: Int, numTimesInsert: Int, numTimesUpdate: Int): Unit = {
+    val query = s"select AVG(A.id), COUNT(B.id) " +
+        s" from $colTableName A inner join $joinTableName B where A.id = B.id"
+    val result = session.sql(query).collect()
+    // scalastyle:off
+    if (iterCount < 0) {
+      println(s"Query = $query result=${result.length}")
+      result.foreach(r => print(s"[${r.getDouble(0)}, ${r.getLong(1)}], "))
+      println()
+    }
+    // scalastyle:on
+  }
 
   private def doGC(): Unit = {
     System.gc()
@@ -212,9 +340,9 @@ object SortedColumnPerformanceTests {
     }
   }
 
-  def executeQuery_PointQuery(session: SnappySession, colTableName: String, joinTableName: String,
-      numIters: Int, iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
-      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
+  def executeQuery_PointQuery_mt(session: SnappySession, colTableName: String,
+      joinTableName: String, numIters: Int, iterCount: Int, numThreads: Int, threadId: Int,
+      isMultithreaded: Boolean, numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param = getParam(iterCount, params)
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) numTimesInsert else numTimesUpdate
@@ -227,9 +355,9 @@ object SortedColumnPerformanceTests {
     passed
   }
 
-  def executeQuery_RangeQuery(session: SnappySession, colTableName: String, joinTableName: String,
-      numIters: Int, iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
-      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
+  def executeQuery_RangeQuery_mt(session: SnappySession, colTableName: String,
+      joinTableName: String, numIters: Int, iterCount: Int, numThreads: Int, threadId: Int,
+      isMultithreaded: Boolean, numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param1 = getParam(iterCount, params1)
     val param2 = getParam(iterCount, params2)
     val (low, high) = if (param1 < param2) { (param1, param2)} else (param2, param1)
@@ -243,9 +371,9 @@ object SortedColumnPerformanceTests {
     passed
   }
 
-  def executeQuery_JoinQuery(session: SnappySession, colTableName: String, joinTableName: String,
-      numIters: Int, iterCount: Int, numThreads: Int, threadId: Int, isMultithreaded: Boolean,
-      numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
+  def executeQuery_JoinQuery_mt(session: SnappySession, colTableName: String,
+      joinTableName: String, numIters: Int, iterCount: Int, numThreads: Int, threadId: Int,
+      isMultithreaded: Boolean, numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param = getParam(iterCount, params)
     val query = s"select * from $colTableName A inner join $joinTableName B on A.id = B.id"
     val joinDF = session.sql(query)
@@ -388,7 +516,7 @@ object SortedColumnPerformanceTests {
     SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery multithreaded", numTimesInsert = 200, isMultithreaded = true,
       doVerifyFullSize = false, totalThreads = numThreads,
-      runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery)
+      runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
   }
 
   val params = Array  (424281, 587515, 907730, 122421, 735695, 964648, 450150, 904625, 562060,
