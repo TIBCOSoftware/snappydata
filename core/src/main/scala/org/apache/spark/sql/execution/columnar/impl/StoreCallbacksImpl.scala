@@ -184,10 +184,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     list
   }
 
-  override def isInternalBatchTable(tableName: String): Boolean =
-    tableName.startsWith(Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR)
-
-
   override def performConnectorOp(ctx: Object): Unit = {
 
     val context = ctx.asInstanceOf[LeadNodeSmartConnectorOpContext]
