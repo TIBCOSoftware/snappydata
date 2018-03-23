@@ -259,7 +259,7 @@ object SortedColumnPerformanceTests {
         s" from $colTableName A inner join $joinTableName B where A.id = B.id"
     val result = session.sql(query).collect()
     // scalastyle:off
-    if (iterCount < 0) {
+    if (iterCount < 5) {
       println(s"Query = $query result=${result.length}")
       result.foreach(r => {
         val avg = r.getDouble(0)
