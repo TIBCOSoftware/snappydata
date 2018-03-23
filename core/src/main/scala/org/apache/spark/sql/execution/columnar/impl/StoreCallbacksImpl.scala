@@ -40,7 +40,7 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
