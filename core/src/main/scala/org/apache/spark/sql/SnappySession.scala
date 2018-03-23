@@ -1874,7 +1874,7 @@ object SnappySession extends Logging {
     } else None
   }
 
-  private def findShuffleDependencies(rdd: RDD[_]): List[Int] = {
+  private[sql] def findShuffleDependencies(rdd: RDD[_]): List[Int] = {
     rdd.dependencies.toList.flatMap {
       case s: ShuffleDependency[_, _, _] => if (s.rdd ne rdd) {
         s.shuffleId :: findShuffleDependencies(s.rdd)
@@ -2278,8 +2278,6 @@ object CachedKey {
   def apply(session: SnappySession, plan: LogicalPlan, sqlText: String,
       paramLiterals: Array[ParamLiteral], forCaching: Boolean): CachedKey = {
 
-    // TODO: SW: PERF: avoid transforming all expressions rather
-    // have a wrapper LogicalPlan having adjusted hashCode/equals
     def normalizeExprIds: PartialFunction[Expression, Expression] = {
       case a: AttributeReference =>
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(-1))
