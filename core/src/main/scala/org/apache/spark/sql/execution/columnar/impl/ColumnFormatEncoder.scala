@@ -21,6 +21,7 @@ import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.Blob
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl}
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.store.RowEncoder.PreProcessRow
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
@@ -123,7 +124,7 @@ final class ColumnFormatEncoder extends RowEncoder {
         var deleteDelta = event.getNewValue.asInstanceOf[ColumnFormatValue]
         if (deleteDelta eq null) return
 
-        deleteDelta = deleteDelta.getValueRetain(decompress = true, compress = false)
+        deleteDelta = deleteDelta.getValueRetain(FetchRequest.DECOMPRESS)
         val region = bucket.getPartitionedRegion
         val deleteBuffer = deleteDelta.getBuffer
         val deleteBatch = try {
@@ -134,8 +135,7 @@ final class ColumnFormatEncoder extends RowEncoder {
         }
         if (deleteBatch) {
           ColumnDelta.deleteBatch(deleteKey, region,
-            region.getUserAttribute.asInstanceOf[GemFireContainer].getQualifiedTableName,
-            forUpdate = true)
+            region.getUserAttribute.asInstanceOf[GemFireContainer].getQualifiedTableName)
         }
       case _ =>
     })

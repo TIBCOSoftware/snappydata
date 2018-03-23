@@ -1,6 +1,6 @@
 # CREATE FUNCTION
 
-```
+```no-highlight
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'
 ```
 
@@ -35,7 +35,7 @@ You can extend any one of the interfaces in the package `org.apache.spark.sql.ap
 |VARCHAR|java.lang.String|
 
 ## Example
-```
+```no-highlight
 CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USING JAR '/path/to/file/udf.jar'
 ```
 

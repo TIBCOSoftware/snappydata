@@ -4,7 +4,7 @@ Displays information about active connections and database objects.
 
 ## Syntax
 
-``` pre
+```no-highlight
 SHOW
 {
    CONNECTIONS |
@@ -32,7 +32,7 @@ Otherwise, the command displays a list of connection names and the URLs used to 
 
 **Example**
 
-``` pre
+```no-highlight
 snappy(CLIENTCONNECTION)> show connections;
 CLIENTCONNECTION* -     jdbc:snappydata://localhost:1527/
 PEERCLIENT -    jdbc:snappydata:
@@ -46,7 +46,7 @@ SHOW IMPORTEDKEYS displays all foreign keys in the specified schema or table. If
 
 **Example**
 
-``` pre
+```no-highlight
 snappy> show importedkeys;
 KTABLE_SCHEM |PKTABLE_NAME|PKCOLUMN_NAME   |PK_NAME     |FKTABLE_SCHEM|FKTABLE_NAME      |FKCOLUMN_NAME   |FK_NAME     |KEY_SEQ
 -------------------------------------------------------------------------------------------------------------------------------
@@ -74,7 +74,7 @@ If `FROM table-Name` is specified, only the indexes on the specified table are d
 
 **Example**
 
-``` pre
+```no-highlight
 snappy> show indexes in app;
 TABLE_NAME          |COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
 ----------------------------------------------------------------------------
@@ -116,7 +116,7 @@ If `IN schemaName` is specified, only procedures in the specified schema are dis
 
 **Example**
 
-``` pre
+```no-highlight
 snappy> show procedures in syscs_util;
 PROCEDURE_SCHEM     |PROCEDURE_NAME                |REMARKS
 ------------------------------------------------------------------------
@@ -156,7 +156,7 @@ SHOW SCHEMAS displays all of the schemas in the current connection.
 
 **Example**
 
-``` pre
+```no-highlight
 snappy> create schema sample;
 0 rows inserted/updated/deleted
 snappy> show schemas;
@@ -186,7 +186,7 @@ If `IN schemaName` is specified, only synonyms in the specified schema are displ
 
 **Example**
 
-``` pre
+```no-highlight
 snappy> SHOW SYNONYMS;
 TABLE_SCHEM         |TABLE_NAME                    |REMARKS
 ------------------------------------------------------------------------
@@ -211,7 +211,7 @@ If `IN schemaName` is specified, the tables in the given schema are displayed.
 
 **Example**
 
-``` pre
+```no-highlight
 snappy> show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |REMARKS
 ------------------------------------------------------------------------
@@ -235,7 +235,7 @@ If `IN schemaName` is specified, the views in the given schema are displayed.
 
 **Example**
 
-``` pre
+```no-highlight
 snappy> create view v1 as select * from maps;
 0 rows inserted/updated/deleted
 snappy> show views;
