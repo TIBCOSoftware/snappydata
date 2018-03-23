@@ -16,37 +16,49 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.sql.SQLException
 import java.util.Collections
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
+import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
-import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, LocalRegion, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
-import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks, UMMMemoryTracker}
-import com.pivotal.gemfirexd.Attribute
+import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
+import com.pivotal.gemfirexd.internal.iapi.error.{PublicAPI, StandardException}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
+import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.FunctionIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, SortDirection, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ExternalStore}
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
+import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.store.StoreHashFunction
+import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, SparkContext}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
@@ -172,6 +184,239 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatRelation.columnBatchTableName(table, None)
   }
 
+  @throws(classOf[SQLException])
+  override def columnTableScan(columnTable: String,
+      projection: Array[Int], serializedFilters: Array[Byte],
+      bucketIds: java.util.Set[Integer]): CloseableIterator[ColumnTableEntry] = {
+    // deserialize the filters
+    val batchFilters = if ((serializedFilters ne null) && serializedFilters.length > 0) {
+      KryoSerializerPool.deserialize(serializedFilters, 0, serializedFilters.length,
+        (kryo, in) => kryo.readObject(in, classOf[Array[Filter]])).toSeq
+    } else null
+    val (region, schemaAttrs, batchFilterExprs) = try {
+      val lr = Misc.getRegionForTable(columnTable, true).asInstanceOf[LocalRegion]
+      val metadata = ExternalStoreUtils.getExternalTableMetaData(columnTable,
+        lr.getUserAttribute.asInstanceOf[GemFireContainer], checkColumnStore = true)
+      val schema = metadata.schema.asInstanceOf[StructType].toAttributes
+      val filterExprs = if (batchFilters ne null) {
+        batchFilters.map(f => translateFilter(f, schema))
+      } else null
+      (lr, schema, filterExprs)
+    } catch {
+      case ae: AnalysisException =>
+        throw PublicAPI.wrapStandardException(StandardException.newException(
+          SQLState.LANG_SYNTAX_OR_ANALYSIS_EXCEPTION, ae, ae.getMessage))
+      case e@(_: IllegalStateException | _: RegionDestroyedException) =>
+        throw PublicAPI.wrapStandardException(StandardException.newException(
+          SQLState.LANG_TABLE_NOT_FOUND, GemFireContainer.getRowBufferTableName(columnTable), e))
+    }
+
+    val ctx = new CodegenContext
+    val rowClass = classOf[UnsafeRow].getName
+    // create the code snippet for applying the filters
+    val numRows = ctx.freshName("numRows")
+    ctx.addMutableState("int", numRows, "")
+    val filterFunction = ColumnTableScan.generateStatPredicate(ctx, isColumnTable = true,
+      schemaAttrs, batchFilterExprs, numRows, metricTerm = null, metricAdd = null)
+    val filterPredicate = if (filterFunction.isEmpty) null
+    else {
+      val codeComment = ctx.registerComment(
+        s"""Code for connector push down for $columnTable;
+          projection=${projection.mkString(", ")}; filters=${batchFilters.mkString(", ")}""")
+      val source =
+        s"""
+          public Object generate(Object[] references) {
+            return new GeneratedTableIterator(references);
+          }
+
+          $codeComment
+          final class GeneratedTableIterator implements ${classOf[StatsPredicate].getName} {
+
+            private Object[] references;
+            ${ctx.declareMutableStates()}
+
+            public GeneratedTableIterator(Object[] references) {
+              this.references = references;
+              ${ctx.initMutableStates()}
+              ${ctx.initPartition()}
+            }
+
+            ${ctx.declareAddedFunctions()}
+
+            public boolean check($rowClass statsRow, boolean isLastStatsRow) {
+              // TODO: don't have the update count for delta row (only insert count)
+              // so adding the delta "insert" count to full count read in previous call
+              $numRows += statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
+              return $filterFunction(statsRow, $numRows, isLastStatsRow);
+            }
+         }
+      """
+      // try to compile, helpful for debug
+      val cleanedSource = CodeFormatter.stripOverlappingComments(
+        new CodeAndComment(CodeFormatter.stripExtraNewLines(source),
+          ctx.getPlaceHolderToComments()))
+
+      CodeGeneration.logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
+
+      val clazz = CodeGenerator.compile(cleanedSource)
+      clazz.generate(ctx.references.toArray).asInstanceOf[StatsPredicate]
+    }
+    val batchIterator = ColumnBatchIterator(region, bucketIds, projection,
+      fullScan = (batchFilters eq null) || batchFilters.isEmpty, context = null)
+    val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(schemaAttrs.length)
+
+    val entriesIter = new Iterator[ArrayBuffer[ColumnTableEntry]] {
+      private var numColumns = (projection.length + 1) << 1
+
+      // iterator will remain one step ahead to skip over filtered/deleted batches
+      moveNext()
+
+      private def moveNext(): Unit = {
+        batchIterator.moveNext()
+        while (batchIterator.currentVal ne null) {
+          if (batchIterator.currentVal.remaining() == 0) batchIterator.moveNext()
+          else if (filterPredicate ne null) {
+            // first check the full stats
+            val statsRow = Utils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
+            val deltaStatsRow = Utils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
+              numColumnsInStatBlob)
+            // check the delta stats after full stats (null columns will be treated as failure
+            // which is what is required since it means that only full stats check should be done)
+            if (filterPredicate.check(statsRow, deltaStatsRow eq null) ||
+                ((deltaStatsRow ne null) &&
+                    filterPredicate.check(deltaStatsRow, isLastStatsRow = true))) {
+              return
+            }
+            batchIterator.moveNext()
+          }
+          else return
+        }
+      }
+
+      override def hasNext: Boolean = batchIterator.currentVal ne null
+
+      override def next(): ArrayBuffer[ColumnTableEntry] = {
+        val entries = new ArrayBuffer[ColumnTableEntry](numColumns)
+        val uuid = batchIterator.getCurrentBatchId
+        val bucketId = batchIterator.getCurrentBucketId
+        // first add the stats rows and delete bitmask to batchIterator
+        addColumnValue(batchIterator.getCurrentStatsColumn, ColumnFormatEntry.STATROW_COL_INDEX,
+          uuid, bucketId, entries, throwIfMissing = true)
+        addColumnValue(ColumnFormatEntry.DELTA_STATROW_COL_INDEX, uuid, bucketId,
+          entries, throwIfMissing = false)
+        addColumnValue(ColumnFormatEntry.DELETE_MASK_COL_INDEX, uuid, bucketId,
+          entries, throwIfMissing = false)
+        // force add all the projected columns and corresponding deltas, if present
+        var i = 0
+        while (i < projection.length) {
+          val columnPosition = projection(i)
+          val deltaPosition = ColumnDelta.deltaColumnIndex(columnPosition - 1, 0)
+          addColumnValue(columnPosition, uuid, bucketId, entries, throwIfMissing = true)
+          addColumnValue(deltaPosition, uuid, bucketId, entries, throwIfMissing = false)
+          addColumnValue(deltaPosition - 1, uuid, bucketId, entries, throwIfMissing = false)
+          i += 1
+        }
+        numColumns = entries.size
+        moveNext()
+        entries
+      }
+
+      private def addColumnValue(columnPosition: Int, uuid: Long, bucketId: Int,
+          entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
+        val value = batchIterator.itr.getBucketEntriesIterator
+            .asInstanceOf[ClusteredColumnIterator].getColumnValue(columnPosition)
+        addColumnValue(value, columnPosition, uuid, bucketId, entries, throwIfMissing)
+      }
+
+      private def addColumnValue(value: AnyRef, columnPosition: Int, uuid: Long, bucketId: Int,
+          entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
+        if (value ne null) {
+          val columnValue = value.asInstanceOf[ColumnFormatValue].getValueRetain(
+            FetchRequest.ORIGINAL)
+          if (columnValue.size() > 0) {
+            entries += new ColumnTableEntry(uuid, bucketId, columnPosition, columnValue)
+            return
+          }
+        }
+        if (throwIfMissing) {
+          // empty buffer indicates value removed from region
+          val ede = new EntryDestroyedException(s"Iteration on column=$columnPosition " +
+              s"partition=$bucketId batchUUID=$uuid failed due to missing value")
+          throw PublicAPI.wrapStandardException(StandardException.newException(
+            SQLState.DATA_UNEXPECTED_EXCEPTION, ede))
+        }
+      }
+    }
+    new CloseableIterator[ColumnTableEntry] {
+      private val iter = entriesIter.flatten
+
+      override def hasNext: Boolean = iter.hasNext
+
+      override def next(): ColumnTableEntry = iter.next()
+
+      override def close(): Unit = batchIterator.close()
+    }
+  }
+
+  private def attr(a: String, schema: Seq[AttributeReference]): AttributeReference = {
+    // filter passed should have same case as in schema and not be qualified which
+    // should be true since these have been created from resolved Expression by sender
+    schema.find(_.name == a) match {
+      case Some(attr) => attr
+      case _ => throw Utils.analysisException(s"Could not find $a in ${schema.mkString(", ")}")
+    }
+  }
+
+  /**
+   * Translate a data source [[Filter]] into Catalyst [[Expression]].
+   */
+  private[sql] def translateFilter(filter: Filter,
+      schema: Seq[AttributeReference]): Expression = filter match {
+    case sources.EqualTo(a, v) =>
+      expressions.EqualTo(attr(a, schema), TokenLiteral.newToken(v))
+    case sources.EqualNullSafe(a, v) =>
+      expressions.EqualNullSafe(attr(a, schema), TokenLiteral.newToken(v))
+
+    case sources.GreaterThan(a, v) =>
+      expressions.GreaterThan(attr(a, schema), TokenLiteral.newToken(v))
+    case sources.LessThan(a, v) =>
+      expressions.LessThan(attr(a, schema), TokenLiteral.newToken(v))
+
+    case sources.GreaterThanOrEqual(a, v) =>
+      expressions.GreaterThanOrEqual(attr(a, schema), TokenLiteral.newToken(v))
+    case sources.LessThanOrEqual(a, v) =>
+      expressions.LessThanOrEqual(attr(a, schema), TokenLiteral.newToken(v))
+
+    case sources.In(a, list) =>
+      val set = if (list.length > 0) {
+        val l = Literal(list(0))
+        val toCatalyst = CatalystTypeConverters.createToCatalystConverter(l.dataType)
+        list.map(v => new TokenLiteral(toCatalyst(v), l.dataType)).toVector
+      } else Vector.empty
+      expressions.DynamicInSet(attr(a, schema), set)
+
+    case sources.IsNull(a) => expressions.IsNull(attr(a, schema))
+    case sources.IsNotNull(a) => expressions.IsNotNull(attr(a, schema))
+
+    case sources.And(left, right) =>
+      expressions.And(translateFilter(left, schema), translateFilter(right, schema))
+    case sources.Or(left, right) =>
+      expressions.Or(translateFilter(left, schema), translateFilter(right, schema))
+    case sources.Not(child) => expressions.Not(translateFilter(child, schema))
+
+    case sources.StringStartsWith(a, v) =>
+      expressions.StartsWith(attr(a, schema),
+        new TokenLiteral(UTF8String.fromString(v), StringType))
+    case sources.StringEndsWith(a, v) =>
+      expressions.EndsWith(attr(a, schema),
+        new TokenLiteral(UTF8String.fromString(v), StringType))
+    case sources.StringContains(a, v) =>
+      expressions.Contains(attr(a, schema),
+        new TokenLiteral(UTF8String.fromString(v), StringType))
+
+    case _ => throw new IllegalStateException(s"translateFilter: unexpected filter = $filter")
+  }
+
   override def registerRelationDestroyForHiveStore(): Unit = {
     SnappyStoreHiveCatalog.registerRelationDestroy()
   }
@@ -190,8 +435,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
     val session = SnappyContext(null: SparkContext).snappySession
     if (context.getUserName != null && !context.getUserName.isEmpty) {
-      session.conf.set(Attribute.USERNAME_ATTR, context.getUserName)
-      session.conf.set(Attribute.PASSWORD_ATTR, context.getAuthToken)
+      session.conf.set(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, context.getUserName)
+      session.conf.set(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, context.getAuthToken)
     }
 
     context.getType match {
@@ -372,8 +617,21 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def initMemoryStats(stats: MemoryManagerStats): Unit =
     MemoryManagerCallback.memoryManager.initMemoryStats(stats)
+
+  override def clearConnectionPools(): Unit = {
+    ConnectionPool.clear()
+  }
 }
 
 trait StoreCallback extends Serializable {
   CallbackFactoryProvider.setStoreCallbacks(StoreCallbacksImpl)
+}
+
+/**
+ * The type of the generated class used by column stats check for a column batch.
+ * Since there can be up-to two stats rows (full stats and delta stats), this has
+ * an additional argument for the same to determine whether to update metrics or not.
+ */
+trait StatsPredicate {
+  def check(row: UnsafeRow, isLastStatsRow: Boolean): Boolean
 }

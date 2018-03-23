@@ -23,7 +23,7 @@ import com.gemstone.gemfire.cache.{EntryEvent, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
 import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
-import com.gemstone.gemfire.internal.shared.BufferAllocator
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, FetchRequest}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue
@@ -223,9 +223,9 @@ final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
       // merge with existing delete list
       val encoder = new ColumnDeleteEncoder
       val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
-        decompress = true, compress = false)
+        FetchRequest.DECOMPRESS)
       val existingBuffer = oldColumnValue.getBuffer
-      val newValue = getValueRetain(decompress = true, compress = false)
+      val newValue = getValueRetain(FetchRequest.DECOMPRESS)
       try {
         new ColumnFormatValue(encoder.merge(newValue.getBuffer, existingBuffer),
           oldColumnValue.compressionCodecId, isCompressed = false)

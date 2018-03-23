@@ -21,13 +21,11 @@ import java.sql.PreparedStatement
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
-import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.{Logging, SparkContext}
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)

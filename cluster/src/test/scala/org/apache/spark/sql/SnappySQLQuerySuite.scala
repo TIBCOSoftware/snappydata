@@ -189,8 +189,8 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
 
   // taken from same test in Spark's DataFrameSuite
   test("SPARK-10316: allow non-deterministic expressions to project in PhysicalScan") {
-    session.sql("create table rowTable (id long) using row")
-    session.range(1, 11).write.insertInto("rowTable")
+    session.sql("create table rowTable (id long, id2 long) using row")
+    session.range(1, 11).select($"id", $"id" * 2).write.insertInto("rowTable")
     val input = session.table("rowTable")
 
     val df = input.select($"id", rand(0).as('r))
@@ -198,6 +198,7 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     result.foreach { row =>
       assert(row.getDouble(1) - row.getDouble(3) === 0.0 +- 0.001)
     }
+    session.sql("drop table rowTable")
   }
 
   test("AQP-292 snappy plan generation failure for aggregation on group by column") {
