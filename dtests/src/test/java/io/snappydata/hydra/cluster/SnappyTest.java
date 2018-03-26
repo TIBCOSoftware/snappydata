@@ -86,6 +86,7 @@ public class SnappyTest implements Serializable {
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
   public static boolean autoCommit = TestConfig.tab().booleanAt(SnappyPrms.setAutoCommit, false);
+  public static boolean isConflictingTest = TestConfig.tab().booleanAt(SnappyPrms.isConflictingTest, false);
   public static int txIsolationLevel = SnappyPrms.getTxIsolationLevel();
   public static boolean setTx = SnappyPrms.setTx();
   /*public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);*/  //default to false

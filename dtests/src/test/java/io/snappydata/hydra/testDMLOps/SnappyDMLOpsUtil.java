@@ -77,6 +77,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         SnappyDMLOpsBB.getBB().getSharedMap().put("autoCommit", autoCommit);
       if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("txIsolationLevel"))
         SnappyDMLOpsBB.getBB().getSharedMap().put("txIsolationLevel", txIsolationLevel);
+      if (isConflictingTest) {
+        if (SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus) == "")
+          Log.getLogWriter().info("SS - initTask ... inside updateStatus empty loop...");
+        SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "START");
+        Log.getLogWriter().info("SS - initTask ... updateStatus set to : " + SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus));
+      }
     }
     derbyTestUtils = new DerbyTestUtils();
   }
@@ -670,10 +676,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public void performUpdate() {
+    if (isConflictingTest) {
+      String updateStatus = (String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus);
+      if (updateStatus.equalsIgnoreCase("STOP"))
+        return;
+    }
     Connection conn = null;
     String tableName = null;
     String tableType = null;
-    String stmtInBB = null;
     String stmt = null;
     boolean autoCommit = false;
     try {
@@ -703,20 +713,39 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         getAndExecuteSelect(conn, stmt, false);
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       Log.getLogWriter().info("SS - tableType: " + tableType + " tableName: " + tableName);
+      if (isConflictingTest && ((String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus)).equalsIgnoreCase("STOP"))
+        return;
       numRows = conn.createStatement().executeUpdate(stmt);
       if (setTx && !autoCommit && tableType.equalsIgnoreCase("R")) {
         Log.getLogWriter().info("SS - committing the transaction. ");
-        commit(conn);
+        conn.commit();
       }
-      Log.getLogWriter().info("SS - update statement: " + stmt);
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
+      if (isConflictingTest) {
+        SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "STOP");
+        SnappyDMLOpsBB.getBB().getSharedMap().put("thr_Id", snappyTest.getMyTid());
+        Log.getLogWriter().info("SS : thr_id:" + SnappyDMLOpsBB.getBB().getSharedMap().get("thr_Id") + ", update stmt: " + stmt.toString());
+      }
+      Log.getLogWriter().info("SS - update statement: " + stmt + ", tid: " + snappyTest.getMyTid());
+
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
         if (stmt.toUpperCase().contains("SELECT"))
           getAndExecuteSelect(dConn, stmt, true);
+        int derbyRows = 0;
+        /*if (isConflictingTest) {
+          int thisTid = snappyTest.getMyTid();
+          int tidInBlackBoard = (int)SnappyDMLOpsBB.getBB().getSharedMap().get("thr_Id");
+          if (thisTid != tidInBlackBoard) {
+            Log.getLogWriter().info("SS : tid does not match ");
+            return;
+          }
+        }*/
+        Log.getLogWriter().info("SS - update statement for derby: " + stmt + " thr_id: " + snappyTest.getMyTid());
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
-        int derbyRows = dConn.createStatement().executeUpdate(stmt);
+        derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
+
         if (numRows != derbyRows) {
           String errMsg = "Update statement failed to update same rows in derby and " +
               "snappy. Derby updated " + derbyRows + " and snappy updated " + numRows + ".";
@@ -731,6 +760,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         //orderByClause = (SnappySchemaPrms.getOrderByClause())[Arrays.asList(dmlTables)
         //    .indexOf(tableName)];
         String message = null;
+        if (isConflictingTest) {
+          SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "START");
+          Log.getLogWriter().info("SS : updateStatus:" + SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus));
+          return;
+        }
         Log.getLogWriter().info("SS - selectQuery: " + selectQuery);
         if (setTx)
           message = verifyResultsForTable(selectQuery, tableName, orderByClause, false);
@@ -740,6 +774,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
               message);
         }
       }
+
       closeConnection(conn);
     } catch (SQLException se) {
       if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {
@@ -753,6 +788,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       } else throw new TestException("Got exception while performing update operation.", se);
     }
   }
+
 
   public void performDelete() {
     String tableType = null;
@@ -996,6 +1032,30 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static void HydraTask_verifyResults() {
     String selectQuery = "select * from ";
     testInstance.verifyResults(selectQuery);
+  }
+
+  /*
+   *   Verify results at the end of the conflicting test
+   */
+  public static void HydraTask_verifyUpdateResults() {
+    testInstance.verifyUpdateResults();
+  }
+
+  public void verifyUpdateResults() {
+    String updateStmt[] = SnappySchemaPrms.getUpdateStmts();
+    int numRows = 0;
+    int rand = new Random().nextInt(updateStmt.length);
+    String stmt = updateStmt[rand];
+    String selectQuery = SnappySchemaPrms.getAfterUpdateSelectStmts()[rand];
+    String orderByClause = "";
+    String message = null;
+    String tableName = SnappySchemaPrms.getUpdateTables()[rand];
+    Log.getLogWriter().info("SS - selectQuery: " + selectQuery);
+    message = verifyResultsForTable(selectQuery, tableName, orderByClause, false);
+    if (message.length() != 0) {
+      throw new TestException("Validation failed after update on table " + tableName + "." +
+          message);
+    }
   }
 
   public void verifyResults(String query) {

@@ -28,7 +28,8 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 "UPDATE app.employees SET TitleOfCourtesy='Mrs.' WHERE FIRSTNAME LIKE '%3%' AND TitleOfCourtesy<>'Mrs.'"
 "UPDATE app.orders SET ShipVia = ShipVia + 1 WHERE OrderID IN (SELECT max(orderID) from orders
 where tid=$tid)"*/
-"UPDATE app.orders SET Freight = Freight * 1.1 WHERE OrderID = 10"
+"UPDATE app.orders SET ShipVia = ShipVia + 1 WHERE OrderID = 10"
+/*"UPDATE app.orders SET Freight = Freight * 1.1 WHERE OrderID = 10"*/
 //"UPDATE app.customers SET CompanyName='abc_$tid'"
 ;
 
@@ -44,7 +45,8 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
 "select EmployeeID,TitleOfCourtesy from employees where TitleOfCourtesy='Mr.'"
 "select EmployeeID,TitleOfCourtesy from employees where TitleOfCourtesy='Mrs.'"
 "select OrderID,ShipVia from orders"*/
-"select OrderID,Freight from app.orders WHERE OrderID = 10"
+"select OrderID,ShipVia from app.orders WHERE OrderID = 10"
+/*"select OrderID,Freight from app.orders WHERE OrderID = 10"*/
 //"select customerID,companyname from customers"
 ;
 

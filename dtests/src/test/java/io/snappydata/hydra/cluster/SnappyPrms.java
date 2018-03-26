@@ -504,6 +504,11 @@ public class SnappyPrms extends BasePrms {
   public static Long tableType;
 
   /**
+   * (Boolean) parameter to set value for verifyig if the test scenario is conflictHandling.
+   */
+  public static Long isConflictingTest;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
