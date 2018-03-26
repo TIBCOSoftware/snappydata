@@ -141,10 +141,18 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
     val benchmark = new Benchmark("JoinQuery", totalElements)
     var iter = 1
-    benchmark.addCase("Sorted", numIters, prepare) { _ =>
-      SortedColumnPerformanceTests.executeQuery_JoinQuery(session, colTableName, joinTableName,
-        iter, numTimesInsert, numTimesUpdate = 1)
-      iter += 1
+    try {
+      // Force SMJ
+      session.conf.set(Property.HashJoinSize.name, "-1")
+      session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+      benchmark.addCase("Sorted", numIters, prepare) { _ =>
+        SortedColumnPerformanceTests.executeQuery_JoinQuery(session, colTableName, joinTableName,
+          iter, numTimesInsert, numTimesUpdate = 1)
+        iter += 1
+      }
+    } finally {
+      session.conf.unset(Property.HashJoinSize.name)
+      session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
     }
     benchmark.run()
     // Thread.sleep(50000000)
