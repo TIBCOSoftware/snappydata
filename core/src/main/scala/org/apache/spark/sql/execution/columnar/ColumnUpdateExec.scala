@@ -246,9 +246,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |  if (${ColumnTableScan.getDebugMode}) {
            |    System.out.println("vivek ordinal=" + $ordinal +
            |     " ,ordinal-id=" + $ordinalIdVar +
-           |     " ,ordinal-id=" + ~$ordinalIdVar +
+           |     " [" + ~$ordinalIdVar + "]" +
            |     " ,updated-ordinal-id=" + updatedOrdinalIdVar +
-           |     " ,updated-ordinal-id=" + ~updatedOrdinalIdVar +
+           |     " [" + ~updatedOrdinalIdVar + "]" +
            |     " ,field=" + $field);
            |  }
            |  $encoderTerm.setUpdatePosition(updatedOrdinalIdVar);
