@@ -28,7 +28,7 @@ import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
@@ -112,18 +112,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter], prunePartitions: => Int): RDD[Any] = {
-
-    val requestedColumns = if (requiredColumns.isEmpty) {
-      val narrowField =
-        schema.fields.minBy { a =>
-          ColumnType(a.dataType).defaultSize
-        }
-
-      Array(narrowField.name)
-    } else {
-      requiredColumns
-    }
+      filters: Array[Expression], prunePartitions: => Int): (RDD[Any], Array[Int]) = {
 
     val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
     (0 until schema.length).foreach(i =>
@@ -134,9 +123,8 @@ abstract case class JDBCAppendableRelation(
       index.toInt
     }
     readLock {
-      externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
-        requestedColumns, projection, (filters eq null) || filters.length == 0,
-        prunePartitions, sqlContext.sparkSession, schema, delayRollover)
+      externalStore.getColumnBatchRDD(tableName, rowBuffer = table, projection,
+        filters, prunePartitions, sqlContext.sparkSession, schema, delayRollover) -> projection
     }
   }
 
