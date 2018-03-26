@@ -117,7 +117,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val dataFrameReader : DataFrameReader = session.read
     val insertDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
       numTimesInsert))
-    val updateDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+    val updateDF1: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+      numTimesUpdate))
+    val updateDF2: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
       numTimesUpdate))
 
     def prepare(): Unit = {
@@ -130,8 +132,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         insertDF.write.insertInto(colTableName)
         insertDF.write.insertInto(joinTableName)
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        updateDF.write.putInto(colTableName)
-        updateDF.write.putInto(joinTableName)
+        updateDF1.write.putInto(colTableName)
+        updateDF2.write.putInto(joinTableName)
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
         session.conf.unset(Property.ColumnBatchSize.name)
@@ -150,12 +152,12 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
           iter, numTimesInsert, numTimesUpdate = 1)
         iter += 1
       }
+      benchmark.run()
     } finally {
       session.conf.unset(Property.HashJoinSize.name)
       session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
     }
-    benchmark.run()
-    // Thread.sleep(50000000)
+    Thread.sleep(50000000)
   }
 
   test("insert performance") {
@@ -254,7 +256,6 @@ object SortedColumnPerformanceTests {
     // scalastyle:off
     // println(s"Query = $query result=${result.length} $expectedNumResults $iterCount")
     // scalastyle:on
-    passed
   }
 
   def executeQuery_JoinQuery(session: SnappySession, colTableName: String, joinTableName: String,
