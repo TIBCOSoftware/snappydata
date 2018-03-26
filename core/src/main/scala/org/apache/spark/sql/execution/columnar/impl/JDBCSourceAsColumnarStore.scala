@@ -523,7 +523,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int,
       conn: Option[Connection] = None): Unit = {
     // split the batch and put into row buffer if it is small
-    if (maxDeltaRows > 0 && batch.numRows < math.min(maxDeltaRows,
+    if (false && maxDeltaRows > 0 && batch.numRows < math.min(maxDeltaRows,
       math.max(maxDeltaRows >>> 1, SystemProperties.SNAPPY_MIN_COLUMN_DELTA_ROWS))) {
       // noinspection RedundantDefaultArgument
       tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
