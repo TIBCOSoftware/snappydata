@@ -90,7 +90,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
     val benchmark = new Benchmark("PointQuery", totalElements)
     var iter = 1
-    benchmark.addCase("Master", numIters, prepare) { _ =>
+    benchmark.addCase("Sorted", numIters, prepare) { _ =>
       SortedColumnPerformanceTests.executeQuery_PointQuery(session, colTableName, iter,
         numTimesInsert, numTimesUpdate = 1)
       iter += 1
@@ -141,7 +141,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
     val benchmark = new Benchmark("JoinQuery", totalElements)
     var iter = 1
-    benchmark.addCase("Master", numIters, prepare) { _ =>
+    benchmark.addCase("Sorted", numIters, prepare) { _ =>
       SortedColumnPerformanceTests.executeQuery_JoinQuery(session, colTableName, joinTableName,
         iter, numTimesInsert, numTimesUpdate = 1)
       iter += 1
