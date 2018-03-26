@@ -35,9 +35,49 @@
 
 package org.apache.spark.sql
 
+import org.scalatest.Tag
+
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
 class SnappySQLQuerySuite extends SQLQuerySuite with SharedSnappySessionContext {
 
+  import testImplicits._
 
+  def excluded: Seq[String] = Seq("inner join ON, one match per row",
+  "data source table created in InMemoryCatalog should be able to read/write")
+
+  override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
+    if (!excluded.contains(testName)) {
+      super.test(testName, testTags: _*)(testFun)
+    }
+  }
+
+
+  test("snappy : inner join ON, one match per row") {
+    withSQLConf(SQLConf.CASE_SENSITIVE.key -> "false") {
+      checkAnswer(
+        sql("SELECT * FROM UPPERCASEDATA U JOIN lowercasedata L ON U.N = L.n"),
+        Seq(
+          Row(1, "A", 1, "a"),
+          Row(2, "B", 2, "b"),
+          Row(3, "C", 3, "c"),
+          Row(4, "D", 4, "d")))
+    }
+  }
+
+  test("snappy: data source table created in InMemoryCatalog should be able to read/write") {
+    withTable("tbl") {
+      sql("CREATE EXTERNAL TABLE tbl(i INT, j STRING) USING parquet")
+      checkAnswer(sql("SELECT i, j FROM tbl"), Nil)
+
+      Seq(1 -> "a", 2 -> "b").toDF("i", "j").write.mode("overwrite").insertInto("tbl")
+      checkAnswer(sql("SELECT i, j FROM tbl"), Row(1, "a") :: Row(2, "b") :: Nil)
+
+      Seq(3 -> "c", 4 -> "d").toDF("i", "j").write.mode("append").saveAsTable("tbl")
+      checkAnswer(
+        sql("SELECT i, j FROM tbl"),
+        Row(1, "a") :: Row(2, "b") :: Row(3, "c") :: Row(4, "d") :: Nil)
+    }
+  }
 }
