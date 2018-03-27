@@ -652,7 +652,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         Log.getLogWriter().info("Got expected Exception : " + se.getMessage() + "\n" + se
             .getCause());
         return;
-      } else if (setTx && se.getMessage().contains("23505")) {
+      } else if (se.getMessage().contains("23505")) {
         Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage() + "\n" + se
             .getCause());
         return;
