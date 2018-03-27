@@ -623,7 +623,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       closeConnection(conn);
 
     } catch (SQLException se) {
-      throw new TestException("Got exception while performing insert operation.", se);
+      if (se.getMessage().contains("23505")) {
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage() + "\n" + se
+            .getCause());
+        return;
+      } else throw new TestException("Got exception while performing insert operation.", se);
     }
   }
 
