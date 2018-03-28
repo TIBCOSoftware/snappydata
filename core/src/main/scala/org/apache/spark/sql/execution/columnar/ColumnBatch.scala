@@ -85,30 +85,40 @@ abstract class ResultSetIterator[A](conn: Connection,
   def close() {
     // if (!hasNextValue) return
     try {
-      if (rs ne null) {
-        // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
-        // rs.lightWeightClose()
-        rs.close()
-      }
-    } catch {
-      case NonFatal(e) => logWarning("Exception closing resultSet", e)
-    }
-    try {
-      if (stmt ne null) {
-        stmt.getConnection match {
-          case embedConn: EmbedConnection =>
-            val lcc = embedConn.getLanguageConnection
-            if (lcc ne null) {
-              lcc.clearExecuteLocally()
-            }
-          case _ =>
+      try {
+        if (rs ne null) {
+          // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
+          // rs.lightWeightClose()
+          rs.close()
         }
-        stmt.close()
+      } catch {
+        case NonFatal(e) => logWarning("Exception closing resultSet", e)
       }
-    } catch {
-      case NonFatal(e) => logWarning("Exception closing statement", e)
+      try {
+        if (stmt ne null) {
+          stmt.getConnection match {
+            case embedConn: EmbedConnection =>
+              val lcc = embedConn.getLanguageConnection
+              if (lcc ne null) {
+                lcc.clearExecuteLocally()
+              }
+            case _ =>
+          }
+          stmt.close()
+        }
+      } catch {
+        case NonFatal(e) => logWarning("Exception closing statement", e)
+      }
+      hasNextValue = false
+    } finally {
+      try {
+        if (conn != null) {
+          conn.close()
+        }
+      } catch {
+        case _: Throwable =>
+      }
     }
-    hasNextValue = false
   }
 }
 
