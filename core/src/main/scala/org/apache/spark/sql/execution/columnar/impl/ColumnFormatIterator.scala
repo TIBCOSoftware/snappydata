@@ -64,7 +64,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   /**
    * The current set of in-memory batches being iterated.
    */
-  private val inMemoryBatches = new java.util.ArrayList[LongObjectHashMap[AnyRef]](4)
+  private val inMemoryBatches = new java.util.TreeMap[Long, LongObjectHashMap[AnyRef]]()
   private var inMemoryBatchIndex: Int = _
 
   private val canOverflow =
@@ -155,7 +155,8 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       if (inMemoryBatchIndex >= inMemoryBatches.size()) {
         if (!advanceToNextBatchSet()) throw new NoSuchElementException
       }
-      val map = inMemoryBatches.get(inMemoryBatchIndex)
+      val values = inMemoryBatches.values().toArray
+      val map = values(inMemoryBatchIndex).asInstanceOf[LongObjectHashMap[AnyRef]]
       map.getGlobalState.asInstanceOf[RegionEntry]
     } else if (nextDiskBatch ne null) {
       if (currentDiskBatch ne null) currentDiskBatch.release()
@@ -170,7 +171,11 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
 
   override def getColumnValue(columnIndex: Int): AnyRef = {
     val column = columnIndex & 0xffffffffL
-    if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)
+    if (entryIterator ne null) {
+      val values = inMemoryBatches.values().toArray
+      val map = values(inMemoryBatchIndex).asInstanceOf[LongObjectHashMap[AnyRef]]
+      map.get(column)
+    }
     else if (columnIndex == DELTA_STATROW_COL_INDEX) currentDiskBatch.getDeltaStatsValue
     else currentDiskBatch.entryMap.get(column)
   }
@@ -207,7 +212,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       // iterate till next map index since all columns of the same batch
       // are guaranteed to be in the same index
       val mapIndex = entryIterator.getMapTableIndex
-      while (entryIterator.hasNext && mapIndex == entryIterator.getMapTableIndex) {
+      while (entryIterator.hasNext /* && mapIndex == entryIterator.getMapTableIndex */) {
         val aEntry = entryIterator.next()
         var entry: RegionEntry = aEntry
         val key = aEntry.getRawKey.asInstanceOf[ColumnFormatKey]
@@ -283,7 +288,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
                   switchDiskBlockSorter()
                 }
               } else if (map.getGlobalState ne null) {
-                inMemoryBatches.add(map)
+                inMemoryBatches.put(uuid, map)
               }
               true
             }
@@ -291,7 +296,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
         } else {
           activeBatches.forEachWhile(new LongObjPredicate[LongObjectHashMap[AnyRef]] {
             override def test(uuid: Long, map: LongObjectHashMap[AnyRef]): Boolean = {
-              if (map.getGlobalState ne null) inMemoryBatches.add(map)
+              if (map.getGlobalState ne null) inMemoryBatches.put(uuid, map)
               true
             }
           })
