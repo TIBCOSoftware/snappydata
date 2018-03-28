@@ -238,7 +238,11 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |  if ($ordinalIdVar < 0) {
            |    // +ordinal is to adjust all inserts in delta so far
            |    // +1 since ordinalIdVar is of the last position
-           |    updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal + 1);
+           |    if (~$ordinalIdVar > 0) {
+           |      updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal + 1);
+           |    } else {
+           |      updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal);
+           |    }
            |  } else {
            |    updatedOrdinalIdVar = $ordinalIdVar;
            |  }
