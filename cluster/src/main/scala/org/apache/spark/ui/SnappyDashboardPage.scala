@@ -112,7 +112,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       extTablesStatsTitle ++ extTablesStatsTable
     }
 
-    val pageContent = pageTitleNode ++ clusterStatsDetails ++ membersStatsDetails ++
+    val jsScripts = <script src={
+                              UIUtils.prependBaseUri("/static/snappydata/snappy-dashboard.js")
+                            }></script>
+
+    val pageContent = jsScripts ++ pageTitleNode ++ clusterStatsDetails ++ membersStatsDetails ++
                       tablesStatsDetails ++ extTablesStatsDetails
 
     UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),

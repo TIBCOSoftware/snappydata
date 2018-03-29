@@ -52,6 +52,11 @@ private[v1] class SnappyApiRootResource extends ApiRequestContext {
     new AllMembersResource
   }
 
+  @Path("memberdetails/{memberId}")
+  def getMemberDetails(): MembersDetailsResource = {
+    new MembersDetailsResource
+  }
+
   @Path("alltables")
   def getAllTables(): AllTablesResource = {
     new AllTablesResource

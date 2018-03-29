@@ -115,172 +115,163 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
       jvmHeapUsage = jvmHeapUsed * 100 / jvmHeapSize
     }
 
+    val memberBasicDetailsContent = {
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+           margin: 0px 10px;">
+        <span>Member :</span><br/>
+        <span style="font-size: large;"> {memberDetails.getId} </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+           margin: 0px 10px;">
+        <span>Type :</span><br/>
+        <span style="font-size: large;"> {memberType} </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+           margin: 0px 10px;">
+        <span>Process ID :</span><br/>
+        <span style="font-size: large;"> {memberDetails.getProcessId} </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+           margin: 0px 10px;">
+        <span>Status :</span><br/>
+        <span style="font-size: large;"> {status} </span>
+      </div>
+    }
+
     val heapHtmlContent = if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>
-            {SnappyMemberDetailsPage.ValueNotApplicable}
-          </span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution :</span>
-          <span>
-            {SnappyMemberDetailsPage.ValueNotApplicable}
-          </span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>
-            {SnappyMemberDetailsPage.ValueNotApplicable}
-          </span>
-        </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+             margin: 0px 10px;">
+        <span>Storage Heap:</span><br/>
+        <span style="font-size: large;"> {SnappyMemberDetailsPage.ValueNotApplicable} </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+         margin: 0px 10px;">
+        <span>Execution Heap:</span><br/>
+        <span style="font-size: large;"> {SnappyMemberDetailsPage.ValueNotApplicable} </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+         margin: 0px 10px;">
+        <span>Total Heap:</span><br/>
+        <span style="font-size: large;"> {SnappyMemberDetailsPage.ValueNotApplicable} </span>
       </div>
     } else {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>
-            {Utils.bytesToString(heapStoragePoolUsed).toString + " / " +
-              Utils.bytesToString(heapStoragePoolSize).toString}
-          </span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution :</span>
-          <span>
-            {Utils.bytesToString(heapExecutionPoolUsed).toString + " / " +
-              Utils.bytesToString(heapExecutionPoolSize).toString}
-          </span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>
-            {Utils.bytesToString(heapMemoryUsed).toString + " / " +
-              Utils.bytesToString(heapMemorySize).toString}
-          </span>
-        </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+             margin: 0px 10px;">
+        <span>Storage Heap:</span><br/>
+        <span style="font-size: large;">
+          {Utils.bytesToString(heapStoragePoolUsed).toString + " / " +
+            Utils.bytesToString(heapStoragePoolSize).toString}
+        </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+         margin: 0px 10px;">
+        <span>Execution Heap:</span><br/>
+        <span style="font-size: large;">
+          {Utils.bytesToString(heapExecutionPoolUsed).toString + " / " +
+            Utils.bytesToString(heapExecutionPoolSize).toString}
+        </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+         margin: 0px 10px;">
+        <span>Total Heap:</span><br/>
+        <span style="font-size: large;">
+          {Utils.bytesToString(heapMemoryUsed).toString + " / " +
+            Utils.bytesToString(heapMemorySize).toString}
+        </span>
       </div>
     }
 
     val offHeapHtmlContent = if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>
-            {SnappyMemberDetailsPage.ValueNotApplicable}
-          </span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution :</span>
-          <span>
-            {SnappyMemberDetailsPage.ValueNotApplicable}
-          </span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>
-            {SnappyMemberDetailsPage.ValueNotApplicable}
-          </span>
-        </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+             margin: 0px 10px;">
+        <span>Storage Off-Heap:</span><br/>
+        <span style="font-size: large;">
+          {SnappyMemberDetailsPage.ValueNotApplicable}
+        </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+         margin: 0px 10px;">
+        <span>Execution Off-Heap:</span><br/>
+        <span style="font-size: large;">
+          {SnappyMemberDetailsPage.ValueNotApplicable}
+        </span>
+      </div>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+         margin: 0px 10px;">
+        <span>Total Off-Heap:</span><br/>
+        <span style="font-size: large;">
+          {SnappyMemberDetailsPage.ValueNotApplicable}
+        </span>
       </div>
     } else {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>
+      <div class="keyStatesText"
+           style="text-align: left; line-height: 25px; float: left; height: 60px;
+             margin: 0px 10px;">
+          <span>Storage Off-Heap:</span><br/>
+          <span style="font-size: large;">
             {Utils.bytesToString(offHeapStoragePoolUsed).toString + " / " +
               Utils.bytesToString(offHeapStoragePoolSize).toString}
           </span>
         </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution :</span>
-          <span>
+        <div class="keyStatesText"
+             style="text-align: left; line-height: 25px; float: left; height: 60px;
+           margin: 0px 10px;">
+          <span>Execution Off-Heap:</span><br/>
+          <span style="font-size: large;">
             {Utils.bytesToString(offHeapExecutionPoolUsed).toString + " / " +
               Utils.bytesToString(offHeapExecutionPoolSize).toString}
           </span>
         </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>
+        <div class="keyStatesText"
+             style="text-align: left; line-height: 25px; float: left; height: 60px;
+           margin: 0px 10px;">
+          <span>Total Off-Heap:</span><br/>
+          <span style="font-size: large;">
             {Utils.bytesToString(offHeapMemoryUsed).toString + " / " +
               Utils.bytesToString(offHeapMemorySize).toString}
           </span>
         </div>
-      </div>
     }
 
-    <div class="row-fluid">
-      <div class="keyStates" style="width: 300px; margin: 0px 10px;">
-        <div class="keyStatesText" style="text-align: left;">
-          Member :
-          <span>
-            {memberDetails.getId}
-          </span>
-        </div>
-        <div class="keyStatesText" style="text-align: left;">
-          Type :
-          <span>
-            {memberType}
-          </span>
-        </div>
-        <div class="keyStatesText" style="text-align: left;">
-          Process ID :
-          <span>
-            {memberDetails.getProcessId}
-          </span>
-        </div>
+    <div class="container-fluid">
+      <div style="float:left; margin: 10px 20px; border: solid 1px darkgray;
+           box-shadow: 5px 5px 5px grey;">
+        {memberBasicDetailsContent}
+        <div style="height: 50px; border: solid 1px darkgray; margin: 5px 10px; float: left;"></div>
+        {heapHtmlContent}
+        <div style="height: 50px; border: solid 1px darkgray; margin: 5px 10px; float: left;"></div>
+        {offHeapHtmlContent}
       </div>
-      <div class="keyStates" style="width: 250px; margin: 0px 10px;">
-        {heapHtmlContent}<div class="keyStatesText">Heap Memory</div>
+    </div>
+    <div class="container-fluid">
+      <div id="cpuUsageContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+         border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
-      <div class="keyStates" style="width: 250px; margin: 0px 10px;">
-        {offHeapHtmlContent}<div class="keyStatesText">Off-Heap Memory</div>
+      <div id="heapUsageContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+         border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue"
-             style="width:50%; margin: auto;" data-toggle="tooltip" title=""
-             data-original-title={
-               SnappyMemberDetailsPage.memberStats("status").toString + ": " + status.toString
-             }>
-          <img style="padding-top: 15px;" src={statusImgUri}/>
-        </div>
-        <div class="keyStatesText">
-          {SnappyMemberDetailsPage.memberStats("status")}
-        </div>
+      <div id="offheapUsageContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+         border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue" id="cpuUsage" data-value={cpuUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={SnappyMemberDetailsPage.memberStats("cpuUsageTooltip").toString}>
-          <svg id="cpuUsageGauge" width="100%" height="100%"></svg>
-        </div>
-        <div class="keyStatesText">
-          {SnappyMemberDetailsPage.memberStats("cpuUsage")}
-        </div>
-      </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue" id="memoryUsage" data-value={memoryUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-               SnappyMemberDetailsPage.memberStats("memoryUsageTooltip").toString
-             }>
-          <svg id="memoryUsageGauge" width="100%" height="100%"></svg>
-        </div>
-        <div class="keyStatesText">
-          {SnappyMemberDetailsPage.memberStats("memoryUsage")}
-        </div>
-      </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue" id="jvmHeapUsage" data-value={jvmHeapUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-               SnappyMemberDetailsPage.memberStats("jvmHeapUsageTooltip").toString
-             }>
-          <svg id="jvmHeapUsageGauge" width="100%" height="100%"></svg>
-        </div>
-        <div class="keyStatesText">
-          {SnappyMemberDetailsPage.memberStats("jvmHeapUsage")}
-        </div>
+      <div id="getsputsContainer"
+           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+         border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
     </div>
   }
@@ -415,7 +406,12 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         </div>
       </div>
 
-    PageContent = pageTitleNode ++ memberStats ++ memberLogTitle ++ content
+    val jsScripts = <script src={
+                              UIUtils.prependBaseUri("/static/snappydata/snappy-memberdetails.js")
+                            }></script> ++
+                    <script>setMemberId('{Unparsed("%s".format(memberId))}');</script>
+
+    PageContent = jsScripts ++ pageTitleNode ++ memberStats ++ memberLogTitle ++ content
 
     UIUtils.headerSparkPage(pageHeaderText, PageContent, parent, Some(500),
       useDataTables = true, isSnappyPage = true)
