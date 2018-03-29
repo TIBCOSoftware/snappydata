@@ -1,0 +1,1 @@
+INSERT INTO [testdatabase20G].[dbo].[AGREEMENT] VALUES (?, 8093, 1, N'PagOvRDn', N'PYydIsuL', N'2016-05-02', N'2016-07-13', N'2016-06-25', N'2016-07-04', N'4027', N'4065');

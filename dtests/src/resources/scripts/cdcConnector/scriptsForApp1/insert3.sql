@@ -1,0 +1,1 @@
+INSERT INTO [testdatabase20G].[dbo].[BANK] VALUES (9989, ?, 2391, 1, N'l', N'NAHJCqkFeaAaqJhG', N'2016-07-14', N'2016-06-26', N'4097', N'9092');

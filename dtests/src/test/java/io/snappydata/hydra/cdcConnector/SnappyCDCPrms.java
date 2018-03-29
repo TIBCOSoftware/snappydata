@@ -19,6 +19,8 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static Long isScanQuery;
 
+  public static Long isBulkDelete;
+
   public static Long isCDCStream;
 
   public static Long isCDC;
@@ -27,11 +29,32 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static Long appName;
 
+  public static Long finalStartRange;
+
+  public static Long finalEndRange;
+
+  public static Long sqlServerInstance;
+
   public static String getDataLocation(){
     String dataLoc = tasktab().stringAt(dataLocation, tab().stringAt
         (dataLocation, null));
     if (dataLoc == null) return "";
     return dataLoc;
+  }
+
+  public static int getSqlServerInstance(){
+    Long key = sqlServerInstance;
+    return tasktab().intAt(key, tab().intAt(key, 1));
+  }
+
+  public static int getFinalStartRange(){
+    Long key = finalStartRange;
+    return tasktab().intAt(key, tab().intAt(key, 1));
+  }
+
+  public static int getFinalEndRange(){
+    Long key = finalEndRange;
+    return tasktab().intAt(key, tab().intAt(key, 1));
   }
 
   public static String getAppName(){
@@ -43,6 +66,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static boolean getIsScanQuery() {
     Long key = isScanQuery;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsBulkDelete() {
+    Long key = isBulkDelete;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
