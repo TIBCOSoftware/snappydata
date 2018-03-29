@@ -20,11 +20,11 @@ package org.apache.spark.sql.execution.row
 import java.sql.Connection
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression}
 import org.apache.spark.sql.execution.TableExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.{StructField, StructType}
 
 /**

@@ -50,6 +50,7 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchT
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -68,7 +69,7 @@ import org.apache.spark.sql.hive._
 import org.apache.spark.sql.internal._
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
@@ -104,34 +105,39 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * and a catalog that interacts with external systems.
    */
   @transient
-  override private[sql] lazy val sharedState: SnappySharedState = {
+  override lazy val sharedState: SnappySharedState = {
     SnappyContext.sharedState(sparkContext)
   }
 
+  val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
+
   private[sql] var disableStoreOptimizations: Boolean = false
 
-//  /**
-//   * State isolated across sessions, including SQL configurations, temporary tables, registered
-//   * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
-//   */
-//  @transient
-//  lazy override val sessionState: SessionState = {
-//    SnappySession.aqpSessionStateClass match {
-//      case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
-//          newInstance(self).asInstanceOf[SnappySessionState]
-//      case None => new SnappySessionState(self)
-//    }
-//  }
-
+  /**
+   * State isolated across sessions, including SQL configurations, temporary tables, registered
+   * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
+   */
+  @transient
   lazy override val sessionState: SessionState = {
-    val className = "org.apache.spark.sql.internal.SnappySessionStateBuilder"
-    try {
-      val clazz = Utils.classForName(className)
-      val ctor = clazz.getConstructors.head
-      ctor.newInstance(self, None).asInstanceOf[BaseSessionStateBuilder].build()
-    } catch {
-      case NonFatal(e) =>
-        throw new IllegalArgumentException(s"Error while instantiating '$className':", e)
+    SnappySession.aqpSessionStateClass match {
+      case Some(aqpClass) =>
+        try {
+        val ctor = aqpClass.getConstructors.head
+        ctor.newInstance(self, None).asInstanceOf[BaseSessionStateBuilder].build()
+      } catch {
+        case NonFatal(e) =>
+          throw new IllegalArgumentException(s"Error while instantiating '$aqpClass':", e)
+      }
+      case None =>
+        val className = "org.apache.spark.sql.internal.SnappySessionStateBuilder"
+        try {
+          val clazz = Utils.classForName(className)
+          val ctor = clazz.getConstructors.head
+          ctor.newInstance(self, None).asInstanceOf[BaseSessionStateBuilder].build()
+        } catch {
+          case NonFatal(e) =>
+            throw new IllegalArgumentException(s"Error while instantiating '$className':", e)
+        }
     }
   }
 
@@ -145,7 +151,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   def snappyParser: ParserInterface = sessionState.sqlParser
 
-  private[spark] def snappyContextFunctions = new SnappyContextFunctions
+  def snappyContextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
   SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
@@ -1858,7 +1864,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       InsertCachedPlanHelper(self, topLevel),
       ReuseExchange(sessionState.conf))
 
-    protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {
+    private[spark] def newQueryExecution(plan: LogicalPlan): QueryExecution = {
       new QueryExecution(self, plan) {
 
         addContextObject(SnappySession.ExecutionKey, () => newQueryExecution(plan))
@@ -1949,7 +1955,7 @@ object SnappySession extends Logging {
     if (isEnterpriseEdition) {
       try {
         Some(org.apache.spark.util.Utils.classForName(
-          "org.apache.spark.sql.internal.SnappyAQPSessionState"))
+          "org.apache.spark.sql.internal.SnappyAQPSessionStateBuilder"))
       } catch {
         case NonFatal(e) =>
           // Let the user know if it failed to load AQP classes.

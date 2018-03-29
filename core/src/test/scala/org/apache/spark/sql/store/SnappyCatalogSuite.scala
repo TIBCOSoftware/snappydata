@@ -34,18 +34,20 @@
 
 package org.apache.spark.sql.store
 
-import io.snappydata.SnappyFunSuite
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import java.net.URI
 
-import org.apache.spark.sql.types.{StringType, StructField, StructType, IntegerType}
-import org.apache.spark.sql.{SnappySession, AnalysisException}
-import org.apache.spark.sql.catalog.{Column, Function, Table, Database}
-import org.apache.spark.sql.catalyst.{ScalaReflection, FunctionIdentifier, TableIdentifier}
+import io.snappydata.SnappyFunSuite
+import org.apache.spark.sql.catalog.{Column, Database, Function, Table}
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.Range
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, ScalaReflection, TableIdentifier}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.internal.CatalogImpl
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.{AnalysisException, SnappySession}
 import org.apache.spark.util.Utils
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 /**
  * Most of the code is copied from CatalogSuite of Spark. Necessary modification for Snappy
@@ -65,7 +67,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
         sessionCatalog.reset()
       }
       snappySession = new SnappySession(snc.sparkContext)
-      sessionCatalog = snappySession.sessionState.catalog
+      sessionCatalog = snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     } finally {
       // super.afterEach()
     }
@@ -117,9 +119,10 @@ class SnappyCatalogSuite extends SnappyFunSuite
   }
 
   private def createTempFunction(name: String): Unit = {
-    val info = new ExpressionInfo("className", name)
     val tempFunc = (e: Seq[Expression]) => e.head
-    sessionCatalog.createTempFunction(name, info, tempFunc, ignoreIfExists = false)
+    val funcMeta = CatalogFunction(FunctionIdentifier(name, None), "className", Nil)
+    sessionCatalog.registerFunction(
+      funcMeta, overrideIfExists = false, functionBuilder = Some(tempFunc))
   }
 
   private def dropFunction(name: String, db: Option[String] = None): Unit = {
@@ -411,7 +414,7 @@ abstract class CatalogTestUtils {
 
   def newFunc(): CatalogFunction = newFunc("funcName")
 
-  def newUriForDatabase(): String = Utils.createTempDir().toURI.toString.stripSuffix("/")
+  def newUriForDatabase(): URI = new URI(Utils.createTempDir().toURI.toString.stripSuffix("/"))
 
   def newDb(name: String): CatalogDatabase = {
     CatalogDatabase(name, name + " description", newUriForDatabase(), Map.empty)

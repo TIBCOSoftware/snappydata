@@ -1212,7 +1212,8 @@ object RowToInternalRow extends BaseGenericInternalRow {
     converters(ordinal)(row.getAs(ordinal))
   }
 
-  override def copy(): InternalRow = throw new UnsupportedOperationException("Not implemented")
+  override def copy(): GenericInternalRow =
+    throw new UnsupportedOperationException("Not implemented")
 
   override def setNullAt(i: Int): Unit = {}
 

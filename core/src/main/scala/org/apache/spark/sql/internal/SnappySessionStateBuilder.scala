@@ -23,7 +23,6 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Colocation
 import io.snappydata.Property
 import org.apache.spark.Partition
 import org.apache.spark.annotation.{Experimental, InterfaceStability}
-import org.apache.spark.sql.{SnappyStrategies, Strategy, _}
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
@@ -33,15 +32,16 @@ import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan, SparkPlanner}
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources._
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan, SparkPlanner}
 import org.apache.spark.sql.hive.{SnappyStoreHiveCatalog, _}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.types.{DecimalType, StringType}
+import org.apache.spark.sql.{SnappyStrategies, Strategy, _}
 import org.apache.spark.streaming.Duration
 
 /**

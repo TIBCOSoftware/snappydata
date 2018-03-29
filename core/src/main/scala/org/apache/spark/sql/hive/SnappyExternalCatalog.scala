@@ -32,14 +32,13 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.execution.datasources.PartitioningUtils
 import org.apache.spark.sql.hive.client.HiveClient
-import org.apache.spark.sql.internal.SessionState
 import org.apache.spark.sql.types.StructType
 import org.apache.thrift.TException
 
 import scala.util.control.NonFatal
 
 private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
-    extends ExternalCatalog with Logging {
+    extends ExternalCatalog {
 
   import CatalogTypes.TablePartitionSpec
 
@@ -414,23 +413,22 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     // construct Spark's statistics from information in Hive metastore
     val statsProps = table.properties.filterKeys(_.startsWith(STATISTICS_PREFIX))
 
-    // 2.3_MERGE_YOGS_TODO - get this stats filtering reconciled
-    if (statsProps.nonEmpty) {
-      val tableIdent = inputTable.identifier
-      val sessionState: SessionState = sessionState
-      val db = tableIdent.database.getOrElse(sessionState.catalog.getCurrentDatabase)
-      val tableIdentWithDB = TableIdentifier(tableIdent.table, Some(db))
-      val tableMeta = sessionState.catalog.getTableMetadata(tableIdentWithDB)
-      // Compute stats for each column
-
-      // We also update table-level stats in order to keep them consistent with column-level stats.
-      val statistics = CatalogStatistics(
-        sizeInBytes = BigInt(table.properties(STATISTICS_TOTAL_SIZE)),
-        rowCount = table.properties.get(STATISTICS_NUM_ROWS).map(BigInt(_)),
-        colStats = tableMeta.stats.map(_.colStats).getOrElse(Map.empty))
-
-      table = table.copy(stats = Some(statistics))
-    }
+    // TODO_2.3_MERGE - get this stats filtering reconciled
+//    if (statsProps.nonEmpty) {
+//      val tableIdent = inputTable.identifier
+//      val db = tableIdent.database.getOrElse(sessionState.catalog.getCurrentDatabase)
+//      val tableIdentWithDB = TableIdentifier(tableIdent.table, Some(db))
+//      val tableMeta = sessionState.catalog.getTableMetadata(tableIdentWithDB)
+//      // Compute stats for each column
+//
+//      // We also update table-level stats in order to keep them consistent with column-level stats.
+//      val statistics = CatalogStatistics(
+//        sizeInBytes = BigInt(table.properties(STATISTICS_TOTAL_SIZE)),
+//        rowCount = table.properties.get(STATISTICS_NUM_ROWS).map(BigInt(_)),
+//        colStats = tableMeta.stats.map(_.colStats).getOrElse(Map.empty))
+//
+//      table = table.copy(stats = Some(statistics))
+//    }
 
     // Get the original table properties as defined by the user.
     table.copy(

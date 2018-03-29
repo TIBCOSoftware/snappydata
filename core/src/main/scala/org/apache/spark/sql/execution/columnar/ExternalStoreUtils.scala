@@ -49,7 +49,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.types.{StructType, _}
 import org.apache.spark.util.{Utils => SparkUtils}
 import org.apache.spark.{SparkContext, SparkException}

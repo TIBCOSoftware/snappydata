@@ -27,7 +27,7 @@ import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterio
 import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, ScalarSubquery}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
 import org.apache.spark.sql.catalyst.util.{sideBySide, stackTraceToString}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row}
@@ -261,8 +261,8 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
         e.copy(exprId = ExprId(0))
       case l: ListQuery =>
         l.copy(exprId = ExprId(0))
-      case p: PredicateSubquery =>
-        p.copy(exprId = ExprId(0))
+//  TODO_2.3_MERGE    case p: PredicateSubquery =>
+//        p.copy(exprId = ExprId(0))
       case a: AttributeReference =>
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
       case a: Alias =>
@@ -286,7 +286,7 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
         Filter(splitConjunctivePredicates(condition).map(rewriteEqual).sortBy(_.hashCode())
             .reduce(And), child)
       case sample: Sample =>
-        sample.copy(seed = 0L)(true)
+        sample.copy(seed = 0L)
       case Join(left, right, joinType, condition) if condition.isDefined =>
         val newCondition =
           splitConjunctivePredicates(condition.get).map(rewriteEqual).sortBy(_.hashCode())
@@ -324,6 +324,6 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
 
   /** Fails the test if the two expressions do not match */
   protected def compareExpressions(e1: Expression, e2: Expression): Unit = {
-    comparePlans(Filter(e1, OneRowRelation), Filter(e2, OneRowRelation))
+    comparePlans(Filter(e1, OneRowRelation()), Filter(e2, OneRowRelation()))
   }
 }

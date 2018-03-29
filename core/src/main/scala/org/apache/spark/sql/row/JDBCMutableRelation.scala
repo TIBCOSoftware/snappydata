@@ -26,6 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -35,7 +36,6 @@ import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, Partition}
 

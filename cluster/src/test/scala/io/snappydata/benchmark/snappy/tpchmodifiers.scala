@@ -16,8 +16,6 @@
  */
 package io.snappydata.benchmark.snappy
 
-import scala.util.matching.Regex
-
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
@@ -112,14 +110,14 @@ trait SnappyAdapter extends Adapter with DynamicQueryGetter {
       // per-row processing time for those cases.
       val queryRelations = scala.collection.mutable.HashSet[String]()
       executor(queryString).queryExecution.logical.map {
-        case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+        case ur@UnresolvedRelation(t: TableIdentifier) =>
           queryRelations.add(t.table.toLowerCase)
         case lp: LogicalPlan =>
           lp.expressions.foreach {
             _ foreach {
               case subquery: SubqueryExpression =>
                 subquery.plan.foreach {
-                  case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+                  case ur@UnresolvedRelation(t: TableIdentifier) =>
                     queryRelations.add(t.table.toLowerCase)
                   case _ =>
                 }

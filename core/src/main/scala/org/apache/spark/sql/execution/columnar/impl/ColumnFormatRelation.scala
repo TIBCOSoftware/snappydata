@@ -29,6 +29,7 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, DynamicReplacableConstant, Expression, SortDirection, SpecificInternalRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
@@ -40,7 +41,7 @@ import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition}
 

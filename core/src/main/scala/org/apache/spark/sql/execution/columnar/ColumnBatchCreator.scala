@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode, WholeStageCodegenExec}
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.types._
 
 final class ColumnBatchCreator(

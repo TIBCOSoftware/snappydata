@@ -507,9 +507,9 @@ object TAQTest extends Logging with Assertions {
     }
 
     session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+    session.conf.set(SQLConf.CODEGEN_FALLBACK.key, "false")
     spark.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    spark.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+    spark.conf.set(SQLConf.CODEGEN_FALLBACK.key, "false")
 
     // Benchmark cases:
     //   (1) Spark caching with column batch compression

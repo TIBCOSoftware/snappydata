@@ -217,7 +217,7 @@ class CachedDataFrame(session: SparkSession, queryExecution: QueryExecution,
     collectInternal().map(boundEnc.fromRow).toArray
   }
 
-  override def withNewExecutionId[T](body: => T): T = queryExecution.executedPlan match {
+  def withNewExecutionId[T](body: => T): T = queryExecution.executedPlan match {
     // don't create a new executionId for ExecutePlan since it has already done so
     case _: ExecutePlan => body
     case _ =>

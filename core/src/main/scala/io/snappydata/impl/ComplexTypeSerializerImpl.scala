@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, GenericRow
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.CalendarInterval

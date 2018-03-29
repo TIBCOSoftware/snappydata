@@ -112,9 +112,10 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
   def execute(plan: SparkPlan): RDD[InternalRow] =
     executeWithFallback(_.execute(), plan)
 
-  override def generateTreeString(depth: Int, lastChildren: Seq[Boolean],
-      builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
-    child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
+  // TODO_2.3_MERGE
+//  override def generateTreeString(depth: Int, lastChildren: Seq[Boolean],
+//      builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
+//    child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
 
   // override def children: Seq[SparkPlan] = child.children
 

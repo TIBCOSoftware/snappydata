@@ -43,6 +43,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{DynamicReplacableConstant, ParamLiteral}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
@@ -50,7 +51,7 @@ import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD,
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.util.TaskCompletionListener
