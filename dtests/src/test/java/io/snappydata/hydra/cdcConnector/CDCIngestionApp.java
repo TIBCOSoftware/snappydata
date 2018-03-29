@@ -15,18 +15,21 @@ import hydra.Log;
 import org.apache.spark.sql.catalyst.plans.logical.Except;
 
 class cdcObject implements Runnable {
-  public String path = "/home/supriya/snappy/snappydata/dtests/src/resources/scripts/cdcConnector";
+  public String path;
   private Thread t;
   private String threadName;
+  private String sqlServer;
   private int startRange;
   private int endRange;
   private static long startTime = System.currentTimeMillis();
 
 
-  cdcObject( String name,int strNum, int endNum) {
+  cdcObject( String name,int strNum, int endNum, String qPath,String sqlSer) {
     threadName = name;
     startRange = strNum;
     endRange = endNum;
+    path = qPath;
+    sqlServer = sqlSer;
     System.out.println("Creating " +  threadName );
   }
   public void run() {
@@ -154,7 +157,12 @@ class cdcObject implements Runnable {
       System.out.println("Getting connection");
       String driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
       Class.forName(driver);
-      String url = "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433";
+      String url ;
+      if(sqlServer.equals("sqlServer1")) {
+        url = "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433";
+      }
+      else
+        url = "jdbc:sqlserver://sqlent2.eastus.cloudapp.azure.com:1434";
       String username = "sqldb";
       String password = "snappydata#msft1";
       Properties props = new Properties();
@@ -262,8 +270,11 @@ public class CDCIngestionApp {
  try {
      int sRange = Integer.parseInt(args[0]);
      int eRange = Integer.parseInt(args[1]);
+     String insertQPAth = args[2];
+     String sqlServerInstance = args[3];
+     System.out.println("The startRange is "+ sRange + " and the endRange is "+eRange);
      for (int i = 1; i <= 5; i++) {
-       cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange);
+       cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth,sqlServerInstance);
        obj.start();
     }
      // cdcIngestionApp.runIngestionApp(sRange, eRange);

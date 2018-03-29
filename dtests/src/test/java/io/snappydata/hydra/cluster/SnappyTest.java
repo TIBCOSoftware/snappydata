@@ -2083,7 +2083,15 @@ public class SnappyTest implements Serializable {
         }
         if(SnappyCDCPrms.getIsCDC())
         {
+          int finalStart= SnappyCDCPrms.getFinalStartRange();
+          int finalEnd = SnappyCDCPrms.getFinalEndRange();
+          Log.getLogWriter().info("Start range and end range : " + finalStart + " & " + finalEnd);
           String appName = SnappyCDCPrms.getAppName();
+          if(appName.equals("CDCIngestionApp2")) {
+            userAppArgs = finalStart + " " + finalEnd + " "+userAppArgs ;
+          }
+          else if(appName.equals("CDCIngestionApp1"))
+            userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
           command = snappyJobScript + " --class " + userJob +
               " --name " + appName +
               " --master spark://" + masterHost + ":" + masterPort + " " +

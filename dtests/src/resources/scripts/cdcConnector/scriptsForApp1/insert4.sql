@@ -1,0 +1,1 @@
+INSERT INTO [testdatabase].[dbo].[BANK_ACCOUNT] VALUES (9989, 49596, ?, 1455, 1, N'whr', N'Dd', 148697, N'2016-08-04', N'2016-05-29', N'3789', N'542');
