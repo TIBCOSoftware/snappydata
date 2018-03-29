@@ -29,7 +29,7 @@ import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 // import org.apache.spark.sql.execution.ui.SQLListener;
 import org.apache.spark.sql.execution.ui.SQLTab;
-import org.apache.spark.sql.execution.ui.SnappySQLListener;
+//import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.client.HiveClient;
 import org.apache.spark.sql.internal.SharedState;
 import org.apache.spark.sql.internal.StaticSQLConf;

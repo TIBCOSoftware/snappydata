@@ -66,7 +66,7 @@ trait StatVarianceCounter extends Serializable {
       mergeDistinctCounter(other)
     }
     else {
-      merge(other.copy()) // Avoid overwriting fields in a weird order
+     //  merge(other.clone()) // Avoid overwriting fields in a weird order
     }
   }
 
@@ -96,7 +96,7 @@ trait StatVarianceCounter extends Serializable {
   }
 
   /** Clone this StatVarianceCounter */
-  def copy(): StatVarianceCounter
+  def copyConstructor(): StatVarianceCounter
 
   final def sum: Double = mean * count
 
@@ -137,7 +137,7 @@ trait StatVarianceCounter extends Serializable {
 
 final class StatCounter extends StatVarianceCounter with Serializable {
   /** Clone this StatCounter */
-  override def copy(): StatCounter = {
+  def copyConstructor(): StatCounter = {
     val other = new StatCounter
     other.count = count
     other.mean = mean

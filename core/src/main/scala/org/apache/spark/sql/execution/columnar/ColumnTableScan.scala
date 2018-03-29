@@ -933,6 +933,10 @@ private[sql] final case class ColumnTableScan(
        |       $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar)) == 0 ||
        |       $batchOrdinal != $decoder.getNextNullPosition())))""".stripMargin
   }
+
+  // Metadata that describes more details of this scan.
+  override protected def metadata: Map[String, String] =
+    throw new UnsupportedOperationException()
 }
 
 /**

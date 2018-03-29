@@ -375,6 +375,10 @@ private[sql] final case class RowTableScan(
       ExprCode(code, "false", col)
     }
   }
+
+  // Metadata that describes more details of this scan.
+  override protected def metadata: Map[String, String] =
+    throw new UnsupportedOperationException("")
 }
 
 class ResultSetNullHolder extends ResultWasNull {

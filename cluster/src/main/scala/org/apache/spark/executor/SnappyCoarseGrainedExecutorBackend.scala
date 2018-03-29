@@ -99,7 +99,7 @@ class SnappyCoarseGrainedExecutorBackend(
       // When tasks are killed, the task threads cannot be interrupted
       // as snappy may be writing to an oplog and it generates a
       // DiskAccessException. This DAE ends up closing the underlying regions.
-      executor.killAllTasks(interruptThread = false)
+      executor.killAllTasks(interruptThread = false, "exitWithoutRestart")
       executor.stop()
     }
     // stop the actor system
@@ -108,6 +108,7 @@ class SnappyCoarseGrainedExecutorBackend(
       rpcEnv.shutdown()
     }
 
-    SparkHadoopUtil.get.stopCredentialUpdater()
+    SparkHadoopUtil.get // .stopCredentialUpdater()
   }
 }
+

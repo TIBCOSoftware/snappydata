@@ -167,7 +167,7 @@ class SnappyUnifiedMemoryManager private[memory](
           val objectName = p._1
           if (!objectName.equals(SPARK_CACHE) &&
               !objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
-            bootManagerMap.addTo(p, numBytes)
+            bootManagerMap.addValue(p, numBytes)
           }
         }
       })
@@ -315,12 +315,12 @@ class SnappyUnifiedMemoryManager private[memory](
         if (fromOwner ne null) {
           val memoryForObject = self.memoryForObject
           // "from" was changed to "to"
-          val prev = memoryForObject.addTo(fromOwner -> mode, -totalSize)
+          val prev = memoryForObject.addValue(fromOwner -> mode, -totalSize)
           if (prev >= totalSize) {
-            memoryForObject.addTo(toOwner -> mode, totalSize)
+            memoryForObject.addValue(toOwner -> mode, totalSize)
           } else {
             // something went wrong with size accounting
-            memoryForObject.addTo(fromOwner -> mode, totalSize)
+            memoryForObject.addValue(fromOwner -> mode, totalSize)
             throw new IllegalStateException(
               s"Unexpected move of $totalSize bytes from owner $fromOwner size=$prev")
           }
@@ -667,13 +667,13 @@ class SnappyUnifiedMemoryManager private[memory](
           logWarning(s"Could not allocate memory for $blockId of " +
             s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         } else {
-          memoryForObject.addTo(objectName -> memoryMode, numBytes)
+          memoryForObject.addValue(objectName -> memoryMode, numBytes)
           logDebug(s"Allocated memory for $blockId of " +
             s"$objectName size=$numBytes. Memory pool size ${storagePool.memoryUsed}")
         }
         couldEvictSomeData
       } else {
-        memoryForObject.addTo(objectName -> memoryMode, numBytes)
+        memoryForObject.addValue(objectName -> memoryMode, numBytes)
         enoughMemory
       }
     }
@@ -716,7 +716,7 @@ class SnappyUnifiedMemoryManager private[memory](
     wrapperStats.decStorageMemoryUsed(offHeap, numBytes)
     val memoryForObject = self.memoryForObject
     if (memoryForObject.containsKey(key)) {
-      if (memoryForObject.addTo(key, -numBytes) == numBytes) {
+      if (memoryForObject.addValue(key, -numBytes) == numBytes) {
         memoryForObject.removeAsLong(key)
       }
     }

@@ -20,12 +20,7 @@ package org.apache.spark.sql
 
 import java.io.File
 
-import scala.util.Try
-
 import io.snappydata.Constant
-import org.parboiled2._
-import shapeless.{::, HNil}
-
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
@@ -41,6 +36,10 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import org.parboiled2._
+import shapeless.{::, HNil}
+
+import scala.util.Try
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -712,8 +711,7 @@ case class DropIndex(ifExists: Boolean, indexName: TableIdentifier) extends Comm
 case class DMLExternalTable(
     tableName: TableIdentifier,
     query: LogicalPlan,
-    command: String)
-    extends LeafNode with Command {
+    command: String) extends Command {
 
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
 
