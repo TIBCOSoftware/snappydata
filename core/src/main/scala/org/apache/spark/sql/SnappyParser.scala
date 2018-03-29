@@ -276,7 +276,7 @@ class SnappyParser(session: SnappySession)
             w: Any, d: Any, h: Any, m2: Any, s: Any, m3: Any, m4: Any) =>
           val year = y.asInstanceOf[Option[Int]]
           val month = m.asInstanceOf[Option[Int]]
-          val week = w.asInstanceOf[Option[Int]]
+          val week = w.asInstanceOf[Option[Long]]
           val day = d.asInstanceOf[Option[Long]]
           val hour = h.asInstanceOf[Option[Long]]
           val minute = m2.asInstanceOf[Option[Long]]
@@ -286,7 +286,7 @@ class SnappyParser(session: SnappySession)
           if (!Seq(year, month, week, day, hour, minute, second, millis,
             micros).exists(_.isDefined)) {
             throw new ParseException(
-              "at least one time unit should be given for interval literal")
+              "No interval can be constructed, at least one time unit should be given for interval literal")
           }
           val months = year.map(_ * 12).getOrElse(0) + month.getOrElse(0)
           val microseconds =
@@ -975,7 +975,10 @@ class SnappyParser(session: SnappySession)
         INTERSECT ~ select1.named("select") ~>
             ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
         EXCEPT ~ select1.named("select") ~>
+            ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))    |
+        MINUS ~ select1.named("select") ~>
             ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
+
     ).*
   }
 
@@ -992,6 +995,8 @@ class SnappyParser(session: SnappySession)
         INTERSECT ~ select2.named("select") ~>
           ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
         EXCEPT ~ select2.named("select") ~>
+          ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))    |
+        MINUS ~ select2.named("select") ~>
           ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
       ).*
   }

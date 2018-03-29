@@ -361,6 +361,7 @@ object SnappyParserConsts {
   final val DROP: Keyword = reservedKeyword("drop")
   final val ELSE: Keyword = reservedKeyword("else")
   final val EXCEPT: Keyword = reservedKeyword("except")
+  final val MINUS: Keyword = reservedKeyword("minus")
   final val EXISTS: Keyword = reservedKeyword("exists")
   final val FALSE: Keyword = reservedKeyword("false")
   final val FROM: Keyword = reservedKeyword("from")

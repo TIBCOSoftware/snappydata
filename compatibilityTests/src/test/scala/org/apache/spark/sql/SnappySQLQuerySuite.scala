@@ -35,26 +35,34 @@
 
 package org.apache.spark.sql
 
-import org.scalatest.Tag
+import java.io.File
 
+import org.apache.spark.sql.execution.aggregate
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappySQLQuerySuite extends SQLQuerySuite with SharedSnappySessionContext {
+/**
+  * Some of the tests from SQLQuerySuite is re-written here to suite SnappyData requirements.
+  * Those tests are excluded from being executed from SnappySession.
+  */
+class SnappySQLQuerySuite extends SQLQuerySuite with
+    SharedSnappySessionContext with SnappySparkTestUtil {
 
   import testImplicits._
 
-  def excluded: Seq[String] = Seq("inner join ON, one match per row",
-  "data source table created in InMemoryCatalog should be able to read/write")
+  override def excluded: Seq[String] = Seq("inner join ON, one match per row",
+    "data source table created in InMemoryCatalog should be able to read/write",
+    // Explicit parquet table creation. Needs path option as parquet is EXTERNAL table in SD
+    "SPARK-16644: Aggregate should not put aggregate expressions to constraints",
+    // Explicit parquet table creation. Needs path option as parquet is EXTERNAL table in SD
+    "SPARK-16975: Column-partition path starting '_' should be handled correctly",
+    // SD create table fails even if a temp table with the same name exists.
+    "CREATE TABLE USING should not fail if a same-name temp view exists",
+    // SD does not support TABLESAMPLE operator
+     "negative in LIMIT or TABLESAMPLE"
+     )
 
-  override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
-    if (!excluded.contains(testName)) {
-      super.test(testName, testTags: _*)(testFun)
-    }
-  }
-
-
-  test("snappy : inner join ON, one match per row") {
+  test("SD:inner join ON, one match per row") {
     withSQLConf(SQLConf.CASE_SENSITIVE.key -> "false") {
       checkAnswer(
         sql("SELECT * FROM UPPERCASEDATA U JOIN lowercasedata L ON U.N = L.n"),
@@ -65,19 +73,77 @@ class SnappySQLQuerySuite extends SQLQuerySuite with SharedSnappySessionContext 
           Row(4, "D", 4, "d")))
     }
   }
+  // Changed the code as PARQUET is an external table in SD
+  test("SD:data source table created in InMemoryCatalog should be able to read/write") {
+    withDir("tbl") {
+      withTable("tbl") {
+        sql("CREATE EXTERNAL TABLE tbl(i INT, j STRING) USING parquet options(path 'tbl')")
+        checkAnswer(sql("SELECT i, j FROM tbl"), Nil)
 
-  test("snappy: data source table created in InMemoryCatalog should be able to read/write") {
-    withTable("tbl") {
-      sql("CREATE EXTERNAL TABLE tbl(i INT, j STRING) USING parquet")
-      checkAnswer(sql("SELECT i, j FROM tbl"), Nil)
+        Seq(1 -> "a", 2 -> "b").toDF("i", "j").write.mode("overwrite").insertInto("tbl")
+        checkAnswer(sql("SELECT i, j FROM tbl"), Row(1, "a") :: Row(2, "b") :: Nil)
 
-      Seq(1 -> "a", 2 -> "b").toDF("i", "j").write.mode("overwrite").insertInto("tbl")
-      checkAnswer(sql("SELECT i, j FROM tbl"), Row(1, "a") :: Row(2, "b") :: Nil)
-
-      Seq(3 -> "c", 4 -> "d").toDF("i", "j").write.mode("append").saveAsTable("tbl")
-      checkAnswer(
-        sql("SELECT i, j FROM tbl"),
-        Row(1, "a") :: Row(2, "b") :: Row(3, "c") :: Row(4, "d") :: Nil)
+        Seq(3 -> "c", 4 -> "d").toDF("i", "j").write.mode("append").saveAsTable("tbl")
+        checkAnswer(
+          sql("SELECT i, j FROM tbl"),
+          Row(1, "a") :: Row(2, "b") :: Row(3, "c") :: Row(4, "d") :: Nil)
+      }
     }
+  }
+
+  // Changed the code as PARQUET is an external table in SD
+  test("SD:SPARK-16644: Aggregate should not put aggregate expressions to constraints") {
+    withDir("tbl") {
+      withTable("tbl") {
+        sql("CREATE EXTERNAL TABLE tbl(a INT, b INT) USING parquet options(path 'tbl')")
+        checkAnswer(sql(
+          """
+            |SELECT
+            |  a,
+            |  MAX(b) AS c1,
+            |  b AS c2
+            |FROM tbl
+            |WHERE a = b
+            |GROUP BY a, b
+            |HAVING c1 = 1
+          """.stripMargin), Nil)
+      }
+    }
+  }
+
+  test("SD:SPARK-16975: Column-partition path starting '_' should be handled correctly") {
+    withTempDir { dir =>
+      val parquetDir = new File(dir, "parquet").getCanonicalPath
+      spark.range(10).withColumn("_col", $"id").write.partitionBy("_col").parquet(parquetDir)
+      spark.read.parquet(parquetDir)
+    }
+  }
+  // Different behaviour than Spark.
+  test("SD:CREATE TABLE USING should fail even if a same-name temp view exists") {
+    withTable("same_name") {
+      withTempView("same_name") {
+        spark.range(10).createTempView("same_name")
+        intercept[AnalysisException] {
+          sql("CREATE TABLE same_name(i int) USING json")
+        }
+      }
+    }
+  }
+
+  override protected def testCodeGen(sqlText: String, expectedResults: Seq[Row]): Unit = {
+    val df = sql(sqlText)
+    // First, check if we have GeneratedAggregate.
+    val hasGeneratedAgg = df.queryExecution.sparkPlan
+        .collect { case _: aggregate.SnappyHashAggregateExec => true }
+        .nonEmpty
+    if (!hasGeneratedAgg) {
+      fail(
+        s"""
+           |Codegen is enabled, but query $sqlText does not have SnappyHashAggregateExec in the plan.
+           |${df.queryExecution.simpleString}
+         """.stripMargin)
+    }
+    // Then, check results.
+    checkAnswer(df, expectedResults)
   }
 }
