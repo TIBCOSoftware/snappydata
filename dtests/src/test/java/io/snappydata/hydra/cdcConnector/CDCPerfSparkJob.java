@@ -50,6 +50,30 @@ public class CDCPerfSparkJob {
     return conn;
   }
 
+  public static Connection getSqlServerConnection() {
+    Connection conn = null;
+    try {
+      System.out.println("Getting sqlServer connection");
+      String driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+      Class.forName(driver);
+      String url = "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433";
+      String username = "sqldb";
+      String password = "snappydata#msft1";
+      Properties props = new Properties();
+      props.put("username", username);
+      props.put("password", password);
+      // Connection connection ;
+      conn = DriverManager.getConnection(url, props);
+
+      System.out.println("Got connection" + conn.isClosed());
+
+    }
+    catch (Exception e) {
+      System.out.println("Caught exception " + e.getMessage());
+    }
+    return conn;
+  }
+
   public static HashMap<List<Integer>, Map<String, Long>> runPointLookupQueries(ArrayList<String> qlist, Integer ThreadId) {
     long timeTaken = 0l;
     long startTime;
@@ -86,6 +110,29 @@ public class CDCPerfSparkJob {
     }
 
     return plTimeListHashMap;
+  }
+
+  public static void runBulkDelete(ArrayList<String> qlist,int startRange) {
+    Connection conn = null;
+    try{
+     conn = getSqlServerConnection();
+     Log.getLogWriter().info("The start Range is " + startRange);
+     for(int i=0 ;i < qlist.size();i++){
+       PreparedStatement ps = conn.prepareStatement(qlist.get(i));
+       ps.setInt(1,(startRange - 2));
+       ps.executeQuery();
+     }
+    }
+    catch(Exception ex){
+       Log.getLogWriter().info("Exception inside runBulkDelete() method" + ex.getMessage());
+    }
+    finally{
+      try {
+        conn.close();
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   public static long runScanQuery() {
@@ -160,7 +207,7 @@ public class CDCPerfSparkJob {
   }
 
 
-  public void runConcurrencyTestJob(int threadCnt,String filePath,Boolean isScanQuery,String hostName){
+  public void runConcurrencyTestJob(int threadCnt,String filePath,String hostName,Boolean isScanQuery,Boolean isBulkDelete,int startRange){
     Log.getLogWriter().info("Inside the actual task");
     THREAD_COUNT = threadCnt;
     queryList = getQueryArr(filePath);
@@ -179,6 +226,9 @@ public class CDCPerfSparkJob {
             try {
               startBarierr.await();
               //if (isScanQuery.equals("false"))
+              if(isBulkDelete){
+                runBulkDelete(queryList,startRange);
+              }
               if(!isScanQuery)
                 plQryTimeList.add(runPointLookupQueries(queryList, iterationIndex));
               else {
@@ -188,6 +238,7 @@ public class CDCPerfSparkJob {
                 Log.getLogWriter().info("Time returned is " + scanTime + " finaltime is = " + actualTime);
                 Log.getLogWriter().info("Thread " + iterationIndex + " finished ");
               }
+
               finishBarierr.countDown(); //current thread finished, send mark
             } catch (InterruptedException e) {
               throw new AssertionError("Unexpected thread interrupting");
@@ -227,12 +278,14 @@ public class CDCPerfSparkJob {
   public static void main(String[] args) throws InterruptedException {
     // THREAD_COUNT = Integer.parseInt(args[0]);
     int threadCnt = Integer.parseInt(args[0]);
-    String path = args[1];
+    String queryPath = args[1];
     Boolean isScanQuery = Boolean.parseBoolean(args[2]);
+    Boolean isbulkDelete = Boolean.parseBoolean(args[3]);
+    int startRange = Integer.parseInt(args[4]);
     String hostName = args[3];
    // queryList = getQueryArr(path);
     CDCPerfSparkJob cdcPerfSparkJob = new CDCPerfSparkJob();
-    cdcPerfSparkJob.runConcurrencyTestJob(threadCnt,path,isScanQuery,hostName);
+    cdcPerfSparkJob.runConcurrencyTestJob(threadCnt,queryPath,hostName,isScanQuery,isbulkDelete,startRange);
 
     /*final List<Long> timeList = new CopyOnWriteArrayList<>();
     final List<HashMap<List<Integer>, Map<String, Long>>> plQryTimeList = new CopyOnWriteArrayList<>();
