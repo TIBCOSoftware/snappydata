@@ -34,7 +34,10 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
  */
 abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
-  protected var caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
+  protected var caseSensitive: Boolean = session match {
+    case null => false
+    case s => s.sessionState.conf.caseSensitiveAnalysis
+  }
 
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)

@@ -33,6 +33,8 @@ import com.gemstone.gemfire.internal.cache.Status;
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
 import com.gemstone.gemfire.internal.shared.LauncherBase;
 
+import static java.io.File.pathSeparator;
+
 class QuickLauncher extends LauncherBase {
 
   private static final String DIR_OPT = "-dir=";
@@ -40,6 +42,7 @@ class QuickLauncher extends LauncherBase {
   private static final String HEAP_SIZE_OPT = "-heap-size=";
   private static final String WAIT_FOR_SYNC_OPT = "-sync=";
   private static final String PASSWORD_OPT = "-password";
+  private static final String NUMA_OPT = "-numa=";
 
   private final String launcherClass;
   private final boolean isLocator;
@@ -290,7 +293,7 @@ class QuickLauncher extends LauncherBase {
       throws FileNotFoundException {
     StringBuilder classPath = new StringBuilder();
     // add the conf directory first
-    classPath.append(snappyHome).append("/conf").append(java.io.File.pathSeparator);
+    classPath.append(snappyHome).append("/conf").append(pathSeparator);
     // then the default product jars directory
     classPath.append(snappyHome).append("/jars/*");
 
@@ -306,7 +309,7 @@ class QuickLauncher extends LauncherBase {
       if (arg.startsWith(DIR_OPT)) {
         processDirOption(arg.substring(DIR_OPT.length()));
       } else if (arg.startsWith(CLASSPATH_OPT)) {
-        classPath.append(java.io.File.pathSeparator)
+        classPath.append(pathSeparator)
             .append(arg.substring(CLASSPATH_OPT.length()));
       } else if (arg.startsWith(HEAP_SIZE_OPT)) {
         processHeapSize(arg.substring(HEAP_SIZE_OPT.length()), vmArgs);
@@ -331,6 +334,16 @@ class QuickLauncher extends LauncherBase {
           // encrypted throughout in the system (SNAP-1657)
           env.put(ENV1, ENV_MARKER + pwd);
         }
+      } else if (arg.startsWith(NUMA_OPT)) {
+        // search for numactl
+        Path numactlPath = findExecutablePath("numactl");
+        if (numactlPath == null) {
+          throw new IllegalArgumentException(LAUNCHER_NUMACTL_DOES_NOT_EXIST);
+        }
+        // insert it at the start
+        String numaNode = arg.substring(NUMA_OPT.length());
+        commandLine.add(0, numactlPath.toString());
+        commandLine.add(1, "--preferred=" + numaNode);
       } else if (arg.startsWith(WAIT_FOR_SYNC_OPT)) {
         processWaitForSync(arg.substring(WAIT_FOR_SYNC_OPT.length()));
       } else if (arg.length() > 0 && arg.charAt(0) == '-') {
@@ -360,6 +373,18 @@ class QuickLauncher extends LauncherBase {
     }
 
     return options;
+  }
+
+  @SuppressWarnings("SameParameterValue")
+  private static Path findExecutablePath(String execName) {
+    String[] paths = System.getenv("PATH").split(pathSeparator);
+    for (String path : paths) {
+      Path execPath = Paths.get(path, execName);
+      if (Files.isRegularFile(execPath) && Files.isExecutable(execPath)) {
+        return execPath.toAbsolutePath();
+      }
+    }
+    return null;
   }
 
   /**

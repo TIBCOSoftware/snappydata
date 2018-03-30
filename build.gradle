@@ -41,7 +41,7 @@ buildscript {
   }
   dependencies {
     classpath 'io.snappydata:gradle-scalatest:0.16'
-    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
+    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
     classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
     classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.+'
   }
@@ -112,7 +112,7 @@ allprojects {
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
     hadoopVersion = '2.7.3'
-    scalatestVersion = '2.2.6'
+    scalatestVersion = '3.0.3'
     jettyVersion = '9.2.22.v20170606'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'

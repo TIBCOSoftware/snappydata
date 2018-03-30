@@ -396,7 +396,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  private def doGFXDInsertOrPut(columnTableName: String, batch: ColumnBatch,
+  private def doJDBCInsertOrPut(columnTableName: String, batch: ColumnBatch,
       batchId: Long, partitionId: Int, maxDeltaRows: Int,
       compressionCodecId: Int): (Connection => Unit) = {
     {
@@ -553,7 +553,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case _ =>
           // noinspection RedundantDefaultArgument
           tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
-            onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
+            onExecutor = true)(doJDBCInsertOrPut(columnTableName, batch, batchId, partitionId,
             maxDeltaRows, compressionCodecId))(conn)
       }
     }

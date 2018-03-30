@@ -48,7 +48,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, SortDirection, TokenLiteral, UnsafeRow}
-import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
@@ -520,7 +519,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val columnNullable = context.getColumnNullable
         logDebug(s"StoreCallbacksImpl.performConnectorOp alter table ")
         session.alterTable(tableName, addOrDropCol, StructField(columnName,
-          CatalystSqlParser.parseDataType(columnDataType), columnNullable))
+          session.sessionState.sqlParser.parseDataType(columnDataType), columnNullable))
         SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")

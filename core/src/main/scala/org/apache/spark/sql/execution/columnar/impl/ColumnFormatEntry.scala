@@ -282,7 +282,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   @GuardedBy("this")
   @transient protected var fromDisk: Boolean = false
   @GuardedBy("this")
-  @transient protected var entry: AbstractOplogDiskRegionEntry = _
+  @transient protected var entry: AbstractRegionEntry = _
   @GuardedBy("this")
   @transient protected var regionContext: RegionEntryContext = _
 
@@ -352,7 +352,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   override final def getBuffer: ByteBuffer = duplicateBuffer(columnBuffer)
 
   override def getValueRetain(fetchRequest: FetchRequest): ColumnFormatValue = {
-    var entry: AbstractOplogDiskRegionEntry = null
+    var entry: AbstractRegionEntry = null
     var regionContext: RegionEntryContext = null
     synchronized {
       val buffer = this.columnBuffer
@@ -365,8 +365,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
       regionContext = this.regionContext
     }
     // try to read using DiskId
-    var diskId: DiskId = null
-    if (entry ne null) diskId = entry.getDiskId
+    val diskId = entry match {
+      case de: DiskEntry => de.getDiskId
+      case _ => null
+    }
     if (diskId ne null) {
       val dr = regionContext match {
         case r: LocalRegion => r.getDiskRegionView
@@ -602,10 +604,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
     new ColumnFormatValue(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
-  override final def setDiskEntry(entry: AbstractOplogDiskRegionEntry,
+  override final def setRegionEntry(entry: AbstractRegionEntry,
       context: RegionEntryContext): Unit = synchronized {
     this.entry = entry
-    // set/update diskRegion only if incoming value has been provided
+    // set/update regionContext only if incoming value has been provided
     if (context ne null) {
       this.regionContext = context
       val codec = context.getColumnCompressionCodec
@@ -614,6 +616,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
       }
     }
   }
+
+  override def getRegionEntry: AbstractRegionEntry = entry
 
   override final def write(channel: OutputStreamChannel): Unit = {
     // write the pre-serialized buffer as is
@@ -797,7 +801,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
   override def toString: String = {
     val buffer = getBuffer
     val entry = this.entry
-    val diskId = if (entry ne null) entry.getDiskId else null
+    val diskId = entry match {
+      case de: DiskEntry => de.getDiskId
+      case _ => null
+    }
     // refCount access is deliberately not synchronized
     s"$className[size=${buffer.remaining()} $buffer diskId=$diskId " +
         s"context=$regionContext refCount=$refCount]"

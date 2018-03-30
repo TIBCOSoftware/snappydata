@@ -1120,17 +1120,19 @@ class SnappyParser(session: SnappySession)
     parseSQL(sqlText, parseRule)
   }
 
-  protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T = {
+  protected[sql] def parseSQL[T](sqlText: String, parseRule: => Try[T]): T = {
     this.input = sqlText
     val plan = parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
-        throw new ParseException(formatError(e, new ErrorFormatter(
-          showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
+        val showTraces = if (session ne null) {
+          Property.ParserTraceError.get(session.sessionState.conf)
+        } else Property.ParserTraceError.defaultValue.get
+        throw new ParseException(formatError(e, new ErrorFormatter(showTraces = showTraces)))
       case Failure(e) =>
         throw new ParseException(e.toString, Some(e))
     }
-    if (!queryHints.isEmpty) {
+    if (!queryHints.isEmpty && (session ne null)) {
       session.queryHints.putAll(queryHints)
     }
     plan

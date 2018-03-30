@@ -34,12 +34,12 @@ import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.metastore.api.FieldSchema
 import org.apache.hadoop.hive.ql.metadata.Table
 
+import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
-import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
@@ -53,7 +53,6 @@ import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, 
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.util.{Utils => SparkUtils}
-import org.apache.spark.{SparkContext, SparkException}
 
 /**
  * Utility methods used by external storage layers.
@@ -636,15 +635,10 @@ object ExternalStoreUtils {
     new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
-  // taken from HiveClientImpl.fromHiveColumn
-  def fromHiveColumn(hc: FieldSchema): StructField = {
-    val columnType = try {
-      CatalystSqlParser.parseDataType(hc.getType)
-    } catch {
-      case e: ParseException =>
-        throw new SparkException("Cannot recognize hive type string: " + hc.getType, e)
-    }
-
+  // adapted from HiveClientImpl.fromHiveColumn
+  def fromTableColumn(hc: FieldSchema): StructField = {
+    val parser = SnappyRestrictedParser.parser
+    val columnType = parser.parseSQL(hc.getType, parser.parsedDataType.run())
     val metadata = new MetadataBuilder().putString(HIVE_TYPE_STRING, hc.getType).build()
     val field = StructField(
       name = hc.getName,
@@ -657,8 +651,8 @@ object ExternalStoreUtils {
   def getTableSchema(table: Table): StructType = {
     getTableSchema(table.getParameters.asScala).getOrElse {
       // Try to get from hive schema that separates partition columns from schema.
-      val partCols = table.getPartCols.asScala.map(fromHiveColumn)
-      StructType(table.getCols.asScala.map(fromHiveColumn) ++ partCols)
+      val partCols = table.getPartCols.asScala.map(fromTableColumn)
+      StructType(table.getCols.asScala.map(fromTableColumn) ++ partCols)
     }
   }
 
@@ -778,4 +772,11 @@ object ExternalStoreUtils {
 object ConnectionType extends Enumeration {
   type ConnectionType = Value
   val Embedded, Net, Unknown = Value
+}
+
+/**
+ * Does not have SnappySession so only limited parsing possible that does not make use of session.
+ */
+object SnappyRestrictedParser {
+  private[sql] val parser: SnappyParser = new SnappyParser(session = null)
 }
