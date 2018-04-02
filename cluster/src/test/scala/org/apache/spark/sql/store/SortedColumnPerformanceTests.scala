@@ -103,8 +103,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val joinTableName = "joinDeltaTable"
-    val numElements = 999551
-    val numTimesInsert = 199
+    val numElements = 100000000
+    val numTimesInsert = 1
     val numTimesUpdate = 1
 
     val totalElements = (numElements * 0.6 * numTimesUpdate +
@@ -117,9 +117,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val dataFrameReader : DataFrameReader = session.read
     val insertDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
       numTimesInsert))
-    val updateDF1: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
-      numTimesUpdate))
-    val updateDF2: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+    val updateDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
       numTimesUpdate))
 
     def prepare(): Unit = {
@@ -129,11 +127,20 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       try {
         session.conf.set(Property.ColumnBatchSize.name, "24M") // default
         session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
-        insertDF.write.insertInto(colTableName)
-        insertDF.write.insertInto(joinTableName)
+        var j = 0
+        while (j < numTimesInsert) {
+          insertDF.write.insertInto(colTableName)
+          insertDF.write.insertInto(joinTableName)
+          j += 1
+        }
+
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        updateDF1.write.putInto(colTableName)
-        updateDF2.write.putInto(joinTableName)
+        j = 0
+        while (j < numTimesInsert) {
+          updateDF.write.putInto(colTableName)
+          updateDF.write.putInto(joinTableName)
+          j += 1
+        }
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
         session.conf.unset(Property.ColumnBatchSize.name)
