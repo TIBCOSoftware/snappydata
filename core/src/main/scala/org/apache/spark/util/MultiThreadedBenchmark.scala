@@ -50,7 +50,7 @@ import org.apache.spark.util.Benchmark.Result
  * @param outputPerIteration if true, the timing for each run will be printed to stdout.
  * @param output optional output stream to write benchmark results to
  */
-private[spark] class QueryBenchmark(
+private[spark] class MultiThreadedBenchmark(
     name: String,
     isMultithreaded: Boolean,
     valuesPerIteration: Long,
@@ -61,8 +61,8 @@ private[spark] class QueryBenchmark(
     outputPerIteration: Boolean = false,
     output: Option[OutputStream] = None) extends Logging {
 
-  import QueryBenchmark._
-  val benchmarks = mutable.ArrayBuffer.empty[QueryBenchmark.Case]
+  import MultiThreadedBenchmark._
+  val benchmarks = mutable.ArrayBuffer.empty[MultiThreadedBenchmark.Case]
   val out = if (output.isDefined) {
     new PrintStream(new TeeOutputStream(System.out, output.get))
   } else {
@@ -87,7 +87,7 @@ private[spark] class QueryBenchmark(
       timer.stopTiming()
       ret
     }
-    benchmarks += QueryBenchmark.Case(name, timedF, numIters, prepare, cleanup)
+    benchmarks += MultiThreadedBenchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 
   /**
@@ -99,7 +99,7 @@ private[spark] class QueryBenchmark(
    * @param numIters if non-zero, forces exactly this many iterations to be run
    */
   def addTimerCase(name: String, numIters: Int = 0)(f: (Benchmark.Timer, Int) => Boolean): Unit = {
-    benchmarks += QueryBenchmark.Case(name, f, numIters)
+    benchmarks += MultiThreadedBenchmark.Case(name, f, numIters)
   }
 
   /**
@@ -265,7 +265,7 @@ private[spark] class QueryBenchmark(
   }
 }
 
-private[spark] object QueryBenchmark {
+private[spark] object MultiThreadedBenchmark {
   case class Case(
       name: String,
       fn: (Benchmark.Timer, Int) => Boolean,
