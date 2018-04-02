@@ -27,7 +27,7 @@ import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{DataFrame, DataFrameReader, SnappySession}
-import org.apache.spark.util.{Benchmark, QueryBenchmark}
+import org.apache.spark.util.{Benchmark, MultiThreadedBenchmark}
 import org.apache.spark.sql.snappy._
 import scala.concurrent.duration._
 
@@ -51,6 +51,64 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       addOn(conf)
     }
     conf
+  }
+
+  test("insert performance") {
+    val session = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 100000000
+    val numTimesInsert = 1
+    val numTimesUpdate = 1
+
+    val totalElements = (numElements * 0.6 * numTimesUpdate +
+        numElements * 0.4 * numTimesUpdate).toLong
+    val numBuckets = 4
+    val numIters = 30
+
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
+    SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
+    val dataFrameReader : DataFrameReader = session.read
+    val insertDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
+      numTimesInsert))
+    val updateDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+      numTimesUpdate))
+
+    def prepare(): Unit = {
+      session.conf.set(Property.ColumnBatchSize.name, "24M") // default
+      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    }
+
+    def testPrepare(): Unit = {
+      SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
+    }
+
+    def cleanup(): Unit = {
+      session.conf.unset(Property.ColumnBatchSize.name)
+      session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    }
+
+    def testCleanup(): Unit = {
+      SortedColumnTests.dropColumnTable(session, colTableName)
+    }
+
+    val benchmark = new Benchmark("InsertQuery", totalElements)
+    var iter = 1
+    ColumnCacheBenchmark.addCaseWithCleanup(benchmark, "Master", numIters, prepare, cleanup,
+      testCleanup, testPrepare) { _ =>
+      var j = 0
+      while (j < numTimesInsert) {
+        insertDF.write.insertInto(colTableName)
+        j += 1
+      }
+      j = 0
+      while (j < numTimesUpdate) {
+        updateDF.write.insertInto(colTableName)
+        j += 1
+      }
+      iter += 1
+    }
+    benchmark.run()
+    // Thread.sleep(50000000)
   }
 
   test("PointQuery performance") {
@@ -164,30 +222,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       session.conf.unset(Property.HashJoinSize.name)
       session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
     }
-    Thread.sleep(50000000)
-  }
-
-  test("insert performance") {
-    val snc = this.snc.snappySession
-    val colTableName = "colDeltaTable"
-    val numElements = 9999551
-    val numBuckets = SortedColumnPerformanceTests.cores
-    val numIters = 2
-
-    SortedColumnPerformanceTests.benchmarkInsert(snc, colTableName, numBuckets, numElements,
-      numIters, "insert")
-  }
-
-  ignore("Old PointQuery performance") {
-    val snc = this.snc.snappySession
-    val colTableName = "colDeltaTable"
-    val numElements = 999551
-    val numBuckets = 3
-    val numIters = 100
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
-      numIters, "PointQuery", numTimesInsert = 200,
-      doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
-    // Thread.sleep(5000000)
+    // Thread.sleep(50000000)
   }
 
   test("PointQuery performance multithreaded 1") {
@@ -230,7 +265,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numElements = 999551
     val numBuckets = 3
     val numIters = 21
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+    SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery_mt)
     // Thread.sleep(5000000)
@@ -243,7 +278,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numElements = 999551
     val numBuckets = 3
     val numIters = 1
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+    SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
       numIters, "JoinQuery", numTimesInsert = 200, doVerifyFullSize = true,
       joinTableName = Some(jnTableName))(SortedColumnPerformanceTests.executeQuery_JoinQuery_mt)
     // Thread.sleep(5000000)
@@ -371,7 +406,7 @@ object SortedColumnPerformanceTests {
       isMultithreaded: Boolean, numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param = if (iterCount != lastFailedIteration) {
       getParam(iterCount, params)
-    } else QueryBenchmark.firstRandomValue
+    } else MultiThreadedBenchmark.firstRandomValue
     val query = s"select * from $colTableName where id = $param"
     val expectedNumResults = if (param % 10 < 6) numTimesInsert else numTimesUpdate
     val result = session.sql(query).collect()
@@ -391,10 +426,10 @@ object SortedColumnPerformanceTests {
       isMultithreaded: Boolean, numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
     val param1 = if (iterCount != lastFailedIteration) {
       getParam(iterCount, params1)
-    } else QueryBenchmark.firstRandomValue
+    } else MultiThreadedBenchmark.firstRandomValue
     val param2 = if (iterCount != lastFailedIteration) {
       getParam(iterCount, params2)
-    } else QueryBenchmark.secondRandomValue
+    } else MultiThreadedBenchmark.secondRandomValue
     val (low, high) = if (param1 < param2) { (param1, param2)} else (param2, param1)
     val query = s"select * from $colTableName where id between $low and $high"
     val expectedNumResults = getParam(iterCount, params3)
@@ -427,7 +462,7 @@ object SortedColumnPerformanceTests {
   }
 
   // scalastyle:off
-  def benchmarkQuery(session: SnappySession, colTableName: String, numBuckets: Int,
+  def benchmarkMultiThreaded(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, numIters: Int, queryMark: String, isMultithreaded: Boolean = false,
       doVerifyFullSize: Boolean = false, numTimesInsert: Int = 1, numTimesUpdate: Int = 1,
       totalThreads: Int = 1, runTime: FiniteDuration = 2.seconds,
@@ -435,8 +470,8 @@ object SortedColumnPerformanceTests {
       // scalastyle:on
       (f : (SnappySession, String, String, Int, Int, Int, Int, Boolean, Int,
           Int) => Boolean): Unit = {
-    val benchmark = new QueryBenchmark(s"Benchmark $queryMark", isMultithreaded, numElements,
-      outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
+    val benchmark = new MultiThreadedBenchmark(s"Benchmark $queryMark", isMultithreaded,
+      numElements, outputPerIteration = true, numThreads = totalThreads, minTime = runTime)
     SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
     val dataFrameReader : DataFrameReader = session.read
@@ -550,7 +585,7 @@ object SortedColumnPerformanceTests {
     val numBuckets = 3
     val numIters = 100
     val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+    SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery multithreaded", numTimesInsert = 200, isMultithreaded = true,
       doVerifyFullSize = false, totalThreads = numThreads,
       runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
@@ -580,7 +615,7 @@ object SortedColumnPerformanceTests {
   }
 
   def addCaseWithCleanup(
-      benchmark: QueryBenchmark,
+      benchmark: MultiThreadedBenchmark,
       name: String,
       numIters: Int = 0,
       prepare: () => Unit,
@@ -600,6 +635,6 @@ object SortedColumnPerformanceTests {
       }
       ret
     }
-    benchmark.benchmarks += QueryBenchmark.Case(name, timedF, numIters, prepare, cleanup)
+    benchmark.benchmarks += MultiThreadedBenchmark.Case(name, timedF, numIters, prepare, cleanup)
   }
 }
