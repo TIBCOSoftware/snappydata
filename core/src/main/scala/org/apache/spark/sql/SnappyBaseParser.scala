@@ -307,7 +307,7 @@ object SnappyParserConsts {
   final val allKeywords: OpenHashSet[String] = new OpenHashSet[String]
 
   final val optimizableLikePattern: java.util.regex.Pattern =
-    java.util.regex.Pattern.compile("%?[^_%]*[^_%\\\\]%?")
+    java.util.regex.Pattern.compile("(%?[^_%]*[^_%\\\\]%?)|([^_%]*[^_%\\\\]%[^_%]*)")
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
@@ -337,10 +337,6 @@ object SnappyParserConsts {
     allKeywords.add(k.upper)
     k
   }
-
-  final val REFERENCES_KEY = "TokenizationReferences"
-  final val WRAPPED_CONSTANTS_KEY = "TokenizedConstants"
-  final val NOCACHING_KEY = "TokenizationNoCaching"
 
   final val COLUMN_SOURCE = "column"
   final val ROW_SOURCE = "row"
