@@ -22,12 +22,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.runtime.universe.{TypeTag, typeOf}
-import scala.util.control.NonFatal
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.gemstone.gemfire.distributed.internal.DistributionAdvisor.Profile
 import com.gemstone.gemfire.distributed.internal.ProfileListener
@@ -42,19 +36,21 @@ import com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
+import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
+import org.apache.spark.internal.config.{ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
-import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGeneration, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -64,6 +60,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTabl
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive._
 import org.apache.spark.sql.internal._
@@ -74,12 +71,14 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark._
-import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
-import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.reflect.{ClassTag, classTag}
+import scala.util.control.NonFatal
 
 
 class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
@@ -123,7 +122,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case Some(aqpClass) =>
         try {
         val ctor = aqpClass.getConstructors.head
-        ctor.newInstance(self, None).asInstanceOf[BaseSessionStateBuilder].build()
+        ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
       } catch {
         case NonFatal(e) =>
           throw new IllegalArgumentException(s"Error while instantiating '$aqpClass':", e)
@@ -133,7 +132,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         try {
           val clazz = Utils.classForName(className)
           val ctor = clazz.getConstructors.head
-          ctor.newInstance(self, None).asInstanceOf[BaseSessionStateBuilder].build()
+          ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
         } catch {
           case NonFatal(e) =>
             throw new IllegalArgumentException(s"Error while instantiating '$className':", e)
@@ -1886,7 +1885,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
 
     private[spark] def clearExecutionData(): Unit = {
-      conf.asInstanceOf[SnappyConf].refreshNumShufflePartitions()
+      sessionState.conf.asInstanceOf[SnappyConf].refreshNumShufflePartitions()
       leaderPartitions.clear()
       clearContext()
     }
@@ -2612,40 +2611,40 @@ object SQLConfigEntry {
   def sparkConf[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
                              isPublic: Boolean = true): SQLConfigEntry = {
     classTag[T] match {
-      case ClassTag.Int => handleDefault[Int](ConfigBuilder(key)
+      case ClassTag.Int => handleDefault[Int](SQLConf.buildConf(key)
         .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
-      case ClassTag.Long => handleDefault[Long](ConfigBuilder(key)
+      case ClassTag.Long => handleDefault[Long](SQLConf.buildConf(key)
         .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
-      case ClassTag.Double => handleDefault[Double](ConfigBuilder(key)
+      case ClassTag.Double => handleDefault[Double](SQLConf.buildConf(key)
         .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
-      case ClassTag.Boolean => handleDefault[Boolean](ConfigBuilder(key)
+      case ClassTag.Boolean => handleDefault[Boolean](SQLConf.buildConf(key)
         .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
       case c if c.runtimeClass == classOf[String] =>
-        handleDefault[String](ConfigBuilder(key).doc(doc).stringConf,
+        handleDefault[String](SQLConf.buildConf(key).doc(doc).stringConf,
           defaultValue.asInstanceOf[Option[String]])
       case c => throw new IllegalArgumentException(
         s"Unknown type of configuration key: $c")
     }
   }
-// TODO_2.3_MERGE
-//  def apply[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
-//                         isPublic: Boolean = true): SQLConfigEntry = {
-//    classTag[T] match {
-//      case ClassTag.Int => handleDefault[Int](SConfigBuilder(key)
-//        .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
-//      case ClassTag.Long => handleDefault[Long](SQLConfigBuilder(key)
-//        .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
-//      case ClassTag.Double => handleDefault[Double](SQLConfigBuilder(key)
-//        .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
-//      case ClassTag.Boolean => handleDefault[Boolean](SQLConfigBuilder(key)
-//        .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
-//      case c if c.runtimeClass == classOf[String] =>
-//        handleDefault[String](SQLConfigBuilder(key).doc(doc).stringConf,
-//          defaultValue.asInstanceOf[Option[String]])
-//      case c => throw new IllegalArgumentException(
-//        s"Unknown type of configuration key: $c")
-//    }
-//  }
+
+  def apply[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
+                         isPublic: Boolean = true): SQLConfigEntry = {
+    classTag[T] match {
+      case ClassTag.Int => handleDefault[Int](SQLConf.buildConf(key)
+        .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
+      case ClassTag.Long => handleDefault[Long](SQLConf.buildConf(key)
+        .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
+      case ClassTag.Double => handleDefault[Double](SQLConf.buildConf(key)
+        .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
+      case ClassTag.Boolean => handleDefault[Boolean](SQLConf.buildConf(key)
+        .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
+      case c if c.runtimeClass == classOf[String] =>
+        handleDefault[String](SQLConf.buildConf(key).doc(doc).stringConf,
+          defaultValue.asInstanceOf[Option[String]])
+      case c => throw new IllegalArgumentException(
+        s"Unknown type of configuration key: $c")
+    }
+  }
 }
 
 trait AltName[T] {
