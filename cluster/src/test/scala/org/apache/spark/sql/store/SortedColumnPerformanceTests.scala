@@ -93,7 +93,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
 
     val benchmark = new Benchmark("InsertQuery", totalElements)
     var iter = 1
-    ColumnCacheBenchmark.addCaseWithCleanup(benchmark, "Master", numIters, prepare, cleanup,
+    ColumnCacheBenchmark.addCaseWithCleanup(benchmark, "Sorted", numIters, prepare, cleanup,
       testCleanup, testPrepare) { _ =>
       var j = 0
       while (j < numTimesInsert) {
