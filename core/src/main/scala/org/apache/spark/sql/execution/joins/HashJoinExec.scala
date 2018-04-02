@@ -20,6 +20,8 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
+import scala.reflect.ClassTag
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
@@ -39,7 +41,6 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.streaming.PhysicalDStreamPlan
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-import scala.reflect.ClassTag
 
 /**
  * :: DeveloperApi ::
@@ -60,7 +61,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     leftSizeInBytes: BigInt,
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
-    extends BinaryExecNode with HashJoin with BatchConsumer with NonRecursivePlans {
+    extends NonRecursivePlans with BinaryExecNode with HashJoin with BatchConsumer {
 
   override def nodeName: String = "SnappyHashJoin"
 
@@ -174,14 +175,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       case BuildLeft => (leftKeys, rightKeys)
       case BuildRight => (rightKeys, leftKeys)
     }
-  }
-
-  /**
-   * Overridden by concrete implementations of SparkPlan.
-   * Produces the result of the query as an RDD[InternalRow]
-   */
-  override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
   }
 
   // return empty here as code of required variables is explicitly instantiated
@@ -339,7 +332,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def doProduce(ctx: CodegenContext): String = {
-    startProducing()
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 

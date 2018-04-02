@@ -24,6 +24,7 @@ import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 import io.snappydata.test.util.TestException
 import scala.sys.process._
 
+import com.pivotal.gemfirexd.TestUtil
 import org.junit.Assert
 
 import org.apache.spark.Logging
@@ -43,6 +44,11 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
     logInfo(s"Starting snappy rowstore cluster" +
         s" in $snappyProductDir/work with locator client port $netPort1")
 
+    // delete any old work directory
+    val workDir = new java.io.File(s"$snappyProductDir/work")
+    if (workDir.exists()) {
+      TestUtil.deleteDir(workDir)
+    }
     // create locators and servers files
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort1",
