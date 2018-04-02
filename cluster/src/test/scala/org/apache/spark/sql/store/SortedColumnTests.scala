@@ -126,13 +126,17 @@ object SortedColumnTests extends Logging {
 
   def createColumnTable(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long, colocateTableName: Option[String] = None): Unit = {
-    session.sql(s"drop table if exists $colTableName")
+    dropColumnTable(session, colTableName)
     val additionalString = if (colocateTableName.isDefined) {
       s", COLOCATE_WITH '${colocateTableName.get}'"
     } else ""
     session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
         s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id' " +
         additionalString + s")")
+  }
+
+  def dropColumnTable(session: SnappySession, colTableName: String): Unit = {
+    session.sql(s"drop table if exists $colTableName")
   }
 
   def testBasicInsert(session: SnappySession, colTableName: String, numBuckets: Int,
