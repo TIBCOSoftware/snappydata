@@ -1058,7 +1058,7 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
   final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
     session.clearQueryData()
     session.clearExecutionData()
-    caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
+    // caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
     parseSQL(sqlText, parseRule)
   }
 

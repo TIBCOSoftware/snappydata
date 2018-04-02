@@ -67,19 +67,31 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
 //      SnappyAggregation, HashJoinStrategies)
 //  }
 
+  override protected def analyzer: Analyzer = new Analyzer(catalog, conf) {
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+//        new PreprocessTableInsertOrPut(conf) +:
+//          new FindDataSourceTable(session) +:
+//          DataSourceAnalysis(conf) +:
+//          ResolveRelationsExtended +:
+//          AnalyzeMutableOperations(session, this) +:
+//          ResolveQueryHints(session) +:
+//          ResolveSQLOnFile(session)
+          // customResolutionRules
+    Seq ( new PreprocessTableInsertOrPut(conf),
+      new FindDataSourceTable(session),
+      DataSourceAnalysis(conf),
+      ResolveRelationsExtended,
+      AnalyzeMutableOperations(session, this),
+      ResolveQueryHints(session),
+      ResolveSQLOnFile(session))
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] =
+      PrePutCheck+:
+        customCheckRules
+  }
+
   override protected def planner: SparkPlanner =
     new DefaultPlanner(session, conf, experimentalMethods)
-
-  override protected def customResolutionRules: Seq[Rule[LogicalPlan]] = {
-    Seq(new PreprocessTableInsertOrPut(conf), new FindDataSourceTable(session),
-      DataSourceAnalysis(conf), ResolveRelationsExtended,
-      AnalyzeMutableOperations(session, analyzer), ResolveQueryHints(session),
-      ResolveSQLOnFile(session))
-  }
-
-  override protected def customCheckRules: Seq[LogicalPlan => Unit] = {
-    Seq(PrePutCheck)
-  }
 
   override protected def customOperatorOptimizationRules: Seq[Rule[LogicalPlan]] = {
     Seq(LikeEscapeSimplification, PushDownWindowLogicalPlan,
@@ -100,9 +112,7 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
-  override protected lazy val conf: SQLConf = {
-    new SnappyConf(session)
-  }
+  override protected lazy val conf: SQLConf = new SnappyConf(session)
 
   /**
     * Create a [[SnappyStoreHiveCatalog]].
@@ -132,8 +142,6 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
           sqlParser,
           resourceLoader)
     }
-    parentState.foreach(_.catalog.copyStateTo(catalog))
-    catalog
   }
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
