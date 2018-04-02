@@ -19,9 +19,7 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
-
-import io.snappydata.SnappyTableStatsProviderService
-
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -441,6 +439,26 @@ case class JDBCMutableRelation(
     throw new UnsupportedOperationException()
   }
 
+  private def getDataType(column: StructField): String = {
+    var datatype = column.dataType.simpleString
+    column.dataType.simpleString match {
+      case "string" => {
+        val metadata = column.metadata
+        if (metadata != null) {
+          val sizeprop = metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP)
+          val baseprop = metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
+          baseprop match {
+            case "VARCHAR" => datatype = s"varchar($sizeprop)"
+            case "CHAR" => datatype = s"char($sizeprop)"
+            case _ =>
+          }
+        }
+      }
+      case _ =>
+    }
+    datatype
+  }
+
   override def alterTable(tableIdent: QualifiedTableName,
                           isAddColumn: Boolean, column: StructField): Unit = {
     val conn = connFactory()
@@ -449,7 +467,7 @@ case class JDBCMutableRelation(
         conn, dialect, sqlContext)
       val sql = if (isAddColumn) {
         s"""alter table ${quotedName(table)}
-            add column "${column.name}" ${column.dataType.simpleString}"""
+            add column "${column.name}" ${getDataType(column)}"""
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
