@@ -38,24 +38,13 @@ class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
 
-  def disabled_testInsertPerformance() {
-    val snc = SnappyContext(sc).snappySession
-    val colTableName = "colDeltaTable"
-    val numElements = 9999551
-    val numBuckets = SortedColumnPerformanceTests.cores
-    val numIters = 2
-
-    SortedColumnPerformanceTests.benchmarkInsert(snc, colTableName, numBuckets, numElements,
-      numIters, "insert")
-  }
-
   def disabled_testPointQueryPerformance() {
     val snc = SnappyContext(sc).snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
     val numBuckets = SortedColumnPerformanceTests.cores
     val numIters = 100
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+    SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery", numTimesInsert = 10,
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
     // while (true) {}
@@ -69,7 +58,7 @@ class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val numIters = 100
     val totalNumThreads = SortedColumnPerformanceTests.cores
     val totalTime: FiniteDuration = new FiniteDuration(5, MINUTES)
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+    SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
       numIters, "PointQuery multithreaded", numTimesInsert = 10, isMultithreaded = true,
       doVerifyFullSize = false, totalThreads = totalNumThreads,
       runTime = totalTime)(SortedColumnPerformanceTests.executeQuery_PointQuery_mt)
@@ -82,7 +71,7 @@ class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val numElements = 999551
     val numBuckets = SortedColumnPerformanceTests.cores
     val numIters = 21
-    SortedColumnPerformanceTests.benchmarkQuery(snc, colTableName, numBuckets, numElements,
+    SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery_mt)
     // while (true) {}
