@@ -105,8 +105,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val joinTableName = "joinDeltaTable"
-    val numElements = 999551
-    val numTimesInsert = 199
+    val numElements = 100000000
+    val numTimesInsert = 1
     val numTimesUpdate = 1
 
     val totalElements = (numElements * 0.6 * numTimesUpdate +
@@ -114,11 +114,11 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     val numBuckets = 4
     val numIters = 100
 
-    SortedColumnTests.verfiyInsertDataExists(session, numElements, multiple = 1)
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
     SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
     val dataFrameReader : DataFrameReader = session.read
     val insertDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
-      multiple = 1))
+      numTimesInsert))
     val updateDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
       numTimesUpdate))
 
@@ -135,8 +135,12 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
           insertDF.write.insertInto(joinTableName)
           j += 1
         }
-        updateDF.write.putInto(colTableName)
-        updateDF.write.putInto(joinTableName)
+        j = 0
+        while (j < numTimesInsert) {
+          updateDF.write.putInto(colTableName)
+          updateDF.write.putInto(joinTableName)
+          j += 1
+        }
       } finally {
         session.conf.unset(Property.ColumnBatchSize.name)
         session.conf.unset(Property.ColumnMaxDeltaRows.name)
