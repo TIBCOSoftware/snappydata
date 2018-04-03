@@ -319,5 +319,6 @@ class QueryTest extends SnappyFunSuite {
     val r = snc.sql(s"select count(*) from TEST").collect()
     assert (1 === r.size)
     assert (2 === r.head.get(0))
+    snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
   }
 }

@@ -440,23 +440,17 @@ case class JDBCMutableRelation(
   }
 
   private def getDataType(column: StructField): String = {
-    var datatype = column.dataType.simpleString
-    column.dataType.simpleString match {
-      case "string" => {
-        val metadata = column.metadata
-        if (metadata != null) {
-          val sizeprop = metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP)
-          val baseprop = metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
-          baseprop match {
-            case "VARCHAR" => datatype = s"varchar($sizeprop)"
-            case "CHAR" => datatype = s"char($sizeprop)"
-            case _ =>
-          }
+    val dataType: String = dialect match {
+      case d: JdbcExtendedDialect => {
+        val jd = d.getJDBCType(column.dataType, column.metadata)
+        jd match {
+          case Some(x) => x.databaseTypeDefinition
+          case _ => column.dataType.simpleString
         }
       }
-      case _ =>
+      case _ => column.dataType.simpleString
     }
-    datatype
+    dataType
   }
 
   override def alterTable(tableIdent: QualifiedTableName,
@@ -471,7 +465,6 @@ case class JDBCMutableRelation(
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
-
       if (tableExists) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
       } else {
