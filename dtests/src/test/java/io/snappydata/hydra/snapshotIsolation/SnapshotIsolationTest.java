@@ -783,10 +783,15 @@ public class SnapshotIsolationTest extends SnappyTest {
   public void verifyResults() {
     try {
       if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads")) {
+        ArrayList<Integer> selectThreads = null;
         ArrayList<Integer> dmlthreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
         for (int i : dmlthreads) {
-          if(hasDuplicateSchemas)
-            replayOpsInDerby(i + "_" + getMyTid());
+          if(hasDuplicateSchemas) {
+            if (SnapshotIsolationDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
+              selectThreads = (ArrayList<Integer>)SnapshotIsolationDMLOpsBB.getBB().getSharedMap().get("selectThreads");
+            for (int selectTid : selectThreads)
+              replayOpsInDerby(i + "_" + selectTid);
+          }
           else
             replayOpsInDerby(String.valueOf(i));
         }
