@@ -23,7 +23,6 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 
 import scala.io.Source
 
-
 object SnappyTestUtils {
 
   var validateFullResultSet: Boolean = false;
@@ -32,8 +31,7 @@ object SnappyTestUtils {
 
   /*
   Executes the join query, matches only the full result with expected result, returns false if the
-  query
-  validation has failed.
+  query validation has failed.
   */
   def assertJoin(snc: SnappyContext, sqlString: String, queryNum: String, pw: PrintWriter,
       sqlContext: SQLContext): Boolean = {
@@ -61,12 +59,13 @@ object SnappyTestUtils {
   /*
    Executes the query, matches only the full resultSet with expected result, returns false if the
    query validation has failed.
- */
+   */
   def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String,
       pw: PrintWriter, sqlContext: SQLContext): Boolean = {
     numRowsValidation = false
     assertQuery(snc, sqlString, 0, queryNum, pw, sqlContext)
   }
+
   /*
    Executes the query, matches the result with expected result, returns false if the query
    validation has failed.
@@ -88,7 +87,7 @@ object SnappyTestUtils {
       }
       pw.flush()
     }
-    var fullRSValidationFailed = false
+    var fullRSValidationFailed: Boolean = false
     if (validateFullResultSet) {
 
       val snappyQueryFileName = s"Snappy_${queryNum}"
@@ -126,19 +125,17 @@ object SnappyTestUtils {
       } catch {
         case ex: Exception => {
           fullRSValidationFailed = true
-          pw.println(s"Full resultSet validation failed for ${queryNum} with following " +
-              s"exception:\n")
+          pw.println(s"Full resultSet validation for ${queryNum} got the following exception:\n")
           ex.printStackTrace(pw)
         }
       }
       pw.flush()
     }
-
     if (validationFailed) {
-      pw.println(s"\nNumRows validation failed for query ${queryNum} on {$tableType} table.")
+      pw.println(s"\nNumRows validation failed for query ${queryNum} on ${tableType} table.")
     }
     if(fullRSValidationFailed){
-      pw.println(s"\nFull resultset validation failed for query ${queryNum} on {$tableType} table.")
+      pw.println(s"\nFull resultset validation failed for query ${queryNum} on ${tableType} table.")
       validationFailed = true
     }
     pw.flush()
@@ -162,7 +159,7 @@ object SnappyTestUtils {
 
   /*
    Writes the query resultset to a csv file.
- */
+   */
   def writeToFile(df: DataFrame, dest: String, snc: SnappyContext): Unit = {
     import snc.implicits._
     df.map(dataTypeConverter)(RowEncoder(df.schema))
@@ -182,8 +179,8 @@ object SnappyTestUtils {
   }
 
   /*
-  Returns the path for the directory where the output of resultset of queries have been saved.
-  Creates a new directory, if not already existing
+   Returns the path for the directory where the output of resultset of queries have been saved.
+   Creates a new directory, if not already existing
    */
   def getQueryResultDir(dirName: String): String = {
     val log: File = new File(".")
@@ -208,8 +205,9 @@ object SnappyTestUtils {
     return queryResultDir.getAbsolutePath
   }
 
-  /* In case of round-off, there is a difference of .1 is snappy and spark. We can ignore such
-  differences
+  /*
+   In case of round-off, there is a difference of .1 in snappy and spark results. We can ignore
+   such differences
    */
   def isIgnorable(actualLine: String, expectedLine: String): Boolean = {
     var canBeIgnored = false
@@ -256,7 +254,7 @@ object SnappyTestUtils {
   }
 
   /*
-    If validation has failed for a query, add the query number to failedQueries String
+   If validation has failed for a query, add the query number to failedQueries String
    */
   def addToFailedQueryList(failedQueries: String, queryNum: String): String = {
     var str = failedQueries
@@ -272,7 +270,7 @@ object SnappyTestUtils {
   /*
    Performs full resultSet validation from snappy for a select query against results in a
    goldenFile.
- */
+   */
   def assertValidateFullResultSetFromGoldenFile(sqlString: String, queryNum: String, tableType:
   String, snc: SnappyContext, pw: PrintWriter, validationFailed: Boolean, goldenFileDest: String):
   Boolean = {

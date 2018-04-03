@@ -17,6 +17,8 @@
 
 package io.snappydata.hydra.connectionPool;
 
+import java.util.Vector;
+
 import hydra.BasePrms;
 import hydra.TestConfig;
 
@@ -37,6 +39,9 @@ public class SnappyConnectionPoolPrms extends BasePrms {
   public static Long maxWait;
 
   public static Long poolName;
+
+  /* space seperated connection properties to be set while creating a connection */
+  public static Long connectionProperties;
 
   public static String getString(Long key){
     return TestConfig.tasktab().stringAt(key, TestConfig.tab().stringAt(key, null));
@@ -85,6 +90,18 @@ public class SnappyConnectionPoolPrms extends BasePrms {
       return 1;
     else
       return -1; //don't use connection pool
+  }
+
+  public static String[] getConnProperties() {
+    Long key = connectionProperties;
+    Vector connProperties = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, null));
+    String[] strArr = new String[connProperties.size()];
+    if (connProperties != null) {
+      for (int i = 0; i < connProperties.size(); i++) {
+        strArr[i] = (String)connProperties.get(i);
+      }
+    }
+    return strArr;
   }
 
   static {
