@@ -32,9 +32,11 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
+import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -90,15 +92,15 @@ case class JDBCMutableRelation(
   final lazy val schemaFields: Map[String, StructField] =
     Utils.schemaFields(schema)
 
-  def partitionColumns: Seq[String] = Seq.empty
+  def partitionColumns: Seq[String] = Nil
 
-  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Seq.empty
+  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Nil
 
   def numBuckets: Int = -1
 
   def isPartitioned: Boolean = false
 
-  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
+  override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory: () => Connection =
@@ -142,7 +144,8 @@ case class JDBCMutableRelation(
 
       // Create the table if the table didn't exist.
       if (!tableExists) {
-        val sql = s"CREATE TABLE $table $userSpecifiedString"
+        // quote the table name e.g. for reserved keywords or special chars
+        val sql = s"CREATE TABLE ${quotedName(table)} $userSpecifiedString"
         val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
@@ -176,7 +179,7 @@ case class JDBCMutableRelation(
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Expression]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val jdbcOptions = new JDBCOptions(connProperties.url,
       table, connProperties.executorConnProps.asScala.toMap)
 
@@ -184,7 +187,7 @@ case class JDBCMutableRelation(
       sqlContext.sparkContext,
       schema,
       requiredColumns,
-      filters.filterNot(ExternalStoreUtils.unhandledFilter),
+      filters.flatMap(translateToFilter),
       parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
@@ -444,10 +447,11 @@ case class JDBCMutableRelation(
     try {
       val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
         conn, dialect, sqlContext)
-      val sql = isAddColumn match {
-        case true => s"alter table ${table} add column" +
-          s" ${column.name} ${column.dataType.simpleString}"
-        case false => s"alter table ${table} drop column ${column.name}"
+      val sql = if (isAddColumn) {
+        s"""alter table ${quotedName(table)}
+            add column "${column.name}" ${column.dataType.simpleString}"""
+      } else {
+        s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
 
       if (tableExists) {

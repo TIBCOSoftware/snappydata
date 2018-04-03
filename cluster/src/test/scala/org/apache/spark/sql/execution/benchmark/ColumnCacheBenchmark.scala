@@ -48,7 +48,7 @@ import org.apache.spark.util.Benchmark
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
-  private val cores = math.min(8, Runtime.getRuntime.availableProcessors())
+  private val cores = math.min(16, Runtime.getRuntime.availableProcessors())
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -69,6 +69,10 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
+  }
+
+  test("cache with randomized keys - query") {
+    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
   }
 
   ignore("PutInto Vs Insert") {
@@ -211,10 +215,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
       SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
   }
 
-  test("cache with randomized keys - query") {
-    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
-  }
-
   test("PutInto wide column table") {
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createAndTestPutIntoInBigTable()
@@ -325,6 +325,14 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           val max = counts.max
           assert(max - min <= 800000, "Unexpectedly large data skew: " +
               results.map(r => s"${r.getInt(1)}=${r.getLong(0)}").mkString(","))
+          // check for SNAP-2200 by forcing overflow with updates
+          snappySession.sql("update test set id = id + 1")
+          snappySession.sql("update test set k = k + 1.0")
+          ColumnCacheBenchmark.collect(snappySession.sql(
+            "select max(id), min(id) from test"), Seq(Row(size, 1L)))
+          // repopulate for the benchmark test
+          snappySession.sql("truncate table test")
+          testDF2.write.insertInto("test")
           ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
         } else {
           ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)

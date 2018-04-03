@@ -1,6 +1,6 @@
 # SELECT
 
-```
+```no-highlight
 SELECT [DISTINCT] named_expression[, named_expression, ...]
     FROM relation[, relation, ...]
     [WHERE boolean_expression]
@@ -24,7 +24,6 @@ expressions:
 
 sort_expressions:
     : expression [ASC|DESC][, expression [ASC|DESC], ...]
-
 ```
 
 For information on executing queries on Synopsis Data Engine, refer to [SDE](/../../aqp.md).
@@ -64,7 +63,7 @@ Limit the number of rows returned.
 
 ## Example
 
-```
+```no-highlight
     SELECT * FROM boxes
     SELECT width, length FROM boxes WHERE height=3
     SELECT DISTINCT width, length FROM boxes WHERE height=3 LIMIT 2
@@ -78,7 +77,7 @@ Limit the number of rows returned.
 JOINS
 -----------
 
-```
+```no-highlight
     join_relation:
         | relation join_type JOIN relation (ON boolean_expression | USING (column_name[, column_name, ...]))
         : relation NATURAL join_type JOIN relation
@@ -88,6 +87,7 @@ JOINS
         | (LEFT|RIGHT|FULL) [OUTER]
         : [LEFT] ANTI
 ```
+
 `INNER JOIN`</br>
 Select all rows from both relations where there is match.
 
@@ -102,7 +102,7 @@ Select only rows from the left side that match no rows on the right side.
 
 **Example**:
 
-```
+```no-highlight
     SELECT * FROM boxes INNER JOIN rectangles ON boxes.width = rectangles.width
     SELECT * FROM boxes FULL OUTER JOIN rectangles USING (width, length)
     SELECT * FROM boxes NATURAL JOIN rectangles
@@ -111,8 +111,7 @@ Select only rows from the left side that match no rows on the right side.
 AGGREGATION
 ------------
 
-
-```
+```no-highlight
     aggregation:
         : GROUP BY expressions [(WITH ROLLUP | WITH CUBE | GROUPING SETS (expressions))]
 ```
@@ -130,7 +129,7 @@ Perform a group by for each subset of the group expressions specified in the gro
 
 **Example**:
 
-```
+```no-highlight
     SELECT height, COUNT(*) AS num_rows FROM boxes GROUP BY height
     SELECT width, AVG(length) AS average_length FROM boxes GROUP BY width
     SELECT width, length, height FROM boxes GROUP BY width, length, height WITH ROLLUP
@@ -140,7 +139,7 @@ Perform a group by for each subset of the group expressions specified in the gro
 Window Functions
 --------------
 
-```
+```no-highlight
 window_expression:
     : expression OVER window_spec
 

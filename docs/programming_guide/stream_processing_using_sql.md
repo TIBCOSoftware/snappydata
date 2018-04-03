@@ -15,7 +15,7 @@ Internally, it works as follows. Spark Streaming receives live input data stream
 
 ![Spark Streaming data flow](http://spark.apache.org/docs/latest/img/streaming-flow.png)
  
- Spark Streaming provides a high-level abstraction called *discretized stream* or *DStream*, which represents a continuous stream of data. DStreams can be created either from input data streams from sources such as Kafka, Flume, and Kinesis, or by applying high-level operations on other DStreams. Internally, a DStream is represented as a sequence of [RDDs](https://spark.apache.org/docs/1.6.0/api/java/org/apache/spark/rdd/RDD.html). 
+ Spark Streaming provides a high-level abstraction called *discretized stream* or *DStream*, which represents a continuous stream of data. DStreams can be created either from input data streams from sources such as Kafka, Flume, and Kinesis, or by applying high-level operations on other DStreams. Internally, a DStream is represented as a sequence of [RDDs](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/rdd/RDD.html). 
 
 Additional details on the Spark Streaming concepts and programming is covered [here](http://spark.apache.org/docs/latest/streaming-programming-guide.html).
 
@@ -35,7 +35,7 @@ The following enhancements over Spark Streaming are provided:
 ## Working with Stream Tables
 SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
 
-```scala
+```no-highlight
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
 (COLUMN_DEFINITION)
@@ -69,7 +69,7 @@ STREAMING STOP
 ```
 
 For example to create a stream table using kafka source : 
-```scala
+```no-highlight
  val spark: SparkSession = SparkSession
      .builder
      .appName("SparkApp")
@@ -96,7 +96,7 @@ The streamTable created in the above example can be accessed from snappy-sql and
 ## Stream SQL through snappy-sql
 Start a SnappyData cluster and connect through snappy-sql :
 
-```scala
+```no-highlight
 //create a connection
 snappy> connect client 'localhost:1527';
 
@@ -126,7 +126,7 @@ SchemaDStream is SQL based DStream with support for schema/Product. It offers th
 Some of these ideas (especially naming our abstractions) were borrowed from [Intel's Streaming SQL project](https://github.com/Intel-bigdata/spark-streamingsql).
 
 ## Registering Continuous Queries
-```scala
+```no-highlight
 //You can join two stream tables and produce a result stream.
 val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (duration
     '2' seconds, slide '2' seconds) s1 JOIN stream2 s2 ON s1.id = s2.id")

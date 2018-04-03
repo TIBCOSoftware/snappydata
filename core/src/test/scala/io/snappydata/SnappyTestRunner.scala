@@ -210,7 +210,15 @@ with Logging with Retries {
     val matcher = exceptionPattern.matcher(output)
     while (matcher.find()) {
       val exceptionStr = matcher.group()
-      if (!exceptionStr.equals("NoSuchObjectException")) {
+      if (!exceptionStr.equals("NoSuchObjectException") &&
+          !exceptionStr.equals("JDODataStoreException") &&
+          !exceptionStr.contains("JDOException") &&
+          !exceptionStr.equals("SQLNonTransientConnectionException") &&
+          !exceptionStr.equals("SQLExceptionFactory") &&
+          !exceptionStr.equals("getSQLException") &&
+          !exceptionStr.equals("generateCsSQLException") &&
+          !exceptionStr.equals("StandardException") &&
+          !exceptionStr.equals("newException")) {
         println(s"***** FAIL due to $exceptionStr")
         return true
       }

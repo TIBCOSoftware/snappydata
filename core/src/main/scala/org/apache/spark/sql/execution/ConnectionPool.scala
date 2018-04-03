@@ -185,7 +185,7 @@ object ConnectionPool {
     } else false
   }
 
-  /** To be invoked only on SparkContext stop or from tests. */
+  /** To be invoked only on SparkContext stop or from tests (or LDAP refresh). */
   def clear(): Unit = pools.synchronized {
     idToPoolMap.asScala.foreach {
       case (id, dsKey) => removePoolKey(id._1, dsKey)

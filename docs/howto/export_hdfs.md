@@ -7,7 +7,7 @@ In SnappyData, table data is stored in memory and on disk (depending on the conf
 
 For example, as shown below you can create a DataFrame for a table and save it as parquet file.
 
-```
+```no-highlight
 // created a DataFrame for table "APP.CUSTOMER"
 val df = snappySession.table("APP.CUSTOMER")
 // save it as parquet file on HDFS
@@ -20,14 +20,14 @@ You can also import this data back into SnappyData tables.
 
 For example using SQL, create an external table and import the data:
 
-```scala
+```no-highlight
 snappy> CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 USING parquet OPTIONS (path 'hdfs://127.0.0.1:9000/customer', header 'true', inferSchema 'true');
 snappy> insert into customer select * from CUSTOMER_STAGING_1;
 ```
 
 Or by using APIs (as a part of SnappyData job). Refer to [How to Run Spark Code inside the Cluster](run_spark_job_inside_cluster.md) for more information. 
 
-```scala
+```no-highlight
 // create a DataFrame using parquet 
 val df2 = snappySession.read.parquet("hdfs://127.0.0.1:9000/customer")
 // insetert the data into table

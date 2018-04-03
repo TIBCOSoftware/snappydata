@@ -19,10 +19,10 @@
 
 package io.snappydata
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -38,6 +38,7 @@ import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
+import io.snappydata.collection.ObjectObjectHashMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
@@ -51,24 +52,12 @@ object SnappyTableStatsProviderService {
   // var that points to the actual stats provider service
   private var statsProviderService: TableStatsProviderService = _
 
-  def start(sc: SparkContext): Unit = {
-    SnappyContext.getClusterMode(sc) match {
-      case ThinClientConnectorMode(_, _) =>
-        throw new IllegalStateException(
-          "Not expected to be called for ThinClientConnectorMode")
-      case _ =>
-        statsProviderService = SnappyEmbeddedTableStatsProviderService
-    }
-    statsProviderService.start(sc)
-  }
-
   def start(sc: SparkContext, url: String): Unit = {
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
         statsProviderService = SnappyThinConnectorTableStatsProvider
       case _ =>
-        throw new IllegalStateException(
-          "This is expected to be called for ThinClientConnectorMode only")
+        statsProviderService = SnappyEmbeddedTableStatsProviderService
     }
     statsProviderService.start(sc, url)
   }
@@ -93,7 +82,7 @@ object SnappyTableStatsProviderService {
 
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
 
-  def start(sc: SparkContext): Unit = {
+  override def start(sc: SparkContext, url: String): Unit = {
     if (!doRun) {
       this.synchronized {
         if (!doRun) {
@@ -130,11 +119,6 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
   }
 
-  override def start(sc: SparkContext, url: String): Unit = {
-    throw new IllegalStateException("This is expected to be called for " +
-        "ThinClientConnectorMode only")
-  }
-
   override def fillAggregatedMemberStatsOnDemand(): Unit = {
 
     try {
@@ -148,11 +132,12 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val itr = memStats.iterator()
 
-      val members = mutable.Map.empty[String, mutable.Map[String, Any]]
+      val members = ObjectObjectHashMap.withExpectedSize[String,
+          scala.collection.mutable.Map[String, Any]](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
-        val map = mutable.HashMap.empty[String, Any]
+        val map = new ConcurrentHashMap[String, Any](8, 0.7f, 1).asScala
         val keyItr = memMap.keySet().iterator()
 
         while (keyItr.hasNext) {
@@ -168,12 +153,12 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           members.put(memMap.get("id").asInstanceOf[String], map)
         }
       }
-      membersInfo ++= members
+      membersInfo ++= members.asScala
       // mark members no longer running as stopped
-      existingMembers.filterNot(members.contains).foreach(m =>
+      existingMembers.filterNot(members.containsKey).foreach(m =>
         membersInfo(m).put("status", "Stopped"))
     } catch {
-      case e: Exception => logWarning(e.getMessage, e)
+      case NonFatal(e) => logWarning(e.getMessage, e)
     }
   }
 

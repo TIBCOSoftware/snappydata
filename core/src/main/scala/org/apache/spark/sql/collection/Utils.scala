@@ -30,6 +30,7 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.collection.ObjectObjectHashMap
@@ -56,6 +57,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
+import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
@@ -285,18 +287,46 @@ object Utils {
     }
   }
 
-  def mapExecutors[T: ClassTag](sqlContext: SQLContext,
-      f: () => Iterator[T]): RDD[T] = {
-    val sc = sqlContext.sparkContext
+  def mapExecutors[T: ClassTag](sc: SparkContext,
+      f: () => Iterator[T], maxTries: Int = 30): Array[T] = {
     val cleanedF = sc.clean(f)
-    new ExecutorLocalRDD[T](sc,
-      (_: TaskContext, _: ExecutorLocalPartition) => cleanedF())
+    mapExecutorsWithRetries(sc, (_: TaskContext, _: ExecutorLocalPartition) => cleanedF(),
+      maxTries)
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
-      f: (TaskContext, ExecutorLocalPartition) => Iterator[T]): RDD[T] = {
+      f: (TaskContext, ExecutorLocalPartition) => Iterator[T], maxTries: Int): Array[T] = {
     val cleanedF = sc.clean(f)
-    new ExecutorLocalRDD[T](sc, cleanedF)
+    mapExecutorsWithRetries(sc, cleanedF, maxTries)
+  }
+
+  private def mapExecutorsWithRetries[T: ClassTag](sc: SparkContext,
+      cleanedF: (TaskContext, ExecutorLocalPartition) => Iterator[T],
+      maxTries: Int): Array[T] = {
+    var tries = 1
+    while (true) {
+      try {
+        return new ExecutorLocalRDD[T](sc, cleanedF).collect()
+      } catch {
+        case NonFatal(e) =>
+          var incorrectRouting = false
+          var t = e
+          while (t ne null) {
+            if (t.isInstanceOf[IllegalStateException]) {
+              incorrectRouting = true
+              t = null
+            } else {
+              t = t.getCause
+            }
+          }
+          if (incorrectRouting && tries < maxTries) {
+            tries += 1
+          } else {
+            throw e
+          }
+      }
+    }
+    null // never reached
   }
 
   def getFixedPartitionRDD[T: ClassTag](sc: SparkContext,
@@ -715,6 +745,7 @@ object Utils {
     context.taskMemoryManager()
 
   def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
+    if (buffer eq null) return null
     val row = new UnsafeRow(numColumns)
     if (buffer.isDirect) {
       row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
@@ -724,6 +755,15 @@ object Utils {
           buffer.arrayOffset() + buffer.position(), buffer.remaining())
     }
     row
+  }
+
+  def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
+    // need to create a copy since underlying Array[Byte] can be re-used
+    val statsLen = statsData.length
+    val statsBuffer = allocator.allocateForStorage(statsLen)
+    statsBuffer.put(statsData, 0, statsLen)
+    statsBuffer.rewind()
+    statsBuffer
   }
 
   def genTaskContextFunction(ctx: CodegenContext): String = {
@@ -742,6 +782,11 @@ object Utils {
         """.stripMargin)
     }
     TASKCONTEXT_FUNCTION
+  }
+
+  def executorsListener(sc: SparkContext): Option[ExecutorsListener] = sc.ui match {
+    case Some(ui) => Some(ui.executorsListener)
+    case _ => None
   }
 }
 
@@ -953,14 +998,17 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-final class SmartExecutorBucketPartition(private var _index: Int,
+final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
     var hostList: mutable.ArrayBuffer[(String, String)])
     extends Partition with KryoSerializable {
 
   override def index: Int = _index
 
+  def bucketId: Int = _bucketId
+
   override def write(kryo: Kryo, output: Output): Unit = {
     output.writeVarInt(_index, true)
+    output.writeVarInt(_bucketId, true)
     val numHosts = hostList.length
     output.writeVarInt(numHosts, true)
     for ((host, url) <- hostList) {
@@ -971,6 +1019,7 @@ final class SmartExecutorBucketPartition(private var _index: Int,
 
   override def read(kryo: Kryo, input: Input): Unit = {
     _index = input.readVarInt(true)
+    _bucketId = input.readVarInt(true)
     val numHosts = input.readVarInt(true)
     hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
     for (_ <- 0 until numHosts) {
@@ -981,7 +1030,7 @@ final class SmartExecutorBucketPartition(private var _index: Int,
   }
 
   override def toString: String =
-    s"SmartExecutorBucketPartition($index, $hostList)"
+    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {
@@ -994,19 +1043,9 @@ object ToolsCallbackInit extends Logging {
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("toolsCallback couldn't be INITIALIZED." +
+        logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }
-  }
-}
-
-object OrderlessHashPartitioningExtract {
-  def unapply(partitioning: Partitioning): Option[(Seq[Expression],
-      Seq[Seq[Attribute]], Int, Int, Int)] = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks ne null) {
-      callbacks.checkOrderlessHashPartitioning(partitioning)
-    } else None
   }
 }

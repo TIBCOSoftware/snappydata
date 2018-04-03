@@ -54,9 +54,10 @@ case class DSID() extends LeafExpression {
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    val idTerm = ctx.freshName("dsid")
-    ctx.addMutableState("UTF8String", idTerm, s"$idTerm=UTF8String" +
-      s".fromString(com.pivotal.gemfirexd.internal.engine.Misc.getMyId().getId());")
-    ev.copy(code = s"final ${ctx.javaType(dataType)} ${ev.value} = $idTerm;", isNull = "false")
+    ctx.addMutableState("UTF8String", ev.value, s"${ev.value} = UTF8String" +
+        ".fromString(com.pivotal.gemfirexd.internal.engine.Misc.getMyId().getId());")
+    ev.code = ""
+    ev.isNull = "false"
+    ev
   }
 }

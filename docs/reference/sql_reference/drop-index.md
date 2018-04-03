@@ -1,6 +1,6 @@
 # DROP INDEX
 
-``` pre
+```no-highlight
 DROP INDEX [ IF EXISTS ] [schema-name.]index-name
 ```
 
@@ -10,8 +10,7 @@ Drops the index in the given schema (or current schema if none is provided). Inc
 
 ## Example
 
-
-``` pre
+```no-highlight
 DROP INDEX IF EXISTS app.idx
 ```
 

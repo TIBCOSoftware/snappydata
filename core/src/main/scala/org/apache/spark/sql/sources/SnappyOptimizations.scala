@@ -187,7 +187,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
         .getOrElse(Replacement(r, r)))
 
     val replicatesWithColocated = ReplacementSet(replicates.map(r => Replacement(r, r, false)) ++
-        (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Seq.empty), conditions)
+        (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Nil), conditions)
 
     val replicatesWithNonColocatedHavingFilters = nonColocatedWithFilters.map(nc =>
       ReplacementSet(replicates.map(r => Replacement(r, r)) ++ Some(nc), conditions)).sorted
@@ -202,7 +202,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
       r.mappedConditions(conditions)
     }
 
-    var curPlan = CompletePlan(null, Seq.empty)
+    var curPlan = CompletePlan(null, Nil)
 
     // there are no Non-Colocated tables of lesser cost than colocation chain in consideration.
     if (smallerNC == -1) {
@@ -348,7 +348,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
         val joinKeys = joinConditions.flatMap {
           case (leftA: AttributeReference, rightA: AttributeReference) =>
             Seq((leftA.name, rightA.name))
-          case _ => Seq.empty[(String, String)]
+          case _ => Nil
         }
 
         val hasJoinKeys = Function.tupled[INDEX_RELATION, INDEX_RELATION, Boolean] {

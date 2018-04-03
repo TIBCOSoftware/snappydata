@@ -21,13 +21,11 @@ import java.sql.PreparedStatement
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
-import org.apache.spark.sql.SnappySession.CachedKey
 import org.apache.spark.{Logging, SparkContext}
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
@@ -383,7 +381,7 @@ object TPCHUtils extends Logging {
             for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
               if (!expectedLine.equals(actualLine)) {
                 resultOutputStream.println(s"For $query result mismatched observed")
-                resultOutputStream.println(s"Excpected : $expectedLine")
+                resultOutputStream.println(s"Expected  : $expectedLine")
                 resultOutputStream.println(s"Found     : $actualLine")
                 resultOutputStream.println(s"-------------------------------------")
               }
@@ -424,7 +422,7 @@ object TPCHUtils extends Logging {
         s"Query result match Observed. Look at Result_Snappy_Tokenization.out for detailed failure")
       if (resultOutputFile.count() != 0) {
         logWarning(
-          s"QUERY RESYLT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
+          s"QUERY RESULT MATCH OBSERVED. Look at Result_Snappy_Tokenization.out for detailed" +
               s" failure")
       }
     }

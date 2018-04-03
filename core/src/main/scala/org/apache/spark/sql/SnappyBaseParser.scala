@@ -121,9 +121,12 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected def start: Rule1[LogicalPlan]
 
+  protected final def unquotedIdentifier: Rule1[String] = rule {
+    atomic(capture(Consts.alphaUnderscore ~ Consts.identifier.*)) ~ delimiter
+  }
+
   protected final def identifier: Rule1[String] = rule {
-    atomic(capture(Consts.alphaUnderscore ~ Consts.identifier.*)) ~
-        delimiter ~> { (s: String) =>
+    unquotedIdentifier ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.reservedKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
@@ -146,8 +149,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    * interpreted as a strictIdentifier.
    */
   protected final def strictIdentifier: Rule1[String] = rule {
-    atomic(capture(CharPredicate.Alpha ~ Consts.identifier.*)) ~
-        delimiter ~> { (s: String) =>
+    unquotedIdentifier ~> { (s: String) =>
       val ucase = Utils.toUpperCase(s)
       test(!Consts.allKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
@@ -276,6 +278,9 @@ final class Keyword private[sql] (s: String) {
   val upper: String = Utils.toUpperCase(s)
 }
 
+final class ParseException(msg: String, cause: Option[Throwable] = None)
+    extends AnalysisException(msg, None, None, None, cause)
+
 object SnappyParserConsts {
   final val space: CharPredicate = CharPredicate(' ', '\t')
   final val whitespace: CharPredicate = CharPredicate(
@@ -302,7 +307,7 @@ object SnappyParserConsts {
   final val allKeywords: OpenHashSet[String] = new OpenHashSet[String]
 
   final val optimizableLikePattern: java.util.regex.Pattern =
-    java.util.regex.Pattern.compile("%?[^_%]*[^_%\\\\]%?")
+    java.util.regex.Pattern.compile("(%?[^_%]*[^_%\\\\]%?)|([^_%]*[^_%\\\\]%[^_%]*)")
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
@@ -333,10 +338,6 @@ object SnappyParserConsts {
     k
   }
 
-  final val REFERENCES_KEY = "TokenizationReferences"
-  final val WRAPPED_CONSTANTS_KEY = "TokenizedConstants"
-  final val NOCACHING_KEY = "TokenizationNoCaching"
-
   final val COLUMN_SOURCE = "column"
   final val ROW_SOURCE = "row"
   final val DEFAULT_SOURCE = ROW_SOURCE
@@ -365,7 +366,6 @@ object SnappyParserConsts {
   final val FROM: Keyword = reservedKeyword("from")
   final val GROUP: Keyword = reservedKeyword("group")
   final val HAVING: Keyword = reservedKeyword("having")
-  final val IF: Keyword = reservedKeyword("if")
   final val IN: Keyword = reservedKeyword("in")
   final val INNER: Keyword = reservedKeyword("inner")
   final val INSERT: Keyword = reservedKeyword("insert")
@@ -425,6 +425,7 @@ object SnappyParserConsts {
   final val GLOBAL: Keyword = nonReservedKeyword("global")
   final val GRANT: Keyword = nonReservedKeyword("grant")
   final val HASH: Keyword = nonReservedKeyword("hash")
+  final val IF: Keyword = nonReservedKeyword("if")
   final val INDEX: Keyword = nonReservedKeyword("index")
   final val INIT: Keyword = nonReservedKeyword("init")
   final val INTERVAL: Keyword = nonReservedKeyword("interval")

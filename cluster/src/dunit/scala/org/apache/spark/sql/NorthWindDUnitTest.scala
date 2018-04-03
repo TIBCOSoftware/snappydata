@@ -136,8 +136,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 
-  private lazy val totalProcessors = Utils.mapExecutors(sc, (_, _) =>
-    Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
+  private lazy val totalProcessors = Utils.mapExecutors[Int](sc, () =>
+    Iterator(Runtime.getRuntime.availableProcessors())).sum
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {
@@ -761,7 +761,10 @@ object NorthWindDUnitTest {
     // scalastyle:off println
     pw.println(s"$queryNum Result Collected in files with prefix $snappyFile")
     if (!new File(s"$sparkFile.0").exists()) {
-      val sparkDF = sqlContext.sql(sqlString).sort(col1, col: _*)
+      var sparkDF = sqlContext.sql(sqlString)
+      val col = sparkDF.schema.fieldNames(0)
+      val cols = sparkDF.schema.fieldNames.tail
+      sparkDF = sparkDF.sort(col, cols: _*)
       writeToFile(sparkDF, sparkFile, snc)
       pw.println(s"$queryNum Result Collected in files with prefix $sparkFile")
     }

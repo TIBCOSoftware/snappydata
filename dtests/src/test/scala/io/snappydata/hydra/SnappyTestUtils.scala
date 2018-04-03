@@ -217,6 +217,7 @@ object SnappyTestUtils {
   def compareFiles(snappyFile: File, sparkFile: File, pw: PrintWriter, validationFailed: Boolean):
   Boolean = {
     var hasValidationFailed = validationFailed
+
     val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()

@@ -110,7 +110,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 //    snappySession.dropTable(newQualifiedTableName(name), ignoreIfNotExists)
 //  }
 
-  protected var currentSchema: String = {
+  protected[sql] var currentSchema: String = {
     var user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
     if (user.isEmpty) {
       // In smart connector, property name is different.
@@ -174,9 +174,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     formatTableName(currentSchema)
   }
 
-  def getCurrentSchema: String = currentSchema
-
-
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
       (LogicalRelation, CatalogTable, RelationInfo)] = {
@@ -226,7 +223,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
 
         (LogicalRelation(relation, catalogTable = Some(table)), table, RelationInfo(
-          0, isPartitioned = false, Seq.empty, Array.empty, Array.empty, Array.empty, -1))
+          0, isPartitioned = false, Nil, Array.empty, Array.empty, Array.empty, -1))
       }
     }
 
@@ -341,8 +338,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     case _ => dataType
   }
 
-  private def normalizeSchemaField(f: StructField): StructField = {
-    val name = Utils.toUpperCase(Utils.fieldName(f))
+  private def normalizeSchemaField(f: StructField): StructField =
+    normalizeField(f, Utils.fieldName(f))
+
+  def normalizeField(f: StructField, fieldName: String): StructField = {
+    val name = Utils.toUpperCase(fieldName)
     val dataType = normalizeType(f.dataType)
     val metadata = if (f.metadata.contains("name")) {
       val builder = new MetadataBuilder
@@ -369,8 +369,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     f.copy(name = name, dataType = dataType, metadata = metadata)
   }
 
+  def caseSensitiveAnalysis: Boolean = sqlConf.caseSensitiveAnalysis
+
   def normalizeSchema(schema: StructType): StructType = {
-    if (sqlConf.caseSensitiveAnalysis) {
+    if (caseSensitiveAnalysis) {
       schema
     } else {
       val fields = schema.fields
@@ -644,7 +646,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             schema
           case None => relation match {
             case Some(r) => r.schema
-            case _ => StructType(Seq.empty)
+            case _ => StructType(Nil)
           }
         }
         val schemaJsonString = tableSchema.json
@@ -1020,9 +1022,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
    */
   override def reset(): Unit = synchronized {
     setCurrentDatabase(Constant.DEFAULT_SCHEMA)
-    listDatabases().map(s => s.toUpperCase).
+    listDatabases().map(Utils.toUpperCase).
         filter(_ != Constant.DEFAULT_SCHEMA).
-        filter(_ != DEFAULT_DATABASE.toUpperCase).foreach { db =>
+        filter(_ != Utils.toUpperCase(DEFAULT_DATABASE)).foreach { db =>
       dropDatabase(db, ignoreIfNotExists = false, cascade = true)
     }
 
@@ -1105,7 +1107,7 @@ object SnappyStoreHiveCatalog {
       Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
     new CacheLoader[QualifiedTableName, Seq[(LogicalPlan, String)]]() {
       override def load(in: QualifiedTableName): Seq[(LogicalPlan, String)] = {
-        Seq.empty
+        Nil
       }
     })
 
@@ -1142,13 +1144,13 @@ object SnappyStoreHiveCatalog {
       SnappyContext.getClusterMode(session.sparkContext) match {
         case SnappyEmbeddedMode(_, _) =>
           val version = getRelationDestroyVersion
-          Utils.mapExecutors(session.sqlContext,
+          Utils.mapExecutors[Unit](session.sparkContext,
             () => {
               val profile: GfxdProfile =
                 GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
               Option(profile).foreach(gp => gp.setRelationDestroyVersion(version))
               Iterator.empty
-            }).count()
+            })
         case _ =>
       }
     )

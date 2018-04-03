@@ -18,10 +18,10 @@ package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
@@ -862,29 +862,29 @@ object SnappyContext extends Logging {
       throw new IllegalStateException("Invalid SparkConf")
   }
 
-  private[this] val storeToBlockMap: TrieMap[String, BlockAndExecutorId] =
-    TrieMap.empty[String, BlockAndExecutorId]
+  private[this] val storeToBlockMap: ConcurrentHashMap[String, BlockAndExecutorId] =
+    new ConcurrentHashMap[String, BlockAndExecutorId](16, 0.7f, 1)
   private[spark] val totalCoreCount = new AtomicInteger(0)
 
   def getBlockId(executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.get(executorId) match {
-      case s@Some(b) if b.blockId ne null => s
+      case b if (b ne null) && (b.blockId ne null) => Some(b)
       case _ => None
     }
   }
 
   private[spark] def getBlockIdIfNull(
       executorId: String): Option[BlockAndExecutorId] =
-    storeToBlockMap.get(executorId)
+    Option(storeToBlockMap.get(executorId))
 
   private[spark] def addBlockId(executorId: String,
       id: BlockAndExecutorId): Unit = {
     storeToBlockMap.put(executorId, id) match {
-      case None =>
+      case null =>
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(id.numProcessors)
         }
-      case Some(oldId) =>
+      case oldId =>
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(id.numProcessors)
         }
@@ -898,22 +898,22 @@ object SnappyContext extends Logging {
   private[spark] def removeBlockId(
       executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.remove(executorId) match {
-      case s@Some(id) =>
+      case null => None
+      case id =>
         if (id.blockId == null || !id.blockId.isDriver) {
           totalCoreCount.addAndGet(-id.numProcessors)
         }
         SnappySession.clearAllCache(onlyQueryPlanCache = true)
-        s
-      case None => None
+        Some(id)
     }
   }
 
   def getAllBlockIds: scala.collection.Map[String, BlockAndExecutorId] = {
-    storeToBlockMap.filter(_._2.blockId != null)
+    storeToBlockMap.asScala.filter(_._2.blockId != null)
   }
 
   def hasServerBlockIds: Boolean = {
-    storeToBlockMap.exists(p => p._2.blockId != null && !"driver".equalsIgnoreCase(p._1))
+    storeToBlockMap.asScala.exists(p => p._2.blockId != null && !"driver".equalsIgnoreCase(p._1))
   }
 
   private[spark] def clearBlockIds(): Unit = {
@@ -959,7 +959,7 @@ object SnappyContext extends Logging {
       val blockId = new BlockAndExecutorId(
         SparkEnv.get.blockManager.blockManagerId,
         numCores, numCores)
-      storeToBlockMap(cache.getMyId.canonicalString()) = blockId
+      storeToBlockMap.put(cache.getMyId.canonicalString(), blockId)
       totalCoreCount.set(blockId.numProcessors)
       SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
@@ -1076,7 +1076,8 @@ object SnappyContext extends Logging {
           ThinClientConnectorMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
-        else ExternalClusterMode(sc, sc.master)
+        else throw new SparkException(
+          s"${Property.SnappyConnection.name} should be specified for smart connector")
       }
     }
     logInfo(s"Initializing SnappyData in cluster mode: $mode")
@@ -1133,7 +1134,7 @@ object SnappyContext extends Logging {
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-        SnappyTableStatsProviderService.start(sc)
+        SnappyTableStatsProviderService.start(sc, url)
         if (ToolsCallbackInit.toolsCallback != null) {
           ToolsCallbackInit.toolsCallback.updateUI(sc)
         }
@@ -1178,10 +1179,7 @@ object SnappyContext extends Logging {
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
     SparkSession.sqlListener.set(null)
-    _clusterMode match {
-      case _: ExternalClusterMode =>
-      case _ => ServiceUtils.clearStaticArtifacts()
-    }
+    ServiceUtils.clearStaticArtifacts()
   }
 
   /**
@@ -1318,14 +1316,6 @@ case class ThinClientConnectorMode(override val sc: SparkContext,
 case class LocalMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode {
   override val description: String = "Local mode"
-}
-
-/**
- * A regular Spark/Yarn/Mesos or any other non-snappy cluster.
- */
-case class ExternalClusterMode(override val sc: SparkContext,
-    override val url: String) extends ClusterMode {
-  override val description: String = "External cluster mode"
 }
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)
