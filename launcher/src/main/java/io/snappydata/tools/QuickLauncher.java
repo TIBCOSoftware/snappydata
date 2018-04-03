@@ -160,6 +160,8 @@ class QuickLauncher extends LauncherBase {
           }
         }
       }
+    } else {
+      logFile = logFile.substring(LOG_FILE.length() + 2);
     }
     if (logFile == null || logFile.isEmpty()) {
       logFile = this.defaultLogFileName;
@@ -295,6 +297,7 @@ class QuickLauncher extends LauncherBase {
     final int numArgs = args.length;
     final LinkedHashMap<String, Object> options = new LinkedHashMap<>(numArgs);
     final ArrayList<String> vmArgs = new ArrayList<>(2);
+    boolean hostData = true;
 
     // skip first two arguments for node type and action
     for (int i = 2; i < numArgs; i++) {
@@ -335,6 +338,9 @@ class QuickLauncher extends LauncherBase {
         int eqIndex = arg.indexOf('=');
         String key = eqIndex != -1 ? arg.substring(1, eqIndex) : arg.substring(1);
         options.put(key, arg);
+        if (key.equals(HOST_DATA) && eqIndex != -1) {
+          hostData = !"false".equalsIgnoreCase(arg.substring(eqIndex + 1));
+        }
       } else {
         throw new IllegalArgumentException("Unexpected command-line option: " + arg);
       }
@@ -347,7 +353,7 @@ class QuickLauncher extends LauncherBase {
     // configure commons-logging to use Log4J logging
     commandLine.add("-Dorg.apache.commons.logging.Log=" +
         "org.apache.commons.logging.impl.Log4JLogger");
-    setDefaultVMArgs(options, options, commandLine);
+    setDefaultVMArgs(options, hostData, commandLine);
     // add the provided JVM args after the defaults
     if (!vmArgs.isEmpty()) {
       commandLine.addAll(vmArgs);

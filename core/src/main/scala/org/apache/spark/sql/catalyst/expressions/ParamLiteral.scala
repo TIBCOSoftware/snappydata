@@ -17,19 +17,22 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
-import java.util.Objects
+import java.util.concurrent.ConcurrentHashMap
+import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, SubExprEliminationState}
+import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -37,79 +40,34 @@ import org.apache.spark.unsafe.types.UTF8String
 
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
-trait DynamicReplacableConstant {
-  def eval(input: InternalRow = null): Any
+trait DynamicReplacableConstant extends Expression {
 
-  def convertedLiteral: Any
-}
+  @transient protected final var literalValueRef: String = _
+  @transient protected final var isNull: String = _
+  @transient protected final var valueTerm: String = _
 
-// whereever ParamLiteral case matching is required, it must match
-// for DynamicReplacableConstant and use .eval(..) for code generation.
-// see SNAP-1597 for more details.
-final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: Int)
-    extends Literal(null, _dataType) with DynamicReplacableConstant {
+  def value: Any
 
-  // override def toString: String = s"ParamLiteral ${super.toString}"
+  override final def deterministic: Boolean = true
 
-  private[this] var _foldable = false
-
-  private[this] var literalValueRef: String = _
-  private[this] val literalValue: LiteralValue = LiteralValue(value, dataType, pos)()
-
-  private[this] var isNull: String = _
-  private[this] var valueTerm: String = _
-
-  private[this] def lv(ctx: CodegenContext) = if (ctx.references.contains(literalValue)) {
-    assert(literalValueRef != null)
-    literalValueRef
-  } else {
-    literalValueRef = ctx.addReferenceObj("literal", literalValue)
-    literalValueRef
+  private def checkValueType(value: Any, expectedClass: Class[_]): Unit = {
+    val valueClass = if (value != null) value.getClass else null
+    assert((valueClass eq expectedClass) || (valueClass eq null),
+      s"Unexpected data type $dataType for value type: $valueClass")
   }
 
-  override def nullable: Boolean = super.nullable
-
-  override def eval(input: InternalRow): Any = literalValue.value
-
-  def convertedLiteral: Any = literalValue.converter(literalValue.value)
-
-  override def foldable: Boolean = _foldable
-
-  def markFoldable(param: Boolean): Unit = _foldable = param
-
-//  override def toString: String = s"pl[${super.toString}]"
-
-  override def hashCode(): Int = ClientResolverUtils.fastHashLong(
-    Objects.hashCode(dataType).toLong << 32L | (pos & 0xffffffffL))
-
-  // Literal cannot equal ParamLiteral since runtime value can be different
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[ParamLiteral]
-
-  override def equals(obj: Any): Boolean = obj match {
-    case a: AnyRef if this eq a => true
-    case pl: ParamLiteral => pl.pos == pos && pl.dataType == dataType
-    case _ => false
-  }
-
-  override def productElement(n: Int): Any = {
-    val parentFields = super.productArity
-    if (n < parentFields) {
-      super.productElement(n)
-    } else {
-      assert (n == parentFields, s"unexpected n = $n but expected $parentFields")
-      pos
-    }
-  }
-
-  override def productArity: Int = super.productArity + 1
-
-  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+  override final def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // change the isNull and primitive to consts, to inline them
     val value = this.value
-    val addMutableState = (isNull eq null) || !ctx.mutableStates.exists(_._2 == isNull)
+    assert(value != null || nullable, "Expected nullable as true when value is null")
+    val addMutableState = !ctx.references.exists(_.asInstanceOf[AnyRef] eq this)
     if (addMutableState) {
-      isNull = ctx.freshName("isNullTerm")
-      valueTerm = ctx.freshName("valueTerm")
+      literalValueRef = ctx.addReferenceObj("literal", this,
+        classOf[DynamicReplacableConstant].getName)
+      isNull = ctx.freshName("isNull")
+      valueTerm = ctx.freshName("value")
+    } else {
+      assert(literalValueRef ne null)
     }
     val isNullLocal = ev.isNull
     val valueLocal = ev.value
@@ -124,35 +82,34 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
       // use the already added fields
       return ev.copy(initCode, isNullLocal, valueLocal)
     }
-    val valueRef = lv(ctx)
+    val valueRef = literalValueRef
     val box = ctx.boxedType(javaType)
 
     val unbox = dataType match {
       case BooleanType =>
-        assert(value.isInstanceOf[Boolean], s"unexpected type $dataType instead of BooleanType")
+        checkValueType(value, classOf[java.lang.Boolean])
         ".booleanValue()"
       case FloatType =>
-        assert(value.isInstanceOf[Float], s"unexpected type $dataType instead of FloatType")
+        checkValueType(value, classOf[java.lang.Float])
         ".floatValue()"
       case DoubleType =>
-        assert(value.isInstanceOf[Double], s"unexpected type $dataType instead of DoubleType")
+        checkValueType(value, classOf[java.lang.Double])
         ".doubleValue()"
       case ByteType =>
-        assert(value.isInstanceOf[Byte], s"unexpected type $dataType instead of ByteType")
+        checkValueType(value, classOf[java.lang.Byte])
         ".byteValue()"
       case ShortType =>
-        assert(value.isInstanceOf[Short], s"unexpected type $dataType instead of ShortType")
+        checkValueType(value, classOf[java.lang.Short])
         ".shortValue()"
-      case t@(IntegerType | DateType) =>
-        assert(value.isInstanceOf[Int], s"unexpected type $dataType instead of $t")
+      case _: IntegerType | _: DateType =>
+        checkValueType(value, classOf[java.lang.Integer])
         ".intValue()"
-      case t@(TimestampType | LongType) =>
-        assert(value.isInstanceOf[Long], s"unexpected type $dataType instead of $t")
+      case _: TimestampType | _: LongType =>
+        checkValueType(value, classOf[java.lang.Long])
         ".longValue()"
       case StringType =>
         // allocate UTF8String on off-heap so that Native can be used if possible
-        assert(value.isInstanceOf[UTF8String],
-          s"unexpected type $dataType instead of UTF8String")
+        checkValueType(value, classOf[UTF8String])
 
         val getContext = Utils.genTaskContextFunction(ctx)
         val memoryManagerClass = classOf[TaskMemoryManager].getName
@@ -191,12 +148,225 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
   }
 }
 
-object ParamLiteral {
-  def apply(_value: Any, _dataType: DataType, pos: Int): ParamLiteral =
-    new ParamLiteral(_value, _dataType, pos)
+trait TokenizedLiteral extends LeafExpression with DynamicReplacableConstant {
 
-  def unapply(arg: ParamLiteral): Option[(Any, DataType, Int)] =
-    Some((arg.value, arg.dataType, arg.pos))
+  protected final var _foldable: Boolean = _
+
+  // avoid constant folding and let it be done by TokenizedLiteralFolding
+  // so that generated code does not embed constants when there are constant
+  // expressions (common case being a CAST when literal type does not match exactly)
+  override def foldable: Boolean = _foldable
+
+  def valueString: String
+
+  def markFoldable(b: Boolean): TokenizedLiteral = {
+    _foldable = b
+    this
+  }
+
+  override final def makeCopy(newArgs: Array[AnyRef]): Expression = {
+    assert(newArgs.length == 0)
+    this
+  }
+
+  override final def withNewChildren(newChildren: Seq[Expression]): Expression = {
+    assert(newChildren.isEmpty)
+    this
+  }
+}
+
+/**
+ * A Literal that passes its value as a reference object in generated code instead
+ * of embedding as a constant to allow generated code reuse.
+ */
+final class TokenLiteral(_value: Any, _dataType: DataType)
+    extends Literal(_value, _dataType) with TokenizedLiteral with KryoSerializable {
+
+  override def valueString: String = toString()
+
+  override def jsonFields: List[JField] = super.jsonFields
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClassAndObject(output, value)
+    StructTypeSerializer.writeType(kryo, output, dataType)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    TokenLiteral.valueField.set(this, kryo.readClassAndObject(input))
+    TokenLiteral.dataTypeField.set(this, StructTypeSerializer.readType(kryo, input))
+  }
+}
+
+/**
+ * In addition to [[TokenLiteral]], this class can also be used in plan caching
+ * so allows for internal value to be updated in subsequent runs when the
+ * plan is re-used with different constants. For that reason this does not
+ * extend Literal (to avoid Analyzer/Optimizer etc doing constant propagation
+ * for example) and its hash/equals ignores the value matching and only the position
+ * of the literal in the plan is used with the data type.
+ *
+ * Where ever ParamLiteral case matching is required, it must match
+ * for DynamicReplacableConstant and use .eval(..) for code generation.
+ * see SNAP-1597 for more details.
+ */
+final case class ParamLiteral(var value: Any, var dataType: DataType,
+    var pos: Int, @transient private[sql] val execId: Int,
+    private[sql] var tokenized: Boolean = false)
+    extends TokenizedLiteral with KryoSerializable {
+
+  override def nullable: Boolean = dataType eq NullType
+
+  override def eval(input: InternalRow): Any = value
+
+  override def nodeName: String = "ParamLiteral"
+
+  override def prettyName: String = "ParamLiteral"
+
+  def asLiteral: TokenLiteral = new TokenLiteral(value, dataType)
+
+  override protected def jsonFields: List[JField] = asLiteral.jsonFields
+
+  override def sql: String = asLiteral.sql
+
+  override def hashCode(): Int = {
+    if (tokenized) {
+      ClientResolverUtils.addIntToHashOpt(pos, dataType.hashCode())
+    } else {
+      val valueHashCode = value match {
+        case null => 0
+        case binary: Array[Byte] => java.util.Arrays.hashCode(binary)
+        case other => other.hashCode()
+      }
+      ClientResolverUtils.addIntToHashOpt(valueHashCode, dataType.hashCode())
+    }
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
+    case a: AnyRef if this eq a => true
+    case l: ParamLiteral =>
+      // match by position only if "tokenized" else value comparison (no-caching case)
+      if (tokenized) pos == l.pos && dataType == l.dataType
+      else dataType == l.dataType && valueEquals(l)
+    case _ => false
+  }
+
+  private def valueEquals(p: ParamLiteral): Boolean = value match {
+    case null => p.value == null
+    case a: Array[Byte] => p.value match {
+      case b: Array[Byte] => java.util.Arrays.equals(a, b)
+      case _ => false
+    }
+    case _ => value.equals(p.value)
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClassAndObject(output, value)
+    StructTypeSerializer.writeType(kryo, output, dataType)
+    output.writeVarInt(pos, true)
+    output.writeBoolean(tokenized)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    value = kryo.readClassAndObject(input)
+    dataType = StructTypeSerializer.readType(kryo, input)
+    pos = input.readVarInt(true)
+    tokenized = input.readBoolean()
+  }
+
+  override def valueString: String = value match {
+    case null => "null"
+    case binary: Array[Byte] => s"0x" + DatatypeConverter.printHexBinary(binary)
+    case other => other.toString
+  }
+
+  override def toString: String = {
+    // add the length of value in string for easy replace later
+    val sb = new StringBuilder
+    sb.append(TokenLiteral.PARAMLITERAL_START).append(pos).append(',').append(execId)
+    val valStr = valueString
+    sb.append('#').append(valStr.length).append(',').append(valStr)
+    sb.toString()
+  }
+}
+
+object TokenLiteral {
+
+  private val valueField = {
+    val f = classOf[Literal].getDeclaredField("value")
+    f.setAccessible(true)
+    f
+  }
+  private val dataTypeField = {
+    val f = classOf[Literal].getDeclaredField("dataType")
+    f.setAccessible(true)
+    f
+  }
+
+  val PARAMLITERAL_START = "ParamLiteral:"
+
+  def unapply(expression: Expression): Option[Any] = expression match {
+    case l: DynamicReplacableConstant => Some(convertToScala(l.value, l.dataType))
+    case Literal(v, t) => Some(convertToScala(v, t))
+    case _ => None
+  }
+
+  def isConstant(expression: Expression): Boolean = expression match {
+    case _: DynamicReplacableConstant | _: Literal => true
+    case _ => false
+  }
+
+  def newToken(value: Any): TokenLiteral = {
+    val l = Literal(value)
+    new TokenLiteral(l.value, l.dataType)
+  }
+}
+
+trait ParamLiteralHolder {
+
+  @transient
+  private final val parameterizedConstants: ArrayBuffer[ParamLiteral] =
+    new ArrayBuffer[ParamLiteral](4)
+  @transient
+  protected final var paramListId = 0
+
+  private[sql] final def getAllLiterals: Array[ParamLiteral] = parameterizedConstants.toArray
+
+  private[sql] final def getCurrentParamsId: Int = paramListId
+
+  private[sql] final def addParamLiteralToContext(value: Any,
+      dataType: DataType): ParamLiteral = {
+    val p = ParamLiteral(value, dataType, parameterizedConstants.length, paramListId)
+    parameterizedConstants += p
+    p
+  }
+
+  private[sql] final def removeIfParamLiteralFromContext(l: TokenizedLiteral): Unit = l match {
+    case pl: ParamLiteral => removeParamLiteralFromContext(pl)
+    case _ =>
+  }
+
+  private[sql] final def removeParamLiteralFromContext(p: ParamLiteral): Unit = {
+    val paramConstants = parameterizedConstants
+    var pos = p.pos
+    assert(paramConstants(pos) eq p)
+    val newLen = paramConstants.length - 1
+    if (pos == newLen) paramConstants.reduceToSize(pos)
+    else {
+      paramConstants.remove(pos)
+      // correct the positions of ParamLiterals beyond this position
+      while (pos < newLen) {
+        val p = paramConstants(pos)
+        p.pos -= 1
+        assert(p.pos == pos)
+        pos += 1
+      }
+    }
+  }
+
+  private[sql] final def clearConstants(): Unit = {
+    parameterizedConstants.clear()
+    paramListId += 1
+  }
 }
 
 final class DirectStringConsumer(memoryManager: TaskMemoryManager, pageSize: Int)
@@ -223,34 +393,19 @@ final class DirectStringConsumer(memoryManager: TaskMemoryManager, pageSize: Int
   }
 }
 
-case class LiteralValue(var value: Any, var dataType: DataType, var position: Int)
-    (var converter: Any => Any = createToScalaConverter(dataType))
-    extends KryoSerializable {
-
-  @transient var collectedForPlanCaching = false
-
-  override def write(kryo: Kryo, output: Output): Unit = {
-    kryo.writeClassAndObject(output, value)
-    StructTypeSerializer.writeType(kryo, output, dataType)
-    output.writeVarInt(position, true)
-  }
-
-  override def read(kryo: Kryo, input: Input): Unit = {
-    value = kryo.readClassAndObject(input)
-    dataType = StructTypeSerializer.readType(kryo, input)
-    position = input.readVarInt(true)
-    converter = createToScalaConverter(dataType)
-  }
-}
-
-
 /**
- * Wrap any ParamLiteral expression with this so that we can generate literal initialization code
- * within the <code>.init()</code> method of the generated class.
+ * Wrap any TokenizedLiteral expression with this so that we can invoke literal
+ * initialization code within the <code>.init()</code> method of the generated class.
+ * <br><br>
+ *
+ * This pushes itself as reference object and uses a call to eval() on itself for actual
+ * evaluation and avoids embedding any generated code. This allows it to keep the
+ * generated code identical regardless of the constant expression (and in addition
+ *   DynamicReplacableConstant trait casts to itself rather than actual object type).
  * <br><br>
  *
  * We try to locate first foldable expression in a query tree such that all its child is foldable
- * but parent isn't. That way we locate the exact point where an expression is safe to evalute
+ * but parent isn't. That way we locate the exact point where an expression is safe to evaluate
  * once instead of evaluating every row.
  * <br><br>
  *
@@ -260,48 +415,141 @@ case class LiteralValue(var value: Any, var dataType: DataType, var position: In
  *
  * @param expr minimal expression tree that can be evaluated only once and turn into a constant.
  */
-case class DynamicFoldableExpression(expr: Expression) extends Expression
-    with DynamicReplacableConstant {
-  override def nullable: Boolean = expr.nullable
+case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpression
+    with DynamicReplacableConstant with KryoSerializable {
+
+  override def checkInputDataTypes(): TypeCheckResult = expr.checkInputDataTypes()
+
+  override def child: Expression = expr
 
   override def eval(input: InternalRow): Any = expr.eval(input)
 
-  def convertedLiteral: Any = createToScalaConverter(dataType)(eval(null))
-
-  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    // subexpression elimination can lead to local variables but this expression
-    // needs in mutable state, so disable it (extra evaluations only once in init in any case)
-    val numSubExprs = ctx.subExprEliminationExprs.size
-    val oldSubExprs = if (numSubExprs != 0) {
-      val exprs = new ArrayBuffer[(Expression, SubExprEliminationState)](numSubExprs)
-      exprs ++= ctx.subExprEliminationExprs
-      ctx.subExprEliminationExprs.clear()
-      exprs
-    } else null
-    val eval = expr.genCode(ctx)
-    if (oldSubExprs ne null) {
-      ctx.subExprEliminationExprs ++= oldSubExprs
-    }
-    val newVar = ctx.freshName("paramLiteralExpr")
-    val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
-    val comment = ctx.registerComment(expr.toString)
-    // initialization for both variable and isNull is being done together
-    // due to dependence of latter on the variable and the two get
-    // separated due to Spark's splitExpressions -- SNAP-1794
-    ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
-      s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
-        s"$newVarIsNull = ${eval.isNull};")
-    ctx.addMutableState("boolean", newVarIsNull, "")
-    // allow sub-expression elimination of this expression itself
-    ctx.subExprEliminationExprs += this -> SubExprEliminationState(newVarIsNull, newVar)
-    ev.copy(code = "", value = newVar, isNull = newVarIsNull)
-  }
-
   override def dataType: DataType = expr.dataType
 
-  override def children: Seq[Expression] = Seq(expr)
+  override def value: Any = eval(EmptyRow)
 
   override def nodeName: String = "DynamicExpression"
 
   override def prettyName: String = "DynamicExpression"
+
+  override def makeCopy(newArgs: Array[AnyRef]): Expression = {
+    assert(newArgs.length == 1)
+    if (newArgs(0) eq expr) this
+    else DynamicFoldableExpression(newArgs(0).asInstanceOf[Expression])
+  }
+
+  override def withNewChildren(newChildren: Seq[Expression]): Expression = {
+    assert(newChildren.length == 1)
+    if (newChildren.head ne expr) expr = newChildren.head
+    this
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClassAndObject(output, value)
+    StructTypeSerializer.writeType(kryo, output, dataType)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    val value = kryo.readClassAndObject(input)
+    val dateType = StructTypeSerializer.readType(kryo, input)
+    expr = new TokenLiteral(value, dateType)
+  }
+}
+
+/**
+ * Unlike Spark's InSet expression, this allows for TokenizedLiterals that can
+ * change dynamically in executions.
+ */
+case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
+    extends UnaryExpression with Predicate {
+
+  require((hset ne null) && hset.nonEmpty, "hset cannot be null or empty")
+  // all expressions must be constant types
+  require(hset.forall(TokenLiteral.isConstant), "hset can only have constant expressions")
+
+  override def toString: String =
+    s"$child DynInSet ${hset.mkString("(", ",", ")")}"
+
+  override def nullable: Boolean = hset.exists(_.nullable)
+
+  @transient private lazy val (hashSet, hasNull) = {
+    val m = new ConcurrentHashMap[AnyRef, AnyRef](hset.length)
+    var hasNull = false
+    for (e <- hset) {
+      val v = e.eval(EmptyRow).asInstanceOf[AnyRef]
+      if (v ne null) {
+        m.put(v, v)
+      } else if (!hasNull) {
+        hasNull = true
+      }
+    }
+    (m, hasNull)
+  }
+
+  protected override def nullSafeEval(value: Any): Any = {
+    if (hashSet.contains(value)) {
+      true
+    } else if (hasNull) {
+      null
+    } else {
+      false
+    }
+  }
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    // JDK8 ConcurrentHashMap consistently clocks fastest for gets among all
+    val setName = classOf[ConcurrentHashMap[AnyRef, AnyRef]].getName
+    val exprClass = classOf[Expression].getName
+    val elements = new Array[AnyRef](hset.length)
+    val childGen = child.genCode(ctx)
+    val hsetTerm = ctx.freshName("hset")
+    val elementsTerm = ctx.freshName("elements")
+    val idxTerm = ctx.freshName("idx")
+    val idx = ctx.references.length
+    ctx.references += elements
+    val hasNullTerm = ctx.freshName("hasNull")
+
+    for (i <- hset.indices) {
+      val e = hset(i)
+      val v = e match {
+        case d: DynamicReplacableConstant => d
+        case _ => e.eval(EmptyRow).asInstanceOf[AnyRef]
+      }
+      elements(i) = v
+    }
+
+    ctx.addMutableState("boolean", hasNullTerm, "")
+    ctx.addMutableState(setName, hsetTerm,
+      s"""
+         |Object[] $elementsTerm = (Object[])references[$idx];
+         |$hsetTerm = new $setName($elementsTerm.length, 0.7f, 1);
+         |for (int $idxTerm = 0; $idxTerm < $elementsTerm.length; $idxTerm++) {
+         |  Object e = $elementsTerm[$idxTerm];
+         |  if (e instanceof $exprClass) e = (($exprClass)e).eval(null);
+         |  if (e != null) {
+         |    $hsetTerm.put(e, e);
+         |  } else if (!$hasNullTerm) {
+         |    $hasNullTerm = true;
+         |  }
+         |}
+      """.stripMargin)
+
+    ev.copy(code = s"""
+      ${childGen.code}
+      boolean ${ev.isNull} = ${childGen.isNull};
+      boolean ${ev.value} = false;
+      if (!${ev.isNull}) {
+        ${ev.value} = $hsetTerm.containsKey(${childGen.value});
+        if (!${ev.value} && $hasNullTerm) {
+          ${ev.isNull} = true;
+        }
+      }
+     """)
+  }
+
+  override def sql: String = {
+    val valueSQL = child.sql
+    val listSQL = hset.map(_.eval(EmptyRow)).mkString(", ")
+    s"($valueSQL IN ($listSQL))"
+  }
 }

@@ -74,7 +74,7 @@ object DataValidationJob extends SnappySQLJob {
             for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
               if (!expectedLine.equals(actualLine)) {
                 resultOutputStream.println(s"For $query result mismatched observed")
-                resultOutputStream.println(s"Excpected : $expectedLine")
+                resultOutputStream.println(s"Expected  : $expectedLine")
                 resultOutputStream.println(s"Found     : $actualLine")
                 resultOutputStream.println(s"-------------------------------------")
               }

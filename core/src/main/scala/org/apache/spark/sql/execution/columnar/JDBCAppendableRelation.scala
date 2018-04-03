@@ -28,7 +28,7 @@ import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
@@ -36,6 +36,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 
@@ -75,6 +76,8 @@ abstract case class JDBCAppendableRelation(
 
   val resolvedName: String = table
 
+  protected var delayRollover = false
+
   def numBuckets: Int = -1
 
   def isPartitioned: Boolean = true
@@ -109,18 +112,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Filter], prunePartitions: => Int): RDD[Any] = {
-
-    val requestedColumns = if (requiredColumns.isEmpty) {
-      val narrowField =
-        schema.fields.minBy { a =>
-          ColumnType(a.dataType).defaultSize
-        }
-
-      Array(narrowField.name)
-    } else {
-      requiredColumns
-    }
+      filters: Array[Expression], prunePartitions: => Int): (RDD[Any], Array[Int]) = {
 
     val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
     (0 until schema.length).foreach(i =>
@@ -131,15 +123,14 @@ abstract case class JDBCAppendableRelation(
       index.toInt
     }
     readLock {
-      externalStore.getColumnBatchRDD(tableName, rowBuffer = table,
-        requestedColumns, projection, (filters eq null) || filters.length == 0,
-        prunePartitions, sqlContext.sparkSession, schema)
+      externalStore.getColumnBatchRDD(tableName, rowBuffer = table, projection,
+        filters, prunePartitions, sqlContext.sparkSession, schema, delayRollover) -> projection
     }
   }
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, Seq.empty, Seq.empty, this, table)
+    new ColumnInsertExec(child, Nil, Nil, this, table)
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
@@ -223,7 +214,7 @@ abstract case class JDBCAppendableRelation(
       case _ => ("primary key (uuid)", "")
     }
 
-    createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
+    createTable(externalStore, s"create table ${quotedName(tableName)} (uuid varchar(36) " +
         "not null, partitionId integer not null, numRows integer not null, " +
         "stats blob, " + schema.fields.map(structField =>
       externalStore.columnPrefix + structField.name + " blob")

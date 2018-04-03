@@ -44,7 +44,6 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
-import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, ToolsCallbackInit}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.{SnappySession, collection}
@@ -67,7 +66,7 @@ case class SnappyHashAggregateExec(
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
     hasDistinct: Boolean)
-    extends UnaryExecNode with BatchConsumer with NonRecursivePlans {
+    extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
   override def nodeName: String = "SnappyHashAggregate"
 
@@ -125,22 +124,7 @@ case class SnappyHashAggregateExec(
   }
 
   override def outputPartitioning: Partitioning = {
-    val partitioning = child.outputPartitioning
-    val callbacks = ToolsCallbackInit.toolsCallback
-    // check for aliases in result expressions
-    if (callbacks ne null) {
-      partitioning match {
-        case OrderlessHashPartitioningExtract(expressions, aliases,
-        nPartitions, nBuckets, tBuckets) => callbacks.getOrderlessHashPartitioning(
-          expressions, getAliases(expressions, aliases), nPartitions, nBuckets, tBuckets)
-
-        case HashPartitioning(expressions, nPartitions) =>
-          callbacks.getOrderlessHashPartitioning(expressions,
-            getAliases(expressions, Nil), nPartitions, 0, 0)
-
-        case _ => partitioning
-      }
-    } else partitioning
+    child.outputPartitioning
   }
 
   override def requiredChildDistribution: List[Distribution] = {
@@ -207,10 +191,6 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
-  }
-
   // all the mode of aggregate expressions
   private val modes = aggregateExpressions.map(_.mode).distinct
 
@@ -227,7 +207,6 @@ case class SnappyHashAggregateExec(
 
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    startProducing()
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {
@@ -610,15 +589,29 @@ case class SnappyHashAggregateExec(
       keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = true)
     val bufferEval = evaluateVariables(bufferVars)
 
+    // if aggregate expressions uses some of the key variables then signal those
+    // to be materialized explicitly for the dictionary optimization case (AQP-292)
+    val updateAttrs = AttributeSet(updateExpr)
+    val evalKeys = if (DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(groupingExpressions)) {
+      var hasEvalKeys = false
+      val keys = groupingAttributes.map { a =>
+        if (updateAttrs.contains(a)) {
+          hasEvalKeys = true
+          true
+        } else false
+      }
+      if (hasEvalKeys) keys else Nil
+    } else Nil
+
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
-      initVars, initCode, input, dictionaryArrayTerm, dictionaryArrayInit)
+      initVars, initCode, input, evalKeys, dictionaryArrayTerm, dictionaryArrayInit)
 
     ctx.currentVars = bufferVars ++ input
     // pre-evaluate input variables used by child expressions and updateExpr
     val inputCodes = evaluateRequiredVariables(child.output,
       ctx.currentVars.takeRight(child.output.length),
-      child.references ++ AttributeSet(updateExpr))
+      child.references ++ updateAttrs)
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttr))
     val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(

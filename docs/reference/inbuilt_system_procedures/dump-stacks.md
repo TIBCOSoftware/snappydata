@@ -6,7 +6,7 @@ Writes thread stacks, locks, and transaction states to the SnappyData log file. 
 
 ## Syntax
 
-``` pre
+```no-highlight
 SYS.DUMP_STACKS (
 IN ALL BOOLEAN
 )
@@ -19,7 +19,7 @@ Specifies boolean value: **true** or **1** to log stack trace information for al
 
 This command writes thread stack information only for the local SnappyData member. The stack information is written to the SnappyData log file (by default snappyserver.log in the member startup directory):
 
-``` pre
+```no-highlight
 snappy> call sys.dump_stacks('false');
 Statement executed.
 ```

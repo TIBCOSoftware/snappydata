@@ -32,6 +32,7 @@ import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
@@ -57,12 +58,13 @@ object CodeGeneration extends Logging {
 
   override def logDebug(msg: => String): Unit = super.logDebug(msg)
 
-  private[this] lazy val cacheSize = {
-    // don't need as big a cache as Spark's CodeGenerator.cache
+  private[this] lazy val (codeCacheSize, cacheSize) = {
     val env = SparkEnv.get
-    if (env ne null) {
-      env.conf.getInt("spark.sql.codegen.cacheSize", 1000) / 4
-    } else 250
+    val size = if (env ne null) {
+      env.conf.getInt("spark.sql.codegen.cacheSize", 2000)
+    } else 2000
+    // don't need as big a cache for other caches
+    (size, size >>> 2)
   }
 
   /**
@@ -84,8 +86,8 @@ object CodeGeneration extends Logging {
    * a key (name+schema) instead of the code string itself to avoid having
    * to create the code string upfront. Code adapted from CodeGenerator.cache
    */
-  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
-    new CacheLoader[ExecuteKey, (GeneratedClass, Array[Any])]() {
+  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(codeCacheSize).build(
+    new CacheLoader[ExecuteKey, AnyRef]() {
       // invoke CodeGenerator.doCompile by reflection to reduce code duplication
       private val doCompileMethod = {
         val allMethods = CodeGenerator.getClass.getDeclaredMethods.toSeq
@@ -96,7 +98,11 @@ object CodeGeneration extends Logging {
         method
       }
 
-      override def load(key: ExecuteKey): (GeneratedClass, Array[Any]) = {
+      override def load(key: ExecuteKey): AnyRef = {
+        if (key.projection) {
+          // generate InternalRow to UnsafeRow projection
+          return UnsafeProjection.create(key.schema.map(_.dataType))
+        }
         val (code, references) = key.genCode()
         val startTime = System.nanoTime()
         val result = doCompileMethod.invoke(CodeGenerator, code)
@@ -477,10 +483,14 @@ object CodeGeneration extends Logging {
   }
 
   def compileCode(name: String, schema: Array[StructField],
-      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass,
-      Array[Any]) = {
+      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass, Array[Any]) = {
     codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
-      forIndex = false, genCode = genCode))
+      forIndex = false, genCode = genCode)).asInstanceOf[(GeneratedClass, Array[Any])]
+  }
+
+  def compileProjection(name: String, schema: Array[StructField]): UnsafeProjection = {
+    codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
+      forIndex = false, projection = true)).asInstanceOf[UnsafeProjection]
   }
 
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
@@ -493,13 +503,10 @@ object CodeGeneration extends Logging {
     result.addBatch(schema.fields)
   }
 
-  def removeCache(name: String): Unit =
+  def removeCache(name: String): Unit = {
     cache.invalidate(new ExecuteKey(name, null, null))
-
-  def removeCache(dataType: DataType): Unit = cache.invalidate(dataType)
-
-  def removeIndexCache(indexName: String): Unit =
-    indexCache.invalidate(new ExecuteKey(indexName, null, null, true))
+    indexCache.invalidate(new ExecuteKey(name, null, null, true))
+  }
 
   def clearAllCache(skipTypeCache: Boolean = true): Unit = {
     cache.invalidateAll()
@@ -536,26 +543,17 @@ trait GeneratedIndexStatement {
 
 final class ExecuteKey(val name: String,
     val schema: Array[StructField], val dialect: JdbcDialect,
-    val forIndex: Boolean = false,
+    val forIndex: Boolean = false, val projection: Boolean = false,
     val genCode: () => (CodeAndComment, Array[Any]) = null) {
 
-  override lazy val hashCode: Int = if (schema != null && !forIndex) {
+  override lazy val hashCode: Int = if ((schema ne null) && !forIndex) {
     MurmurHash3.listHash(name :: schema.toList, MurmurHash3.seqSeed)
   } else name.hashCode
 
   override def equals(other: Any): Boolean = other match {
-    case o: ExecuteKey => if (schema != null && o.schema != null && !forIndex) {
-      val numFields = schema.length
-      if (numFields == o.schema.length && name == o.name) {
-        var i = 0
-        while (i < numFields) {
-          if (!schema(i).equals(o.schema(i))) {
-            return false
-          }
-          i += 1
-        }
-        true
-      } else false
+    case o: ExecuteKey => if ((schema ne null) && (o.schema ne null) && !forIndex) {
+      schema.length == o.schema.length && name == o.name && java.util.Arrays.equals(
+        schema.asInstanceOf[Array[AnyRef]], o.schema.asInstanceOf[Array[AnyRef]])
     } else {
       name == o.name
     }

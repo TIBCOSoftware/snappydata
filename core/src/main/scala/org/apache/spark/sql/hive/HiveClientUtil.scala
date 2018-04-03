@@ -33,8 +33,10 @@ import org.apache.hadoop.util.VersionInfo
 import org.apache.log4j.LogManager
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.client.{HiveClient, IsolatedClientLoader}
+import org.apache.spark.sql.hive.execution.HiveTableScanExec
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.{Logging, SparkContext}
 
@@ -290,8 +292,6 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
         (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
-      case ExternalClusterMode(_, _) =>
-        (null, null)
     }
   }
 }
@@ -303,4 +303,6 @@ object HiveClientUtil {
   def newClient(sparkContext: SparkContext): HiveClient = synchronized {
     new HiveClientUtil(sparkContext).newClientWithLogSetting()
   }
+
+  def isHiveExecPlan(plan: SparkPlan): Boolean = plan.isInstanceOf[HiveTableScanExec]
 }

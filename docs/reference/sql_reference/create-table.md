@@ -2,7 +2,7 @@
 
 **To Create Row/Column Table:**
 
-```
+```no-highlight
 CREATE TABLE [IF NOT EXISTS] table_name {
     ( column-definition	[ , column-definition  ] * )
 	}
@@ -15,9 +15,10 @@ CREATE TABLE [IF NOT EXISTS] table_name {
     EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
-    OVERFLOW 'true | false', // specifies the action to be executed upon eviction event
+    OVERFLOW 'true | false', // specifies the action to be executed upon eviction event, 'false' allowed only when EVCITON_BY is not set.
     EXPIRE 'time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
+	KEY_COLUMNS  'column_name,..', // Only for column table if putInto support is required
     COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
 	)
 	[AS select_statement];
@@ -30,7 +31,7 @@ The column definition defines the name of a column and its data type.
 <a id="column-definition"></a>
 `column-definition` (for Column Table)
 
-```
+```no-highlight
 column-definition: column-name column-data-type [NOT NULL]
 
 column-name: 'unique column name'
@@ -38,7 +39,7 @@ column-name: 'unique column name'
 <a id="row-definition"></a>
 `column-definition` (for Row Table)
 
-```
+```no-highlight
 column-definition: column-definition-for-row-table | table-constraint
 
 column-definition-for-row-table: column-name column-data-type [ column-constraint ] *
@@ -51,30 +52,31 @@ Refer to the [identity](#id-columns) section for more information on GENERATED.<
 Refer to the [constraint](#constraint) section for more information on table-constraint and column-constraint.
 
 `column-data-type`
-```
+
+```no-highlight
 column-data-type: 
-	BIGINT | 
-	BINARY | 
-	BLOB | 
-	BOOLEAN | 
-	BYTE | 
-	CLOB | 
-	DATE | 
-	DECIMAL | 
-	DOUBLE |  
-	FLOAT | 
-	INT | 
-	INTEGER | 
-	LONG |  
-	NUMERIC | 
-	REAL | 
-	SHORT | 
-	SMALLINT | 
-	STRING | 
-	TIMESTAMP | 
-	TINYINT | 
-	VARBINARY | 
-	VARCHAR | 
+	BIGINT |
+	BINARY |
+	BLOB |
+	BOOLEAN |
+	BYTE |
+	CLOB |
+	DATE |
+	DECIMAL |
+	DOUBLE |
+	FLOAT |
+	INT |
+	INTEGER |
+	LONG |
+	NUMERIC |
+	REAL |
+	SHORT |
+	SMALLINT |
+	STRING |
+	TIMESTAMP |
+	TINYINT |
+	VARBINARY |
+	VARCHAR |
 ```
 Column tables can also use ARRAY, MAP and STRUCT types.</br>
 Decimal and numeric has default precision of 38 and scale of 18.</br>
@@ -100,7 +102,7 @@ Use the REDUNDANCY clause to specify the number of redundant copies that should 
 
 <a id="eviction-by"></a>
 `EVICTION_BY`</br>
-Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all column tables (expected to host larger data sets) overflow to disk, by default. See [best practices](../../best_practices/optimizing_query_latency.md#overflow) for more information. The value for this parameter is set in MB.
+Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all tables (expected to host larger data sets) overflow to disk, by default. See [best practices](../../best_practices/optimizing_query_latency.md#overflow) for more information. The value for this parameter is set in MB.
 
 !!!Note:
 	EVICTION_BY is not supported for replicated tables.
@@ -122,7 +124,7 @@ The disk directories where you want to persist the table data. By default, Snapp
 
 <a id="overflow"></a>
 `OVERFLOW`</br> 
-Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' causes the evicted rows to be destroyed in case of eviction event.
+Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' is not allowed except when EVICTION_BY is set. In such case, the eviction itself is disabled.
 !!! Note: 
 	The tables are evicted to disk by default.
 
@@ -151,7 +153,7 @@ For example, `create table if not exists Table1 (a int)` is equivalent to `creat
 ## Examples
 
 ### Example: Column Table Partitioned on a Single Column
-```
+```no-highlight
 snappy>CREATE TABLE CUSTOMER ( 
     C_CUSTKEY     INTEGER NOT NULL,
     C_NAME        VARCHAR(25) NOT NULL,
@@ -161,11 +163,11 @@ snappy>CREATE TABLE CUSTOMER (
     C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
     C_MKTSEGMENT  VARCHAR(10) NOT NULL,
     C_COMMENT     VARCHAR(117) NOT NULL))
-    USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY');
+    USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY');
 ```
 
 ### Example: Column Table Partitioned with 10 Buckets and Persistence Enabled
-```
+```no-highlight
 snappy>CREATE TABLE CUSTOMER ( 
     C_CUSTKEY     INTEGER NOT NULL,
     C_NAME        VARCHAR(25) NOT NULL,
@@ -179,7 +181,7 @@ snappy>CREATE TABLE CUSTOMER (
 ```
 
 ### Example: Replicated, Persistent Row Table
-```
+```no-highlight
 snappy>CREATE TABLE SUPPLIER ( 
       S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
       S_NAME STRING NOT NULL, 
@@ -188,11 +190,11 @@ snappy>CREATE TABLE SUPPLIER (
       S_PHONE STRING NOT NULL, 
       S_ACCTBAL DECIMAL(15, 2) NOT NULL,
       S_COMMENT STRING NOT NULL)
-      USING ROW OPTIONS (PERSISTENCE 'ASYNCHRONOUS');
+      USING ROW OPTIONS (BUCKETS '10', PERSISTENCE 'ASYNCHRONOUS');
 ```
 
 ### Example: Row Table Partitioned with 10 Buckets and Overflow Enabled
-```
+```no-highlight
 snappy>CREATE TABLE SUPPLIER ( 
       S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
       S_NAME STRING NOT NULL, 
@@ -210,7 +212,7 @@ snappy>CREATE TABLE SUPPLIER (
 
 ### Example: Create Table using Select Query
 
-```
+```no-highlight
 CREATE TABLE CUSTOMER_STAGING USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY') AS SELECT * FROM CUSTOMER ;
 ```
 
@@ -223,6 +225,17 @@ Note that only the column names and datatypes from the queried table are used wh
 ### Example: Create Table using Spark DataFrame API
 
 For information on using the Apache Spark API, refer to [Using the Spark DataFrame API](../../sde/running_queries.md#using-the-spark-dataframe-api).
+
+### Example: Create Column Table with PUT INTO
+
+```no-highlight
+snappy>CREATE TABLE COL_TABLE (
+	PRSN_EVNT_ID BIGINT NOT NULL,
+    VER bigint NOT NULL,
+    CLIENT_ID BIGINT NOT NULL,
+    SRC_TYP_ID BIGINT NOT NULL) USING COLUMN OPTIONS(PARTITION_BY 'PRSN_EVNT_ID,CLIENT_ID', BUCKETS '64',
+    KEY_COLUMNS 'PRSN_EVNT_ID,CLIENT_ID');
+```
 
 ### Example: Create Table with Eviction Settings
 
@@ -244,16 +257,16 @@ Use eviction settings to keep your table within a specified limit, either by rem
 4. Create the table with the required eviction configuration.
 
 	For example, to evict using LRU entry count and overflow evicted rows to a disk store:
-
-    	CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT ) USING row
-        OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async')
-
-    To create a table that simply removes evicted data from memory without persisting the evicted data, use the DESTROY eviction action. For example:
-    Default in SnappyData is synchronous persistence, overflow is true and eviction_by is LRUHEAPPERCENT
-
+	
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT ) USING row
+		OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async')
+	
+    To create a table that simply removes evicted data from memory without persisting the evicted data, use the `DESTROY` eviction action. For example:
+    Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
+    	
         CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row 
 		OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000')
-
+	
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)
 A CONSTRAINT clause is an optional part of a CREATE TABLE <!--or ALTER TABLE--> statement that defines a rule to which table data must conform.
@@ -291,19 +304,20 @@ For a GENERATED ALWAYS identity column, SnappyData increments the default value 
 
 Consider a table with the following column definition:
 
-```
-create table greetings (i int generated always as identity, ch char(50)) using row;
+```no-highlight
+CREATE TABLE greetings (i int generated always as identity, ch char(50)) using row;
 ```
 
 You can insert rows into the table using either the DEFAULT keyword or by omitting the identity column from the INSERT statement:
 
-```
+```no-highlight
 insert into greetings values (DEFAULT, 'hello');
 ```
 
-```
+```no-highlight
 insert into greetings(ch) values ('hi');
 ```
+
 The values that SnappyData automatically generates for a GENERATED ALWAYS identity column are unique.
 
 For a GENERATED BY DEFAULT identity column, SnappyData increments and uses a default value for an INSERT only when no explicit value is given. To use the generated default value, either specify the DEFAULT keyword when inserting into the identity column or leave the identity column out of the INSERT column list.
@@ -312,20 +326,20 @@ In contrast to GENERATED ALWAYS identity columns, with a GENERATED BY DEFAULT co
 
 For example, consider a table created using the statement:
 
-```
-create table greetings (i int generated by default as identity, ch char(50)); 
+```no-highlight
+CREATE TABLE GREETINGS (i int generated by default as identity, ch char(50)); 
 ```
 
 The following statement specifies the value “1” for the identity column:
 
-```
-insert into greetings values (1, 'hi'); 
+```no-highlight
+INSERT INTO GREETINGS values (1, 'hi'); 
 ```
 These statements both use generated default values:
 
-```
-insert into greetings values (DEFAULT, 'hello');
-insert into greetings(ch) values ('bye');
+```no-highlight
+INSERT INTO GREETINGS values (DEFAULT, 'hello');
+INSERT INTO GREETINGS(ch) values ('bye');
 ```
 
 Although the automatically-generated values in a GENERATED BY DEFAULT identity column are unique, a GENERATED BY DEFAULT column does not guarantee unique identity values for all rows in the table. For example, in the above statements, the rows containing “hi” and “hello” both have an identity value of “1.” This occurs because the generated column starts at “1” and the user-specified value was also “1.”

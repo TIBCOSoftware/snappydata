@@ -16,7 +16,6 @@
  */
 package io.snappydata.cluster
 
-import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
@@ -52,6 +51,7 @@ class SplitClusterDUnitTest(s: String)
   bootProps.setProperty("log-level", "config")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
+  System.setProperty(Constant.COMPRESSION_MIN_SIZE, compressionMinSize)
 
   private[this] var host: Host = _
   var vm0: VM = _
@@ -84,20 +84,21 @@ class SplitClusterDUnitTest(s: String)
     // create locators, leads and servers files
     val port = SplitClusterDUnitTest.locatorPort
     val netPort = SplitClusterDUnitTest.locatorNetPort
-    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
 
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
 
+    val compressionArg = this.compressionArg
+    val waitForInit = "-jobserver.waitForInitialization=true"
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] -client-port=$netPort1",
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg",
       s"$confDir/leads")
     writeToFile(
-      s"""localhost  -locators=localhost[$port] -client-port=$netPort2
-          |localhost  -locators=localhost[$port] -client-port=$netPort3
+      s"""localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg
+          |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg
           |""".stripMargin, s"$confDir/servers")
     (snappyProductDir + "/sbin/snappy-start-all.sh").!!
 
@@ -113,15 +114,6 @@ class SplitClusterDUnitTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
-  }
-
-  private def writeToFile(str: String, fileName: String): Unit = {
-    val pw = new PrintWriter(fileName)
-    try {
-      pw.write(str)
-    } finally {
-      pw.close()
-    }
   }
 
   override protected def startNetworkServers(): Unit = {

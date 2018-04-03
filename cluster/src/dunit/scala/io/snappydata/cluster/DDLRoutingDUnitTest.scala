@@ -153,7 +153,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 INT) " +
           s"USING column $options")
     } catch {
-      case sqle: SQLException => if (sqle.getSQLState != "38000" ||
+      case sqle: SQLException => if (sqle.getSQLState != "42000" ||
           !sqle.getMessage.contains("Unknown option")) {
         throw sqle
       }
