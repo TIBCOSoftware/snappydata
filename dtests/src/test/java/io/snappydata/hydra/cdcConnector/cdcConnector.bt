@@ -1,9 +1,10 @@
-/*
+
  io/snappydata/hydra/cdcConnector/cdcConnectorLongRunning.conf
     A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
     B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
     C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
     D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+    testJar="/home/supriya/snappy/snappydata/dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
     dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
     queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointqueries.sql"
     delQueryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
@@ -18,21 +19,22 @@
     tableListPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/tableList.txt"
     initStartRange=1000001
     initEndRange=1000200
-*/
 
 
+/*
 io/snappydata/hydra/cdcConnector/cdcConnectorMultiSqlServerInstanceTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
-  testJar="/home/supriya/snappy/snappydata/dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+  testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
   dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
   queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointqueries.sql"
   delQueryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
   insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1"
   insertQueryPath2="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2"
   threadCnt = 5
+  cores = 15
   dataBaseName = testdatabase20G
   connectorJar="/home/supriya/snappy/snappydata/snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2-SNAPSHOT.jar"
   driverJar="/home/supriya/.m2/repository/com/microsoft/sqlserver/mssql-jdbc/6.1.0.jre8/mssql-jdbc-6.1.0.jre8.jar"
@@ -45,3 +47,4 @@ io/snappydata/hydra/cdcConnector/cdcConnectorMultiSqlServerInstanceTest.conf
   tableListPath2="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2/tableList.txt"
   initStartRange=1000001
   initEndRange=1000200
+*/
