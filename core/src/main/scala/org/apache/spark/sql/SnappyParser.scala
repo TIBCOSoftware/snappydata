@@ -974,9 +974,7 @@ class SnappyParser(session: SnappySession)
         ) |
         INTERSECT ~ select1.named("select") ~>
             ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
-        EXCEPT ~ select1.named("select") ~>
-            ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))    |
-        MINUS ~ select1.named("select") ~>
+        (EXCEPT | MINUS) ~ select1.named("select") ~>
             ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
 
     ).*

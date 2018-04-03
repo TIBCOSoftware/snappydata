@@ -59,7 +59,9 @@ class SnappySQLQuerySuite extends SQLQuerySuite with
     // SD create table fails even if a temp table with the same name exists.
     "CREATE TABLE USING should not fail if a same-name temp view exists",
     // SD does not support TABLESAMPLE operator
-     "negative in LIMIT or TABLESAMPLE"
+     "negative in LIMIT or TABLESAMPLE",
+    // double quote in leteral value
+     "date row"
      )
 
   test("SD:inner join ON, one match per row") {
@@ -128,6 +130,13 @@ class SnappySQLQuerySuite extends SQLQuerySuite with
         }
       }
     }
+  }
+  // We don't support double quotes around literals
+  test("SD: date row") {
+    checkAnswer(sql(
+      """select cast('2015-01-28' as date) from testData limit 1"""),
+      Row(java.sql.Date.valueOf("2015-01-28"))
+    )
   }
 
   override protected def testCodeGen(sqlText: String, expectedResults: Seq[Row]): Unit = {
