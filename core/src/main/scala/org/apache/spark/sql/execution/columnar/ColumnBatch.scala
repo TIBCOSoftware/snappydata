@@ -45,7 +45,8 @@ case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte], deltaIndexes: Array[Int])
 
 abstract class ResultSetIterator[A](conn: Connection,
-    stmt: Statement, rs: ResultSet, context: TaskContext)
+    stmt: Statement, rs: ResultSet, context: TaskContext,
+    closeConnectionOnResultsClose: Boolean = true)
     extends Iterator[A] with Logging {
 
   protected[this] final var doMove = true
@@ -85,30 +86,40 @@ abstract class ResultSetIterator[A](conn: Connection,
   def close() {
     // if (!hasNextValue) return
     try {
-      if (rs ne null) {
-        // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
-        // rs.lightWeightClose()
-        rs.close()
-      }
-    } catch {
-      case NonFatal(e) => logWarning("Exception closing resultSet", e)
-    }
-    try {
-      if (stmt ne null) {
-        stmt.getConnection match {
-          case embedConn: EmbedConnection =>
-            val lcc = embedConn.getLanguageConnection
-            if (lcc ne null) {
-              lcc.clearExecuteLocally()
-            }
-          case _ =>
+      try {
+        if (rs ne null) {
+          // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
+          // rs.lightWeightClose()
+          rs.close()
         }
-        stmt.close()
+      } catch {
+        case NonFatal(e) => logWarning("Exception closing resultSet", e)
       }
-    } catch {
-      case NonFatal(e) => logWarning("Exception closing statement", e)
+      try {
+        if (stmt ne null) {
+          stmt.getConnection match {
+            case embedConn: EmbedConnection =>
+              val lcc = embedConn.getLanguageConnection
+              if (lcc ne null) {
+                lcc.clearExecuteLocally()
+              }
+            case _ =>
+          }
+          stmt.close()
+        }
+      } catch {
+        case NonFatal(e) => logWarning("Exception closing statement", e)
+      }
+      hasNextValue = false
+    } finally {
+      try {
+        if (closeConnectionOnResultsClose && conn != null) {
+          conn.close()
+        }
+      } catch {
+        case _: Throwable =>
+      }
     }
-    hasNextValue = false
   }
 }
 
@@ -312,7 +323,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 final class ColumnBatchIteratorOnRS(conn: Connection,
     projection: Array[Int], stmt: Statement, rs: ResultSet,
     context: TaskContext, partitionId: Int)
-    extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
+    extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context, false) {
   private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (projection.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
