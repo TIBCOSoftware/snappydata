@@ -22,12 +22,16 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
-import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
+import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl}
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.AttributeReference
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding}
+import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow}
+import org.apache.spark.sql.catalyst.util.TypeUtils
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 /**
@@ -76,35 +80,125 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       result
     } else {
       // merge with existing delta
-      val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
-      if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
-        // TODO: SW: merge stats
-        oldValue
-      } else {
-        val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
-        val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
+      val oldColValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+        FetchRequest.DECOMPRESS)
+      val existingBuffer = oldColValue.getBuffer
+      val newValue = getValueRetain(FetchRequest.DECOMPRESS)
+      val newBuffer = newValue.getBuffer
+      try {
         val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
             .fetchHiveMetaData(false) match {
           case null => throw new IllegalStateException(
             s"Table for region ${region.getFullPath} not found in hive metadata")
           case m => m.schema.asInstanceOf[StructType]
         }
-        val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
-          decompress = true, compress = false)
-        val existingBuffer = oldColumnValue.getBuffer
-        val newValue = getValueRetain(decompress = true, compress = false)
-        try {
-          new ColumnFormatValue(encoder.merge(newValue.getBuffer, existingBuffer,
+        val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
+        // TODO: SW: if old value itself is returned, then avoid any put at GemFire layer
+        // (perhaps throw some exception that can be caught and ignored in virtualPut)
+        if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
+          // ignore if either of the buffers is empty (old placeholder of 4 bytes
+          // while UnsafeRow based data can never be less than 8 bytes)
+          if (existingBuffer.limit() <= 4 || newBuffer.limit() <= 4) {
+            oldColValue
+          } else {
+            val merged = mergeStats(existingBuffer, newBuffer, schema)
+            if (merged ne null) {
+              new ColumnFormatValue(merged, oldColValue.compressionCodecId, isCompressed = false)
+            } else oldColValue
+          }
+        } else {
+          val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
+          val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
+          new ColumnFormatValue(encoder.merge(newBuffer, existingBuffer,
             columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)),
-            oldColumnValue.compressionCodecId, isCompressed = false)
-        } finally {
-          oldColumnValue.release()
-          newValue.release()
-          // release own buffer too and delta should be unusable now
-          release()
+            oldColValue.compressionCodecId, isCompressed = false)
         }
+      } finally {
+        oldColValue.release()
+        newValue.release()
+        // release own buffer too and delta should be unusable now
+        release()
       }
     }
+  }
+
+  private def mergeStats(oldBuffer: ByteBuffer, newBuffer: ByteBuffer,
+      schema: StructType): ByteBuffer = {
+    val numColumnsInStats = ColumnStatsSchema.numStatsColumns(schema.length)
+    val oldStatsRow = Utils.toUnsafeRow(oldBuffer, numColumnsInStats)
+    val newStatsRow = Utils.toUnsafeRow(newBuffer, numColumnsInStats)
+    val oldCount = oldStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+    val newCount = newStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+
+    val values = new Array[Any](numColumnsInStats)
+    val statsSchema = new Array[StructField](numColumnsInStats)
+    val nullCountField = StructField("nullCount", IntegerType)
+    values(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) = oldCount + newCount
+    statsSchema(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) =
+        StructField("count", IntegerType, nullable = false)
+    var hasChange = false
+    // non-generated code for evaluation since this is only for one row
+    // (besides binding to two separate rows will need custom code)
+    for (i <- schema.indices) {
+      val statsIndex = i * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+      val dataType = schema(i).dataType
+      val lowerExpr = BoundReference(statsIndex, dataType, nullable = true)
+      val upperExpr = BoundReference(statsIndex + 1, dataType, nullable = true)
+      val nullCountExpr = BoundReference(statsIndex + 2, IntegerType, nullable = true)
+      val ordering = TypeUtils.getInterpretedOrdering(dataType)
+
+      val oldLower = lowerExpr.eval(oldStatsRow)
+      val newLower = lowerExpr.eval(newStatsRow)
+      val oldUpper = upperExpr.eval(oldStatsRow)
+      val newUpper = upperExpr.eval(newStatsRow)
+      val oldNullCount = nullCountExpr.eval(oldStatsRow)
+      val newNullCount = nullCountExpr.eval(newStatsRow)
+
+      // Unlike normal < or > semantics, comparison against null on either
+      // side should return the non-null value or null if both are null.
+      // This is like Spark's Greatest/Least semantics. Likewise nullCount
+      // should return null only if both are null else skip the null one, if any,
+      // like the "sum" aggregate semantics (and unlike the SQL add semantics that
+      // returns null if either of the sides is null). The "AddStats" extension
+      // to Add operator is to encapsulate that behaviour.
+      val lower =
+        if (newLower == null) oldLower
+        else if (oldLower == null) {
+          if (!hasChange && newLower != null) hasChange = true
+          newLower
+        }
+        else if (ordering.lt(newLower, oldLower)) {
+          if (!hasChange) hasChange = true
+          newLower
+        }
+        else oldLower
+      val upper =
+        if (newUpper == null) oldUpper
+        else if (oldUpper == null) {
+          if (!hasChange && newUpper != null) hasChange = true
+          newUpper
+        }
+        else if (ordering.lt(oldUpper, newUpper)) {
+          if (!hasChange) hasChange = true
+          newUpper
+        }
+        else oldUpper
+      val nullCount = new AddStats(nullCountExpr).eval(newNullCount, oldNullCount)
+      if (!hasChange && nullCount != oldNullCount) hasChange = true
+
+      values(statsIndex) = lower
+      // shared name in StructField for all columns is fine because UnsafeProjection
+      // code generation uses only the dataType and doesn't care for the name here
+      statsSchema(statsIndex) = StructField("lowerBound", dataType, nullable = true)
+      values(statsIndex + 1) = upper
+      statsSchema(statsIndex + 1) = StructField("upperBound", dataType, nullable = true)
+      values(statsIndex + 2) = nullCount
+      statsSchema(statsIndex + 2) = nullCountField
+    }
+    if (!hasChange) return null // indicates caller to return old column value
+    val projection = CodeGeneration.compileProjection("STATS_MERGE_PROJECT", statsSchema)
+    val statsRow = projection.apply(new GenericInternalRow(values))
+    Utils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
   }
 
   /** first delta update for a column will be put as is into the region */
@@ -203,7 +297,7 @@ object ColumnDelta {
    * matching those of given key.
    */
   private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
-      columnTableName: String, forUpdate: Boolean): Unit = {
+      columnTableName: String): Unit = {
 
     // delete all the rows with matching batchId
     def destroyKey(key: ColumnFormatKey): Unit = {
@@ -217,9 +311,7 @@ object ColumnDelta {
     val numColumns = key.getNumColumnsInTable(columnTableName)
     // delete the stats rows first
     destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
-    if (forUpdate) {
-      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
-    }
+    destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
     // column values and deltas next
     for (columnIndex <- 1 to numColumns) {
       destroyKey(key.withColumnIndex(columnIndex))
@@ -229,8 +321,19 @@ object ColumnDelta {
       }
     }
     // lastly the delete delta row itself
-    if (forUpdate) {
-      destroyKey(key.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX))
-    }
+    destroyKey(key.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX))
+  }
+}
+
+/**
+ * Unlike the "Add" operator that follows SQL semantics of returning null
+ * if either of the expressions is, this will return the non-null value
+ * if either is null or add if both are non-null (like the "sum" aggregate).
+ */
+final class AddStats(attr: BoundReference) extends Add(attr, attr) {
+  def eval(leftVal: Any, rightVal: Any): Any = {
+    if (leftVal == null) rightVal
+    else if (rightVal == null) leftVal
+    else nullSafeEval(leftVal, rightVal)
   }
 }

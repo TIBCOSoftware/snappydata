@@ -761,7 +761,10 @@ object NorthWindDUnitTest {
     // scalastyle:off println
     pw.println(s"$queryNum Result Collected in files with prefix $snappyFile")
     if (!new File(s"$sparkFile.0").exists()) {
-      val sparkDF = sqlContext.sql(sqlString).sort(col1, col: _*)
+      var sparkDF = sqlContext.sql(sqlString)
+      val col = sparkDF.schema.fieldNames(0)
+      val cols = sparkDF.schema.fieldNames.tail
+      sparkDF = sparkDF.sort(col, cols: _*)
       writeToFile(sparkDF, sparkFile, snc)
       pw.println(s"$queryNum Result Collected in files with prefix $sparkFile")
     }

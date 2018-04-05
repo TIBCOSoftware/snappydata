@@ -7,7 +7,7 @@ Code example for streaming is in [StreamingExample.scala](https://github.com/Sna
 
 **First get a SnappySession and a SnappyStreamingContext**: </br>
 Here SnappyStreamingContext is initialized in a batch duration of one second.
-```scala
+```no-highlight
     val spark: SparkSession = SparkSession
         .builder
         .appName(getClass.getSimpleName)
@@ -20,7 +20,7 @@ Here SnappyStreamingContext is initialized in a batch duration of one second.
 The example starts an embedded Kafka instance on which a few messages are published. SnappyData processes these message and updates a table based on the stream data.
 
 The SQL below shows how to declare a stream table using SQL. The rowConverter attribute specifies a class used to return Row objects from the received stream messages.
-```scala
+```no-highlight
     snsc.sql(
       "create stream table adImpressionStream (" +
           " time_stamp timestamp," +
@@ -38,7 +38,7 @@ The SQL below shows how to declare a stream table using SQL. The rowConverter at
 
 RowsConverter decodes a stream message consisting of comma separated fields and forms a Row object from it.
 
-```scala
+```no-highlight
 class RowsConverter extends StreamToRowsConverter with Serializable {
   override def toRows(message: Any): Seq[Row] = {
     val log = message.asInstanceOf[String]
@@ -58,20 +58,20 @@ class RowsConverter extends StreamToRowsConverter with Serializable {
 
 **To create a row table that is updated based on the streaming data**:
 
-```scala
+```no-highlight
 snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) using row")
 ```
 
 **To declare a continuous query that is executed on the streaming data**: This query returns a number of bids per publisher in one batch.
 
-```scala
+```no-highlight
     val resultStream: SchemaDStream = snsc.registerCQ("select publisher, count(bid) as bidCount from " +
         "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 ```
 
 **To process that the result of above continuous query to update the row table publisher_bid_counts**:
 
-```scala
+```no-highlight
     // this conf is used to get a JDBC connection
     val conf = new ConnectionConfBuilder(snsc.snappySession).build()
 
@@ -97,14 +97,12 @@ snsc.sql("create table publisher_bid_counts(publisher string, bidCount int) usin
         conn.close()
       }
     })
-
 ```
 
 **To display the total bids by each publisher by querying publisher_bid_counts table**:
 
-```scala
+```no-highlight
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
-
 ```
 
 ## Spark's structured streaming with SnappyData 

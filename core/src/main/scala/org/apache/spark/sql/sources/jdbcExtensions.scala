@@ -260,7 +260,14 @@ object JdbcExtendedUtils extends Logging {
   /** get the table name in SQL quoted form e.g. "APP"."TABLE1" */
   def quotedName(table: String, escapeQuotes: Boolean = false): String = {
     val (schema, tableName) = getTableWithSchema(table, null)
-    if (escapeQuotes) s"""\\"$schema\\".\\"$tableName\\"""" else s""""$schema"."$tableName""""
+    if (escapeQuotes) {
+      val sb = new java.lang.StringBuilder(schema.length + tableName.length + 9)
+      sb.append("\\\"").append(schema).append("\\\".\\\"")
+          .append(tableName).append("\\\"").toString
+    } else {
+      val sb = new java.lang.StringBuilder(schema.length + tableName.length + 5)
+      sb.append('"').append(schema).append("\".\"").append(tableName).append('"').toString
+    }
   }
 
   /**

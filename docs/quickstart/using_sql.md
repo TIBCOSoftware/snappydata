@@ -8,51 +8,51 @@ You can use any SQL client tool (for example, Snappy shell). For an example, ref
 
 For more information on the available options, refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md) section.
 
-```scala
+```no-highlight
 scala>  snappy.sql("create table colTable(CustKey Integer, CustName String) using column options()")
 ```
 
-```
+```no-highlight
 //Insert couple of records to the column table
 scala>  snappy.sql("insert into colTable values(1, 'a')")
 scala>  snappy.sql("insert into colTable values(2, 'b')")
 scala>  snappy.sql("insert into colTable values(3, '3')")
 ```
 
-```scala
+```no-highlight
 // Check the total row count now
 scala>  snappy.sql("select count(*) from colTable").show
 ```
 
 **Create a row table with a primary key**:
 
-```scala
+```no-highlight
 // Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala>  snappy.sql("create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, " +
             "CustName String) using row options()")
 ```
 If you create a table using standard SQL (that is, no 'row options' clause) it creates a replicated row table.
  
-```scala
+```no-highlight
 //Insert couple of records to the row table
 scala>  snappy.sql("insert into rowTable values(1, 'a')")
 scala>  snappy.sql("insert into rowTable values(2, 'b')")
 scala>  snappy.sql("insert into rowTable values(3, '3')")
 ```
 
-```scala
+```no-highlight
 //Update some rows
 scala>  snappy.sql("update rowTable set CustName='d' where custkey = 1")
 scala>  snappy.sql("select * from rowTable order by custkey").show
 ```
 
-```scala
+```no-highlight
 //Drop the existing tables
 scala>  snappy.sql("drop table if exists rowTable ")
 scala>  snappy.sql("drop table if exists colTable ")
 ```
 
-```
+```no-highlight
 scala> :q //Quit the Spark Shell
 ```
 

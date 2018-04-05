@@ -16,17 +16,34 @@
  */
 package org.apache.spark.sql.execution
 
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.internal.CodeGenerationException
 
-trait NonRecursivePlans {
-  var producedForPlanInstance : Boolean = false
+/**
+ * Base class for SparkPlan implementations that have only the code-generated
+ * version and use the same for non-codegenerated case. For that case this
+ * prevents recursive calls into code generation in case it fails for some reason.
+ */
+abstract class NonRecursivePlans extends SparkPlan {
 
   /**
-    * Sets the variable which will disallow recursive plan generation,
-    * hence code generation will stop if it fails.
-    * Check for producedForPlanInstance is done in CachedPlanHelperExec.
-    */
-  def startProducing(): Unit = {
-    producedForPlanInstance = true
+   * Variable to disallow recursive generation so will mark the case of
+   * non-codegenerated case and throw back exception to use CodegenSparkFallback.
+   */
+  protected final var nonCodeGeneratedPlan: Boolean = _
+
+  override protected def doExecute(): RDD[InternalRow] = {
+    if (nonCodeGeneratedPlan) {
+      throw new CodeGenerationException("Code generation failed for some of the child plans")
+    }
+    nonCodeGeneratedPlan = true
+    WholeStageCodegenExec(this).execute()
   }
 
+  override def makeCopy(newArgs: Array[AnyRef]): NonRecursivePlans = {
+    val plan = super.makeCopy(newArgs).asInstanceOf[NonRecursivePlans]
+    plan.nonCodeGeneratedPlan = nonCodeGeneratedPlan
+    plan
+  }
 }
