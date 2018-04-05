@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAns
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.collection.{OrderlessHashPartitioningExtract, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -38,7 +38,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
+import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, SQLConf}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -75,7 +75,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  object HashJoinStrategies extends Strategy {
+  object HashJoinStrategies extends Strategy with JoinQueryPlanning {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
@@ -140,44 +140,10 @@ private[sql] trait SnappyStrategies {
       }
     }
 
-    @tailrec def unAlias(e: Expression): Expression = e match {
-      case a: Alias => unAlias(a.child)
-      case _ => e
-    }
-
     private def getCollocatedPartitioning(joinType: JoinType,
         leftPlan: LogicalPlan, leftKeys: Seq[Expression],
         rightPlan: LogicalPlan, rightKeys: Seq[Expression],
         checkBroadcastJoin: Boolean): (Seq[NamedExpression], Seq[Int], Int) = {
-
-      def getKeyOrder(plan: LogicalPlan, joinKeys: Seq[Expression],
-          partitioning: Seq[NamedExpression]): Seq[Int] = {
-        val part = partitioning.map(unAlias)
-        lazy val planExpressions = plan.expressions
-        val keyOrder = joinKeys.map { k =>
-          val key = unAlias(k)
-          val i = part.indexWhere(_.semanticEquals(key))
-          if (i < 0) {
-            // search for any view aliases (SNAP-2204)
-            key match {
-              case ke: NamedExpression =>
-                val planKey = planExpressions.collectFirst {
-                  case a: Alias if ke.exprId == a.exprId => unAlias(a.child)
-                  case e: NamedExpression if (ke ne e) && ke.exprId == e.exprId => e
-                } match {
-                  case Some(e) => e
-                  case None => return Nil
-                }
-                val j = part.indexWhere(_.semanticEquals(planKey))
-                if (j < 0) return Nil
-                j
-
-              case _ => return Nil
-            }
-          } else i
-        }
-        keyOrder
-      }
 
       def getCompatiblePartitioning(plan: LogicalPlan,
           joinKeys: Seq[Expression]): (Seq[NamedExpression], Seq[Int], Int) = plan match {
@@ -193,8 +159,8 @@ private[sql] trait SnappyStrategies {
                   .getOrElse(throw new AnalysisException(
                     s"""Cannot resolve column "$colName" among (${r.output})""")))
             // check if join keys match (or are subset of) partitioning columns
-            val keyOrder = getKeyOrder(plan, joinKeys, partCols)
-            if (keyOrder.nonEmpty) (partCols, keyOrder, scan.numBuckets)
+            val (keyOrder, joinKeySubsetOfPart) = getKeyOrder(plan, joinKeys, partCols)
+            if (joinKeySubsetOfPart) (partCols, keyOrder, scan.numBuckets)
             // return partitioning in any case when checking for broadcast
             else if (checkBroadcastJoin) (partCols, Nil, scan.numBuckets)
             else (Nil, Nil, -1)
@@ -210,8 +176,8 @@ private[sql] trait SnappyStrategies {
             val (cols, _, numPartitions) = getCollocatedPartitioning(
               jType, left, lKeys, right, rKeys, checkBroadcastJoin = true)
             // check if the partitioning of the result is compatible with current
-            val keyOrder = getKeyOrder(plan, joinKeys, cols)
-            if (keyOrder.nonEmpty) (cols, keyOrder, numPartitions)
+            val (keyOrder, joinKeySubsetOfPart) = getKeyOrder(plan, joinKeys, cols)
+            if (joinKeySubsetOfPart) (cols, keyOrder, numPartitions)
             else (Nil, Nil, -1)
 
           case _ => (Nil, Nil, -1)
@@ -695,10 +661,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
     case t: TableExec =>
       val addShuffle = if (t.partitioned) {
         // force shuffle when inserting into a table with different partitions
-        t.child.outputPartitioning match {
-          case OrderlessHashPartitioningExtract(_, _, _, _, buckets) => buckets != t.numBuckets
-          case p => p.numPartitions != t.numBuckets
-        }
+        t.child.outputPartitioning.numPartitions != t.outputPartitioning.numPartitions
       } else false
       if (addShuffle) {
         t.withNewChildren(Seq(ShuffleExchange(HashPartitioning(
@@ -712,7 +675,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
  * Rule to insert a helper plan to collect information for other entities
  * like parameterized literals.
  */
-case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
+case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     extends Rule[SparkPlan] {
   private def addFallback(plan: SparkPlan): SparkPlan = {
     // skip fallback plan when optimizations are already disabled,
@@ -727,10 +690,24 @@ case class InsertCachedPlanHelper(session: SnappySession, topLevel: Boolean)
     }
   }
 
-  override def apply(plan: SparkPlan): SparkPlan = addFallback(plan.transformUp {
-    case ws@WholeStageCodegenExec(CachedPlanHelperExec(_)) => ws
-    case ws @ WholeStageCodegenExec(onlychild) =>
-      val c = onlychild.asInstanceOf[CodegenSupport]
-      ws.copy(child = CachedPlanHelperExec(c))
-  })
+  override def apply(plan: SparkPlan): SparkPlan = addFallback(plan)
+}
+
+/**
+ * Plans scalar subqueries like the Spark's PlanSubqueries but uses customized
+ * ScalarSubquery to insert a tokenized literal instead of literal value embedded
+ * in code to allow generated code re-use and improve performance substantially.
+ */
+case class TokenizeSubqueries(sparkSession: SparkSession) extends Rule[SparkPlan] {
+  def apply(plan: SparkPlan): SparkPlan = {
+    plan.transformAllExpressions {
+      case subquery: catalyst.expressions.ScalarSubquery =>
+        val executedPlan = new QueryExecution(sparkSession, subquery.plan).executedPlan
+        new TokenizedScalarSubquery(SubqueryExec(s"subquery${subquery.exprId.id}",
+          executedPlan), subquery.exprId)
+      case catalyst.expressions.PredicateSubquery(query, Seq(e: Expression), _, exprId) =>
+        val executedPlan = new QueryExecution(sparkSession, query).executedPlan
+        InSubquery(e, SubqueryExec(s"subquery${exprId.id}", executedPlan), exprId)
+    }
+  }
 }

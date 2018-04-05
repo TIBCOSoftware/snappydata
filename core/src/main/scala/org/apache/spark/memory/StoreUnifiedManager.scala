@@ -174,6 +174,7 @@ object MemoryManagerCallback extends Logging {
     }
   }
 
+  /** allocate buffer of given size and return a little-endian buffer */
   def allocateExecutionMemory(size: Int, owner: String,
       allocator: BufferAllocator): ByteBuffer = {
     /* (doesn't work properly for some reason: fails with LME frequently)

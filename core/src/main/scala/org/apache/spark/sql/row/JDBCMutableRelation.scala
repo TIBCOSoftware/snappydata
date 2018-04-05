@@ -19,9 +19,7 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
-
-import io.snappydata.SnappyTableStatsProviderService
-
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -32,6 +30,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
+import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -99,7 +98,7 @@ case class JDBCMutableRelation(
 
   def isPartitioned: Boolean = false
 
-  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
+  override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory: () => Connection =
@@ -178,7 +177,7 @@ case class JDBCMutableRelation(
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Expression]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val jdbcOptions = new JDBCOptions(connProperties.url,
       table, connProperties.executorConnProps.asScala.toMap)
 
@@ -186,7 +185,7 @@ case class JDBCMutableRelation(
       sqlContext.sparkContext,
       schema,
       requiredColumns,
-      filters.filterNot(ExternalStoreUtils.unhandledFilter),
+      filters.flatMap(translateToFilter),
       parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
@@ -440,6 +439,20 @@ case class JDBCMutableRelation(
     throw new UnsupportedOperationException()
   }
 
+  private def getDataType(column: StructField): String = {
+    val dataType: String = dialect match {
+      case d: JdbcExtendedDialect => {
+        val jd = d.getJDBCType(column.dataType, column.metadata)
+        jd match {
+          case Some(x) => x.databaseTypeDefinition
+          case _ => column.dataType.simpleString
+        }
+      }
+      case _ => column.dataType.simpleString
+    }
+    dataType
+  }
+
   override def alterTable(tableIdent: QualifiedTableName,
                           isAddColumn: Boolean, column: StructField): Unit = {
     val conn = connFactory()
@@ -448,11 +461,10 @@ case class JDBCMutableRelation(
         conn, dialect, sqlContext)
       val sql = if (isAddColumn) {
         s"""alter table ${quotedName(table)}
-            add column "${column.name}" ${column.dataType.simpleString}"""
+            add column "${column.name}" ${getDataType(column)}"""
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
-
       if (tableExists) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
       } else {

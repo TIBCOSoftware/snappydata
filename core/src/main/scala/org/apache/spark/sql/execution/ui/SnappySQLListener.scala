@@ -16,11 +16,12 @@
  */
 package org.apache.spark.sql.execution.ui
 
-import org.apache.spark.{JobExecutionStatus, SparkConf}
-import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
-import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
-
 import scala.collection.mutable
+
+import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
+import org.apache.spark.sql.CachedDataFrame
+import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
+import org.apache.spark.{JobExecutionStatus, SparkConf}
 
 /**
  * A new event that is fired when a plan is executed to get an RDD.
@@ -36,7 +37,8 @@ case class SparkListenerSQLPlanExecutionStart(
 
 /**
  * Snappy's SQL Listener.
- * @param conf
+ *
+ * @param conf SparkConf of active SparkContext
  */
 class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
   // base class variables that are private
@@ -57,7 +59,6 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
   }
 
   def getInternalField(fieldName: String): Any = {
-    val x = classOf[SQLListener]
     val resultField = classOf[SQLListener].getDeclaredField(fieldName)
     resultField.setAccessible(true)
     resultField.get(this)
@@ -108,25 +109,28 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
     event match {
 
       case SparkListenerSQLExecutionStart(executionId, description, details,
-      physicalPlanDescription, sparkPlanInfo, time) =>
-        val executionUIData = baseExecutionIdToData.get(executionId).getOrElse({
+      physicalPlanDescription, sparkPlanInfo, time) => synchronized {
+        val executionUIData = baseExecutionIdToData.getOrElseUpdate(executionId, {
         val physicalPlanGraph = SparkPlanGraph(sparkPlanInfo)
         val sqlPlanMetrics = physicalPlanGraph.allNodes.flatMap { node =>
           node.metrics.map(metric => metric.accumulatorId -> metric)
         }
+        // description and details strings being reference equals means
+        // trim off former here
+        val desc = if (description eq details) {
+          CachedDataFrame.queryStringShortForm(details)
+        } else description
         new SQLExecutionUIData(
           executionId,
-          description,
+          desc,
           details,
           physicalPlanDescription,
           physicalPlanGraph,
           sqlPlanMetrics.toMap,
           time)
         })
-        synchronized {
-          baseExecutionIdToData(executionId) = executionUIData
-          baseActiveExecutions(executionId) = executionUIData
-        }
+        baseActiveExecutions(executionId) = executionUIData
+      }
       case SparkListenerSQLPlanExecutionStart(executionId, description, details,
       physicalPlanDescription, sparkPlanInfo, time) =>
         val physicalPlanGraph = SparkPlanGraph(sparkPlanInfo)
