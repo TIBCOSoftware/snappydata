@@ -306,4 +306,19 @@ class QueryTest extends SnappyFunSuite {
       checkAnswer(r2, e)
     }
   }
+
+  test("SNAP-2080 alter table add column and then index on that") {
+    val snc = this.snc
+    snc.sql(s"CREATE TABLE APP.TEST ( COL1 VARCHAR(36) NOT NULL ) using row options()")
+    snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL2 VARCHAR(36)")
+    snc.sql(s"create index APP.X_TEST_COL1 on APP.TEST (col1)")
+    snc.sql(s"create index APP.X_TEST_COL2 on APP.TEST (col2)")
+    snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL3 CHAR(4)")
+    snc.sql(s"create index APP.X_TEST_COL3 on APP.TEST (col3)")
+    snc.sql(s"insert into TEST values ('one', 'vone', 'cone'), ('two', 'vtwo', 'ctwo')")
+    val r = snc.sql(s"select count(*) from TEST").collect()
+    assert (1 === r.size)
+    assert (2 === r.head.get(0))
+    snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
+  }
 }
