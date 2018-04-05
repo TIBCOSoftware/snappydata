@@ -25,9 +25,6 @@ import org.apache.spark.sql.collection.Utils
 
 import scala.sys.process._
 
-/**
-  * Created by kneeraj on 12/3/18.
-  */
 class CommandLineToolsSuite extends SnappyTestRunner {
 
   override def servers: String = s"$localHostName\n"
@@ -37,7 +34,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   // scalastyle:off println
   test("backup restore") {
     val debugWriter = new PrintWriter(s"$snappyHome/CommandLineToolsSuite.debug")
-    val backupDir = new File(s"$snappyHome/backup_dir")
+    val backupDir = new File(s"/tmp/backup_dir.${System.currentTimeMillis()}")
     try {
       SnappyShell("quickStartScripts", Seq("connect client 'localhost:1527';",
         s"create table test_app (col1 int not null, col2 int not null) using column options();;",
@@ -49,7 +46,6 @@ class CommandLineToolsSuite extends SnappyTestRunner {
         s"insert into testDD values (5, 3), (6, 4);",
         "exit;"))
 
-      val backupDir = new File(s"$snappyHome/backup_dir")
       if (backupDir.exists) {
         assert(backupDir.delete(), s"could not delete $backupDir")
       }
@@ -70,7 +66,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
         throw new Exception(s"Failed to remove work dir")
       }
       // Find all the restore scripts
-      val (out3, err3) = executeCommand(s"find . -name restore.sh")
+      val (out3, err3) = executeCommand(s"find ${backupDir} -name restore.sh")
 
       val restoreCmnds = out3.split("\n")
       assert(restoreCmnds.length == 2, "expected 2 restore commands")
@@ -184,33 +180,5 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       debugWriter.close()
       executeCommand(s"rm -rf $snappyHome/backup*")
     }
-  }
-
-  def getJdbcConnection(netPort: Int): Connection = {
-    val driver = "io.snappydata.jdbc.ClientDriver"
-    Utils.classForName(driver).newInstance
-    var url: String = "jdbc:snappydata://localhost:" + netPort + "/"
-    DriverManager.getConnection(url)
-  }
-
-  // CWD will be assumed the same for all command which is $snappyHome
-  def executeCommand(command: String): (String, String) = {
-    val stdoutStream = new ByteArrayOutputStream
-    val stderrStream = new ByteArrayOutputStream
-
-    val teeOut = new TeeOutputStream(stdout, new BufferedOutputStream(stdoutStream))
-    val teeErr = new TeeOutputStream(stderr, new BufferedOutputStream(stderrStream))
-
-    val stdoutWriter = new PrintStream(teeOut, true)
-    val stderrWriter = new PrintStream(teeErr, true)
-
-    val code = Process(command, new File(s"$snappyHome")) !
-        ProcessLogger(stdoutWriter.println, stderrWriter.println)
-    var stdoutStr = stdoutStream.toString
-    if (code != 0) {
-      // add an exception to the output to force failure
-      stdoutStr += s"\n***** Exit with Exception code = $code\n"
-    }
-    (stdoutStr, stderrStream.toString)
   }
 }
