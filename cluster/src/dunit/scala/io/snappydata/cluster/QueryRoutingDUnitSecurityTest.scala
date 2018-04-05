@@ -102,7 +102,7 @@ object QueryRoutingDUnitSecurityTest {
         jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1, 400, 40)
       assert(false) // fail
     } catch {
-      case x: SQLException if x.getSQLState.equals("42502") => // ignore
+      case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
     query("testColumnTableRouting-2", serverHostPort,

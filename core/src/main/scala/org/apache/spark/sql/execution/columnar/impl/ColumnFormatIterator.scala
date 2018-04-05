@@ -31,6 +31,7 @@ import io.snappydata.collection.LongObjectHashMap
 
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.columnar.encoding.BitSet
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
 import org.apache.spark.unsafe.Platform
 
 /**
@@ -84,7 +85,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     override def apply(uuid: Long): LongObjectHashMap[AnyRef] =
       LongObjectHashMap.withExpectedSize[AnyRef](projection.length *
           // + 2 due to RegionEntry also being put
-          (ColumnDelta.USED_MAX_DEPTH + 2) - ColumnFormatEntry.DELETE_MASK_COL_INDEX)
+          (ColumnDelta.USED_MAX_DEPTH + 2) - DELETE_MASK_COL_INDEX)
   }
 
   private lazy val (readerId, diskPosition, diskEntries) = {
@@ -170,6 +171,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   override def getColumnValue(columnIndex: Int): AnyRef = {
     val column = columnIndex & 0xffffffffL
     if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)
+    else if (columnIndex == DELTA_STATROW_COL_INDEX) currentDiskBatch.getDeltaStatsValue
     else currentDiskBatch.entryMap.get(column)
   }
 
@@ -209,9 +211,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
         val aEntry = entryIterator.next()
         var entry: RegionEntry = aEntry
         val key = aEntry.getRawKey.asInstanceOf[ColumnFormatKey]
-        // check if it is for required projection columns and whether
+        // check if it is one of required projection columns, their deltas or meta-columns
         val columnIndex = key.columnIndex
-        if ((columnIndex < 0 && columnIndex >= ColumnFormatEntry.DELETE_MASK_COL_INDEX) || {
+        if ((columnIndex < 0 && columnIndex >= DELETE_MASK_COL_INDEX) || {
           val tableColumn = ColumnDelta.tableColumnIndex(columnIndex)
           tableColumn > 0 &&
               BitSet.isSet(projectionBitSet, Platform.LONG_ARRAY_OFFSET,
@@ -222,7 +224,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
           // and so the same values as that stored in ColumnFormatKey are used
           val uuidMap = activeBatches.computeIfAbsent(key.uuid, newMapCreator)
           // set the stats entry in the state
-          if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
+          if (columnIndex == STATROW_COL_INDEX) {
             if (uuidMap.getGlobalState eq null) uuidMap.setGlobalState(entry)
             // put the stats entry in the map in any case for possible use by disk iterator
             if (canOverflow) uuidMap.justPut((1L << 32) | (columnIndex & 0xffffffffL), entry)
@@ -315,6 +317,9 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
   private var arrayIndex: Int = _
   private var faultIn: Boolean = _
   private var closing: Boolean = _
+  // track delta stats separately since it is required for stats filtering
+  // and should not lead to other columns getting read from disk (or worse faulted in)
+  private var deltaStatsEntry: RegionEntry = _
 
   private[impl] lazy val entryMap: LongObjectHashMap[AnyRef] = {
     if (closing) null
@@ -334,7 +339,7 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
             case _ => v
           } else v
         } else re.getValueInVMOrDiskWithoutFaultIn(region)
-        map.justPut(re.getRawKey.asInstanceOf[ColumnFormatKey].columnIndex & 0xffffffffL, v)
+        map.justPut(getKey(re).columnIndex & 0xffffffffL, v)
         i += 1
       }
       diskEntries = null
@@ -342,11 +347,19 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
     }
   }
 
+  private def getKey(entry: RegionEntry): ColumnFormatKey =
+    entry.getRawKey.asInstanceOf[ColumnFormatKey]
+
+  def getDeltaStatsValue: AnyRef =
+    if (deltaStatsEntry ne null) deltaStatsEntry.getValue(region) else null
+
   def addEntry(diskPosition: DiskPosition, entry: RegionEntry): Unit = {
     // store the stats entry separately to provide to top-level iterator
-    if ((this.entry eq null) && entry.getRawKey.asInstanceOf[ColumnFormatKey]
-        .columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
+    val key = getKey(entry)
+    if (key.columnIndex == STATROW_COL_INDEX) {
       this.entry = entry
+    } else if (key.columnIndex == DELTA_STATROW_COL_INDEX) {
+      this.deltaStatsEntry = entry
     } else {
       // fetch disk position even for in-memory entries because they are likely to
       // be overflowed by the time iterator gets to them (and if not then memory
@@ -385,7 +398,7 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
     closing = true
     val entryMap = this.entryMap
     if ((entryMap ne null) && entryMap.size() > 0) {
-      entryMap.forEachWhile(new LongObjPredicate[AnyRef] {
+      if (GemFireCacheImpl.hasNewOffHeap) entryMap.forEachWhile(new LongObjPredicate[AnyRef] {
         override def test(i: Long, v: AnyRef): Boolean = {
           v match {
             case s: SerializedDiskBuffer => s.release()

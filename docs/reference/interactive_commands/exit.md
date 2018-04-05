@@ -3,7 +3,7 @@ Completes the `snappy` application and halts processing.
 
 ## Syntax
 
-``` pre
+```no-highlight
 EXIT
 ```
 
@@ -16,7 +16,7 @@ Causes the `snappy` application to complete and processing to halt. Issuing this
 ## Example
 
 
-``` pre
+```no-highlight
 snappy> disconnect peerclient;
 snappy> exit;
 ```

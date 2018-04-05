@@ -2,7 +2,7 @@
 
 An INSERT statement creates a row or rows and stores them in the named table. The number of values assigned in an INSERT statement must be the same as the number of specified or implied columns.
 
-``` pre
+```no-highlight
 INSERT INTO table-name
     [ ( simple-column-name [ , simple-column-name ]* ) ]
    Query
@@ -24,7 +24,7 @@ For more information, refer to [SELECT](select.md).
 
 ## Example
 
-``` pre
+```no-highlight
 INSERT INTO TRADE.CUSTOMERS
       VALUES (1, 'User 1', '07-06-2002', 'SnappyData', 1);
 

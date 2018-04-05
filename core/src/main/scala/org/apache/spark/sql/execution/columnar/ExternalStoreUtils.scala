@@ -24,8 +24,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
-import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
@@ -37,7 +36,9 @@ import org.apache.hadoop.hive.ql.metadata.Table
 
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
@@ -48,9 +49,9 @@ import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, Code
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.sources._
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.types.{StructType, _}
+import org.apache.spark.sql.types._
 import org.apache.spark.util.{Utils => SparkUtils}
 import org.apache.spark.{SparkContext, SparkException}
 
@@ -335,14 +336,14 @@ object ExternalStoreUtils {
 
     if (!user.isEmpty && !password.isEmpty) {
       def secureProps(props: Properties): Properties = {
-        props.setProperty(Attribute.USERNAME_ATTR, user)
-        props.setProperty(Attribute.PASSWORD_ATTR, password)
+        props.setProperty(ClientAttribute.USERNAME, user)
+        props.setProperty(ClientAttribute.PASSWORD, password)
         props
       }
 
       // Hikari only take 'username'. So does Tomcat
       def securePoolProps(props: Map[String, String]): Map[String, String] = {
-        props + (Attribute.USERNAME_ALT_ATTR.toLowerCase -> user) + (Attribute.PASSWORD_ATTR ->
+        props + (ClientAttribute.USERNAME_ALT.toLowerCase -> user) + (ClientAttribute.PASSWORD ->
             password)
       }
 
@@ -359,8 +360,8 @@ object ExternalStoreUtils {
       case ThinClientConnectorMode(_, _) => Constant.SPARK_STORE_PREFIX
       case _ => ""
     }
-    (session.conf.get(prefix + Attribute.USERNAME_ATTR, ""),
-        session.conf.get(prefix + Attribute.PASSWORD_ATTR, ""))
+    (session.conf.get(prefix + ClientAttribute.USERNAME, ""),
+        session.conf.get(prefix + ClientAttribute.PASSWORD, ""))
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,
@@ -406,66 +407,85 @@ object ExternalStoreUtils {
   }
 
   // This should match JDBCRDD.compileFilter for best performance
-  def unhandledFilter(f: Filter): Boolean = f match {
-    case EqualTo(_, _) => false
-    case LessThan(_, _) => false
-    case GreaterThan(_, _) => false
-    case LessThanOrEqual(_, _) => false
-    case GreaterThanOrEqual(_, _) => false
+  def unhandledFilter(f: Expression): Boolean = f match {
+    case _: expressions.EqualTo | _: expressions.LessThan | _: expressions.GreaterThan |
+         _: expressions.LessThanOrEqual | _: expressions.GreaterThanOrEqual =>
+      val b = f.asInstanceOf[BinaryExpression]
+      !((b.left.isInstanceOf[Attribute] && TokenLiteral.isConstant(b.right)) ||
+          (TokenLiteral.isConstant(b.left) && b.right.isInstanceOf[Attribute]))
+    case expressions.IsNull(_: Attribute) | expressions.IsNotNull(_: Attribute) => false
+    case _: expressions.StartsWith | _: expressions.EndsWith | _: expressions.Contains =>
+      val b = f.asInstanceOf[BinaryExpression]
+      !(b.left.isInstanceOf[Attribute] && TokenLiteral.isConstant(b.right))
     case _ => true
   }
 
-  private def checkIndexedColumn(col: String,
-      indexedCols: scala.collection.Set[String]): Option[String] = {
+  private def checkIndexedColumn(a: Attribute,
+      indexedCols: scala.collection.Set[String]): Option[Attribute] = {
+    val col = a.name
     // quote identifiers when they could be case-sensitive
-    if (indexedCols.contains(col)) Some("\"" + col + '"')
+    if (indexedCols.contains(col)) Some(a.withName("\"" + col + '"'))
     else {
       // case-insensitive check
       val ucol = Utils.toUpperCase(col)
-      if ((col ne ucol) && indexedCols.contains(ucol)) Some(col)
-      else None
+      if ((col ne ucol) && indexedCols.contains(ucol)) Some(a) else None
     }
   }
 
   // below should exactly match RowFormatScanRDD.compileFilter
-  def handledFilter(f: Filter,
-      indexedCols: scala.collection.Set[String]): Option[Filter] = f match {
+  def handledFilter(f: Expression,
+      indexedCols: scala.collection.Set[String]): Option[Expression] = f match {
     // only pushdown filters if there is an index on the column;
     // keeping a bit conservative and not pushing other filters because
     // Spark execution engine is much faster at filter apply (though
     //   its possible that not all indexed columns will be used for
     //   index lookup still push down all to keep things simple)
-    case EqualTo(col, v) => checkIndexedColumn(col, indexedCols).map(EqualTo(_, v))
-    case LessThan(col, v) => checkIndexedColumn(col, indexedCols).map(LessThan(_, v))
-    case GreaterThan(col, v) => checkIndexedColumn(col, indexedCols).map(GreaterThan(_, v))
-    case LessThanOrEqual(col, v) => checkIndexedColumn(col, indexedCols).map(LessThanOrEqual(_, v))
-    case GreaterThanOrEqual(col, v) =>
-      checkIndexedColumn(col, indexedCols).map(GreaterThanOrEqual(_, v))
-    case StringStartsWith(col, v) =>
-      checkIndexedColumn(col, indexedCols).map(StringStartsWith(_, v))
-    case In(col, v) => checkIndexedColumn(col, indexedCols).map(In(_, v))
+    case expressions.EqualTo(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.EqualTo(_, v))
+    case expressions.EqualTo(v, a: Attribute) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.EqualTo(v, _))
+    case expressions.LessThan(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.LessThan(_, v))
+    case expressions.LessThan(v, a: Attribute) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.LessThan(v, _))
+    case expressions.GreaterThan(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.GreaterThan(_, v))
+    case expressions.GreaterThan(v, a: Attribute) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.GreaterThan(v, _))
+    case expressions.LessThanOrEqual(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.LessThanOrEqual(_, v))
+    case expressions.LessThanOrEqual(v, a: Attribute) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.LessThanOrEqual(v, _))
+    case expressions.GreaterThanOrEqual(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.GreaterThanOrEqual(_, v))
+    case expressions.GreaterThanOrEqual(v, a: Attribute) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.GreaterThanOrEqual(v, _))
+    case expressions.StartsWith(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.StartsWith(_, v))
+    case expressions.In(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(expressions.In(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
-    case And(left, right) => handledFilter(left, indexedCols) match {
+    case expressions.And(left, right) => handledFilter(left, indexedCols) match {
       case None => handledFilter(right, indexedCols)
       case lf@Some(l) => handledFilter(right, indexedCols) match {
         case None => lf
-        case Some(r) => Some(And(l, r))
+        case Some(r) => Some(expressions.And(l, r))
       }
     }
     // ORList optimization requires all columns to have indexes
     // which is ensured by the condition below
-    case Or(left, right) => handledFilter(left, indexedCols) match {
+    case expressions.Or(left, right) => handledFilter(left, indexedCols) match {
       case None => None
       case Some(l) => handledFilter(right, indexedCols) match {
         case None => None
-        case Some(r) => Some(Or(l, r))
+        case Some(r) => Some(expressions.Or(l, r))
       }
     }
     case _ => None
   }
 
-  def unhandledFilter(f: Filter, indexedCols: scala.collection.Set[String]): Boolean =
+  def unhandledFilter(f: Expression, indexedCols: scala.collection.Set[String]): Boolean =
     handledFilter(f, indexedCols) eq None
 
   /**
@@ -696,15 +716,22 @@ object ExternalStoreUtils {
     }.asJava
   }
 
-  def getExternalTableMetaData(schema: String, table: String): ExternalTableMetaData = {
-    val region = Misc.getRegion(Misc.getRegionPath(schema, table, null), true, false)
-    region.getUserAttribute.asInstanceOf[GemFireContainer] match {
+  def getExternalTableMetaData(qualifiedTable: String): ExternalTableMetaData = {
+    getExternalTableMetaData(qualifiedTable,
+      GemFireXDUtils.getGemFireContainer(qualifiedTable, true), checkColumnStore = false)
+  }
+
+  def getExternalTableMetaData(qualifiedTable: String, container: GemFireContainer,
+      checkColumnStore: Boolean): ExternalTableMetaData = {
+    container match {
       case null =>
-        throw new IllegalStateException(s"Table $schema.$table not found in containers")
+        throw new IllegalStateException(s"Table $qualifiedTable not found in containers")
       case c => c.fetchHiveMetaData(false) match {
         case null =>
-          throw new IllegalStateException(s"Table $schema.$table not found in hive metadata")
-        case m => m
+          throw new IllegalStateException(s"Table $qualifiedTable not found in hive metadata")
+        case m => if (checkColumnStore && !c.isColumnStore) {
+          throw new IllegalStateException(s"Table $qualifiedTable not a column table")
+        } else m
       }
     }
   }

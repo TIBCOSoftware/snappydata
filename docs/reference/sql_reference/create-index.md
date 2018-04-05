@@ -1,6 +1,6 @@
 # CREATE INDEX
 
-``` pre
+```no-highlight
 CREATE INDEX index_name
     ON table-name (
     column-name 
@@ -18,7 +18,7 @@ The `CREATE INDEX` statement creates an index on one or more columns of a table.
 
 Create an index on two columns:
 
-``` pre
+```no-highlight
 CREATE INDEX idx ON FLIGHTS (flight_id, segment_number);
 ```
 

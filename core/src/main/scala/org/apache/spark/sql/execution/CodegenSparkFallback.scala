@@ -38,37 +38,40 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 
+  protected[sql] def isCodeGenerationException(t: Throwable): Boolean = {
+    t match {
+      case e: Error =>
+        if (SystemFailure.isJVMFailureError(e)) {
+          SystemFailure.initiateFailure(e)
+          // If this ever returns, rethrow the error. We're poisoned
+          // now, so don't let this thread continue.
+          throw e
+        }
+        e match {
+          // assume all stack overflow failures are due to compilation issues in janino
+          // for very large code
+          case _: StackOverflowError => true
+          case _ => false
+        }
+      case _ =>
+        // search for any janino or code generation exception
+        var cause = t
+        do {
+          if (cause.isInstanceOf[CodeGenerationException] ||
+              cause.toString.contains("janino")) {
+            return true
+          }
+          cause = cause.getCause
+        } while (cause ne null)
+        false
+    }
+  }
+
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {
-      val pool = plan.sqlContext.sparkSession.asInstanceOf[SnappySession].
-        sessionState.conf.activeSchedulerPool
-      sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       f(plan)
     } catch {
       case t: Throwable =>
-        var useFallback = false
-        t match {
-          case e: Error =>
-            if (SystemFailure.isJVMFailureError(e)) {
-              SystemFailure.initiateFailure(e)
-              // If this ever returns, rethrow the error. We're poisoned
-              // now, so don't let this thread continue.
-              throw e
-            }
-            // assume all other errors will be some stack/assertion failures
-            // or similar compilation issues in janino for very large code
-            useFallback = true
-          case _ =>
-            // search for any janino or code generation exception
-            var cause = t
-            do {
-              if (cause.isInstanceOf[CodeGenerationException] ||
-                  cause.toString.contains("janino")) {
-                useFallback = true
-              }
-              cause = cause.getCause
-            } while ((cause ne null) && !useFallback)
-        }
         // Whenever you catch Error or Throwable, you must also
         // check for fatal JVM error (see above).  However, there is
         // _still_ a possibility that you are dealing with a cascading
@@ -76,7 +79,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         // is still usable:
         SystemFailure.checkFailure()
 
-        if (!useFallback) throw t
+        if (!isCodeGenerationException(t)) throw t
 
         // fallback to Spark plan
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
