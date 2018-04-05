@@ -19,18 +19,18 @@ package io.snappydata
 // scalastyle:off
 import java.io._
 import java.net.InetAddress
+import java.sql.{Connection, DriverManager}
 import java.util.regex.Pattern
 
 import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.parsing.json.JSON
-
 import com.gemstone.gemfire.internal.AvailablePort
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.output.TeeOutputStream
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Retries}
-
 import org.apache.spark.Logging
+import org.apache.spark.sql.collection.Utils
 
 /**
  * Extensible Abstract test suite to test different shell based commands
@@ -58,6 +58,8 @@ with Logging with Retries {
   def snappyShell: String = s"$snappyHome/bin/snappy-sql"
 
   def sparkShell: String = s"$snappyHome/bin/spark-shell"
+
+  def clusterSuccessString: String = "Distributed system now has 4 members"
 
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
   private  var locatorDirPath = ""
@@ -108,7 +110,7 @@ with Logging with Retries {
 
     val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
 
-    if (!out.contains("Distributed system now has 4 members")) {
+    if (!out.contains(clusterSuccessString)) {
       throw new Exception(s"Failed to start Snappy cluster")
     }
     executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
@@ -282,4 +284,32 @@ with Logging with Retries {
       case e: Exception => throw e
   }
 */
+
+  def getJdbcConnection(netPort: Int): Connection = {
+    val driver = "io.snappydata.jdbc.ClientDriver"
+    Utils.classForName(driver).newInstance
+    var url: String = "jdbc:snappydata://localhost:" + netPort + "/"
+    DriverManager.getConnection(url)
+  }
+
+  // CWD will be assumed the same for all command which is $snappyHome
+  def executeCommand(command: String): (String, String) = {
+    val stdoutStream = new ByteArrayOutputStream
+    val stderrStream = new ByteArrayOutputStream
+
+    val teeOut = new TeeOutputStream(stdout, new BufferedOutputStream(stdoutStream))
+    val teeErr = new TeeOutputStream(stderr, new BufferedOutputStream(stderrStream))
+
+    val stdoutWriter = new PrintStream(teeOut, true)
+    val stderrWriter = new PrintStream(teeErr, true)
+
+    val code = Process(command, new File(s"$snappyHome")) !
+        ProcessLogger(stdoutWriter.println, stderrWriter.println)
+    var stdoutStr = stdoutStream.toString
+    if (code != 0) {
+      // add an exception to the output to force failure
+      stdoutStr += s"\n***** Exit with Exception code = $code\n"
+    }
+    (stdoutStr, stderrStream.toString)
+  }
 }
