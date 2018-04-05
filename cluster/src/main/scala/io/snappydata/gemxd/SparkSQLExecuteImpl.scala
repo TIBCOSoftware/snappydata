@@ -232,16 +232,8 @@ class SparkSQLExecuteImpl(val sql: String,
           InternalDataSerializer.writeSignedVL(precision, hdos)
         case StoredFormatIds.REF_TYPE_ID =>
           // Write the DataType
-          val pooled = KryoSerializerPool.borrow()
-          val output = pooled.newOutput()
-          try {
-            StructTypeSerializer.writeType(pooled.kryo, output,
-              querySchema(i).dataType)
-            hdos.write(output.toBytes)
-          } finally {
-            output.release()
-            KryoSerializerPool.release(pooled)
-          }
+          hdos.write(KryoSerializerPool.serialize((kryo, out) =>
+            StructTypeSerializer.writeType(kryo, out, querySchema(i).dataType)))
         case _ => // ignore for others
       }
     }

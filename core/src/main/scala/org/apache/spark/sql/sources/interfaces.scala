@@ -72,8 +72,8 @@ trait RowPutRelation extends DestroyRelation {
 
 trait BulkPutRelation extends DestroyRelation {
 
+  def getPutKeys: Option[Seq[String]]
 
-  def getPutKeys() : Option[Seq[String]]
   /**
     * Get a spark plan for puts. If the row is already present, it gets updated
     * otherwise it gets inserted into the table represented by this relation.
@@ -373,6 +373,13 @@ trait ExternalSchemaRelationProvider {
 @DeveloperApi
 trait PrunedUnsafeFilteredScan {
 
+  /**
+   * Returns the list of [[Expression]]s that this datasource may not be able to handle.
+   * By default, this function will return all filters, as it is always safe to
+   * double evaluate an [[Expression]].
+   */
+  def unhandledFilters(filters: Seq[Expression]): Seq[Expression]
+
   def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]])
+      filters: Array[Expression]): (RDD[Any], Seq[RDD[InternalRow]])
 }

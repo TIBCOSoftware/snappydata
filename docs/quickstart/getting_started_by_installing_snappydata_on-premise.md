@@ -2,7 +2,7 @@
 # Getting Started by Installing SnappyData On-Premise
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
 
-```bash
+```no-highlight
 $ tar -xzf snappydata-1.0.1-bin.tar.gz
 $ cd snappydata-1.0.1-bin/
 # Create a directory for SnappyData artifacts

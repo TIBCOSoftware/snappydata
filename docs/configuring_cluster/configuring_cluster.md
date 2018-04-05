@@ -26,7 +26,7 @@ In this file, you can specify:
 
 You can refer to the **conf/locators.template** file for some examples.
 
-### List of Locator Properties 
+### List of Locator Properties
 
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
@@ -34,7 +34,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-----|-----|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
-|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| 
+|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). </br>If you want your data to be stored on separate disks (and not the default location), [create separate diskstores](../reference/sql_reference/create-diskstore.md) and specify the directories where you want the data to be stored.|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
@@ -46,7 +46,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 <a id="locator-example"></a>
 **Example**: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:
 
-```scala
+```no-highlight
 $ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
@@ -67,7 +67,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-bind-address|IP address on which the locator is bound. The default behaviour is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|
-|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| 
+|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.</br>|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
@@ -84,7 +84,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
 
-```
+```no-highlight
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
@@ -121,7 +121,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 **Example**: To start a two servers (node-c and node-c), update the configuration file as follows:
 
-```
+```no-highlight
 $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
@@ -138,7 +138,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 
 **Example**:
 
-```bash
+```no-highlight
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
 	--packages "SnappyDataInc:snappydata:1.0.1-s_2.11" 
@@ -155,7 +155,7 @@ If you want to run SnappyData with an already existing custom Hadoop cluster lik
 
 To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 
-```
+```no-highlight
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 ```
 <a id="command-line"></a>
@@ -163,7 +163,7 @@ export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 
 Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be configured, started and stopped on a system locally using these commands.
 
-```
+```no-highlight
 $ bin/snappy locator start  -dir=/node-a/locator1 
 $ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
 $ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
@@ -179,7 +179,7 @@ $ bin/snappy leader stop -dir=/node-c/lead1
 Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
 The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory. 
 
-```bash
+```no-highlight
 $ cat conf/log4j.properties 
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG

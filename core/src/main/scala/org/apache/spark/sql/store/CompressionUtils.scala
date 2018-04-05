@@ -20,7 +20,7 @@ package org.apache.spark.sql.store
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, HeapBufferAllocator, SystemProperties}
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import io.snappydata.Constant
 import net.jpountz.lz4.LZ4Factory
@@ -114,19 +114,32 @@ object CompressionUtils {
       output
   }
 
-  /** decompress the given buffer if compressed else return the original */
+  /**
+   * Decompress the given buffer if compressed else return the original.
+   * Input buffer must be little-endian and so will be the result.
+   */
   def codecDecompressIfRequired(input: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     assert(input.order() eq ByteOrder.LITTLE_ENDIAN)
     val position = input.position()
     val codec = -input.getInt(position)
     if (CompressionCodecId.isCompressed(codec)) {
-      codecDecompress(input, allocator, position, codec)
+      // prefer heap for small output buffers
+      val outputLen = input.getInt(position + 4)
+      val useAllocator = if (outputLen <= MIN_COMPRESSION_SIZE && !allocator.isDirect) {
+        HeapBufferAllocator.instance()
+      } else allocator
+      codecDecompress(input, outputLen, useAllocator, position, codec)
     } else input
   }
 
   private[sql] def codecDecompress(input: ByteBuffer,
       allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
     val outputLen = input.getInt(position + 4)
+    codecDecompress(input, outputLen, allocator, position, codecId)
+  }
+
+  private def codecDecompress(input: ByteBuffer, outputLen: Int,
+      allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
     var result: ByteBuffer = null
     codecId match {
       case CompressionCodecId.LZ4_ID =>

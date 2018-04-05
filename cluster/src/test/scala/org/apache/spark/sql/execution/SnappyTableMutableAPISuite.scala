@@ -22,11 +22,18 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
 
 case class DataDiffCol(column1: Int, column2: Int, column3: Int)
 
 case class DataStrCol(column1: Int, column2: String, column3: Int)
+
+
+case class RData(C_CustKey: Int, C_Name: String,
+    C_Address: String, C_NationKey: Int,
+    C_Phone: String, C_AcctBal: Decimal,
+    C_MktSegment: String, C_Comment: String, skip: String)
 
 class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with BeforeAndAfter
     with BeforeAndAfterAll {
@@ -272,7 +279,8 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("row_table", Row(2, "2", null, 2))
     snc.insert("row_table", Row(4, "4", "3", 3))
 
-    snc.sql("update row_table set col3 = '5' where col2 in (select col2 from col_table)")
+    val df = snc.sql("update row_table set col3 = '5' where col2 in (select col2 from col_table)")
+    df.show
 
     val resultdf = snc.table("row_table").collect()
     assert(resultdf.length == 4)
@@ -422,6 +430,75 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     // TODO What should be the behaviour ?
     assert(resultdf.filter(r => r.equals(Row(3, null, 3))).size == 2)
   }
+
+  test("PutInto op changed row count validation") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT, col2 STRING, col3 INT)" +
+        " using column options(BUCKETS '4', PARTITION_BY 'col1', key_columns 'col2') ")
+    snc.sql("create table row_table(col1 INT, col2 STRING, col3 INT)")
+
+    snc.insert("row_table", Row(1, "1", 11))
+    snc.insert("row_table", Row(9, "9", 99))
+    snc.insert("row_table", Row(2, "2", 22))
+    snc.insert("row_table", Row(3, "4", 3))
+
+    snc.insert("col_table", Row(1, "1", 1))
+    snc.insert("col_table", Row(9, "9", 9))
+    snc.insert("col_table", Row(2, "2", 2))
+    snc.insert("col_table", Row(3, "5", 3))
+
+    val df = snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    assert(df.collect()(0)(0) == 4)
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 5)
+  }
+
+  test("PutInto with only key values") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table(col1 INT)" +
+        " using column options(BUCKETS '2', PARTITION_BY 'col1', key_columns 'col1') ")
+    snc.sql("create table row_table(col1 INT)")
+
+    snc.insert("row_table", Row(1))
+    snc.insert("row_table", Row(2))
+    snc.insert("row_table", Row(3))
+
+    snc.insert("col_table", Row(1))
+    snc.insert("col_table", Row(2))
+    snc.insert("col_table", Row(3))
+
+    intercept[AnalysisException]{
+      snc.sql("put into table col_table" +
+          "   select * from row_table")
+    }
+
+  }
+
+  test("Bug - Incorrect updateExpresion") {
+    val snc = new SnappySession(sc)
+    snc.sql("create table col_table (col1 int, col2 int, col3 int)" +
+        " using column options(partition_by 'col2', key_columns 'col2') ")
+    snc.sql("create table row_table " +
+        "(col1 int, col2 int, col3 int) using row options(partition_by 'col2')")
+
+    snc.insert("row_table", Row(1, 1, 1))
+    snc.insert("row_table", Row(2, 2, 2))
+    snc.insert("row_table", Row(3, 3, 3))
+    snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    snc.sql("put into table col_table" +
+        "   select * from row_table")
+
+    val df = snc.table("col_table").collect()
+
+    assert(df.contains(Row(1, 1, 1)))
+    assert(df.contains(Row(2, 2, 2)))
+    assert(df.contains(Row(3, 3, 3)))
+  }
+
 
   test("PutInto with multiple column key") {
     val snc = new SnappySession(sc)
@@ -641,37 +718,80 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     }
   }
 
-  // This test should be moved to a query suite.
-  test("Double exists") {
-    val snc = new SnappySession(sc)
-    snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row ")
-    snc.sql("create table r2(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row")
+  test("Bug - SNAP-2157") {
+    snc.sql("CREATE TABLE app.customer (C_CustKey int NOT NULL,C_Name varchar(64)," +
+        "C_Address varchar(64),C_NationKey int,C_Phone varchar(64),C_AcctBal decimal(13,2)," +
+        "C_MktSegment varchar(64),C_Comment varchar(120)," +
+        " skip varchar(64), PRIMARY KEY (C_CustKey))")
 
-    snc.sql("create table r3(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row")
+    val data = (1 to 10).map(i => RData(i, s"$i name",
+      s"$i addr",
+      i,
+      s"$i phone",
+      Decimal(1),
+      s"$i mktsegment",
+      s"$i comment",
+      s"$i skip"))
 
-    snc.insert("r1", Row(1, "1", "1", 100))
-    snc.insert("r1", Row(2, "2", "2", 2))
-    snc.insert("r1", Row(4, "4", "4", 4))
-    snc.insert("r1", Row(7, "7", "7", 4))
+    val rdd = sc.parallelize(data, 2)
+    val df1 = snc.createDataFrame(rdd)
+    df1.write.insertInto("app.customer")
 
-    snc.insert("r2", Row(1, "1", "1", 1))
-    snc.insert("r2", Row(2, "2", "2", 2))
-    snc.insert("r2", Row(3, "3", "3", 3))
-
-    snc.insert("r3", Row(1, "1", "1", 1))
-    snc.insert("r3", Row(2, "2", "2", 2))
-    snc.insert("r3", Row(4, "4", "4", 4))
-
-    val df = snc.sql("select * from r1 where " +
-        "(exists (select col1 from r2 where r2.col1=r1.col1) " +
-        "or exists(select col1 from r3 where r3.col1=r1.col1))")
-
-    val result = df.collect()
-    checkAnswer(df, Seq(Row(1, "1", "1", 100),
-      Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
-    assert(!result.contains(Row(7, "7", "7", 7)))
+    df1.write.deleteFrom("app.customer")
+    val df0 = snc.table("app.customer")
+    assert(df0.count() == 0)
   }
+
+  test("DeleteFrom dataframe API Row tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
+        " using row options(partition_by 'col1')")
+    df1.write.insertInto("row_table")
+    df2.write.deleteFrom("row_table")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, 8)))
+  }
+
+  test("DeleteFrom dataframe API Row replicated tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
+        " using row ")
+    df1.write.insertInto("row_table")
+    df2.write.deleteFrom("row_table")
+
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, 8)))
+  }
+
+  test("DeleteFrom Row tables : Key columns validation") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.createTable("row_table", "row",
+      df1.schema, Map.empty[String, String])
+
+    df1.write.insertInto("row_table")
+
+    val message = intercept[AnalysisException]{
+      df2.write.deleteFrom("row_table")
+    }.getMessage
+    assert(message.contains("DeleteFrom in a table requires key column(s) but got empty string"))
+  }
+
 }

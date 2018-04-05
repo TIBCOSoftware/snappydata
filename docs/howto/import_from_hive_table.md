@@ -5,7 +5,7 @@
 If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.
 
 For example,
-```
+```no-highlight
 create external table Hive_External_Table_Name using parquet options(path path-to-parquet-or-orc)
 create table Snappy_Table_Name using column as (select * from Hive_External_Table_Name)
 ```
@@ -16,7 +16,7 @@ For more information on creating an external table, refer to [CREATE EXTERNAL TA
 Take the RDD[Row] from Dataset of Hive Table and insert it into column table.
 
 For example,
-```
+```no-highlight
 val ds = spark.table("Hive_Table_Name")
 val df = snappy.createDataFrame(ds.rdd, ds.schema)
 df.write.format("column").saveAsTable("Snappy_Table_Name")

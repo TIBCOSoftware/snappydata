@@ -20,6 +20,8 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
+import scala.reflect.ClassTag
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
@@ -39,7 +41,6 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.streaming.PhysicalDStreamPlan
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-import scala.reflect.ClassTag
 
 /**
  * :: DeveloperApi ::
@@ -60,7 +61,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     leftSizeInBytes: BigInt,
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
-    extends BinaryExecNode with HashJoin with BatchConsumer with NonRecursivePlans {
+    extends NonRecursivePlans with BinaryExecNode with HashJoin with BatchConsumer {
 
   override def nodeName: String = "SnappyHashJoin"
 
@@ -114,10 +115,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val rightClustered = ClusteredDistribution(rightKeys)
       val leftPartitioning = left.outputPartitioning
       val rightPartitioning = right.outputPartitioning
-      if (leftPartitioning.satisfies(leftClustered) ||
-          rightPartitioning.satisfies(rightClustered) ||
-          // if either side is broadcast then return defaults
-          leftPartitioning.isInstanceOf[BroadcastDistribution] ||
+      // if either side is broadcast then return defaults
+      if (leftPartitioning.isInstanceOf[BroadcastDistribution] ||
           rightPartitioning.isInstanceOf[BroadcastDistribution] ||
           // if both sides are unknown then return defaults too
           (leftPartitioning.isInstanceOf[UnknownPartitioning] &&
@@ -178,14 +177,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
   }
 
-  /**
-   * Overridden by concrete implementations of SparkPlan.
-   * Produces the result of the query as an RDD[InternalRow]
-   */
-  override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
-  }
-
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
 
@@ -229,8 +220,18 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
       // treat as a zip of all stream side RDDs and build side RDDs and
       // use intersection of preferred locations, if possible, else union
-      val numParts = streamRDDs.head.getNumPartitions
-      val allRDDs = streamRDDs ++ buildRDDs
+
+      // Mostly with SHJ both the partition num will be equal.
+      // However, in certain cases if num partition of one side is
+      // == 1 it also qualifies for SHJ.
+      val (allRDDs, numParts) = if (buildRDDs.head.getNumPartitions == 1) {
+        (streamRDDs, streamRDDs.head.getNumPartitions)
+      } else if (streamRDDs.head.getNumPartitions == 1) {
+        (buildRDDs, buildRDDs.head.getNumPartitions)
+      } else {
+        // Equal partitions
+        ((streamRDDs ++ buildRDDs), streamRDDs.head.getNumPartitions)
+      }
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
           rdd.partitions(i)))
@@ -331,7 +332,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def doProduce(ctx: CodegenContext): String = {
-    startProducing()
     val initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 
