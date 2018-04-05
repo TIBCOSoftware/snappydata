@@ -48,8 +48,9 @@ object SecurityUtils {
       forExecutor: Boolean = true): Unit = {
     if (Misc.isSecurityEnabled) {
       // pool connection is a proxy so get embedded connection from statement
-      val stmt = ExternalStoreUtils.getConnection(rowBufferTable,
-        connProperties, forExecutor).createStatement()
+      val pooledConnection = ExternalStoreUtils.getConnection(rowBufferTable,
+        connProperties, forExecutor)
+      val stmt = pooledConnection.createStatement()
       val conn = stmt.getConnection.asInstanceOf[EmbedConnection]
       stmt.close()
       val lcc = conn.getLanguageConnectionContext
@@ -69,7 +70,10 @@ object SecurityUtils {
             conn.getTR.restoreContextStack()
           }
         } finally {
-          conn.close()
+          // Since it is a pooled connection, the  underlying embed connection
+          // should not be closed, instead pooled connection should be closed,
+          // so that connection pool is not exhausted
+          pooledConnection.close()
         }
       }
     }
