@@ -176,13 +176,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             .asScala
       }
 
-      // External Tables
-      val hiveTables: java.util.List[ExternalTableMetaData] =
-        Misc.getMemStore.getExternalCatalog.getHiveTables(true)
-      externalTables = hiveTables.asScala.collect {
-        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
-          new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-            table.externalStore, table.dataSourcePath, table.driverClass)
+      // External Tables, how to get the external tables as external catalog is null?
+      val externalCatalog = Misc.getMemStore.getExternalCatalog
+
+      if (externalCatalog != null) {
+        val hiveTables: java.util.List[ExternalTableMetaData] =
+          externalCatalog.getHiveTables(true)
+        externalTables = hiveTables.asScala.collect {
+          case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
+              table.externalStore, table.dataSourcePath, table.driverClass)
+        }
       }
     }
     catch {
