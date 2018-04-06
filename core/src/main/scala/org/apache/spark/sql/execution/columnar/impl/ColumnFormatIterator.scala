@@ -65,7 +65,6 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
    * The current set of in-memory batches being iterated.
    */
   private val inMemoryBatches = new java.util.TreeMap[Long, LongObjectHashMap[AnyRef]]()
-  private var inMemoryBatchValues: Array[AnyRef] = _
   private var inMemoryBatchIndex: Int = _
 
   private val canOverflow =
@@ -146,7 +145,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
 
   override def hasNext: Boolean = {
     if (entryIterator ne null) {
-      if (inMemoryBatchValues != null && inMemoryBatchIndex + 1 < inMemoryBatchValues.length) {
+      if (inMemoryBatchIndex + 1 < inMemoryBatches.size()) {
         true
       } else advanceToNextBatchSet()
     } else nextDiskBatch ne null
@@ -155,10 +154,11 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   override def next(): RegionEntry = {
     if (entryIterator ne null) {
       inMemoryBatchIndex += 1
-      if (inMemoryBatchValues != null && inMemoryBatchIndex >= inMemoryBatchValues.length) {
+      if (inMemoryBatchIndex >= inMemoryBatches.size()) {
         if (!advanceToNextBatchSet()) throw new NoSuchElementException
       }
-      val map = inMemoryBatchValues(inMemoryBatchIndex).asInstanceOf[LongObjectHashMap[AnyRef]]
+      val batchArray = inMemoryBatches.values().toArray
+      val map = batchArray(inMemoryBatchIndex).asInstanceOf[LongObjectHashMap[AnyRef]]
       map.getGlobalState.asInstanceOf[RegionEntry]
     } else if (nextDiskBatch ne null) {
       if (currentDiskBatch ne null) currentDiskBatch.release()
@@ -174,7 +174,8 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   override def getColumnValue(columnIndex: Int): AnyRef = {
     val column = columnIndex & 0xffffffffL
     if (entryIterator ne null) {
-      val map = inMemoryBatchValues(inMemoryBatchIndex).asInstanceOf[LongObjectHashMap[AnyRef]]
+      val batchArray = inMemoryBatches.values().toArray
+      val map = batchArray(inMemoryBatchIndex).asInstanceOf[LongObjectHashMap[AnyRef]]
       map.get(column)
     }
     else if (columnIndex == DELTA_STATROW_COL_INDEX) currentDiskBatch.getDeltaStatsValue
@@ -182,6 +183,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   }
 
   override def close(): Unit = {
+    inMemoryBatches.clear()
     if (currentDiskBatch ne null) {
       currentDiskBatch.release()
       currentDiskBatch = null
@@ -303,7 +305,6 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
           })
         }
         if (!inMemoryBatches.isEmpty) {
-          inMemoryBatchValues = inMemoryBatches.values().toArray
           return true
         }
       }
