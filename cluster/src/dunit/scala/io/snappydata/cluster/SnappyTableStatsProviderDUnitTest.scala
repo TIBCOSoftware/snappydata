@@ -271,12 +271,12 @@ object SnappyTableStatsProviderDUnitTest {
 
   def convertToSerializableForm(stat: SnappyRegionStats): RegionStat = {
     RegionStat(stat.getTableName, stat.getTotalSize, stat.getSizeInMemory,
-      stat.getRowCount, stat.isColumnTable, stat.isReplicatedTable, stat.getBucketCount)
+      stat.getRowCount, stat.isColumnTable, stat.isReplicatedTable)
   }
 
   def getRegionStat(stat: RegionStat): SnappyRegionStats = {
     new SnappyRegionStats(stat.regionName, stat.totalSize,
-      stat.memSize, stat.rowCount, stat.isColumnType, stat.isReplicated, stat.bucketCnt)
+      stat.memSize, stat.rowCount, stat.isColumnType, stat.isReplicated)
   }
 
 
@@ -305,4 +305,4 @@ object SnappyTableStatsProviderDUnitTest {
 
 case class RegionStat(regionName: String, totalSize: Long,
       memSize: Long, rowCount: Long, isColumnType: Boolean,
-      isReplicated: Boolean, bucketCnt: Int)
+      isReplicated: Boolean)

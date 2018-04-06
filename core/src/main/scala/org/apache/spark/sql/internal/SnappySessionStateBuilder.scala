@@ -52,7 +52,6 @@ import org.apache.spark.streaming.Duration
 class SnappySessionStateBuilder(sparkSession: SparkSession,
                                 parentState: Option[SessionState] = None)
   extends BaseSessionStateBuilder(sparkSession, parentState) {
-
   override val session = sparkSession.asInstanceOf[SnappySession]
   /**
     * Function that produces a new instance of the `BaseSessionStateBuilder`. This is used by the
@@ -69,21 +68,14 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
 
   override protected def analyzer: Analyzer = new Analyzer(catalog, conf) {
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-//        new PreprocessTableInsertOrPut(conf) +:
-//          new FindDataSourceTable(session) +:
-//          DataSourceAnalysis(conf) +:
-//          ResolveRelationsExtended +:
-//          AnalyzeMutableOperations(session, this) +:
-//          ResolveQueryHints(session) +:
-//          ResolveSQLOnFile(session)
-          // customResolutionRules
-    Seq ( new PreprocessTableInsertOrPut(conf),
-      new FindDataSourceTable(session),
-      DataSourceAnalysis(conf),
-      ResolveRelationsExtended,
-      AnalyzeMutableOperations(session, this),
-      ResolveQueryHints(session),
-      ResolveSQLOnFile(session))
+        new PreprocessTableInsertOrPut(conf) +:
+          new FindDataSourceTable(session) +:
+          DataSourceAnalysis(conf) +:
+          ResolveRelationsExtended +:
+          AnalyzeMutableOperations(session, this) +:
+          ResolveQueryHints(session) +:
+          ResolveSQLOnFile(session) +:
+           customResolutionRules
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] =
       PrePutCheck+:
@@ -118,7 +110,7 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
     * Create a [[SnappyStoreHiveCatalog]].
     */
   override protected lazy val catalog: SnappyStoreHiveCatalog = {
-    SnappyContext.getClusterMode(session.sparkContext) match {
+    val cat = SnappyContext.getClusterMode(session.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         new SnappyConnectorCatalog(
           externalCatalog,
@@ -142,6 +134,8 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
           sqlParser,
           resourceLoader)
     }
+    parentState.foreach(_.catalog.copyStateTo(cat))
+    cat
   }
 
   def getTablePartitions(region: PartitionedRegion): Array[Partition] = {
@@ -605,6 +599,11 @@ class DefaultPlanner(val session: SnappySession, conf: SQLConf,
       StoreStrategy, StreamQueryStrategy) ++
       storeOptimizedRules ++
       super.strategies
+
+  override def extraPlanningStrategies: Seq[Strategy] =
+    super.extraPlanningStrategies ++ Seq(SnappyStrategies, StoreStrategy,
+      StreamQueryStrategy, StoreDataSourceStrategy,
+      SnappyAggregation, HashJoinStrategies)
 }
 
 // copy of ConstantFolding that will turn a constant up/down cast into
