@@ -44,7 +44,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     if (env ne null) {
       env.memoryManager.synchronized {
         val success = env.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
-        memoryForObject.addValue(objectName -> memoryMode, numBytes)
+        memoryForObject.addTo(objectName -> memoryMode, numBytes)
         success
       }
     } else {
@@ -86,7 +86,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
         env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
         val key = objectName -> memoryMode
         if (memoryForObject.containsKey(key)) {
-          if (memoryForObject.addValue(key, -numBytes) == numBytes) {
+          if (memoryForObject.addTo(key, -numBytes) == numBytes) {
             memoryForObject.removeAsLong(key)
           }
         }

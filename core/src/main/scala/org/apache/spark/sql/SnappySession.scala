@@ -118,16 +118,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    */
   @transient
   lazy override val sessionState: SessionState = {
-    SnappySession.aqpSessionStateClass match {
-      case Some(aqpClass) =>
-        try {
-        val ctor = aqpClass.getConstructors.head
-        ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
-      } catch {
-        case NonFatal(e) =>
-          throw new IllegalArgumentException(s"Error while instantiating '$aqpClass':", e)
-      }
-      case None =>
+//    SnappySession.aqpSessionStateClass match {
+//      case Some(aqpClass) =>
+//        try {
+//        val ctor = aqpClass.getConstructors.head
+//        ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
+//      } catch {
+//        case NonFatal(e) =>
+//          throw new IllegalArgumentException(s"Error while instantiating '$aqpClass':", e)
+//      }
+//      case None =>
         val className = "org.apache.spark.sql.internal.SnappySessionStateBuilder"
         try {
           val clazz = Utils.classForName(className)
@@ -137,7 +137,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           case NonFatal(e) =>
             throw new IllegalArgumentException(s"Error while instantiating '$className':", e)
         }
-    }
+   // }
   }
 
   @transient

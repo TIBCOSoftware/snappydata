@@ -43,7 +43,7 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -518,6 +518,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
       }
     }
+  }
+  override def lookupRelation(tableIdent: TableIdentifier): LogicalPlan = {
+    // If an alias was specified by the lookup, wrap the plan in a
+    // sub-query so that attributes are properly qualified with this alias
+    SubqueryAlias(tableIdent.table,
+            lookupRelation(newQualifiedTableName(tableIdent)))
   }
 
   final def lookupRelationOption(tableIdent: QualifiedTableName): Option[LogicalPlan] = {
