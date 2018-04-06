@@ -237,11 +237,13 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |  final int updatedOrdinalIdVar;
            |  if ($ordinalIdVar < 0) {
            |    // +ordinal is to adjust all inserts in delta so far
-           |    // +1 since ordinalIdVar is of the last position
-           |    if (~$ordinalIdVar > 0) {
-           |      updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal + 1);
+           |    if ($ordinalIdVar == Integer.MIN_VALUE) {
+           |      // These are new inserts going in first slot of column batch
+           |      updatedOrdinalIdVar = ~$ordinal;
            |    } else {
-           |      updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal);
+           |      // These inserts are falling in a range
+           |      // +1 since ordinalIdVar is of the last position
+           |      updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal + 1);
            |    }
            |  } else {
            |    updatedOrdinalIdVar = $ordinalIdVar;
