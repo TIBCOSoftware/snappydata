@@ -19,6 +19,14 @@
 
 #set -vx 
 
+function absPath() {
+    perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+
+if [ -z "${SNAPPY_HOME}" ]; then
+  export SNAPPY_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
+fi
+
 usage=$'Usage: 
        # Create a new context using the provided context factory
        snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>] [--passfile <config-file-path-with-credentials>]
@@ -51,6 +59,10 @@ TOK_EMPTY="EMPTY"
 APP_PROPS=$APP_PROPS
 securePart=""
 batchInterval=
+packages=
+repos=
+jarcache=
+alljars=
 
 while (( "$#" )); do
   param="$1"
@@ -84,6 +96,18 @@ while (( "$#" )); do
     --app-jar)
       shift
       appjar="${1:-$TOK_EMPTY}"
+    ;;
+    --packages)
+      shift
+      packages="${1:-$TOK_EMPTY}"
+    ;;
+    --repos)
+      shift
+      repos="${1:-$TOK_EMPTY}"
+    ;;
+    --jarcache)
+      shift
+      jarcache="${1:-$TOK_EMPTY}"
     ;;
     --job-id)
       shift
@@ -184,6 +208,12 @@ case $cmd in
       showUsage "--class"
     elif validateOptionalArg $appjar ; then
         showUsage "--app-jar"
+    elif validateOptionalArg $packages ; then
+        showUsage "--packages"
+    elif validateOptionalArg $repos ; then
+        showUsage "--repos"
+    elif validateOptionalArg $jarcache ; then
+        showUsage "--jarcache"
     elif validateOptionalArg $contextName ; then
       showUsage "--context"
     fi
@@ -240,6 +270,20 @@ if [[ $cmd == "jobs" && -z $newContext && -z $contextName ]]; then
   newContext="yes"
 fi
 
+function addDependentJarsToProp () {
+  if [[ $packages != "" ]]; then
+    jarclasspath=`echo jars/*.jar | tr -s ' ' ':'`
+    echo "Resolving the dependencies for $packages"
+    depjars=`scala -classpath $jarclasspath org.apache.spark.deploy.GetJarsAndDependencies $packages $repos $jarcache 2>/dev/null`
+    depjars=`echo $depjars | sed -e "s/,/|/g"`
+    if [[ -z "$APP_PROPS" ]]; then
+      APP_PROPS="dependent-jar-uris=$depjars"
+    else
+      APP_PROPS=$APP_PROPS",dependent-jar-uris=$depjars"
+    fi
+  fi
+}
+
 buildCommand
 
 # build command for new context, if needed.
@@ -260,6 +304,10 @@ fi
 # invoke command
 
 jobServerURL="$hostnamePort/${cmdLine}"
+
+addDependentJarsToProp
+
+echo "APP_PROPS = $APP_PROPS"
 
 case $cmd in
   jobs | newcontext)
