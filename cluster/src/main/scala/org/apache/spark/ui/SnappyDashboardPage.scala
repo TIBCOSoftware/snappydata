@@ -289,21 +289,21 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   }
 
   private def clusterStats(): Seq[Node] = {
-    <div class="container-fluid">
+    <div class="container-fluid" style="text-align: center;">
       <div id="cpuUsageContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
              border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
       <div id="heapUsageContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
              border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
       <div id="offheapUsageContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
              border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
       <div id="getsputsContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
              border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
     </div>

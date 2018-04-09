@@ -68,6 +68,7 @@ trait TableStatsProviderService extends Logging {
           // Commenting this call to avoid periodic refresh of members stats
           // get members details
           // fillAggregatedMemberStatsOnDemand()
+          val memInfo = getMembersStatsOnDemand
 
         } finally {
           running = false
@@ -125,6 +126,14 @@ trait TableStatsProviderService extends Logging {
     synchronized {
       if (running) wait(10000)
     }
+  }
+
+  def getMembersStatsFromService: mutable.Map[String, MemberStatistics] = {
+    if (this.membersInfo.isEmpty) {
+      // force run
+      aggregateStats()
+    }
+    this.membersInfo
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {

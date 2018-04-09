@@ -27,7 +27,7 @@ import io.snappydata.SnappyTableStatsProviderService
 object MemberDetails {
 
   def getAllMembersInfo: Seq[MemberSummary] = {
-    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsOnDemand
+    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
     val membersBuff: ListBuffer[MemberSummary] = ListBuffer.empty[MemberSummary]
 
     allMembers.foreach(mem => {
@@ -43,7 +43,7 @@ object MemberDetails {
   }
 
   def getMembersInfo(memId: String): Seq[MemberSummary] = {
-    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsOnDemand
+    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
     val membersBuff: ListBuffer[MemberSummary] = ListBuffer.empty[MemberSummary]
 
     val loop = new Breaks;

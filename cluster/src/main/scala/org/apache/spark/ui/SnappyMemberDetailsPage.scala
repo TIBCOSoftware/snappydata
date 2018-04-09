@@ -246,8 +246,8 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         </div>
     }
 
-    <div class="container-fluid">
-      <div style="float:left; margin: 10px 20px; border: solid 1px darkgray;
+    <div class="container-fluid" style="text-align: center;">
+      <div style="margin: 10px 20px; display: inline-block; border: solid 1px darkgray;
            box-shadow: 5px 5px 5px grey;">
         {memberBasicDetailsContent}
         <div style="height: 50px; border: solid 1px darkgray; margin: 5px 10px; float: left;"></div>
@@ -256,21 +256,21 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         {offHeapHtmlContent}
       </div>
     </div>
-    <div class="container-fluid">
+    <div class="container-fluid" style="text-align: center;">
       <div id="cpuUsageContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
          border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
       <div id="heapUsageContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
          border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
       <div id="offheapUsageContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
          border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
       <div id="getsputsContainer"
-           style="width: 350px; height: 200px; float:left; margin: 10px 20px;
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
          border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
     </div>
@@ -288,7 +288,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
       throw new IllegalArgumentException(s"Missing memId parameter")
     }
 
-    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsOnDemand
+    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
     val memberDetails: MemberStatistics = {
       var mem: MemberStatistics = null
       breakable {
