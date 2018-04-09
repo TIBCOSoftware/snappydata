@@ -93,11 +93,12 @@ public class SnappyTest implements Serializable {
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
-  private static Boolean logDirExists = false;
+  private static Boolean dirExists = false;
   private static Boolean doneCopying = false;
   protected static Boolean doneRandomizing = false;
   private static Boolean doneRestore = false;
   private static Boolean diskDirExists = false;
+  private static Boolean logDirExists = false;
   private static Boolean runGemXDQuery = false;
   protected static int[] dmlTables = SQLPrms.getTables();
   public static final Random random = new Random(SQLPrms.getRandSeed());
@@ -327,9 +328,10 @@ public class SnappyTest implements Serializable {
     switch (snappyNode) {
       case LOCATOR:
         int locPort;
+        String locatorLogDir = logDir("locator", dirPath);
         do locPort = PortHelper.getRandomPort();
         while (locPort < 0 || locPort > 65535);
-        nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port +
+        nodeLogDir = HostHelper.getLocalHost() + locatorLogDir + clientPort + port +
             locPortString + locPort + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
             " " + SnappyPrms.getLocatorLauncherProps();
         SnappyBB.getBB().getSharedMap().put("locatorHost" + "_" + RemoteTestModule.getMyVmid(),
@@ -352,39 +354,43 @@ public class SnappyTest implements Serializable {
           SnappyBB.getBB().getSharedMap().put("primaryLocatorHost", hostnameForPrimaryLocator);
           SnappyBB.getBB().getSharedMap().put("primaryLocatorPort", Integer.toString(port));
         }
+        SnappyBB.getBB().getSharedMap().put("nodelogDir_" + RemoteTestModule.getMyClientName() +
+            "_" + RemoteTestModule.getMyVmid(), locatorLogDir);
         break;
       case SERVER:
         locatorsList = getLocatorsList("locators");
-        nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" +
-            dirPath + clientPort + port + SnappyPrms.getServerMemory()
+        String serverLogDir = logDir("server", dirPath);
+        nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + serverLogDir +
+            clientPort + port + SnappyPrms.getServerMemory()
             + SnappyPrms.getConserveSockets() +
             " -J-Dgemfirexd.table-default-partitioned=" +
             SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
             SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() +
             SnappyPrms.getEvictionHeapPercentage() + SnappyPrms.getPersistIndexes() +
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
-            SnappyPrms.getFlightRecorderOptions(dirPath) +
+            SnappyPrms.getFlightRecorderOptions(serverLogDir) +
             " -J-XX:+DisableExplicitGC" +
-            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
-            SnappyPrms.getGCOptions(dirPath) + " " +
-            SnappyPrms.getServerLauncherProps() +
-            " -classpath=" + getStoreTestsJar();
+            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + serverLogDir + SnappyPrms
+            .getGCOptions(serverLogDir) + " " + SnappyPrms.getServerLauncherProps() + " -classpath="
+            + getStoreTestsJar();
         Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
         SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule
             .getMyVmid(), endpoint);
+        SnappyBB.getBB().getSharedMap().put("nodelogDir_" + RemoteTestModule.getMyClientName() +
+            "_" + RemoteTestModule.getMyVmid(), serverLogDir);
         break;
       case LEAD:
         locatorsList = getLocatorsList("locators");
         String leadHost;
+        String leadLogDir = logDir("lead", dirPath);
         int leadPort = PortHelper.getRandomPort();
                 /*do leadPort = PortHelper.getRandomPort();
                 while (leadPort < 8091 || leadPort > 8099);*/
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList +
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
             " -spark.local.dir=" + snappyTest.getTempDir("temp") +
-            " -dir=" + dirPath + clientPort + port +
-            " -jobserver.waitForInitialization=true " +
+            leadLogDir + clientPort + port + " -jobserver.waitForInitialization=true " +
             SnappyPrms.getLeadMemory() + SnappyPrms.getSparkSqlBroadcastJoinThreshold()
             + " -spark.jobserver.port=" + leadPort + SnappyPrms.getSparkSchedulerMode()
             + /*" -spark.sql.inMemoryColumnarStorage.compressed="
@@ -392,13 +398,13 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getColumnBatchSize() + SnappyPrms.getConserveSockets() +
             " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() +
             " -J-XX:+DisableExplicitGC" + SnappyPrms.getTimeStatistics() +
-            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
+            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + leadLogDir +
             SnappyPrms.getLogLevel() + SnappyPrms.getNumBootStrapTrials() +
             SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
             " -classpath=" + getStoreTestsJar() +
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
-            SnappyPrms.getFlightRecorderOptions(dirPath) +
-            SnappyPrms.getGCOptions(dirPath) + " " +
+            SnappyPrms.getFlightRecorderOptions(leadLogDir) +
+            SnappyPrms.getGCOptions(leadLogDir) + " " +
             SnappyPrms.getLeaderLauncherProps() +
             " -spark.driver.extraClassPath=" + getStoreTestsJar() +
             " -spark.executor.extraClassPath=" + getStoreTestsJar();
@@ -412,6 +418,8 @@ public class SnappyTest implements Serializable {
             + "_" + RemoteTestModule.getMyVmid(), leadHost);
         SnappyBB.getBB().getSharedMap().put("leadPort_" + RemoteTestModule
             .getMyClientName() + "_" + RemoteTestModule.getMyVmid(), Integer.toString(leadPort));
+        SnappyBB.getBB().getSharedMap().put("nodelogDir_" + RemoteTestModule.getMyClientName() +
+            "_" + RemoteTestModule.getMyVmid(), leadLogDir);
         break;
       case WORKER:
         nodeLogDir = HostHelper.getLocalHost();
@@ -941,6 +949,35 @@ public class SnappyTest implements Serializable {
     }
   }
 
+
+  public static synchronized void HydraTask_copyLogFiles() {
+    if (dirExists) return;
+    else {
+      String dirName = snappyTest.generateLogDirName();
+      File destDir = new File(dirName);
+      String nodeLogDirName = (String) SnappyBB.getBB().getSharedMap().get("nodelogDir_" +
+          RemoteTestModule.getMyClientName() + "_" + RemoteTestModule.getMyVmid());
+      Log.getLogWriter().info("SS - nodeLogDirName from BB in HydraTask_copyLogFiles: " +
+          nodeLogDirName);
+      File dir = new File(nodeLogDirName);
+      for (File srcFile : dir.listFiles()) {
+        try {
+          if (srcFile.isDirectory()) {
+            FileUtils.copyDirectoryToDirectory(srcFile, destDir);
+            Log.getLogWriter().info("Done copying log directory from: " + srcFile + " to " +
+                destDir);
+          } else {
+            FileUtils.copyFileToDirectory(srcFile, destDir);
+            Log.getLogWriter().info("Done copying logDirFile from: " + srcFile + " to " + destDir);
+          }
+        } catch (IOException e) {
+          throw new TestException("Error occurred while copying data from file: " + srcFile + "\n " + e.getMessage());
+        }
+      }
+      dirExists = true;
+    }
+  }
+
   public static synchronized void HydraTask_copyDiskFiles_gemToSnappyCluster() {
     Set<File> myDirList = getDirList("dirName_");
     if (diskDirExists) return;
@@ -1171,11 +1208,11 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
-  public static synchronized void setConnPoolType(){
-    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+  public static synchronized void setConnPoolType() {
+    if (!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
       SnappyBB.getBB().getSharedMap().put("connPoolType", SnappyConnectionPoolPrms
           .getConnPoolType(connPool));
-    connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
+    connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
   }
 
   /**
@@ -1184,17 +1221,16 @@ public class SnappyTest implements Serializable {
   public static Connection getLocatorConnection() throws SQLException {
     Connection conn = null;
 
-    if(!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
+    if (!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
       setConnPoolType();
-    else 
-      connPoolType = (int)SnappyBB.getBB().getSharedMap().get("connPoolType");
-    
-    if(connPoolType == 0){
+    else
+      connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
+
+    if (connPoolType == 0) {
       conn = HikariConnectionPool.getConnection();
-    } else if (connPoolType == 1){
+    } else if (connPoolType == 1) {
       conn = TomcatConnectionPool.getConnection();
-    }
-    else {
+    } else {
       List<String> endpoints = validateLocatorEndpointData();
 
       if (!runGemXDQuery) {
@@ -2321,6 +2357,25 @@ public class SnappyTest implements Serializable {
         + "_" + HostHelper.getLocalHost()
         + "_" + RemoteTestModule.getMyPid();
     return dirname;
+  }
+
+  private synchronized String logDir(String vmName, String dirPath) {
+    String logDir = null;
+    if (vmName.equalsIgnoreCase("server")) {
+      if (SnappyPrms.getServerLauncherProps().contains("-dir")) {
+        logDir = " ";
+      } else logDir = " -dir=" + dirPath;
+    } else if (vmName.equalsIgnoreCase("lead")) {
+      if (SnappyPrms.getLeaderLauncherProps().contains("-dir")) {
+        logDir = " ";
+      } else logDir = " -dir=" + dirPath;
+    } else if (vmName.equalsIgnoreCase("locator")) {
+      if (SnappyPrms.getLocatorLauncherProps().contains("-dir")) {
+        logDir = " ";
+      } else logDir = " -dir=" + dirPath;
+    }
+    Log.getLogWriter().info("SS - logDir is : " + logDir + " for vm : " + vmName);
+    return logDir;
   }
 
   protected synchronized void generateConfig(String fileName) {
