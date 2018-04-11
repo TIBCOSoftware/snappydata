@@ -11,7 +11,6 @@ TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             maxThreads = 1
             startInterval = 1800
             endInterval = 1800
-            maxThreads = 1
             threadGroups = snappyThreads
             //maxTimesToRun = 3
             ;
