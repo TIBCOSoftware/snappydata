@@ -14,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package io.snappydata.hydra
 
 import java.io.{File, PrintWriter}
@@ -239,15 +240,13 @@ object SnappyTestUtils {
       if (actualLineSet.hasNext) {
         pw.println(s"Following ${actualLineSet.size} rows are unexpected in Snappy:")
         while (actualLineSet.hasNext) {
-          val txt: String = actualLineSet.next()
-          pw.println(s"$txt")
+          pw.println(s"${actualLineSet.next()}")
         }
       }
       if (expectedLineSet.hasNext) {
         pw.println(s"Following ${expectedLineSet.size} rows are missing in Snappy:")
         while (expectedLineSet.hasNext) {
-          val txt: String = actualLineSet.next()
-          pw.println(s"$txt")
+          pw.println(s"${expectedLineSet.next()}")
         }
       }
     }
