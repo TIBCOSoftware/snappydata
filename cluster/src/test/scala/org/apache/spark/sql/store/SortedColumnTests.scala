@@ -68,6 +68,14 @@ class SortedColumnTests extends ColumnTablesTestBase {
     SortedColumnTests.verfiyUpdateDataExists(snc, numElements)
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
+
+  test("multiple insert") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 300
+    SortedColumnTests.testMultipleInsert(snc, colTableName, numBuckets = 1, numElements)
+    SortedColumnTests.testMultipleInsert(snc, colTableName, numBuckets = 2, numElements)
+  }
 }
 
 object SortedColumnTests extends Logging {
@@ -166,6 +174,140 @@ object SortedColumnTests extends Logging {
       }
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true,
         numTimesInsert = 1, numTimesUpdate = 1)
+    } catch {
+      case t: Throwable =>
+        logError(t.getMessage, t)
+        throw t
+    }
+
+    // Disable verifying rows in sorted order
+    // def sorted(l: List[Row]) = l.isEmpty ||
+    //    l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
+    // assert(sorted(rs2.toList))
+
+    session.sql(s"drop table $colTableName")
+    session.conf.unset(Property.ColumnBatchSize.name)
+    session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+    session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+  }
+
+  def fixedFilePath(fileName: String): String = s"$baseDataPath/$fileName"
+
+  def createFixedData(snc: SnappySession, size: Long, fileName: String)
+      (f: (Long) => Boolean): Unit = {
+    val dataDir = new File(fixedFilePath(fileName))
+    if (dataDir.exists()) {
+      def deleteRecursively(file: File): Unit = {
+        if (file.isDirectory) {
+          file.listFiles.foreach(deleteRecursively)
+        }
+        if (file.exists && !file.delete) {
+          throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
+        }
+      }
+      deleteRecursively(dataDir)
+    }
+    dataDir.mkdir()
+    snc.sql(s"drop TABLE if exists insert_table_$fileName")
+    snc.sql(s"create EXTERNAL TABLE insert_table_$fileName(id int, addr string," +
+        s" status boolean)" +
+        s" USING parquet OPTIONS(path '${fixedFilePath(fileName)}')")
+    snc.range(size).filter(f(_)).selectExpr("id", "concat('addr'," +
+        "cast(id as string))",
+      "case when (id % 2) = 0 then true else false end").write.
+        insertInto(s"insert_table_$fileName")
+  }
+
+  def testMultipleInsert(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long): Unit = {
+    val firstFile_1 = "firstFile_1"
+    SortedColumnTests.createFixedData(session, numElements, firstFile_1)(i => {
+      i == 0 || i == 99 || i == 200 || i == 299
+    })
+    val secondFile_1 = "secondFile_1"
+    SortedColumnTests.createFixedData(session, numElements, secondFile_1)(i => {
+      i == 100 || i == 199
+    })
+    val secondFile_2 = "secondFile_2"
+    SortedColumnTests.createFixedData(session, numElements, secondFile_2)(i => {
+      i == 50 || i == 250
+    })
+    val secondFile_3 = "secondFile_3"
+    SortedColumnTests.createFixedData(session, numElements, secondFile_3)(i => {
+      i == 25 || i == 175
+    })
+    val secondFile_4 = "secondFile_4"
+    SortedColumnTests.createFixedData(session, numElements, secondFile_4)(i => {
+      i == 125 || i == 275
+    })
+    val secondFile_5 = "secondFile_5"
+    SortedColumnTests.createFixedData(session, numElements, secondFile_5)(i => {
+      i == 150 || i == 225
+    })
+
+    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+
+    createColumnTable(session, colTableName, numBuckets, numElements)
+    val dataFrameReader : DataFrameReader = session.read
+    dataFrameReader.load(fixedFilePath(firstFile_1)).write.insertInto(colTableName)
+    // scalastyle:off
+    println(s"testMultipleInsert loaded $firstFile_1")
+    // scalastyle:on
+
+    try {
+      try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        ColumnTableScan.setDebugMode(false)
+        dataFrameReader.load(fixedFilePath(secondFile_1)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"testMultipleInsert loaded $secondFile_1")
+        // scalastyle:on
+      } finally {
+        ColumnTableScan.setDebugMode(false)
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
+      }
+
+      try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        dataFrameReader.load(fixedFilePath(secondFile_2)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"testMultipleInsert loaded $secondFile_2")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(secondFile_3)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"testMultipleInsert loaded $secondFile_3")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(secondFile_4)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"testMultipleInsert loaded $secondFile_4")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(secondFile_5)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"testMultipleInsert loaded $secondFile_5")
+        // scalastyle:on
+      } finally {
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
+      }
+
+      ColumnTableScan.setDebugMode(true)
+      val colDf = session.sql(s"select * from $colTableName")
+      val res = colDf.collect()
+      val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
+      assert(res.length == expected.length)
+      // scalastyle:off
+      // println(s"verifyTotalRows = ${colDf.collect().length}")
+      // scalastyle:on
+      if (numBuckets == 1) {
+        var i = 0
+        res.foreach(r => {
+          val col1 = r.getInt(0)
+          assert(col1 == expected(i), s"$i : $col1")
+          i += 1
+        })
+      }
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
