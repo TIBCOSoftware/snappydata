@@ -136,7 +136,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
     values(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) = oldCount + newCount
     statsSchema(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) =
         StructField("count", IntegerType, nullable = false)
-    var hasChange = false
+    var hasChange = oldCount != newCount
     // non-generated code for evaluation since this is only for one row
     // (besides binding to two separate rows will need custom code)
     for (i <- schema.indices) {
