@@ -67,8 +67,8 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   private val inMemoryBatches = new java.util.TreeMap[Long, LongObjectHashMap[AnyRef]]()
   private var inMemoryBatchIndex: Int = _
 
-  private val canOverflow =
-    distributedRegion.isOverflowEnabled && distributedRegion.getDataPolicy.withPersistence()
+  private val canOverflow = false // TODO VB: Disable for now
+   // distributedRegion.isOverflowEnabled && distributedRegion.getDataPolicy.withPersistence()
 
   private val projectionBitSet = {
     if (projection.length > 0) {
