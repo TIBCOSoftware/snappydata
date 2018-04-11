@@ -404,16 +404,24 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // Only valid for positive ordinals i.e. meant for update
       val areDuplicate: Boolean = position1 > 0 && position2 > 0 &&
-        ColumnTableScan.getPositive(position1) == ColumnTableScan.getPositive(position2)
-      // Also include case where equal absolute value ordinals but one meant for update is
-      // deemed greater than ordinal meant for insert.
-      val isGreater: Boolean = (position1 > 0 && position2 < 0 &&
-          ColumnTableScan.getPositive(position1) == ColumnTableScan.getPositive(position2)) ||
-        ColumnTableScan.getPositive(position1) > ColumnTableScan.getPositive(position2)
+        position1 == position2
+      val isGreater: Boolean = (position1 >= 0, position2 >= 0) match {
+        case (true, true) => position1 > position2
+        case (true, false) =>
+          // Equal absolute value ordinals but one meant for update is
+          // deemed greater than ordinal meant for insert.
+          position1 == ColumnTableScan.getPositive(position2 - relativePosition1)
+        case (false, true) => ColumnTableScan.getPositive(position1) > position2
+        case (false, false) => ColumnTableScan.getPositive(position1) >
+            ColumnTableScan.getPositive(position2 - relativePosition1)
+      }
+
       if (isGreater || areDuplicate) {
         // set next update position to be from second
         if (existingIsDelta && !areDuplicate) {
-          positionsArray(encoderPosition) = position2
+          positionsArray(encoderPosition) = if (position2 < 0) {
+            position2 - relativePosition1
+          } else position2
         }
         // consume data at position2 and move it if position2 is smaller
         // else if they are equal then newValue gets precedence
@@ -435,7 +443,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       // write for the second was skipped in the first block above
       if (!isGreater) {
         // set next update position to be from first
-        if (existingIsDelta) positionsArray(encoderPosition) = position1
+        if (existingIsDelta) {
+          positionsArray(encoderPosition) = position1
+        }
         // consume data at position1 and move it
         cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
           columnBytes1, writer, cursor, encoderPosition)
@@ -455,6 +465,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // set next update position to be from first
       if (existingIsDelta) {
+        val pos = ColumnEncoding.readInt(columnBytes1, positionCursor1)
         positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
         positionCursor1 += 4
       }
@@ -467,7 +478,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // set next update position to be from second
       if (existingIsDelta) {
-        positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
+        val pos = ColumnEncoding.readInt(columnBytes2, positionCursor2)
+        positionsArray(encoderPosition) = if (pos < 0) pos - relativePosition1 else pos
         positionCursor2 += 4
       }
       cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
