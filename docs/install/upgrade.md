@@ -19,7 +19,7 @@ Create a backup of the locator, lead, and server configuration files that exist 
 
 6. Reconfigure your cluster using the locator, lead, and server configuration files you backed up in step 1.
 
-7. To ensure that the restore script (restore.sh restore.bat) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.
+7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.
 
 8. [Restart the SnappyData cluster](../howto/start_snappy_cluster.md).
 
@@ -34,9 +34,7 @@ For best performance, it is recommended that you re-create any large column tabl
 
 !!! Note:
 
-	- Ensure that no operations are currently running on the system.
-
-	- Use a path for the Parquet file that has enough space to hold the table data. Once the re-import has completed successfully, make sure that the Parquet files are deleted explicitly.
+	Ensure that no operations are currently running on the system.
 
 The following example demonstrates how you can re-create your column tables using a Parquet-based external table:
 
@@ -59,3 +57,6 @@ snappy> insert into table1 as select * from table1Parquet;
 snappy> drop table table1Parquet;
 ```
 
+!!! Note:
+
+​	 Use a path for the Parquet file that has enough space to hold the table data. Once the re-import has completed successfully, make sure that the Parquet files are deleted explicitly.

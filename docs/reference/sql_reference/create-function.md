@@ -40,3 +40,7 @@ CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USI
 ```
 
 You can write a JAVA or SCALA class to write an UDF implementation. 
+
+**Related Topics**
+
+* [DROP FUNCTION](drop-function.md)

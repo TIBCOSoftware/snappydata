@@ -23,13 +23,13 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 The example below demonstrates how you can read CSV files from HDFS using an API:
 
 ```scala
-val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv'")
+val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv")
 
 // drop table if exist
 snc.sql("drop table if exists CUSTOMER")
 
 // Load data into table
-dataDF.write.saveAsTable("CUSTOMER")
+dataDF.write.format("column").saveAsTable("CUSTOMER")
 ```
 
 ## Example - Loading and Enriching CSV Data from HDFS 

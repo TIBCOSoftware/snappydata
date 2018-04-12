@@ -6,7 +6,9 @@ To do so, you can copy the existing template files **servers.template**, **locat
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
 !!! Tip:
-	For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
+	- For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
+
+    - Instead of starting the SnappyData cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
 
 
 <a id="locator"></a>
@@ -160,20 +162,6 @@ To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 
 ```
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
-```
-<a id="command-line"></a>
-### SnappyData Command Line Utility
-
-Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be configured, started and stopped on a system locally using these commands.
-
-```
-$ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
-
-$ bin/snappy locator stop -dir=/node-a/locator1
-$ bin/snappy server stop -dir=/node-b/server1
-$ bin/snappy leader stop -dir=/node-c/lead1
 ```
 
 <a id="logging"></a>

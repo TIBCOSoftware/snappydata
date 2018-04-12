@@ -23,8 +23,7 @@ If the [Connect](connect.md) command without the AS clause was used, you can sup
 ## Example
 
 ``` pre
-snappy> disconnect peerclient;
-snappy>
+snappy> disconnect CONNECTION1;
 ```
 
 

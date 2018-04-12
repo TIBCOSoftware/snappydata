@@ -5,13 +5,13 @@ Use the *snappy* command-line utility to launch SnappyData utilities.
 To display a full list of snappy commands and options:
 
 ``` pre
-snappy --help
+./bin/snappy --help
 ```
 
 The command form to display a particular utility's usage is:
 
 ``` pre
-snappy <utility> --help
+./bin/snappy <utility> --help
 ```
 
 With no arguments, `snappy` starts an [interactive SQL command shell](../../reference/interactive_commands/store_command_reference.md):

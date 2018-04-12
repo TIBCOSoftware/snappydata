@@ -107,3 +107,9 @@ snappy> CREATE DISKSTORE STORE1
       QUEUESIZE 17374
       ('dir1' 456 , 'dir2', 'dir3' 532 );
 ```
+
+**Related Topics**
+
+* [DROP DISKSTORE](drop-diskstore.md)
+
+* [SYSDISKSTORES](../system_tables/sysdiskstores.md)

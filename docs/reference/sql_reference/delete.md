@@ -22,3 +22,13 @@ DELETE FROM TRADE.CUSTOMERS WHERE CID = 10;
 // Delete all rows from table T.
 DELETE FROM T;
 ```
+
+**Related Topics**</br>
+
+* [CREATE TABLE](create-table.md)
+
+* [DROP TABLE](drop-table.md)
+
+* [SHOW TABLES](../interactive_commands/show.md#tables)
+
+* [TRUNCATE TABLE](truncate-table.md)
