@@ -28,6 +28,7 @@ import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.{DataFrame, DataFrameReader, SnappySession}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.snappy._
+import org.apache.spark.util.Benchmark
 
 /**
  * Tests for column table having sorted columns.
@@ -75,6 +76,20 @@ class SortedColumnTests extends ColumnTablesTestBase {
     val numElements = 300
     SortedColumnTests.testMultipleInsert(snc, colTableName, numBuckets = 1, numElements)
     SortedColumnTests.testMultipleInsert(snc, colTableName, numBuckets = 2, numElements)
+  }
+
+  test("join query") {
+    val session = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val joinTableName = "joinDeltaTable"
+    val numBuckets = 4
+
+    SortedColumnTests.testColocatedJoin(session, colTableName, joinTableName, numBuckets,
+      numElements = 10000000, expectedResCount = 1000000000,
+      numTimesInsert = 10, numTimesUpdate = 10)
+    SortedColumnTests.testColocatedJoin(session, colTableName, joinTableName, numBuckets,
+      numElements = 100000000, expectedResCount = 100000000)
+    // Thread.sleep(50000000)
   }
 }
 
@@ -324,5 +339,60 @@ object SortedColumnTests extends Logging {
     session.conf.unset(Property.ColumnMaxDeltaRows.name)
     session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
     session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+  }
+
+  def testColocatedJoin(session: SnappySession, colTableName: String, joinTableName: String,
+      numBuckets: Int, numElements: Long, expectedResCount: Int, numTimesInsert: Int = 1,
+      numTimesUpdate: Int = 1): Unit = {
+    val totalElements = (numElements * 0.6 * numTimesUpdate +
+        numElements * 0.4 * numTimesUpdate).toLong
+    SortedColumnTests.verfiyInsertDataExists(session, numElements, numTimesInsert)
+    SortedColumnTests.verfiyUpdateDataExists(session, numElements, numTimesUpdate)
+    val dataFrameReader : DataFrameReader = session.read
+    val insertDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathInsert(numElements,
+      numTimesInsert))
+    val updateDF: DataFrame = dataFrameReader.load(SortedColumnTests.filePathUpdate(numElements,
+      numTimesUpdate))
+
+    SortedColumnTests.createColumnTable(session, colTableName, numBuckets, numElements)
+    SortedColumnTests.createColumnTable(session, joinTableName, numBuckets, numElements,
+      Some(colTableName))
+    try {
+      session.conf.set(Property.ColumnBatchSize.name, "24M") // default
+      session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+      insertDF.write.insertInto(colTableName)
+      insertDF.write.insertInto(joinTableName)
+
+      ColumnTableScan.setCaseOfSortedInsertValue(true)
+      updateDF.write.putInto(colTableName)
+      updateDF.write.putInto(joinTableName)
+    } finally {
+      ColumnTableScan.setCaseOfSortedInsertValue(false)
+      session.conf.unset(Property.ColumnBatchSize.name)
+      session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    }
+
+    try {
+      // Force SMJ
+      session.conf.set(Property.HashJoinSize.name, "-1")
+      session.conf.set(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+      val query = s"select AVG(A.id), COUNT(B.id) " +
+          s" from $colTableName A inner join $joinTableName B where A.id = B.id"
+      val result = session.sql(query).collect()
+      // scalastyle:off
+      println(s"Query = $query result=${result.length}")
+      result.foreach(r => {
+        val avg = r.getDouble(0)
+        val count = r.getLong(1)
+        println(s"[$avg, $count], ")
+        assert(count == expectedResCount)
+      })
+      // scalastyle:on
+    } finally {
+      session.sql(s"drop TABLE if exists $joinTableName")
+      session.sql(s"drop TABLE if exists $colTableName")
+      session.conf.unset(Property.HashJoinSize.name)
+      session.conf.unset(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key)
+    }
   }
 }
