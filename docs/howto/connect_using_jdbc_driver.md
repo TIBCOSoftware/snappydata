@@ -1,5 +1,5 @@
-	<a id="howto-jdbc"></a>
 # How to Connect using JDBC Driver
+<a id="howto-jdbc"></a>
 
 You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.
 
@@ -10,9 +10,8 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 **Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData.
 
 **Example: Maven dependency:**
-
-```scala
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
+```no-highlight
+<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client -->
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-store-client</artifactId>
@@ -21,8 +20,7 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 ```
 
 **Example: SBT dependency:**
-
-```scala
+```no-highlight
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
 libraryDependencies += "io.snappydata" % "snappydata-store-client" % "1.6.1"
 ```
@@ -47,7 +45,7 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 
 The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at [JDBCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
 
-```scala
+```no-highlight
 val url: String = s"jdbc:snappydata://localhost:1527/"
 val conn1 = DriverManager.getConnection(url)
 

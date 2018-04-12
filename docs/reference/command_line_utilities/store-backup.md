@@ -6,7 +6,7 @@ An online backup saves the following:
 
 - For each member with persistent data, the backup includes disk store files for all stores containing persistent table data.
 - Configuration files from the member startup.
-- A restore script (restore.sh), written for the member's operating system, that copies the files back to their original locations.
+- A restore script (restore.sh) copies the files back to their original locations.
 
 !!! Note:
 	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
@@ -53,29 +53,37 @@ You can use one of two formats:
 
 <a id="directory-structure"></a>
 ## Backup Directory Structure and Contents
-Below is the structure of files and directories backed up in a distributed system:
+The backup directory contains a backup of the persistent data.  Below is the structure of files and directories backed up in a distributed system:
 
-``` pre
-2018-02-28-13-00-21 /:
-127_0_0_1_12755_ec_v0_5506 127_0_0_1_12893_v1_48175
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506:
-config diskstores README.txt restore.sh user
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/config:
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/diskstores:
-GFXD-DD-DISKSTORE_40bf5411-4fba-495b-b783-26cfc6505839
-GFXD-DEFAULT-DISKSTORE_a9b5f827-d0a8-4a3a-9031-00443a3ef535
+```no-highlight
+2018-03-15-05-31-46:
+10_80_141_112_10715_ec_v0_7393 10_80_141_112_10962_v1_57099
 
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/user:
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175:
+2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393:
 config diskstores README.txt restore.sh user
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/config:
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/diskstores:
-GFXD-DD-DISKSTORE_e958efda-b6d6-473c-ae56-2327bfdca094
-GFXD-DEFAULT-DISKSTORE_0c8be336-5a6a-48bb-8b6c-372efaddb721
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/user:
+2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393/config:
+2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393/user:
+2018-03-15-05-31-46/2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393/diskstores/
+GFXD-DD-DISKSTORE_4d9fa95e-7746-4d4d-b404-2648d64cf35e GFXD-DEFAULT-DISKSTORE_3c446ce4-43e4-4c14-bce5-e4336b6570e5
+
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099:
+config diskstores README.txt restore.sh user
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099/config
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099/user
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099/diskstores:
+GFXD-DD-DISKSTORE_76705038-10de-4b3e-955b-446546fe4036 GFXD-DEFAULT-DISKSTORE_157fa93d-c8a9-4585-ba78-9c10eb9c2ab6 USERDISKSTORE_216d5484-86f7-4e82-be81-d5bf7c2ba59f USERDISKSTORE-SNAPPY-DELTA_e7e12e86-3907-49e6-8f4c-f8a7a0d4156c
 ```
 
+| Directory  | Contents                                                     |
+| ---------- | ------------------------------------------------------------ |
+| config     | For internal use                                             |
+| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using the [CREATE DISKSTORE](../reference/sql_reference/create-diskstore) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
+| user       | For internal use                                             |
+| README.txt | The file contains information about other files in a directory. |
+| restore.sh | Script that copies files back to their original locations.   |
+
 <a id="full-backup"></a>
+
 ## Performing a Full Backup
 
 For each member with persistent data, the backup includes:
@@ -106,7 +114,7 @@ To perform a full backup:
 
 If the operation is successful, you see a message like this:
 
-```
+```no-highlight
 The following disk stores were backed up:
 	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
 	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
@@ -128,13 +136,13 @@ If members are missing from the baseline directory because they were offline or 
 
 To perform an incremental backup, execute the backup command but specify the baseline directory as well as your incremental backup directory (both can be the same directory). </br>For example:
 
-```
+```no-highlight
 ./bin/snappy backup -baseline=<SnappyBackupLocation> <SnappyBackupLocation> -locators=<peer-discovery-address>
 ```
 
 The tool reports on the success of the operation. If the operation is successful, you see a message like this:
 
-```
+```no-highlight
 The following disk stores were backed up:
 	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
 	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
@@ -169,9 +177,7 @@ The restore.sh script is generated for each member in the cluster in the timesta
 
 2. Run each restore script on the host where the backup originated.
 
-    ```
-    <SnappyBackupLocation>/<TimestampDirectory>/restore.sh
-    ```
+    	<SnappyBackupLocation>/<TimestampDirectory>/restore.sh
 
 3. Repeat this procedure as necessary for other members of the distributed system.
 

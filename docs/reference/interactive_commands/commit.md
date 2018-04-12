@@ -2,7 +2,7 @@
 
 ## Syntax
 
-``` pre
+```no-highlight
 COMMIT
 ```
 
@@ -13,11 +13,11 @@ Issues a *java.sql.Connection.commit* request. Use this command only if auto-com
 
 ## Example
 
-``` pre
-snappy(PEERCLIENT)> AUTOCOMMIT off;
-snappy(PEERCLIENT)> insert into airlines VALUES ('NA', 'New Airline', 0.20, 0.07, 0.6, 1.7, 20, 10, 5);
+``` no-highlight
+snappy> autocommit off;
+snappy> insert into greetings values (DEFAULT, 'hello');
 1 row inserted/updated/deleted
-snappy(PEERCLIENT)> commit;
+snappy> commit;
 ```
 
 

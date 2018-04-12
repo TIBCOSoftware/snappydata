@@ -58,7 +58,7 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
 
 4. If required, edit other properties, and then click **Save**to apply your changes. </br>For more information on using Zeppelin, see [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin).
 
-**Additional Information**
+**Related Topics**
 
 *  [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin)
 
