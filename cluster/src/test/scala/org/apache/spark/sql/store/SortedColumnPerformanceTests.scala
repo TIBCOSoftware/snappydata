@@ -185,20 +185,12 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
       try {
         session.conf.set(Property.ColumnBatchSize.name, "24M") // default
         session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
-        var j = 0
-        while (j < numTimesInsert) {
-          insertDF.write.insertInto(colTableName)
-          insertDF.write.insertInto(joinTableName)
-          j += 1
-        }
+        insertDF.write.insertInto(colTableName)
+        insertDF.write.insertInto(joinTableName)
 
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        j = 0
-        while (j < numTimesInsert) {
-          updateDF.write.putInto(colTableName)
-          updateDF.write.putInto(joinTableName)
-          j += 1
-        }
+        updateDF.write.putInto(colTableName)
+        updateDF.write.putInto(joinTableName)
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
         session.conf.unset(Property.ColumnBatchSize.name)
