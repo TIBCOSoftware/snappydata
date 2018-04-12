@@ -170,6 +170,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       existingMembers.filterNot(members.containsKey).foreach(m =>
         membersInfo(m).setStatus("Stopped"))
 
+      // update cluster level stats
+      ClusterStatistics.getInstance().updateClusterStatistics(membersInfo.asJava)
+
     } catch {
       case NonFatal(e) => logWarning(e.getMessage, e)
     }

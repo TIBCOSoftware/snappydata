@@ -22,23 +22,38 @@ package org.apache.spark.status.api.v1
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
+import com.pivotal.gemfirexd.internal.engine.ui.ClusterStatistics
+
 object ClusterDetails {
   def getClusterDetailsInfo: Seq[ClusterSummary] = {
     val clusterBuff: ListBuffer[ClusterSummary] = ListBuffer.empty[ClusterSummary]
-    // todo : build cluster object here
 
-    val arrCpu = new mutable.Queue[Double]
-    val arrHeap = new mutable.Queue[Double]
-    val arrOffHeap = new mutable.Queue[Double]
+    val csInstance = ClusterStatistics.getInstance()
+    val clusterInfo = mutable.HashMap.empty[String, Any]
+    clusterInfo += ("timeLine" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE));
+    clusterInfo += ("cpuUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_CPU_USAGE));
+    clusterInfo += ("jvmUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_JVM_HEAP_USAGE));
+    clusterInfo += ("heapUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_USAGE));
+    clusterInfo += ("heapStorageUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_STORAGE_USAGE));
+    clusterInfo += ("heapExecutionUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_EXECUTION_USAGE));
+    clusterInfo += ("offHeapUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_USAGE));
+    clusterInfo += ("offHeapStorageUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_STORAGE_USAGE));
+    clusterInfo += ("offHeapExecutionUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_EXECUTION_USAGE));
 
-    for(i <- 0 to 10){
-      arrCpu.enqueue(Math.random()*100)
-      arrHeap.enqueue(Math.random()*100)
-      arrOffHeap.enqueue(Math.random()*100)
-    }
+    val membersInfo = MemberDetails.getAllMembersInfo
+    val tablesInfo = TableDetails.getAllTablesInfo
+    val extTablesInfo = TableDetails.getAllExternalTablesInfo
 
-    // clusterBuff += new ClusterSummary(Array.empty[Long], Array.empty[Long], Array.empty[Long])
-    clusterBuff += new ClusterSummary(arrCpu.toList, arrHeap.toList, arrOffHeap.toList)
+    clusterBuff += new ClusterSummary(clusterInfo, membersInfo, tablesInfo, extTablesInfo)
     clusterBuff.toList
   }
 }

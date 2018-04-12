@@ -19,14 +19,16 @@
 package org.apache.spark.status.api.v1
 
 import java.util.UUID
-import scala.collection.immutable.Queue
+
+import scala.collection.mutable
 
 
 
 class ClusterSummary private[spark](
-    val cpuUsageTrend: Seq[Double],
-    val heapUsageTrend: Seq[Double],
-    val offHeapUsageTrend: Seq[Double]
+    val clusterInfo:  mutable.HashMap[String, Any],
+    val membersInfo: Seq[MemberSummary],
+    val tablesInfo: Seq[TableSummary],
+    val externalTablesInfo: Seq[ExternalTableSummary]
 )
 
 class MemberSummary private[spark](
