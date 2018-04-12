@@ -251,7 +251,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // Thread.sleep(5000000)
   }
 
-  ignore("Old RangeQuery performance") {
+  test("RangeQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
@@ -260,19 +260,6 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
       numIters, "RangeQuery", numTimesInsert = 10,
       doVerifyFullSize = true)(SortedColumnPerformanceTests.executeQuery_RangeQuery_mt)
-    // Thread.sleep(5000000)
-  }
-
-  ignore("Old JoinQuery performance") {
-    val snc = this.snc.snappySession
-    val colTableName = "colDeltaTable"
-    val jnTableName = "joinDeltaTable"
-    val numElements = 999551
-    val numBuckets = 3
-    val numIters = 1
-    SortedColumnPerformanceTests.benchmarkMultiThreaded(snc, colTableName, numBuckets, numElements,
-      numIters, "JoinQuery", numTimesInsert = 200, doVerifyFullSize = true,
-      joinTableName = Some(jnTableName))(SortedColumnPerformanceTests.executeQuery_JoinQuery_mt)
     // Thread.sleep(5000000)
   }
 }
@@ -352,29 +339,14 @@ object SortedColumnPerformanceTests {
     val query = s"select * from $colTableName where id between $low and $high"
     val expectedNumResults = getParam(iterCount, params3)
     val result = session.sql(query).collect()
-    val passed = isMultithreaded || result.length > 0
+    val passed = if (iterCount != lastFailedIteration) {
+      expectedNumResults == result.length
+    } else result.length > 0
     if (!passed &&  iterCount != -1) {
       lastFailedIteration = iterCount
     }
     // scalastyle:off
     // println(s"Query = $query result=${result.length} $passed $expectedNumResults")
-    // scalastyle:on
-    passed
-  }
-
-  def executeQuery_JoinQuery_mt(session: SnappySession, colTableName: String,
-      joinTableName: String, numIters: Int, iterCount: Int, numThreads: Int, threadId: Int,
-      isMultithreaded: Boolean, numTimesInsert: Int, numTimesUpdate: Int): Boolean = {
-    val param = getParam(iterCount, params)
-    val query = s"select * from $colTableName A inner join $joinTableName B on A.id = B.id"
-    val joinDF = session.sql(query)
-    var i = 0
-    joinDF.foreach(_ => i += 1)
-    val expectedNumResults = i
-    val result = i
-    val passed = result == expectedNumResults
-    // scalastyle:off
-    // println(s"Query = $query iterCount=$iterCount result=$result $passed $expectedNumResults")
     // scalastyle:on
     passed
   }
