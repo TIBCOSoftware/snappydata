@@ -624,8 +624,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
     } catch (SQLException se) {
       if (se.getMessage().contains("23505")) {
-        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage() + "\n" + se
-            .getCause());
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
         return;
       } else throw new TestException("Got exception while performing insert operation.", se);
     }
@@ -1187,10 +1186,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try (Stream<String> lines = Files.lines(Paths.get(csvFilePath + File.separator + csvFileName))) {
       row = lines.skip(insertCounter).findFirst().get();
     } catch (NoSuchElementException nse) {
-      getDmlLock();
-      counters.set(randTable, 1);
-      SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
-      releaseDmlLock();
+      if (SnappyPrms.insertDuplicateData()) {
+        getDmlLock();
+        counters.set(randTable, 1);
+        SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
+        releaseDmlLock();
+      } else throw new TestException("Reached the end of csv file: " + csvFilePath + File
+          .separator + csvFileName + ", no new record to insert.");
     } catch (IOException io) {
       throw new TestException("File not found at specified location " +
           (csvFilePath + File.separator + csvFileName));
