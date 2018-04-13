@@ -78,6 +78,13 @@ class SortedColumnTests extends ColumnTablesTestBase {
     SortedColumnTests.testMultipleInsert(snc, colTableName, numBuckets = 2, numElements)
   }
 
+  test("update and insert") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 300
+    SortedColumnTests.testUpdateAndInsert(snc, colTableName, numBuckets = 1, numElements)
+  }
+
   test("join query") {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -236,28 +243,29 @@ object SortedColumnTests extends Logging {
 
   def testMultipleInsert(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long): Unit = {
-    val firstFile_1 = "firstFile_1"
-    SortedColumnTests.createFixedData(session, numElements, firstFile_1)(i => {
+    val testName = "testMultipleInsert"
+    val dataFile_1 = s"${testName}_1"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_1)(i => {
       i == 0 || i == 99 || i == 200 || i == 299
     })
-    val secondFile_1 = "secondFile_1"
-    SortedColumnTests.createFixedData(session, numElements, secondFile_1)(i => {
+    val dataFile_2 = s"${testName}_2"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_2)(i => {
       i == 100 || i == 199
     })
-    val secondFile_2 = "secondFile_2"
-    SortedColumnTests.createFixedData(session, numElements, secondFile_2)(i => {
+    val dataFile_3 = s"${testName}_3"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_3)(i => {
       i == 50 || i == 250
     })
-    val secondFile_3 = "secondFile_3"
-    SortedColumnTests.createFixedData(session, numElements, secondFile_3)(i => {
+    val dataFile_4 = s"${testName}_4"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_4)(i => {
       i == 25 || i == 175
     })
-    val secondFile_4 = "secondFile_4"
-    SortedColumnTests.createFixedData(session, numElements, secondFile_4)(i => {
+    val dataFile_5 = s"${testName}_5"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_5)(i => {
       i == 125 || i == 275
     })
-    val secondFile_5 = "secondFile_5"
-    SortedColumnTests.createFixedData(session, numElements, secondFile_5)(i => {
+    val dataFile_6 = s"${testName}_6"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_6)(i => {
       i == 150 || i == 225
     })
 
@@ -265,45 +273,39 @@ object SortedColumnTests extends Logging {
     session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
     session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
-    createColumnTable(session, colTableName, numBuckets, numElements)
-    val dataFrameReader : DataFrameReader = session.read
-    dataFrameReader.load(fixedFilePath(firstFile_1)).write.insertInto(colTableName)
-    // scalastyle:off
-    println(s"testMultipleInsert loaded $firstFile_1")
-    // scalastyle:on
-
     try {
-      try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
-        ColumnTableScan.setDebugMode(false)
-        dataFrameReader.load(fixedFilePath(secondFile_1)).write.putInto(colTableName)
-        // scalastyle:off
-        println(s"testMultipleInsert loaded $secondFile_1")
-        // scalastyle:on
-      } finally {
-        ColumnTableScan.setDebugMode(false)
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
-      }
+      createColumnTable(session, colTableName, numBuckets, numElements)
+      val dataFrameReader : DataFrameReader = session.read
+      dataFrameReader.load(fixedFilePath(dataFile_1)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_1")
+      // scalastyle:on
 
       try {
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        dataFrameReader.load(fixedFilePath(secondFile_2)).write.putInto(colTableName)
+        ColumnTableScan.setDebugMode(false)
+        dataFrameReader.load(fixedFilePath(dataFile_2)).write.putInto(colTableName)
         // scalastyle:off
-        println(s"testMultipleInsert loaded $secondFile_2")
+        println(s"$testName loaded $dataFile_2")
         // scalastyle:on
-        dataFrameReader.load(fixedFilePath(secondFile_3)).write.putInto(colTableName)
+        dataFrameReader.load(fixedFilePath(dataFile_3)).write.putInto(colTableName)
         // scalastyle:off
-        println(s"testMultipleInsert loaded $secondFile_3")
+        println(s"$testName loaded $dataFile_3")
         // scalastyle:on
-        dataFrameReader.load(fixedFilePath(secondFile_4)).write.putInto(colTableName)
+        dataFrameReader.load(fixedFilePath(dataFile_4)).write.putInto(colTableName)
         // scalastyle:off
-        println(s"testMultipleInsert loaded $secondFile_4")
+        println(s"$testName loaded $dataFile_4")
         // scalastyle:on
-        dataFrameReader.load(fixedFilePath(secondFile_5)).write.putInto(colTableName)
+        dataFrameReader.load(fixedFilePath(dataFile_5)).write.putInto(colTableName)
         // scalastyle:off
-        println(s"testMultipleInsert loaded $secondFile_5")
+        println(s"$testName loaded $dataFile_5")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(dataFile_6)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $dataFile_6")
         // scalastyle:on
       } finally {
+        ColumnTableScan.setDebugMode(false)
         ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
 
@@ -320,6 +322,123 @@ object SortedColumnTests extends Logging {
         res.foreach(r => {
           val col1 = r.getInt(0)
           assert(col1 == expected(i), s"$i : $col1")
+          i += 1
+        })
+      }
+    } catch {
+      case t: Throwable =>
+        logError(t.getMessage, t)
+        throw t
+    }
+
+    // Disable verifying rows in sorted order
+    // def sorted(l: List[Row]) = l.isEmpty ||
+    //    l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
+    // assert(sorted(rs2.toList))
+
+    session.sql(s"drop table $colTableName")
+    session.conf.unset(Property.ColumnBatchSize.name)
+    session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+    session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+  }
+
+  def testUpdateAndInsert(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long): Unit = {
+    val testName = "testUpdateAndInsert"
+    val dataFile_1 = s"${testName}_1"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_1)(i => {
+      i == 0 || i == 99 || i == 200 || i == 299
+    })
+    val dataFile_2 = s"${testName}_2"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_2)(i => {
+      i == 100 || i == 199
+    })
+    val dataFile_3 = s"${testName}_3"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_3)(i => {
+      i == 50 || i == 250
+    })
+    val dataFile_4 = s"${testName}_4"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_4)(i => {
+      i == 25 || i == 175
+    })
+    val dataFile_5 = s"${testName}_5"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_5)(i => {
+      i == 125 || i == 275
+    })
+    val dataFile_6 = s"${testName}_6"
+    SortedColumnTests.createFixedData(session, numElements, dataFile_6)(i => {
+      i == 150 || i == 225
+    })
+
+    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+
+    try {
+      createColumnTable(session, colTableName, numBuckets, numElements)
+      val dataFrameReader : DataFrameReader = session.read
+      dataFrameReader.load(fixedFilePath(dataFile_1)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_1")
+      // scalastyle:on
+
+      val update_query = s"update $colTableName set addr = 'updated'"
+      // scalastyle:off
+      println(s"$testName started UPDATE $update_query")
+      // scalastyle:on
+      ColumnTableScan.setDebugMode(true)
+      val upd = session.sql(update_query)
+      // scalastyle:off
+      println(s"$testName done UPDATE")
+      // scalastyle:on
+
+      try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        ColumnTableScan.setDebugMode(true)
+        dataFrameReader.load(fixedFilePath(dataFile_2)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $dataFile_2")
+        // scalastyle:on
+        /*
+        dataFrameReader.load(fixedFilePath(dataFile_3)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $dataFile_3")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(dataFile_4)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $dataFile_4")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(dataFile_5)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $dataFile_5")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(dataFile_6)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $dataFile_6")
+        // scalastyle:on
+        */
+      } finally {
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
+      }
+
+      val select_query = s"select * from $colTableName"
+      // scalastyle:off
+      println(s"$testName started SELECT $select_query")
+      // scalastyle:on
+      ColumnTableScan.setDebugMode(true)
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
+      // assert(res.length == expected.length)
+      // scalastyle:off
+      println(s"$testName SELECT = ${res.length}")
+      // scalastyle:on
+      if (numBuckets == 1) {
+        var i = 0
+        res.foreach(r => {
+          val col1 = r.getInt(0)
+          // assert(col1 == expected(i), s"$i : $col1")
           i += 1
         })
       }
