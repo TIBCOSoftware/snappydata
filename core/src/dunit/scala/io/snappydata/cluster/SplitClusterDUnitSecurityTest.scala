@@ -29,10 +29,10 @@ import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
+import io.snappydata.{Constant, Property}
 import org.apache.commons.io.FileUtils
 
 import org.apache.spark.TestPackageUtils
@@ -58,6 +58,8 @@ class SplitClusterDUnitSecurityTest(s: String)
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
   System.setProperty(Constant.COMPRESSION_MIN_SIZE, compressionMinSize)
+  // disable code generation fallback by default to ensure all tests work with Snappy plans
+  bootProps.setProperty(Property.SparkFallback.name, "false")
 
   var adminConn = null: Connection
   var user1Conn = null: Connection

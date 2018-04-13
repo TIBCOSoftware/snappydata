@@ -284,6 +284,9 @@ subprojects {
     // maxHeapSize '12g'
     // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
     //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
+    if (rootProject.hasProperty('numCores')) {
+      environment 'TEST_CORES': numCores
+    }
 
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.events = TestLogEvent.values() as Set

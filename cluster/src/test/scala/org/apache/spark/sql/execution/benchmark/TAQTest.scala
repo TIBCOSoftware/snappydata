@@ -272,8 +272,10 @@ object TAQTest extends Logging with Assertions {
     System.runFinalization()
   }
 
+  val cores: Int = Option(System.getenv("TEST_CORES")).map(_.toInt).getOrElse(
+    math.min(16, Runtime.getRuntime.availableProcessors()))
+
   def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
-    val cores = math.min(16, Runtime.getRuntime.availableProcessors())
     val conf = new SparkConf()
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")

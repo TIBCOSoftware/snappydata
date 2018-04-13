@@ -57,15 +57,7 @@ abstract class SnappyFunSuite
   protected var testName: String = _
   protected val dirList: ArrayBuffer[String] = ArrayBuffer[String]()
 
-  protected def sc: SparkContext = {
-    val ctx = SnappyContext.globalSparkContext
-    if (ctx != null && !ctx.isStopped) {
-      ctx
-    } else {
-      cachedContext = null
-      new SparkContext(newSparkConf())
-    }
-  }
+  protected def sc: SparkContext = sc(addOn = null)
 
   protected def sc(addOn: (SparkConf) => SparkConf): SparkContext = {
     val ctx = SnappyContext.globalSparkContext
@@ -74,12 +66,10 @@ abstract class SnappyFunSuite
     }
     else {
       cachedContext = null
-      new SparkContext(newSparkConf(addOn))
+      val conf = newSparkConf(addOn)
+      conf.setIfMissing(Property.SparkFallback.name, "false")
+      new SparkContext(conf)
     }
-  }
-
-  protected def scWithConf(addOn: (SparkConf) => SparkConf): SparkContext = {
-    new SparkContext(newSparkConf(addOn))
   }
 
   @transient private var cachedContext: SnappyContext = _
@@ -127,7 +117,7 @@ abstract class SnappyFunSuite
     FileCleaner.deletePath(dir)
   }
 
-  protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf =
+  protected def newSparkConf(addOn: SparkConf => SparkConf): SparkConf =
     LocalSparkConf.newConf(addOn)
 
   protected def dirCleanup(): Unit = {

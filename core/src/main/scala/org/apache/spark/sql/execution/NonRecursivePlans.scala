@@ -35,7 +35,8 @@ abstract class NonRecursivePlans extends SparkPlan {
 
   override protected def doExecute(): RDD[InternalRow] = {
     if (nonCodeGeneratedPlan) {
-      throw new CodeGenerationException("Code generation failed for some of the child plans")
+      throw new CodeGenerationException(
+        "Code generation failed for some of the child plans. See driver log for details.")
     }
     nonCodeGeneratedPlan = true
     WholeStageCodegenExec(this).execute()

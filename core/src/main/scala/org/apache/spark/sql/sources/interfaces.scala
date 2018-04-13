@@ -136,7 +136,7 @@ trait MutableRelation extends DestroyRelation {
  * ::DeveloperApi
  *
  * An extension to <code>InsertableRelation</code> that allows for data to be
- * inserted (possibily having different schema) into the target relation after
+ * inserted (possibly having different schema) into the target relation after
  * comparing against the result of <code>insertSchema</code>.
  */
 @DeveloperApi

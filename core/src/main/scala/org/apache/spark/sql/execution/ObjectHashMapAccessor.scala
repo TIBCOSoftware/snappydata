@@ -24,10 +24,10 @@ import io.snappydata.collection.ObjectHashSet
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Average, Count, Last}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.execution.columnar.encoding.StringDictionary
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.types._
@@ -50,8 +50,7 @@ import org.apache.spark.unsafe.array.ByteArrayMethods
  * types. Storage of a column value in the map is a simple matter of assignment
  * of incoming variable to the corresponding field of the class object and
  * access is likewise read from that field of class . Nullability information
- * is crammed in long bit-mask fields which are generated as many required
- * (instead of unnecessary overhead of something like a BitSet).
+ * is in separate boolean variables for each nullable aggregate value.
  * <p>
  * Hashcode and equals methods are generated for the key column fields.
  * Having both key and value fields in the same class object helps both in
@@ -80,18 +79,21 @@ import org.apache.spark.unsafe.array.ByteArrayMethods
  * to be used for both group by aggregation as well as for HashJoins.
  */
 case class ObjectHashMapAccessor(@transient session: SnappySession,
-    @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
-    @transient valueExprs: Seq[Expression], classPrefix: String,
+    @transient ctx: CodegenContext, @transient keyExpressions: Seq[Expression],
+    @transient valueExpressions: Seq[Expression], classPrefix: String,
+    @transient aggregateExpressions: Seq[(AggregateExpression, Seq[Attribute])],
     hashMapTerm: String, dataTerm: String, maskTerm: String,
-    multiMap: Boolean, @transient consumer: CodegenSupport,
+    multiMap: Boolean, @transient consumer: BatchConsumer,
     @transient cParent: CodegenSupport, override val child: SparkPlan)
     extends UnaryExecNode with CodegenSupport {
 
   override def output: Seq[Attribute] = child.output
 
-  private[execution] val keyExpressions = keyExprs.map(_.canonicalized)
-  private[execution] val valueExpressions = valueExprs.map(_.canonicalized)
   private[execution] var dictionaryKey: Option[DictionaryCode] = None
+
+  @transient
+  private[execution] var entryIsNullExpr: String =
+    if (multiMap) "" else DictionaryOptimizedMapAccessor.ENTRY_IS_NULL_DEFAULT
 
   private[this] val valueIndex = keyExpressions.length
 
@@ -120,21 +122,14 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     }.unzip3
 
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
-  private[this] val nullsMaskPrefix = "nullsMask"
-  /**
-   * Indicator value for "nullIndex" of a non-primitive nullable that can be
-   * checked using its value rather than a separate bit mask.
-   */
-  private[this] val NULL_NON_PRIM = -2
   private[this] val numMultiValuesVar = "numMultiValues"
   private[this] val nextValueVar = "nextValue"
 
-  private type ClassVar = (DataType, String, ExprCode, Int)
+  private type ClassVar = (DataType, String, ExprCode)
 
-  @transient private[this] val (className, valueClassName, classVars,
-  numNullVars) = initClass()
+  @transient private[this] val (className, valueClassName, classVars) = initClass()
 
-  private def initClass(): (String, String, IndexedSeq[ClassVar], Int) = {
+  private def initClass(): (String, String, IndexedSeq[ClassVar]) = {
 
     // Key columns will be first in the class.
     // Eliminate common expressions and re-use variables.
@@ -165,34 +160,34 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // separate value class that the main class will extend. The value class
     // object will have the next value class object reference (possibly null)
     // forming a list that holds any additional values.
-    val (entryVars, valClassVars, numNulls, nullDecls) = createClassVars(
-      entryTypes, valClassTypes)
+    val (entryVars, valClassVars) = createClassVars(entryTypes, valClassTypes)
     if (!exists) {
       // Generate equals code for key columns only.
       val keyVars = entryVars.take(valueIndex)
       val equalsCode = keyVars.map {
-        case (dataType, _, ExprCode(_, nullVar, varName), nullIndex) =>
+        case (dataType, _, ExprCode(_, nullVar, varName)) =>
           genEqualsCode("this", varName, nullVar, other,
-            varName, nullVar, nullIndex, isPrimitiveType(dataType), dataType)
+            varName, nullVar, isPrimitiveType(dataType), dataType)
       }.mkString(" &&\n")
-      val (valueClassCode, extendsCode, nulls, multiValues) =
+      val (valueClassCode, extendsCode, multiValues) =
         if (valClassVars.nonEmpty) {
           (s"""
             public static class $valueClass {
-              $nullDecls
               ${valClassVars.map(e => s"${e._2} ${e._3.value};").mkString("\n")}
+              ${getNullDeclarations(valClassVars)}
               $valueClass $nextValueVar;
             }
-          """, s" extends $valueClass", "", "")
+          """, s" extends $valueClass", "")
         } else if (multiMap) {
-          ("", "", nullDecls, s"int $numMultiValuesVar;")
-        } else ("", "", nullDecls, "")
+          ("", "", s"int $numMultiValuesVar;")
+        } else ("", "", "")
+      val entryIsNull = if (entryIsNullExpr.isEmpty) "" else s"\nboolean $entryIsNullExpr;"
       val classCode =
         s"""
           public static final class $entryClass$extendsCode {
-            $nulls
             ${entryVars.map(e => s"${e._2} ${e._3.value};").mkString("\n")}
-            $multiValues
+            ${getNullDeclarations(entryVars)}
+            $multiValues$entryIsNull
             final int hash;
 
             static final $entryClass EMPTY = new $entryClass(0);
@@ -221,25 +216,25 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         valueClass, entryClass, multiMap)
     }
 
-    (entryClass, valueClass, entryVars ++ valClassVars, numNulls)
+    (entryClass, valueClass, entryVars ++ valClassVars)
+  }
+
+  private def getNullDeclarations(vars: Seq[ClassVar]): String = {
+    vars.collect {
+      case e if e._3.isNull != "false" && e._3.isNull.indexOf(' ') == -1 =>
+        s"boolean ${e._3.isNull};"
+    }.mkString("\n")
   }
 
   private def createClassVars(entryTypes: Seq[(DataType, Boolean)],
-      valClassTypes: Seq[(DataType, Boolean)]): (IndexedSeq[ClassVar],
-      IndexedSeq[ClassVar], Int, String) = {
-    // collect the null field declarations (will be in baseClass if present)
-    val nullMaskDeclarations = new StringBuilder
-
-    var numNulls = -1
-    var currNullVar = ""
-
+      valClassTypes: Seq[(DataType, Boolean)]): (IndexedSeq[ClassVar], IndexedSeq[ClassVar]) = {
     val numEntryVars = entryTypes.length
     val entryVars = new mutable.ArrayBuffer[ClassVar](numEntryVars)
     val valClassVars = new mutable.ArrayBuffer[ClassVar](valClassTypes.length)
     val allTypes = entryTypes ++ valClassTypes
     allTypes.indices.foreach { index =>
       val p = allTypes(index)
-      val varName = s"field$index"
+      val varName = "field" + index
       val dataType = p._1
       val nullable = p._2
       val javaType = dataType match {
@@ -247,29 +242,19 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         case StringType if !multiMap => "byte[]"
         case _ => ctx.javaType(dataType)
       }
-      val (nullVar, nullIndex) = if (nullable) {
+      val nullVar = if (nullable) {
         if (isPrimitiveType(dataType)) {
-          // nullability will be stored in separate long bitmask fields
-          numNulls += 1
-          // each long can hold bit mask for 64 nulls
-          val nullIndex = numNulls % 64
-          if (nullIndex == 0) {
-            currNullVar = s"$nullsMaskPrefix${numNulls / 64}"
-            nullMaskDeclarations.append(s"long $currNullVar;\n")
-          }
-          (currNullVar, nullIndex)
-        } else ("", NULL_NON_PRIM) // field itself is nullable
-      } else ("", -1)
+          // nullability will be stored in separate byte fields
+          "isNull" + index
+        } else s"($varName == null)" // field itself is nullable
+      } else "false"
       if (index < numEntryVars) {
-        entryVars += ((dataType, javaType, ExprCode("", nullVar, varName),
-            nullIndex))
+        entryVars += ((dataType, javaType, ExprCode("", nullVar, varName)))
       } else {
-        valClassVars += ((dataType, javaType, ExprCode("", nullVar, varName),
-            nullIndex))
+        valClassVars += ((dataType, javaType, ExprCode("", nullVar, varName)))
       }
     }
-    val numNullVars = if (numNulls >= 0) (numNulls / 64) + 1 else 0
-    (entryVars, valClassVars, numNullVars, nullMaskDeclarations.toString())
+    (entryVars, valClassVars)
   }
 
   private def getExpressionVars(expressions: Seq[Expression],
@@ -443,18 +428,18 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     }
     if (keyVars.length > 1) {
       classVars.tail.zip(keyVars.tail).map {
-        case ((BooleanType, _, _, _), ev) =>
+        case ((BooleanType, _, _), ev) =>
           addHashInt(s"${ev.value} ? 1 : 0", ev.isNull, hash)
-        case ((ByteType | ShortType | IntegerType | DateType, _, _, _), ev) =>
+        case ((ByteType | ShortType | IntegerType | DateType, _, _), ev) =>
           addHashInt(ev.value, ev.isNull, hash)
-        case ((LongType | TimestampType, _, _, _), ev) =>
+        case ((LongType | TimestampType, _, _), ev) =>
           addHashLong(ev.value, ev.isNull, hash)
-        case ((FloatType, _, _, _), ev) =>
+        case ((FloatType, _, _), ev) =>
           addHashInt(s"Float.floatToIntBits(${ev.value})", ev.isNull, hash)
-        case ((DoubleType, _, _, _), ev) =>
+        case ((DoubleType, _, _), ev) =>
           addHashLong(s"Double.doubleToLongBits(${ev.value})", ev.isNull,
             hash)
-        case ((_: DecimalType, _, _, _), ev) =>
+        case ((_: DecimalType, _, _), ev) =>
           addHashInt(s"${ev.value}.fastHashCode()", ev.isNull, hash)
         case (_, ev) =>
           addHashInt(s"${ev.value}.hashCode()", ev.isNull, hash)
@@ -470,74 +455,51 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
    */
   def generateEquals(objVar: String,
       keyVars: Seq[ExprCode]): String = classVars.zip(keyVars).map {
-    case ((dataType, _, ExprCode(_, nullVar, varName), nullIndex), colVar) =>
+    case ((dataType, _, ExprCode(_, nullVar, varName)), colVar) =>
       genEqualsCode("", colVar.value, colVar.isNull, objVar, varName,
-        nullVar, nullIndex, isPrimitiveType(dataType), dataType)
+        nullVar, isPrimitiveType(dataType), dataType)
   }.mkString(" &&\n")
 
   /**
    * Get the ExprCode for the key and/or value columns given a class object
    * variable. This also returns an initialization code that should be inserted
    * in generated code first. The last element in the result tuple is the names
-   * of null mask variables.
+   * of isNull variables.
    */
   def getColumnVars(keyObjVar: String, localValObjVar: String,
       onlyKeyVars: Boolean, onlyValueVars: Boolean,
-      checkNullObj: Boolean = false): (String, Seq[ExprCode], Array[String]) = {
+      checkNullObj: Boolean = false): Seq[ExprCode] = {
     // no local value if no separate value class
     val valObjVar = if (valueClassName.isEmpty) keyObjVar else localValObjVar
-    // Generate initial declarations for null masks to avoid reading those
-    // repeatedly. Caller is supposed to insert the code at the start.
-    val declarations = new StringBuilder
-    val nullValMaskVars = new Array[String](numNullVars)
-    val nullMaskVarMap = (0 until numNullVars).map { index =>
-      val nullVar = s"$nullsMaskPrefix$index"
-      // separate final variable for nulls mask of key columns because
-      // value can change for multi-map case whose nullsMask may not
-      // be properly set for key fields
-      val nullMaskVar = ctx.freshName("localKeyNullsMask")
-      val nullValMaskVar = ctx.freshName("localNullsMask")
-      if (checkNullObj) {
-        // for outer joins, check for null entry and set all bits to 1
-        declarations.append(s"final long $nullMaskVar = " +
-            s"$keyObjVar != null ? $keyObjVar.$nullVar : -1L;\n")
-      } else {
-        declarations.append(s"final long $nullMaskVar = $keyObjVar.$nullVar;\n")
-      }
-      declarations.append(s"long $nullValMaskVar = $nullMaskVar;\n")
-      nullValMaskVars(index) = nullValMaskVar
-      nullVar -> (nullMaskVar, nullValMaskVar)
-    }.toMap
-
-    val vars = if (onlyKeyVars) classVars.take(valueIndex)
+    val vars = if (onlyKeyVars) classVars.take(valueIndex).map(_ -> -1)
     else {
       // for value variables that are part of common expressions with keys,
-      // indicate the same as a null ExprCode with "nullIndex" pointing to
+      // indicate the same as a null ExprCode with "keyIndex" pointing to
       // the index of actual key variable to use in classVars
       val valueVars = valueExprIndexes.collect {
-        case (_, i) if i >= 0 => classVars(i + valueIndex)
-        case (_, i) => (null, null, null, -i - 1) // i < 0
+        case (_, i) if i >= 0 => classVars(i + valueIndex) -> -1
+        case (_, i) => (null, null, null) -> (-i - 1) // i < 0
       }
-      if (onlyValueVars) valueVars else classVars.take(valueIndex) ++ valueVars
+      if (onlyValueVars) valueVars else classVars.take(valueIndex).map(_ -> -1) ++ valueVars
     }
 
     // lookup common expressions in key for values if accumulated by
     // back to back calls to getColumnVars for keys, then columns
     val columnVars = new mutable.ArrayBuffer[ExprCode]
     vars.indices.foreach { index =>
-      val (dataType, javaType, ev, nullIndex) = vars(index)
+      val ((dataType, javaType, ev), keyIndex) = vars(index)
       val isKeyVar = index < valueIndex
       val objVar = if (isKeyVar) keyObjVar else valObjVar
       ev match {
-        // nullIndex contains index of referenced key variable in this case
-        case null if !onlyValueVars => columnVars += columnVars(nullIndex)
+        // keyIndex contains index of referenced key variable in this case
+        case null if !onlyValueVars => columnVars += columnVars(keyIndex)
         case _ =>
           val (localVar, localDeclaration) = {
             dataType match {
               case StringType if !multiMap =>
                 // wrap the bytes in UTF8String
                 val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(s"final UTF8String $lv = ").append(
+                (lv, new StringBuilder().append(s"UTF8String $lv = ").append(
                   if (checkNullObj) {
                     s"($objVar != null ? UTF8String.fromBytes(" +
                         s"$objVar.${ev.value}) : null);"
@@ -546,7 +508,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
                   }))
               case _ =>
                 val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(s"final $javaType $lv = ").append(
+                (lv, new StringBuilder().append(s"$javaType $lv = ").append(
                   if (checkNullObj) {
                     s"($objVar != null ? $objVar.${ev.value} " +
                         s" : ${ctx.defaultValue(dataType)});"
@@ -555,17 +517,17 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
                   }))
             }
           }
-          val nullExpr = nullMaskVarMap.get(ev.isNull)
-              .map(p => if (isKeyVar) genNullCode(p._1, nullIndex)
-              else genNullCode(p._2, nullIndex)).getOrElse(
-            if (nullIndex == NULL_NON_PRIM) s"($localVar == null)"
-            else "false")
-          val nullVar = ctx.freshName("isNull")
-          localDeclaration.append(s"\nboolean $nullVar = $nullExpr;")
+          val nullVar = if (ev.isNull == "false") "false"
+          else if (ev.isNull.indexOf(' ') != -1) s"($localVar == null)"
+          else {
+            val isNull = ctx.freshName("isNull")
+            localDeclaration.append(s"\nboolean $isNull = $objVar.${ev.isNull};")
+            isNull
+          }
           columnVars += ExprCode(localDeclaration.toString, nullVar, localVar)
       }
     }
-    (declarations.toString(), columnVars, nullValMaskVars)
+    columnVars
   }
 
   private[execution] def mapLookup(objVar: String, hash: String,
@@ -683,32 +645,12 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   private def initDictionaryCodeForSingleKeyCase(dictionaryArrayInit: String,
       input: Seq[ExprCode], keyExpressions: Seq[Expression] = keyExpressions,
-      output: Seq[Attribute] = output): Boolean = {
+      output: Seq[Attribute] = output): Unit = {
     // make a copy of input key variables if required since this is used
     // only for lookup and the ExprCode's code should not be cleared
     dictionaryKey = DictionaryOptimizedMapAccessor.checkSingleKeyCase(
       keyExpressions, getExpressionVars(keyExpressions, input.map(_.copy()),
         output), ctx, session)
-    dictionaryKey match {
-      case Some(d@DictionaryCode(dictionary, _, _)) =>
-        // initialize or reuse the array at batch level for join
-        // null key will be placed at the last index of dictionary
-        // and dictionary index will be initialized to that by ColumnTableScan
-        ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
-        ctx.addNewFunction(dictionaryArrayInit,
-          s"""
-             |public $className[] $dictionaryArrayInit() {
-             |  ${d.evaluateDictionaryCode()}
-             |  if (${dictionary.value} != null) {
-             |    return new $className[${dictionary.value}.size() + 1];
-             |  } else {
-             |    return null;
-             |  }
-             |}
-           """.stripMargin)
-        true
-      case None => false
-    }
   }
 
   /**
@@ -727,6 +669,27 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     initDictionaryCodeForSingleKeyCase(dictArrayInitVar, input)
     dictionaryKey match {
       case Some(dictKey) =>
+        // search for first Average or Count aggregate and set "entryIsNullField" expression
+        // accordingly to check "count == 0" to indicate null entry
+        entryIsNullExpr = DictionaryOptimizedMapAccessor.ENTRY_IS_NULL_DEFAULT
+        aggregateExpressions.exists { a =>
+          var forLast = false
+          val attr = a._1.aggregateFunction match {
+            case avg: Average if !avg.child.nullable => a._2(1)
+            case _: Count => a._2.head
+            case l: Last if !l.child.nullable && a._2.length >= 2 => forLast = true; a._2(1)
+            case _ => null
+          }
+          if (attr ne null) {
+            valueExprIndexes.exists { e =>
+              if (e._1 == attr && e._2 >= 0) {
+                val varName = classVars(e._2 + valueIndex)._3.value
+                entryIsNullExpr = if (forLast) s"$varName == false" else s"$varName == 0"
+                true
+              } else false
+            }
+          } else false
+        }
         val keyVars = getExpressionVars(keyExpressions, input)
         // materialize the key code explicitly if required by update expressions later (AQP-292:
         //   it can no longer access the code since keyVars has emptied the key codes in input)
@@ -739,7 +702,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           $evalKeyCode
           $className $objVar;
           ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
-            keyExpressions, keyVar, dictKey, dictArrayVar, objVar, valueInit,
+            keyExpressions, keyVar, dictKey, dictArrayVar, dictArrayInitVar, objVar, valueInit,
             continueOnNull = false, this)} else {
             // evaluate the key expressions
             ${evaluateVariables(keyVars)}
@@ -749,6 +712,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           }
         """
       case None =>
+        entryIsNullExpr = ""
         val inputEvals = evaluateVariables(input)
         val keyVars = getExpressionVars(keyExpressions, input)
         s"""
@@ -769,8 +733,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   // scalastyle:off
   def generateMapLookup(entryVar: String, localValueVar: String,
-      keyIsUnique: String, numRows: String, nullMaskVars: Array[String],
-      initCode: String, checkCond: (Option[ExprCode], String, Option[Expression]),
+      keyIsUnique: String, numRows: String,
+      checkCond: (Option[ExprCode], String, Option[Expression]),
       streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
       streamOutput: Seq[Attribute], buildKeyVars: Seq[ExprCode],
       buildVars: Seq[ExprCode], input: Seq[ExprCode],
@@ -795,7 +759,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         }
       case _ => buildKeyVars
     }
-    val mapKeyCodes = s"$initCode\n${evaluateVariables(mapKeyVars)}"
+    val mapKeyCodes = evaluateVariables(mapKeyVars)
 
     // invoke generateHashCode before consume so that hash variables
     // can be re-used by consume if possible
@@ -848,12 +812,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           break;
         }"""
     } else {
-      // code to update the null masks
-      val nullsUpdate = (0 until numNullVars).map { index =>
-        val nullVar = s"$nullsMaskPrefix$index"
-        s"${nullMaskVars(index)} = $localValueVar.$nullVar;"
-      }.mkString("\n")
-
       val dupRow =
         s"""
            |if (!currentRows.isEmpty()) {
@@ -862,7 +820,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
          """.stripMargin
       s"""
         if (($localValueVar = $localValueVar.$nextValueVar) != null) {
-          $nullsUpdate
           $dupRow
         } else {
           break;
@@ -889,7 +846,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // if required outside the block
         val code = s"""
           ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
-            streamKeys, keyVar, dictKey, dictArrayVar, entryVar,
+            streamKeys, keyVar, dictKey, dictArrayVar, dictArrayInitVar, entryVar,
             valueInit = null, continueOnNull, this)} else {
             // evaluate the key expressions
             ${if (keyVar.code.isEmpty) "" else keyVar.code.trim}
@@ -1004,47 +961,19 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val fieldVars = if (forKey) classVars.take(valueIndex)
     else classVars.drop(valueIndex)
 
-    val nullLocalVars = if (columnVars.isEmpty) {
-      // get nullability from object fields
-      fieldVars.map(e => genNullCode(s"$objVar.${e._3.isNull}", e._4))
-    } else {
-      // get nullability from already set local vars passed in columnVars
-      columnVars.map(_.isNull)
-    }
-
-    fieldVars.zip(nullLocalVars).zip(resultVars).map { case (((dataType, _,
-    fieldVar, nullIdx), nullLocalVar), resultVar) =>
-      if (nullIdx == -1) {
+    fieldVars.zip(resultVars).map { case ((dataType, _, fieldVar), resultVar) =>
+      val resultNull = resultVar.isNull
+      if (resultNull == "false") {
         // if incoming variable is null, then default will get assigned
         // because the variable will be initialized with the default
         genVarAssignCode(objVar, resultVar, fieldVar.value, dataType, doCopy)
-      } else if (nullIdx == NULL_NON_PRIM) {
-        val varName = fieldVar.value
-        s"""
-          if (${resultVar.isNull}) {
-            $objVar.$varName = null;
-          } else {
-            ${genVarAssignCode(objVar, resultVar, varName, dataType, doCopy)}
-          }
-        """
       } else {
-        val nullVar = fieldVar.isNull
-        // when initializing the object, no need to clear null mask
-        val nullClear = if (forInit) ""
-        else {
-          s"""
-            if ($nullLocalVar) {
-              $objVar.$nullVar &= ~${genNullBitMask(nullIdx)};
-            }
-          """
-        }
+        val fieldNull = fieldVar.isNull
+        val nullAssign = if (fieldNull == "false" || fieldNull.indexOf(' ') != -1) ""
+        else s"$objVar.$fieldNull = $resultNull;\n"
         s"""
-          if (${resultVar.isNull}) {
-            $objVar.$nullVar |= ${genNullBitMask(nullIdx)};
-          } else {
-            $nullClear
-            ${genVarAssignCode(objVar, resultVar, fieldVar.value,
-                dataType, doCopy)}
+          ${nullAssign}if (!$resultNull) {
+            ${genVarAssignCode(objVar, resultVar, fieldVar.value, dataType, doCopy)}
           }
         """
       }
@@ -1322,29 +1251,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$colVar = ${resultVar.value};"
   }
 
-  private def genNullBitMask(nullIdx: Int): String =
-    if (nullIdx > 0) s"(1L << $nullIdx)" else "1L"
-
-  private def genNullCode(colVar: String, nullIndex: Int): String = {
-    if (nullIndex > 0) {
-      s"(($colVar & (1L << $nullIndex)) != 0L)"
-    } else if (nullIndex == 0) {
-      s"(($colVar & 1L) == 1L)"
-    } else if (nullIndex == NULL_NON_PRIM) {
-      s"($colVar == null)"
-    } else "false"
-  }
-
-  private def genNotNullCode(colVar: String, nullIndex: Int): String = {
-    if (nullIndex > 0) {
-      s"(($colVar & (1L << $nullIndex)) == 0L)"
-    } else if (nullIndex == 0) {
-      s"(($colVar & 1L) == 0L)"
-    } else if (nullIndex == NULL_NON_PRIM) {
-      s"($colVar != null)"
-    } else "true"
-  }
-
   private def hashSingleInt(colVar: String, nullVar: String,
       hashVar: String): String = {
     if (nullVar.isEmpty || nullVar == "false") {
@@ -1405,7 +1311,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   private def genEqualsCode(
       thisVar: String, thisColVar: String, thisNullVar: String,
       otherVar: String, otherColVar: String, otherNullVar: String,
-      nullIndex: Int, isPrimitive: Boolean, dataType: DataType): String = {
+      isPrimitive: Boolean, dataType: DataType): String = {
     // check for object field or local variable
     val otherCol = if (otherColVar.isEmpty) otherVar
     else s"$otherVar.$otherColVar"
@@ -1431,17 +1337,14 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         }
       case _ => s"$thisColVar.equals($otherCol)"
     }
-    if (nullIndex == -1 || thisNullVar.isEmpty || thisNullVar == "false") {
+    if (thisNullVar.isEmpty || thisNullVar == "false") {
       equalsCode
-    } else if (nullIndex == NULL_NON_PRIM) {
+    } else if (isPrimitive) {
+      s"""(!$thisNullVar ? (!$otherColNull && $equalsCode)
+           : $otherColNull)"""
+    } else {
       s"""($thisColVar != null ? ($otherCol != null && $equalsCode)
            : ($otherCol) == null)"""
-    } else {
-      val notNullCode = if (thisVar.isEmpty) s"!$thisNullVar"
-      else genNotNullCode(thisNullVar, nullIndex)
-      val otherNotNullCode = genNotNullCode(otherColNull, nullIndex)
-      s"""($notNullCode ? ($otherNotNullCode && $equalsCode)
-           : !$otherNotNullCode)"""
     }
   }
 }

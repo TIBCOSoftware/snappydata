@@ -39,6 +39,7 @@ package org.apache.spark.sql.execution.aggregate
 import io.snappydata.collection.ObjectHashSet
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
@@ -46,7 +47,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
 /**
@@ -76,18 +76,17 @@ case class SnappyHashAggregateExec(
     aggregateExpressions.flatMap(_.aggregateFunction.aggBufferAttributes)
   }
 
-  @transient lazy private[this] val aggregateBufferAttributesForGroup = {
-    aggregateExpressions.flatMap(a => bufferAttributesForGroup(
-      a.aggregateFunction))
+  @transient lazy private[this] val aggregateGroupExpressions = {
+    aggregateExpressions.map(a => a -> bufferAttributesForGroup(a.aggregateFunction))
   }
+
+  @transient lazy private[this] val aggregateBufferAttributesForGroup =
+    aggregateGroupExpressions.flatMap(_._2)
 
   override lazy val allAttributes: AttributeSeq =
     child.output ++ aggregateBufferAttributes ++ aggregateAttributes ++
         aggregateExpressions.flatMap(_.aggregateFunction
             .inputAggBufferAttributes)
-
-  @transient val (metricAdd, _): (String => String, String => String) =
-    collection.Utils.metricMethods
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext,
@@ -113,15 +112,6 @@ case class SnappyHashAggregateExec(
         AttributeSet(resultExpressions.diff(groupingExpressions)
             .map(_.toAttribute)) ++
         AttributeSet(aggregateBufferAttributes)
-
-  private def getAliases(expressions: Seq[Expression],
-      existing: Seq[Seq[Attribute]]): Seq[Seq[Attribute]] = {
-    expressions.zipWithIndex.map { case (e, i) =>
-      resultExpressions.collect {
-        case a@Alias(c, _) if c.semanticEquals(e) => a.toAttribute
-      } ++ (if (existing.isEmpty) Nil else existing(i))
-    }
-  }
 
   override def outputPartitioning: Partitioning = {
     child.outputPartitioning
@@ -233,7 +223,7 @@ case class SnappyHashAggregateExec(
   }
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
-      input: Seq[ExprCode]): String = {
+      input: Seq[ExprCode], numBatchRows: String): String = {
     if (groupingExpressions.isEmpty || !canConsume(plan)) ""
     else {
       // create an empty method to populate the dictionary array
@@ -243,13 +233,17 @@ case class SnappyHashAggregateExec(
       // this array will be used at batch level for grouping if possible
       dictionaryArrayTerm = ctx.freshName("dictionaryArray")
       dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
+      // data and mask terms could be updated after dictionary array initialization
+      val mapInit =
+        s"""$mapDataTerm = (${keyBufferAccessor.getClassName}[])$hashMapTerm.data();
+          $maskTerm = $hashMapTerm.mask();"""
       ctx.addNewFunction(dictionaryArrayInit,
         s"""
-           |private $className[] $dictionaryArrayInit() {
+           |private $className[] $dictionaryArrayInit(int numBatchRows) {
            |  return null;
            |}
          """.stripMargin)
-      s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
+      s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit($numBatchRows);\n$mapInit"
     }
   }
 
@@ -259,10 +253,12 @@ case class SnappyHashAggregateExec(
     else {
       bufVarUpdates = bufVars.indices.map { i =>
         val ev = bufVars(i)
+        // check for the case of AverageExp where isNull is an expression
+        val assignIsNull = if (ev.isNull.indexOf(' ') != -1) ""
+        else s"this.${ev.isNull} = ${ev.isNull};\n"
         s"""
            |// update the member result variables from local variables
-           |this.${ev.isNull} = ${ev.isNull};
-           |this.${ev.value} = ${ev.value};
+           |${assignIsNull}this.${ev.value} = ${ev.value};
         """.stripMargin
       }.mkString("\n").trim
       bufVarUpdates
@@ -333,10 +329,10 @@ case class SnappyHashAggregateExec(
       // use local variables while member variables are updated at the end
       initBufVar = bufVars.indices.map { i =>
         val ev = bufVars(i)
-        s"""
-           |boolean ${ev.isNull} = this.${ev.isNull};
-           |${ctx.javaType(initExpr(i).dataType)} ${ev.value} = this.${ev.value};
-        """.stripMargin
+        // check for the case of AverageExp where isNull is an expression
+        val declIsNull = if (ev.isNull.indexOf(' ') != -1) ""
+        else s"boolean ${ev.isNull};\n"
+        s"$declIsNull${ctx.javaType(initExpr(i).dataType)} ${ev.value};\n"
       }.mkString("", "\n", initBufVar).trim
       produceOutput = s"$produceOutput\n$bufVarUpdates"
     }
@@ -393,10 +389,14 @@ case class SnappyHashAggregateExec(
     }
     // aggregate buffer should be updated atomic
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
-      s"""
-         | ${bufVars(i).isNull} = ${ev.isNull};
-         | ${bufVars(i).value} = ${ev.value};
-      """.stripMargin
+      if (bufVars(i).value != ev.value) {
+        s"""${bufVars(i).isNull} = ${ev.isNull};
+            ${bufVars(i).value} = ${ev.value};"""
+      } else {
+        // update the isNull variable in case its different (expression for AverageExp)
+        bufVars(i).isNull = ev.isNull
+        ""
+      }
     }
     s"""
        | // do aggregate
@@ -405,7 +405,7 @@ case class SnappyHashAggregateExec(
        | // evaluate aggregate functions
        | ${evaluateVariables(aggVals)}
        | // update aggregation buffer
-       | ${updates.mkString("\n").trim}
+       | ${updates.mkString("\n")}
     """.stripMargin
   }
 
@@ -484,7 +484,6 @@ case class SnappyHashAggregateExec(
     // Create a name for iterator from HashMap
     val iterTerm = ctx.freshName("mapIter")
     val iter = ctx.freshName("mapIter")
-    val iterObj = ctx.freshName("iterObj")
     val iterClass = "java.util.Iterator"
     ctx.addMutableState(iterClass, iterTerm, "")
 
@@ -503,7 +502,7 @@ case class SnappyHashAggregateExec(
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     keyBufferAccessor = ObjectHashMapAccessor(session, ctx, groupingExpressions,
-      aggregateBufferAttributesForGroup, "KeyBuffer", hashMapTerm,
+      aggregateBufferAttributesForGroup, "KeyBuffer", aggregateGroupExpressions, hashMapTerm,
       mapDataTerm, maskTerm, multiMap = false, this, this.parent, child)
 
     val entryClass = keyBufferAccessor.getClassName
@@ -527,7 +526,7 @@ case class SnappyHashAggregateExec(
 
     // generate code for output
     val keyBufferTerm = ctx.freshName("keyBuffer")
-    val (initCode, keyBufferVars, _) = keyBufferAccessor.getColumnVars(
+    val keyBufferVars = keyBufferAccessor.getColumnVars(
       keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false)
     val outputCode = generateResultCode(ctx, keyBufferVars,
       groupingExpressions.length)
@@ -536,6 +535,11 @@ case class SnappyHashAggregateExec(
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
+
+    // explicit nullability field check for dictionary case that initializes map upfront
+    val entryIsNull = keyBufferAccessor.entryIsNullExpr
+    val nullabilityCheck = if (entryIsNull.isEmpty) ""
+    else s"if ($keyBufferTerm.$entryIsNull) continue;\n"
 
     val aggTime = metricTerm(ctx, "aggTime")
     val beforeAgg = ctx.freshName("beforeAgg")
@@ -549,12 +553,10 @@ case class SnappyHashAggregateExec(
       }
 
       // output the result
-      Object $iterObj;
+      $entryClass $keyBufferTerm;
       final $iterClass $iter = $iterTerm;
-      while (($iterObj = $iter.next()) != null) {
-        $numOutput.${metricAdd("1")};
-        final $entryClass $keyBufferTerm = ($entryClass)$iterObj;
-        $initCode
+      while (($keyBufferTerm = ($entryClass)$iter.next()) != null) {
+        $nullabilityCheck$numOutput.${metricAdd("1")};
 
         $outputCode
 
@@ -585,9 +587,9 @@ case class SnappyHashAggregateExec(
       bufferInitialValuesForGroup(_).map(BindReferences.bindReference(_,
         inputAttr))))
     val initCode = evaluateVariables(initVars)
-    val (bufferInit, bufferVars, _) = keyBufferAccessor.getColumnVars(
+    val bufferVars = keyBufferAccessor.getColumnVars(
       keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = true)
-    val bufferEval = evaluateVariables(bufferVars)
+    // val bufferEval = evaluateVariables(bufferVars) // SW:
 
     // if aggregate expressions uses some of the key variables then signal those
     // to be materialized explicitly for the dictionary optimization case (AQP-292)
@@ -606,6 +608,9 @@ case class SnappyHashAggregateExec(
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = keyBufferAccessor.generateMapGetOrInsert(keyBufferTerm,
       initVars, initCode, input, evalKeys, dictionaryArrayTerm, dictionaryArrayInit)
+    val entryIsNull = keyBufferAccessor.entryIsNullExpr
+    val entryIsNullUpdate = if (entryIsNull.isEmpty || entryIsNull.indexOf(' ') != -1) ""
+    else s"\n$keyBufferTerm.$entryIsNull = false;"
 
     ctx.currentVars = bufferVars ++ input
     // pre-evaluate input variables used by child expressions and updateExpr
@@ -635,8 +640,7 @@ case class SnappyHashAggregateExec(
        |// -- Update the buffer with new aggregate results --
        |
        |// initialization for buffer fields
-       |$bufferInit
-       |$bufferEval
+       |// bufferEval SW:
        |
        |// common sub-expressions
        |$inputCodes
@@ -647,7 +651,7 @@ case class SnappyHashAggregateExec(
        |
        |// update generated class object fields
        |${keyBufferAccessor.generateUpdate(keyBufferTerm, bufferVars,
-          updateEvals, forKey = false, doCopy = false, forInit = false)}
+          updateEvals, forKey = false, doCopy = false, forInit = false)}$entryIsNullUpdate
     """.stripMargin
   }
 

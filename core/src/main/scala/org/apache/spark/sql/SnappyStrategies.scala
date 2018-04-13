@@ -16,14 +16,13 @@
  */
 package org.apache.spark.sql
 
-import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
 import io.snappydata.Property
 
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
@@ -334,10 +333,19 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
 
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
-    case PhysicalAggregation(groupingExpressions, aggregateExpressions,
+    case PhysicalAggregation(groupingExpressions, aggregateExprs,
     resultExpressions, child) if maxAggregateInputSize == 0 ||
         child.statistics.sizeInBytes <= maxAggregateInputSize =>
 
+      // transform aggregate functions to more optimal ones
+      val aggregateExpressions = aggregateExprs.map { agg =>
+        agg.aggregateFunction match {
+          case Average(c) => agg.copy(aggregateFunction = new AverageExp(c))
+          case Sum(c) => agg.copy(aggregateFunction = new SumExp(c))
+          case Count(c) => agg.copy(aggregateFunction = new CountExp(c))
+          case _ => agg
+        }
+      }
       val (functionsWithDistinct, functionsWithoutDistinct) =
         aggregateExpressions.partition(_.isDistinct)
       if (functionsWithDistinct.map(_.aggregateFunction.children)
@@ -441,7 +449,7 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
       child = partialAggregate,
       hasDistinct = false)
 
-    val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
+    val finalAggregate = if (isRootPlan && groupingAttributes.length <= 3) {
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
       CollectAggregateExec(basePlan = finalHashAggregate,
@@ -682,8 +690,10 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     // or if the plan is not a top-level one e.g. a subquery or inside
     // CollectAggregateExec (only top-level plan will catch and retry
     //   with disabled optimizations)
-    if (!topLevel || session.sessionState.disableStoreOptimizations) plan
-    else plan match {
+    if (!topLevel || session.sessionState.disableStoreOptimizations ||
+        !Property.SparkFallback.get(session.sessionState.conf)) {
+      plan
+    } else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
       case _ => CodegenSparkFallback(plan)

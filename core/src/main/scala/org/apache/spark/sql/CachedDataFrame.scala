@@ -55,7 +55,8 @@ import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.CallSite
 
-class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecution,
+class CachedDataFrame(snappySession: SnappySession,
+    exec: () => QueryExecution, queryExecution: QueryExecution,
     private[sql] val queryExecutionString: String,
     private[sql] val queryPlanInfo: SparkPlanInfo,
     private[sql] var currentQueryExecutionString: String,
@@ -146,7 +147,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   }
 
   private[sql] def duplicate(): CachedDataFrame = {
-    val cdf = new CachedDataFrame(snappySession, queryExecution, queryExecutionString,
+    val cdf = new CachedDataFrame(snappySession, exec, queryExecution, queryExecutionString,
       queryPlanInfo, null, null, cachedRDD, shuffleDependencies, encoder, shuffleCleanups,
       rddId, noSideEffects, queryHints, -1L, -1L, -1L)
     cdf.log_ = log_
@@ -322,7 +323,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     val (executedPlan, withFallback) = SnappySession.getExecutedPlan(queryExecution.executedPlan)
 
     def execute(): (Iterator[R], Long) = withNewExecutionIdTiming {
-      snappySession.addContextObject(SnappySession.ExecutionKey, () => queryExecution)
+      snappySession.addContextObject(SnappySession.ExecutionKey, exec)
 
       def executeCollect(): Array[InternalRow] = {
         if (withFallback ne null) withFallback.executeCollect()

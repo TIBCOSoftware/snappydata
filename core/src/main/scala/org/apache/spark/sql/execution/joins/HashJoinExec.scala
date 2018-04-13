@@ -74,9 +74,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   @transient private var dictionaryArrayTerm: String = _
   @transient private var dictionaryArrayInit: String = _
 
-  @transient val (metricAdd, _): (String => String, String => String) =
-    Utils.metricMethods
-
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
     "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
@@ -230,7 +227,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         (buildRDDs, buildRDDs.head.getNumPartitions)
       } else {
         // Equal partitions
-        ((streamRDDs ++ buildRDDs), streamRDDs.head.getNumPartitions)
+        (streamRDDs ++ buildRDDs, streamRDDs.head.getNumPartitions)
       }
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
@@ -367,7 +364,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     mapAccessor = ObjectHashMapAccessor(session, ctx, buildSideKeys,
-      buildPlan.output, "LocalMap", hashMapTerm, mapDataTerm, maskTerm,
+      buildPlan.output, "LocalMap", Nil, hashMapTerm, mapDataTerm, maskTerm,
       multiMap = true, this, this.parent, buildPlan)
 
     val buildRDDs = ctx.addReferenceObj("buildRDDs", rdds.toArray,
@@ -507,9 +504,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       case LeftOuter | RightOuter | FullOuter | LeftAnti => true
       case _ => false
     }
-    val (initCode, keyValueVars, nullMaskVars) = mapAccessor.getColumnVars(
-      entryVar, localValueVar, onlyKeyVars = false, onlyValueVars = false,
-      checkNullObj)
+    val keyValueVars = mapAccessor.getColumnVars(entryVar, localValueVar,
+      onlyKeyVars = false, onlyValueVars = false, checkNullObj)
     val buildKeyVars = keyValueVars.take(buildSideKeys.length)
     val buildVars = keyValueVars.drop(buildSideKeys.length)
     val checkCondition = getJoinCondition(ctx, input, buildVars)
@@ -524,10 +520,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
-    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
-      numRowsTerm, nullMaskVars, initCode, checkCondition, streamSideKeys,
-      streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, input,
-      resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
+    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm, numRowsTerm,
+      checkCondition, streamSideKeys, streamKeyVars, streamedPlan.output, buildKeyVars,
+      buildVars, input, resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {
@@ -538,7 +533,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def batchConsume(ctx: CodegenContext,
-      plan: SparkPlan, input: Seq[ExprCode]): String = {
+      plan: SparkPlan, input: Seq[ExprCode], numBatchRows: String): String = {
     if (!canConsume(plan)) return ""
     // create an empty method to populate the dictionary array
     // which will be actually filled with code in consume if the dictionary
@@ -549,11 +544,11 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
     ctx.addNewFunction(dictionaryArrayInit,
       s"""
-         |private $className[] $dictionaryArrayInit() {
+         |private $className[] $dictionaryArrayInit(int numBatchRows) {
          |  return null;
          |}
          """.stripMargin)
-    s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
+    s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit($numBatchRows);"
   }
 
   /**

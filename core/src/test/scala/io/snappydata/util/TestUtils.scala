@@ -16,14 +16,12 @@
  */
 package io.snappydata.util
 
-import io.snappydata.Constant
-import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
-
 import scala.collection.mutable
 
 import _root_.com.gemstone.gemfire.cache.Region
 import _root_.com.gemstone.gemfire.internal.cache.PartitionedRegion
 import _root_.com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
@@ -33,7 +31,7 @@ import org.apache.spark.sql.{Row, SnappyContext}
 
 object TestUtils {
 
-  def defaultCores: Int = math.min(8, Runtime.getRuntime.availableProcessors())
+  def defaultCores: Int = math.min(16, Runtime.getRuntime.availableProcessors())
 
   def dropAllTables(snc: => SnappyContext): Unit = {
     val sc = SnappyContext.globalSparkContext
@@ -102,6 +100,7 @@ object TestUtils {
 
     }
   }
+
   private def checkColocatedByList(colocated: java.util.List[PartitionedRegion],
       allRegions: mutable.Set[String]): Boolean = {
     val itr = colocated.iterator()

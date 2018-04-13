@@ -273,6 +273,12 @@ object Property extends Enumeration {
         "Default value is 0 meaning no limit on the size so the optimized " +
         "hash aggregation is always used.", Some("0"))
 
+  val SparkFallback: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.codegen.sparkFallback",
+    "Enable fallback to Spark plans in code-generation in case SnappyData plans " +
+        "fail to compile (for example due to 64K bytecode limit being breached). " +
+        "Default is true to enable fallback to Spark plans.", Some(true))
+
   val ForceLinkPartitionsToBuckets: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}linkPartitionsToBuckets",
     "Property to always treat each bucket as separate partition in column/row table scans. " +

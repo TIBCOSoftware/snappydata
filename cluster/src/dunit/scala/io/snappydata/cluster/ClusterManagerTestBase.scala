@@ -79,6 +79,9 @@ abstract class ClusterManagerTestBase(s: String)
   // reduce minimum compression size so that it happens for all the values for testing
   sysProps.setProperty(Constant.COMPRESSION_MIN_SIZE, "128")
 
+  // disable code generation fallback by default to ensure all tests work with Snappy plans
+  sysProps.setProperty(Property.SparkFallback.name, "false")
+
   var host: Host = _
   var vm0: VM = _
   var vm1: VM = _

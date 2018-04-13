@@ -136,10 +136,12 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override def isNullable: Boolean = realEncoder.isNullable
 
-  override protected[sql] def getNumNullWords: Int = realEncoder.getNumNullWords
+  override protected[sql] def getNumNullWords(size: Int): (Int, Int) =
+    realEncoder.getNumNullWords(size)
 
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
-      numWords: Int): Long = realEncoder.writeNulls(columnBytes, cursor, numWords)
+      numWords: Int, numNulls: Int): Long =
+    realEncoder.writeNulls(columnBytes, cursor, numWords, numNulls)
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int = -1): Long = {
@@ -260,7 +262,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition: Int, doWrite: Boolean = true): Long = {
     if (decoderNullPosition >= 0) {
       // nulls are always written as per relative position in decoder
-      if (decoder.isNullAt(decoderBytes, decoderNullPosition)) {
+      if (decoderNullPosition == decoder.getNextNullPosition) {
+        decoder.numNulls = decoder.moveToNextNull(decoderBytes,
+          decoderNullPosition, decoder.numNulls)
         // null words are copied as is in initial creation so only write in merge
         if (doWrite) realEncoder.writeIsNull(encoderPosition)
         return encoderCursor
@@ -271,16 +275,13 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   }
 
   private def writeHeader(columnBytes: AnyRef, cursor: Long, numNullWords: Int,
-      numBaseRows: Int, positions: Array[Int], numDeltas: Int): Long = {
+      numNulls: Int, numBaseRows: Int, positions: Array[Int], numDeltas: Int): Long = {
     var deltaCursor = cursor
     // typeId
     ColumnEncoding.writeInt(columnBytes, deltaCursor, typeId)
     deltaCursor += 4
-    // number of nulls
-    ColumnEncoding.writeInt(columnBytes, deltaCursor, numNullWords << 3)
-    deltaCursor += 4
     // write the null bytes
-    deltaCursor = writeNulls(columnBytes, deltaCursor, numNullWords)
+    deltaCursor = writeNulls(columnBytes, deltaCursor, numNullWords, numNulls)
 
     // write the number of base column rows to help in merging and creating
     // next hierarchy deltas if required
@@ -360,7 +361,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var positionCursor2 = 0L
     val existingValueSize = existingValue.remaining()
 
-    val nullable = field.nullable && (decoder1.hasNulls || decoder2.hasNulls)
+    val nullable = field.nullable & (nullable1 | nullable2)
     realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
     // Set the source of encoder with an upper limit for bytes that also avoids
     // checking buffer limit when writing position integers.
@@ -484,27 +485,27 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // the encoded data above
     val encodedData = realEncoder.columnData
     val encodedBytes = realEncoder.columnBytes
-    val numNullWords = realEncoder.getNumNullWords
+    val numElements = encoderPosition + 1
+    val (numNullWords, numNulls) = realEncoder.getNumNullWords(numElements)
     val deltaStart = realEncoder.columnBeginPosition
     val deltaSize = cursor - deltaStart
 
     assert(cursor <= realEncoder.columnEndPosition)
 
-    val numElements = encoderPosition + 1
     val positionsSize = if (existingIsDelta) {
       4 /* numBaseRows */ + 4 /* numPositions */ + (numElements << 2)
     } else 0
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
         // round positions to nearest word as done by writeHeader; for the non-delta case,
         // positionsSize is zero so total header is already rounded to word boundary
-        (numNullWords << 3) /* header */ + positionsSize + 7) >> 3) << 3) +
+        (math.abs(numNullWords) << 3) /* header */ + positionsSize + 7) >> 3) << 3) +
         realEncoder.encodedSize(cursor, deltaStart)))
     realEncoder.setSource(buffer, releaseOld = false)
 
     val columnBytes = allocator.baseObject(buffer)
     cursor = allocator.baseOffset(buffer)
     // write the header including positions
-    cursor = writeHeader(columnBytes, cursor, numNullWords, numBaseRows,
+    cursor = writeHeader(columnBytes, cursor, numNullWords, numNulls, numBaseRows,
       positionsArray, numElements)
 
     // write any internal structures (e.g. dictionary)
@@ -524,12 +525,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     buffer
   }
 
-  override def finish(encoderCursor: Long): ByteBuffer = {
-    throw new UnsupportedOperationException(
-      "ColumnDeltaEncoder.finish(cursor) not expected to be called")
-  }
-
-  def finish(encoderCursor: Long, numBaseRows: Int): ByteBuffer = {
+  override def finish(encoderCursor: Long, numBaseRows: Int): ByteBuffer = {
     val numDeltas = positionIndex + 1
     // write any remaining bytes in encoder
     val dataEndPosition = realEncoder.flushWithoutFinish(encoderCursor)
@@ -541,9 +537,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val allocator = this.storageAllocator
 
     // make space for the positions at the start
-    val numNullWords = realEncoder.getNumNullWords
+    val (numNullWords, numNulls) = realEncoder.getNumNullWords(numDeltas)
     val buffer = allocator.allocateForStorage(ColumnEncoding.checkBufferSize((((8L +
-        (numNullWords << 3) /* header */ +
+        (math.abs(numNullWords) << 3) /* header */ +
         // round positions to nearest word as done by writeHeader
         4 /* numBaseRows */ + 4 /* numPositions */ + (numDeltas << 2) + 7) >> 3) << 3) +
         realEncoder.encodedSize(encoderCursor, dataBeginPosition)))
@@ -551,7 +547,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     val columnBytes = allocator.baseObject(buffer)
     var cursor = allocator.baseOffset(buffer)
     // write the header including positions
-    cursor = writeHeader(columnBytes, cursor, numNullWords, numBaseRows,
+    cursor = writeHeader(columnBytes, cursor, numNullWords, numNulls, numBaseRows,
       positionsArray, numDeltas)
 
     // write any internal structures (e.g. dictionary)

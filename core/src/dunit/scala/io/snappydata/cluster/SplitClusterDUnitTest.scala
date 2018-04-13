@@ -29,9 +29,9 @@ import scala.util.Random
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
-import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
+import io.snappydata.{Constant, Property}
 import org.junit.Assert
 
 import org.apache.spark.sql.SnappyContext
@@ -52,6 +52,8 @@ class SplitClusterDUnitTest(s: String)
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
   System.setProperty(Constant.COMPRESSION_MIN_SIZE, compressionMinSize)
+  // disable code generation fallback by default to ensure all tests work with Snappy plans
+  bootProps.setProperty(Property.SparkFallback.name, "false")
 
   private[this] var host: Host = _
   var vm0: VM = _

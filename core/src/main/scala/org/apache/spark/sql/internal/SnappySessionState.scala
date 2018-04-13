@@ -21,7 +21,6 @@ import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
-import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
@@ -33,20 +32,17 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FileSourceStrategy, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FileSourceStrategy, FindDataSourceTable, LogicalRelation, PreprocessTableInsertion, ResolveDataSource}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
@@ -952,7 +948,16 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
 
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     extends Rule[LogicalPlan] {
-  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+
+  private var useDefault: Boolean = _
+
+  override def apply(plan: LogicalPlan): LogicalPlan = {
+    useDefault = false
+    val result = doApply(plan)
+    if (useDefault) PreprocessTableInsertion(conf)(result) else result
+  }
+
+  private def doApply(plan: LogicalPlan): LogicalPlan = plan transform {
     // Check for SchemaInsertableRelation first
     case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
     _, _), _, child, _, _) if l.resolved && child.resolved =>
@@ -968,6 +973,18 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
               "SELECT clause of the INSERT INTO/OVERWRITE statement " +
               "generates the same number of columns as its schema.")
       }
+
+    case i@InsertIntoTable(l@LogicalRelation(ir: RowInsertableRelation,
+    _, _), _, child, _, _) if l.resolved && child.resolved =>
+      // First, make sure the data to be inserted have the same number of
+      // fields with the schema of the relation.
+      val expectedOutput = l.output
+      if (expectedOutput.size != child.output.size) {
+        throw new AnalysisException(s"$l requires that the query in the " +
+            "SELECT clause of the PUT INTO statement " +
+            "generates the same number of columns as its schema.")
+      }
+      castAndRenameChildOutputForPut(i, expectedOutput, ir, l, child)
 
     // Check for PUT
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
@@ -1031,75 +1048,8 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         case _ => d
       }
 
-    // other cases handled like in PreprocessTableInsertion
-    case i@InsertIntoTable(table, _, child, _, _)
-      if table.resolved && child.resolved => table match {
-      case relation: CatalogRelation =>
-        val metadata = relation.catalogTable
-        preProcess(i, relation = null, metadata.identifier.quotedString,
-          metadata.partitionColumnNames)
-      case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
-        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preProcess(i, h, tblName, h.partitionSchema.map(_.name))
-      case LogicalRelation(ir: InsertableRelation, _, identifier) =>
-        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preProcess(i, ir, tblName, Nil)
-      case _ => i
-    }
-  }
-
-  private def preProcess(
-      insert: InsertIntoTable,
-      relation: BaseRelation,
-      tblName: String,
-      partColNames: Seq[String]): InsertIntoTable = {
-
-    // val expectedColumns = insert
-
-    val normalizedPartSpec = PartitioningUtils.normalizePartitionSpec(
-      insert.partition, partColNames, tblName, conf.resolver)
-
-    val expectedColumns = {
-      val staticPartCols = normalizedPartSpec.filter(_._2.isDefined).keySet
-      insert.table.output.filterNot(a => staticPartCols.contains(a.name))
-    }
-
-    if (expectedColumns.length != insert.child.schema.length) {
-      throw new AnalysisException(
-        s"Cannot insert into table $tblName because the number of columns are different: " +
-            s"need ${expectedColumns.length} columns, " +
-            s"but query has ${insert.child.schema.length} columns.")
-    }
-    if (insert.partition.nonEmpty) {
-      // the query's partitioning must match the table's partitioning
-      // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
-      val samePartitionColumns =
-      if (conf.caseSensitiveAnalysis) {
-        insert.partition.keySet == partColNames.toSet
-      } else {
-        insert.partition.keySet.map(_.toLowerCase) == partColNames.map(_.toLowerCase).toSet
-      }
-      if (!samePartitionColumns) {
-        throw new AnalysisException(
-          s"""
-             |Requested partitioning does not match the table $tblName:
-             |Requested partitions: ${insert.partition.keys.mkString(",")}
-             |Table partitions: ${partColNames.mkString(",")}
-           """.stripMargin)
-      }
-      castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
-
-//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-//        child)).getOrElse(insert)
-    } else {
-      // All partition columns are dynamic because because the InsertIntoTable
-      // command does not explicitly specify partitioning columns.
-      castAndRenameChildOutput(insert, expectedColumns)
-          .copy(partition = partColNames.map(_ -> None).toMap)
-//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-//        child)).getOrElse(insert).copy(partition = partColNames
-//          .map(_ -> None).toMap)
-    }
+    // other cases handled by PreprocessTableInsertion
+    case ir: InsertIntoTable => useDefault = true; ir
   }
 
   /**
@@ -1117,7 +1067,11 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
       case (expected, actual) =>
         if (expected.dataType.sameType(actual.dataType) &&
             expected.name == actual.name) {
-          actual
+          // insert zeros for nulls and not CodegenContext's default
+          if (!expected.nullable && actual.nullable) {
+            Alias(new IfNull(actual, Literal.default(Utils.getSQLDataType(actual.dataType))),
+              expected.name)()
+          } else actual
         } else {
           // avoid unnecessary copy+cast when inserting DECIMAL types
           // into column table
@@ -1143,30 +1097,6 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
         child)).asInstanceOf[T]
-    }
-  }
-
-  private def castAndRenameChildOutput(
-      insert: InsertIntoTable,
-      expectedOutput: Seq[Attribute]): InsertIntoTable = {
-    val newChildOutput = expectedOutput.zip(insert.child.output).map {
-      case (expected, actual) =>
-        if (expected.dataType.sameType(actual.dataType) &&
-            expected.name == actual.name &&
-            expected.metadata == actual.metadata) {
-          actual
-        } else {
-          // Renaming is needed for handling the following cases like
-          // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
-          // 2) Target tables have column metadata
-          Alias(Cast(actual, expected.dataType), expected.name)(
-            explicitMetadata = Option(expected.metadata))
-        }
-    }
-
-    if (newChildOutput == insert.child.output) insert
-    else {
-      insert.copy(child = Project(newChildOutput, insert.child))
     }
   }
 }

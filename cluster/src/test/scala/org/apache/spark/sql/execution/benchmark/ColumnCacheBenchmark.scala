@@ -37,7 +37,7 @@
 package org.apache.spark.sql.execution.benchmark
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
@@ -160,11 +160,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val benchmark = new Benchmark("SNAP-2118 with random data", numElems1)
 
     var expectedResult: Array[Row] = null
-    benchmark.addCase("smj", numIters, () => snappy.sql("set snappydata.hashJoinSize=-1")) { i =>
+    benchmark.addCase("smj", numIters,
+      () => snappy.sql(s"set ${Property.HashJoinSize.name}=-1")) { i =>
       if (i == 1) expectedResult = snappy.sql(sql).collect()
       else snappy.sql(sql).collect()
     }
-    benchmark.addCase("hash", numIters, () => snappy.sql("set snappydata.hashJoinSize=1g")) { i =>
+    benchmark.addCase("hash", numIters,
+      () => snappy.sql(s"set ${Property.HashJoinSize.name}=1g")) { i =>
       if (i == 1) ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
       else snappy.sql(sql).collect()
     }
@@ -205,12 +207,16 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   }
 
   test("insert more than 64K data") {
+    val snc = this.snc
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+    Property.SparkFallback.set(snc.conf, true)
+
     createAndTestBigTable()
 
     createAndTestTableWithNulls(size = 20000, numCols = 300)
     createAndTestTableWithNulls(size = 100000, numCols = 20)
 
+    Property.SparkFallback.set(snc.conf, false)
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key,
       SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
   }
@@ -218,6 +224,8 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   test("PutInto wide column table") {
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
     createAndTestPutIntoInBigTable()
+    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key,
+      SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
   }
 
   private def doGC(): Unit = {
