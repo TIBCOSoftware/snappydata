@@ -443,9 +443,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       // write for the second was skipped in the first block above
       if (!isGreater) {
         // set next update position to be from first
-        if (existingIsDelta) {
-          positionsArray(encoderPosition) = position1
-        }
+        if (existingIsDelta) positionsArray(encoderPosition) = position1
         // consume data at position1 and move it
         cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
           columnBytes1, writer, cursor, encoderPosition)
@@ -465,7 +463,6 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // set next update position to be from first
       if (existingIsDelta) {
-        val pos = ColumnEncoding.readInt(columnBytes1, positionCursor1)
         positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
         positionCursor1 += 4
       }

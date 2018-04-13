@@ -106,6 +106,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       s"expressions=$updateExpressions compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
+  @transient private var deltaInsertOrdinal: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
@@ -143,6 +144,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val cursors = ctx.freshName("cursors")
     val index = ctx.freshName("index")
     batchOrdinal = ctx.freshName("batchOrdinal")
+    deltaInsertOrdinal = ctx.freshName("deltaInsertOrdinal")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
     val lastBucketId = ctx.freshName("lastBucketId")
     val lastNumRows = ctx.freshName("lastNumRows")
@@ -170,6 +172,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |$initializeEncoders();
       """.stripMargin)
     ctx.addMutableState("int", batchOrdinal, "")
+    ctx.addMutableState("int", deltaInsertOrdinal, "")
     ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
     ctx.addMutableState("int", lastBucketId, "")
     ctx.addMutableState("int", lastNumRows, "")
@@ -221,6 +224,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val callEncoders = updateColumns.zipWithIndex.map { case (col, i) =>
       val function = ctx.freshName("encoderFunction")
       val ordinal = ctx.freshName("ordinal")
+      val insertCount = ctx.freshName("insertCount")
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
       val dataType = col.dataType
@@ -230,7 +234,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
-           |private void $function(int $ordinal, int $ordinalIdVar,
+           |private void $function(int $ordinal, int $ordinalIdVar, int $insertCount,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
            |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
            |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
@@ -255,6 +259,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |     " [" + ~$ordinalIdVar + "]" +
            |     " ,updated-ordinal-id=" + updatedOrdinalIdVar +
            |     " [" + ~updatedOrdinalIdVar + "]" +
+           |     " ,insertCount=" + $insertCount +
            |     " ,field=" + $field);
            |  }
            |  $encoderTerm.setUpdatePosition(updatedOrdinalIdVar);
@@ -263,7 +268,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
+      // TODO VB: Remove passing deltaInsertOrdinal
+      s"$function($batchOrdinal, (int)$ordinalIdVar, $deltaInsertOrdinal, ${ev.isNull}," +
+          s"${ev.value});"
     }.mkString("\n")
     // Write the delta stats row for all table columns at the end of a batch.
     // Columns that have not been updated will write nulls for all three stats
@@ -285,7 +292,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // GenerateUnsafeProjection will automatically split stats expressions into separate
     // methods if required so no need to add separate functions explicitly.
     // Count is hardcoded as zero which will change for "insert" index deltas.
-    val statsEv = ColumnWriter.genStatsRow(ctx, batchOrdinal, stats, statsSchema)
+    val statsEv = ColumnWriter.genStatsRow(ctx, deltaInsertOrdinal, stats, statsSchema)
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
@@ -317,6 +324,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    $lastBucketId = bucketId;
          |    $lastNumRows = numRows;
          |    $batchOrdinal = 0;
+         |    $deltaInsertOrdinal = 0;
          |  }
          |}
       """.stripMargin)
@@ -331,6 +339,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
        |  // write to the encoders
        |  $callEncoders
        |  $batchOrdinal++;
+       |  if ($ordinalIdVar < 0) {
+       |    $deltaInsertOrdinal++;
+       |  }
        |} else {
        |  $rowConsume
        |}
