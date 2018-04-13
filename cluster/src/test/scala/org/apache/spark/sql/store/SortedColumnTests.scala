@@ -83,6 +83,7 @@ class SortedColumnTests extends ColumnTablesTestBase {
     val colTableName = "colDeltaTable"
     val numElements = 300
     SortedColumnTests.testUpdateAndInsert(snc, colTableName, numBuckets = 1, numElements)
+    SortedColumnTests.testUpdateAndInsert(snc, colTableName, numBuckets = 2, numElements)
   }
 
   test("join query") {
@@ -400,7 +401,6 @@ object SortedColumnTests extends Logging {
         // scalastyle:off
         println(s"$testName loaded $dataFile_2")
         // scalastyle:on
-        /*
         dataFrameReader.load(fixedFilePath(dataFile_3)).write.putInto(colTableName)
         // scalastyle:off
         println(s"$testName loaded $dataFile_3")
@@ -417,7 +417,6 @@ object SortedColumnTests extends Logging {
         // scalastyle:off
         println(s"$testName loaded $dataFile_6")
         // scalastyle:on
-        */
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
@@ -430,7 +429,7 @@ object SortedColumnTests extends Logging {
       val colDf = session.sql(select_query)
       val res = colDf.collect()
       val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
-      // assert(res.length == expected.length)
+      assert(res.length == expected.length)
       // scalastyle:off
       println(s"$testName SELECT = ${res.length}")
       // scalastyle:on
@@ -438,7 +437,7 @@ object SortedColumnTests extends Logging {
         var i = 0
         res.foreach(r => {
           val col1 = r.getInt(0)
-          // assert(col1 == expected(i), s"$i : $col1")
+          assert(col1 == expected(i), s"$i : $col1")
           i += 1
         })
       }
