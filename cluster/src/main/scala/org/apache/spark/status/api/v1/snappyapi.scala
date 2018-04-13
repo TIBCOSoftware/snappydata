@@ -73,7 +73,8 @@ class MemberSummary private[spark](
     val heapExecutionUsageTrend: Array[Object],
     val offHeapUsageTrend: Array[Object],
     val offHeapStorageUsageTrend: Array[Object],
-    val offHeapExecutionUsageTrend: Array[Object]
+    val offHeapExecutionUsageTrend: Array[Object],
+    val aggrMemoryUsageTrend: Array[Object]
 )
 
 class TableSummary private[spark](

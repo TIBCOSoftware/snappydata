@@ -48,6 +48,8 @@ object ClusterDetails {
         csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_STORAGE_USAGE));
     clusterInfo += ("offHeapExecutionUsageTrend" ->
         csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_EXECUTION_USAGE));
+    clusterInfo += ("aggrMemoryUsageTrend" ->
+        csInstance.getUsageTrends(ClusterStatistics.TREND_AGGR_MEMORY_USAGE));
 
     val membersInfo = MemberDetails.getAllMembersInfo
     val tablesInfo = TableDetails.getAllTablesInfo

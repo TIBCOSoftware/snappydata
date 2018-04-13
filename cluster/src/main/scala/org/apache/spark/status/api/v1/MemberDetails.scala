@@ -151,6 +151,8 @@ object MemberDetails {
       MemberStatistics.TREND_OFFHEAP_STORAGE_USAGE)
     val offHeapExecutionUsageTrends = memberDetails.getUsageTrends(
       MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE)
+    val aggrMemoryUsageTrends = memberDetails.getUsageTrends(
+      MemberStatistics.TREND_AGGR_MEMORY_USAGE)
 
     new MemberSummary(memberId, nameOrId.toString, host, shortDirName, fullDirName,
       logFile, processId, status, memberType, isLocator, isDataServer, isLead, isActiveLead,
@@ -160,7 +162,7 @@ object MemberDetails {
       offHeapExecutionPoolUsed, offHeapExecutionPoolSize, offHeapMemorySize, offHeapMemoryUsed,
       timeLine, cpuUsageTrends, jvmUsageTrends, heapUsageTrends, heapStorageUsageTrends,
       heapExecutionUsageTrends, offHeapUsageTrends, offHeapStorageUsageTrends,
-      offHeapExecutionUsageTrends)
+      offHeapExecutionUsageTrends, aggrMemoryUsageTrends)
   }
 
 }

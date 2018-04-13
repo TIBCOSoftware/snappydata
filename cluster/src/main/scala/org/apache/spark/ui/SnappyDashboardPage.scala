@@ -294,15 +294,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
            style="width: 400px; height: 200px; display: inline-block; margin: 10px;
              border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
+      <div id="memoryUsageContainer"
+           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
+             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
+      </div>
       <div id="heapUsageContainer"
            style="width: 400px; height: 200px; display: inline-block; margin: 10px;
              border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
       <div id="offheapUsageContainer"
-           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
-             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
-      </div>
-      <div id="getsputsContainer"
            style="width: 400px; height: 200px; display: inline-block; margin: 10px;
              border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
       </div>
