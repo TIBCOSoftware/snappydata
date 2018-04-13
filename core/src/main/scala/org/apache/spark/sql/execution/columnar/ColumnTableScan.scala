@@ -609,7 +609,8 @@ private[sql] final case class ColumnTableScan(
         s"""
            |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(
            |    ${if (embedded) relationSchema.length - 3 else output.length - 3})
-           |    : ~$batchOrdinal; // Inverted bytes for incremental insert
+           |    :  ${if (ColumnTableScan.getCaseOfSortedInsertValue) {
+                   ~batchOrdinal} else batchOrdinal}; // Inverted bytes for incremental insert
         """.stripMargin)
     else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
