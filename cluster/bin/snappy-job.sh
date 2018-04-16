@@ -26,12 +26,20 @@ function absPath() {
 if [ -z "${SNAPPY_HOME}" ]; then
   export SNAPPY_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
 fi
+if [ -z "${SPARK_HOME}" ]; then
+  export SPARK_HOME="$SNAPPY_HOME"
+fi
 
 usage=$'Usage: 
        # Create a new context using the provided context factory
-       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>] [--passfile <config-file-path-with-credentials>]
+       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>]
+         [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>]
+         [--passfile <config-file-path-with-credentials>] [--packages <comma separated package-coordinates> ]
+         [--repos <comma separated mvn repositories] [--jarcache <path where resolved jars will be kept]
        # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
-       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>] [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>] [--passfile <config-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
+       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>]
+         [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>]
+         [--passfile <config-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
        # Get status of the job with the given job-id
        snappy-job.sh status --job-id <job-id> [--lead <hostname:port>] [--passfile <config-file-path-with-credentials>]
        # Stop a job with the given job-id
@@ -273,8 +281,15 @@ fi
 function addDependentJarsToProp () {
   if [[ $packages != "" ]]; then
     jarclasspath=`echo jars/*.jar | tr -s ' ' ':'`
-    echo "Resolving the dependencies for $packages"
-    depjars=`scala -classpath $jarclasspath org.apache.spark.deploy.GetJarsAndDependencies $packages $repos $jarcache 2>/dev/null`
+    depargs=
+    if [ ! -z $repos ]; then
+      depargs="-- repos $repos"
+    fi
+    if [ ! -z $jarcache ]; then
+      depargs="$depargs --jarcache $jarcache"
+    fi
+    depargs="$depargs $packages"
+    depjars=`${SPARK_HOME}/bin/spark-class -cp $jarclasspath org.apache.spark.deploy.GetJarsAndDependencies $depargs 2>/dev/null`
     depjars=`echo $depjars | sed -e "s/,/|/g"`
     if [[ -z "$APP_PROPS" ]]; then
       APP_PROPS="dependent-jar-uris=$depjars"
