@@ -322,8 +322,6 @@ jobServerURL="$hostnamePort/${cmdLine}"
 
 addDependentJarsToProp
 
-echo "APP_PROPS = $APP_PROPS"
-
 case $cmd in
   jobs | newcontext)
     if [[ $appjar != "" ]]; then
