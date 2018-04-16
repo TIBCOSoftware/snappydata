@@ -66,9 +66,7 @@ object TestUtils {
           }
           allow
         })
-
-
-
+        
         val allRegions = mutable.HashSet[String]()
         val allTablesWithRegions = tablesToBeDropped.map { t =>
           val table = t._1
