@@ -266,6 +266,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
+
   final def functionIdentifier: Rule1[FunctionIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
     (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, name: String) =>
@@ -386,6 +387,8 @@ object SnappyParserConsts {
   final val SELECT: Keyword = reservedKeyword("select")
   final val SET: Keyword = reservedKeyword("set")
   final val TABLE: Keyword = reservedKeyword("table")
+  final val DISK_STORE: Keyword = reservedKeyword("diskstore")
+  final val CALL = reservedKeyword("call")
   final val THEN: Keyword = reservedKeyword("then")
   final val TO: Keyword = reservedKeyword("to")
   final val TRUE: Keyword = reservedKeyword("true")
