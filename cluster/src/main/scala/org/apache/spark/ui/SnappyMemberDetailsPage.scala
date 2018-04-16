@@ -43,19 +43,11 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
   private val defaultBytes: Long = 1024 * 100
 
   private def createPageTitleNode(title: String): Seq[Node] = {
-
-    val sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss")
-    val lastUpdatedOn = sdf.format(new Date())
-
     <div class="row-fluid">
       <div class="span12">
         <h3 style="vertical-align: bottom; display: inline-block;">
           {title}
         </h3>
-        <span style="float:right; font-size: 12px;" data-toggle="tooltip" title=""
-              data-original-title="Reload page to refresh Dashboard.">
-          Last updated on {lastUpdatedOn}
-        </span>
       </div>
     </div>
   }
