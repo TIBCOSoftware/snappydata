@@ -177,6 +177,7 @@ public class SnappyTest implements Serializable {
   }
 
 
+
   public static void initSnappyArtifacts() {
     snappyTest = new SnappyTest();
     HostDescription hd = TestConfig.getInstance().getMasterDescription()
@@ -220,7 +221,7 @@ public class SnappyTest implements Serializable {
     return clusterTestsJar;
   }
 
-  protected void getClientHostDescription() {
+  public void getClientHostDescription() {
     hd = TestConfig.getInstance()
         .getClientDescription(RemoteTestModule.getMyClientName())
         .getVmDescription().getHostDescription();
@@ -359,6 +360,11 @@ public class SnappyTest implements Serializable {
         }
         break;
       case SERVER:
+        boolean excludeDirCreation = false;
+        if(SnappyPrms.getServerLauncherProps().contains("-dir"))
+        {
+          excludeDirCreation = true;
+        }
         locatorsList = getLocatorsList("locators");
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList + " -dir=" +
             dirPath + clientPort + port + SnappyPrms.getServerMemory()
@@ -2070,63 +2076,67 @@ public class SnappyTest implements Serializable {
         String userJob = (String) jobClassNames.elementAt(i);
         String masterHost = getSparkMasterHost();
         String masterPort = MASTER_PORT;
-        String locatorsList = getLocatorsList("locators");
         String command = null;
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
         String userAppArgs = SnappyPrms.getUserAppArgs();
+        String commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+            " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " +
+            " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort;
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
         logFile = new File(dest);
         if (SnappyPrms.hasDynamicAppProps()) {
           userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
         }
-        if(SnappyCDCPrms.getIsCDC())
-        {
-          int finalStart= SnappyCDCPrms.getFinalStartRange();
-          int finalEnd = SnappyCDCPrms.getFinalEndRange();
+        if (SnappyCDCPrms.getIsCDC()) {
+          int finalStart = SnappyCDCPrms.getInitEndRange() + 1;
+          int finalEnd = SnappyCDCPrms.getInitEndRange() + 100;
           Log.getLogWriter().info("Start range and end range : " + finalStart + " & " + finalEnd);
           String appName = SnappyCDCPrms.getAppName();
-          if(appName.equals("CDCIngestionApp2")) {
-            userAppArgs = finalStart + " " + finalEnd + " "+userAppArgs ;
-          }
-          else if(appName.equals("CDCIngestionApp1"))
+          if (appName.equals("CDCIngestionApp2")) {
+            int tempFinalStart = (Integer) SnappyBB.getBB().getSharedMap().get("finalStartRange");
+            int tempEndRange = (Integer) SnappyBB.getBB().getSharedMap().get("finalEndRange");
+            Log.getLogWriter().info("For  second Ingestion New Start range and end range : " + tempFinalStart + " & " + tempEndRange);
+            userAppArgs = tempFinalStart + " " + tempEndRange + " " + userAppArgs;
+            SnappyBB.getBB().getSharedMap().put("finalStartRange", tempEndRange + 1);
+            SnappyBB.getBB().getSharedMap().put("finalEndRange", tempEndRange + 10);
+          } else if (appName.equals("CDCIngestionApp1")) {
             userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
+            SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
+            SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
+          }
+          else if(appName.equals("BulkDeleteApp")){
+            commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+                " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " ;
+          }
           command = snappyJobScript + " --class " + userJob +
               " --name " + appName +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +
-              " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-              " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-              " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort +
-              " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-              userAppArgs ;
-              if(SnappyCDCPrms.getIsCDCStream())
-                command = "nohup " + command + " > " + logFile + " & ";
-        }
-        else {
+              SnappyPrms.getSparkSubmitExtraPrms() + " " +commonArgs +" " +snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              userAppArgs;
+          if (SnappyCDCPrms.getIsCDCStream())
+            command = "nohup " + command + " > " + logFile + " & ";
+        } else {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +
-              " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-              " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" +
-              " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort +
-              " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " +commonArgs +" " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
               userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         }
         Log.getLogWriter().info("spark-submit command is : " + command);
         pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
         Log.getLogWriter().info("CDC stream is : " + SnappyCDCPrms.getIsCDCStream());
-        if(SnappyCDCPrms.getIsCDCStream()) {
+        if (SnappyCDCPrms.getIsCDCStream()) {
+          //wait for 1 min untill the cdc streams starts off.
           try {
-            Thread.sleep(60000);
-          }catch (InterruptedException ie){
+            Thread.sleep(120000);
+          } catch (InterruptedException ie) {
 
           }
-          Log.getLogWriter().info("SP - inside getIsCDCStream : " + SnappyCDCPrms.getIsCDCStream());
+          Log.getLogWriter().info("Inside getIsCDCStream : " + SnappyCDCPrms.getIsCDCStream());
           return;
         }
         String searchString = "Spark ApplicationEnd: ";
@@ -2370,7 +2380,7 @@ public class SnappyTest implements Serializable {
     return dirname;
   }
 
-  protected synchronized void generateConfig(String fileName) {
+  public synchronized void generateConfig(String fileName) {
     File file = null;
     try {
       String path = productConfDirPath + sep + fileName;

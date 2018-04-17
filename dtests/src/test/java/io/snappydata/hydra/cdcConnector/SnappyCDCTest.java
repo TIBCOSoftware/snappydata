@@ -1,41 +1,26 @@
 package io.snappydata.hydra.cdcConnector;
 
 import hydra.Log;
-import io.snappydata.hydra.cluster.SnappyTest;
-import org.apache.spark.sql.catalyst.plans.logical.Except;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.Enumeration;
-import java.util.HashMap;
+import io.snappydata.hydra.cluster.SnappyTest;
+
+import java.io.*;
+
 import java.util.List;
 import java.util.Properties;
 
 public class SnappyCDCTest extends SnappyTest {
-  protected static SnappyCDCTest snappyCdcTest;
+  protected static SnappyCDCTest snappyCDCTest;
 
   public SnappyCDCTest() {
   }
 
-  private static Properties readPropertyFile(String filePath) throws Exception {
-    File file = new File(filePath);
-    FileInputStream fileInput = new FileInputStream(file);
-    Properties properties = new Properties();
-    properties.load(fileInput);
-    fileInput.close();
-    return properties;
-  }
   public static void HydraTask_runConcurrencyJob() {
     Log.getLogWriter().info("Inside HydraTask_runConcurrencyJob");
-    if (snappyCdcTest == null) {
-      snappyCdcTest = new SnappyCDCTest();
-      Log.getLogWriter().info("SP1");
-    }
-    Log.getLogWriter().info("SP2");
-    snappyCdcTest.runConcurrencyTestJob();
-    Log.getLogWriter().info("SP3");
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+     }
+     snappyCDCTest.runConcurrencyTestJob();
   }
 
   public static void HydraTask_closeStreamingJob() {
@@ -46,8 +31,8 @@ public class SnappyCDCTest extends SnappyTest {
     File log = null;
     File logFile = null;
     Log.getLogWriter().info("Inside HydraTask_closeStreamingJob");
-    if (snappyCdcTest == null) {
-      snappyCdcTest = new SnappyCDCTest();
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
     }
     try{
       curlCmd = "curl -d \"name="+appName+"&terminate=true\" -X POST http://pnq-spillai3:8080/app/killByName/";
@@ -63,16 +48,6 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
- /* public void runIngestionApp() {
-    CDCIngestionApp cdcIngestionApp = new CDCIngestionApp();
-    int start = SnappyCDCPrms.getStartRange();
-    int end = SnappyCDCPrms.getEndRange();
-    Log.getLogWriter().info("Inside runIngestionApp");
-    cdcIngestionApp.runIngestionApp(start, end);
-    Log.getLogWriter().info("Finish runIngestionApp");
-  }*/
-
-
   public void runConcurrencyTestJob() {
     try {
       CDCPerfSparkJob cdcPerfSparkJob = new CDCPerfSparkJob();
@@ -81,12 +56,86 @@ public class SnappyCDCTest extends SnappyTest {
       String queryPath = SnappyCDCPrms.getDataLocation();
       Boolean isScanQuery = SnappyCDCPrms.getIsScanQuery();
       Boolean isBulkDelete = SnappyCDCPrms.getIsBulkDelete();
-      int startRange = SnappyCDCPrms.getStartRange();
-      Log.getLogWriter().info("Inside runConcurrencyTestJob() " + threadCnt + " " + queryPath + " "+isScanQuery + " hostPort = " + endpoints.get(0));
-      cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath,endpoints.get(0), isScanQuery,isBulkDelete,startRange);
+      Boolean isPointLookUp = SnappyCDCPrms.getIsPointLookUP();
+      String sqlServerInst = SnappyCDCPrms.getSqlServerInstance();
+      String dataBaseName = SnappyCDCPrms.getDataBaseName();
+      int intStartRange = SnappyCDCPrms.getInitStartRange();
+      Log.getLogWriter().info("Inside runConcurrencyTestJob() parameters are  " + threadCnt + " "+  queryPath+ " "
+          +endpoints.get(0)+ " " + isScanQuery+ " " +isBulkDelete+ " " +isPointLookUp + " " + intStartRange + " "
+          + sqlServerInst + " " + dataBaseName);
+      cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath,endpoints.get(0), isScanQuery,isBulkDelete,
+          isPointLookUp,intStartRange,sqlServerInst);
 
     } catch (Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runConcurrencyTestJob() method");
+    }
+  }
+
+  public static void performHA() {
+    File orgName = null;
+    File bkName = null;
+    File tempConfFile = null;
+    try {
+      String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+      Log.getLogWriter().info("snappyPath File path is " + snappyPath);
+
+      String nodeType = SnappyCDCPrms.getNodeType();
+
+      orgName = new File(snappyPath + "/conf/" + nodeType);
+      bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
+
+      String nodeInfoforHA = SnappyCDCPrms.getNodeInfoforHA();
+
+      //rename original conf file
+      if (orgName.renameTo(bkName)) {
+        Log.getLogWriter().info("File renamed to " + bkName);
+      } else {
+        Log.getLogWriter().info("Error");
+      }
+
+      //write a new file in conf
+      try {
+        tempConfFile = new File(snappyPath + "/conf/" + nodeType);
+        FileWriter fw = new FileWriter(tempConfFile);
+        fw.write(nodeInfoforHA);
+        fw.close();
+        File log = new File(".");
+        String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
+        Log.getLogWriter().info("The destination file is " + dest);
+        File logFile = new File(dest);
+        ProcessBuilder pbStop = new ProcessBuilder(snappyPath + "/sbin/snappy-servers.sh", "stop");
+        snappyTest.executeProcess(pbStop, logFile);
+
+        Thread.sleep(30000); //sleep for 3 min before restarting the node.
+
+        ProcessBuilder pbStart = new ProcessBuilder(snappyPath + "/sbin/snappy-servers.sh", "start");
+        snappyTest.executeProcess(pbStart, logFile);
+
+        Thread.sleep(60000);
+
+        //delete the temp conf file created.
+        if (tempConfFile.delete()) {
+          System.out.println(tempConfFile.getName() + " is deleted!");
+        } else {
+          System.out.println("Delete operation is failed.");
+        }
+
+        //restore the back up to its originals.
+        if (bkName.renameTo(orgName)) {
+          Log.getLogWriter().info("File renamed to " + orgName);
+        } else {
+          Log.getLogWriter().info("Error");
+        }
+      } catch (FileNotFoundException e) {
+        // File not found
+        e.printStackTrace();
+      } catch (IOException e) {
+        // Error when writing to the file
+        e.printStackTrace();
+      }
+
+    } catch (Exception e) {
+      Log.getLogWriter().info("Caught Exception in performHA " + e.getMessage());
     }
   }
 
