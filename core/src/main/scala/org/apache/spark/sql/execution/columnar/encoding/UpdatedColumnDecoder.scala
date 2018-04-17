@@ -123,7 +123,7 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
         return isInsertOrUpdate(ordinal)
       }
     }
-    ColumnTableScan.UPDATE_IN_DELTA // never reached
+    ColumnTableScan.NOT_IN_DELTA // never reached
   }
 
   private def isInsertOrUpdate(ordinal: Int): Byte = if (nextUpdatedPosition < 0) {
