@@ -810,7 +810,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,lastRowFromDeltaWasInsert=" + $lastRowFromDeltaWasInsert +
            |    "");
            |    }
-           |  $isNullVar = false;
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;
