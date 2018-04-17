@@ -401,7 +401,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var encoderPosition = -1
     var doProcess = numPositions1 > 0 && numPositions2 > 0
     while (doProcess) {
-      encoderPosition += 1
+      // TODO VB: Discuss with sumedh
+      // encoderPosition += 1
       // Only valid for positive ordinals i.e. meant for update
       val areDuplicate: Boolean = position1 > 0 && position2 > 0 &&
         position1 == position2
@@ -419,6 +420,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       if (isGreater || areDuplicate) {
         // set next update position to be from second
         if (existingIsDelta && !areDuplicate) {
+          // TODO VB: Discuss with sumedh
+          encoderPosition += 1
           val pos = if (position2 < 0) {
             position2 - insertCount
           } else {
@@ -447,6 +450,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       if (!isGreater) {
         // set next update position to be from first
         if (existingIsDelta) {
+          // TODO VB: Discuss with sumedh
+          encoderPosition += 1
           positionsArray(encoderPosition) = position1
           if (position1 < 0) {
             insertCount += 1
