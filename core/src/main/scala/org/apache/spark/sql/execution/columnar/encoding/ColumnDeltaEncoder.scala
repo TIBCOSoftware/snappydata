@@ -403,9 +403,16 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     while (doProcess) {
       // TODO VB: Discuss with sumedh
       // encoderPosition += 1
-      // Only valid for positive ordinals i.e. meant for update
-      val areDuplicate: Boolean = position1 > 0 && position2 > 0 &&
-        position1 == position2
+      val areDuplicate: Boolean = (position1 >= 0, position2 >= 0) match {
+        case (true, true) =>
+          // Only valid for positive ordinals i.e. meant for update
+          position1 == position2
+        case (true, false) =>
+          // Update on existing incremental insert
+          position1 == ColumnTableScan.getPositive(position2)
+        case (false, true) => false // TODO VB: ?
+        case (false, false) => false // No duplicate if both is for insert
+      }
       val isGreater: Boolean = (position1 >= 0, position2 >= 0) match {
         case (true, true) => position1 > position2 + insertCount
         case (true, false) =>
