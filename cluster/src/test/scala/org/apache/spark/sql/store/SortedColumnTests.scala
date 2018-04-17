@@ -376,50 +376,71 @@ object SortedColumnTests extends Logging {
     session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
     session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
 
-    try {
-      createColumnTable(session, colTableName, numBuckets, numElements)
-      val dataFrameReader : DataFrameReader = session.read
-      dataFrameReader.load(fixedFilePath(dataFile_1)).write.insertInto(colTableName)
-      // scalastyle:off
-      println(s"$testName loaded $dataFile_1")
-      // scalastyle:on
-
-      val update_query = s"update $colTableName set addr = 'updated'"
+    def doUpdate(queryStr: String, whereClause: String = ""): String = {
+      val update_query = s"update $colTableName set addr = '$queryStr' $whereClause"
       // scalastyle:off
       println(s"$testName started UPDATE $update_query")
       // scalastyle:on
       ColumnTableScan.setDebugMode(true)
       val upd = session.sql(update_query)
       // scalastyle:off
-      println(s"$testName done UPDATE")
+      println(s"$testName done UPDATE $update_query")
       // scalastyle:on
+      queryStr
+    }
 
+    def doPutInto(fileName: String, dataFrameReader: DataFrameReader): Unit = {
       try {
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        ColumnTableScan.setDebugMode(true)
-        dataFrameReader.load(fixedFilePath(dataFile_2)).write.putInto(colTableName)
         // scalastyle:off
-        println(s"$testName loaded $dataFile_2")
+        println(s"$testName start loading $fileName")
         // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_3)).write.putInto(colTableName)
+        dataFrameReader.load(fixedFilePath(fileName)).write.putInto(colTableName)
         // scalastyle:off
-        println(s"$testName loaded $dataFile_3")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_4)).write.putInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_4")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_5)).write.putInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_5")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_6)).write.putInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_6")
+        println(s"$testName loaded $fileName")
         // scalastyle:on
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
+    }
+
+    def verifyUpdate(expected: String): Unit = {
+      val select_query = s"select * from $colTableName"
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      res.foreach(r => {
+        val col1 = r.getString(1)
+        assert(col1.equalsIgnoreCase(expected), s"$col1 : $expected")
+      })
+    }
+
+    try {
+      createColumnTable(session, colTableName, numBuckets, numElements)
+
+      // scalastyle:off
+      println(s"$testName start loading $dataFile_1")
+      // scalastyle:on
+      val dataFrameReader: DataFrameReader = session.read
+      dataFrameReader.load(fixedFilePath(dataFile_1)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_1")
+      // scalastyle:on
+      verifyUpdate(doUpdate("updated1"))
+
+      doPutInto(dataFile_2, dataFrameReader)
+      verifyUpdate(doUpdate("updated2"))
+
+      doPutInto(dataFile_3, dataFrameReader)
+      verifyUpdate(doUpdate("updated3"))
+
+      doPutInto(dataFile_4, dataFrameReader)
+      verifyUpdate(doUpdate("updated4"))
+
+      doPutInto(dataFile_5, dataFrameReader)
+      verifyUpdate(doUpdate("updated5"))
+
+      doPutInto(dataFile_6, dataFrameReader)
+      verifyUpdate(doUpdate("updated6"))
 
       val select_query = s"select * from $colTableName"
       // scalastyle:off
