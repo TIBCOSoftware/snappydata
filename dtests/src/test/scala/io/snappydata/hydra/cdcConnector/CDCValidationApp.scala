@@ -33,6 +33,7 @@ object CDCValidationApp {
   def main(args: Array[String]) {
     // scalastyle:off println
     // table file contains table name that is ; seperated
+    Thread.sleep(60000)
     val tableFile = args(0)
     val flag = args(1)
     val isUpdate = args(2)
@@ -61,7 +62,6 @@ object CDCValidationApp {
       else{
         hostPort = "sqlent2.eastus.cloudapp.azure.com:1434"
       }
-
       val driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
       Class.forName(driver)
       val sqlServerURL = s"jdbc:sqlserver://$hostPort"
@@ -78,7 +78,6 @@ object CDCValidationApp {
       val tableNameArr: Array[String] = new Array[String](tableArray.length)
       for (i <- 0 to tableArray.length - 1) {
         val tempArr = tableArray(i).split("=")
-        // pw.println("the values are "+ tempArr(0) + tempArr(1))
         tableNameArr(i) = tempArr(0)
         idValArr(i) = tempArr(1)
       }
