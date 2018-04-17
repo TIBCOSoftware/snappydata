@@ -381,7 +381,6 @@ object SortedColumnTests extends Logging {
       // scalastyle:off
       println(s"$testName started UPDATE $update_query")
       // scalastyle:on
-      ColumnTableScan.setDebugMode(true)
       val upd = session.sql(update_query)
       // scalastyle:off
       println(s"$testName done UPDATE $update_query")
@@ -442,25 +441,30 @@ object SortedColumnTests extends Logging {
       doPutInto(dataFile_6, dataFrameReader)
       verifyUpdate(doUpdate("updated6"))
 
-      val select_query = s"select * from $colTableName"
-      // scalastyle:off
-      println(s"$testName started SELECT $select_query")
-      // scalastyle:on
-      ColumnTableScan.setDebugMode(true)
-      val colDf = session.sql(select_query)
-      val res = colDf.collect()
-      val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
-      assert(res.length == expected.length)
-      // scalastyle:off
-      println(s"$testName SELECT = ${res.length}")
-      // scalastyle:on
-      if (numBuckets == 1) {
-        var i = 0
-        res.foreach(r => {
-          val col1 = r.getInt(0)
-          assert(col1 == expected(i), s"$i : $col1")
-          i += 1
-        })
+      try {
+        val select_query = s"select * from $colTableName"
+        // scalastyle:off
+        println(s"$testName started SELECT $select_query")
+        // scalastyle:on
+        ColumnTableScan.setDebugMode(true)
+        val colDf = session.sql(select_query)
+        val res = colDf.collect()
+        val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
+        assert(res.length == expected.length, s"output: ${res.length}, expected=${expected.length}")
+        // scalastyle:off
+        println(s"$testName SELECT = ${res.length}")
+        // scalastyle:on
+        if (numBuckets == 1) {
+          var i = 0
+          res.foreach(r => {
+            val col1 = r.getInt(0)
+            assert(col1 == expected(i), s"$i : $col1")
+            assert(col1 == expected(i), s"$i: output: $col1, expected=${expected(i)}")
+            i += 1
+          })
+        }
+      } finally {
+        ColumnTableScan.setDebugMode(false)
       }
     } catch {
       case t: Throwable =>
