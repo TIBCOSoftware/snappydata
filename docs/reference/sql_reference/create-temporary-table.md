@@ -1,13 +1,10 @@
 # CREATE TEMPORARY TABLE
 
 ```no-highlight
-CREATE TEMPORARY TABLE [schema_name.]table_name
-    ( column-definition	[ , column-definition  ] * )
+CREATE TEMPORARY TABLE table_name
     USING datasource
-    [OPTIONS (key1=val1, key2=val2, ...)]
-    [AS select_statement]
+    [AS select_statement];
 ```
-
 For more information on column-definition, refer to [Column Definition For Column Table](create-table.md#column-definition).
 
 Refer to these sections for more information on [Creating Table](create-table.md), [Creating Sample Table](create-sample-table.md), [Creating External Table](create-external-table.md) and [Creating Stream Table](create-stream-table.md).
@@ -25,14 +22,8 @@ Populate the table with input data from the select statement.
 
 ## Examples
 
-**Create a Temporary Table**
-
 ```no-highlight
 snappy> CREATE TEMPORARY TABLE STAGING_AIRLINEREF USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
-```
-
-```no-highlight
-snappy> CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP (CODE2 string, DESCRIPTION2 String) AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
 ```
 
 ```no-highlight
@@ -41,3 +32,24 @@ snappy> CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP2 AS SELECT CODE, DESCRIPTION
 
 !!! Note:
     When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br>Ensure that you create temporary tables with a unique name.
+    
+## CREATE GLOBAL TEMPORARY TABLE
+
+```no-highlight
+snappy> CREATE GLOBAL TEMPORARY TABLE [global-temporary-table-name] USING PARQUET OPTIONS(path 'path-to-parquet');
+
+snappy> CREATE GLOBAL TEMPORARY TABLE [global-temporary-table-name] AS SELECT [column-name], [column-name] FROM [table-name];
+```
+
+### Description
+Specifies a table definition that is visible to all sessions. Temporary table data is visible only to the session that inserts the data into the table.
+
+### Examples
+
+```no-highlight
+snappy> CREATE GLOBAL TEMPORARY TABLE STAGING_AIRLINEREF1 USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
+
+snappy> CREATE GLOBAL TEMPORARY TABLE STAGING_AIRLINE2 AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
+```
+!!!Note:
+	Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions.

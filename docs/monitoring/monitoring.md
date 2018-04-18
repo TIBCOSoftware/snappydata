@@ -132,10 +132,10 @@ The Dashboard offers the following capabilities and benefits:
 	Displays the name of the external table.
 
 * **Provider**</br>
-	Displays the file format used for the external table. The supported file formats are  Parquet, CSV and JDBC.
+	Displays the datastores provide used when creating the external table. For example, Parquet, CSV, JDBC etc.
 
 * **Source**</br>
-	For Parquet and CSV file format, the path of the data file used to create the external table is displayed. For JDBC, the name of the Driver Class is displayed.
+	For Parquet and CSV format, the path of the data file used to create the external table is displayed. For JDBC, the name of the client driver is displayed.
 
 <a id="member-details"></a>
 ## Member Details View
