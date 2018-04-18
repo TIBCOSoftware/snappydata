@@ -403,14 +403,21 @@ object SortedColumnTests extends Logging {
       }
     }
 
-    def verifyUpdate(expected: String): Unit = {
+    def verifyUpdate(expected: String, expectedCount: Int): Unit = {
       val select_query = s"select * from $colTableName"
       val colDf = session.sql(select_query)
       val res = colDf.collect()
+      var i = 0
       res.foreach(r => {
+        val col0 = r.getInt(0)
         val col1 = r.getString(1)
+        // scalastyle:off
+        println(s"verifyUpdate-$expected-$expectedCount $col0 $col1")
+        // scalastyle:on
         assert(col1.equalsIgnoreCase(expected), s"$col1 : $expected")
+        i += 1
       })
+      assert(i == expectedCount, s"$i : $expectedCount")
     }
 
     try {
@@ -424,22 +431,22 @@ object SortedColumnTests extends Logging {
       // scalastyle:off
       println(s"$testName loaded $dataFile_1")
       // scalastyle:on
-      verifyUpdate(doUpdate("updated1"))
+      verifyUpdate(doUpdate("updated1"), 4)
 
       doPutInto(dataFile_2, dataFrameReader)
-      verifyUpdate(doUpdate("updated2"))
+      verifyUpdate(doUpdate("updated2"), 6)
 
       doPutInto(dataFile_3, dataFrameReader)
-      verifyUpdate(doUpdate("updated3"))
+      verifyUpdate(doUpdate("updated3"), 8)
 
       doPutInto(dataFile_4, dataFrameReader)
-      verifyUpdate(doUpdate("updated4"))
+      verifyUpdate(doUpdate("updated4"), 10)
 
       doPutInto(dataFile_5, dataFrameReader)
-      verifyUpdate(doUpdate("updated5"))
+      verifyUpdate(doUpdate("updated5"), 12)
 
       doPutInto(dataFile_6, dataFrameReader)
-      verifyUpdate(doUpdate("updated6"))
+      verifyUpdate(doUpdate("updated6"), 14)
 
       try {
         val select_query = s"select * from $colTableName"
@@ -452,13 +459,12 @@ object SortedColumnTests extends Logging {
         val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
         assert(res.length == expected.length, s"output: ${res.length}, expected=${expected.length}")
         // scalastyle:off
-        println(s"$testName SELECT = ${res.length}")
+        println(s"$testName SELECT = ${res.length} / ${expected.length}")
         // scalastyle:on
         if (numBuckets == 1) {
           var i = 0
           res.foreach(r => {
             val col1 = r.getInt(0)
-            assert(col1 == expected(i), s"$i : $col1")
             assert(col1 == expected(i), s"$i: output: $col1, expected=${expected(i)}")
             i += 1
           })
