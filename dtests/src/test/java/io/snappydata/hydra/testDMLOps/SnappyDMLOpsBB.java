@@ -25,6 +25,10 @@ public class SnappyDMLOpsBB extends Blackboard {
   static String SNAPPY_DML_BB_NAME = "Snappy_DML_Blackboard";
   static String SNAPPY_DML_BB_TYPE = "RMI";
 
+  public static int ReadyToBegin;     // used to sync all threads at the beginning of a task
+  public static int Pausing;          // used to sync all threads at the after executing the update statement on snappy
+  public static int ExecutionNumber;  // the serial execution number
+  public static int TimeToStop;       // used to tell all clients it is time to throw StopSchedulingException
   public static SnappyDMLOpsBB bbInstance = null;
 
   /**

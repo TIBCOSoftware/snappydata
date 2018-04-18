@@ -24,12 +24,11 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -37,12 +36,15 @@ import com.gemstone.gemfire.cache.query.Struct;
 import com.gemstone.gemfire.cache.query.internal.types.ObjectTypeImpl;
 import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import com.gemstone.gemfire.cache.query.types.ObjectType;
+import hydra.HydraVector;
 import hydra.Log;
 import hydra.Prms;
+import hydra.RemoteTestModule;
 import hydra.TestConfig;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.commons.lang.ArrayUtils;
+import parReg.ParRegBB;
 import sql.SQLHelper;
 import sql.sqlutil.GFXDStructImpl;
 import sql.sqlutil.ResultSetHelper;
@@ -52,14 +54,17 @@ import util.TestHelper;
 public class SnappyDMLOpsUtil extends SnappyTest {
 
   public static boolean hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
+  //private static Set<Integer> thrIds = Collections.synchronizedSet(new LinkedHashSet<Integer>());
   public static boolean testUniqueKeys = TestConfig.tab().booleanAt(SnappySchemaPrms.testUniqueKeys, true);
   public static boolean isHATest = TestConfig.tab().booleanAt(SnappySchemaPrms.isHATest, false);
   public static boolean largeDataSet = TestConfig.tab().booleanAt(SnappySchemaPrms
       .largeDataSet, false);
 
   protected static hydra.blackboard.SharedLock dmlLock;
+  protected int numThreadsInClients;
 
   protected static SnappyDMLOpsUtil testInstance;
+  protected static int secondsToRun;                 // number of seconds to allow tasks
   public static DerbyTestUtils derbyTestUtils;
 
   public static void HydraTask_initialize() {
@@ -82,9 +87,57 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           Log.getLogWriter().info("SS - initTask ... inside updateStatus empty loop...");
         SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "START");
         Log.getLogWriter().info("SS - initTask ... updateStatus set to : " + SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus));
+        if (SnappyPrms.getTableType().equalsIgnoreCase("C")) {
+          secondsToRun = TestConfig.tab().intAt(SnappyPrms.secondsToRun, 1800);
+          Log.getLogWriter().info("SS - secondsToRun:" + secondsToRun);
+        }
       }
     }
     derbyTestUtils = new DerbyTestUtils();
+  }
+
+  /**
+   * Add the key to the thread Ids Set in the shared map
+   */
+  public synchronized void addThrID(Object sharedMapKey, Object keyToAdd, String stmt) {
+    Log.getLogWriter().info("Adding " + keyToAdd + " to " + sharedMapKey);
+
+    // coordinate access among VMs
+    SnappyDMLOpsBB.getBB().getSharedLock().lock();
+
+    if (SnappyDMLOpsBB.getBB().getSharedMap().get(sharedMapKey) == null) {
+      //SnappyDMLOpsBB.getBB().getSharedMap().put("thrIds", Collections.synchronizedSet(new LinkedHashSet<Integer>()));
+      //SnappyDMLOpsBB.getBB().getSharedMap().put(sharedMapKey, new HashSet());
+      SnappyDMLOpsBB.getBB().getSharedMap().put(sharedMapKey, Collections.synchronizedSet(new LinkedHashSet<Integer>()));
+    }
+    if (SnappyDMLOpsBB.getBB().getSharedMap().get("updateStmt") == null) {
+      //SnappyDMLOpsBB.getBB().getSharedMap().put("thrIds", Collections.synchronizedSet(new LinkedHashSet<Integer>()));
+      SnappyDMLOpsBB.getBB().getSharedMap().put("updateStmt", new HydraVector());
+    }
+    Set ops = (Set)SnappyDMLOpsBB.getBB().getSharedMap().get(sharedMapKey);
+    ops.add(keyToAdd);
+    Vector updateStmts = (Vector)SnappyDMLOpsBB.getBB().getSharedMap().get("updateStmt");
+    updateStmts.add(stmt);
+    SnappyDMLOpsBB.getBB().getSharedMap().put(sharedMapKey, ops);
+    SnappyDMLOpsBB.getBB().getSharedMap().put("updateStmt", updateStmts);
+    SnappyDMLOpsBB.getBB().getSharedLock().unlock();
+
+    Log.getLogWriter().info("Added " + keyToAdd + " to set: " + ops);
+    Log.getLogWriter().info("Added " + stmt + " to set: " + updateStmts);
+  }
+
+  /**
+   * Clears the thread Ids Set in the shared map
+   */
+  public synchronized void removeThrIDs(Object sharedMapKey) {
+    Log.getLogWriter().info("Removing all threadIds from " + sharedMapKey);
+
+    // coordinate access among VMs
+    SnappyDMLOpsBB.getBB().getSharedLock().lock();
+    Set ops = (Set)SnappyDMLOpsBB.getBB().getSharedMap().get(sharedMapKey);
+    ops.clear();
+    SnappyDMLOpsBB.getBB().getSharedLock().unlock();
+    Log.getLogWriter().info("Removed all threadIds from " + sharedMapKey);
   }
 
   //ENUM for DML Ops
@@ -675,12 +728,51 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
   }
 
-  public void performUpdate() {
-    if (isConflictingTest) {
-      String updateStatus = (String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus);
-      if (updateStatus.equalsIgnoreCase("STOP"))
-        return;
+  /**
+   * Log the execution number of this serial task.
+   */
+  static protected void logExecutionNumber() {
+    long exeNum = SnappyDMLOpsBB.getBB().getSharedCounters().incrementAndRead(SnappyDMLOpsBB.ExecutionNumber);
+    Log.getLogWriter().info("Beginning task with execution number " + exeNum);
+  }
+
+  // ========================================================================
+// other methods to help out in doing the tasks
+  public void checkForLastIteration() {
+    Log.getLogWriter().info("SS - secondsToRun:" + secondsToRun);
+    checkForLastIteration(secondsToRun);
+  }
+
+  /**
+   * Check if we have run for the desired length of time. We cannot use
+   * hydra's taskTimeSec parameter because of a small window of opportunity
+   * for the test to hang due to the test's "concurrent round robin" type
+   * of strategy. Here we set a blackboard counter if time is up and this
+   * is the last concurrent round.
+   */
+  public static void checkForLastIteration(int numSeconds) {
+    // determine if this is the last iteration
+    long taskStartTime = 0;
+    final String bbKey = "TaskStartTime";
+    Object anObj = SnappyDMLOpsBB.getBB().getSharedMap().get(bbKey);
+    if (anObj == null) {
+      taskStartTime = System.currentTimeMillis();
+      SnappyDMLOpsBB.getBB().getSharedMap().put(bbKey, new Long(taskStartTime));
+      Log.getLogWriter().info("Initialized taskStartTime to " + taskStartTime);
+    } else {
+      taskStartTime = ((Long)anObj).longValue();
     }
+    if (System.currentTimeMillis() - taskStartTime >= numSeconds * 1000) {
+      Log.getLogWriter().info("This is the last iteration of this task");
+      SnappyDMLOpsBB.getBB().getSharedCounters().increment(SnappyDMLOpsBB.TimeToStop);
+    } else {
+      Log.getLogWriter().info("Running for " + numSeconds + " seconds; time remaining is " +
+          (numSeconds - ((System.currentTimeMillis() - taskStartTime) / 1000)) + " seconds");
+    }
+  }
+
+
+  public void performUpdate() {
     Connection conn = null;
     String tableName = null;
     String tableType = null;
@@ -695,6 +787,33 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       } else {
         conn = getLocatorConnection();
       }
+      if (isConflictingTest && tableType.equalsIgnoreCase("R")) {
+        String updateStatus = (String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus);
+        if (updateStatus.equalsIgnoreCase("STOP"))
+          return;
+      }
+
+      if (isConflictingTest && autoCommit && tableType.equalsIgnoreCase("C")) {
+        String updateStatus = (String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus);
+        if (updateStatus.equalsIgnoreCase("STOP"))
+          return;
+        // wait for all threads to be ready to do this task, then do random ops
+        long counter = SnappyDMLOpsBB.getBB().getSharedCounters().incrementAndRead(SnappyDMLOpsBB.ReadyToBegin);
+        if (counter == 1) {
+          logExecutionNumber();
+        }
+        numThreadsInClients = RemoteTestModule.getCurrentThread().getCurrentTask().getTotalThreads();
+        Log.getLogWriter().info("numThreadsInClients = " + numThreadsInClients);
+        TestHelper.waitForCounter(SnappyDMLOpsBB.getBB(),
+            "SnappyDMLOpsBB.ReadyToBegin",
+            SnappyDMLOpsBB.ReadyToBegin,
+            numThreadsInClients,
+            true,
+            -1,
+            1000);
+        checkForLastIteration();
+      }
+
       Connection dConn = null; //get the derby connection here
       String updateStmt[] = SnappySchemaPrms.getUpdateStmts();
       int numRows = 0;
@@ -713,15 +832,32 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         getAndExecuteSelect(conn, stmt, false);
       Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       Log.getLogWriter().info("SS - tableType: " + tableType + " tableName: " + tableName);
-      if (isConflictingTest && ((String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus)).equalsIgnoreCase("STOP"))
+      if (isConflictingTest && ((String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus)).equalsIgnoreCase("STOP") && tableType.equalsIgnoreCase("R"))
         return;
-      numRows = conn.createStatement().executeUpdate(stmt);
+      if (setTx && autoCommit && tableType.equalsIgnoreCase("C") && isConflictingTest) {
+        /*if(((String)SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus)).equalsIgnoreCase("STOP")){
+          SnappyDMLOpsBB.getBB().getSharedCounters().increment(SnappyDMLOpsBB.Pausing);
+          TestHelper.waitForCounter(SnappyDMLOpsBB.getBB(),
+              "SnappyDMLOpsBB.Pausing",
+              SnappyDMLOpsBB.Pausing,
+              numThreadsInClients,
+              true,
+              -1,
+              5000);
+          return;
+        }*/
+        numRows = conn.createStatement().executeUpdate(stmt);
+        //thrIds.add(snappyTest.getMyTid());
+        addThrID("thrIds", snappyTest.getMyTid(), stmt);
+        Log.getLogWriter().info("SS - added thrID : " + snappyTest.getMyTid() + " in linkedHashSet");
+        Log.getLogWriter().info("SS - added updateStmt : " + stmt + " in linkedHashSet");
+      } else numRows = conn.createStatement().executeUpdate(stmt);
       if (setTx && !autoCommit && tableType.equalsIgnoreCase("R")) {
         Log.getLogWriter().info("SS - committing the transaction. ");
         conn.commit();
       }
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
-      if (isConflictingTest) {
+      if (isConflictingTest && tableType.equalsIgnoreCase("R")) {
         SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "STOP");
         SnappyDMLOpsBB.getBB().getSharedMap().put("thr_Id", snappyTest.getMyTid());
         Log.getLogWriter().info("SS : thr_id:" + SnappyDMLOpsBB.getBB().getSharedMap().get("thr_Id") + ", update stmt: " + stmt.toString());
@@ -733,18 +869,53 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         if (stmt.toUpperCase().contains("SELECT"))
           getAndExecuteSelect(dConn, stmt, true);
         int derbyRows = 0;
-        /*if (isConflictingTest) {
+        if (isConflictingTest && setTx && autoCommit && tableType.equalsIgnoreCase("C")) {
+          /*int thisTid = snappyTest.getMyTid();
+          int lastTid = 0;
+          lastTid = (int)thrIds.toArray()[thrIds.size() - 1];
+          Log.getLogWriter().info("SS - lastTid: " + lastTid);
+          if (thisTid != lastTid) {
+            Log.getLogWriter().info("SS : tid does not match ");*/
+          //long counter1 = SnappyDMLOpsBB.getBB().getSharedCounters().incrementAndRead(SnappyDMLOpsBB.ReadyToBegin);
+         TestHelper.waitForCounter(SnappyDMLOpsBB.getBB(),
+              "SnappyDMLOpsBB.Pausing",
+              SnappyDMLOpsBB.Pausing,
+              numThreadsInClients,
+              true,
+              -1,
+              5000);
+          SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "STOP");
           int thisTid = snappyTest.getMyTid();
-          int tidInBlackBoard = (int)SnappyDMLOpsBB.getBB().getSharedMap().get("thr_Id");
-          if (thisTid != tidInBlackBoard) {
+          int lastTid = 0;
+          Set thrIds = (Set)SnappyDMLOpsBB.getBB().getSharedMap().get("thrIds");
+          Log.getLogWriter().info("SS - thrIds.size(): " + thrIds.size());
+          lastTid = (int)thrIds.toArray()[thrIds.size() - 1];
+          Log.getLogWriter().info("SS - lastTid: " + lastTid);
+          if (thisTid != lastTid) {
             Log.getLogWriter().info("SS : tid does not match ");
             return;
           }
-        }*/
-        Log.getLogWriter().info("SS - update statement for derby: " + stmt + " thr_id: " + snappyTest.getMyTid());
-        Log.getLogWriter().info("Executing " + stmt + " on derby.");
-        derbyRows = dConn.createStatement().executeUpdate(stmt);
-        Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
+          //SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "STOP");
+        }
+
+        if (isConflictingTest && setTx && autoCommit && tableType.equalsIgnoreCase("C")) {
+          Log.getLogWriter().info("SS - inside update statements loop for 12 threads.....");
+          Vector updateStmtFromBB = (Vector)SnappyDMLOpsBB.getBB().getSharedMap().get("updateStmt");
+          Log.getLogWriter().info("SS - updateStmtFromBB size: " + updateStmtFromBB.size());
+          Log.getLogWriter().info("SS - updateStmtFromBB: " + updateStmtFromBB.toArray().toString());
+          Iterator<String> itr = updateStmtFromBB.iterator();
+          while (itr.hasNext()) {
+            String updateString = itr.next();
+            Log.getLogWriter().info("SS - Executing " + updateString + " on derby.");
+            derbyRows = dConn.createStatement().executeUpdate(updateString);
+            Log.getLogWriter().info("SS - Updated " + derbyRows + " rows in derby.");
+          }
+        } else {
+          Log.getLogWriter().info("SS - update statement for derby: " + stmt + " thr_id: " + snappyTest.getMyTid());
+          Log.getLogWriter().info("Executing " + stmt + " on derby.");
+          derbyRows = dConn.createStatement().executeUpdate(stmt);
+          Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
+        }
 
         if (numRows != derbyRows) {
           String errMsg = "Update statement failed to update same rows in derby and " +
@@ -760,7 +931,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         //orderByClause = (SnappySchemaPrms.getOrderByClause())[Arrays.asList(dmlTables)
         //    .indexOf(tableName)];
         String message = null;
-        if (isConflictingTest) {
+        if (isConflictingTest && tableType.equalsIgnoreCase("R")) {
           SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "START");
           Log.getLogWriter().info("SS : updateStatus:" + SnappyDMLOpsBB.getBB().getSharedMap().get(SnappyDMLOpsBB.updateStatus));
           return;
@@ -774,7 +945,21 @@ public class SnappyDMLOpsUtil extends SnappyTest {
               message);
         }
       }
-
+      if (isConflictingTest && tableType.equalsIgnoreCase("C") && autoCommit) {
+        // SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "START");
+        /*SnappyDMLOpsBB.getBB().getSharedCounters().increment(SnappyDMLOpsBB.Pausing);
+        TestHelper.waitForCounter(SnappyDMLOpsBB.getBB(),
+            "SnappyDMLOpsBB.Pausing",
+            SnappyDMLOpsBB.Pausing,
+            numThreadsInClients,
+            true,
+            -1,
+            5000);*/
+        Log.getLogWriter().info("Zeroing ReadyToBegin");
+        SnappyDMLOpsBB.getBB().getSharedCounters().zero(SnappyDMLOpsBB.ReadyToBegin);
+        removeThrIDs("thrIds");
+        SnappyDMLOpsBB.getBB().getSharedMap().put(SnappyDMLOpsBB.updateStatus, "START");
+      }
       closeConnection(conn);
     } catch (SQLException se) {
       if (setTx && !autoCommit && tableType.equalsIgnoreCase("C")) {

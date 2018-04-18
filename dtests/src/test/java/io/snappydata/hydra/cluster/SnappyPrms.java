@@ -156,6 +156,13 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long streamingJobClassNames;
 
+  /** (int) The number of seconds to run a test (currently used for concDMLOps for column )
+   *        to terminate the test. We cannot use hydra's taskTimeSec parameter
+   *        because of a small window of opportunity for the test to hang due
+   *        to the test's "concurrent round robin" type of strategy.
+   */
+  public static Long secondsToRun;
+
   /**
    * (boolean) for testing HA
    */
