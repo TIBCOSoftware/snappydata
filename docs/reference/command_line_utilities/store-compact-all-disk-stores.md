@@ -5,7 +5,7 @@ Perform online compaction of SnappyData disk stores.
 ## Syntax
 
 ```no-highlight
-snappy compact-all-disk-stores==
+./bin/snappy compact-all-disk-stores==
   <-locators=<addresses>> [-bind-address=<address>] [-<prop-name>=<prop-value>]*
 ```
 

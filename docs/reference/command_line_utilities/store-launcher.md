@@ -5,20 +5,21 @@ Use the *snappy* command-line utility to launch SnappyData utilities.
 To display a full list of snappy commands and options:
 
 ```no-highlight
-snappy --help
+./bin/snappy --help
 ```
 
 The command form to display a particular utility's usage is:
 
 ```no-highlight
-snappy <utility> --help
+./bin/snappy <utility> --help
 ```
 
 With no arguments, `snappy` starts an [interactive SQL command shell](../../reference/interactive_commands/store_command_reference.md):
 
 ```no-highlight
-snappy
-```
+./bin/snappy
+
+
 
 To specify a system property for an interactive `snappy` session, you must define the JAVA_ARGS environment variable before starting `snappy`. For example, `snappy` uses the `snappy.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA_ARGS variable:
 
@@ -30,7 +31,7 @@ $ snappy
 To launch and exit a `snappy` utility (rather than start an interactive `snappy` shell) use the syntax:
 
 ```no-highlight
-snappy <utility> <arguments for specified utility>
+./bin/snappy <utility> <arguments for specified utility>
 ```
 
 To specify a system property when launching a `snappy` utility, use -J-D*property_name*=*property_value* argument.
