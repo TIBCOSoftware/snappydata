@@ -19,7 +19,7 @@
 
 package io.snappydata
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
@@ -170,12 +170,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     try {
       if (dataServers != null && dataServers.size() > 0) {
         result = FunctionService.onMembers(dataServers)
-            .withCollector(new GfxdListResultCollector())
-            .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
+            // .withCollector(new GfxdListResultCollector())
+            .execute(SnappyRegionStatsCollectorFunction.ID).getResult(5, TimeUnit.SECONDS).
             asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
             .asScala
       }
+    }
+    catch {
+      case NonFatal(e) => log.warn(e.getMessage, e)
+    }
 
+    try {
       // External Tables
       val hiveTables: java.util.List[ExternalTableMetaData] =
         Misc.getMemStore.getExternalCatalog.getHiveTables(true)
@@ -189,9 +194,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       case NonFatal(e) => log.warn(e.getMessage, e)
     }
 
-    (result.flatMap(_.getRegionStats.asScala),
-     result.flatMap(_.getIndexStats.asScala),
-     externalTables)
+    if(result.flatMap(_.getRegionStats.asScala).size == 0) {
+      // Return last updated tableSizeInfo
+      (tableSizeInfo.values.toSeq,
+       result.flatMap(_.getIndexStats.asScala),
+       externalTables)
+    } else {
+      // Return updated tableSizeInfo
+      (result.flatMap(_.getRegionStats.asScala),
+       result.flatMap(_.getIndexStats.asScala),
+       externalTables)
+    }
   }
 
   type PRIterator = PartitionedRegion#PRLocalScanIterator
