@@ -1,13 +1,13 @@
 <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 # Setting up Cluster on Amazon Web Services (AWS)
 
-## Using AWS management console
+## Using AWS Management Console
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 
 ### Prerequisites
 Ensure that you have an existing AWS account with required permissions to launch the EC2 resources.
 
-### Launching the instance
+### Launching the Instance
 To launch the instance and start the SnappyData cluster:
 
 1. Open the [Amazon EC2 console](https://console.aws.amazon.com/ec2/) and sign in using your AWS login credentials.
@@ -24,7 +24,8 @@ To launch the instance and start the SnappyData cluster:
 
 7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
 
-	!!! Note:  
+	!!! Note:
+
 		* You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.
 
 		*  When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).
@@ -50,15 +51,14 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 
 	!!! Note: 
-		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
 
+		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
+	
 		* The SnappyData product distribution is already downloaded and extracted in the **/opt/snappydata** directory and Java 8 is installed. 
 
-13. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
+15. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
 
-```no-highlight
-./sbin/snappy-start-all.sh
-```
+	 	./sbin/snappy-start-all.sh
 
 <a id="EC2"></a>
 ## Using SnappyData EC2 scripts
@@ -90,13 +90,17 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
-### Launching SnappyData Cluster
+### Cluster Management
+
+#### Launching SnappyData Cluster
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
 **Syntax**
 
-`./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>`
+```no-highlight
+./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>
+```
 
 Here: 
 
@@ -125,7 +129,7 @@ The example assumes that you have the key file (my-ec2-key.pem) in your home dir
 !!! Note:
 	By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region ensure that you set the region property `--region=`.
 
-### Specifying properties
+#### Specifying properties
 
 If you want to configure each of the locator, lead, or server with specific properties, you can do so by specifying them in files named **locators**, **leads** or **servers**, respectively and placing these under **aws/ec2/deploy/home/ec2-user/snappydata/**. Refer to [this SnappyData documentation page](../configuring_cluster/configuring_cluster.md#configuration-files) for example on how to configure these configuration files.</br>
 This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the `sbin/snappy-start-all.sh` script.</br>
@@ -134,44 +138,51 @@ The important difference here is that, instead of the host names of the locator,
 The sample configuration files for a cluster with 2 locators, 1 lead and 2 stores are given below:
 
 *locators*
-````no-highlight
+
+```no-highlight
 {{LOCATOR_0}} -peer-discovery-port=9999 -heap-size=1024m
 {{LOCATOR_1}} -peer-discovery-port=9888 -heap-size=1024m
-````
+```
+
 *leads*
-````no-highlight
+
+```no-highlight
 {{LEAD_0}} -heap-size=4096m -spark.ui.port=3333 -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -spark.executor.cores=10
-````no-highlight
+```
+
 *servers*
-````
+
+```no-highlight
 {{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888
 {{SERVER_1}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -client-port=1530
-````
+```
+
 When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/home/ec2-user/snappydata/** and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options `--locators`, `--leads` or `--stores` must match to the number of entries in their respective configuration file.
 </br>The script also reads **snappy-env.sh**, if present in this location.
 
-### Stopping the cluster
+#### Stopping the cluster
 
 When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost. However, the data saved on EBS volumes is retained, unless the spot-instances are used.
 
-````no-highlight
+```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
-````
+```
 
-### Resuming the cluster
+#### Resuming the cluster
 
 When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches SnappyData processes on them.
-````no-highlight
+
+```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
-````
+```
 !!!Note: 
 	The start command (or launch command with `--resume` option) ignores the `--locators`, `--leads` or `--stores` options, and launches the SnappyData cluster on existing instances. The configuration files however, are read if they are present in the location mentioned above. You therefore must ensure that every time you use the `start` command, the number of entries in configuration files are equal to the number of instances in their respective security group.
 
-### Adding servers to the cluster
+#### Adding servers to the cluster
 
 This is not yet fully supported using the script. You may have to manually launch an instance with `(cluster-name)-stores` group, and then use launch command with the `--resume` option.
 
-### Listing members of the cluster
+#### Listing members of the cluster
 
 **To get the first locator's hostname:**
 ```no-highlight
@@ -179,7 +190,7 @@ This is not yet fully supported using the script. You may have to manually launc
 ```
 Use the `get-lead` command to get the first lead's hostname.
 
-### Connecting to the cluster
+#### Connecting to the cluster
 
 You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. You can then use SSH to connect to any other member of the cluster without a password. </br>
 The SnappyData product directory is located under **/home/ec2-user/snappydata/** on all the members.
@@ -187,7 +198,7 @@ The SnappyData product directory is located under **/home/ec2-user/snappydata/**
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
 ```
 
-### Destroying the cluster
+#### Destroying the cluster
 
 Destroying a cluster permanently destroys all the data on the local instance stores and on the attached EBS volumes.
 ```no-highlight
@@ -195,7 +206,7 @@ Destroying a cluster permanently destroys all the data on the local instance sto
 ```
 This retains the security groups created for this cluster. To delete this, use it with `--delete-` group option.
 
-### Starting cluster with Apache Zeppelin
+#### Starting cluster with Apache Zeppelin
 
 Optionally, you can start an instance of Apache Zeppelin server with the cluster. [Apache Zeppelin](https://zeppelin.apache.org/) is a web-based notebook that enables interactive notebook. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
 

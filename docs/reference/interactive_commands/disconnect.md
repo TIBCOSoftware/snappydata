@@ -22,9 +22,8 @@ If the [Connect](connect.md) command without the AS clause was used, you can sup
 
 ## Example
 
-```no-highlight
-snappy> disconnect peerclient;
-snappy>
+``` no-highlight
+snappy> DISCONNECT CONNECTION1;
 ```
 
 

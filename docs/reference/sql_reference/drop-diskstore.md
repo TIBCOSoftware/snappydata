@@ -20,4 +20,8 @@ This command removes the disk store "STORE1" from the cluster:
 DROP DISKSTORE store1;
 ```
 
+**Related Topics**
 
+* [CREATE DISKSTORE](../sql_reference/create-diskstore.md)
+
+* [SYSDISKSTORES](../system_tables/sysdiskstores.md)
