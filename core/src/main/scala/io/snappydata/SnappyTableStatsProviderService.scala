@@ -164,7 +164,6 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
-    val currTableSizeInfo = tableSizeInfo.values.toSeq
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
@@ -197,7 +196,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
     if(result.flatMap(_.getRegionStats.asScala).size == 0) {
       // Return last updated tableSizeInfo
-      (currTableSizeInfo,
+      (tableSizeInfo.values.toSeq,
        result.flatMap(_.getIndexStats.asScala),
        externalTables)
     } else {
