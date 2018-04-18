@@ -20,7 +20,7 @@ The percentage of used heap space that triggers `LowMemoryException`s on the loc
 This command sets the critical threshold for heap memory usage on the local SnappyData member to 99.9%:
 
 ```no-highlight
-call sys.set_critical_heap_percentage (99.9);
+snappy>call sys.set_critical_heap_percentage (99.9);
 ```
 
 

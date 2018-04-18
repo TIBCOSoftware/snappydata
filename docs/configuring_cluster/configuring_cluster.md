@@ -6,8 +6,9 @@ To do so, you can copy the existing template files **servers.template**, **locat
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
 !!! Tip:
-	For system properties (set in the conf/leads, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
+	- For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
 
+    - Instead of starting the SnappyData cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
 
 <a id="locator"></a>
 ## Configuring Locators
@@ -34,7 +35,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-----|-----|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
-|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). </br>If you want your data to be stored on separate disks (and not the default location), [create separate diskstores](../reference/sql_reference/create-diskstore.md) and specify the directories where you want the data to be stored.|
+|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| 
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
@@ -58,6 +59,9 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 Lead Nodes primarily runs the SnappyData managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the **conf/leads.template** file for some examples. 
 
 Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>/conf** directory.
+
+!!!Note:
+	In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.
 
 ### List of Lead Properties
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
@@ -157,20 +161,6 @@ To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 
 ```no-highlight
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
-```
-<a id="command-line"></a>
-### SnappyData Command Line Utility
-
-Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be configured, started and stopped on a system locally using these commands.
-
-```no-highlight
-$ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
-
-$ bin/snappy locator stop -dir=/node-a/locator1
-$ bin/snappy server stop -dir=/node-b/server1
-$ bin/snappy leader stop -dir=/node-c/lead1
 ```
 
 <a id="logging"></a>

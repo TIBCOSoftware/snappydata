@@ -11,3 +11,7 @@ Drops an existing function. If the function to drop does not exist, an exception
 ```no-highlight
 DROP FUNCTION IF EXISTS app.strnglen
 ```
+
+**Related Topics**
+
+* [CREATE FUNCTION](create-function.md)
