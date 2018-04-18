@@ -5,7 +5,7 @@ Specifies which connection to make current when more than one connection is open
 ## Syntax
 
 ``` no-highlight
-SET CONNECTION Identifier
+SET CONNECTION Identifier;
 ```
 
 ## Description

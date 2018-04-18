@@ -73,5 +73,3 @@ If you already have Spark2.0 installed in your local machine you can directly us
 ```no-highlight
 ./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
 ```
-
-

@@ -24,7 +24,6 @@ import scala.language.postfixOps
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.{TestData, TestData2}
-import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
@@ -32,7 +31,7 @@ import org.junit.Assert
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{SnappyJoinSuite, StoreUtils}
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -262,6 +261,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = true
     try {
       ColumnUpdateDeleteTests.testBasicUpdate(session)
+      ColumnUpdateDeleteTests.testDeltaStats(session)
       ColumnUpdateDeleteTests.testBasicDelete(session)
       ColumnUpdateDeleteTests.testSNAP1925(session)
       ColumnUpdateDeleteTests.testSNAP1926(session)
@@ -529,7 +529,7 @@ object SplitSnappyClusterDUnitTest
       locatorClientPort: Int): Unit = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
-    val testJoins = new ClusterSnappyJoinSuite()
+    val testJoins = new SnappyJoinSuite()
     testJoins.partitionToPartitionJoinAssertions(snc, table1, table2)
 
     logInfo("Successful")

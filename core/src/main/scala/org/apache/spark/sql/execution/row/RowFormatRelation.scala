@@ -27,10 +27,11 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -39,6 +40,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 
@@ -81,7 +83,7 @@ class RowFormatRelation(
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
 
   @transient private lazy val clusterMode = SnappyContext.getClusterMode(_context.sparkContext)
-  private[this] def indexedColumns: mutable.HashSet[String] = {
+  private[this] lazy val indexedColumns: mutable.HashSet[String] = {
     val cols = new mutable.HashSet[String]()
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
@@ -90,17 +92,17 @@ class RowFormatRelation(
       case _ =>
         val indexCols = new Array[String](1)
         GfxdSystemProcedures.getIndexColumns(indexCols, region)
-        Option(indexCols(0)).foreach(icols => cols ++= icols.split(":"))
+        cols ++= indexCols(0).split(":")
         cols
     }
   }
 
-  private[this] def pushdownPKColumns(filters: Array[Filter]): Array[String] = {
-    def getEqualToColumns(filters: Array[Filter]): ArrayBuffer[String] = {
+  private[this] def pushdownPKColumns(filters: Seq[Expression]): Seq[String] = {
+    def getEqualToColumns(filters: Seq[Expression]): ArrayBuffer[String] = {
       val list = new ArrayBuffer[String](4)
       filters.foreach {
-        case EqualTo(col, _) => list += col
-        case In(col, _) => list += col
+        case EqualTo(col: Attribute, _) => list += col.name
+        case In(col: Attribute, _) => list += col.name
         case And(left, right) => list ++= getEqualToColumns(Array(left, right))
         case _ =>
       }
@@ -121,17 +123,17 @@ class RowFormatRelation(
         }
         if (pkCols.forall(equalToColumns.contains)) return pkCols
     }
-    Array.empty[String]
+    Nil
   }
 
 
-  override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {
+  override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] = {
     filters.filter(ExternalStoreUtils.unhandledFilter(_,
       indexedColumns ++ pushdownPKColumns(filters)))
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
-      filters: Array[Filter]): (RDD[Any], Seq[RDD[InternalRow]]) = {
+      filters: Array[Expression]): (RDD[Any], Seq[RDD[InternalRow]]) = {
     val handledFilters = filters.flatMap(ExternalStoreUtils.handledFilter(_, indexedColumns))
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
@@ -145,7 +147,7 @@ class RowFormatRelation(
           useResultSet = false,
           connProperties,
           handledFilters,
-          commitTx = true, delayRollover = false)
+          commitTx = true, delayRollover = false, projection = null)
 
       case _ =>
         new SmartConnectorRowRDD(
@@ -262,7 +264,7 @@ class RowFormatRelation(
       case Some(x) => x
       case None => ""
     }
-    s"CREATE $indexType INDEX $indexName ON $baseTable ($columns)"
+    s"CREATE $indexType INDEX ${quotedName(indexName)} ON ${quotedName(baseTable)} ($columns)"
   }
 
   /** Base table of this relation. */
@@ -317,7 +319,8 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       data: Option[LogicalPlan]): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val table = ExternalStoreUtils.removeInternalProps(parameters)
+    // hive metastore is case-insensitive so table name is always upper-case
+    val tableName = Utils.toUpperCase(ExternalStoreUtils.removeInternalProps(parameters))
     ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
@@ -331,7 +334,6 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       Some(sqlContext.sparkSession), parameters)
 
     StoreUtils.validateConnProps(parameters)
-    val tableName = SnappyStoreHiveCatalog.processIdentifier(table, sqlContext.conf)
     var success = false
     val relation = new RowFormatRelation(connProperties,
       tableName,

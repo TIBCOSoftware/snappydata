@@ -134,6 +134,7 @@ scalaTest {
     doFirst {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)
+        environment 'SMOKE_PERF': rootProject.hasProperty("smokePerf")
     }
     doLast {
         // cleanup files since scalatest plugin does not honour workingDir yet

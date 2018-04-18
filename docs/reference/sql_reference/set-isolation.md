@@ -28,7 +28,7 @@ Example
 
 ```no-highlight
 snappy> set ISOLATION READ COMMITTED;
-0 rows inserted/updated/deleted
+
 snappy> VALUES CURRENT ISOLATION;
 1
 ----

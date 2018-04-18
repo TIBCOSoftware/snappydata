@@ -4,66 +4,64 @@ This section provides a complete description of the Structured Query Language (S
 
 The following topics are covered in this section:
 
-**CREATE STATEMENTS**
+- **[ALTER TABLE](reference/sql_reference/alter-table.md)**
 
- - **[CREATE DISKSTORE](reference/sql_reference/create-diskstore.md)**
+- **CREATE STATEMENTS**
 
- - **[CREATE EXTERNAL TABLE](reference/sql_reference/create-external-table.md)**
+    - **[CREATE DISKSTORE](reference/sql_reference/create-diskstore.md)**
 
- - **[CREATE FUNCTION](reference/sql_reference/create-function.md)**
+    - **[CREATE EXTERNAL TABLE](reference/sql_reference/create-external-table.md)**
 
- - **[CREATE INDEX](reference/sql_reference/create-index.md)**
+    - **[CREATE FUNCTION](reference/sql_reference/create-function.md)**
 
- - **[CREATE SCHEMA](reference/sql_reference/create-schema.md)**
+    - **[CREATE INDEX](reference/sql_reference/create-index.md)**
 
- - **[CREATE SYNONYM](reference/sql_reference/create-synonym.md)**
+    - **[CREATE SCHEMA](reference/sql_reference/create-schema.md)**
 
- - **[CREATE SAMPLE TABLE](reference/sql_reference/create-sample-table.md)**
+    - **[CREATE SYNONYM](reference/sql_reference/create-synonym.md)**
 
- - **[CREATE STREAM TABLE](reference/sql_reference/create-stream-table.md)**
+    - **[CREATE SAMPLE TABLE](reference/sql_reference/create-sample-table.md)**
 
- - **[CREATE TABLE](reference/sql_reference/create-table.md)**
+    - **[CREATE STREAM TABLE](reference/sql_reference/create-stream-table.md)**
 
- - **[CREATE TEMPORARY TABLE](reference/sql_reference/create-temporary-table.md)**
+    - **[CREATE TABLE](reference/sql_reference/create-table.md)**
 
- - **[CREATE VIEW](reference/sql_reference/create-view.md)**
+    - **[CREATE TEMPORARY TABLE](reference/sql_reference/create-temporary-table.md)**
 
+    - **[CREATE VIEW](reference/sql_reference/create-view.md)**
 
-**DROP STATEMENTS**
+- **DROP STATEMENTS**
 
- - **[DROP DISKSTORE](reference/sql_reference/drop-diskstore.md)**
+     - **[DROP DISKSTORE](reference/sql_reference/drop-diskstore.md)**
 
- - **[DROP FUNCTION](reference/sql_reference/drop-function.md)**
+     - **[DROP FUNCTION](reference/sql_reference/drop-function.md)**
 
- - **[DROP INDEX](reference/sql_reference/drop-index.md)**
+     - **[DROP INDEX](reference/sql_reference/drop-index.md)**
 
- - **[DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE](reference/sql_reference/drop-table.md)**
+     - **[DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE](reference/sql_reference/drop-table.md)**
 
- - **[DROP SCHEMA](reference/sql_reference/drop-schema.md)**
+     - **[DROP SCHEMA](reference/sql_reference/drop-schema.md)**
 
- - **[DROP SYNONYMN](reference/sql_reference/drop-synonym.md)**
+     - **[DROP SYNONYMN](reference/sql_reference/drop-synonym.md)**
 
+- **[DELETE](reference/sql_reference/delete.md)**
 
-* **[ALTER TABLE](reference/sql_reference/alter-table.md)**
+- **[GRANT](reference/sql_reference/grant.md)**
 
-* **[DELETE](reference/sql_reference/delete.md)**
+- **[INSERT](reference/sql_reference/insert.md)**
 
-* **[GRANT](reference/sql_reference/grant.md)**
+- **[LATERAL VIEW](reference/sql_reference/lateral-view.md)**
 
-* **[INSERT](reference/sql_reference/insert.md)**
+- **[PUT INTO](reference/sql_reference/put-into.md)**
 
-* **[PUT INTO](reference/sql_reference/put-into.md)**
+- **[REVOKE](reference/sql_reference/revoke.md)**
 
-* **[REVOKE](reference/sql_reference/revoke.md)**
+- **[SELECT](reference/sql_reference/select.md)**
 
-* **[SELECT](reference/sql_reference/select.md)**
+- **[SET ISOLATION](reference/sql_reference/set-isolation.md)**
 
-* **[SET ISOLATION](reference/sql_reference/set-isolation.md)**
+- **[SET SCHEMA](reference/sql_reference/set-schema.md)**
 
-* **[SET SCHEMA](reference/sql_reference/set-schema.md)**
+- **[TRUNCATE TABLE](reference/sql_reference/truncate-table.md)**
 
-* **[TRUNCATE TABLE](reference/sql_reference/truncate-table.md)**
-
-* **[UPDATE](reference/sql_reference/update.md)**
-
-* **[LATERAL VIEW](reference/sql_reference/lateral-view.md)**
+- **[UPDATE](reference/sql_reference/update.md)**

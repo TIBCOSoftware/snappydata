@@ -4,8 +4,8 @@ Perform offline compaction of a single SnappyData disk store.
 
 ## Syntax
 
-```pre
-snappy compact-disk-store <diskStoreName> <directory>+ [-maxOplogSize=<int>]
+```no-highlight
+./bin/snappy compact-disk-store <diskStoreName> <directory>+ [-maxOplogSize=<int>]
 ```
 
 ## Description
@@ -26,14 +26,14 @@ Offline compaction can consume a large amount of memory. If you get a java.lang.
 
 ## Example
 
-``` pre
-snappy compact-disk-store myDiskStoreName  /firstDir  /secondDir   
+```no-highlight
+./bin/snappy compact-disk-store myDiskStoreName  /firstDir  /secondDir   
 maxOplogSize=maxMegabytesForOplog
 ```
 
 The output of this command is similar to:
 
-``` pre
+```no-highlight
 Offline compaction removed 12 records.
 Total number of region entries in this disk store is: 7
 ```

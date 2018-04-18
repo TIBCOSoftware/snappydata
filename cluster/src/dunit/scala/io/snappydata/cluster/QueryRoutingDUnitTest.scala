@@ -113,7 +113,7 @@ class QueryRoutingDUnitTest(val s: String)
       s.execute("select ** from sometable")
     } catch {
       case sqe: SQLException =>
-        if ("42X01" != sqe.getSQLState && "38000" != sqe.getSQLState) {
+        if ("42X01" != sqe.getSQLState && "42000" != sqe.getSQLState) {
           throw sqe
         }
     }
@@ -651,7 +651,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     foundTable = false
     while (rSet2.next()) {
-      if (ColumnFormatRelation.columnBatchTableName(t).
+      if (ColumnFormatRelation.columnBatchTableName("APP." + t).
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))

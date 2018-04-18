@@ -9,15 +9,17 @@ This is the simplest form of deployment and can be used for testing and POCs.
 
 Open the command prompt, go the location of the downloaded SnappyData file, and run the following command to extract the archive file.
 
-```bash
+```no-highlight
 $ tar -xzf snappydata-<version-number>bin.tar.gz
 $ cd snappydata-<version-number>-bin/
 ```
 
-Start a basic cluster with one data node, one lead, and one locator
-```
+Start a basic cluster with one data node, one lead, and one locator:
+
+```no-highlight
 ./sbin/snappy-start-all.sh
 ```
+
 For custom configuration and to start more nodes,  see the section on [configuring the SnappyData cluster](../configuring_cluster/configuring_cluster.md).
 
 ## Multi-Host Installation

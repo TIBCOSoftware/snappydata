@@ -21,7 +21,7 @@ The following examples provide JDBC example code snippets that explain how to us
 
 For row tables, **autocommit** can be set to **false** or **true**
 
-```
+```no-highlight
 import java.sql.{Connection, Statement}
 
 ...
@@ -70,7 +70,7 @@ conn1.close()
 
 For column tables, **autocommit** must be set to **true**, otherwise, an error is reported when the query is executed.
 
-```
+```no-highlight
 val conn2 = DriverManager.getConnection(url)
 val stmt2 = conn2.createStatement()
 
@@ -103,7 +103,7 @@ rs2.close()
 
 #### Unsupported operations when **autocommit** is set to false for column tables
 
-```
+```no-highlight
 // if autocommit is set to false, queries throw an error if column tables are involved
 conn2.setAutoCommit(false)
 // invalid query

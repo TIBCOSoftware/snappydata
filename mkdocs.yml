@@ -184,6 +184,7 @@ pages:
             - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
+        - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
@@ -191,7 +192,6 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
-        - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'

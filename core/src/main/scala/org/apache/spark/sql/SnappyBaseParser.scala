@@ -278,6 +278,9 @@ final class Keyword private[sql] (s: String) {
   val upper: String = Utils.toUpperCase(s)
 }
 
+final class ParseException(msg: String, cause: Option[Throwable] = None)
+    extends AnalysisException(msg, None, None, None, cause)
+
 object SnappyParserConsts {
   final val space: CharPredicate = CharPredicate(' ', '\t')
   final val whitespace: CharPredicate = CharPredicate(
@@ -304,7 +307,7 @@ object SnappyParserConsts {
   final val allKeywords: OpenHashSet[String] = new OpenHashSet[String]
 
   final val optimizableLikePattern: java.util.regex.Pattern =
-    java.util.regex.Pattern.compile("%?[^_%]*[^_%\\\\]%?")
+    java.util.regex.Pattern.compile("(%?[^_%]*[^_%\\\\]%?)|([^_%]*[^_%\\\\]%[^_%]*)")
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
@@ -334,10 +337,6 @@ object SnappyParserConsts {
     allKeywords.add(k.upper)
     k
   }
-
-  final val REFERENCES_KEY = "TokenizationReferences"
-  final val WRAPPED_CONSTANTS_KEY = "TokenizedConstants"
-  final val NOCACHING_KEY = "TokenizationNoCaching"
 
   final val COLUMN_SOURCE = "column"
   final val ROW_SOURCE = "row"
