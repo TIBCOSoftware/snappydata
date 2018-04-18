@@ -26,6 +26,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import io.snappydata.SnappyFunSuite.checkAnswer
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.scalatest.Assertions
 
@@ -196,6 +197,53 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table checkTable3")
 
     session.conf.unset(Property.ColumnBatchSize.name)
+  }
+
+  def testDeltaStats(session: SnappySession): Unit = {
+    session.sql("drop table if exists test1")
+    session.sql("create table test1 (col1 long, col2 long) using column " +
+        "options (buckets '1', column_batch_size '50')")
+    // size of batch ensured so that both rows fall in same batch
+    session.range(2).selectExpr("(id  + 1) * 10", "(id + 1) * 100").write.insertInto("test1")
+
+    checkAnswer(session.sql("select * from test1"), Seq(Row(10L, 100L), Row(20L, 200L)))
+
+    // update should change the delta stats else many point queries below will fail
+    session.sql("update test1 set col1 = 100 where col2 = 100")
+
+    checkAnswer(session.sql("select * from test1"), Seq(Row(100L, 100L), Row(20L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 100"), Seq(Row(100L, 100L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 100"), Seq(Row(100L, 100L)))
+
+    // check for merging of delta stats
+    session.sql("update test1 set col1 = 200 where col1 = 20")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(100L, 100L), Row(200L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 200"), Seq(Row(200L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 200"), Seq(Row(200L, 200L)))
+    session.sql("update test1 set col1 = col1 * 10 where col1 = 100 or col2 = 200")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 100L), Row(2000L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 1000"), Seq(Row(1000L, 100L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 100"), Seq(Row(1000L, 100L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 2000"), Seq(Row(2000L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 200"), Seq(Row(2000L, 200L)))
+
+    // also check for other column
+    session.sql("update test1 set col2 = 10 where col1 = 1000")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 10L), Row(2000L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 1000"), Seq(Row(1000L, 10L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 10"), Seq(Row(1000L, 10L)))
+    session.sql("update test1 set col2 = 20 where col2 = 200")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 10L), Row(2000L, 20L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 2000"), Seq(Row(2000L, 20L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 20"), Seq(Row(2000L, 20L)))
+    session.sql("update test1 set col2 = col2 * 100 where col1 = 2000 or col2 = 10")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 1000L), Row(2000L, 2000L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 1000"), Seq(Row(1000L, 1000L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 1000"), Seq(Row(1000L, 1000L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 2000"), Seq(Row(2000L, 2000L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 2000"), Seq(Row(2000L, 2000L)))
+
+    session.sql("drop table test1")
   }
 
   def testBasicDelete(session: SnappySession): Unit = {
@@ -554,5 +602,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       assert(ds.rdd.getNumPartitions === 40)
     }
     SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcin.com']", "[]")))
+
+    ds = session.sql("delete from domaindata where id = 40")
+    // change when pruning is available in all modes (SNAP-2195)
+    if (checkPruning) {
+      assert(ds.rdd.getNumPartitions === 1)
+    } else {
+      assert(ds.rdd.getNumPartitions === 40)
+    }
   }
 }

@@ -31,4 +31,3 @@ MEMBERID                        |NAME                            |ID            
 
 12 rows selected
 ```
-

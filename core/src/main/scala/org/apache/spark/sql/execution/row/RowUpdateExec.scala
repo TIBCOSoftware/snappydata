@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.row
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.types.StructType
 
@@ -40,7 +41,7 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
-    sql.append("UPDATE ").append(resolvedName).append(" SET ")
+    sql.append("UPDATE ").append(quotedName(resolvedName, escapeQuotes = true)).append(" SET ")
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
       escapeQuotes = true, separator = ", ")
     sql.append(" WHERE ")

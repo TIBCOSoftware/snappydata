@@ -25,6 +25,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
@@ -39,10 +40,11 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException, NoSuchPermanentFunctionException, NoSuchTableException}
+import org.apache.spark.sql.catalyst.analysis.{FunctionAlreadyExistsException, FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPermanentFunctionException, NoSuchTableException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
@@ -110,7 +112,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 //    snappySession.dropTable(newQualifiedTableName(name), ignoreIfNotExists)
 //  }
 
-  protected var currentSchema: String = {
+  protected[sql] var currentSchema: String = {
     var user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
     if (user.isEmpty) {
       // In smart connector, property name is different.
@@ -173,9 +175,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   override def getCurrentDatabase: String = synchronized {
     formatTableName(currentSchema)
   }
-
-  def getCurrentSchema: String = currentSchema
-
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
@@ -341,8 +340,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     case _ => dataType
   }
 
-  private def normalizeSchemaField(f: StructField): StructField = {
-    val name = Utils.toUpperCase(Utils.fieldName(f))
+  private def normalizeSchemaField(f: StructField): StructField =
+    normalizeField(f, Utils.fieldName(f))
+
+  def normalizeField(f: StructField, fieldName: String): StructField = {
+    val name = Utils.toUpperCase(fieldName)
     val dataType = normalizeType(f.dataType)
     val metadata = if (f.metadata.contains("name")) {
       val builder = new MetadataBuilder
@@ -369,8 +371,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     f.copy(name = name, dataType = dataType, metadata = metadata)
   }
 
+  def caseSensitiveAnalysis: Boolean = sqlConf.caseSensitiveAnalysis
+
   def normalizeSchema(schema: StructType): StructType = {
-    if (sqlConf.caseSensitiveAnalysis) {
+    if (caseSensitiveAnalysis) {
       schema
     } else {
       val fields = schema.fields
@@ -898,12 +902,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
     // If the name itself is not qualified, add the current database to it.
-    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
-    val qualifiedName = name.copy(database = database)
+    val database = formatDatabaseName(name.database.getOrElse(currentSchema))
+    val qualifiedName = name.copy(database = Some(database))
     ContextJarUtils.getDriverJar(qualifiedName.unquotedString) match {
       case Some(_) =>
         val catalogFunction = try {
-          externalCatalog.getFunction(currentSchema, qualifiedName.funcName)
+          externalCatalog.getFunction(database, qualifiedName.funcName)
         } catch {
           case _: AnalysisException => failFunctionLookup(qualifiedName.funcName)
           case _: NoSuchPermanentFunctionException => failFunctionLookup(qualifiedName.funcName)
@@ -912,6 +916,36 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ =>
     }
     super.dropFunction(name, ignoreIfNotExists)
+  }
+
+  /**
+    * Create a metastore function in the database specified in `funcDefinition`.
+    * If no such database is specified, create it in the current database.
+    * If the specified database is not present in catalog, create that database.
+    * @TODO Ideally create schema from gfxd should get routed to create the database in
+    * the Hive catalog.
+    */
+  override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit = {
+    val db = formatDatabaseName(funcDefinition.identifier.database.getOrElse(currentSchema))
+    withHiveExceptionHandling(getDatabaseOption(client, db)) match {
+      case Some(_) => // We are all good
+      case None => withHiveExceptionHandling(client.createDatabase(CatalogDatabase(
+        db,
+        description = db,
+        getDefaultDBPath(db),
+        Map.empty[String, String]),
+        ignoreIfExists = true))
+      // Path is empty String for now @TODO for parquet & hadoop relation
+      // handle path correctly
+    }
+
+    val identifier = FunctionIdentifier(funcDefinition.identifier.funcName, Some(db))
+    val newFuncDefinition = funcDefinition.copy(identifier = identifier)
+    if (!functionExists(identifier)) {
+      externalCatalog.createFunction(db, newFuncDefinition)
+    } else if (!ignoreIfExists) {
+      throw new FunctionAlreadyExistsException(db = db, func = identifier.toString)
+    }
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
@@ -969,8 +1003,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
 
     // If the name itself is not qualified, add the current database to it.
-    val database = name.database.orElse(Some(currentSchema)).map(formatDatabaseName)
-    val qualifiedName = name.copy(database = database)
+    val database = formatDatabaseName(name.database.getOrElse(currentSchema))
+    val qualifiedName = name.copy(database = Some(database))
 
     if (functionRegistry.functionExists(qualifiedName.unquotedString)) {
       // This function has been already loaded into the function registry.
@@ -983,10 +1017,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // in the metastore). We need to first put the function in the FunctionRegistry.
     // TODO: why not just check whether the function exists first?
     val catalogFunction = try {
-      externalCatalog.getFunction(currentSchema, name.funcName)
+      externalCatalog.getFunction(database, qualifiedName.funcName)
     } catch {
-      case _: AnalysisException => failFunctionLookup(name.funcName)
-      case _: NoSuchPermanentFunctionException => failFunctionLookup(name.funcName)
+      case _: AnalysisException =>
+        throw new NoSuchFunctionException(db = database, func = qualifiedName.funcName)
+      case _: NoSuchPermanentFunctionException =>
+        throw new NoSuchFunctionException(db = database, func = qualifiedName.funcName)
     }
     // loadFunctionResources(catalogFunction.resources) // Not needed for Snappy use case
 
@@ -1020,9 +1056,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
    */
   override def reset(): Unit = synchronized {
     setCurrentDatabase(Constant.DEFAULT_SCHEMA)
-    listDatabases().map(s => s.toUpperCase).
+    listDatabases().map(Utils.toUpperCase).
         filter(_ != Constant.DEFAULT_SCHEMA).
-        filter(_ != DEFAULT_DATABASE.toUpperCase).foreach { db =>
+        filter(_ != Utils.toUpperCase(DEFAULT_DATABASE)).foreach { db =>
       dropDatabase(db, ignoreIfNotExists = false, cascade = true)
     }
 
@@ -1142,13 +1178,13 @@ object SnappyStoreHiveCatalog {
       SnappyContext.getClusterMode(session.sparkContext) match {
         case SnappyEmbeddedMode(_, _) =>
           val version = getRelationDestroyVersion
-          Utils.mapExecutors(session.sqlContext,
+          Utils.mapExecutors[Unit](session.sparkContext,
             () => {
               val profile: GfxdProfile =
                 GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
               Option(profile).foreach(gp => gp.setRelationDestroyVersion(version))
               Iterator.empty
-            }).count()
+            })
         case _ =>
       }
     )

@@ -3,7 +3,7 @@
 ```no-highlight
 CREATE TEMPORARY TABLE table_name
     USING datasource
-    [AS select_statement]
+    [AS select_statement];
 ```
 For more information on column-definition, refer to [Column Definition For Column Table](create-table.md#column-definition).
 
@@ -22,16 +22,14 @@ Populate the table with input data from the select statement.
 
 ## Examples
 
-```
+```no-highlight
 snappy> CREATE TEMPORARY TABLE STAGING_AIRLINEREF USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
 ```
 
-<!--
-snappy> CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP (CODE2 string, DESCRIPTION2 String) AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
--->
-```
+```no-highlight
 snappy> CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP2 AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
 ```
+
 !!! Note:
     When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br>Ensure that you create temporary tables with a unique name.
     

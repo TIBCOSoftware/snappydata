@@ -1,9 +1,7 @@
 # MEMBERS
 
 A SnappyData virtual table that contains information about each distributed system member.
-<!--
-See <mark> TO BE CONFIRMED RowStore Link [Distributed System Membership Information](http://rowstore.docs.snappydata.io/docs/manage_guide/Topics/distributed-sysadmin/member-info.html#concept_2FFD239F66BD4A0099E401F1FC250574)</mark>. 
--->
+
 !!! Note
 	SnappyData converts server group names to all uppercase letters before storing the values in the SYS.MEMBERS table. DDL statements and procedures automatically convert any supplied server group values to all uppercase letters. However, you must specify uppercase values for server groups when you directly query the SYS.MEMBERS table.
 

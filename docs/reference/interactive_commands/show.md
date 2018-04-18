@@ -256,7 +256,6 @@ If `IN schemaName` is specified, only synonyms in the specified schema are displ
 **Example**
 
 ``` no-highlight
-
 snappy> CREATE SYNONYM myairline FOR airlineREF_1;
 
 snappy> SHOW SYNONYMS;

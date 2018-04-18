@@ -51,7 +51,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 
 	!!! Note: 
-	
+
 		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
 	
 		* The SnappyData product distribution is already downloaded and extracted in the **/opt/snappydata** directory and Java 8 is installed. 
@@ -59,7 +59,6 @@ Refer to the following documentation, for more information on [accessing an EC2 
 15. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
 
 	 	./sbin/snappy-start-all.sh
-
 
 <a id="EC2"></a>
 ## Using SnappyData EC2 scripts
@@ -139,25 +138,29 @@ The important difference here is that, instead of the host names of the locator,
 The sample configuration files for a cluster with 2 locators, 1 lead and 2 stores are given below:
 
 *locators*
+
 ```no-highlight
 {{LOCATOR_0}} -peer-discovery-port=9999 -heap-size=1024m
 {{LOCATOR_1}} -peer-discovery-port=9888 -heap-size=1024m
 ```
 
 *leads*
+
 ```no-highlight
 {{LEAD_0}} -heap-size=4096m -spark.ui.port=3333 -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -spark.executor.cores=10
 ```
 
 *servers*
+
 ```no-highlight
 {{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888
 {{SERVER_1}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -client-port=1530
 ```
+
 When you run **snappy-ec2**, it looks for these files under **aws/ec2/deploy/home/ec2-user/snappydata/** and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options `--locators`, `--leads` or `--stores` must match to the number of entries in their respective configuration file.
 </br>The script also reads **snappy-env.sh**, if present in this location.
 
-#### Stopping a cluster
+#### Stopping the cluster
 
 When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost. However, the data saved on EBS volumes is retained, unless the spot-instances are used.
 
@@ -165,20 +168,21 @@ When you stop a cluster, it shuts down the EC2 instances and any data saved on t
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
 ```
 
-#### Starting a cluster
+#### Resuming the cluster
 
 When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches SnappyData processes on them.
+
 ```no-highlight
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
 ```
 !!!Note: 
 	The start command (or launch command with `--resume` option) ignores the `--locators`, `--leads` or `--stores` options, and launches the SnappyData cluster on existing instances. The configuration files however, are read if they are present in the location mentioned above. You therefore must ensure that every time you use the `start` command, the number of entries in configuration files are equal to the number of instances in their respective security group.
 
-#### Adding servers to a cluster
+#### Adding servers to the cluster
 
 This is not yet fully supported using the script. You may have to manually launch an instance with `(cluster-name)-stores` group, and then use launch command with the `--resume` option.
 
-#### Listing members of a cluster
+#### Listing members of the cluster
 
 **To get the first locator's hostname:**
 ```no-highlight
@@ -186,7 +190,7 @@ This is not yet fully supported using the script. You may have to manually launc
 ```
 Use the `get-lead` command to get the first lead's hostname.
 
-#### Connecting to a cluster
+#### Connecting to the cluster
 
 You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. You can then use SSH to connect to any other member of the cluster without a password. </br>
 The SnappyData product directory is located under **/home/ec2-user/snappydata/** on all the members.
@@ -194,7 +198,7 @@ The SnappyData product directory is located under **/home/ec2-user/snappydata/**
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
 ```
 
-#### Destroying a cluster
+#### Destroying the cluster
 
 Destroying a cluster permanently destroys all the data on the local instance stores and on the attached EBS volumes.
 ```no-highlight
@@ -212,7 +216,7 @@ Optionally, you can start an instance of Apache Zeppelin server with the cluster
 
 ### More options
 
-For a complete list of options provided by the script run `./snappy-ec2`. </br>The options are also provided below for quick reference.
+For a complete list of options provided by the script run `./snappy-ec2` (available in the  snappydata-ec2-<version>.tar.gz compressed file). </br>The options are also provided below for quick reference.
 
 ```no-highlight
 Usage: snappy-ec2 [options] <action> <cluster_name>

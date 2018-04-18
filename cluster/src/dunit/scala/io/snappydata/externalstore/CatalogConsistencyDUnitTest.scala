@@ -90,7 +90,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     try {
       // make sure that the column buffer does not exist
       routeQueryDisabledConn.createStatement().executeQuery(
-        "select * from " + ColumnFormatRelation.columnBatchTableName("column_table1"))
+        "select * from " + ColumnFormatRelation.columnBatchTableName("app.column_table1"))
     } catch {
       case se: SQLException if (se.getSQLState.equals("42X05")) =>
       case unknown: Throwable => throw unknown
@@ -156,7 +156,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // drop column_table1 from store DD
     val routeQueryDisabledConn = getClientConnection(netPort1, false)
     routeQueryDisabledConn.createStatement().execute("drop table " +
-        ColumnFormatRelation.columnBatchTableName("column_table1"))
+        ColumnFormatRelation.columnBatchTableName("app.column_table1"))
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore

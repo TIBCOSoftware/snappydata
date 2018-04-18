@@ -475,7 +475,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting of delete for replicated tables") {
-    val sparkSession = createSparkSession(1, 0, sparkMemory = 1200)
+    val sparkSession = createSparkSession(1, 0, sparkMemory = 12000)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, Map.empty[String, String])
@@ -532,7 +532,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting of drop table for replicated tables") {
-    val sparkSession = createSparkSession(1, 0)
+    val sparkSession = createSparkSession(1, 0, sparkMemory = 12000)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val beforeCreateTable = SparkEnv.get.memoryManager.storageMemoryUsed
@@ -542,7 +542,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession.dropTable("t1")
     val afterDropTable = SparkEnv.get.memoryManager.storageMemoryUsed
     // Approximate because drop table adds entry in system table which causes memory to grow a bit
-    assertApproximate(afterDropTable, beforeCreateTable)
+    assertApproximate(afterDropTable, beforeCreateTable, error = 10)
   }
 
   test("Test storage for column tables with df inserts") {

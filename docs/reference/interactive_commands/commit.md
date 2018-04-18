@@ -14,10 +14,8 @@ Issues a *java.sql.Connection.commit* request. Use this command only if auto-com
 ## Example
 
 ``` no-highlight
-snappy> autocommit off;
-snappy> insert into greetings values (DEFAULT, 'hello');
+snappy> AUTOCOMMIT off;
+snappy> INSERT INTO greetings values (DEFAULT, 'hello');
 1 row inserted/updated/deleted
-snappy> commit;
+snappy> COMMIT;
 ```
-
-
