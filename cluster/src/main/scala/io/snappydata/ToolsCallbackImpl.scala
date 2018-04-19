@@ -18,11 +18,14 @@ package io.snappydata
 
 import java.io.File
 
-import org.apache.spark.SparkContext
+import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.impl.LeadImpl
+import org.apache.spark.executor.SnappyExecutor
+import org.apache.spark.{SparkContext, SparkFiles}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
 import org.apache.spark.ui.SnappyDashboardTab
-import org.apache.spark.util.SnappyUtils
+import org.apache.spark.util.{SnappyUtils, Utils}
 
 object ToolsCallbackImpl extends ToolsCallback {
 
@@ -46,5 +49,21 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def setSessionDependencies(sparkContext: SparkContext, appName: String,
       classLoader: ClassLoader): Unit = {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
+  }
+
+  override def addURIs(jars: Array[String]): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    val loader = lead.urlclassloader
+    jars.foreach(j => {
+      val url = new File(SparkFiles.getRootDirectory(), j).toURI.toURL
+      loader.addURL(url)
+    })
+  }
+
+  override def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
+    if (ExecutorInitiator.snappyExecBackend != null) {
+      val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+      snappyexecutor.updateMainLoader(jars)
+    }
   }
 }

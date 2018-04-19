@@ -51,4 +51,10 @@ trait ToolsCallback {
       appName : String,
       classLoader: ClassLoader): Unit = {
   }
+
+  def addURIs(jars: Array[String]): Unit
+
+  def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
+
+  }
 }

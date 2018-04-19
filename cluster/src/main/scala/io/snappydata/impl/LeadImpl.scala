@@ -17,6 +17,7 @@
 package io.snappydata.impl
 
 import java.lang.reflect.{Constructor, Method}
+import java.net.{URL, URLClassLoader}
 import java.sql.SQLException
 import java.util.Properties
 
@@ -24,7 +25,6 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
@@ -49,7 +49,6 @@ import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
-
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
@@ -74,6 +73,8 @@ class LeadImpl extends ServerImpl with Lead
 
   private var remoteInterpreterServerClass: Class[_] = _
   private var remoteInterpreterServerObj: Any = _
+
+  var urlclassloader: ExtendibleURLClassLoader = _
 
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
@@ -263,6 +264,11 @@ class LeadImpl extends ServerImpl with Lead
       if (!authSpecified) {
         checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
       }
+
+      // Add a URL classloader to the main thread so that new URIs can be added
+      val parent = Thread.currentThread().getContextClassLoader
+      urlclassloader = new ExtendibleURLClassLoader(parent)
+      Thread.currentThread().setContextClassLoader(urlclassloader)
 
       if (jobServerWait) {
         // mark RUNNING after job server and zeppelin initialization if so configured
@@ -660,6 +666,13 @@ class LeadImpl extends ServerImpl with Lead
 
   def getInterpreterServerClass(): Class[_] = {
     remoteInterpreterServerClass
+  }
+}
+
+class ExtendibleURLClassLoader(parent: ClassLoader)
+    extends URLClassLoader(Array.empty[URL], parent) {
+  override def addURL(url: URL) {
+    super.addURL(url)
   }
 }
 
