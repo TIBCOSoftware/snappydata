@@ -5,7 +5,7 @@ This procedure enables or disables a specific trace flag for the distributed sys
 ## Syntax
 
 ```no-highlight
-SYS.SET_TRACE_FLAG (
+CALL SYS.SET_TRACE_FLAG (
 IN TRACE_FLAG VARCHAR(256),
 IN ON BOOLEAN
 )
