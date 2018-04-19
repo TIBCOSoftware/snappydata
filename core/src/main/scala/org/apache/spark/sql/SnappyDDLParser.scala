@@ -21,18 +21,18 @@ package org.apache.spark.sql
 import java.io.File
 
 import scala.util.Try
-
 import io.snappydata.Constant
+import org.apache.spark.TaskContext
+import org.apache.spark.deploy.SparkSubmitUtils
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, ExecutorLocalRDD, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
@@ -723,3 +723,28 @@ case class DMLExternalTable(
 case class SetSchema(schemaName: String) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
+
+/**
+  * Returns a list of jar files that are added to resources.
+  * If jar files are provided, return the ones that are added to resources.
+  */
+case class DeployCommand(
+    coordinates: String,
+    repos: Option[String],
+    jarCache: Option[String]) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+    if (jarsstr.nonEmpty) {
+      val jars = jarsstr.split(",")
+      val sc = sparkSession.sparkContext
+      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
+        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+        Iterator.empty
+      })
+      ToolsCallbackInit.toolsCallback.addURIs(jars)
+    }
+    Seq.empty[Row]
+  }
+}

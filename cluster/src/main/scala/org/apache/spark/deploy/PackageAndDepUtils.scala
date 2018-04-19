@@ -23,7 +23,9 @@ object GetJarsAndDependencies {
       s" [--repos repositories] [--jarcache path] coordinates"
 
   def main(args: Array[String]) {
+    // scalastyle:off
     if (args.length == 0) println(usage)
+    // scalastyle:on
     val arglist = args.toList
     type OptionMap = Map[Symbol, String]
 
@@ -39,8 +41,10 @@ object GetJarsAndDependencies {
         case string :: opt2 :: tail if isSwitch(opt2) =>
           nextOption(map ++ Map('coordinates -> string), list.tail)
         case string :: Nil => nextOption(map ++ Map('coordinates -> string), list.tail)
+        // scalastyle:off
         case option :: tail => println("Unknown option " + option)
           Map.empty
+        // scalastyle:on
       }
     }
 
@@ -49,7 +53,9 @@ object GetJarsAndDependencies {
     val coordinates = options.getOrElse('coordinates, throw new IllegalArgumentException)
     val remoteRepos = options.get('repos)
     val ivyPath = options.get('jarcache)
+    // scalastyle:off
     println(PackageAndDepUtils.resolveMavenCoordinates(coordinates, remoteRepos, ivyPath))
+    // scalastyle:on
   }
 }
 
