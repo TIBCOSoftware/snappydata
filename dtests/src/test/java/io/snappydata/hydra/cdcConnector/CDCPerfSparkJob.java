@@ -121,8 +121,9 @@ public class CDCPerfSparkJob {
       for (int i = 0; i < qlist.size(); i++) {
         System.out.println("The query is " + qlist.get(i));
         PreparedStatement ps = conn.prepareStatement(qlist.get(i));
-        ps.setInt(1, (startRange - 2));
+        ps.setInt(1, (startRange - 1));
         ps.execute();
+        System.out.println("successfully executed the query");
       }
     } catch (Exception ex) {
       System.out.println("Exception inside runBulkDelete() method" + ex.getMessage());

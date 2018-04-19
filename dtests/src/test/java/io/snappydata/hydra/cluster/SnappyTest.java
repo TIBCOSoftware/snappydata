@@ -2091,7 +2091,7 @@ public class SnappyTest implements Serializable {
         }
         if (SnappyCDCPrms.getIsCDC()) {
           int finalStart = SnappyCDCPrms.getInitEndRange() + 1;
-          int finalEnd = SnappyCDCPrms.getInitEndRange() + 100;
+          int finalEnd = SnappyCDCPrms.getInitEndRange() + 1000;
           Log.getLogWriter().info("Start range and end range : " + finalStart + " & " + finalEnd);
           String appName = SnappyCDCPrms.getAppName();
           if (appName.equals("CDCIngestionApp2")) {
@@ -2100,7 +2100,7 @@ public class SnappyTest implements Serializable {
             Log.getLogWriter().info("For  second Ingestion New Start range and end range : " + tempFinalStart + " & " + tempEndRange);
             userAppArgs = tempFinalStart + " " + tempEndRange + " " + userAppArgs;
             SnappyBB.getBB().getSharedMap().put("finalStartRange", tempEndRange + 1);
-            SnappyBB.getBB().getSharedMap().put("finalEndRange", tempEndRange + 10);
+            SnappyBB.getBB().getSharedMap().put("finalEndRange", tempEndRange + 1000);
           } else if (appName.equals("CDCIngestionApp1")) {
             userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
             SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
