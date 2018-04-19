@@ -10,8 +10,8 @@ The DSID function returns the string form of the distributed member process iden
 
 ## Example
 
-```no-highlight	
-select count(*), dsid() from AIRLINE group by dsid();
+``` no-highlight
+snappy>select count(*), dsid() from AIRLINE group by dsid();
 
 count(1)            |DSID()                      
 -------------------------------------------------
@@ -20,7 +20,6 @@ count(1)            |DSID()
 303811              |192.168.1.98(3255)<v1>:2428 
 
 3 rows selected
-snappy> 
 ```
 
 

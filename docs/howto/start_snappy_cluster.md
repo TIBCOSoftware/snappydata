@@ -1,6 +1,6 @@
 <a id="howto-startcluster"></a>
 # How to Start a SnappyData Cluster
-## Start SnappyData Cluster on a single machine
+## Starting SnappyData Cluster on a Single Machine
 
 If you have [downloaded and extracted](../install.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
 
@@ -32,7 +32,7 @@ SnappyData Leader pid: 9699 status: running
   Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
 ```
 
-## Start SnappyData Cluster on Multiple Hosts
+## Starting the SnappyData Cluster on Multiple Hosts
 
 To start the cluster on multiple hosts:
 
@@ -46,3 +46,16 @@ To start the cluster on multiple hosts:
 !!! Note: 
 	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](../install/install_on_premise.md) and [cluster configuration](../configuring_cluster/configuring_cluster.md).
 
+<a id="start-component"></a>
+## Starting Individual Components
+
+Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be started on a system locally using the following commands:
+
+!!!Tip:
+	All [configuration parameters](../configuring_cluster/configuring_cluster.md) are provided as command line arguments rather than reading from a configuration file.
+
+```
+$ bin/snappy locator start  -dir=/node-a/locator1
+$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g
+$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
+```

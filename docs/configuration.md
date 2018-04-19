@@ -13,16 +13,18 @@ The following topics are covered in this section:
 	- [Configuring Locators](configuring_cluster/configuring_cluster.md#locator)
 
 	- [Configuring Leads](configuring_cluster/configuring_cluster.md#lead)
+	
+	- [Configuring Data Servers](configuring_cluster/configuring_cluster.md#dataserver)
 
 	- [Configuring SnappyData Smart Connector](configuring_cluster/configuring_cluster.md#configure-smart-connector)
 
-* [Environment Settings](configuring_cluster/configuring_cluster.md#environment)
+	- [Environment Settings](configuring_cluster/configuring_cluster.md#environment)
 
- 	- [Hadoop Provided Settings](configuring_cluster/configuring_cluster.md#hadoop-setting)
+	 	- [Hadoop Provided Settings](configuring_cluster/configuring_cluster.md#hadoop-setting)
 
- 	- [SnappyData Command Line Utility](configuring_cluster/configuring_cluster.md#command-line)
+	 	- [SnappyData Command Line Utility](configuring_cluster/configuring_cluster.md#command-line)
 
-* [Logging](configuring_cluster/configuring_cluster.md#logging)
+	- [Logging](configuring_cluster/configuring_cluster.md#logging)
 
 * [SSL Setup for Client-Server](configuring_cluster/ssl_setup.md)
 
