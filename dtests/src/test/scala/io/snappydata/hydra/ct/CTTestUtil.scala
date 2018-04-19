@@ -20,6 +20,7 @@ package io.snappydata.hydra.ct
 import java.io.PrintWriter
 
 import io.snappydata.hydra.TestUtil
+import org.apache.spark.sql.snappy._
 
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
@@ -55,7 +56,7 @@ object CTTestUtil {
   }
 
   def createPersistPartitionedRowTables(snc: SnappyContext,
-      persistenceMode: String, redundancy: String): Unit = {
+                                        persistenceMode: String, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS(partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "', PERSISTENT '" +
         persistenceMode + "')")
@@ -90,7 +91,7 @@ object CTTestUtil {
 
   // to add eviction attributes
   def createColocatedRowTablesWithEviction(snc: SnappyContext, redundancy: String,
-      persistenceMode: String): Unit = {
+                                           persistenceMode: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', redundancy '" + redundancy + "', buckets '11', PERSISTENT '" +
         persistenceMode + "')")
@@ -130,6 +131,17 @@ object CTTestUtil {
         "COLOCATE_WITH 'ORDERS_DETAILS')")
   }
 
+
+  def createPersistColocatedColumnTablesWithKeyColumns(snc: SnappyContext, redundancy: String,
+                                                       persistenceMode: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" +
+        redundancy + "', key_columns 'SINGLE_ORDER_DID') ")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" + redundancy + "',  " +
+        "COLOCATE_WITH 'ORDERS_DETAILS' , key_columns 'EXEC_DID')")
+  }
+
   // to add eviction attributes
   def createColumnTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
@@ -155,6 +167,15 @@ object CTTestUtil {
   }
 
   /*
+Load data to existign tables using putInto API.
+ */
+
+  def addDataUsingPutInto(snc: SnappyContext): Unit = {
+    CTQueries.orders_details_df(snc).write.putInto("orders_details")
+    CTQueries.exec_details_df(snc).write.putInto("exec_details")
+  }
+
+  /*
    Create and load tables in Spark
    */
   def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
@@ -168,7 +189,7 @@ object CTTestUtil {
   Performs validation for tables with the queries. Returns failed queries in a string.
    */
   def executeQueries(snc: SnappyContext, tblType: String, pw: PrintWriter,
-      fullResultSetValidation: Boolean, sqlContext: SQLContext): String = {
+                     fullResultSetValidation: Boolean, sqlContext: SQLContext): String = {
     TestUtil.validateFullResultSet = fullResultSetValidation
     TestUtil.tableType = tblType
     var failedQueries = ""
