@@ -55,12 +55,14 @@ object ToolsCallbackImpl extends ToolsCallback {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     val loader = lead.urlclassloader
     jars.foreach(j => {
-      val url = new File(SparkFiles.getRootDirectory(), j).toURI.toURL
+      val url = new File(j).toURI.toURL
+      println(s"KN: addURIs add url called with url: $url" )
       loader.addURL(url)
     })
   }
 
   override def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
+    println(s"KN: addURIsToExecutorClassLoader called with jars: $jars" )
     if (ExecutorInitiator.snappyExecBackend != null) {
       val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
       snappyexecutor.updateMainLoader(jars)
