@@ -90,6 +90,8 @@ object StoreStrategy extends Strategy {
 
     case SetSchema(schemaName) => ExecutedCommandExec(SetSchemaCommand(schemaName)) :: Nil
 
+    case d@DeployCommand(_, _, _) => ExecutedCommandExec(d) :: Nil
+
     case SnappyStreamingActions(action, batchInterval) =>
       ExecutedCommandExec(SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
 

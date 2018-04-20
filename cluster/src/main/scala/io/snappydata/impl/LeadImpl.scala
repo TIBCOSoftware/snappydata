@@ -674,6 +674,8 @@ class ExtendibleURLClassLoader(parent: ClassLoader)
   override def addURL(url: URL) {
     super.addURL(url)
   }
+
+  override def getURLs: Array[URL] = super.getURLs
 }
 
 object LeadImpl {

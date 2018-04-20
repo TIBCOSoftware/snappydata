@@ -59,6 +59,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
   final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
   final def DESC: Rule0 = rule { keyword(Consts.DESC) }
+  final def DEPLOY: Rule0 = rule { keyword(Consts.DEPLOY) }
   final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
@@ -84,6 +85,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def OR: Rule0 = rule { keyword(Consts.OR) }
   final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
   final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
+  final def PACKAGE: Rule0 = rule { keyword(Consts.PACKAGE) }
+  final def PATH: Rule0 = rule { keyword(Consts.PATH) }
+  final def REPOS: Rule0 = rule { keyword(Consts.REPOS) }
   final def REVOKE: Rule0 = rule { keyword(Consts.REVOKE) }
   final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
   final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
@@ -484,6 +488,12 @@ abstract class SnappyDDLParser(session: SparkSession)
         "", None)), input.sliceString(0, input.length)))
   }
 
+  protected def deployPackages: Rule1[LogicalPlan] = rule {
+    DEPLOY ~ PACKAGE ~ stringLiteral ~ (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
+        ((packages: String, repos: Any, path: Any) => DeployCommand(
+          packages, repos.asInstanceOf[Option[String]], path.asInstanceOf[Option[String]]))
+  }
+
   protected def streamContext: Rule1[LogicalPlan] = rule {
     STREAMING ~ (
         INIT ~ durationUnit ~> ((batchInterval: Duration) =>
@@ -734,11 +744,15 @@ case class DeployCommand(
     jarCache: Option[String]) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
+    log.info(s"KN: DeployCommand.run called")
     val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+    log.info(s"KN: DeployCommand.run jarstr: $jarsstr" )
     if (jarsstr.nonEmpty) {
       val jars = jarsstr.split(",")
       val sc = sparkSession.sparkContext
       val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      log.info(s"KN: DeployCommand.run uris = : $uris" )
+      log.info(s"KN: DeployCommand.run uris length = : ${uris.length}" )
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
         Iterator.empty
