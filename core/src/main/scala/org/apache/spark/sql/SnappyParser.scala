@@ -103,10 +103,18 @@ class SnappyParser(session: SnappySession)
     var index = 0
     val len = s.length
     // use double if ending with D/d, float for F/f and long for L/l
+
     s.charAt(len - 1) match {
       case 'D' | 'd' =>
-        return newTokenizedLiteral(
-          java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
+        if (s.length > 2 && (s.charAt(len - 2) match {
+          case 'B' | 'b' => true
+          case _ => false
+        })) {
+          return toDecimalLiteral(s.substring(0, len - 2), checkExactNumeric = false)
+        } else {
+          return newTokenizedLiteral(
+            java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
+        }
       case 'F' | 'f' =>
         return newTokenizedLiteral(
           java.lang.Float.parseFloat(s.substring(0, len - 1)), FloatType)
@@ -143,6 +151,7 @@ class SnappyParser(session: SnappySession)
     } else {
       toDecimalLiteral(s, checkExactNumeric = false)
     }
+
   }
 
   private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
@@ -175,8 +184,8 @@ class SnappyParser(session: SnappySession)
 
   protected final def numericLiteral: Rule1[Expression] = rule {
     capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
-        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.?) ~
-        delimiter ~> ((s: String) => toNumericLiteral(s))
+        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
+        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => toNumericLiteral(s))
   }
 
   protected final def literal: Rule1[Expression] = rule {
