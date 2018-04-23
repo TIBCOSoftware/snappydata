@@ -27,6 +27,7 @@ import org.joda.time.DateTime
 import spark.jobserver.util.ContextURLClassLoader
 
 import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.sql.{ClusterMode, SnappyContext, SnappyEmbeddedMode, ThinClientConnectorMode}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.ui.SparkUI
 import org.apache.spark.{SparkContext, SparkEnv}
@@ -76,11 +77,18 @@ object SnappyUtils {
       classLoader: ClassLoader): Unit = {
     assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
     val dependentJars = classLoader.asInstanceOf[URLClassLoader].getURLs
-    val sparkJars = dependentJars.map(url => {
-      sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))
-    })
-    val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.toSeq).mkString(",")
-    sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
+    val clusterMode: ClusterMode = SnappyContext.getClusterMode(sparkContext)
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) => dependentJars.map(url => {
+        sparkContext.addJar(new File(url.toURI).getAbsolutePath)
+      })
+      case SnappyEmbeddedMode(_, _) =>
+        val sparkJars = dependentJars.map(url => {
+        sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))
+      })
+        val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.toSeq).mkString(",")
+        sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
+    }
   }
 
   def clearSessionDependencies(sparkContext: SparkContext): Unit = {
@@ -88,9 +96,15 @@ object SnappyUtils {
   }
 
   def getSnappyContextURLClassLoader(
-      parent: ContextURLClassLoader): ContextURLClassLoader = parent match {
-    case _: SnappyContextURLLoader => parent // no double wrap
-    case _ => new SnappyContextURLLoader(parent)
+      parent: ContextURLClassLoader, context: SparkContext): ContextURLClassLoader = {
+    val clusterMode: ClusterMode = SnappyContext.getClusterMode(context)
+    clusterMode match {
+      case ThinClientConnectorMode(_, _) => parent
+      case SnappyEmbeddedMode(_, _) => parent match {
+          case _: SnappyContextURLLoader => parent // no double wrap
+          case _ => new SnappyContextURLLoader(parent)
+        }
+    }
   }
 
   def doFetchFile(
@@ -129,7 +143,7 @@ class SnappyContextURLLoader(parent: ClassLoader)
     try {
       super.loadClass(name)
     } catch {
-      case _: ClassNotFoundException =>
+      case cxe: ClassNotFoundException =>
         Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
     }
   }

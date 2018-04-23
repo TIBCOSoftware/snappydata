@@ -84,7 +84,7 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
       // If Job class directly refers to any jars which has been provided
       // by install_jars, this can help.
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
-        SnappyUtils.getSnappyContextURLClassLoader(parent)
+        SnappyUtils.getSnappyContextURLClassLoader(parent, this.sparkContext)
       }
     }
   }
