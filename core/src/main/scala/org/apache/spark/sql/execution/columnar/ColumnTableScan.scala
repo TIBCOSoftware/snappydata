@@ -320,7 +320,7 @@ private[sql] final case class ColumnTableScan(
       attr: Attribute, index: Int, batchOrdinal: String): ExprCode = {
     val retValName = ctx.freshName(s"col$index")
     val nullVarForCol = ctx.freshName(s"nullVarForCol$index")
-    ctx.addMutableState("boolean", nullVarForCol, _ => "")
+    ctx.addMutableState("boolean", nullVarForCol, _ => "", true, false)
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
     val name = s"readValue_$index"
@@ -375,7 +375,7 @@ private[sql] final case class ColumnTableScan(
     val (weightVarName, weightAssignCode) = if (output.exists(_.name ==
         Utils.WEIGHTAGE_COLUMN_NAME)) {
       val varName = ctx.freshName("weightage")
-      ctx.addMutableState("long", varName, _ => s"$varName = 0;")
+      ctx.addMutableState("long", varName, _ => s"$varName = 0;", true, false)
       (varName, s"$varName = $wrappedRow.weight();")
     } else ("", "")
 
@@ -385,34 +385,34 @@ private[sql] final case class ColumnTableScan(
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         ctx.addMutableState(iteratorClass, rowInputSRR, _ =>
-          s"$rowInputSRR = ($iteratorClass)inputs[0].next();")
+          s"$rowInputSRR = ($iteratorClass)inputs[0].next();", true, false)
         ctx.addMutableState(unsafeHolderClass, unsafeHolder, _ =>
-          s"$unsafeHolder = new $unsafeHolderClass();")
-        ctx.addMutableState("boolean", inputIsRowSRR, _ => s"$inputIsRowSRR = true;")
+          s"$unsafeHolder = new $unsafeHolderClass();", true, false)
+        ctx.addMutableState("boolean", inputIsRowSRR, _ => s"$inputIsRowSRR = true;", true, false)
       }
       ctx.addMutableState(iteratorClass, rowInput, _ =>
-        s"$rowInput = ($iteratorClass)inputs[0].next();")
+        s"$rowInput = ($iteratorClass)inputs[0].next();", true, false)
       ctx.addMutableState(colIteratorClass, colInput, _ =>
-        s"$colInput = ($colIteratorClass)inputs[0].next();")
+        s"$colInput = ($colIteratorClass)inputs[0].next();", true, false)
       ctx.addMutableState("java.sql.ResultSet", rs, _ =>
-        s"$rs = (($rsIterClass)$rowInput).rs();")
+        s"$rs = (($rsIterClass)$rowInput).rs();", true, false)
     } else {
       ctx.addMutableState("boolean", inputIsOtherRDD, _ =>
-        s"$inputIsOtherRDD = (partitionIndex >= $otherRDDsPartitionIndex);")
+        s"$inputIsOtherRDD = (partitionIndex >= $otherRDDsPartitionIndex);", true, false)
       ctx.addMutableState(iteratorClass, rowInput, _ =>
         s"$rowInput = $inputIsOtherRDD ? inputs[0] " +
-            s": ($iteratorClass)inputs[0].next();")
+            s": ($iteratorClass)inputs[0].next();", true, false)
       ctx.addMutableState(colIteratorClass, colInput, _ =>
-        s"$colInput = $inputIsOtherRDD ? null : ($colIteratorClass)inputs[0].next();")
+        s"$colInput = $inputIsOtherRDD ? null : ($colIteratorClass)inputs[0].next();", true, false)
       ctx.addMutableState("java.sql.ResultSet", rs, _ =>
-        s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
+        s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();", true, false)
       ctx.addMutableState(unsafeHolderClass, unsafeHolder, _ =>
-        s"$unsafeHolder = new $unsafeHolderClass();")
+        s"$unsafeHolder = new $unsafeHolderClass();", true, false)
     }
     ctx.addMutableState(iteratorClass, input, _ =>
       if (isForSampleReservoirAsRegion) s"$input = $rowInputSRR;"
-      else s"$input = $rowInput;")
-    ctx.addMutableState("boolean", inputIsRow, _ => s"$inputIsRow = true;")
+      else s"$input = $rowInput;", true, false)
+    ctx.addMutableState("boolean", inputIsRow, _ => s"$inputIsRow = true;", true, false)
 
     ctx.currentVars = null
     val encodingClass = ColumnEncoding.encodingClassName
@@ -435,11 +435,11 @@ private[sql] final case class ColumnTableScan(
     val deletedCount = ctx.freshName("deletedCount")
     var deletedCountCheck = ""
 
-    ctx.addMutableState("java.nio.ByteBuffer", buffers, _ => "")
-    ctx.addMutableState("int", numBatchRows, _ => "")
-    ctx.addMutableState("int", batchIndex, _ => "")
-    ctx.addMutableState(deletedDecoderClass, deletedDecoder, _ => "")
-    ctx.addMutableState("int", deletedCount, _ => "")
+    ctx.addMutableState("java.nio.ByteBuffer", buffers, _ => "", true, false)
+    ctx.addMutableState("int", numBatchRows, _ => "", true, false)
+    ctx.addMutableState("int", batchIndex, _ => "", true, false)
+    ctx.addMutableState(deletedDecoderClass, deletedDecoder, _ => "", true, false)
+    ctx.addMutableState("int", deletedCount, _ => "", true, false)
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -509,7 +509,7 @@ private[sql] final case class ColumnTableScan(
       val bufferVar = s"${buffer}Object"
       val initBufferFunction = s"${buffer}Init"
       if (isWideSchema) {
-        ctx.addMutableState("Object", bufferVar, _ => "")
+        ctx.addMutableState("Object", bufferVar, _ => "", true, false)
       }
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
@@ -517,18 +517,18 @@ private[sql] final case class ColumnTableScan(
       val incrementUpdatedColumnCount = if (updatedColumnCount eq null) ""
       else s"\n$updatedColumnCount.${metricAdd("1")};"
 
-      ctx.addMutableState("java.nio.ByteBuffer", buffer, _ => "")
-      ctx.addMutableState("int", numNullsVar, _ => "")
+      ctx.addMutableState("java.nio.ByteBuffer", buffer, _ => "", true, false)
+      ctx.addMutableState("int", numNullsVar, _ => "", true, false)
 
       val rowDecoderCode =
         s"$decoder = new $rsDecoderClass(($rsWithNullClass)$rs, $rsPosition);"
       if (otherRDDs.isEmpty) {
         if (isForSampleReservoirAsRegion) {
           ctx.addMutableState(decoderClass, decoder, _ =>
-            s"$decoder = new $rowDecoderClass($unsafeHolder, $baseIndex);")
+            s"$decoder = new $rowDecoderClass($unsafeHolder, $baseIndex);", true, false)
           initRowTableDecoders.append(rowDecoderCode).append('\n')
         } else {
-          ctx.addMutableState(decoderClass, decoder, _ => rowDecoderCode)
+          ctx.addMutableState(decoderClass, decoder, _ => rowDecoderCode, true, false)
         }
       } else {
         ctx.addMutableState(decoderClass, decoder, _ =>
@@ -538,10 +538,10 @@ private[sql] final case class ColumnTableScan(
             } else {
               $rowDecoderCode
             }
-          """
+          """, true, false
         )
       }
-      ctx.addMutableState(updatedDecoderClass, updatedDecoder, _ => "")
+      ctx.addMutableState(updatedDecoderClass, updatedDecoder, _ => "", true, false)
 
       ctx.addNewFunction(initBufferFunction,
         s"""

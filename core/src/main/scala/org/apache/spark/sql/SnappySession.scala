@@ -49,7 +49,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGeneration, Codege
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, ScalarSubquery, SortDirection}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.QueryPlan
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.plans.logical.{AnalysisBarrier, Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -1203,7 +1203,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         case _ =>
           // Check if the specified data source match the data source
           // of the existing table.
-          // TODO_2.3_MERGE
           val plan = new PreprocessTableInsertOrPut(sessionState.conf).apply(
             sessionState.catalog.lookupRelation(tableIdent))
           EliminateSubqueryAliases(plan) match {
@@ -1239,30 +1238,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             data.toDF(s.fieldNames: _*)
           case None => data
         }
-
-        insertRelation match {
-          case Some(ir) =>
-            var success = false
-            try {
-              ir.insert(data, overwrite)
-              success = true
-              ir
-            } finally {
-              if (!success) ir match {
-                case dr: DestroyRelation =>
-                  if (!dr.tableExists) dr.destroy(ifExists = false)
-                case _ =>
-              }
-            }
-          case None =>
-            val ds = DataSource(self,
-              className = source,
-              userSpecifiedSchema = userSpecifiedSchema,
-              partitionColumns = partitionColumns,
-              options = params)
-            ds.planForWriting(mode, df.logicalPlan)
-            ds.copy(userSpecifiedSchema = Some(df.schema.asNullable)).resolveRelation()
-        }
+        val ds = DataSource(self, className = source, userSpecifiedSchema = userSpecifiedSchema,
+          partitionColumns = partitionColumns, options = params)
+        runCommand("save") { ds.planForWriting(mode, AnalysisBarrier(df.logicalPlan)) }
+        ds.copy(userSpecifiedSchema = Some(df.schema.asNullable)).resolveRelation()
     }
 
     // need to register if not existing in catalog
@@ -1275,6 +1254,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       snappyContextFunctions.postRelationCreation(relationOpt, this)
     }
     LogicalRelation(relation, tableIdent.getTable(this.sessionCatalog))
+  }
+
+  private def runCommand(name: String)(command: LogicalPlan): Unit = {
+    val qe = sessionState.executePlan(command)
+    try {
+      val start = System.nanoTime()
+      // call `QueryExecution.toRDD` to trigger the execution of commands.
+      SQLExecution.withNewExecutionId(this, qe)(qe.toRdd)
+      val end = System.nanoTime()
+      listenerManager.onSuccess(name, qe, end - start)
+    } catch {
+      case e: Exception =>
+        listenerManager.onFailure(name, qe, e)
+        throw e
+    }
   }
 
   /**

@@ -106,26 +106,14 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
     // change the isNull and primitive to consts, to inline them
     val value = this.value
     val addMutableState = (isNull eq null) || !ctx.inlinedMutableStates.exists(_._2 == isNull)
-    if (addMutableState) {
-      isNull = ctx.freshName("isNullTerm")
-      valueTerm = ctx.freshName("valueTerm")
-    }
     val isNullLocal = ev.isNull
     val valueLocal = ev.value
     val dataType = Utils.getSQLDataType(this.dataType)
     val javaType = ctx.javaType(dataType)
-    val initCode =
-      s"""
-         |final boolean $isNullLocal = $isNull;
-         |final $javaType $valueLocal = $valueTerm;
-      """.stripMargin
-    if (!addMutableState) {
-      // use the already added fields
-      return ev.copy(initCode, isNullLocal, valueLocal)
-    }
+
     val valueRef = lv(ctx)
     val box = ctx.boxedType(javaType)
-
+    isNull = ctx.addMutableState("boolean", "isNullTerm", _ => "", forceInline = true)
     val unbox = dataType match {
       case BooleanType =>
         assert(value.isInstanceOf[Boolean], s"unexpected type $dataType instead of BooleanType")
@@ -157,34 +145,42 @@ final class ParamLiteral(override val value: Any, _dataType: DataType, val pos: 
         val memoryManagerClass = classOf[TaskMemoryManager].getName
         val memoryModeClass = classOf[MemoryMode].getName
         val consumerClass = classOf[DirectStringConsumer].getName
-        ctx.addMutableState(javaType, valueTerm, _ =>
+        valueTerm = ctx.addMutableState(javaType, "valueTerm", v =>
           s"""
              |if (($isNull = $valueRef.value() == null)) {
-             |  $valueTerm = ${ctx.defaultValue(dataType)};
+             |  $v = ${ctx.defaultValue(dataType)};
              |} else {
-             |  $valueTerm = ($box)$valueRef.value();
+             |  $v = ($box)$valueRef.value();
              |  if (com.gemstone.gemfire.internal.cache.GemFireCacheImpl.hasNewOffHeap() &&
              |      $getContext() != null) {
              |    // convert to off-heap value if possible
              |    $memoryManagerClass mm = $getContext().taskMemoryManager();
              |    if (mm.getTungstenMemoryMode() == $memoryModeClass.OFF_HEAP) {
              |      $consumerClass consumer = new $consumerClass(mm);
-             |      $valueTerm = consumer.copyUTF8String($valueTerm);
+             |      $v = consumer.copyUTF8String($v);
              |    }
              |  }
              |}
-          """.stripMargin)
+          """.stripMargin, forceInline = true)
         // indicate that code for valueTerm has already been generated
         null.asInstanceOf[String]
       case _ => ""
     }
-    ctx.addMutableState("boolean", isNull, _ => "")
     if (unbox ne null) {
-      ctx.addMutableState(javaType, valueTerm, _ =>
+      valueTerm = ctx.addMutableState(javaType, "valueTerm", v =>
         s"""
            |$isNull = $valueRef.value() == null;
-           |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
-        """.stripMargin)
+           |$v = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
+        """.stripMargin, forceInline = true)
+    }
+    val initCode =
+      s"""
+         |final boolean $isNullLocal = $isNull;
+         |final $javaType $valueLocal = $valueTerm;
+      """.stripMargin
+    if (!addMutableState) {
+      // use the already added fields
+      return ev.copy(initCode, isNullLocal, valueLocal)
     }
     ev.copy(initCode, isNullLocal, valueLocal)
   }
@@ -289,16 +285,15 @@ case class DynamicFoldableExpression(expr: Expression) extends Expression
     if (oldSubExprs ne null) {
       ctx.subExprEliminationExprs ++= oldSubExprs
     }
-    val newVar = ctx.freshName("paramLiteralExpr")
-    val newVarIsNull = ctx.freshName("paramLiteralExprIsNull")
     val comment = ctx.registerComment(expr.toString)
     // initialization for both variable and isNull is being done together
     // due to dependence of latter on the variable and the two get
     // separated due to Spark's splitExpressions -- SNAP-1794
-    ctx.addMutableState(ctx.javaType(expr.dataType), newVar,
-      _ => s"$comment\n${eval.code}\n$newVar = ${eval.value};\n" +
-        s"$newVarIsNull = ${eval.isNull};")
-    ctx.addMutableState("boolean", newVarIsNull, _ => "")
+    val newVarIsNull = ctx.addMutableState("boolean", "paramLiteralExprIsNull",
+      _ => "", forceInline = true)
+    val newVar = ctx.addMutableState(ctx.javaType(expr.dataType), "paramLiteralExpr",
+      v => s"$comment\n${eval.code}\n$v = ${eval.value};\n" +
+        s"$newVarIsNull = ${eval.isNull};", forceInline = true)
     // allow sub-expression elimination of this expression itself
     ctx.subExprEliminationExprs += this -> SubExprEliminationState(newVarIsNull, newVar)
     ev.copy(code = "", value = newVar, isNull = newVarIsNull)
