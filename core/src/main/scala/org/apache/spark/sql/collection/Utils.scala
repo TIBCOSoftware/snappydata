@@ -732,9 +732,9 @@ object Utils {
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
     if (!ctx.declareAddedFunctions().contains(TASKCONTEXT_FUNCTION)) { // TODO_2.3_MERGE
-      val taskContextVar = ctx.freshName("taskContext")
       val contextClass = classOf[TaskContext].getName
-      ctx.addMutableState(contextClass, taskContextVar, _ => "")
+      val taskContextVar = ctx.addMutableState(contextClass,
+        "taskContext", _ => "", forceInline = true)
       ctx.addNewFunction(TASKCONTEXT_FUNCTION,
         s"""
            |private $contextClass $TASKCONTEXT_FUNCTION() {

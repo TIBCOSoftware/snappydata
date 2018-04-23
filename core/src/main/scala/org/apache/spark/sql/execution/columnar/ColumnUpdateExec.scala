@@ -142,17 +142,18 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val encoderClass = classOf[ColumnEncoder].getName
     val columnBatchClass = classOf[ColumnBatch].getName
 
-    ctx.addMutableState(s"$deltaEncoderClass[]", deltaEncoders, _ => "")
+    ctx.addMutableState(s"$deltaEncoderClass[]", deltaEncoders, _ => "", true, false)
     ctx.addMutableState("long[]", cursors, _ =>
       s"""
          |$deltaEncoders = new $deltaEncoderClass[$numColumns];
          |$cursors = new long[$numColumns];
          |$initializeEncoders();
-      """.stripMargin)
-    ctx.addMutableState("int", batchOrdinal, _ => "")
-    ctx.addMutableState("long", lastColumnBatchId, _ => s"$lastColumnBatchId = $invalidUUID;")
-    ctx.addMutableState("int", lastBucketId, _ => "")
-    ctx.addMutableState("int", lastNumRows, _ => "")
+      """.stripMargin, true, false)
+    ctx.addMutableState("int", batchOrdinal, _ => "", true, false)
+    ctx.addMutableState("long", lastColumnBatchId,
+      _ => s"$lastColumnBatchId = $invalidUUID;", true, false)
+    ctx.addMutableState("int", lastBucketId, _ => "", true, false)
+    ctx.addMutableState("int", lastNumRows, _ => "", true, false)
 
     // last three columns in keyColumns should be internal ones
     val keyCols = keyColumns.takeRight(4)

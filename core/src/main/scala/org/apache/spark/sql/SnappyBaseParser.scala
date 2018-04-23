@@ -278,6 +278,9 @@ final class Keyword private[sql] (s: String) {
   val upper: String = Utils.toUpperCase(s)
 }
 
+final class ParseException(msg: String, cause: Option[Throwable] = None)
+    extends AnalysisException(msg, None, None, None, cause)
+
 object SnappyParserConsts {
   final val space: CharPredicate = CharPredicate(' ', '\t')
   final val whitespace: CharPredicate = CharPredicate(

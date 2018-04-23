@@ -153,13 +153,13 @@ object snappy extends Serializable {
     f => f.getName == "df" || f.getName.endsWith("$df")
   }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
 
-  private[this] val parColsMethod = classOf[DataFrameWriter[_]]
-      .getDeclaredMethods.find(_.getName.contains("$normalizedParCols"))
+  private[this] val partitioningColumns = classOf[DataFrameWriter[_]]
+      .getDeclaredFields.find(_.getName.contains("partitioningColumns"))
       .getOrElse(sys.error("Failed to obtain method  " +
-      "normalizedParCols from DataFrameWriter"))
+      "partitioningColumns from DataFrameWriter"))
 
   dfField.setAccessible(true)
-  parColsMethod.setAccessible(true)
+  partitioningColumns.setAccessible(true)
 
   implicit class DataFrameWriterExtensions(writer: DataFrameWriter[_])
       extends Serializable {
@@ -177,7 +177,7 @@ object snappy extends Serializable {
         case sc: SnappySession => sc
         case _ => sys.error("Expected a SnappyContext for putInto operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
+      val normalizedParCols = partitioningColumns.get(writer)
           .asInstanceOf[Option[Seq[String]]]
       // A partitioned relation's schema can be different from the input
       // logicalPlan, since partition columns are all moved after data columns.
@@ -203,7 +203,7 @@ object snappy extends Serializable {
         case sc: SnappySession => sc
         case _ => sys.error("Expected a SnappyContext for putInto operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
+      val normalizedParCols = partitioningColumns.get(writer)
           .asInstanceOf[Option[Seq[String]]]
       // A partitioned relation's schema can be different from the input
       // logicalPlan, since partition columns are all moved after data columns.

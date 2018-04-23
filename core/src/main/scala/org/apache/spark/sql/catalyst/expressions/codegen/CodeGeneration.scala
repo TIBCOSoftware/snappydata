@@ -97,7 +97,7 @@ object CodeGeneration extends Logging {
       override def load(key: ExecuteKey): (GeneratedClass, Array[Any]) = {
         val (code, references) = key.genCode()
         val startTime = System.nanoTime()
-        val result = doCompileMethod.invoke(CodeGenerator, code)
+        val (result, _) = doCompileMethod.invoke(CodeGenerator, code)
         val endTime = System.nanoTime()
         val timeMs = (endTime - startTime).toDouble / 1000000.0
         CodegenMetrics.METRIC_SOURCE_CODE_SIZE.update(code.body.length)
@@ -163,7 +163,7 @@ object CodeGeneration extends Logging {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         ctx.addMutableState(encoderClass, encoderVar,
-          _ => s"$encoderVar = new $encoderClass();")
+          _ => s"$encoderVar = new $encoderClass();" , forceInline = true)
         s"""
            |final ArrayData $arr = ${ev.value};
            |if ($arr instanceof $serArrayClass) {
@@ -185,7 +185,7 @@ object CodeGeneration extends Logging {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         ctx.addMutableState(encoderClass, encoderVar,
-          _ => s"$encoderVar = new $encoderClass();")
+          _ => s"$encoderVar = new $encoderClass();", forceInline = true)
         s"""
            |final MapData $map = ${ev.value};
            |if ($map instanceof $serMapClass) {
@@ -204,7 +204,7 @@ object CodeGeneration extends Logging {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         ctx.addMutableState(encoderClass, encoderVar,
-          _ => s"$encoderVar = new $encoderClass();")
+          _ => s"$encoderVar = new $encoderClass();", forceInline = true)
         s"""
            |final InternalRow $struct = ${ev.value};
            |if ($struct instanceof $serRowClass) {

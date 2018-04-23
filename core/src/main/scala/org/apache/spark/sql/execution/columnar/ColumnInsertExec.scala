@@ -125,7 +125,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val listenerClass = classOf[TaskCompletionListener].getName
     val getContext = Utils.genTaskContextFunction(ctx)
 
-    ctx.addMutableState("int", defaultBatchSizeTerm, _ =>
+    defaultBatchSizeTerm = ctx.addMutableState("int", "defaultBatchSize", _ =>
       s"""
          |if ($getContext() != null) {
          |  $getContext().addTaskCompletionListener(new $listenerClass() {
@@ -135,7 +135,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |    }
          |  });
          |}
-      """.stripMargin)
+      """.stripMargin, forceInline = true)
     s"""
        |if ($numInsertions >= 0 && $getContext() == null) {
        |  $closeEncodersFunction();
@@ -159,8 +159,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val schemaLength = tableSchema.length
     encoderArrayTerm = ctx.freshName("encoderArray")
     cursorArrayTerm = ctx.freshName("cursorArray")
-    numInsertions = ctx.freshName("numInsertions")
-    ctx.addMutableState("long", numInsertions, _ => s"$numInsertions = -1L;")
+    numInsertions = ctx.addMutableState("long", "numInsertions",
+      v => s"$v = -1L;", forceInline = true)
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
     txIdConnArray = ctx.freshName("txIdConnArray")
@@ -198,16 +198,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val initEncoderArray = loop(initEncoderCode, schemaLength)
 
     ctx.addMutableState(s"$encoderClass[]",
-      encoderArrayTerm, _ =>
+      encoderArrayTerm, v =>
       s"""
-         |this.$encoderArrayTerm =
+         |this.$v =
          | new $encoderClass[$schemaLength];
          |$initEncoderArray
         """.stripMargin)
 
-    ctx.addMutableState("long[]", cursorArrayTerm, _ =>
+    ctx.addMutableState("long[]", cursorArrayTerm, v =>
       s"""
-         |this.$cursorArrayTerm = new long[$schemaLength];
+         |this.$v = new long[$schemaLength];
         """.stripMargin)
 
     val encoderLoopCode = s"$defaultRowSize += " +
@@ -292,23 +292,25 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     else metricTerm(ctx, "numInsertedRows")
     schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
-    encoderCursorTerms = tableSchema.map { _ =>
-      (ctx.freshName("encoder"), ctx.freshName("cursor"))
+//    encoderCursorTerms = tableSchema.map { _ =>
+//      (ctx.freshName("encoder"), ctx.freshName("cursor"))
+//    }
+    encoderCursorTerms = tableSchema.indices.map { i =>
+      (ctx.addMutableState(encoderClass, "encoder", v =>
+        s"""
+           |this.$v = $encodingClass.getColumnEncoder(
+           |  $schemaTerm.fields()[$i]);
+        """.stripMargin, forceInline = true),
+        ctx.addMutableState("long", "cursor", v => s"$v = 0L;", forceInline = true))
     }
-    numInsertions = ctx.freshName("numInsertions")
-    ctx.addMutableState("long", numInsertions, _ => s"$numInsertions = -1L;")
+    numInsertions = ctx.addMutableState("long", "numInsertions",
+      v => s"$v = -1L;", forceInline = true)
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
-    batchSizeTerm = ctx.freshName("currentBatchSize")
+    batchSizeTerm = ctx.addMutableState("int", "currentBatchSize",
+      v => s"$v = 0;", forceInline = true)
     txIdConnArray = ctx.freshName("txIdConnArray")
     txId = ctx.freshName("txId")
     conn = ctx.freshName("conn")
-    val batchSizeDeclaration = if (useMemberVariables) {
-      ctx.addMutableState("int", batchSizeTerm, _ => s"$batchSizeTerm = 0;")
-      ""
-    } else {
-      s"int $batchSizeTerm = 0;"
-    }
-    defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
     val defaultRowSize = ctx.freshName("defaultRowSize")
 
     val childProduce = doChildProduce(ctx)
@@ -324,19 +326,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
         batchBucketIdTerm = Some(c.bucketIdTerm)
       case _ =>
     }
-
     val closeEncoders = new StringBuilder
-    val (declarations, cursorDeclarations) = encoderCursorTerms.indices.map { i =>
+    val (declarations, _) = encoderCursorTerms.indices.map { i =>
       val (encoder, cursor) = encoderCursorTerms(i)
-      ctx.addMutableState(encoderClass, encoder, _ =>
-        s"""
-           |this.$encoder = $encodingClass.getColumnEncoder(
-           |  $schemaTerm.fields()[$i]);
-        """.stripMargin)
-      val cursorDeclaration = if (useMemberVariables) {
-        ctx.addMutableState("long", cursor, _ => s"$cursor = 0L;")
-        ""
-      } else s"long $cursor = 0L;"
+      val cursorDeclaration = cursor
       val declaration =
         s"""
            |final $encoderClass $encoder = this.$encoder;
@@ -367,8 +360,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |final Object[] $txIdConnArray  = $beginSnapshotTx();
        |boolean success = false;
        |try {
-       |$batchSizeDeclaration
-       |${cursorDeclarations.mkString("\n")}
        |if ($numInsertions < 0) {
        |  $numInsertions = 0;
        |  int $defaultRowSize = 0;
@@ -475,11 +466,11 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
                                       exprs: IndexedSeq[Seq[ExprCode]]): (String, String) = {
 
 
-    val statsRowTerm = ctx.freshName("statsRow")
+//    val statsRowTerm = ctx.freshName("statsRow")
     val statsSchema = StructType.fromAttributes(statsAttrs)
     val statsSchemaVar = ctx.addReferenceObj("statsSchema", statsSchema)
-    ctx.addMutableState("SpecificInternalRow", statsRowTerm, _ =>
-      s"$statsRowTerm = new SpecificInternalRow($statsSchemaVar);")
+    val statsRowTerm = ctx.addMutableState("SpecificInternalRow", "statsRow", v =>
+      s"$v = new SpecificInternalRow($statsSchemaVar);", forceInline = true)
 
     val blocks = new ArrayBuffer[String]()
     val blockBuilder = new StringBuilder()
@@ -556,10 +547,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val sizeExceededTerm = ctx.freshName("sizeExceeded")
     cursorsArrayTerm = ctx.freshName("cursors")
 
-    val mutableRow = ctx.freshName("mutableRow")
-
-    ctx.addMutableState("SpecificInternalRow", mutableRow, _ =>
-      s"$mutableRow = new SpecificInternalRow($schemaTerm);")
+    val mutableRow = ctx.addMutableState("SpecificInternalRow", "mutableRow", v =>
+      s"$v = new SpecificInternalRow($schemaTerm);", forceInline = true)
 
     val rowWriteExprs = schema.indices.map { i =>
       val field = schema(i)
@@ -746,7 +735,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       val (encoderTerm, cursorTerm) = encoderCursorTerms(i)
       val field = schema(i)
       val init = s"$cursorTerm = $encoderTerm.initialize(" +
-          s"$schemaTerm.fields()[$i], $defaultBatchSizeTerm, true);"
+          s"$schemaTerm.fields()[$i], 16, true);"
       buffersCode.append(
         s"$buffers[$i] = $encoderTerm.finish($cursorTerm);\n")
       encoderCursorDeclarations.append(
@@ -852,13 +841,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |    long $sizeTerm = 0L;
        |    ${calculateSize.toString()}
        |    $sizeExceededTerm = $sizeTerm >= $columnBatchSize;
-       |  }
-       |  if ($sizeExceededTerm) {
-       |    $cursorsArrayCreate
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs,
-       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |    $batchSizeTerm = 0;
-       |    $initEncoders
        |  }
        |}
        |${evaluateVariables(input)}

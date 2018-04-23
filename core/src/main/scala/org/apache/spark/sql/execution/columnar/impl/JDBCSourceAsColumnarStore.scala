@@ -585,7 +585,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   private def doRowBufferPut(batch: ColumnBatch,
       partitionId: Int): (Connection => Unit) = {
     (connection: Connection) => {
-      val gen = CodeGeneration.compileCode(
+      val (gen, r) = CodeGeneration.compileCode(
         tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
           val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
@@ -607,12 +607,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           references += insertPlan.connRef
           (code, references.toArray)
         })
-      val refs = gen._2.clone()
+      val refs = r.clone()
       // set the connection object for current execution
       val connectionRef = refs(refs.length - 1).asInstanceOf[Int]
       refs(connectionRef) = connection
       // no harm in passing a references array with extra element at end
-      val iter = gen._1.generate(refs).asInstanceOf[BufferedRowIterator]
+      val iter = gen.generate(refs).asInstanceOf[BufferedRowIterator]
       // put the single ColumnBatch in the iterator read by generated code
       iter.init(partitionId, Array(Iterator[Any](new ResultSetTraversal(
         conn = null, stmt = null, rs = null, context = null),
