@@ -107,11 +107,25 @@ object CTTestUtil {
         + "')")
   }
 
+  def createColumnTablesWithKeyColumns(snc: SnappyContext, redundancy: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " using column options(redundancy '" +
+        redundancy + "' , key_columns 'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " using column options(redundancy '" + redundancy
+        + "', key_columns 'EXEC_DID')")
+  }
+
   def createPersistColumnTables(snc: SnappyContext, persistenceMode: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " using column options(PERSISTENT '" +
         persistenceMode + "')")
     snc.sql(CTQueries.exec_details_create_ddl + " using column options(PERSISTENT '" +
-        persistenceMode + "')")
+        persistenceMode + "', key_columns 'EXEC_DID')")
+  }
+
+  def createPersistColumnTablesWithKeyColumns(snc: SnappyContext, persistenceMode: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " using column options(PERSISTENT '" +
+        persistenceMode + "' , key_columns 'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " using column options(PERSISTENT '" +
+        persistenceMode + "', key_columns 'EXEC_DID')")
   }
 
   def createColocatedColumnTables(snc: SnappyContext, redundancy: String): Unit = {
@@ -119,6 +133,15 @@ object CTTestUtil {
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
     snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
         "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS')")
+  }
+
+  def createColocatedColumnTablesWithKeyColumns(snc: SnappyContext, redundancy: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "' , key_columns " +
+        "'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS' , " +
+        "key_columns 'EXEC_DID')")
   }
 
   def createPersistColocatedColumnTables(snc: SnappyContext, redundancy: String, persistenceMode:
@@ -150,12 +173,33 @@ object CTTestUtil {
         "buckets '11', redundancy '" + redundancy + "')")
   }
 
+
+  def createColumnTablesWithEvictionAndKeyColumns(snc: SnappyContext, redundancy: String): Unit
+  = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "' , key_columns " +
+        "'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "' , key_columns 'EXEC_DID')")
+  }
+
+
   // to add eviction attributes
   def createColocatedColumnTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
     snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
         "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS')")
+  }
+
+  def createColocatedColumnTablesWithEvictionAndKeyColumns(snc: SnappyContext, redundancy:
+  String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "' , key_columns " +
+        "'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS' , " +
+        "key_columns 'EXEC_DID')")
   }
 
   /*
@@ -167,7 +211,7 @@ object CTTestUtil {
   }
 
   /*
-Load data to existign tables using putInto API.
+  Load data to existing tables using putInto API.
  */
 
   def addDataUsingPutInto(snc: SnappyContext): Unit = {
