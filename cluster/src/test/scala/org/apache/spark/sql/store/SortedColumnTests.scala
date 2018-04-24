@@ -86,6 +86,14 @@ class SortedColumnTests extends ColumnTablesTestBase {
     SortedColumnTests.testUpdateAndInsert(snc, colTableName, numBuckets = 2, numElements)
   }
 
+  test("update and insert 2") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 400
+    SortedColumnTests.testUpdateAndInsert2(snc, colTableName, numBuckets = 1, numElements)
+    SortedColumnTests.testUpdateAndInsert2(snc, colTableName, numBuckets = 2, numElements)
+  }
+
   test("join query") {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -168,6 +176,17 @@ object SortedColumnTests extends Logging {
         additionalString + s")")
   }
 
+  def createColumnTable2(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long, colocateTableName: Option[String] = None): Unit = {
+    dropColumnTable(session, colTableName)
+    val additionalString = if (colocateTableName.isDefined) {
+      s", COLOCATE_WITH '${colocateTableName.get}'"
+    } else ""
+    session.sql(s"create table $colTableName (id int, addr int, status int) " +
+        s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id' " +
+        additionalString + s")")
+  }
+
   def dropColumnTable(session: SnappySession, colTableName: String): Unit = {
     session.sql(s"drop table if exists $colTableName")
   }
@@ -239,6 +258,30 @@ object SortedColumnTests extends Logging {
     snc.range(size).filter(f(_)).selectExpr("id", "concat('addr'," +
         "cast(id as string))",
       "case when (id % 2) = 0 then true else false end").write.
+        insertInto(s"insert_table_$fileName")
+  }
+
+  def createFixedData2(snc: SnappySession, size: Long, fileName: String)
+      (f: (Long) => Boolean): Unit = {
+    val dataDir = new File(fixedFilePath(fileName))
+    if (dataDir.exists()) {
+      def deleteRecursively(file: File): Unit = {
+        if (file.isDirectory) {
+          file.listFiles.foreach(deleteRecursively)
+        }
+        if (file.exists && !file.delete) {
+          throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
+        }
+      }
+      deleteRecursively(dataDir)
+    }
+    dataDir.mkdir()
+    snc.sql(s"drop TABLE if exists insert_table_$fileName")
+    snc.sql(s"create EXTERNAL TABLE insert_table_$fileName(id int, addr int," +
+        s" status int)" +
+        s" USING parquet OPTIONS(path '${fixedFilePath(fileName)}')")
+    snc.range(size).filter(f(_)).selectExpr("id", "10000",
+      "case when (id % 2) = 0 then 111111 else 222222 end").write.
         insertInto(s"insert_table_$fileName")
   }
 
@@ -447,6 +490,175 @@ object SortedColumnTests extends Logging {
 
       doPutInto(dataFile_6, dataFrameReader)
       verifyUpdate(doUpdate("updated6"), 14)
+
+      try {
+        val select_query = s"select * from $colTableName"
+        // scalastyle:off
+        println(s"$testName started SELECT $select_query")
+        // scalastyle:on
+        ColumnTableScan.setDebugMode(true)
+        val colDf = session.sql(select_query)
+        val res = colDf.collect()
+        val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
+        assert(res.length == expected.length, s"output: ${res.length}, expected=${expected.length}")
+        // scalastyle:off
+        println(s"$testName SELECT = ${res.length} / ${expected.length}")
+        // scalastyle:on
+        if (numBuckets == 1) {
+          var i = 0
+          res.foreach(r => {
+            val col1 = r.getInt(0)
+            assert(col1 == expected(i), s"$i: output: $col1, expected=${expected(i)}")
+            i += 1
+          })
+        }
+      } finally {
+        ColumnTableScan.setDebugMode(false)
+      }
+    } catch {
+      case t: Throwable =>
+        logError(t.getMessage, t)
+        throw t
+    }
+
+    // Disable verifying rows in sorted order
+    // def sorted(l: List[Row]) = l.isEmpty ||
+    //    l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
+    // assert(sorted(rs2.toList))
+
+    session.sql(s"drop table $colTableName")
+    session.conf.unset(Property.ColumnBatchSize.name)
+    session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+    session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+  }
+
+  def testUpdateAndInsert2(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long): Unit = {
+    val testName = "testUpdateAndInsert"
+    val dataFile_1 = s"${testName}_1"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_1)(i => {
+      i == 0 || i == 99 || i == 200 || i == 299
+    })
+    val dataFile_2 = s"${testName}_2"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_2)(i => {
+      i == 100 || i == 199
+    })
+    val dataFile_3 = s"${testName}_3"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_3)(i => {
+      i == 50 || i == 250
+    })
+    val dataFile_4 = s"${testName}_4"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_4)(i => {
+      i == 25 || i == 175
+    })
+    val dataFile_5 = s"${testName}_5"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_5)(i => {
+      i == 125 || i == 275
+    })
+    val dataFile_6 = s"${testName}_6"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_6)(i => {
+      i == 150 || i == 225
+    })
+
+    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+
+    def doUpdate(queryStr: Int, whereClause: String = ""): Int = {
+      val update_query = s"update $colTableName set addr = '$queryStr' $whereClause"
+      // scalastyle:off
+      println(s"$testName started UPDATE $update_query")
+      // scalastyle:on
+      val upd = session.sql(update_query)
+      // scalastyle:off
+      println(s"$testName done UPDATE $update_query")
+      // scalastyle:on
+      queryStr
+    }
+
+    def doPutInto(fileName: String, dataFrameReader: DataFrameReader): Unit = {
+      try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        // scalastyle:off
+        println(s"$testName start loading $fileName")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(fileName)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $fileName")
+        // scalastyle:on
+      } finally {
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
+      }
+    }
+
+    def verifySelect(expectedCount: Int): Unit = {
+      val select_query = s"select * from $colTableName"
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      var i = 0
+      res.foreach(r => {
+        val col0 = r.getInt(0)
+        val col1 = r.getInt(1)
+        // scalastyle:off
+        println(s"verifySelect-$expectedCount $col0 $col1")
+        // scalastyle:on
+        i += 1
+      })
+      assert(i == expectedCount, s"$i : $expectedCount")
+    }
+
+    def verifyUpdate(expected: Int, expectedCount: Int): Unit = {
+      val select_query = s"select * from $colTableName"
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      var i = 0
+      res.foreach(r => {
+        val col0 = r.getInt(0)
+        val col1 = r.getInt(1)
+        // scalastyle:off
+        println(s"verifyUpdate-$expected-$expectedCount $col0 $col1")
+        // scalastyle:on
+        assert(col1 == expected, s"$col1 : $expected")
+        i += 1
+      })
+      assert(i == expectedCount, s"$i : $expectedCount")
+    }
+
+    try {
+      createColumnTable2(session, colTableName, numBuckets, numElements)
+
+      // scalastyle:off
+      println(s"$testName start loading $dataFile_1")
+      // scalastyle:on
+      val dataFrameReader: DataFrameReader = session.read
+      dataFrameReader.load(fixedFilePath(dataFile_1)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_1")
+      // scalastyle:on
+      ColumnTableScan.setDebugMode(true)
+      verifySelect(4)
+      verifyUpdate(doUpdate(10001), 4)
+
+      doPutInto(dataFile_2, dataFrameReader)
+      verifySelect(6)
+      verifyUpdate(doUpdate(10002), 6)
+
+      doPutInto(dataFile_3, dataFrameReader)
+      verifySelect(8)
+      verifyUpdate(doUpdate(10003), 8)
+
+      doPutInto(dataFile_4, dataFrameReader)
+      verifySelect(10)
+      verifyUpdate(doUpdate(10004), 10)
+
+      doPutInto(dataFile_5, dataFrameReader)
+      verifySelect(12)
+      verifyUpdate(doUpdate(10005), 12)
+
+      doPutInto(dataFile_6, dataFrameReader)
+      verifySelect(14)
+      verifyUpdate(doUpdate(10006), 14)
 
       try {
         val select_query = s"select * from $colTableName"
