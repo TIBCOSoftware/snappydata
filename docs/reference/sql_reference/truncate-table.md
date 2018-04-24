@@ -18,4 +18,12 @@ To truncate the "flights" table in the current schema:
 TRUNCATE TABLE flights;
 ```
 
+**Related Topics**</br>
 
+* [CREATE TABLE](create-table.md)
+
+* [DROP TABLE](drop-table.md)
+
+* [DELETE TABLE](delete.md)
+
+* [SHOW TABLES](../interactive_commands/show.md#tables)
