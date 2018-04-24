@@ -27,7 +27,7 @@ import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow}
+import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
@@ -196,7 +196,12 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       statsSchema(statsIndex + 2) = nullCountField
     }
     if (!hasChange) return null // indicates caller to return old column value
-    val projection = CodeGeneration.compileProjection("STATS_MERGE_PROJECT", statsSchema)
+    // TODO VB: Temporary Fix from Sumedh for issue I was getting for doing
+    // insert and update on dataset with multiple buckets.
+    // He told they should not share instance of projection but class
+    // He will be fixing issue on master
+    // CodeGeneration.compileProjection("STATS_MERGE_PROJECT", statsSchema)
+    val projection = UnsafeProjection.create(statsSchema.map(_.dataType))
     val statsRow = projection.apply(new GenericInternalRow(values))
     Utils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
   }
