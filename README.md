@@ -21,8 +21,8 @@ We provide multiple options to get going with SnappyData. The easiest option is,
 You can simply get started by adding SnappyData as a package dependency. You can find more information on options for running SnappyData [here](docs/quickstart.md).
 
 ## Downloading and Installing SnappyData
-You can download and install the latest version of SnappyData from the [SnappyData Download Page](https://www.snappydata.io/download). 
-Refer to the [documentation](http://snappydatainc.github.io/snappydata/) for installation steps.
+You can download and install the latest version of SnappyData from the [SnappyData Download Page](https://www.snappydata.io/download).
+Refer to the [documentation](docs/install.md) for installation steps.
 
 If you would like to build SnappyData from source, refer to the [documentation on building from source](docs/install/building_from_source.md).
 
@@ -39,7 +39,9 @@ We monitor channels listed below for comments/questions.
 [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)    [Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)        [Gitter](https://gitter.im/SnappyDataInc/snappydata) ![Gitter](http://i.imgur.com/jNAJeOn.jpg)          [Mailing List](https://groups.google.com/forum/#!forum/snappydata-user) ![Mailing List](http://i.imgur.com/YomdH4s.png)             [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          [JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with SnappyData Distribution
+
 **Using Maven Dependency**
+
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 
 ```
@@ -51,8 +53,10 @@ groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
 version: 1.0.1
 ```
-**Using sbt**
-If you are using sbt, add this line to your **build.sbt** for core SnappyData artifacts:
+
+**Using SBT Dependency**
+
+If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
 
 `libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"`
 
@@ -61,6 +65,17 @@ For additions related to SnappyData cluster, use:
 `libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"`
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)
+
+**Note:** If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br> As a workaround, you can add the below code to your **build.sbt**:
+
+```
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
 ## Ad Analytics using SnappyData
 Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Spark programming approaches in SnappyData - [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData. The example also goes through a benchmark comparing SnappyData to a Hybrid in-memory database and Cassandra.

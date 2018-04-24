@@ -38,7 +38,7 @@ import org.apache.spark.{Logging, SparkContext}
 trait TableStatsProviderService extends Logging {
 
   @volatile
-  private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
+  protected var tableSizeInfo = Map.empty[String, SnappyRegionStats]
   private var externalTableSizeInfo = Map.empty[String, SnappyExternalTableStats]
   @volatile
   private var indexesInfo = Map.empty[String, SnappyIndexStats]

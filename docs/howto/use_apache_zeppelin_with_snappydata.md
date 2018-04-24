@@ -50,7 +50,7 @@
 
 1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
 
-2. Click **Create** ![Create](../Images/create_interpreter.png) to add an interpreter.	 
+2. Click **Create** to add an interpreter. ![Create](../Images/create_interpreter.png)	 
 
 3. From the **Interpreter group** drop-down select **snappydata**.
 	 ![Configure Interpreter](../Images/snappydata_interpreter_properties.png)
