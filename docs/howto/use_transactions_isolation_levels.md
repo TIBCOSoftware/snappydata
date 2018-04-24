@@ -5,7 +5,9 @@ SnappyData supports transaction isolation levels when using JDBC or ODBC connect
 SnappyData also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of the transaction's semantics in SnappyData can be found in the [Overview of SnappyData Distributed Transactions](../consistency/transactions_about.md) section.
 
 !!! Note:
-	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br>Queries on column tables are supported when isolation level is set to `NONE`. SnappyData internally sets autocommit to `true`.</br>Queries on row tables are supported when **autocommit** is set to **false** and isolation level is set to other `READ_COMMITTED` or `REPEATABLE_READ`.
+	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br> Queries on column tables are supported when isolation level is set to `NONE`. SnappyData internally sets autocommit to `true` in this case.
+
+    Queries on row tables are supported when **autocommit** is set to **false** and isolation level is set to other `READ_COMMITTED` or `REPEATABLE_READ`.
 
 ## Examples
 
