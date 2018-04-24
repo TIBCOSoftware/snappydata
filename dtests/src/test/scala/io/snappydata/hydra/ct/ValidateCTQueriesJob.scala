@@ -51,7 +51,7 @@ class ValidateCTQueriesJob extends SnappySQLJob {
         pw.println(s"Test will not perform fullResultSetValidation")
       val startTime = System.currentTimeMillis
       val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-        sqlContext, false)
+        sqlContext, false, false)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")
