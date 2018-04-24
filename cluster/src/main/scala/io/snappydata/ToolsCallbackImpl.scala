@@ -17,7 +17,10 @@
 package io.snappydata
 
 import java.io.File
+import java.util.UUID
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 import org.apache.spark.executor.SnappyExecutor
@@ -51,7 +54,12 @@ object ToolsCallbackImpl extends ToolsCallback {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
   }
 
-  override def addURIs(jars: Array[String]): Unit = {
+  override def addURIs(jars: Array[String], deploySql: String): Unit = {
+    val key = UUID.randomUUID().toString
+    Misc.getMemStore.getGlobalCmdRgn.put(key, deploySql)
+    val logger = Misc.getCacheLogWriter
+    logger.info(s"KN: addURIs key = $key and val = $deploySql")
+    getAllGlobalCmnds.foreach(x => logger.info(s"KN: retrieved value = $x"))
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     val loader = lead.urlclassloader
     jars.foreach(j => {
@@ -67,5 +75,15 @@ object ToolsCallbackImpl extends ToolsCallback {
       val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
       snappyexecutor.updateMainLoader(jars)
     }
+  }
+
+  override def getAllGlobalCmnds(): Array[String] = {
+    GemFireXDUtils.waitForNodeInitialization()
+    val values = Misc.getMemStore.getGlobalCmdRgn.values()
+    val logger = Misc.getCacheLogWriter
+    logger.info(s"KN: getAllGlobalCmnds size of the region = ${Misc.getMemStore.getGlobalCmdRgn.size()}")
+    logger.info(s"KN: getAllGlobalCmnds values = ${values}", new Exception)
+    values.toArray.foreach(x => logger.info(s"KN: getAllGlobalCmnds Inside foreach - $x"))
+    Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
   }
 }

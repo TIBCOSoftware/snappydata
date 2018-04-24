@@ -741,7 +741,8 @@ case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) 
 case class DeployCommand(
     coordinates: String,
     repos: Option[String],
-    jarCache: Option[String]) extends RunnableCommand {
+    jarCache: Option[String],
+    addCmd: Boolean = true) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     log.info(s"KN: DeployCommand.run called")
@@ -757,7 +758,11 @@ case class DeployCommand(
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
         Iterator.empty
       })
-      ToolsCallbackInit.toolsCallback.addURIs(jars)
+      // if (addCmd) {
+        val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+      log.info(s"KN: deployCmd to be put = $deployCmd")
+        ToolsCallbackInit.toolsCallback.addURIs(jars, deployCmd)
+      // }
     }
     Seq.empty[Row]
   }
