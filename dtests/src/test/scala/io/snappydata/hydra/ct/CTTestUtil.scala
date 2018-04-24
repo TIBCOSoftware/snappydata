@@ -211,34 +211,50 @@ object CTTestUtil {
   }
 
   /*
+  Load data to already created tables by removing duplicate records.
+ */
+  def loadTablesByRemovingDuplicateRecords(snc: SnappyContext): Unit = {
+    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID").write.insertInto("orders_details")
+    CTQueries.exec_details_df(snc).dropDuplicates("EXEC_DID").write.insertInto("exec_details")
+  }
+
+  /*
   Load data to existing tables using putInto API.
  */
 
   def addDataUsingPutInto(snc: SnappyContext): Unit = {
-    CTQueries.orders_details_df(snc).write.putInto("orders_details")
-    CTQueries.exec_details_df(snc).write.putInto("exec_details")
+    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID").write.putInto("orders_details")
+    CTQueries.exec_details_df(snc).dropDuplicates("EXEC_DID").write.putInto("exec_details")
   }
 
   /*
    Create and load tables in Spark
    */
-  def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
-    CTQueries.orders_details_df(sqlContext).createOrReplaceTempView("orders_details")
-    println(s"orders_details Table created successfully in spark")
-    CTQueries.exec_details_df(sqlContext).createOrReplaceTempView("exec_details")
-    println(s"exec_details Table created successfully in spark")
+  def createAndLoadSparkTables(sqlContext: SQLContext, insertUniqueRecords: Boolean): Unit = {
+    if (insertUniqueRecords) {
+      CTQueries.orders_details_df(sqlContext).dropDuplicates("SINGLE_ORDER_DID").createOrReplaceTempView("orders_details")
+      println(s"orders_details Table created successfully in spark")
+      CTQueries.exec_details_df(sqlContext).dropDuplicates("EXEC_DID").createOrReplaceTempView("exec_details")
+      println(s"exec_details Table created successfully in spark")
+    }
+    else {
+      CTQueries.orders_details_df(sqlContext).createOrReplaceTempView("orders_details")
+      println(s"orders_details Table created successfully in spark")
+      CTQueries.exec_details_df(sqlContext).createOrReplaceTempView("exec_details")
+      println(s"exec_details Table created successfully in spark")
+    }
   }
 
   /*
   Performs validation for tables with the queries. Returns failed queries in a string.
    */
   def executeQueries(snc: SnappyContext, tblType: String, pw: PrintWriter,
-                     fullResultSetValidation: Boolean, sqlContext: SQLContext): String = {
+                     fullResultSetValidation: Boolean, sqlContext: SQLContext, insertUniqueRecords: Boolean): String = {
     TestUtil.validateFullResultSet = fullResultSetValidation
     TestUtil.tableType = tblType
     var failedQueries = ""
     if (TestUtil.validateFullResultSet) {
-      CTTestUtil.createAndLoadSparkTables(sqlContext)
+      CTTestUtil.createAndLoadSparkTables(sqlContext, insertUniqueRecords)
     }
 
     for (q <- CTQueries.queries) {

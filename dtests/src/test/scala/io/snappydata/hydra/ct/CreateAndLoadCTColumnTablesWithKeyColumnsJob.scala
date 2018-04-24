@@ -62,7 +62,7 @@ class CreateAndLoadCTColumnTablesWithKeyColumnsJob extends SnappySQLJob {
       }
       pw.println("Tables are created. Now loading data.")
       pw.flush()
-      CTTestUtil.loadTables(snc);
+      CTTestUtil.loadTablesByRemovingDuplicateRecords(snc);
       println(s"Create and load for ${tableType} tables has completed successfully. " +
           s"See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTColumnTablesWithKeyColumnsJob.out")
       pw.println(s"Create and load for ${tableType} tables has completed successfully")
