@@ -235,6 +235,11 @@ class LeadImpl extends ServerImpl with Lead
         markLauncherRunning(if (startupString ne null) s"Starting $startupString" else null)
       }
 
+      // Add a URL classloader to the main thread so that new URIs can be added
+      val parent = Thread.currentThread().getContextClassLoader
+      urlclassloader = new ExtendibleURLClassLoader(parent)
+      Thread.currentThread().setContextClassLoader(urlclassloader)
+
       // wait for a while until servers get registered
       val endWait = System.currentTimeMillis() + 120000
       while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
@@ -264,11 +269,6 @@ class LeadImpl extends ServerImpl with Lead
       if (!authSpecified) {
         checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
       }
-
-      // Add a URL classloader to the main thread so that new URIs can be added
-      val parent = Thread.currentThread().getContextClassLoader
-      urlclassloader = new ExtendibleURLClassLoader(parent)
-      Thread.currentThread().setContextClassLoader(urlclassloader)
 
       if (jobServerWait) {
         // mark RUNNING after job server and zeppelin initialization if so configured
