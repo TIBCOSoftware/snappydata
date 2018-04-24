@@ -253,9 +253,59 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
         "(exists (select col1 from r2 where r2.col1=r1.col1) " +
         "or exists(select col1 from r3 where r3.col1=r1.col1))")
 
-    val result = df.collect()
     checkAnswer(df, Seq(Row(1, "1", "1", 100),
       Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
+    snc.dropTable("r1", ifExists = true)
+  }
+
+  test("Delete duplicate with WITH and window function") {
+    val snc = new SnappySession(sc)
+    snc.dropTable("r1", ifExists = true)
+    snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column ")
+
+
+    snc.insert("r1", Row(1, "1", "1", 100))
+    snc.insert("r1", Row(1, "1", "1", 100))
+    snc.insert("r1", Row(2, "4", "4", 4))
+    snc.insert("r1", Row(2, "4", "4", 4))
+    snc.sql("WITH dups AS " +
+        "(SELECT col1, ROW_NUMBER() OVER" +
+        " (PARTITION BY col1 ORDER BY ( SELECT 0))" +
+        " RN FROM r1)  DELETE from dups where rn > 1;")
+
+    val df = snc.sql("Select * from r1")
+    checkAnswer(df, Seq(Row(1, "1", "1", 100),
+      Row(2, "4", "4", 4)))
+  }
+
+  test("Update rows  duplicate with WITH and window function") {
+    val snc = new SnappySession(sc)
+    snc.dropTable("r1", ifExists = true)
+    snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
+        " using column ")
+
+
+    snc.insert("r1", Row(1, "1", "1", 100))
+    snc.insert("r1", Row(1, "1", "1", 100))
+    snc.insert("r1", Row(2, "4", "4", 4))
+    snc.insert("r1", Row(2, "4", "4", 4))
+    snc.sql("WITH dups AS " +
+        "(SELECT col1, ROW_NUMBER() OVER" +
+        " (PARTITION BY col1 ORDER BY ( SELECT 0))" +
+        " RN FROM r1)  update dups set col1 = 99 where rn > 1;")
+
+    val df = snc.sql("Select * from r1")
+    checkAnswer(df, Seq(Row(99, "1", "1", 100),
+      Row(99, "4", "4", 4), Row(1, "1", "1", 100), Row(2, "4", "4", 4)))
+  }
+
+  test("netsed CTEs") {
+    val snc = new SnappySession(sc)
+    val df = snc.sql("select * from range(10) where id" +
+        " not in (select id from range(2) union all select id from range(2))")
+
+    df.show
   }
 }
 
