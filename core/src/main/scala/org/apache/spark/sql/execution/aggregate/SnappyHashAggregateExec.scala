@@ -292,18 +292,18 @@ case class SnappyHashAggregateExec(
   @transient private var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.addMutableState("boolean", "initAgg",
-      v => s"$v = false;", forceInline = true)
+    val initAgg = ctx.freshName("initAgg")
+    ctx.addMutableState("boolean", initAgg, _ => s"$initAgg = false;")
 
     // generate variables for aggregation buffer
     val functions = aggregateExpressions.map(_.aggregateFunction
         .asInstanceOf[DeclarativeAggregate])
     val initExpr = functions.flatMap(f => f.initialValues)
     bufVars = initExpr.map { e =>
-      val isNull = ctx.addMutableState("boolean", "bufIsNull",
-        _ => "", forceInline = true)
-      val value = ctx.addMutableState(ctx.javaType(e.dataType),
-        "bufValue", _ => "", forceInline = true)
+      val isNull = ctx.freshName("bufIsNull")
+      val value = ctx.freshName("bufValue")
+      ctx.addMutableState("boolean", isNull, _ => "")
+      ctx.addMutableState(ctx.javaType(e.dataType), value, _ => "")
       // The initial expression should not access any column
       val ev = e.genCode(ctx)
       val initVars =
@@ -499,20 +499,22 @@ case class SnappyHashAggregateExec(
   }
 
   private def doProduceWithKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.addMutableState("boolean", "initAgg",
-      v => s"$v = false;", forceInline = true)
+    val initAgg = ctx.freshName("initAgg")
+    ctx.addMutableState("boolean", initAgg, _ => s"$initAgg = false;")
 
     // Create a name for iterator from HashMap
-    val iterClass = "java.util.Iterator"
-    val iterTerm = ctx.addMutableState(iterClass, "mapIter", _ => "", forceInline = true)
+    val iterTerm = ctx.freshName("mapIter")
     val iter = ctx.freshName("mapIter")
     val iterObj = ctx.freshName("iterObj")
+    val iterClass = "java.util.Iterator"
+    ctx.addMutableState(iterClass, iterTerm, _ => "")
 
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
+    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    hashMapTerm = ctx.addMutableState(hashSetClassName, "hashMap", _ => "", forceInline = true)
+    ctx.addMutableState(hashSetClassName, hashMapTerm, _ => "")
 
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
