@@ -7,11 +7,11 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = b
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  =  backUpLocatorConfigData
             threadGroups = snappyThreads;
 
-/*TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLeadVM
+TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLeadVM
             maxThreads = 1
             startInterval = 360  //10 hours
             endInterval = 360
-            threadGroups = snappyStoreThreads; */
+            threadGroups = snappyStoreThreads;
 
 TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleStoreVms
             startInterval = 1500  //  25 mins
@@ -20,11 +20,11 @@ TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             threadGroups = snappyThreads;
 
 
-/*TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLocatorVms
+TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLocatorVms
             startInterval = 28800  // 24 hours
             endInterval = 28800
             maxThreads = 1
-            threadGroups = snappyThreads;*/
+            threadGroups = snappyThreads;
 
 CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLocatorConfigData
            threadGroups = snappyThreads;

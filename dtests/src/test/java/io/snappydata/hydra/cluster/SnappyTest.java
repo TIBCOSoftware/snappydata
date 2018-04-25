@@ -1700,10 +1700,6 @@ public class SnappyTest implements Serializable {
         assert pb.redirectOutput().file() == logFile;
         assert p.getInputStream().read() == -1;
       }
-      /*if(SnappyCDCPrms.getIsCDCStream()) {
-        Log.getLogWriter().info("SP - inside executeProcess... ");
-        return;
-      }*/
       int rc = p.waitFor();
       if ((rc == 0) || (pb.command().contains("grep") && rc == 1)) {
         Log.getLogWriter().info("Executed successfully");
@@ -2066,7 +2062,6 @@ public class SnappyTest implements Serializable {
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
     boolean isCDCStream = SnappyCDCPrms.getIsCDCStream();
-    Log.getLogWriter().info("SP - isCDCStream value : " + isCDCStream);
     ProcessBuilder pb = null;
     File log = null, logFile = null;
     userAppJar = SnappyPrms.getUserAppJar();

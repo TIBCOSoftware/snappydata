@@ -36,112 +36,10 @@ class cdcObject implements Runnable {
   public void run() {
     System.out.println("Running " + threadName);
     try {
-
-      switch (threadName) {
-        case "Thread-1":
-          String f1 = path + "/insert1.sql";
-          String upQryF1 = "";
-          Connection conn1 = null;
-          ArrayList qArr = this.getQuery(f1);
-          ArrayList updQArr1 = this.getQuery(upQryF1);
-          try {
-           conn1 = this.getConnection();
-           // conn1 = this.getSnappyConnection();
-            this.insertData(qArr, conn1);
-            this.updateData(updQArr1, conn1);
-          } catch (Exception e) {
-            System.out.println("Caught exception " + e.getMessage());
-          } finally {
-            try {
-              conn1.close();
-            } catch (SQLException e) {
-              e.printStackTrace();
-            }
-          }
-          break;
-        case "Thread-2":
-          String f2 = path + "/insert2.sql";
-          String upQryF2 = "";
-          ArrayList qArr2 = this.getQuery(f2);
-          ArrayList updQArr2 = this.getQuery(upQryF2);
-          Connection conn2 = null;
-          try {
-            conn2 = this.getConnection();
-            this.insertData(qArr2, conn2);
-            this.updateData(updQArr2, conn2);
-          } catch (Exception e) {
-            System.out.println("Caught exception " + e.getMessage());
-          } finally {
-            try {
-              conn2.close();
-            } catch (SQLException e) {
-              e.printStackTrace();
-            }
-          }
-          break;
-        case "Thread-3":
-          String f3 = path + "/insert3.sql";
-          String upQryF3 = "";
-          ArrayList qArr3 = this.getQuery(f3);
-          ArrayList updQArr3 = this.getQuery(upQryF3);
-          Connection conn3 = null;
-          try {
-            conn3 = this.getConnection();
-            this.insertData(qArr3, conn3);
-            this.updateData(updQArr3, conn3);
-          } catch (Exception e) {
-            System.out.println("Caught exception " + e.getMessage());
-          } finally {
-            try {
-              conn3.close();
-            } catch (SQLException e) {
-              e.printStackTrace();
-            }
-          }
-          break;
-        case "Thread-4":
-          String f4 = path + "/insert4.sql";
-          String upQryF4 = "";
-          ArrayList qArr4 = this.getQuery(f4);
-          ArrayList updQArr4 = this.getQuery(upQryF4);
-          Connection conn4 = null;
-          try {
-            conn4 = this.getConnection();
-            this.insertData(qArr4, conn4);
-            this.updateData(updQArr4, conn4);
-          } catch (Exception e) {
-            System.out.println("Caught exception " + e.getMessage());
-          } finally {
-            try {
-              conn4.close();
-            } catch (SQLException e) {
-              e.printStackTrace();
-            }
-          }
-          break;
-        case "Thread-5":
-          String f5 = path + "/insert5.sql";
-          String upQryF5 = "";
-          ArrayList qArr5 = this.getQuery(f5);
-          ArrayList updQArr5 = this.getQuery(upQryF5);
-          Connection conn5 = null;
-          try {
-            conn5 = this.getConnection();
-            this.insertData(qArr5, conn5);
-            this.updateData(updQArr5, conn5);
-          } catch (Exception e) {
-            System.out.println("Caught exception " + e.getMessage());
-          } finally {
-            try {
-              conn5.close();
-            } catch (SQLException e) {
-              e.printStackTrace();
-            }
-          }
-          break;
-        default:
-          System.out.println("Invalid Thread name = " + threadName);
-      }
+      Connection conn = getConnection();
+      String filePath = path;
+      ArrayList qArr = getQuery(filePath);
+      insertData(qArr,conn);
     } catch (Exception e) {
       System.out.println("Caught exception " + e.getMessage());
     }
@@ -269,9 +167,9 @@ public class CDCIngestionApp {
       String sqlServerInstance = args[3];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
       for (int i = 1; i <= 5; i++) {
-        cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth, sqlServerInstance);
+        cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth+"/insert"+i+".sql", sqlServerInstance);
         obj.start();
-      }
+     }
     } catch (Exception e) {
     } finally {
       System.out.println("Spark ApplicationEnd: ");
