@@ -2262,7 +2262,7 @@ object SnappySession extends Logging {
     case _ => dvd.getObject
   }
 
-  var jarServerFiles: Array[String] = _
+  var jarServerFiles: Array[String] = Array.empty
 
   def getJarURIs(): Array[String] = {
     SnappySession.synchronized({

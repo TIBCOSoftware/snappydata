@@ -745,24 +745,19 @@ case class DeployCommand(
     addCmd: Boolean = true) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    log.info(s"KN: DeployCommand.run called")
     val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
-    log.info(s"KN: DeployCommand.run jarstr: $jarsstr" )
     if (jarsstr.nonEmpty) {
       val jars = jarsstr.split(",")
       val sc = sparkSession.sparkContext
       val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
-      log.info(s"KN: DeployCommand.run uris = : $uris" )
-      log.info(s"KN: DeployCommand.run uris length = : ${uris.length}" )
+      SnappySession.addJarURIs(uris)
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
         Iterator.empty
       })
-      // if (addCmd) {
-        val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+      val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
       log.info(s"KN: deployCmd to be put = $deployCmd")
-        ToolsCallbackInit.toolsCallback.addURIs(jars, deployCmd)
-      // }
+      ToolsCallbackInit.toolsCallback.addURIs(jars, deployCmd)
     }
     Seq.empty[Row]
   }
