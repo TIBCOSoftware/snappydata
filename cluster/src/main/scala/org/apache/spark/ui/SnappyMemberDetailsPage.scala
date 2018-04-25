@@ -43,6 +43,14 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
   private val defaultBytes: Long = 1024 * 100
 
   private def createPageTitleNode(title: String): Seq[Node] = {
+    <div style="position:fixed; width: 100%;">
+      <div id="AutoUpdateErrorMsg"
+           style="width: 500px; max-height: 60px; background-color: rgba(210, 56, 56, 0.16);
+             border: 2px solid red; border-radius: 10px; z-index: 2; position: relative;
+             margin: 5px auto; padding: 0px 10px; overflow: auto; display: none;
+             text-align: center; font-weight: bold;">
+      </div>
+    </div>
     <div class="row-fluid">
       <div class="span12">
         <h3 style="vertical-align: bottom; display: inline-block;">
