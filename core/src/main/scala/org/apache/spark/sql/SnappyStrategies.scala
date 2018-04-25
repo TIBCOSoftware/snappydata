@@ -37,7 +37,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PhysicalScan}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
-import org.apache.spark.sql.internal.{DefaultPlanner, SQLConf}
+import org.apache.spark.sql.internal.{SnappySparkPlanner, SQLConf}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -46,7 +46,7 @@ import org.apache.spark.sql.streaming._
  */
 private[sql] trait SnappyStrategies {
 
-  self: DefaultPlanner =>
+  self: SnappySparkPlanner =>
 
   object SnappyStrategies extends Strategy {
 
@@ -346,7 +346,7 @@ private[sql] object JoinStrategy {
  *
  * Adapted from Spark's Aggregation strategy.
  */
-class SnappyAggregationStrategy(planner: DefaultPlanner)
+class SnappyAggregationStrategy(planner: SnappySparkPlanner)
     extends Strategy {
 
   private val maxAggregateInputSize = {
