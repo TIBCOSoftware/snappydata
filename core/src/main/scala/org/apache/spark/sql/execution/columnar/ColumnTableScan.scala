@@ -123,6 +123,8 @@ private[sql] final case class ColumnTableScan(
   override def metricTerm(ctx: CodegenContext, name: String): String =
     if (sqlContext eq null) null else super.metricTerm(ctx, name)
 
+  override def verboseString: String = ""
+
   private def generateStatPredicate(ctx: CodegenContext,
       numRowsTerm: String): String = {
 
