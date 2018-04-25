@@ -28,6 +28,7 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, CastSupport, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.UnresolvedCatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, Cast, Contains, DynamicFoldableExpression, EndsWith, EqualTo, Expression, Like, Literal, NamedExpression, ParamLiteral, PredicateHelper, StartsWith}
+import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -85,11 +86,33 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
   }
 
   override protected def planner: SparkPlanner =
-    new DefaultPlanner(session, conf, experimentalMethods)
+    new SnappySparkPlanner(session, conf, experimentalMethods)
 
-  override protected def customOperatorOptimizationRules: Seq[Rule[LogicalPlan]] = {
-    Seq(LikeEscapeSimplification, PushDownWindowLogicalPlan,
-      new LinkPartitionsToBuckets(conf), ParamLiteralFolding)
+
+  override protected def optimizer: Optimizer = new SparkOptimizer(catalog, experimentalMethods) {
+    override def batches: Seq[Batch] = {
+      implicit val ss = session
+      var insertedSnappyOpts = 0
+      val modified = super.batches.map {
+        case batch if batch.name
+          .equalsIgnoreCase("Operator Optimization before Inferring Filters") =>
+          insertedSnappyOpts += 1
+          val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
+          Batch(batch.name, batch.strategy, left ++ Some(ResolveIndex()) ++ right
+            : _*)
+        case b => b
+      }
+
+      if (insertedSnappyOpts != 1) {
+        throw new AnalysisException("Snappy Optimizations not applied")
+      }
+
+      modified :+
+        Batch("Like escape simplification", Once, LikeEscapeSimplification) :+
+        Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
+        Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets(conf)) :+
+        Batch("ParamLiteral Folding Optimization", Once, ParamLiteralFolding)
+    }
   }
 
   private def externalCatalog: SnappyExternalCatalog =
@@ -689,8 +712,8 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
   }
 }
 
-class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
-                     experimentalMethods: ExperimentalMethods)
+class SnappySparkPlanner(val snappySession: SnappySession, conf: SQLConf,
+                         experimentalMethods: ExperimentalMethods)
   extends SparkPlanner(snappySession.sparkContext, conf, experimentalMethods)
     with SnappyStrategies {
 
