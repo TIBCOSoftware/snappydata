@@ -926,28 +926,13 @@ object SnappyContext extends Logging {
     override def quorumLost(failures: java.util.Set[InternalDistributedMember],
         remaining: java.util.List[InternalDistributedMember]): Unit = {}
 
-    override def memberJoined(id: InternalDistributedMember): Unit = {
-      val executorId = id.canonicalString()
-      // TODO: Make it better     ... timed wait
-      while(!storeToBlockMap.contains(executorId)) Thread.sleep(1000)
-      val bid = storeToBlockMap.get(executorId)._blockId
-      handleNewExecutorJoin(bid)
-    }
+    override def memberJoined(id: InternalDistributedMember): Unit = {}
 
     override def memberSuspect(id: InternalDistributedMember,
         whoSuspected: InternalDistributedMember): Unit = {}
 
     override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
       removeBlockId(id.canonicalString())
-    }
-
-    private def handleNewExecutorJoin(bid: BlockManagerId) = {
-      val sc = globalSparkContext
-      val uris = SnappySession.getJarURIs()
-      Utils.mapExecutors[Unit](sc, () => {
-        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-        Iterator.empty
-      }, 30, Seq(bid))
     }
   }
 
