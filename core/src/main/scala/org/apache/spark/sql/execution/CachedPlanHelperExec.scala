@@ -53,6 +53,8 @@ case class CachedPlanHelperExec(childPlan: CodegenSupport)
     childRDDs
   }
 
+  override def needCopyResult: Boolean = false
+
   override protected def doProduce(ctx: CodegenContext): String = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     // cannot flatten out the references buffer here since the values may not

@@ -18,7 +18,6 @@ package io.snappydata.gemxd
 
 import java.io.DataOutput
 
-import scala.collection.mutable
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.Attribute
@@ -28,11 +27,13 @@ import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStre
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import org.apache.spark.Logging
-import org.apache.spark.sql.{Row, SnappyParser}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
+
+import scala.collection.mutable
 
 
 class SparkSQLPrepareImpl(val sql: String,
@@ -70,8 +71,7 @@ class SparkSQLPrepareImpl(val sql: String,
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
-    val questionMarkCounter = session.snappyParser
-      .asInstanceOf[SnappyParser].questionMarkCounter
+    val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
       allParamLiterals(analyzedPlan, paramLiterals)
