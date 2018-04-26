@@ -62,6 +62,8 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 <a id="array"></a>
 ## ARRAY
 
+!!! Note
+	Supported only for column tables
 
 <a id="bigint"></a>
 ## BIGINT

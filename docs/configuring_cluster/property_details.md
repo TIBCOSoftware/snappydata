@@ -62,28 +62,14 @@ This is an SQL property.
 
 This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
 
-For example:
-```
-Set in the snappy SQL shell
-
-snappy> connect client 'localhost:1527';
-snappy> set snappydata.column.batchSize=100k;
-This sets the property for the snappy SQL shell's session.
-
-Set in the conf/leads file
-
-$ cat conf/leads
-node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
-```
-
 **Example**</br>
 
-``` 
+``` no-highlight
 // To set auto broadcast
 snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=<_SizeInBytes_>")
 ```
 
-``` 
+``` no-highlight
 // To disable auto broadcast
 .set("spark.sql.autoBroadcastJoinThreshold", "-1")
 ```
@@ -104,14 +90,15 @@ localhost
 - Locator
 
 **Example**</br>
-```
+
+``` no-highlight
 -client-bind-address=localhost
 ```
 <a id="classpath"></a>
 ## classpath
 
 **Description**</br>
-Location of user classes required by the SnappyData Server. </br> This path is appended to the current classpath.
+Location of user classes required by the SnappyData Server/Lead nodes. </br> This path is appended to the current classpath.
 
 **Default Values**</br>
 
@@ -119,9 +106,12 @@ Location of user classes required by the SnappyData Server. </br> This path is a
 
 - Server
 - Lead
-- Locator
 
 **Example**</br>
+
+``` no-highlight
+-classpath=<path to user jar>
+```
 
 <a id="critical-heap-percentage"></a>
 ## critical-heap-percentage
@@ -165,15 +155,23 @@ conf.set("snappydata.store.critical-off-heap-percentage", "95")
 ## dir
 
 **Description**</br>
-Working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).
+Working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, etc.
 
-**Default Values**</br>**Components**</br>
+**Default Values**</br>
+Defaults to the product's work directory.
+
+**Components**</br>
 
 - Server
 - Lead
 - Locator
 
 **Example**</br>
+
+This is the launcher property and needs to be specified in the respective conf files before starting the cluster.
+``` no-highlight
+-dir = <path to log directory>
+```
 
 <a id="eviction-heap-percentage"></a>
 ## eviction-heap-percentage
@@ -182,7 +180,7 @@ Working directory of the server that contains the SnappyData Server status file 
 Sets the memory usage percentage threshold (0-100) that the Resource Manager uses to start evicting data from the heap. </br> Use this to override the default.
 
 **Default Values**</br>
-By default, the eviction threshold is 81% of whatever is set for  `critical-heap-percentage`.
+By default, the eviction threshold is 81% of that value that is set for  `critical-heap-percentage`.
 
 **Components**</br>
 
@@ -190,10 +188,16 @@ By default, the eviction threshold is 81% of whatever is set for  `critical-heap
 - Lead
 
 **Example**</br>
-```
-props.setProperty("eviction-heap-percentage", "20")
+
+This can be set as a launcher property or a boot property as below:
+
+```no-highligt
+-eviction-heap-percentage = “20”
 ```
 
+```no-highlight
+props.setProperty("eviction-heap-percentage", "20") 
+```
 <a id="eviction-off-heap-percentage"></a>
 ## eviction-off-heap-percentage
 
@@ -209,7 +213,14 @@ By default, the eviction threshold is 81% of whatever is set for `critical-off-h
 - Server
 
 **Example**</br>
+
+This can be set as a launcher property or a boot property as below:
+
+```no-highlight
+-eviction-heap-percentage = “20”
 ```
+
+```no-highlight
 props.setProperty("eviction-off-heap-percentage", "15")
 ```
 
@@ -217,7 +228,7 @@ props.setProperty("eviction-off-heap-percentage", "15")
 ## heap-size
 
 **Description**</br>
-Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.
+Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the `critical-heap-percentage` to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.
 
 **Default Values**</br>
 
@@ -228,6 +239,7 @@ Sets the maximum heap size for the Java VM, using SnappyData default resource ma
 - Locator
 
 **Example**</br>
+
 
 <a id="J"></a>
 ## J
