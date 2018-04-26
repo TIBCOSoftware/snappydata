@@ -626,6 +626,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if (se.getMessage().contains("23505")) {
         Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
         return;
+      } else if (se.getMessage().contains("X0Z16")) {
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
+        return;
       } else throw new TestException("Got exception while performing insert operation.", se);
     }
   }
