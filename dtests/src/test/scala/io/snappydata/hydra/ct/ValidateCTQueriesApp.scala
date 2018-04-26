@@ -55,7 +55,7 @@ object ValidateCTQueriesApp {
     }
     val startTime = System.currentTimeMillis
     val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-      sqlContext)
+      sqlContext, false, false)
     val endTime = System.currentTimeMillis
     val totalTime = (endTime - startTime) / 1000
     pw.println(s"Total time for execution is :: ${totalTime} seconds.")
