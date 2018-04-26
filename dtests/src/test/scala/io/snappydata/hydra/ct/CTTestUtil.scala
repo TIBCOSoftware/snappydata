@@ -118,7 +118,7 @@ object CTTestUtil {
     snc.sql(CTQueries.orders_details_create_ddl + " using column options(PERSISTENT '" +
         persistenceMode + "')")
     snc.sql(CTQueries.exec_details_create_ddl + " using column options(PERSISTENT '" +
-        persistenceMode + "', key_columns 'EXEC_DID')")
+        persistenceMode + "')")
   }
 
   def createPersistColumnTablesWithKeyColumns(snc: SnappyContext, persistenceMode: String): Unit = {
