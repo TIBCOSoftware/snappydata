@@ -11,3 +11,6 @@ The following topics are covered in this section:
 * [Configuring High Availability for a Partitioned Table](configure_high_availability.md)
 
 * [Configuring Logging](configure_logging.md)
+
+* [Getting Information from SnappyData System Tables
+](monitor-manage.md)
