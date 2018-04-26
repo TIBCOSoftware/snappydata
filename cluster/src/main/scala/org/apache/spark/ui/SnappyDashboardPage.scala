@@ -38,45 +38,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val pageHeaderText: String = SnappyDashboardPage.pageHeaderText
 
-    /* // Commenting for now, as not being used
-    var clusterStatsMap = scala.collection.mutable.HashMap.empty[String, Any]
-    clusterStatsMap += ("status" -> SnappyDashboardPage.Status.normal)
-    clusterStatsMap += ("numMembers" -> 0)
-    clusterStatsMap += ("numLeads" -> 0)
-    clusterStatsMap += ("numLocators" -> 0)
-    clusterStatsMap += ("numTables" -> 0)
-    clusterStatsMap += ("numDataServers" -> 0)
-    clusterStatsMap += ("numClients" -> 0)
-    clusterStatsMap += ("memoryUsage" -> 0)
-    clusterStatsMap += ("numColumnTables" -> 0)
-    clusterStatsMap += ("numRowTables" -> 0)
-
-    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsOnDemand
-
-    var clusterMembers = scala.collection.mutable.HashMap.empty[String, mutable.Map[String, Any]]
-    var sparkConnectors = scala.collection.mutable.HashMap.empty[String, mutable.Map[String, Any]]
-
-    allMembers.foreach(m => {
-      if (!m._2("dataServer").toString.toBoolean
-          && !m._2("activeLead").toString.toBoolean
-          && !m._2("lead").toString.toBoolean
-          && !m._2("locator").toString.toBoolean) {
-
-        if (!m._2("status").toString.equalsIgnoreCase("stopped")) {
-          sparkConnectors += m
-        }
-
-      } else {
-        clusterMembers += m
-      }
-    })
-
-    val (tableBuff, indexBuff, externalTableBuff) =
-      SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
-
-    updateClusterStats(clusterStatsMap, clusterMembers, tableBuff, externalTableBuff)
-    */
-
     // Generate Pages HTML
     val pageTitleNode = createPageTitleNode(pageHeaderText)
 
@@ -124,153 +85,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   }
 
-  // todo: to be removed as not being used anymore
-  private def updateClusterStats(
-      clusterStatsMap: mutable.HashMap[String, Any],
-      membersBuf: mutable.Map[String, mutable.Map[String, Any]],
-      tablesBuf: Map[String, SnappyRegionStats],
-      extTablesBuf: Map[String, SnappyExternalTableStats]): Unit = {
-
-    val numMembers = membersBuf.size
-    var isClusterStateNormal = true
-    var numLead = 0
-    var numLocator = 0
-    var numDataServers = 0
-    var numClients = 0
-    var numClientsToLocator = 0
-    var numClientsToDataServers = 0
-    var numColumnTables = 0
-    var numRowTables = 0
-    var cpuUsage: Double = 0
-    var memoryUsage: Double = 0;
-    var heapUsage: Double = 0;
-    var offHeapUsage: Double = 0;
-    var jvmHeapUsage: Double = 0;
-
-    var totalCPUSize: Int = 0;
-    var totalCPUUsage: Int = 0;
-    var totalMemorySize: Long = 0;
-    var totalMemoryUsage: Long = 0;
-    var totalHeapSize: Long = 0;
-    var totalHeapUsage: Long = 0;
-    var totalOffHeapSize: Long = 0;
-    var totalOffHeapUsage: Long = 0;
-    var totalJvmHeapSize: Long = 0;
-    var totalJvmHeapUsage: Long = 0;
-
-    val hostsList: mutable.Set[String] = mutable.Set.empty[String]
-
-    membersBuf.foreach(mb => {
-      val m = mb._2
-
-      if(!m("status").toString.equalsIgnoreCase("running")){
-        isClusterStateNormal = false
-      }
-
-      if(m("lead").toString.toBoolean || m("activeLead").toString.toBoolean){
-        numLead += 1
-      }
-      if(m("locator").toString.toBoolean){
-        numLocator += 1
-        numClientsToLocator = m("clients").toString.toInt
-      }
-      if(m("dataServer").toString.toBoolean
-          && !m("activeLead").toString.toBoolean
-          && !m("lead").toString.toBoolean
-          && !m("locator").toString.toBoolean){
-        numDataServers += 1
-      }
-
-      numClients += m("clients").toString.toInt
-
-      totalHeapSize = totalHeapSize + m("heapMemorySize").asInstanceOf[Long]
-      totalHeapUsage = totalHeapUsage + m("heapMemoryUsed").asInstanceOf[Long]
-
-      totalOffHeapSize = totalOffHeapSize + m("offHeapMemorySize").asInstanceOf[Long]
-      totalOffHeapUsage = totalOffHeapUsage + m("offHeapMemoryUsed").asInstanceOf[Long]
-
-      totalJvmHeapSize = totalJvmHeapSize + m("totalMemory").asInstanceOf[Long]
-      totalJvmHeapUsage = totalJvmHeapUsage + m("usedMemory").asInstanceOf[Long]
-
-      // CPU
-      if(!hostsList.contains(m("host").toString)
-          && !m("locator").toString.toBoolean ){
-        hostsList.add(m("host").toString)
-        totalCPUUsage = totalCPUUsage + m("cpuActive").asInstanceOf[Int]
-        totalCPUSize += 1
-      }
-
-    })
-
-    if(membersBuf.size > 0){
-      totalMemorySize = totalHeapSize + totalOffHeapSize
-      totalMemoryUsage = totalHeapUsage + totalOffHeapUsage
-
-      if(totalMemorySize > 0) {
-        memoryUsage = totalMemoryUsage * 100 / totalMemorySize
-      }
-      if(totalHeapSize > 0) {
-        heapUsage = totalHeapUsage * 100 / totalHeapSize
-      }
-      if(totalOffHeapSize > 0) {
-        offHeapUsage = totalOffHeapUsage * 100 / totalOffHeapSize
-      }
-      if(totalJvmHeapSize > 0) {
-        jvmHeapUsage = totalJvmHeapUsage * 100 / totalJvmHeapSize
-      }
-
-      cpuUsage = totalCPUUsage / totalCPUSize
-    }
-
-    numClientsToDataServers = numClients - numClientsToLocator
-
-    tablesBuf.foreach(tb => {
-      val tbl = tb._2
-
-      if(tbl.isColumnTable) {
-        numColumnTables += 1
-      }
-      else {
-        numRowTables += 1
-      }
-    })
-
-    clusterStatsMap += ("status" -> { if (isClusterStateNormal) { "Normal" } else { "Warning" }})
-    clusterStatsMap += ("numMembers" -> numMembers)
-    clusterStatsMap += ("numTables" -> tablesBuf.size)
-    clusterStatsMap += ("numLeads" -> numLead)
-    clusterStatsMap += ("numLocators" -> numLocator)
-    clusterStatsMap += ("numDataServers" -> numDataServers)
-    clusterStatsMap += ("numClients" -> numClients)
-    clusterStatsMap += ("numClientsToLocator" -> numClientsToLocator)
-    clusterStatsMap += ("numClientsToDataServers" -> numClientsToDataServers)
-    clusterStatsMap += ("numColumnTables" -> numColumnTables)
-    clusterStatsMap += ("numRowTables" -> numRowTables)
-    clusterStatsMap += ("numExtTables" -> extTablesBuf.size)
-    clusterStatsMap += ("cpuUsage" -> cpuUsage)
-    clusterStatsMap += ("memoryUsage" -> memoryUsage)
-    clusterStatsMap += ("totalMemoryUsage" -> totalMemoryUsage)
-    clusterStatsMap += ("heapUsage" -> heapUsage)
-    clusterStatsMap += ("totalHeapUsage" -> totalHeapUsage)
-    clusterStatsMap += ("offHeapUsage" -> offHeapUsage)
-    clusterStatsMap += ("totalOffHeapUsage" -> totalOffHeapUsage)
-    clusterStatsMap += ("jvmHeapUsage" -> jvmHeapUsage)
-    clusterStatsMap += ("totalJvmHeapUsage" -> totalJvmHeapUsage)
-
-  }
-
   private def createPageTitleNode(title: String): Seq[Node] = {
-    <div style="position:fixed; width: 100%;">
-      <div id="AutoUpdateErrorMsg"
-           style="width: 500px; max-height: 60px; background-color: rgba(210, 56, 56, 0.16);
-             border: 2px solid red; border-radius: 10px; z-index: 2; position: relative;
-             margin: 5px auto; padding: 0px 10px; overflow: auto; display: none;
-             text-align: center; font-weight: bold;">
+    <div id="AutoUpdateErrorMsgContainer">
+      <div id="AutoUpdateErrorMsg">
       </div>
     </div>
     <div class="row-fluid">
       <div class="span12">
-        <h3 style="vertical-align: bottom; display: inline-block;">
+        <h3 class="page-title-node-h3">
           {title}
         </h3>
       </div>
@@ -280,8 +102,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   private def createTitleNode(title: String, tooltip: String): Seq[Node] = {
     <div class="row-fluid">
       <div class="span12">
-        <h4 style="vertical-align: bottom; display: inline-block;"
-            data-toggle="tooltip" data-placement="top" title={tooltip}>
+        <h4 class="title-node-h4" data-toggle="tooltip" data-placement="top" title={tooltip}>
           {title}
         </h4>
       </div>
@@ -290,21 +111,13 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def clusterStats(): Seq[Node] = {
     <div class="container-fluid" style="text-align: center;">
-      <div id="cpuUsageContainer"
-           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
-             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
+      <div id="cpuUsageContainer" class="graph-container">
       </div>
-      <div id="memoryUsageContainer"
-           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
-             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
+      <div id="memoryUsageContainer" class="graph-container">
       </div>
-      <div id="heapUsageContainer"
-           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
-             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
+      <div id="heapUsageContainer" class="graph-container">
       </div>
-      <div id="offheapUsageContainer"
-           style="width: 400px; height: 200px; display: inline-block; margin: 10px;
-             border: solid 1px darkgray; box-shadow: 5px 5px 5px grey;">
+      <div id="offheapUsageContainer" class="graph-container">
       </div>
     </div>
   }
@@ -314,66 +127,59 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table id="memberStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center; vertical-align: middle; width: 60px;">
+            <th class="table-th-col-heading" style="width: 60px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("statusTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.memberStatsColumn("status")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle;">
+            <th class="table-th-col-heading">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("descriptionTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.memberStatsColumn("description")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 100px;">
+            <th class="table-th-col-heading" style="width: 100px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("memberTypeTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.memberStatsColumn("memberType")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("cpuUsageTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.memberStatsColumn("cpuUsage")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("memoryUsageTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.memberStatsColumn("memoryUsage")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("heapMemoryTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 Heap Memory<br/>(Used / Total)
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.memberStatsColumn("offHeapMemoryTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 Off-Heap Memory<br/>(Used / Total)
               </span>
             </th>
@@ -388,66 +194,59 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table id="tableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center; vertical-align: middle;">
+            <th class="table-th-col-heading">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("nameTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.tableStatsColumn("name")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle;">
+            <th class="table-th-col-heading">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("storageModelTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.tableStatsColumn("storageModel")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle;">
+            <th class="table-th-col-heading">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("distributionTypeTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width: 200px;">
+            <th class="table-th-col-heading" style="width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("bucketCountTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.tableStatsColumn("bucketCount")}
               </span>
             </th>
@@ -463,30 +262,27 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table id="extTableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
-            <th style="text-align:center; vertical-align: middle; width:300px;">
+            <th class="table-th-col-heading" style="width:300px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("nameTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.extTableStatsColumn("name")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle; width:300px;">
+            <th class="table-th-col-heading" style="width:300px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("providerTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.extTableStatsColumn("provider")}
               </span>
             </th>
-            <th style="text-align:center; vertical-align: middle;">
+            <th class="table-th-col-heading">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.extTableStatsColumn("externalSourceTooltip")
-                    }
-                    style="font-size: 17px;">
+                    }>
                 {SnappyDashboardPage.extTableStatsColumn("externalSource")}
               </span>
             </th>
