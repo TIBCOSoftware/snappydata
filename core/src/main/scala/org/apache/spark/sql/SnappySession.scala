@@ -47,7 +47,6 @@ import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGeneration, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, LiteralValue, ParamLiteral, ScalarSubquery, SortDirection}
-import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{AnalysisBarrier, Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -148,7 +147,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  def snappyParser: ParserInterface = sessionState.sqlParser
+  def snappyParser: SnappyParser = sessionState.sqlParser.asInstanceOf[SnappySqlParser].sqlParser
 
   def snappyContextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
@@ -1824,7 +1823,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
 
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
-    snappyParser.asInstanceOf[SnappyParser].setPreparedQuery(preparePhase, paramSet)
+    snappyParser.setPreparedQuery(preparePhase, paramSet)
 
   private[sql] def getParameterValue(questionMarkCounter: Int, pvs: Any): (Any, DataType) = {
     val parameterValueSet = pvs.asInstanceOf[ParameterValueSet]
