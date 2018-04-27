@@ -26,29 +26,37 @@ trait ToolsCallback {
 
   def updateUI(sc: SparkContext): Unit
 
-  def removeAddedJar(sc: SparkContext, jarName : String): Unit
+  def removeAddedJar(sc: SparkContext, jarName: String): Unit
 
   /**
-   * Callback to spark Utils to fetch file
-   * Download a file or directory to target directory. Supports fetching the file in a variety of
-   * ways, including HTTP, Hadoop-compatible filesystems, and files on a standard filesystem, based
-   * on the URL parameter. Fetching directories is only supported from Hadoop-compatible
-   * filesystems.
-   *
-   * If `useCache` is true, first attempts to fetch the file to a local cache that's shared
-   * across executors running the same application. `useCache` is used mainly for
-   * the executors, and not in local mode.
-   *
-   * Throws SparkException if the target file already exists and has different contents than
-   * the requested file.
-   */
+    * Callback to spark Utils to fetch file
+    * Download a file or directory to target directory. Supports fetching the file in a variety of
+    * ways, including HTTP, Hadoop-compatible filesystems, and files on a standard filesystem, based
+    * on the URL parameter. Fetching directories is only supported from Hadoop-compatible
+    * filesystems.
+    *
+    * If `useCache` is true, first attempts to fetch the file to a local cache that's shared
+    * across executors running the same application. `useCache` is used mainly for
+    * the executors, and not in local mode.
+    *
+    * Throws SparkException if the target file already exists and has different contents than
+    * the requested file.
+    */
   def doFetchFile(
-      url: String,
-      targetDir: File,
-      filename: String) : File
+                     url: String,
+                     targetDir: File,
+                     filename: String): File
 
   def setSessionDependencies(sparkContext: SparkContext,
-      appName : String,
-      classLoader: ClassLoader): Unit = {
+                             appName: String,
+                             classLoader: ClassLoader): Unit = {
   }
+
+  def addURIs(alias: String, jars: Array[String], deploySql: String): Unit
+
+  def addURIsToExecutorClassLoader(jars: Array[String]): Unit
+
+  def getAllGlobalCmnds(): Array[String]
+
+  def removePackage(alias: String): Unit
 }

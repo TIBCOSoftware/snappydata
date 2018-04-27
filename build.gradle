@@ -58,7 +58,7 @@ allprojects {
     maven { url "https://repo.spring.io/libs-release" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     // maven { url 'http://repository.snappydata.io/repository/internal' }
-    // maven { url 'http://repository.snappydata.io/repository/snapshots' }
+    //  maven { url 'http://repository.snappydata.io/repository/snapshots' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
   }
 
