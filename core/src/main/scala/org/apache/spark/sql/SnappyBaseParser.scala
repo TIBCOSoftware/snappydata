@@ -39,7 +39,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
-  protected def reset(): Unit = queryHints.clear()
+  protected def clearQueryHints(): Unit = queryHints.clear()
 
   protected final def commentBody: Rule0 = rule {
     "*/" | ANY ~ commentBody
@@ -98,7 +98,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
-    '\'' ~ capture((noneOf("'") | "''").*) ~ '\'' ~ ws ~> ((s: String) =>
+    (("\"" ~ capture((noneOf("\"") | "\"\"").*) ~ "\"") |
+        ("\'" ~ capture((noneOf("'") | "''").*) ~ "\'")) ~
+        ws ~> ((s: String) =>
       if (s.indexOf("''") >= 0) s.replace("''", "'") else s)
   }
 
@@ -397,6 +399,7 @@ object SnappyParserConsts {
   final val WITH: Keyword = reservedKeyword("with")
   final val FUNCTIONS: Keyword = reservedKeyword("functions")
   final val FUNCTION: Keyword = reservedKeyword("function")
+  final val RESET: Keyword = reservedKeyword("RESET")
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
