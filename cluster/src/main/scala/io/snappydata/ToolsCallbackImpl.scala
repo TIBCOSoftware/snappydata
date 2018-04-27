@@ -54,11 +54,10 @@ object ToolsCallbackImpl extends ToolsCallback {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
   }
 
-  override def addURIs(jars: Array[String], deploySql: String): Unit = {
-    val key = UUID.randomUUID().toString
-    Misc.getMemStore.getGlobalCmdRgn.put(key, deploySql)
+  override def addURIs(alias: String, jars: Array[String], deploySql: String): Unit = {
+    Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
     val logger = Misc.getCacheLogWriter
-    logger.info(s"KN: addURIs key = $key and val = $deploySql")
+    logger.info(s"KN: addURIs key = $alias and val = $deploySql")
     getAllGlobalCmnds.foreach(x => logger.info(s"KN: retrieved value = $x"))
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     val loader = lead.urlclassloader
@@ -85,5 +84,11 @@ object ToolsCallbackImpl extends ToolsCallback {
     logger.info(s"KN: getAllGlobalCmnds values = ${values}", new Exception)
     values.toArray.foreach(x => logger.info(s"KN: getAllGlobalCmnds Inside foreach - $x"))
     Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
+  }
+
+  override def removePackage(alias: String): Unit = {
+    GemFireXDUtils.waitForNodeInitialization()
+    val packageRegion = Misc.getMemStore.getGlobalCmdRgn()
+    packageRegion.destroy(alias)
   }
 }

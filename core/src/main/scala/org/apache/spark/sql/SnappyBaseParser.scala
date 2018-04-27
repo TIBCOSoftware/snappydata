@@ -458,6 +458,7 @@ object SnappyParserConsts {
   final val TABLES: Keyword = nonReservedKeyword("tables")
   final val TEMPORARY: Keyword = nonReservedKeyword("temporary")
   final val TRUNCATE: Keyword = nonReservedKeyword("truncate")
+  final val UNDEPLOY: Keyword = reservedKeyword("undeploy")
   final val UNCACHE: Keyword = nonReservedKeyword("uncache")
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
