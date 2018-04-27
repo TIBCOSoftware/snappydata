@@ -54,6 +54,7 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
 
     val expressions = encoder.serializer.map(
       BindReferences.bindReference(_, output))
+
     ctx.INPUT_ROW = null
     // for non-flat objects row cannot be null and exception
     // will be thrown right at the start
@@ -123,12 +124,20 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
         case DateType => optimizeDate(expr)
         case _ => expr.genCode(ctx)
       }
-      if (ctx.isPrimitiveType(dataType)) {
+      ev
+
+      // Commenting the code below, as it causes result mismatch.
+      // IMO the nullability of a field is already determined while
+      // creating the encoder. See ScalaReflection.schemaFor.
+
+      // @TODO Check with Sumwale, if it will cause any perf issues.
+      /* if (ctx.isPrimitiveType(dataType)) {
         ev.copy(isNull = "false")
       } else {
         ev
-      }
+      } */
     }
+
     s"""
        |$declarations
        |while ($iterator.hasNext()) {
@@ -143,4 +152,11 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
 
 class EncoderPlan[T](rdd: RDD[T], val encoder: ExpressionEncoder[T],
     val isFlat: Boolean, output: Seq[Attribute], session: SparkSession)
-    extends LogicalRDD(output, rdd.asInstanceOf[RDD[InternalRow]])(session)
+    extends LogicalRDD(output, rdd.asInstanceOf[RDD[InternalRow]])(session) {
+
+  override def newInstance(): EncoderPlan.this.type = {
+    val newRDD = super.newInstance().asInstanceOf[LogicalRDD]
+    new EncoderPlan(rdd, encoder, isFlat,
+      newRDD.output, session).asInstanceOf[this.type]
+  }
+}

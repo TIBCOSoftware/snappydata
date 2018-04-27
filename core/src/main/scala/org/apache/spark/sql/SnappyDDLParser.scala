@@ -63,6 +63,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
   final def EXCEPT: Rule0 = rule { keyword(Consts.EXCEPT) }
+  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
   final def EXISTS: Rule0 = rule { keyword(Consts.EXISTS) }
   final def FALSE: Rule0 = rule { keyword(Consts.FALSE) }
   final def FROM: Rule0 = rule { keyword(Consts.FROM) }
@@ -570,7 +571,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
           name.database, Some(name.funcName), user, system)
         case Some(pat: String) => ShowFunctionsCommand(
-          None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
+          None, Some(pat), user, system)
         case None => ShowFunctionsCommand(None, None, user, system)
         case _ => throw new ParseException(
           s"SHOW FUNCTIONS $nameOrPat unexpected")

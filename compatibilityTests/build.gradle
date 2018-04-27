@@ -48,6 +48,7 @@ dependencies {
 
   testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
       configuration: 'testOutput')
+  testCompile project(':dunit')
 
   compile (project(':snappy-core_' + scalaBinaryVersion)) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)

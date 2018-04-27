@@ -24,13 +24,19 @@ import org.apache.spark.sql.internal.{SQLConf, SessionState, SnappyConf, SnappyS
  * A special [[SparkSession]] prepared for testing.
  */
 private[sql] class TestSnappySession(sc: SparkContext) extends SnappySession(sc) {
+
+
   self =>
   def this(snappyConf: SparkConf) {
     this(
       new SparkContext("local[2]", "test-sql-context",
-        snappyConf.set("spark.sql.testkey", "true"))
+        snappyConf.set("spark.sql.testkey", "true")
+      )
     )
   }
+
+  TestSQLContext.overrideConfs = TestSQLContext.overrideConfs ++
+      Map("spark.sql.sources.default" -> "column")
 
   def this() {
     this(new SparkConf)
