@@ -588,8 +588,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public void performInsert() {
+    Connection conn = null;
     try {
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
       Connection dConn = null;
       String[] dmlTable = SnappySchemaPrms.getDMLTables();
       int rand = new Random().nextInt(dmlTable.length);
@@ -625,9 +626,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     } catch (SQLException se) {
       if (se.getMessage().contains("23505")) {
         Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
+        closeConnection(conn);
         return;
       } else if (se.getMessage().contains("X0Z16")) {
         Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
+        closeConnection(conn);
+        return;
+      } else if (se.getMessage().contains("40XC0")) {
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
+        closeConnection(conn);
         return;
       } else throw new TestException("Got exception while performing insert operation.", se);
     }
