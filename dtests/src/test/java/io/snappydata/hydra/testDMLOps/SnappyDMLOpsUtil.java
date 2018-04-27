@@ -629,11 +629,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         closeConnection(conn);
         return;
       } else if (se.getMessage().contains("X0Z16")) {
-        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage() +
+            se.getStackTrace());
         closeConnection(conn);
         return;
       } else if (se.getMessage().contains("40XC0")) {
-        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage());
+        Log.getLogWriter().info("Got expected Exception, continuing test: " + se.getMessage() +
+            se.getStackTrace());
         closeConnection(conn);
         return;
       } else throw new TestException("Got exception while performing insert operation.", se);
