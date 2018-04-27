@@ -70,6 +70,16 @@ class SortedColumnTests extends ColumnTablesTestBase {
     SortedColumnTests.testBasicInsert(snc, colTableName, numBuckets, numElements)
   }
 
+  test("basic insert 2") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 551
+    val numBuckets = 1
+
+    SortedColumnTests.testBasicInsert2(snc, colTableName, numBuckets, numElements)
+    // Thread.sleep(50000000)
+  }
+
   test("multiple insert") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -226,6 +236,83 @@ object SortedColumnTests extends Logging {
     // def sorted(l: List[Row]) = l.isEmpty ||
     //    l.view.zip(l.tail).forall(x => x._1.getInt(0) <= x._2.getInt(0))
     // assert(sorted(rs2.toList))
+
+    session.sql(s"drop table $colTableName")
+    session.conf.unset(Property.ColumnBatchSize.name)
+    session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+    session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+  }
+
+  def testBasicInsert2(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long): Unit = {
+    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+
+    val testName = "testBasicInsert2"
+    val dataFile_1 = s"${testName}_1"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_1)(i => {
+      i % 10 < 6
+    })
+    val dataFile_2 = s"${testName}_2"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_2)(i => {
+      i % 10 > 5
+    })
+
+    def doPutInto(fileName: String, dataFrameReader: DataFrameReader): Unit = {
+      try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        // scalastyle:off
+        println(s"$testName start loading $fileName")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(fileName)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $fileName")
+        // scalastyle:on
+      } finally {
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
+      }
+    }
+
+    def verifySelect(expectedCount: Int): Unit = {
+      val select_query = s"select * from $colTableName"
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      var i = 0
+      res.foreach(r => {
+        val col0 = r.getInt(0)
+        val col1 = r.getInt(1)
+        val col2 = r.getInt(2)
+        // scalastyle:off
+        println(s"verifySelect-$expectedCount-$i [$col0 $col1 $col2]")
+        // scalastyle:on
+        i += 1
+      })
+      assert(i == expectedCount, s"$i : $expectedCount")
+    }
+
+    try {
+      createColumnTable2(session, colTableName, numBuckets, numElements)
+
+      // scalastyle:off
+      println(s"$testName start loading $dataFile_1")
+      // scalastyle:on
+      val dataFrameReader: DataFrameReader = session.read
+      dataFrameReader.load(fixedFilePath(dataFile_1)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_1")
+      // scalastyle:on
+
+      doPutInto(dataFile_2, dataFrameReader)
+
+      // ColumnTableScan.setDebugMode(true)
+      verifySelect(numElements.toInt)
+    } catch {
+      case t: Throwable =>
+        logError(t.getMessage, t)
+        throw t
+    }
 
     session.sql(s"drop table $colTableName")
     session.conf.unset(Property.ColumnBatchSize.name)
