@@ -28,12 +28,12 @@ import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpres
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
-import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
+import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.{ColumnSortedInsertExec, ColumnTableScan, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
@@ -134,6 +134,15 @@ private[sql] trait SnappyStrategies {
               !RowOrdering.isOrderable(leftKeys)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildLeft, replicatedTableJoin = false)
+          } else if (ColumnTableScan.getCaseOfSortedInsertValue && joinType == FullOuter &&
+              RowOrdering.isOrderable(leftKeys)) {
+            val leftPlan = planLater(left)
+            val rightPlan = planLater(right)
+            val child = joins.SortMergeJoinExec(
+              leftKeys, rightKeys, joinType, condition, leftPlan, rightPlan)
+            val sortedInsert = ColumnSortedInsertExec(
+              /*leftKeys, rightKeys, joinType, condition, leftPlan, rightPlan,*/ child)
+            sortedInsert :: Nil
           } else Nil
 
         case _ => Nil
