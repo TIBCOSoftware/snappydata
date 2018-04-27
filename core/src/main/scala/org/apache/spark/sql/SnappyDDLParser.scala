@@ -97,6 +97,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def THEN: Rule0 = rule { keyword(Consts.THEN) }
   final def TO: Rule0 = rule { keyword(Consts.TO) }
   final def TRUE: Rule0 = rule { keyword(Consts.TRUE) }
+  final def UNDEPLOY: Rule0 = rule { keyword(Consts.UNDEPLOY) }
   final def UNION: Rule0 = rule { keyword(Consts.UNION) }
   final def UNIQUE: Rule0 = rule { keyword(Consts.UNIQUE) }
   final def UPDATE: Rule0 = rule { keyword(Consts.UPDATE) }
@@ -489,9 +490,12 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def deployPackages: Rule1[LogicalPlan] = rule {
-    DEPLOY ~ PACKAGE ~ stringLiteral ~ (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
-        ((packages: String, repos: Any, path: Any) => DeployCommand(
-          packages, repos.asInstanceOf[Option[String]], path.asInstanceOf[Option[String]]))
+    DEPLOY ~ PACKAGE ~ tableIdentifier ~ stringLiteral ~
+        (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
+        ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
+          packages, alias.identifier, repos.asInstanceOf[Option[String]],
+          path.asInstanceOf[Option[String]])) |
+    UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier))
   }
 
   protected def streamContext: Rule1[LogicalPlan] = rule {
@@ -740,6 +744,7 @@ case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) 
   */
 case class DeployCommand(
     coordinates: String,
+    alias: String,
     repos: Option[String],
     jarCache: Option[String],
     addCmd: Boolean = true) extends RunnableCommand {
@@ -757,8 +762,18 @@ case class DeployCommand(
       })
       val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
       log.info(s"KN: deployCmd to be put = $deployCmd")
-      ToolsCallbackInit.toolsCallback.addURIs(jars, deployCmd)
+      if (alias != null) {
+        ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+      }
     }
+    Seq.empty[Row]
+  }
+}
+
+case class UnDeployCommand(alias: String) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    ToolsCallbackInit.toolsCallback.removePackage(alias)
     Seq.empty[Row]
   }
 }

@@ -52,10 +52,11 @@ trait ToolsCallback {
                              classLoader: ClassLoader): Unit = {
   }
 
-  def addURIs(jars: Array[String], deploySql: String): Unit
+  def addURIs(alias: String, jars: Array[String], deploySql: String): Unit
 
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
 
   def getAllGlobalCmnds(): Array[String]
 
+  def removePackage(alias: String): Unit
 }
