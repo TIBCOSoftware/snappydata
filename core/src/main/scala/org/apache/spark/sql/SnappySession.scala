@@ -2101,39 +2101,44 @@ object SnappySession extends Logging {
    */
   private[sql] def replaceParamLiterals(text: String,
       currentParamConstants: Array[ParamLiteral], paramsId: Int): String = {
-    if ((currentParamConstants eq null) || currentParamConstants.length == 0) return text
-    val paramStart = TokenLiteral.PARAMLITERAL_START
-    var nextIndex = text.indexOf(paramStart)
-    if (nextIndex != -1) {
-      var lastIndex = 0
-      val sb = new java.lang.StringBuilder(text.length)
-      while (nextIndex != -1) {
-        sb.append(text, lastIndex, nextIndex)
-        nextIndex += paramStart.length
-        val posEnd = text.indexOf(',', nextIndex)
-        val pos = Integer.parseInt(text.substring(nextIndex, posEnd))
-        // get the ID which created this ParamLiteral (e.g. a query on temporary table
-        // for a previously cached table will have its own literals and cannot replace former)
-        val idEnd = text.indexOf('#', posEnd + 1)
-        val id = Integer.parseInt(text.substring(posEnd + 1, idEnd))
-        val lenEnd = text.indexOf(',', idEnd + 1)
-        val len = Integer.parseInt(text.substring(idEnd + 1, lenEnd))
-        lastIndex = lenEnd + 1 + len
-        // append the new value if matching ID else replace with embedded value
-        if (paramsId == id) {
-          sb.append(currentParamConstants(pos).valueString)
-          // skip to end of value and continue searching
-        } else {
-          sb.append(text.substring(lenEnd + 1, lastIndex))
+    try {
+      if ((currentParamConstants eq null) || currentParamConstants.length == 0) return text
+      val paramStart = TokenLiteral.PARAMLITERAL_START
+      var nextIndex = text.indexOf(paramStart)
+      if (nextIndex != -1) {
+        var lastIndex = 0
+        val sb = new java.lang.StringBuilder(text.length)
+        while (nextIndex != -1) {
+          sb.append(text, lastIndex, nextIndex)
+          nextIndex += paramStart.length
+          val posEnd = text.indexOf(',', nextIndex)
+          val pos = Integer.parseInt(text.substring(nextIndex, posEnd))
+          // get the ID which created this ParamLiteral (e.g. a query on temporary table
+          // for a previously cached table will have its own literals and cannot replace former)
+          val idEnd = text.indexOf('#', posEnd + 1)
+          val id = Integer.parseInt(text.substring(posEnd + 1, idEnd))
+          val lenEnd = text.indexOf(',', idEnd + 1)
+          val len = Integer.parseInt(text.substring(idEnd + 1, lenEnd))
+          lastIndex = lenEnd + 1 + len
+          // append the new value if matching ID else replace with embedded value
+          if (paramsId == id) {
+            sb.append(currentParamConstants(pos).valueString)
+            // skip to end of value and continue searching
+          } else {
+            sb.append(text.substring(lenEnd + 1, lastIndex))
+          }
+          nextIndex = text.indexOf(paramStart, lastIndex)
         }
-        nextIndex = text.indexOf(paramStart, lastIndex)
-      }
-      // append any remaining
-      if (lastIndex < text.length) {
-        sb.append(text, lastIndex, text.length)
-      }
-      sb.toString
-    } else text
+        // append any remaining
+        if (lastIndex < text.length) {
+          sb.append(text, lastIndex, text.length)
+        }
+        sb.toString
+      } else text
+    } catch {
+      case _: Exception => "Fix the bug in parsing "
+      case _ => "Fix the bug in parsing"
+    }
   }
 
   private def newId(): Int = {
