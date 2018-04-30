@@ -33,15 +33,6 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 </dependency>
 ```
 
-```no-highlight
-<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11 -->
-<dependency>
-    <groupId>io.snappydata</groupId>
-    <artifactId>snappydata-core_2.11</artifactId>
-    <version>1.0.1</version>
-</dependency>
-```
-
 **Example: SBT dependency**:
 
 ```no-highlight
@@ -49,12 +40,9 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.1"
 ```
 
-```no-highlight
-// https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.0.1"
-```
-This is specific to 1.0.1:
-If your project fails while resolving the above dependency (ie. it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. A workaround to that is adding below code to your `build.sbt`
+!!! Note:
+	
+    If your project fails while resolving the above dependency (ie. it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br> As a workaround, add the below code to the `build.sbt`:
 
 ```no-highlight
 val workaround = {
@@ -62,6 +50,7 @@ val workaround = {
   ()
 }
 ```
+
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
 **Running the Job**: 

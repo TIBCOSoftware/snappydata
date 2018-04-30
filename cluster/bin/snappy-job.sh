@@ -34,12 +34,13 @@ usage=$'Usage:
        # Create a new context using the provided context factory
        snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>]
          [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>]
-         [--passfile <config-file-path-with-credentials>] [--packages <comma separated package-coordinates> ]
-         [--repos <comma separated mvn repositories] [--jarcache <path where resolved jars will be kept]
+         [--passfile <config-file-path-with-credentials>]
        # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
        snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>]
          [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>]
          [--passfile <config-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
+         [--packages <comma separated package-coordinates> ]
+         [--repos <comma separated mvn repositories] [--jarcache <path where resolved jars will be kept]
        # Get status of the job with the given job-id
        snappy-job.sh status --job-id <job-id> [--lead <hostname:port>] [--passfile <config-file-path-with-credentials>]
        # Stop a job with the given job-id

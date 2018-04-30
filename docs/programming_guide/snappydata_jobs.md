@@ -1,5 +1,6 @@
 <a id="snappydata-jobs"></a>
 # SnappyData Jobs
+
 To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. The structure of a job looks as below:
  
 **Scala**
@@ -64,6 +65,7 @@ See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/
 SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SnappySession per job. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.
 
 ## Submitting Jobs
+
 The following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala). This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its `runJob` method.
 
 !!! Note:
@@ -129,7 +131,7 @@ The status of this job can be queried in the same manner as shown above. The res
 
 ### Jar Dependencies for Jobs
 
-For writing jobs, users need to include **[snappydata-cluster_2.11:1.0.1](http://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11/1.0.1)** to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
+For writing jobs users need to include [Maven/SBT dependencies for the latest released version of SnappyData](../howto/run_spark_job_inside_cluster.md) to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
 
 For example, gradle can be configured as:
 
@@ -151,6 +153,7 @@ compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
 ```
 
 ## Running Python Applications
+
 Python users can submit a Python application using `bin/spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
 
 ```no-highlight
@@ -163,10 +166,9 @@ bin/spark-submit \
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.
 
 !!! Note:
-	For running ML/MLlib applications you need to install appropriate python packages if your application uses any.
-	KMeans uses numpy hence you need to install numpy package before using Spark KMeans.
-	
-	e.g. sudo apt-get install python-numpy
+	For running ML/MLlib applications you need to install appropriate python packages(if your application uses any).</br>
+	KMeans uses numpy hence you need to install numpy package before using Spark KMeans.</br>
+	For example `sudo apt-get install python-numpy`
 
 
 ## Streaming Jobs
