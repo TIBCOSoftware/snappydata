@@ -126,10 +126,15 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def setLeadClassLoader(): Unit = {
-    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    val loader = lead.urlclassloader
-    if (loader != null) {
-      Thread.currentThread().setContextClassLoader(loader)
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          Thread.currentThread().setContextClassLoader(loader)
+        }
+      }
+      case _ =>
     }
   }
 }

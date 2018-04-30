@@ -762,9 +762,9 @@ case class DeployCommand(
       })
       val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
       log.info(s"KN: deployCmd to be put = $deployCmd")
-      if (alias != null) {
+      // if (alias != null) {
         ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
-      }
+      //}
     }
     Seq.empty[Row]
   }
