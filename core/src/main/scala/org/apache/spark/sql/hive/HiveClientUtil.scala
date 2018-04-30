@@ -302,17 +302,24 @@ object HiveClientUtil {
   def newClient(sparkContext: SparkContext): HiveClient = synchronized {
     val client = new HiveClientUtil(sparkContext).newClientWithLogSetting()
     // replay global sql commands
-    val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
-    // logInfo(s"deploycmnds size = ${deployCmds.size}")
-    // deployCmds.foreach(s => logDebug(s"s"))
-    deployCmds.foreach(d => {
-      val cmdFields = d.split('|')
-      val coordinate = cmdFields(0)
-      val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
-      val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-      val session = SparkSession.builder().getOrCreate()
-      DeployCommand(coordinate, null, repos, cache, false).run(session)
-    })
+    if (ToolsCallbackInit.toolsCallback != null) {
+      SnappyContext.getClusterMode(sparkContext) match {
+        case _: SnappyEmbeddedMode => {
+          val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
+          // logInfo(s"deploycmnds size = ${deployCmds.size}")
+          // deployCmds.foreach(s => logDebug(s"s"))
+          deployCmds.foreach(d => {
+            val cmdFields = d.split('|')
+            val coordinate = cmdFields(0)
+            val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+            val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+            val session = SparkSession.builder().getOrCreate()
+            DeployCommand(coordinate, null, repos, cache, false).run(session)
+          })
+        }
+        case _ => // Nothing
+      }
+    }
     client
   }
 
