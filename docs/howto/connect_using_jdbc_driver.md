@@ -25,6 +25,20 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 libraryDependencies += "io.snappydata" % "snappydata-store-client" % "1.6.1"
 ```
 
+!!!Note:
+
+	If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
+
+```
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
+
+
 **Code Example:**
 
 **Connect to a SnappyData cluster using JDBC on default client port**
