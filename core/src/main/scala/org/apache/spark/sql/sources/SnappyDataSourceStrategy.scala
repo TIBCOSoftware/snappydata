@@ -18,6 +18,8 @@ package org.apache.spark.sql.sources
 
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.Constant
+
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToScala
@@ -350,7 +352,7 @@ object SnappyDataSourceStrategy extends Strategy with Logging {
 
     // A map from original Catalyst expressions to corresponding translated data source filters.
     // If a predicate is not in this map, it means it cannot be pushed down.
-    val isGFERelation = relation.getClass.getSimpleName.equals("GemFireRelation")
+    val isGFERelation = relation.getClass.getSimpleName.equals(Constant.GEMFIRE_RELATION)
     val translatedMap: Map[Expression, Filter] = predicates.flatMap { p =>
       translateFilter(p, isGFERelation).map(f => p -> f)
     }.toMap

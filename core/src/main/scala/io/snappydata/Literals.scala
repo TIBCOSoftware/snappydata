@@ -163,6 +163,8 @@ object Constant {
     // and the Spark impls create the seed in constructor rather than in generated code
     "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
     "LIKE" -> Array(1), "RLIKE" -> Array(1)))
+
+  val GEMFIRE_RELATION = "GemFireRelation"
 }
 
 /**
