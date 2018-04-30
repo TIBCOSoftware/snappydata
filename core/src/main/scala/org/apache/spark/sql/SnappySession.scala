@@ -97,16 +97,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   override private[sql] lazy val sharedState: SnappySharedState = {
     val sharedState = SnappyContext.sharedState(sparkContext)
     // replay global sql commands
-    val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
-    logInfo(s"deploycmnds size = ${deployCmds.size}")
-    deployCmds.foreach(s => logDebug(s"s"))
-    deployCmds.foreach(d => {
-      val cmdFields = d.split('|')
-      val coordinate = cmdFields(0)
-      val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
-      val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-      DeployCommand(coordinate, null, repos, cache, false).run(self)
-    })
+    SnappyContext.getClusterMode(sparkContext) match {
+      case _: SnappyEmbeddedMode => {
+        val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
+        logInfo(s"deploycmnds size = ${deployCmds.size}")
+        deployCmds.foreach(s => logDebug(s"s"))
+        deployCmds.foreach(d => {
+          val cmdFields = d.split('|')
+          val coordinate = cmdFields(0)
+          val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+          val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+          DeployCommand(coordinate, null, repos, cache, false).run(self)
+        })
+       }
+      case _ => // Nothing
+    }
     sharedState
   }
 

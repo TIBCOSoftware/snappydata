@@ -55,21 +55,18 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   override def addURIs(alias: String, jars: Array[String], deploySql: String): Unit = {
-    Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
-    val logger = Misc.getCacheLogWriter
-    logger.info(s"KN: addURIs key = $alias and val = $deploySql")
-    getAllGlobalCmnds.foreach(x => logger.info(s"KN: retrieved value = $x"))
+    if (alias != null) {
+      Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
+    }
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     val loader = lead.urlclassloader
     jars.foreach(j => {
       val url = new File(j).toURI.toURL
-      println(s"KN: addURIs add url called with url: $url" )
       loader.addURL(url)
     })
   }
 
   override def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
-    println(s"KN: addURIsToExecutorClassLoader called with jars: $jars" )
     if (ExecutorInitiator.snappyExecBackend != null) {
       val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
       snappyexecutor.updateMainLoader(jars)
@@ -78,11 +75,6 @@ object ToolsCallbackImpl extends ToolsCallback {
 
   override def getAllGlobalCmnds(): Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
-    val values = Misc.getMemStore.getGlobalCmdRgn.values()
-    val logger = Misc.getCacheLogWriter
-    logger.info(s"KN: getAllGlobalCmnds size of the region = ${Misc.getMemStore.getGlobalCmdRgn.size()}")
-    logger.info(s"KN: getAllGlobalCmnds values = ${values}", new Exception)
-    values.toArray.foreach(x => logger.info(s"KN: getAllGlobalCmnds Inside foreach - $x"))
     Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
   }
 
