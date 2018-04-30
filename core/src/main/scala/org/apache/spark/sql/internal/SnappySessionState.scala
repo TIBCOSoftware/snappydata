@@ -46,7 +46,7 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FileSourceStrategy, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
@@ -947,7 +947,15 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
     Seq(SnappyStrategies,
       StoreStrategy, StreamQueryStrategy) ++
         storeOptimizedRules ++
-        super.strategies
+        extraStrategies ++ (
+        FileSourceStrategy ::
+            SnappyDataSourceStrategy ::
+            DDLStrategy ::
+            SpecialLimits ::
+            Aggregation ::
+            JoinSelection ::
+            InMemoryScans ::
+            BasicOperators :: Nil)
 }
 
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
