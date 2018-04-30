@@ -21,7 +21,6 @@ The name of the disk store, as specified in the [CREATE DISKSTORE](../../referen
 
 ```no-highlight
 snappy> call sys.diskstore_fsync('GFXD-DD-DISKSTORE');
-Statement executed.
 ```
 
 

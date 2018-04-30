@@ -5,7 +5,7 @@ Lists all disk stores with the most recent data for which other members are wait
 ## Syntax
 
 ```no-highlight
-snappy list-missing-disk-stores 
+./bin/snappy list-missing-disk-stores 
    <-locators=<addresses>> [-bind-address=<address>] [-<prop-name>=<prop-value>]*
 ```
 
@@ -23,7 +23,7 @@ The table describes options for snappy list-missing-disk-stores.
 ## Example
 
 ```no-highlight
-snappy list-missing-disk-stores -locators=localhost:10334
+./bin/snappy list-missing-disk-stores -locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334
 The distributed system did not have any missing disk stores
 ```

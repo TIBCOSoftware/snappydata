@@ -26,6 +26,7 @@ pages:
     - 'Install On-Premise': 'install/install_on_premise.md'
     - 'Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
     - 'Building from Source': 'install/building_from_source.md'
+    - 'Upgrade Instructions (1.0.0 to 1.0.1)': 'install/upgrade.md'
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
@@ -73,6 +74,8 @@ pages:
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
+    - 'List of Properties':    
+        - 'Property Details': 'configuring_cluster/property_details.md'
     - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
@@ -117,10 +120,10 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-#- 'Using Connectors': 'connectors/connectors.md'
-#- 'Using Connectors': 
-    #    - How to Use the Snappy JDBC Streaming Connector': 'connectors/jdbc_streaming_connector.md'
-    #    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'   
+#- 'Using Connectors': 'connectors/connector.md'
+#- 'Using Connectors':
+#    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
+#    - 'Getting Started with SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Using SnappyData CloudBuilder': 'aqp_aws.md'
 - 'Using SnappyData CloudBuilder': 
     - 'Key Components': 'isight/key_components.md'
@@ -160,23 +163,28 @@ pages:
         - 'CREATE Statements': 'reference/sql_reference/create-statements.md'
         - 'CREATE Statements':
             - 'CREATE DISKSTORE': 'reference/sql_reference/create-diskstore.md'
+            - 'CREATE EXTERNAL TABLE': 'reference/sql_reference/create-external-table.md'
             - 'CREATE FUNCTION': 'reference/sql_reference/create-function.md'
             - 'CREATE INDEX': 'reference/sql_reference/create-index.md'
             - 'CREATE SCHEMA': 'reference/sql_reference/create-schema.md'
-            - 'CREATE TABLE': 'reference/sql_reference/create-table.md'
-            - 'CREATE SAMPLE TABLE': 'reference/sql_reference/create-sample-table.md'
-            - 'CREATE EXTERNAL TABLE': 'reference/sql_reference/create-external-table.md'
-            - 'CREATE TEMPORARY TABLE': 'reference/sql_reference/create-temporary-table.md'
+            - 'CREATE SYNONYM': 'reference/sql_reference/create-synonym.md'
             - 'CREATE STREAM TABLE': 'reference/sql_reference/create-stream-table.md'
+            - 'CREATE SAMPLE TABLE': 'reference/sql_reference/create-sample-table.md'
+            - 'CREATE TABLE': 'reference/sql_reference/create-table.md'
+            - 'CREATE TEMPORARY TABLE': 'reference/sql_reference/create-temporary-table.md'
+            - 'CREATE VIEW': 'reference/sql_reference/create-view.md'
         - 'DELETE': 'reference/sql_reference/delete.md'
         - 'DROP Statements': 'reference/sql_reference/drop-statements.md'
         - 'DROP Statements':
             - 'DROP DISKSTORE': 'reference/sql_reference/drop-diskstore.md'
             - 'DROP FUNCTION': 'reference/sql_reference/drop-function.md'
             - 'DROP INDEX': 'reference/sql_reference/drop-index.md'
-            - 'DROP TABLE': 'reference/sql_reference/drop-table.md'
+            - 'DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE': 'reference/sql_reference/drop-table.md'
+            - 'DROP SCHEMA': 'reference/sql_reference/drop-schema.md'
+            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
+        - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
@@ -184,7 +192,6 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
-        - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
