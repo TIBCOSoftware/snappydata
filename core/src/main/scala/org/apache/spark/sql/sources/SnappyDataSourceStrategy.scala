@@ -288,17 +288,28 @@ object SnappyDataSourceStrategy extends Strategy with Logging {
       case expressions.LessThanOrEqual(x: ParamLiteral, a: Attribute) if prmLitPushDown =>
         Some(sources.GreaterThanOrEqual(a.name, x))
 
-      case expressions.InSet(a: Attribute, set) =>
+      case expressions.InSet(a: Attribute, set) if !set.exists(_.isInstanceOf[ParamLiteral]) ||
+          prmLitPushDown =>
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
-        Some(sources.In(a.name, set.toArray.map(toScala)))
-
+        // Some(sources.In(a.name, set.toArray.map(toScala)))
+        Some(sources.In(a.name, set.toArray.map(_ match {
+          case pl: ParamLiteral => pl
+          case x => toScala(x)
+        })))
       // Because we only convert In to InSet in Optimizer when there are more than certain
       // items. So it is possible we still get an In expression here that needs to be pushed
       // down.
-      case expressions.In(a: Attribute, list) if !list.exists(!_.isInstanceOf[Literal]) =>
-        val hSet = list.map(e => e.eval(EmptyRow))
+      case expressions.In(a: Attribute, list) if (list.forall(_.isInstanceOf[Literal])
+      || ( prmLitPushDown && list.exists(_.isInstanceOf[ParamLiteral]))) =>
+        val hSet = list.map(e => e match {
+          case x: ParamLiteral => x
+          case _ => e.eval(EmptyRow)
+        })
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
-        Some(sources.In(a.name, hSet.toArray.map(toScala)))
+        Some(sources.In(a.name, hSet.toArray.map(_ match {
+          case pl: ParamLiteral => pl
+          case x => toScala(x)
+        })))
 
       case expressions.IsNull(a: Attribute) =>
         Some(sources.IsNull(a.name))
@@ -320,7 +331,6 @@ object SnappyDataSourceStrategy extends Strategy with Logging {
 
       case expressions.StartsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringStartsWith(a.name, v.toString))
-
 
       case expressions.EndsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
         Some(sources.StringEndsWith(a.name, v.toString))
