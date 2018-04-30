@@ -90,10 +90,8 @@ object SnappySessionFactory {
         val cl = SnappyUtils.getSnappyContextURLClassLoader(parent)
         val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
         val loader = lead.urlclassloader
-        log.info(s"KN: SSF cl = $cl")
         if (loader != null) {
           loader.getURLs.foreach(u => {
-            log.info(s"KN: SSF Adding the url $u to loader $cl")
             cl.addURL(u)
           })
         }
