@@ -13,7 +13,7 @@ IN ALL BOOLEAN
 ```
 
 **ALL**   
-Specifies boolean value: **true** or **1** to log stack trace information for all SnappyData members, or **false** or **0** to log information only for the local SnappyData member.
+Specifies boolean value: **true** to log stack trace information for all SnappyData members, or **false** to log information only for the local SnappyData member.
 
 ## Example
 
@@ -21,9 +21,5 @@ This command writes thread stack information only for the local SnappyData membe
 
 ```no-highlight
 snappy> call sys.dump_stacks('false');
-Statement executed.
 ```
-
-<!-- See [print-stacks](../command_line_utilities/store-print-stacks.md) for an example of the partial thread stack output.-->
-
 
