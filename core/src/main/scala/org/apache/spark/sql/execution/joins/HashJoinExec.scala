@@ -336,17 +336,15 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
   override def doProduce(ctx: CodegenContext): String = {
     startProducing()
-    val initMap = ctx.freshName("initMap")
-    ctx.addMutableState("boolean", initMap, _ => "$initMap = false;", true, false)
+    val initMap = ctx.addMutableState("boolean", "initMap", v => s"$v = false;", true, false)
 
     val createMap = ctx.freshName("createMap")
     val createMapClass = ctx.freshName("CreateMap")
     val getOrCreateMap = ctx.freshName("getOrCreateMap")
 
     // generate variable name for hash map for use here and in consume
-    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    ctx.addMutableState(hashSetClassName, hashMapTerm, _ => "", true, false)
+    hashMapTerm = ctx.addMutableState(hashSetClassName, "hashMap", _ => "" , forceInline = true)
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
@@ -380,18 +378,16 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val partitionClass = classOf[Partition].getName
     val buildPartsVar = ctx.addReferenceObj("buildParts", buildParts.toArray,
       s"$partitionClass[][]")
-    val allIterators = ctx.freshName("allIterators")
     val indexVar = ctx.freshName("index")
-    val contextName = ctx.freshName("context")
     val taskContextClass = classOf[TaskContext].getName
-    ctx.addMutableState(taskContextClass, contextName, _ =>
-      s"this.$contextName = $taskContextClass.get();", true, false)
+    val contextName = ctx.addMutableState(taskContextClass, "context", v =>
+      s"this.$v = $taskContextClass.get();", forceInline = true) // , true, false)
 
 
     // switch inputs to use the buildPlan RDD iterators
-    ctx.addMutableState("scala.collection.Iterator[]", allIterators, _ =>
+    val allIterators = ctx.addMutableState("scala.collection.Iterator[]", "allIterators", v =>
       s"""
-         |$allIterators = inputs;
+         |$v = inputs;
          |inputs = new scala.collection.Iterator[$buildRDDs.length];
          |$taskContextClass $contextName = $taskContextClass.get();
          |for (int $indexVar = 0; $indexVar < $buildRDDs.length; $indexVar++) {
@@ -405,12 +401,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
          |      parts[partitionIndex], $contextName);
          |  }
          |}
-      """.stripMargin, true, false)
+      """.stripMargin, forceInline = true)
 
     val buildProduce = buildCodeGen.produce(ctx, mapAccessor)
     // switch inputs back to streamPlan iterators
     val numIterators = ctx.freshName("numIterators")
-    ctx.addMutableState("int", numIterators, _ => s"inputs = $allIterators;", true, false)
+    ctx.addMutableState("int", numIterators, _ => s"inputs = $allIterators;") // , true, false)
 
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
@@ -459,10 +455,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     // clear the parent by reflection if plan is serialized by operators like Sort
     TypeUtilities.parentSetter.invoke(buildPlan, null)
-    // TODO_2.3_MERGE
-    // The child could change `copyResult` to true, but we had already
-    // consumed all the rows, so `copyResult` should be reset to `false`.
-    // ctx.copyResult = false
     val buildTime = metricTerm(ctx, "buildTime")
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     // initialization of min/max for integral keys

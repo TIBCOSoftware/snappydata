@@ -573,15 +573,6 @@ object Utils {
     driver
   }
 
-  // TODO_2.3_MERGE
-//  /**
-//   * Wrap a DataFrame action to track all Spark jobs in the body so that
-//   * we can connect them with an execution.
-//   */
-//  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
-//    df.withNewExecutionId(body)
-//  }
-
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
 
     private[this] val map = m
