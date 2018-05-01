@@ -383,21 +383,7 @@ class SnappyAggregationStrategy(planner: SnappySparkPlanner)
       }
 
       val aggregateOperator =
-        // TODO_2.3_MERGE
-        if (false /* aggregateExpressions.map(_.aggregateFunction).exists(!_.supportsPartial) */) {
-          if (functionsWithDistinct.nonEmpty) {
-            sys.error("Distinct columns cannot exist in Aggregate " +
-                "operator containing aggregate functions which don't " +
-                "support partial aggregation.")
-          } else {
-            sys.error("TODO_2.3_MERGE")
-//            aggregate.AggUtils.planAggregateWithoutPartial(
-//              groupingExpressions,
-//              aggregateExpressions,
-//              resultExpressions,
-//              planLater(child))
-          }
-        } else if (functionsWithDistinct.isEmpty) {
+        if (functionsWithDistinct.isEmpty) {
           planAggregateWithoutDistinct(
             groupingExpressions,
             aggregateExpressions,

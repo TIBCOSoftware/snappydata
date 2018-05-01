@@ -346,7 +346,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // evaluate the key and value expressions
       ${evaluateVariables(keyVars)}${evaluateVariables(valueVars)}
       // skip if any key is null
-      if (${keyVars.map(_.isNull).mkString(" ||\n")}) continue;
+      if (${keyVars.map(_.isNull).mkString(" ||\n")}) return;
       // generate hash code
       ${generateHashCode(hashVar, keyVars, keyExpressions, register = false)}
       // lookup or insert the grouping key in map
@@ -354,6 +354,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // existing register variables instead of having to fill up
       // a lookup key fields and compare against those (thus saving
       //   on memory writes/reads vs just register reads)
+      int $maskTerm = $hashMapTerm.mask();
+      $className[] $dataTerm = ($className[])$hashMapTerm.data();
       int $posVar = ${hashVar(0)} & $maskTerm;
       int $deltaVar = 1;
       while (true) {
@@ -694,7 +696,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // initialize or reuse the array at batch level for join
         // null key will be placed at the last index of dictionary
         // and dictionary index will be initialized to that by ColumnTableScan
-        ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, _ => "")
+        ctx.addMutableState(classOf[StringDictionary].getName,
+          dictionary.value, _ => "", forceInline = true)
         ctx.addNewFunction(dictionaryArrayInit,
           s"""
              |public $className[] $dictionaryArrayInit() {

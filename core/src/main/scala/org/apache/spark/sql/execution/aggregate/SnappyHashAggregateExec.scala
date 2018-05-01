@@ -270,21 +270,21 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
-      input: Seq[ExprCode]): String = {
-    if (bufVars eq null) ""
-    else {
-      bufVarUpdates = bufVars.indices.map { i =>
-        val ev = bufVars(i)
-        s"""
-           |// update the member result variables from local variables
-           |this.${ev.isNull} = ${ev.isNull};
-           |this.${ev.value} = ${ev.value};
-        """.stripMargin
-      }.mkString("\n").trim
-      bufVarUpdates
-    }
-  }
+//  override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
+//      input: Seq[ExprCode]): String = {
+//    if (bufVars eq null) ""
+//    else {
+//      bufVarUpdates = bufVars.indices.map { i =>
+//        val ev = bufVars(i)
+//        s"""
+//           |// update the member result variables from local variables
+//           |this.${ev.isNull} = ${ev.isNull};
+//           |this.${ev.value} = ${ev.value};
+//        """.stripMargin
+//      }.mkString("\n").trim
+//      bufVarUpdates
+//    }
+//  }
 
   // The variables used as aggregation buffer
   @transient private var bufVars: Seq[ExprCode] = _
@@ -292,18 +292,16 @@ case class SnappyHashAggregateExec(
   @transient private var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, _ => s"$initAgg = false;")
+    val initAgg = ctx.addMutableState("boolean", "initAgg", forceInline = true)
 
     // generate variables for aggregation buffer
     val functions = aggregateExpressions.map(_.aggregateFunction
         .asInstanceOf[DeclarativeAggregate])
     val initExpr = functions.flatMap(f => f.initialValues)
     bufVars = initExpr.map { e =>
-      val isNull = ctx.freshName("bufIsNull")
-      val value = ctx.freshName("bufValue")
-      ctx.addMutableState("boolean", isNull, _ => "")
-      ctx.addMutableState(ctx.javaType(e.dataType), value, _ => "")
+      val isNull = ctx.addMutableState(ctx.JAVA_BOOLEAN, "bufIsNull")
+      val value = ctx.addMutableState(ctx.javaType(e.dataType), "bufValue")
+
       // The initial expression should not access any column
       val ev = e.genCode(ctx)
       val initVars =

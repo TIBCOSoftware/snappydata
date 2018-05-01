@@ -501,7 +501,14 @@ class SnappyParser(session: SnappySession) extends SnappyDDLParser(session) {
       aggregations: Seq[NamedExpression],
       groupByExprs: Seq[Expression],
       groupingSets: Seq[Seq[Expression]]): GroupingSets = {
-    // TODO_2.3_MERGE
+    // TODO_2.3_MERGE, clarify with Shirish
+    val keyMap = groupByExprs.zipWithIndex.toMap
+    val numExpressions = keyMap.size
+    val mask = (1 << numExpressions) - 1
+//    val bitmasks: Seq[Seq[Expression]] = groupingSets.map(set => set.foldLeft(mask)((bitmap, col) => {
+//          require(keyMap.contains(col), s"$col doesn't show up in the GROUP BY list")
+//          bitmap & ~(1 << (numExpressions - 1 - keyMap(col)))
+//     }))
     GroupingSets(groupingSets, groupByExprs, child, aggregations)
   }
 
