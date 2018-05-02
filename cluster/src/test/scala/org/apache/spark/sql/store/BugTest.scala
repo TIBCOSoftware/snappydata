@@ -20,11 +20,9 @@ import java.util.Properties
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
+import io.snappydata.util.TestUtils
 import io.snappydata.{Constant, PlanTest, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
-
-
-
 import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 
 import org.apache.spark.SparkConf
@@ -32,6 +30,9 @@ import org.apache.spark.SparkConf
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   private val sysUser = "gemfire10"
 
+  override def beforeAll(): Unit = {
+   this.stopAll()
+  }
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
       getClass.getResource("/auth.ldif").getPath)
@@ -56,6 +57,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
+    this.stopAll()
     val ldapServer = LdapTestServer.getInstance()
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
@@ -63,13 +65,18 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.clearProperty(k)
+      System.clearProperty("gemfirexd." + k)
+      System.clearProperty(Constant.STORE_PROPERTY_PREFIX  + k)
     }
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
-    super.afterAll()
+  //  System.setProperty(Attribute.AUTH_PROVIDER, "NONE")
+  //  System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.AUTH_PROVIDER, "NONE")
+    System.setProperty("gemfirexd.authentication.required", "false")
+
   }
 
-  test("Bug SNAP-2255 connection pool exhaustion ") {
+  test("Bug SNAP-2255 connection pool exhaustion") {
     val user1 = "gemfire1"
     val user2 = "gemfire2"
 

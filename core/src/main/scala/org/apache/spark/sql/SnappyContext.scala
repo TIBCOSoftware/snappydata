@@ -27,6 +27,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.util.ServiceUtils
@@ -1150,7 +1151,17 @@ object SnappyContext extends Logging {
       // clear current hive catalog connection
       Hive.closeCurrent()
       if (ExternalStoreUtils.isLocalMode(sc)) {
-        ServiceUtils.invokeStopFabricServer(sc)
+        val user = sc.getConf.get(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, "")
+        val props = if (!user.isEmpty) {
+          val prps = new java.util.Properties();
+          val pass = sc.getConf.get(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, "")
+          prps.put(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, user)
+          prps.put(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, pass)
+          prps
+        } else {
+          null
+        }
+        ServiceUtils.invokeStopFabricServer(sc, props)
       }
 
       // clear static objects on the driver
