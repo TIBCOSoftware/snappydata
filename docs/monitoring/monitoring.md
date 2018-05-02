@@ -120,6 +120,10 @@ The Dashboard offers the following capabilities and benefits:
 
 * **Total Size**</br>
    Displays the collective physical memory and disk overflow space used by the data table to store its data/records.
+<!--
+ **BUCKETS**</br>
+   Displays the total number of buckets in the data table.
+-->
 
 ![Dashboard](../Images/monitoring_external_table.png)
 <a id="external-table"></a>
