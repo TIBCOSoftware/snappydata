@@ -13,6 +13,9 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**Boolean value to determine if the query is a pointLookUp type query*/
   public static Long isPointLookUP;
 
+  /**Boolean value to determine if the query is a mixedType query*/
+  public static Long isMixedQuery;
+
   /**Boolean value to determine if the query is a bulk delete type query*/
   public static Long isBulkDelete;
 
@@ -117,6 +120,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static boolean getIsPointLookUP() {
     Long key = isPointLookUP;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsMixedQuery() {
+    Long key = isMixedQuery;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

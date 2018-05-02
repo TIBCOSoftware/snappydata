@@ -57,6 +57,7 @@ public class SnappyCDCTest extends SnappyTest {
       Boolean isScanQuery = SnappyCDCPrms.getIsScanQuery();
       Boolean isBulkDelete = SnappyCDCPrms.getIsBulkDelete();
       Boolean isPointLookUp = SnappyCDCPrms.getIsPointLookUP();
+      Boolean isMixedQuery = SnappyCDCPrms.getIsMixedQuery();
       String sqlServerInst = SnappyCDCPrms.getSqlServerInstance();
       String dataBaseName = SnappyCDCPrms.getDataBaseName();
       int intStartRange = SnappyCDCPrms.getInitStartRange();
@@ -64,7 +65,7 @@ public class SnappyCDCTest extends SnappyTest {
           +endpoints.get(0)+ " " + isScanQuery+ " " +isBulkDelete+ " " +isPointLookUp + " " + intStartRange + " "
           + sqlServerInst + " " + dataBaseName);
       cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath,endpoints.get(0), isScanQuery,isBulkDelete,
-          isPointLookUp,intStartRange,sqlServerInst);
+          isPointLookUp,isMixedQuery,intStartRange,sqlServerInst);
 
     } catch (Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runConcurrencyTestJob() method");

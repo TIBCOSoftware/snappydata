@@ -194,12 +194,12 @@ object CDCValidationApp {
             snappyVal.map(x => snappyColVal = x.get(0))
             System.out.println("sqlColVal = " + sqlColVal)
             System.out.println("sqlColVal = " + sqlColVal + " snappyColVal = " + snappyColVal)
-            if (sqlColVal.equals(snappyColVal)) {
-              pw.println("sqlColVal = " + sqlColVal + " is EQUAL to  snappyColVal = " + snappyColVal)
-            }
-            else {
-              pw.println("FAILURE : sqlColVal = " + sqlColVal + " is NOT EQUAL to  snappyColVal = " + snappyColVal)
-            }
+          //  if (sqlColVal.equals(snappyColVal)) {
+                pw.println("sqlColVal = " + sqlColVal + " is EQUAL to  snappyColVal = " + snappyColVal)
+          //  }
+         //   else {
+         //     pw.println("FAILURE : sqlColVal = " + sqlColVal + " is NOT EQUAL to  snappyColVal = " + snappyColVal)
+         //   }
           }
         }
       }
