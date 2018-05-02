@@ -46,6 +46,10 @@ SELECT FirstName, LastName, BirthDate FROM Employees WHERE BirthDate BETWEEN Cas
 
 SELECT CONCAT(FirstName, ' ', LastName) FROM Employees;
 
+SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate asc;
+
+SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate;
+
 SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal FROM Orders WHERE Freight >= 500;
 
 SELECT SUM(Quantity) AS TotalUnits FROM Order_Details WHERE ProductID=3;
