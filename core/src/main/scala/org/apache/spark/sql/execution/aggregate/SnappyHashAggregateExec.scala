@@ -497,22 +497,22 @@ case class SnappyHashAggregateExec(
   }
 
   private def doProduceWithKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, _ => s"$initAgg = false;")
+    val initAgg = ctx.addMutableState("boolean",
+      "initAgg", v => s"$v = false;", forceInline = true)
 
     // Create a name for iterator from HashMap
-    val iterTerm = ctx.freshName("mapIter")
     val iter = ctx.freshName("mapIter")
     val iterObj = ctx.freshName("iterObj")
     val iterClass = "java.util.Iterator"
-    ctx.addMutableState(iterClass, iterTerm, _ => "")
+    val iterTerm = ctx.addMutableState(iterClass,
+      "mapIter", _ => "", forceInline = true)
 
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
-    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    ctx.addMutableState(hashSetClassName, hashMapTerm, _ => "")
+    hashMapTerm = ctx.addMutableState(hashSetClassName,
+      "hashMap", _ => "", forceInline = true)
 
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")

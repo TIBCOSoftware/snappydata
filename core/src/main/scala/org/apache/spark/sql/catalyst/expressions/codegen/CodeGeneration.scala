@@ -158,12 +158,11 @@ object CodeGeneration extends Logging {
       case _: DecimalType =>
         s"$stmt.setBigDecimal(${col + 1}, ${ev.value}.toJavaBigDecimal());"
       case a: ArrayType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val arr = ctx.freshName("arr")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          _ => s"$encoderVar = new $encoderClass();" , forceInline = true)
+        val encoderVar = ctx.addMutableState(encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();" , forceInline = true)
         s"""
            |final ArrayData $arr = ${ev.value};
            |if ($arr instanceof $serArrayClass) {
@@ -180,12 +179,11 @@ object CodeGeneration extends Logging {
            |}
         """.stripMargin
       case m: MapType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val map = ctx.freshName("mapValue")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          _ => s"$encoderVar = new $encoderClass();", forceInline = true)
+        val encoderVar = ctx.addMutableState(encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();", forceInline = true)
         s"""
            |final MapData $map = ${ev.value};
            |if ($map instanceof $serMapClass) {
@@ -199,12 +197,11 @@ object CodeGeneration extends Logging {
            |}
         """.stripMargin
       case s: StructType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val struct = ctx.freshName("structValue")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          _ => s"$encoderVar = new $encoderClass();", forceInline = true)
+        val encoderVar = ctx.addMutableState(encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();", forceInline = true)
         s"""
            |final InternalRow $struct = ${ev.value};
            |if ($struct instanceof $serRowClass) {
