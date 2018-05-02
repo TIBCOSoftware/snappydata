@@ -34,14 +34,15 @@ public class CDCPerfSparkJob {
 
   public static Connection getConnection() {
     Connection conn = null;
-    String url = "jdbc:snappydata://" + hostPort;
-    String driver = "io.snappydata.jdbc.ClientDriver";
-    try {
-      Class.forName(driver);
-      conn = DriverManager.getConnection(url);
-    } catch (Exception ex) {
-      System.out.println("Caught exception in getConnection() method" + ex.getMessage());
-    }
+     String url = "jdbc:snappydata://" + hostPort;
+      String driver = "io.snappydata.jdbc.ClientDriver";
+      try {
+        Class.forName(driver);
+        conn = DriverManager.getConnection(url);
+      } catch (Exception ex) {
+        System.out.println("Caught exception in getConnection() method" + ex.getMessage());
+      }
+
     return conn;
   }
 
@@ -112,6 +113,49 @@ public class CDCPerfSparkJob {
     }
     return plTimeListHashMap;
   }
+
+  public static void runMixedQuery(ArrayList<String> qlist,String serverInstance) {
+    Connection sqlConn = null;
+    Connection snappyConn ;
+    ResultSet rs = null;
+    try {
+      sqlConn = getSqlServerConnection(serverInstance);
+      System.out.println("The hostPort is " + hostPort);
+      for (int i = 0; i < qlist.size(); i++) {
+        String query = qlist.get(i);
+        System.out.println("The query is " + query);
+        if(query.contains("SELECT")){
+          System.out.println("Query contains select");
+          snappyConn = getConnection();
+          Thread.sleep(5000); // sleep for 5 secs between each select
+          rs = snappyConn.createStatement().executeQuery(query);
+          snappyConn.close();
+        }
+        else
+        {
+          System.out.println("Query contains insert/delete");
+          sqlConn.createStatement().execute(query);
+        }
+        if(rs.next()){
+          System.out.println("FAILURE : The result set should have been empty");
+        }
+        else
+        {
+          System.out.println("SUCCESS : The result set is empty as expected");
+        }
+      }
+    } catch (Exception ex) {
+      System.out.println("Exception inside runMixedQuery() method" + ex.getMessage());
+    } finally {
+      try {
+        sqlConn.close();
+
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
 
   public static void runBulkDelete(ArrayList<String> qlist, int startRange, String serverInstance) {
     Connection conn = null;
@@ -209,7 +253,7 @@ public class CDCPerfSparkJob {
   }
 
 
-  public void runConcurrencyTestJob(int threadCnt, String filePath, String hostP, Boolean isScanQuery, Boolean isBulkDelete, Boolean isPointLookUp, int startRange, String sqlServerInst) {
+  public void runConcurrencyTestJob(int threadCnt, String filePath, String hostP, Boolean isScanQuery, Boolean isBulkDelete, Boolean isPointLookUp, Boolean isMixedQuery, int startRange, String sqlServerInst) {
     System.out.println("Inside the actual task");
     THREAD_COUNT = threadCnt;
     queryList = getQueryArr(filePath);
@@ -227,6 +271,9 @@ public class CDCPerfSparkJob {
             System.out.println("Thread " + iterationIndex + " started");
             try {
               startBarierr.await();
+              if(isMixedQuery) {
+                runMixedQuery(queryList,sqlServerInst);
+              }
               if (isBulkDelete) {
                 runBulkDelete(queryList, startRange, sqlServerInst);
               }
@@ -281,11 +328,12 @@ public class CDCPerfSparkJob {
     String hostName = args[3];
     Boolean isbulkDelete = Boolean.parseBoolean(args[4]);
     Boolean ispointLookup = Boolean.parseBoolean(args[5]);
-    int startRange = Integer.parseInt(args[6]);
-    String sqlServerInst = args[7];
+    Boolean isMixedQuery = Boolean.parseBoolean(args[6]);
+    int startRange = Integer.parseInt(args[7]);
+    String sqlServerInst = args[8];
 
     CDCPerfSparkJob cdcPerfSparkJob = new CDCPerfSparkJob();
-    cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath, hostName, isScanQuery, isbulkDelete, ispointLookup, startRange, sqlServerInst);
+    cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath, hostName, isScanQuery, isbulkDelete, ispointLookup, isMixedQuery, startRange, sqlServerInst);
   }
 }
 
