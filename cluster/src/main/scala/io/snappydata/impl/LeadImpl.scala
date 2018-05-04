@@ -206,6 +206,10 @@ class LeadImpl extends ServerImpl with Lead
         case _ =>
       }
 
+      val parent = Thread.currentThread().getContextClassLoader
+      urlclassloader = new ExtendibleURLClassLoader(parent)
+      Thread.currentThread().setContextClassLoader(urlclassloader)
+
       val sc = new SparkContext(conf)
 
       // This will use GfxdDistributionAdvisor#distributeProfileUpdate
@@ -236,9 +240,6 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       // Add a URL classloader to the main thread so that new URIs can be added
-      val parent = Thread.currentThread().getContextClassLoader
-      urlclassloader = new ExtendibleURLClassLoader(parent)
-      Thread.currentThread().setContextClassLoader(urlclassloader)
 
       // wait for a while until servers get registered
       val endWait = System.currentTimeMillis() + 120000
@@ -655,6 +656,8 @@ class LeadImpl extends ServerImpl with Lead
         case tTransportException: TTransportException =>
           logWarning("Error while starting zeppelin interpreter.Actual exception : " +
               tTransportException.getMessage)
+        case t: Throwable => logWarning("Error starting zeppelin interpreter.Actual exception : " +
+            t.getMessage, t)
       }
       // Add memory listener for zeppelin will need it for zeppelin
       // val listener = new LeadNodeMemoryListener();
