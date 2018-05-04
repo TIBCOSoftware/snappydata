@@ -17,6 +17,7 @@
 package io.snappydata
 
 import java.io.File
+import java.net.URLClassLoader
 import java.util.UUID
 
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -82,5 +83,33 @@ object ToolsCallbackImpl extends ToolsCallback {
     GemFireXDUtils.waitForNodeInitialization()
     val packageRegion = Misc.getMemStore.getGlobalCmdRgn()
     packageRegion.destroy(alias)
+  }
+
+  override def setLeadClassLoader(): Unit = {
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          Thread.currentThread().setContextClassLoader(loader)
+        }
+      }
+      case _ =>
+    }
+  }
+
+  override def getLeadClassLoader(): URLClassLoader = {
+    var ret: URLClassLoader = null
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          ret = loader
+        }
+      }
+      case _ =>
+    }
+    ret
   }
 }

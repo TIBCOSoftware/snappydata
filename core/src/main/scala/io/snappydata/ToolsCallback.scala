@@ -17,10 +17,9 @@
 package io.snappydata
 
 import java.io.File
+import java.net.URLClassLoader
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 trait ToolsCallback {
 
@@ -59,4 +58,8 @@ trait ToolsCallback {
   def getAllGlobalCmnds(): Array[String]
 
   def removePackage(alias: String): Unit
+
+  def setLeadClassLoader(): Unit
+
+  def getLeadClassLoader(): URLClassLoader
 }
