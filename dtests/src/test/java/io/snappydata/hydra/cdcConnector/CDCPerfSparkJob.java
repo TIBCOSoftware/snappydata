@@ -117,7 +117,6 @@ public class CDCPerfSparkJob {
   public static void runMixedQuery(ArrayList<String> qlist,String serverInstance) {
     Connection sqlConn = null;
     Connection snappyConn ;
-    ResultSet rs = null;
     try {
       sqlConn = getSqlServerConnection(serverInstance);
       System.out.println("The hostPort is " + hostPort);
@@ -127,8 +126,15 @@ public class CDCPerfSparkJob {
         if(query.contains("SELECT")){
           System.out.println("Query contains select");
           snappyConn = getConnection();
-          Thread.sleep(5000); // sleep for 5 secs between each select
-          rs = snappyConn.createStatement().executeQuery(query);
+         // Thread.sleep(5000); // sleep for 5 secs between each select
+          ResultSet rs = snappyConn.createStatement().executeQuery(query);
+          if(rs.next()){
+            System.out.println("FAILURE : The result set should have been empty");
+          }
+          else
+          {
+            System.out.println("SUCCESS : The result set is empty as expected");
+          }
           snappyConn.close();
         }
         else
@@ -136,19 +142,13 @@ public class CDCPerfSparkJob {
           System.out.println("Query contains insert/delete");
           sqlConn.createStatement().execute(query);
         }
-        if(rs.next()){
-          System.out.println("FAILURE : The result set should have been empty");
-        }
-        else
-        {
-          System.out.println("SUCCESS : The result set is empty as expected");
-        }
       }
     } catch (Exception ex) {
       System.out.println("Exception inside runMixedQuery() method" + ex.getMessage());
     } finally {
       try {
-        sqlConn.close();
+        if(!sqlConn.isClosed())
+          sqlConn.close();
 
       } catch (SQLException e) {
         e.printStackTrace();
