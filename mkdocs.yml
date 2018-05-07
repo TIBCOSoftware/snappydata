@@ -73,8 +73,8 @@ pages:
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
-    - 'List of Properties':    
-        - 'Property Details': 'configuring_cluster/property_details.md'
+#    - 'List of Properties':    (to be updated later)
+#        - 'Property Details': 'configuring_cluster/property_details.md'
     - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
@@ -211,7 +211,7 @@ pages:
         - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
 #        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md' (to be confirmed later 1.0.2)
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
-        - 'unblock-missing-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
+        - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'

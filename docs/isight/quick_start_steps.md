@@ -284,7 +284,7 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 
 2. [Bind the interpreter by setting the default interpreter](../howto/use_apache_zeppelin_with_snappydata.md#additional-settings). Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
 
-3. Download a data set you want to use and create tables as mentioned below
+3. Download a data set you want to use and create tables as mentioned below.
 
 ### Examples of Queries and Results
 This section provides you with examples you can use in a paragraph.
