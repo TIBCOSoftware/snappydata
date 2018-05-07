@@ -22,7 +22,7 @@ Specifies boolean value: **true** or **1** to enable the trace flag, or **false*
 This command traces all JAR installation, update, and removal operations in the SnappyData distributed system:
 
 ```no-highlight
-call sys.set_trace_flag ('TraceJars', 'true');
+snappy> call sys.set_trace_flag ('TraceJars', 'true');
 ```
 
 
