@@ -73,6 +73,7 @@ object SecurityUtils {
           // Since it is a pooled connection, the  underlying embed connection
           // should not be closed, instead pooled connection should be closed,
           // so that connection pool is not exhausted
+          pooledConnection.commit()
           pooledConnection.close()
         }
       }
