@@ -104,10 +104,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         deployCmds.foreach(s => logDebug(s"s"))
         deployCmds.foreach(d => {
           val cmdFields = d.split('|')
-          val coordinate = cmdFields(0)
-          val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
-          val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-          DeployCommand(coordinate, null, repos, cache, false).run(self)
+          if (cmdFields.length > 1) {
+            val coordinate = cmdFields(0)
+            val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+            val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+            DeployCommand(coordinate, null, repos, cache).run(self)
+          }
+          else {
+            // Jars we have
+            DeployJarCommand(null, cmdFields(0)).run(self)
+          }
         })
        }
       case _ => // Nothing
