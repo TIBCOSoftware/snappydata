@@ -2458,6 +2458,8 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
+  override def wholeStageSplitConsumeFuncByOperator = false
+
   private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
@@ -2513,6 +2515,7 @@ class SnappyConf(@transient val session: SnappySession)
       case Some(b) => session.wholeStageEnabled = b.toString.toBoolean
       case None => session.wholeStageEnabled = SQLConf.WHOLESTAGE_CODEGEN_ENABLED.defaultValue.get
     }
+
     case _ => // ignore others
   }
 
