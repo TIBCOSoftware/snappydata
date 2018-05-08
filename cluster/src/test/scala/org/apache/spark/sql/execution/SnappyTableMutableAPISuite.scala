@@ -388,6 +388,25 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(100, 100, 100)))
   }
 
+  test("PutInto Cache test for intermediate joins") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val df1 = snc.createDataFrame(rdd)
+    val df2 = snc.range(100, 110).selectExpr("id", "id", "id")
+    snc.sql("set spark.sql.defaultSizeInBytes=1000")
+    snc.createTable("col_table", "column", df1.schema,
+      Map("key_columns" -> "col2", "buckets" -> "4"))
+
+    df1.write.insertInto("col_table") // insert initial data
+    snc.sharedState.cacheManager.clearCache()
+    df2.write.putInto("col_table") // update & insert subsequent data
+    assert(snc.sharedState.cacheManager.isEmpty)
+
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 16)
+    assert(resultdf.contains(Row(100, 100, 100)))
+  }
+
 
 
   test("PutInto with different column names") {

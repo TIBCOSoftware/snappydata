@@ -1092,7 +1092,7 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | cache | uncache | desc))
+        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | cache | uncache | desc | deployPackages))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
