@@ -17,11 +17,12 @@
 package org.apache.spark.scheduler.cluster
 
 import com.pivotal.gemfirexd.internal.engine.Misc
-
-import org.apache.spark.SparkContext
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, SparkListenerExecutorAdded, SparkListenerExecutorRemoved, TaskSchedulerImpl}
-import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext, SnappySession}
+import org.apache.spark.storage.BlockManagerId
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
     override val rpcEnv: RpcEnv)
@@ -82,6 +83,10 @@ class BlockManagerIdListener(sc: SparkContext)
       case Some(b) => b._executorCores = executorCores
         b._numProcessors = numProcessors
     }
+    SnappyContext.getBlockId(msg.executorId) match {
+      case Some(b) => if (b._blockId != null) handleNewExecutorJoin(b._blockId)
+      case None =>
+    }
   }
 
   override def onBlockManagerAdded(
@@ -106,4 +111,12 @@ class BlockManagerIdListener(sc: SparkContext)
 
   override def onApplicationEnd(msg: SparkListenerApplicationEnd): Unit =
     SnappyContext.clearBlockIds()
+
+  private def handleNewExecutorJoin(bid: BlockManagerId) = {
+    val uris = SnappySession.getJarURIs()
+    Utils.mapExecutors[Unit](sc, () => {
+      ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+      Iterator.empty
+    }, 30, Seq(bid))
+  }
 }
