@@ -697,7 +697,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // null key will be placed at the last index of dictionary
         // and dictionary index will be initialized to that by ColumnTableScan
         ctx.addMutableState(classOf[StringDictionary].getName,
-          dictionary.value, _ => "", forceInline = true)
+          dictionary.value, _ => "", forceInline = true, useFreshName = false)
         ctx.addNewFunction(dictionaryArrayInit,
           s"""
              |public $className[] $dictionaryArrayInit() {

@@ -111,6 +111,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
+  private[sql] var stateBuilder : SnappySessionStateBuilder = _
   /**
    * State isolated across sessions, including SQL configurations, temporary tables, registered
    * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
@@ -121,7 +122,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case Some(aqpClass) =>
         try {
           val ctor = aqpClass.getConstructors.head
-          ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
+          stateBuilder = ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder]
+          // ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
+          snappyContextFunctions = stateBuilder.contextFunctions
+          stateBuilder.build()
       } catch {
         case NonFatal(e) =>
           throw new IllegalArgumentException(s"Error while instantiating '$aqpClass':", e)
@@ -131,7 +135,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         try {
           val clazz = Utils.classForName(className)
           val ctor = clazz.getConstructors.head
-          ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
+          stateBuilder = ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder]
+          //ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder].build()
+          stateBuilder.build()
         } catch {
           case NonFatal(e) =>
             throw new IllegalArgumentException(s"Error while instantiating '$className':", e)
@@ -149,7 +155,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   def snappyParser: SnappyParser = sessionState.sqlParser.asInstanceOf[SnappySqlParser].sqlParser
 
-  def snappyContextFunctions: SnappyContextFunctions = new SnappyContextFunctions
+  var snappyContextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
   SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
