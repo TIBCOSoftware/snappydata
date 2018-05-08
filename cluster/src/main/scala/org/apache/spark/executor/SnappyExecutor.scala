@@ -31,7 +31,7 @@ import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
-import scala.collection.mutable
+import scala.collection.mutable.Map
 
 class SnappyExecutor(
     executorId: String,
@@ -116,8 +116,8 @@ class SnappyExecutor(
     }
   }
 
-  override def updateDependencies(newFiles: mutable.HashMap[String, Long],
-                                  newJars: mutable.HashMap[String, Long]): Unit = {
+    override def updateDependencies(newFiles: Map[String, Long],
+                                  newJars: Map[String, Long]): Unit = {
     super.updateDependencies(newFiles, newJars)
     synchronized {
       val taskDeserializationProps = Executor.taskDeserializationProps.get()
