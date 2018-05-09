@@ -17,16 +17,15 @@
 package io.snappydata
 
 import java.io.File
+import java.net.URLClassLoader
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 trait ToolsCallback {
 
   def updateUI(sc: SparkContext): Unit
 
-  def removeAddedJar(sc: SparkContext, jarName : String): Unit
+  def removeAddedJar(sc: SparkContext, jarName: String): Unit
 
   /**
    * Callback to spark Utils to fetch file
@@ -45,10 +44,25 @@ trait ToolsCallback {
   def doFetchFile(
       url: String,
       targetDir: File,
-      filename: String) : File
+      filename: String): File
 
   def setSessionDependencies(sparkContext: SparkContext,
-      appName : String,
+      appName: String,
       classLoader: ClassLoader): Unit = {
   }
+
+  def addURIs(alias: String, jars: Array[String],
+    deploySql: String, isPackage: Boolean = true): Unit
+
+  def addURIsToExecutorClassLoader(jars: Array[String]): Unit
+
+  def getAllGlobalCmnds(): Array[String]
+
+  def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]]
+
+  def removePackage(alias: String): Unit
+
+  def setLeadClassLoader(): Unit
+
+  def getLeadClassLoader(): URLClassLoader
 }
