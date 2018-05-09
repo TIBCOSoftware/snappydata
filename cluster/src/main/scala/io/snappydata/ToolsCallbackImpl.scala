@@ -55,7 +55,8 @@ object ToolsCallbackImpl extends ToolsCallback {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
   }
 
-  override def addURIs(alias: String, jars: Array[String], deploySql: String): Unit = {
+  override def addURIs(alias: String, jars: Array[String],
+    deploySql: String, isPackage: Boolean = true): Unit = {
     if (alias != null) {
       Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
     }
@@ -65,6 +66,10 @@ object ToolsCallbackImpl extends ToolsCallback {
       val url = new File(j).toURI.toURL
       loader.addURL(url)
     })
+    // Close and reopen interpreter
+    if (alias != null) {
+      lead.closeAndReopenInterpreterServer();
+    }
   }
 
   override def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
@@ -77,6 +82,11 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def getAllGlobalCmnds(): Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
+  }
+
+  override def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]] = {
+    GemFireXDUtils.waitForNodeInitialization()
+    Misc.getMemStore.getGlobalCmdRgn.entrySet()
   }
 
   override def removePackage(alias: String): Unit = {
