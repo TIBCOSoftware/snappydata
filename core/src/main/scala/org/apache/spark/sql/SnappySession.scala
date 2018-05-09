@@ -27,7 +27,6 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
@@ -38,7 +37,6 @@ import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -49,7 +47,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
-import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -97,7 +95,30 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    */
   @transient
   override private[sql] lazy val sharedState: SnappySharedState = {
-    SnappyContext.sharedState(sparkContext)
+    val sharedState = SnappyContext.sharedState(sparkContext)
+    // replay global sql commands
+    SnappyContext.getClusterMode(sparkContext) match {
+      case _: SnappyEmbeddedMode => {
+        val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
+        logInfo(s"deploycmnds size = ${deployCmds.size}")
+        deployCmds.foreach(s => logDebug(s"s"))
+        deployCmds.foreach(d => {
+          val cmdFields = d.split('|')
+          if (cmdFields.length > 1) {
+            val coordinate = cmdFields(0)
+            val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+            val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+            DeployCommand(coordinate, null, repos, cache).run(self)
+          }
+          else {
+            // Jars we have
+            DeployJarCommand(null, cmdFields(0)).run(self)
+          }
+        })
+       }
+      case _ => // Nothing
+    }
+    sharedState
   }
 
   /**
@@ -2250,6 +2271,19 @@ object SnappySession extends Logging {
       val c: Calendar = null
       d.getDate(c)
     case _ => dvd.getObject
+  }
+
+  var jarServerFiles: Array[String] = Array.empty
+
+  def getJarURIs(): Array[String] = {
+    SnappySession.synchronized({
+      jarServerFiles
+    })
+  }
+  def addJarURIs(uris: Array[String]): Unit = {
+    SnappySession.synchronized({
+      jarServerFiles = jarServerFiles ++ uris
+    })
   }
 }
 

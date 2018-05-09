@@ -95,7 +95,7 @@ The COLOCATE_WITH clause specifies a partitioned table with which the new partit
 `PARTITION_BY`</br>
 Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. </br>
 If not specified, for row table (mentioned further for case of column table) it is a 'replicated row table'.</br> 
-Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
+Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
 <a id="buckets"></a>
 `BUCKETS` </br>

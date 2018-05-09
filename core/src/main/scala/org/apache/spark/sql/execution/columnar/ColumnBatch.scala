@@ -85,7 +85,6 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   def close() {
     // if (!hasNextValue) return
-    try {
       try {
         if (rs ne null) {
           // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
@@ -111,15 +110,7 @@ abstract class ResultSetIterator[A](conn: Connection,
         case NonFatal(e) => logWarning("Exception closing statement", e)
       }
       hasNextValue = false
-    } finally {
-      try {
-        if (closeConnectionOnResultsClose && conn != null) {
-          conn.close()
-        }
-      } catch {
-        case _: Throwable =>
-      }
-    }
+
   }
 }
 
@@ -323,7 +314,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 final class ColumnBatchIteratorOnRS(conn: Connection,
     projection: Array[Int], stmt: Statement, rs: ResultSet,
     context: TaskContext, partitionId: Int)
-    extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context, false) {
+    extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
   private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (projection.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
