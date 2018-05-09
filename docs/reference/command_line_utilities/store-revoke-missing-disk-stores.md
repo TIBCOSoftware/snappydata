@@ -19,9 +19,9 @@ The table describes options and arguments for snappy revoke-missing-disk-store. 
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
 |-prop-name|Any other SnappyData distributed system property.|
 
-## Description
+<!--## Description
 
-<!--
+
 [Handling Missing Disk Stores](../../concepts/tables/persisting_table_data/handling_missing_disk_stores.md#handling_missing_disk_stores) provides more details about listing and revoking missing disk stores.
 -->
 

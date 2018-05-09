@@ -1,7 +1,7 @@
 <a id="howto-python"></a>
 # How to use Python to Create Tables and Run Queries
 
-Developers can write programs in Python to use SnappyData features.
+Developers can write programs in Python to use SnappyData features. 
 
 **First create a SnappySession**:
 
@@ -97,3 +97,7 @@ snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
 The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py)
+
+**Related Topics:**
+
+- [Running Python Applications](../programming_guide/snappydata_jobs.md#running-python-applications)

@@ -210,3 +210,7 @@ $ ./bin/snappy-job.sh listcontexts  \
 $ ./bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead localhost:8090
 ```
+
+**Related Topic**:
+
+- [How to use Python to Create Tables and Run Queries](../howto/use_python_to_create_tables_and_run_queries.md)
