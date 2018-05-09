@@ -57,8 +57,8 @@ allprojects {
     maven { url 'https://dl.bintray.com/big-data/maven' }
     maven { url "https://repo.spring.io/libs-release" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    maven { url 'http://repository.snappydata.io/repository/internal' }
-    maven { url 'http://repository.snappydata.io/repository/snapshots' }
+    // maven { url 'http://repository.snappydata.io/repository/internal' }
+    // maven { url 'http://repository.snappydata.io/repository/snapshots' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
   }
 
@@ -166,6 +166,12 @@ def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
 def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists() 
 def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()
+
+if (isEnterpriseProduct) {
+  if (!hasJdbcConnectorProject || !hasGemFireConnectorProject) {
+    throw new GradleException('Project repository snappy-connectors not found.')
+  }
+}
 
 def getProcessId() {
   String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()

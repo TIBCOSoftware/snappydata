@@ -26,7 +26,7 @@ pages:
     - 'Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
     - 'Building from Source': 'install/building_from_source.md'
     - 'Upgrade Instructions (1.0.0 to 1.0.1)': 'install/upgrade.md'
-#- 'Migration Guide': 'migration/migration.md' 
+#- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
 #    - 'Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.0': 'migration/upgrade_sqlfire_standalone.md'    

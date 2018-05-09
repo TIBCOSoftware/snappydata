@@ -27,10 +27,9 @@ import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.SnappyEmbeddedTableStatsProviderService
+import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
-
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
@@ -124,5 +123,18 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
           .AQP_VERSION_PROPERTIES)
     }
     GemFireVersion.getClusterType
+  }
+
+  override def setLeadClassLoader(): Unit = {
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          Thread.currentThread().setContextClassLoader(loader)
+        }
+      }
+      case _ =>
+    }
   }
 }
