@@ -57,11 +57,14 @@ trait ToolsCallback {
   def setDebugMode(v: Boolean): Unit
   def getDebugMode: Boolean
 
-  def addURIs(alias: String, jars: Array[String], deploySql: String): Unit
+  def addURIs(alias: String, jars: Array[String],
+    deploySql: String, isPackage: Boolean = true): Unit
 
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
 
   def getAllGlobalCmnds(): Array[String]
+
+  def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]]
 
   def removePackage(alias: String): Unit
 
