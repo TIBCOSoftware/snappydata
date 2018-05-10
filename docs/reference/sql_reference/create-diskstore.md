@@ -75,7 +75,8 @@ In each entry:
 
     If you do not specify the *disk-space-in-mb* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings. If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
 
-You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
+You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The default diskstore does not have an option for multiple directories. It is recommended that you use separate data area from the server working directory.
+Create a separate diskstore and specify multiple directories. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
 
 ## Example
 
