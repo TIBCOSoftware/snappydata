@@ -188,7 +188,7 @@ snappy>CREATE TABLE CUSTOMER (
     C_PHONE       VARCHAR(15) NOT NULL,
     C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
     C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-    C_COMMENT     VARCHAR(117) NOT NULL))
+    C_COMMENT     VARCHAR(117) NOT NULL)
     USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENCE 'SYNCHRONOUS');
 ```
 
@@ -242,11 +242,11 @@ For information on using the Apache Spark API, refer to [Using the Spark DataFra
 
 ```no-highlight
 snappy>CREATE TABLE COL_TABLE (
-	PRSN_EVNT_ID BIGINT NOT NULL,
-    VER bigint NOT NULL,
-    CLIENT_ID BIGINT NOT NULL,
-    SRC_TYP_ID BIGINT NOT NULL) USING COLUMN OPTIONS(PARTITION_BY 'PRSN_EVNT_ID,CLIENT_ID', BUCKETS '64',
-    KEY_COLUMNS 'PRSN_EVNT_ID,CLIENT_ID');
+      PRSN_EVNT_ID BIGINT NOT NULL,
+      VER bigint NOT NULL,
+      CLIENT_ID BIGINT NOT NULL,
+      SRC_TYP_ID BIGINT NOT NULL)
+      USING COLUMN OPTIONS(PARTITION_BY 'PRSN_EVNT_ID,CLIENT_ID', BUCKETS '64', KEY_COLUMNS 'PRSN_EVNT_ID, CLIENT_ID');
 ```
 
 ### Example: Create Table with Eviction Settings
@@ -271,14 +271,14 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 	For example, to evict using LRU entry count and overflow evicted rows to a disk store:
 	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT ) USING row
-		OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
+ 	USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
 	
     To create a table that simply removes evicted data from memory without persisting the evicted data, use the `DESTROY` eviction action. For example:
     Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
     	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row 
-	    OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
+	USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)
