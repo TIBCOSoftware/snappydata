@@ -80,6 +80,15 @@ class SortedColumnTests extends ColumnTablesTestBase {
     // Thread.sleep(50000000)
   }
 
+  test("basic delete 1") {
+    val snc = this.snc.snappySession
+    val colTableName = "colDeltaTable"
+    val numElements = 551
+    SortedColumnTests.testBasicInsert2WithDelete1(snc, colTableName, numBuckets = 1, numElements)
+    SortedColumnTests.testBasicInsert2WithDelete1(snc, colTableName, numBuckets = 2, numElements)
+    // Thread.sleep(50000000)
+  }
+
   test("multiple insert") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
@@ -308,6 +317,103 @@ object SortedColumnTests extends Logging {
 
       // ColumnTableScan.setDebugMode(true)
       verifySelect(numElements.toInt)
+    } catch {
+      case t: Throwable =>
+        logError(t.getMessage, t)
+        throw t
+    }
+
+    session.sql(s"drop table $colTableName")
+    session.conf.unset(Property.ColumnBatchSize.name)
+    session.conf.unset(Property.ColumnMaxDeltaRows.name)
+    session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
+    session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
+  }
+
+  def testBasicInsert2WithDelete1(session: SnappySession, colTableName: String, numBuckets: Int,
+      numElements: Long): Unit = {
+    session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
+    session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
+    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+
+    val testName = "testBasicInsert2"
+    val dataFile_1 = s"${testName}_1"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_1)(i => {
+      i % 10 < 6
+    })
+    val dataFile_2 = s"${testName}_2"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_2)(i => {
+      i % 10 > 5 && i % 10 < 10
+    })
+
+    def doPutInto(fileName: String, dataFrameReader: DataFrameReader): Unit = {
+      try {
+        ColumnTableScan.setCaseOfSortedInsertValue(true)
+        // scalastyle:off
+        println(s"$testName start loading $fileName")
+        // scalastyle:on
+        dataFrameReader.load(fixedFilePath(fileName)).write.putInto(colTableName)
+        // scalastyle:off
+        println(s"$testName loaded $fileName")
+        // scalastyle:on
+      } finally {
+        ColumnTableScan.setCaseOfSortedInsertValue(false)
+      }
+    }
+
+    def verifySelect(expectedCount: Int): Unit = {
+      val select_query = s"select * from $colTableName"
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      var i = 0
+      res.foreach(r => {
+        val col0 = r.getInt(0)
+        val col1 = r.getInt(1)
+        val col2 = r.getInt(2)
+        // scalastyle:off
+        println(s"verifySelect-$expectedCount-$i [$col0 $col1 $col2]")
+        // scalastyle:on
+        i += 1
+      })
+      assert(i == expectedCount, s"$i : $expectedCount")
+    }
+
+    def doDelete(whereClause: String = ""): Unit = {
+      val delete_query = s"delete from $colTableName where id in $whereClause"
+      // scalastyle:off
+      println(s"$testName started DELETE $delete_query")
+      // scalastyle:on
+      val upd = session.sql(delete_query)
+      // scalastyle:off
+      println(s"$testName done DELETE $delete_query")
+      // scalastyle:on
+    }
+
+    try {
+      createColumnTable2(session, colTableName, numBuckets, numElements)
+
+      // scalastyle:off
+      println(s"$testName start loading $dataFile_1")
+      // scalastyle:on
+      val dataFrameReader: DataFrameReader = session.read
+      dataFrameReader.load(fixedFilePath(dataFile_1)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_1")
+      // scalastyle:on
+
+      var numDeletes = 1
+      var deleteWhereCaluse: StringBuilder = new StringBuilder("(3")
+      (10 to numElements.toInt).foreach(i => {
+        if (i % 10 == 3) {
+          deleteWhereCaluse.append(s", $i")
+          numDeletes += 1
+        }
+      })
+      deleteWhereCaluse.append(s")")
+      doDelete(deleteWhereCaluse.result())
+      // ColumnTableScan.setDebugMode(true)
+      doPutInto(dataFile_2, dataFrameReader)
+      verifySelect(numElements.toInt - numDeletes)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)

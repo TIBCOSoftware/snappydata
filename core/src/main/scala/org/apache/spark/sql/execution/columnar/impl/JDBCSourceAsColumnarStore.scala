@@ -45,7 +45,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
-import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteChange, ColumnDeleteDelta}
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
@@ -362,6 +362,18 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
       } else new ColumnFormatValue(statsBuffer, compressionCodecId, isCompressed = false)
       keyValues.put(key, value)
+
+      // update the delete indexes for delta inserts
+      if (deltaUpdate) {
+        val deleteKey = new ColumnFormatKey(batchId, partitionId,
+          ColumnFormatEntry.DELETE_MASK_COL_INDEX)
+        if (region.get(deleteKey) != null) {
+          // TODO VB: Should always buffers(0) go?
+          val deleteChange = new ColumnDeleteChange(batch.buffers(0), compressionCodecId,
+            isCompressed = false)
+          keyValues.put(deleteKey, deleteChange)
+        }
+      }
 
       // do a putAll of the key-value map with create=true
       val startPut = CachePerfStats.getStatTime
