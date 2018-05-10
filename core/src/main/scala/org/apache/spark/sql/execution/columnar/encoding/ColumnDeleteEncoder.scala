@@ -25,9 +25,11 @@ import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
 import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, FetchRequest}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue
-import org.apache.spark.sql.types.{DataType, IntegerType}
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.types.{DataType, IntegerType, StructField, StructType}
 import org.apache.spark.unsafe.Platform
 
 /**
@@ -179,6 +181,72 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
     createFinalBuffer(position, numBaseRows)
   }
 
+  def adjust(newValue: ByteBuffer, existingValue: ByteBuffer, field: StructField): ByteBuffer = {
+    deletedPositions = new Array[Int](16)
+    var position = 0
+    var cursor1: Long = 0
+    var numBaseRows: Int = 0
+    var numPositions: Int = 0
+    def initializeDecoder(columnBytes: AnyRef, cursor: Long): Long = {
+      // read the number of base rows
+      numBaseRows = ColumnEncoding.readInt(columnBytes, cursor)
+      // read the positions
+      numPositions = ColumnEncoding.readInt(columnBytes, cursor + 4)
+      cursor1 = cursor + 8
+      val positionEndCursor = cursor1 + (numPositions << 2)
+      // round to nearest word to get data start position
+      ((positionEndCursor + 7) >> 3) << 3
+    }
+
+    val (decoder1, columnBytes1) = ColumnEncoding.getColumnDecoderAndBuffer(
+      newValue, field, initializeDecoder)
+    val endOffset1 = cursor1 + newValue.remaining()
+    var position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
+
+    val allocator2 = ColumnEncoding.getAllocator(existingValue)
+    val columnBytes2 = allocator2.baseObject(existingValue)
+    var cursor2 = allocator2.baseOffset(existingValue) + existingValue.position()
+    val endOffset2 = cursor2 + existingValue.remaining()
+    // skip 12 byte header (4 byte + number of base rows + number of elements)
+    cursor2 += 12
+    var position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
+
+    var insertCount = 0
+    def insertAdjustedPosition(pos: Int) = if (pos < 0) pos - insertCount else pos + insertCount
+
+    // Adjust delete index with delta inserts
+    var doProcess = cursor1 < endOffset1 && cursor2 < endOffset2
+    while (doProcess) {
+      val adjustedPosition2 = insertAdjustedPosition(position2)
+      if (ColumnTableScan.getPositive(position1) > ColumnTableScan.getPositive(adjustedPosition2)) {
+        // consume position2 and move
+        position = writeInt(position, adjustedPosition2)
+        cursor2 += 4
+        if (cursor2 < endOffset2) {
+          position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
+        } else {
+          doProcess = false
+        }
+      } else {
+        // consume position1 and move
+        cursor1 += 4
+        if (cursor1 < endOffset1) {
+          position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
+          if (position1 < 0) insertCount += 1
+        } else {
+          doProcess = false
+        }
+      }
+    }
+    // consume any remaining of deletes
+    while (cursor2 < endOffset2) {
+      position = writeInt(position, ColumnEncoding.readInt(columnBytes2, cursor2))
+      cursor2 += 4
+    }
+
+    createFinalBuffer(position, numBaseRows)
+  }
+
   override def finish(cursor: Long): ByteBuffer = {
     throw new UnsupportedOperationException(
       "ColumnDeleteEncoder.finish(cursor) not expected to be called")
@@ -256,4 +324,75 @@ final class ColumnDeleteDelta extends ColumnFormatValue with Delta {
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_DELETE_DELTA
 
   override protected def className: String = "ColumnDeleteDelta"
+}
+
+/** Simple delta that merges the deleted positions */
+final class ColumnDeleteChange extends ColumnFormatValue with Delta {
+
+  val columnIndex = 0 // TODO VB: Adjust columnIndex
+
+  def this(buffer: ByteBuffer, codecId: Int, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean = true) = {
+    this()
+    setBuffer(buffer, codecId, isCompressed, changeOwnerToStorage)
+  }
+
+  override protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
+      changeOwnerToStorage: Boolean): ColumnDeleteChange = synchronized {
+    new ColumnDeleteChange(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
+  }
+
+  override def apply(putEvent: EntryEvent[_, _]): AnyRef = {
+    val event = putEvent.asInstanceOf[EntryEventImpl]
+    apply(event.getRegion, event.getKey, event.getOldValueAsOffHeapDeserializedOrRaw,
+      event.getTransactionId == null)
+  }
+
+  override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
+      prepareForOffHeap: Boolean): AnyRef = synchronized {
+    if (oldValue eq null) {
+      null
+    } else {
+      // Adjust existing delete list with incoming delta buffer
+      val encoder = new ColumnDeleteEncoder
+      val oldColumnValue = oldValue.asInstanceOf[ColumnFormatValue].getValueRetain(
+        FetchRequest.DECOMPRESS)
+      val existingBuffer = oldColumnValue.getBuffer
+      val newValue = getValueRetain(FetchRequest.DECOMPRESS)
+      val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
+          .fetchHiveMetaData(false) match {
+        case null => throw new IllegalStateException(
+          s"Table for region ${region.getFullPath} not found in hive metadata")
+        case m => m.schema.asInstanceOf[StructType]
+      }
+      try {
+        new ColumnFormatValue(encoder.adjust(newValue.getBuffer, existingBuffer,
+          schema(columnIndex)), oldColumnValue.compressionCodecId, isCompressed = false)
+      } finally {
+        oldColumnValue.release()
+        // Do Not release newValue that is delta buffer
+        // release own buffer too and delta should be unusable now
+        release()
+      }
+    }
+  }
+
+  /** first delta update for a column will be put as is into the region */
+  override def allowCreate(): Boolean = true
+
+  override def merge(region: Region[_, _], toMerge: Delta): Delta =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteChange.merge")
+
+  override def cloneDelta(): Delta =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteChange.cloneDelta")
+
+  override def setVersionTag(versionTag: VersionTag[_ <: VersionSource[_]]): Unit =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteChange.setVersionTag")
+
+  override def getVersionTag: VersionTag[_ <: VersionSource[_]] =
+    throw new UnsupportedOperationException("Unexpected call to ColumnDeleteChange.getVersionTag")
+
+  override def getGfxdID: Byte = GfxdSerializable.COLUMN_DELETE_CHANGE
+
+  override protected def className: String = "ColumnDeleteChange"
 }
