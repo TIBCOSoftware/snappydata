@@ -56,7 +56,7 @@ These columns are used to identify a row uniquely. PUT INTO is available by SQL 
 **For SQL**
 
 ``` no-highlight
--- Insert into another table using a select statement for column tables with key columns
+// Insert into another table using a select statement for column tables with key columns
 PUT INTO NEWEMPLOYEES SELECT * from EMPLOYEES;
 
 PUT INTO NEWEMPLOYEES SELECT * from EMPLOYEES WHERE C_NAME='User 1'

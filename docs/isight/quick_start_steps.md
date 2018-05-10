@@ -14,9 +14,9 @@ To set up the SnappyData Cloud Cluster follow these easy steps that can get you 
 
 	* [Creating your own Notebook](#Creatingnotebook)
 
-3. [Loading Data from AWS S3](#dataAWSS3)
+* [Loading Data from AWS S3](#dataAWSS3)
 
-4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
+* [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
 This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the SnappyData CloudBuilder and using a script.
 
