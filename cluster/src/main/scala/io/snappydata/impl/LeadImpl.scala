@@ -16,8 +16,9 @@
  */
 package io.snappydata.impl
 
-import java.lang.reflect.{Constructor, Method}
+import java.lang.reflect.{Constructor, InvocationTargetException, Method}
 import java.net.{URL, URLClassLoader}
+import java.security.Permission
 import java.sql.SQLException
 import java.util.Properties
 
@@ -664,6 +665,30 @@ class LeadImpl extends ServerImpl with Lead
       // Misc.getGemFireCache.getResourceManager.
       //   addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
 
+    }
+  }
+
+  class NoExitSecurityManager extends SecurityManager {
+    override def checkExit(status: Int): Unit = {
+      throw new SecurityException("exit not allowed")
+    }
+
+    override def checkPermission(perm: Permission): Unit = {
+      // Allow other activities by default
+    }
+  }
+
+  def closeAndReopenInterpreterServer(): Unit = {
+    if (remoteInterpreterServerClass != null) {
+      val origSecurityManager = System.getSecurityManager
+      System.setSecurityManager(new NoExitSecurityManager)
+      try {
+        remoteInterpreterServerClass.getSuperclass.
+            getDeclaredMethod("shutdown").invoke(remoteInterpreterServerObj)
+      } finally {
+        System.setSecurityManager(origSecurityManager)
+      }
+      checkAndStartZeppelinInterpreter(true, bootProperties)
     }
   }
 
