@@ -343,8 +343,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val getOrCreateMap = ctx.freshName("getOrCreateMap")
 
     // generate variable name for hash map for use here and in consume
+    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    hashMapTerm = ctx.addMutableState(hashSetClassName, "hashMap", _ => "" , forceInline = true)
+    ctx.addMutableState(hashSetClassName, hashMapTerm, _ => "" , true, false)
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
@@ -405,8 +406,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     val buildProduce = buildCodeGen.produce(ctx, mapAccessor)
     // switch inputs back to streamPlan iterators
-    val numIterators = ctx.freshName("numIterators")
-    ctx.addMutableState("int", numIterators, _ => s"inputs = $allIterators;") // , true, false)
+    ctx.addMutableState("int", "numIterators", _ => s"inputs = $allIterators;", forceInline = true)
 
     val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
