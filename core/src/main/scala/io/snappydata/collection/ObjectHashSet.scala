@@ -290,7 +290,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   private def freeMemoryOnTaskCompletion(): Unit = {
     taskContext.addTaskCompletionListener { _ =>
-        consumer.freeMemory(totalSize)
+      consumer.freeMemory(totalSize)
     }
   }
 
