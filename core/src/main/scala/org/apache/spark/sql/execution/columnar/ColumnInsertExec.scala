@@ -298,7 +298,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     numInsertions = ctx.freshName("numInsertions")
     ctx.addMutableState("long", numInsertions, _ => s"$numInsertions = -1L;", true, false)
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
-    batchSizeTerm = ctx.freshName("currentBatchSizeYogs")
+    batchSizeTerm = ctx.freshName("currentBatchSize")
     txIdConnArray = ctx.freshName("txIdConnArray")
     txId = ctx.freshName("txId")
     conn = ctx.freshName("conn")
@@ -477,7 +477,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
                                       exprs: IndexedSeq[Seq[ExprCode]]): (String, String) = {
 
 
-//    val statsRowTerm = ctx.freshName("statsRow")
     val statsSchema = StructType.fromAttributes(statsAttrs)
     val statsSchemaVar = ctx.addReferenceObj("statsSchema", statsSchema)
     val statsRowTerm = ctx.addMutableState("SpecificInternalRow", "statsRow", v =>

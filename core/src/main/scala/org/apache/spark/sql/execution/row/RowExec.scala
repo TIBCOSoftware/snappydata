@@ -90,15 +90,17 @@ trait RowExec extends TableExec {
   protected def doProduce(ctx: CodegenContext, pstmtStr: String,
       produceAddonCode: () => String = () => ""): String = {
     val (initCode, commitCode, endCode) = connectionCodes(ctx)
-    result = ctx.addMutableState("long", "result", v => s"$v = -1L;", forceInline = true)
-    stmt = ctx.addMutableState("java.sql.PreparedStatement", "statement",
-      _ => "", forceInline = true)
-    rowCount = ctx.addMutableState("long", "rowCount", _ => "", forceInline = true)
+    result = ctx.freshName("result")
+    stmt = ctx.freshName("statement")
+    rowCount = ctx.freshName("rowCount")
     val numOpRowsMetric = if (onExecutor) null
     else metricTerm(ctx, s"num${opType}Rows")
     val numOperations = ctx.freshName("numOperations")
     val childProduce = doChildProduce(ctx)
     val mutateTable = ctx.freshName("mutateTable")
+    ctx.addMutableState("long", result, v => s"$v = -1L;", true, false)
+    ctx.addMutableState("java.sql.PreparedStatement", stmt, _ => "", true, false)
+    ctx.addMutableState("long", rowCount, _ => "", true, false)
 
     ctx.addNewFunction(mutateTable,
       s"""

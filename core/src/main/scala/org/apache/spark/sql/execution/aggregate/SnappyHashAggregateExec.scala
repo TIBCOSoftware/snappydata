@@ -270,21 +270,21 @@ case class SnappyHashAggregateExec(
     }
   }
 
-//  override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
-//      input: Seq[ExprCode]): String = {
-//    if (bufVars eq null) ""
-//    else {
-//      bufVarUpdates = bufVars.indices.map { i =>
-//        val ev = bufVars(i)
-//        s"""
-//           |// update the member result variables from local variables
-//           |this.${ev.isNull} = ${ev.isNull};
-//           |this.${ev.value} = ${ev.value};
-//        """.stripMargin
-//      }.mkString("\n").trim
-//      bufVarUpdates
-//    }
-//  }
+  override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
+      input: Seq[ExprCode]): String = {
+    if (bufVars eq null) ""
+    else {
+      bufVarUpdates = bufVars.indices.map { i =>
+        val ev = bufVars(i)
+        s"""
+           |// update the member result variables from local variables
+           |this.${ev.isNull} = ${ev.isNull};
+           |this.${ev.value} = ${ev.value};
+        """.stripMargin
+      }.mkString("\n").trim
+      bufVarUpdates
+    }
+  }
 
   // The variables used as aggregation buffer
   @transient private var bufVars: Seq[ExprCode] = _
@@ -299,8 +299,10 @@ case class SnappyHashAggregateExec(
         .asInstanceOf[DeclarativeAggregate])
     val initExpr = functions.flatMap(f => f.initialValues)
     bufVars = initExpr.map { e =>
-      val isNull = ctx.addMutableState(ctx.JAVA_BOOLEAN, "bufIsNull")
-      val value = ctx.addMutableState(ctx.javaType(e.dataType), "bufValue")
+      val isNull = ctx.freshName("bufIsNull")
+      val value = ctx.freshName("bufValue")
+      ctx.addMutableState("boolean", isNull, _ => "", true, false)
+      ctx.addMutableState(ctx.javaType(e.dataType), value, _ => "", true, false)
 
       // The initial expression should not access any column
       val ev = e.genCode(ctx)
