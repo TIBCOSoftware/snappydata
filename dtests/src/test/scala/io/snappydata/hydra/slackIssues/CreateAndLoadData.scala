@@ -100,10 +100,14 @@ class CreateAndLoadData extends SnappySQLJob {
           " COMP_FLAG3 SMALLINT," +
           " VALID_STATUS SMALLINT," +
           " GMT_TIME TIMESTAMP," +
-          " VERSION TIMESTAMP) using column options" +
-          " (partition_by 'mt_poi_id'," +
-          " buckets '383'," +
-          " PERSISTENCE 'ASYNCHRONOUS')")
+          " VERSION TIMESTAMP) " +
+          " using column options (" +
+          " PARTITION_BY 'mt_poi_id'," +
+          // " DISKSTORE 'mblStore1'," +
+          " BUCKETS '383'," +
+          // " COLOCATE_WITH 'OE_DIM_POI'," +
+          " REDUNDANCY '0'," +
+          " PERSISTENCE 'ASYNC', OVERFLOW 'true')")
 
       import snappySession.implicits._
 
