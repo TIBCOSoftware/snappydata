@@ -2,13 +2,13 @@
 
 Prints information about the SnappyData product version.
 
-# Syntax
+## Syntax
 
 ```no-highlight
 ./bin/snappy version
 ```
 
-# Example
+## Example
 
 ```no-highlight
 ./bin/snappy version

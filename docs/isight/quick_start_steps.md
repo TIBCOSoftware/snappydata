@@ -14,9 +14,9 @@ To set up the SnappyData Cloud Cluster follow these easy steps that can get you 
 
 	* [Creating your own Notebook](#Creatingnotebook)
 
-3. [Loading Data from AWS S3](#dataAWSS3)
+* [Loading Data from AWS S3](#dataAWSS3)
 
-4. [Monitoring SnappyData Cloud Cluster](#Monitoring)
+* [Monitoring SnappyData Cloud Cluster](#Monitoring)
 
 This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the SnappyData CloudBuilder and using a script.
 
@@ -284,7 +284,7 @@ When you launch Apache Zeppelin in the browser, the welcome page displays the ex
 
 2. [Bind the interpreter by setting the default interpreter](../howto/use_apache_zeppelin_with_snappydata.md#additional-settings). Use `%snappydata.spark` for SnappyData interpreter or use `%snappydata.sql` for SQL interpreter.
 
-3. Download a data set you want to use and create tables as mentioned below
+3. Download a data set you want to use and create tables as mentioned below.
 
 ### Examples of Queries and Results
 This section provides you with examples you can use in a paragraph.

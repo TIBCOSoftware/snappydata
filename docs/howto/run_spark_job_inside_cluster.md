@@ -54,14 +54,14 @@ val workaround = {
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
 **Running the Job**: 
-Once you create a jar file for SnappyData job, use the `bin/snappy-job.sh` to submit the job in the SnappyData cluster, and then run the job. This is similar to `spark-submit` for any Spark application. 
+Once you create a jar file for SnappyData job, use the `./bin/snappy-job.sh` to submit the job in the SnappyData cluster, and then run the job. This is similar to `spark-submit` for any Spark application. 
 
 For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command. The command submits the job and runs it as:
 
 ```no-highlight
- # first cd to your SnappyData product dir
+ # first change the directory to the SnappyData product directory
  $ cd $SNAPPY_HOME
- $ bin/snappy-job.sh submit
+ $ ./bin/snappy-job.sh submit
     --app-name CreatePartitionedRowTable
     --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
     --app-jar examples/jars/quickstart.jar
@@ -84,7 +84,7 @@ In the above command, **quickstart.jar** contains the program and is bundled in 
 **Check Status**: You can check the status of the job using the Job ID listed above:
 
 ```no-highlight
-bin/snappy-job.sh status --lead localhost:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
+./bin/snappy-job.sh status --lead localhost:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 ```
 
 Refer to the [Building SnappyData applications using Spark API](../programming_guide/building_snappydata_applications_using_spark_api.md) section of the documentation for more details.

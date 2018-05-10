@@ -74,7 +74,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/S
 The program must be compiled and bundled as a jar file and submitted to jobs server as shown below.
 
 ```no-highlight
-$ bin/snappy-job.sh submit  \
+$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
@@ -104,7 +104,7 @@ The status returned by the utility is displayed below:
 This Job ID can be used to query the status of the running job. 
 
 ```no-highlight
-$ bin/snappy-job.sh status  \
+$ ./bin/snappy-job.sh status  \
     --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 
@@ -121,7 +121,7 @@ $ bin/snappy-job.sh status  \
 Once the tables are created, they can be queried by running another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) for implementing the job. 
 
 ```no-highlight
-$ bin/snappy-job.sh submit  \
+$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
@@ -154,10 +154,10 @@ compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
 
 ## Running Python Applications
 
-Python users can submit a Python application using `bin/spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
+Python users can submit a Python application using `./bin/spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
 
 ```no-highlight
-bin/spark-submit \
+./bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
     --conf spark.ui.port=4042 /quickstart/python/CreateTable.py
@@ -180,7 +180,7 @@ For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata
 This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, and top 10 popular tweets.
 
 ```no-highlight
-$ bin/snappy-job.sh submit  \
+$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
@@ -199,14 +199,18 @@ $ bin/snappy-job.sh submit  \
 To start another streaming job with a new streaming context, you need to first stop the currently running streaming job, followed by its streaming context.
 
 ```no-highlight
-$ bin/snappy-job.sh stop  \
+$ ./bin/snappy-job.sh stop  \
     --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
 
-$ bin/snappy-job.sh listcontexts  \
+$ ./bin/snappy-job.sh listcontexts  \
     --lead localhost:8090
 ["snappyContext1452598154529305363", "snappyStreamingContext1463987084945028747", "snappyStreamingContext"]
 
-$ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
+$ ./bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead localhost:8090
 ```
+
+**Related Topic**:
+
+- [How to use Python to Create Tables and Run Queries](../howto/use_python_to_create_tables_and_run_queries.md)

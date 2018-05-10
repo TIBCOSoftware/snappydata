@@ -6,8 +6,10 @@ Queries can be executed directly on sample tables or on the base table. Any quer
 
 Here is the syntax:
 
+```
 > > SELECT ... FROM .. WHERE .. GROUP BY ...<br>
 > > WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
+```
     
 * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
 * **CONFIDENCE** - this is optional clause. The values are confidence 0 < value(double) < 1 . The default value is 0.95
