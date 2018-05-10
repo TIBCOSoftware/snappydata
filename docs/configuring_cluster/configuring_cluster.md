@@ -103,7 +103,7 @@ Create the configuration file (**servers**) for data servers in the **<_SnappyDa
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
 |Property|Description</br>|
-|-|-|-|
+|-|-|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|

@@ -1,5 +1,7 @@
 # Properties Details
 
+**WORK IN PROGRESS - OUTDATED CONTENT**
+
 *	[autoBroadcastJoinThreshold](#autoBroadcastJoinThreshold)
 *	[bind-address](#bind-address)
 *	[classpath](#classpath)
