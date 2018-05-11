@@ -12,50 +12,50 @@ For example, in the code snippet below, the ORDERS table is colocated with the C
 **Get a SnappySession**:
 
 ```no-highlight
-    val spark: SparkSession = SparkSession
-        .builder
-        .appName("ColocatedJoinExample")
-        .master("local[*]")
-        .getOrCreate
+val spark: SparkSession = SparkSession
+    .builder
+    .appName("ColocatedJoinExample")
+    .master("local[*]")
+    .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext)
+val snSession = new SnappySession(spark.sparkContext)
 ```
 
 **Create Table Customer:**
 
 ```no-highlight
-    snSession.sql("CREATE TABLE CUSTOMER ( " +
-        "C_CUSTKEY     INTEGER NOT NULL," +
-        "C_NAME        VARCHAR(25) NOT NULL," +
-        "C_ADDRESS     VARCHAR(40) NOT NULL," +
-        "C_NATIONKEY   INTEGER NOT NULL," +
-        "C_PHONE       VARCHAR(15) NOT NULL," +
-        "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
-        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
-        "C_COMMENT     VARCHAR(117) NOT NULL)" +
-        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
+snSession.sql("CREATE TABLE CUSTOMER ( " +
+    "C_CUSTKEY     INTEGER NOT NULL," +
+    "C_NAME        VARCHAR(25) NOT NULL," +
+    "C_ADDRESS     VARCHAR(40) NOT NULL," +
+    "C_NATIONKEY   INTEGER NOT NULL," +
+    "C_PHONE       VARCHAR(15) NOT NULL," +
+    "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
+    "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
+    "C_COMMENT     VARCHAR(117) NOT NULL)" +
+    "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 ```
 **Create Table Orders:**
 
 ```no-highlight
-    snSession.sql("CREATE TABLE ORDERS  ( " +
-        "O_ORDERKEY       INTEGER NOT NULL," +
-        "O_CUSTKEY        INTEGER NOT NULL," +
-        "O_ORDERSTATUS    CHAR(1) NOT NULL," +
-        "O_TOTALPRICE     DECIMAL(15,2) NOT NULL," +
-        "O_ORDERDATE      DATE NOT NULL," +
-        "O_ORDERPRIORITY  CHAR(15) NOT NULL," +
-        "O_CLERK          CHAR(15) NOT NULL," +
-        "O_SHIPPRIORITY   INTEGER NOT NULL," +
-        "O_COMMENT        VARCHAR(79) NOT NULL) " +
-        "USING COLUMN OPTIONS (PARTITION_BY 'O_CUSTKEY', " +
-        "COLOCATE_WITH 'CUSTOMER' )")
+snSession.sql("CREATE TABLE ORDERS  ( " +
+    "O_ORDERKEY       INTEGER NOT NULL," +
+    "O_CUSTKEY        INTEGER NOT NULL," +
+    "O_ORDERSTATUS    CHAR(1) NOT NULL," +
+    "O_TOTALPRICE     DECIMAL(15,2) NOT NULL," +
+    "O_ORDERDATE      DATE NOT NULL," +
+    "O_ORDERPRIORITY  CHAR(15) NOT NULL," +
+    "O_CLERK          CHAR(15) NOT NULL," +
+    "O_SHIPPRIORITY   INTEGER NOT NULL," +
+    "O_COMMENT        VARCHAR(79) NOT NULL) " +
+    "USING COLUMN OPTIONS (PARTITION_BY 'O_CUSTKEY', " +
+    "COLOCATE_WITH 'CUSTOMER' )")
 ```
 
 **Perform a Colocate join:** 
 
 ```no-highlight
-    // Selecting orders for all customers
-    val result = snSession.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
-        "O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY").collect()
+// Selecting orders for all customers
+val result = snSession.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
+    "O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY").collect()
 ```
