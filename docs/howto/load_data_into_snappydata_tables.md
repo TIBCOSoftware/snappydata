@@ -15,7 +15,7 @@ SnappyData relies on the Spark SQL Data Sources API to parallelly load data from
 For instance, you can first [create an external table](../reference/sql_reference/create-external-table.md). 
 
 ```no-highlight
-create external table <tablename> using <any-data-source-supported> options <options>
+CREATE EXTERNAL TABLE <tablename> USING <any-data-source-supported> OPTIONS <options>
 ```
 
 Next, use it in any SQL query or DDL. For example,
@@ -31,37 +31,37 @@ CREATE TABLE CUSTOMER USING column OPTIONS(buckets '8') AS ( SELECT * FROM STAGI
 You can either explicitly define the schema or infer the schema and the column data types. To infer the column names, we need the CSV header to specify the names. In this example we don't have the names, so we explicitly define the schema. 
 
 ```no-highlight
-    // Get a SnappySession in a local cluster
-    val spark: SparkSession = SparkSession
-        .builder
-        .appName("CreateColumnTable")
-        .master("local[*]")
-        .getOrCreate
+// Get a SnappySession in a local cluster
+val spark: SparkSession = SparkSession
+    .builder
+    .appName("CreateColumnTable")
+    .master("local[*]")
+    .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext)
+val snSession = new SnappySession(spark.sparkContext)
 ```
 
 We explicitly define the table definition first ....
 
 ```no-highlight
-    snSession.sql("CREATE TABLE CUSTOMER ( " +
-        "C_CUSTKEY     INTEGER NOT NULL," +
-        "C_NAME        VARCHAR(25) NOT NULL," +
-        "C_ADDRESS     VARCHAR(40) NOT NULL," +
-        "C_NATIONKEY   INTEGER NOT NULL," +
-        "C_PHONE       VARCHAR(15) NOT NULL," +
-        "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
-        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
-        "C_COMMENT     VARCHAR(117) NOT NULL)" +
-        "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
+snSession.sql("CREATE TABLE CUSTOMER ( " +
+    "C_CUSTKEY     INTEGER NOT NULL," +
+    "C_NAME        VARCHAR(25) NOT NULL," +
+    "C_ADDRESS     VARCHAR(40) NOT NULL," +
+    "C_NATIONKEY   INTEGER NOT NULL," +
+    "C_PHONE       VARCHAR(15) NOT NULL," +
+    "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
+    "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
+    "C_COMMENT     VARCHAR(117) NOT NULL)" +
+    "USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY')")
 ```
 
 **Load data in the CUSTOMER table from a CSV file by using Data Sources API**
 
 ```no-highlight
-    val tableSchema = snSession.table("CUSTOMER").schema
-    val customerDF = snSession.read.schema(schema = tableSchema).csv(s"$dataFolder/customer.csv")
-    customerDF.write.insertInto("CUSTOMER")
+val tableSchema = snSession.table("CUSTOMER").schema
+val customerDF = snSession.read.schema(schema = tableSchema).csv(s"$dataFolder/customer.csv")
+customerDF.write.insertInto("CUSTOMER")
 ```
 
 The [Spark SQL programming guide](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#data-sources) provides a full description of the Data Sources API 
@@ -78,24 +78,24 @@ customerDF.write.insertInto("CUSTOMER")
 A schema for the table can be inferred from the data file. Data is first introspected to learn the schema (column names and types) without requring this input from the user. The example below illustrates reading a parquet data source and creates a new columnar table in SnappyData. The schema is automatically defined when the Parquet data files are read. 
 
 ```no-highlight
-    val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
-    // props1 map specifies the properties for the table to be created
-    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
-    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
-    customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
+val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
+// props1 map specifies the properties for the table to be created
+// "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
+val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
+customerDF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
 ```
 
 In the code snippet below a schema is inferred from a CSV file. Column names are derived from the header in the file.
 
 ```no-highlight
-    val customer_csv_DF = snSession.read.option("header", "true")
-        .option("inferSchema", "true").csv("quickstart/src/main/resources/customer_with_headers.csv")
+val customer_csv_DF = snSession.read.option("header", "true")
+    .option("inferSchema", "true").csv("quickstart/src/main/resources/customer_with_headers.csv")
 
-    // props1 map specifies the properties for the table to be created
-    // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
-    // For complete list of attributes refer the documentation
-    val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
-    customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
+// props1 map specifies the properties for the table to be created
+// "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
+// For complete list of attributes refer the documentation
+val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
+customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
 ```
 
 The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). 
@@ -107,4 +107,4 @@ Here is a simple example that loads multiple JSON records that show dealing with
 
 !!! Note
 
-	When loading data from sources like CSV or Parquet the files would need to be accessible from all the cluster members in SnappyData. Make sure it is NFS mounted or made accessible through the Cloud solution (shared storage like S3). 
+	When loading data from sources like CSV or Parquet the files would need to be accessible from all the cluster members in SnappyData. Make sure it is NFS mounted or made accessible through the Cloud solution (shared storage like S3).

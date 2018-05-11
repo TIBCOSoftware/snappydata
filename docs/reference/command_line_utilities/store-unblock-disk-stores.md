@@ -14,10 +14,10 @@ The table describes options and arguments for snappy unblock-disk-store. If no m
 
 |Option|Description|
 |-|-|
-|disk-store-id|(Required.) Specifies the unique ID of the disk store to unblock.| 
-|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
-|bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|prop-name|Any other SnappyData distributed system property.|
+|-disk-store-id|(Required.) Specifies the unique ID of the disk store to unblock.| 
+|-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
+|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
+|-prop-name|Any other SnappyData distributed system property.|
 
 
 ## Example

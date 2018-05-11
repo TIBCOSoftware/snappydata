@@ -13,9 +13,9 @@ The table describes options for `snappy compact-all-disk-stores`.
 
 |Option|Description|
 |--------|--------|
-|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
-|bind-address    |The address to which this peer binds for receiving peer-to-peer messages. By default `snappy` uses the hostname, or localhost if the hostname points to a local loopback address.|
-|prop-name</br> prop-value    |Any other SnappyData distributed system property.|
+|-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
+|-bind-address    |The address to which this peer binds for receiving peer-to-peer messages. By default `snappy` uses the hostname, or localhost if the hostname points to a local loopback address.|
+|-prop-name</br> prop-value    |Any other SnappyData distributed system property.|
 
 ## Description
 
