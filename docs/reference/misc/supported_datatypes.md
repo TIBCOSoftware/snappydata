@@ -1,9 +1,12 @@
 # Data Types
 
+**WORK IN PROGRESS - OUTDATED CONTENT**
+
 The SQL type system determines the compile-time and runtime type of an expression. Each type has a certain range of permissible values that can be assigned to a column or value of that type.
 
 The special value NULL, denotes an unassigned or missing value of any of the types (columns that have been assigned as non-nullable using NOT NULL clause or the primary key columns cannot have a NULL value). The supported types are given below.
 
+- [ARRAY](#array)
 - [BIGINT](#bigint)
 - [BINARY](#binary)
 - [BLOB](#blob)
@@ -18,11 +21,13 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 - [INT](#int)
 - [INTEGER](#integer)
 - [LONG](#long)
+- [MAP](#map)
 - [NUMERIC](#numeric)
 - [REAL](#real)
 - [SHORT](#short)
 - [SMALLINT](#smallint)
 - [STRING](#string)
+- [STRUCT](#struct)
 - [TIMESTAMP](#timestamp)
 - [TINYINT](#tinyint)
 - [VARBINARY](#varbinary)
@@ -55,6 +60,13 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 | [VARBINARY](#varbinary)|Stores binary byte strings rather than non-binary character strings|
 | [VARCHAR](#varchar)|Stores character strings of varying length (up to 255 bytes); collation is in code-set order|
 -->
+
+<a id="array"></a>
+## ARRAY
+
+!!! Note
+	Supported only for column tables
+
 <a id="bigint"></a>
 ## BIGINT
 
@@ -67,8 +79,6 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Equivalent Java type | java.lang.Long                                    |
 | Minimum value        | java.lang.Long.MIN\_VALUE (-9223372036854775808 ) |
 | Maximum value        | java.lang.Long.MAX\_VALUE (9223372036854775807 )  |
-| JDBC metadata type   | java.sql.Types.BIGINT                             |
-| JDBC methods         | ResultSet.getLong, PreparedStatement.setLong      |
 
 <a id="binary"></a>
 ## BINARY
@@ -82,16 +92,14 @@ A binary large object represents an array of raw bytes of varying length.
 |--------------------------------------|----------------------------------------------|
 | Equivalent Java type                 | java.lang.Blob                               |
 | Maximum length (also default length) | 2 GB - 1 (or 2,147,483,647)                  |
-| JDBC metadata type                   | java.sql.Types.BLOB                          |
-| JDBC methods                         | ResultSet.getBlob, PreparedStatement.setBlob |
 
-``` pre
+``` no-highlight
 { BLOB | BINARY LARGE OBJECT } [ ( length [{ K | M | G }] ) ] 
 ```
 
 The length of the BLOB is expressed in number of bytes by default. The suffixes K, M, and G stand for kilobyte, megabyte and gigabyte, and use the multiples of 1024, 1024\*1024, or 1024\*1024\*1024 respectively.
 
-``` pre
+``` no-highlight
 CREATE TABLE blob_data(id INT primary key, data BLOB(10M)); 
 –- search for a blob 
 select length(data) from blob_data where id = 100;
@@ -110,7 +118,7 @@ Provides for fixed-length strings. If a string value is shorter than the expecte
 
 To represent a single quotation mark within a string, use two quotation marks:
 
-``` pre
+``` no-highlight
 VALUES 'going to Chandra''s place' 
 ```
 
@@ -121,10 +129,8 @@ The length of CHAR is an unsigned integer constant.
 | Equivalent Java type | java.lang.String                                 |
 | Maximum length       | java.lang.Integer.MAX\_VALUE (2147483647 )       |
 | Default length       | 1                                                |
-| JDBC metadata type   | java.sql.Types.CHAR                              |
-| JDBC methods         | ResultSet.getString, PreparedStatement.setString |
 
-``` pre
+``` no-highlight
 CHAR[ACTER] [(length)] 
 ```
 
@@ -140,14 +146,12 @@ The length is expressed in number characters, unless you specify the suffix K, M
 |--------------------------------------|----------------------------------------------|
 | Equivalent Java type                 | java.sql.Clob                                |
 | Maximum length (also default length) | 2 GB - 1 (or 2,147,483,647)                  |
-| JDBC metadata type                   | java.sql.Types.CLOB                          |
-| JDBC methods                         | ResultSet.getClob, PreparedStatement.setClob |
 
-``` pre
+``` no-highlight
 { CLOB | CHARACTER LARGE OBJECT } [ ( length [{ K | M | G }] ) ] 
 ```
 
-``` pre
+``` no-highlight
 CREATE TABLE clob_data(id INT primary key, text CLOB(10M)); 
 –- search for a clob
 select text from clob_data where id = 100;
@@ -159,15 +163,15 @@ select text from clob_data where id = 100;
 
 Provides for storage of a date as year-month-day. Supported formats are:
 
-``` pre
+``` no-highlight
 yyyy-mm-dd 
 ```
 
-``` pre
+``` no-highlight
 mm/dd/yyyy 
 ```
 
-``` pre
+``` no-highlight
 dd.mm.yyyy 
 ```
 
@@ -176,14 +180,12 @@ The year (yyyy) must always be expressed with four digits, while months (mm) and
 |                      |                                              |
 |----------------------|----------------------------------------------|
 | Equivalent Java type | java.sql.Date                                |
-| JDBC metadata type   | java.sql.Types.DATE                          |
-| JDBC methods         | ResultSet.getDate, PreparedStatement.setDate |
 
-``` pre
+``` no-highlight
 VALUES '2010-05-04'
 ```
 
-``` pre
+``` no-highlight
 VALUES DATE('2001-10-12')
 ```
 
@@ -206,14 +208,12 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Scale min/max        | less than or equal to precision                          |
 | Default precision    | 5                                                        |
 | Default scale        | 0                                                        |
-| JDBC metadata type   | java.sql.Types.DECIMAL                                   |
-| JDBC methods         | ResultSet.getBigDecimal, PreparedStatement.setBigDecimal |
 
-``` pre
+``` no-highlight
 { DECIMAL | DEC } [(precision [, scale ])]
 ```
 
-``` pre
+``` no-highlight
 -- this cast loses fractional precision 
 values cast (23.8372 AS decimal(4,1)); 
 -–- results in: 
@@ -243,10 +243,8 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Largest negative value  | -2.225E-307                                                                                                                                                      |
 | Default precision       | 5                                                                                                                                                                |
 | Default scale           | 0                                                                                                                                                                |
-| JDBC metadata type      | java.sql.Types.DOUBLE                                                                                                                                            |
-| JDBC methods            | ResultSet.getDouble, PreparedStatement.setDouble                                                                                                                 |
 
-``` pre
+``` no-highlight
 –- examples of valid values 
 values 233.31E3; 
 values 8928E+06; 
@@ -265,10 +263,8 @@ Alias for a REAL or DOUBLE data type, depending on the specified precision. The 
 | Equivalent Java type   | java.lang.Double or java.lang.Float depending on precision                                                            |
 | Minumum/Maximum limits | Same as those for FLOAT if the precision is less than 23. Otherwise, same minimum/maximum limits as those for DOUBLE. |
 | Default precision      | 53                                                                                                                    |
-| JDBC metadata type     | java.sql.Types.FLOAT                                                                                                  |
-| JDBC methods           | ResultSet.getFloat/getDouble, PreparedStatement.setFloat/setDouble                                                    |
 
-``` pre
+``` no-highlight
 FLOAT [(precision)]
 ```
 
@@ -289,13 +285,19 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Equivalent Java type | java.lang.Integer                          |
 | Minimum value        | java.lang.Integer.MIN\_VALUE (-2147483648) |
 | Maximum value        | java.lang.Integer.MAX\_VALUE (21474836487) |
-| JDBC metadata type   | java.sql.Types.INTEGER                     |
-| JDBC methods         | ResultSet.getInt, PreparedStatement.setInt |
 
 
 <a id="long"></a>
 
 ## LONG
+
+
+<a id="map"></a>
+- [MAP](#map)
+
+!!! Note
+	Supported only for column tables
+
 
 <a id="numeric"></a>
 
@@ -307,9 +309,9 @@ The meta-data differences from DECIMAL are listed below. Otherwise, NUMERIC beha
 
 |                    |                        |
 |--------------------|------------------------|
-| JDBC metadata type | java.sql.Types.NUMERIC |
+|  |  |
 
-``` pre
+``` no-highlight
 NUMERIC [(precision [, scale ])]
 ```
 <a id="real"></a>
@@ -333,8 +335,14 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Equivalent Java type | java.lang.Short                                |
 | Minimum value        | java.lang.Short.MIN\_VALUE (-32768 )           |
 | Maximum value        | java.lang.Short.MAX\_VALUE (32767)             |
-| JDBC metadata type   | java.sql.Types.SMALLINT                        |
-| JDBC methods         | ResultSet.getShort, PreparedStatement.setShort |
+
+
+<a id="struct"></a>
+- [STRUCT](#struct)
+
+!!! Note
+	Supported only for column tables
+
 
 <a id="string"></a>
 ## STRING
@@ -344,11 +352,11 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 
 Provides for storage of both DATE and TIME as a combined value. In addition it allows for fractional seconds having up to six digits. Supported formats are:
 
-``` pre
+``` no-highlight
 yyyy-MM-dd hh:mm:ss[.nnnnnn] 
 ```
 
-``` pre
+``` no-highlight
 yyyy-MM-dd-hh.mm.ss[.nnnnnn] 
 ```
 
@@ -357,10 +365,8 @@ The year (yyyy) must always be expressed with four digits. Months (MM), days (dd
 |                      |                                                        |
 |----------------------|--------------------------------------------------------|
 | Equivalent Java type | java.sql.Timestamp                                     |
-| JDBC metadata type   | java.sql.Types.TIMESTAMP                               |
-| JDBC methods         | ResultSet.getTimestamp, PreparedStatement.setTimestamp |
 
-``` pre
+``` no-highlight
 VALUES '2000-02-03 12:23:04' 
 VALUES TIMESTAMP(' 2000-02-03 12:23:04.827') 
 VALUES TIMESTAMP('2000-02-03 12:23:04')
@@ -382,7 +388,7 @@ Provides for variable-length strings with a maximum limit for length. If a strin
 
 The type of a string constant is CHAR, not VARCHAR. To represent a single quotation mark within a string, use two quotation marks:
 
-``` pre
+``` no-highlight
 VALUES 'going to Chandra''s place' 
 ```
 
@@ -392,10 +398,8 @@ The length of VARCHAR is an unsigned integer constant.
 |----------------------|--------------------------------------------------|
 | Equivalent Java type | java.lang.String                                 |
 | Maximum length       | 32672                                            |
-| JDBC metadata type   | java.sql.Types.VARCHAR                           |
-| JDBC methods         | ResultSet.getString, PreparedStatement.setString |
 
-``` pre
+``` no-highlight
 { VARCHAR | CHAR VARYING | CHARACTER VARYING }(length)
 ```
 

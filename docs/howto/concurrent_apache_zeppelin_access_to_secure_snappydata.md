@@ -31,7 +31,7 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 
 5. Extract the contents of the Zeppelin binary package. </br> 
 
-6. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
+6. Start the Zeppelin daemon using the command: </br> `./bin/zeppelin-daemon.sh start`
 
 ## Configure the JDBC Interpreter
 Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](https://zeppelin.apache.org/docs/0.7.0/interpreter/jdbc.html).
