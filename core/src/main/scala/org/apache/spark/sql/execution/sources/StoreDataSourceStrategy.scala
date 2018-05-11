@@ -72,16 +72,19 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           0,
           Nil,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case LogicalRelation(_, _, _) => if (plan.collectFirst {
-        case lp  if lp.expressions.exists(_.collectFirst {
-          case pl: ParamLiteral => pl
-        }.isDefined) => lp
-      }.isDefined) {
-        planLater(plan.transformAllExpressions {
-          case pl: ParamLiteral => pl.asLiteral
-        }) :: Nil
-      } else {
-        Nil
+      case LogicalRelation(_, _, _) => {
+        var foundParamLiteral = false
+        val tp = plan.transformAllExpressions {
+          case pl: ParamLiteral => {
+            foundParamLiteral = true
+            pl.asLiteral
+          }
+        }
+        if (foundParamLiteral) {
+          planLater(tp) :: Nil
+        } else {
+          Nil
+        }
       }
       case _ => Nil
     }
