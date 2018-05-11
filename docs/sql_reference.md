@@ -30,6 +30,8 @@ The following topics are covered in this section:
 
     - **[CREATE VIEW](reference/sql_reference/create-view.md)**
 
+- **[DELETE](reference/sql_reference/delete.md)**
+
 - **DROP STATEMENTS**
 
      - **[DROP DISKSTORE](reference/sql_reference/drop-diskstore.md)**
@@ -43,8 +45,6 @@ The following topics are covered in this section:
      - **[DROP SCHEMA](reference/sql_reference/drop-schema.md)**
 
      - **[DROP SYNONYMN](reference/sql_reference/drop-synonym.md)**
-
-- **[DELETE](reference/sql_reference/delete.md)**
 
 - **[GRANT](reference/sql_reference/grant.md)**
 

@@ -116,7 +116,7 @@ To import into IntelliJ IDEA:
 
 * Upgrade IntelliJ IDEA to version 2016.x, including the latest Scala plug-in. Older versions (pre 14.x) have trouble dealing with Scala code, particularly some of the code in Spark. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via *JAVA_HOME*).
 
-* Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase `-Xmx` option to be something like *-Xmx=2g* for comfortable use.
+* Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase `-Xmx` option to be something like *-Xmx2g* for comfortable use.
 
 * Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Clear the **Create separate module per source set** option, while other options can continue with the default . Click **Next** in the following screens.<br/>
     

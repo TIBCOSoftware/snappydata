@@ -1,4 +1,4 @@
-# Getting Started with SnappyData CDC (Change Data Capture) Connector
+# Using the SnappyData CDC (Change Data Capture) Connector
 
 <ent>This feature is available only in the Enterprise version of SnappyData.</ent>
 
@@ -9,11 +9,11 @@ A CDC enabled system (SQL database) automatically captures changes from the sour
 It provides an efficient framework which allows users to capture *individual data changes* like insert, update, and delete in the source tables (instead of dealing with the entire data), and apply them to the SnappyData tables to keep both the source and target tables in sync.
 
 !!! Info:
-	Spark streaming pipelines are used to get changed data from the source tables and to update the target SnappyData tables. For information on how to write your program to read and sink data, refer to the Spark documentation.
+	Spark structured streaming and SnappyData mutable APIs are used to keep the source and target tables in sync. For writing a Spark structured streaming application, refer to the Spark documentation.
 
 ![CDC Workflow](../Images/cdc_tables.png)
 
-CDC is supported on both the Smart Connector Mode and the Embedded more. For more  information on the modes, refer to the documentation on [Smart Connector Mode](../affinity_modes/connector_mode.md) and [Embedded SnappyData Store Mode](../affinity_modes/embedded_mode.md).
+CDC is supported on both the Smart Connector Mode and the Embedded mode. For more  information on the modes, refer to the documentation on [Smart Connector Mode](../affinity_modes/connector_mode.md) and [Embedded SnappyData Store Mode](../affinity_modes/embedded_mode.md).
 
 In this topic, we explain how SnappyData uses the JDBC streaming connector to pull changed data from the SQL database and ingest it into SnappyData tables.
 
@@ -28,7 +28,7 @@ The following image illustrates the data flow for change data capture:</br>
 
 - Ensure that a JDBC source to which SnappyData CDC Connector can connect is running and available from the node where CDC connector is running.
 
-- The **snappydata-jdbc-stream-connector_2.11-0.9.1.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
+- The **snappydata-jdbc-stream-connector_<version>.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
 
 ## Understanding the Program Structure
 
@@ -109,23 +109,23 @@ The JDBC Stream Reader options are:
     |`user`|User name to access the database |
     |`password`|Password to access the database |
     |`databaseName`|The name of the database|
-    |`poolImpl`|Connection pool implementation(default Hikari). Currently, only Tomcat and Hikari are supported|
-    |`maximumPoolSize`|Connection pool size (default 10)|
-    |`minimumIdle`|Minimum number of idle connection (default 5)|
+    |`poolImpl`|Connection pool implementation(default Tomcat). Currently, only Tomcat and Hikari are supported|
+    |`poolProperties`|Comma separated pool specific properties. For more details see Tomcat or Hikari JDBC connection pool documents. Example: connectionTestQuery=select 1,minimumIdle=5 |
 
 Optionally, you can use any Spark API to transform your data obtained from the stream reader.
 
 The sample usage can be as follows:
 
-```
+```no-highlight
 Dataset<Row> ds = reader.load();
 ds.filter(<filter_condition>)
 ```
+
 ## Writing into SnappyData tables
 
 To write into SnappyData tables you need to have a StreamWriter as follows:
 
-```
+```no-highlight
 ds.writeStream()
         .trigger(ProcessingTime.create(10, TimeUnit.SECONDS))
         .format("snappystore")
@@ -148,14 +148,14 @@ The **sink** option is mandatory for SnappyStore sink. This option is required t
 
 The above trait contains a single method, which user needs to implement. A user can use SnappyData mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.
 
-```pre
+```no-highlight
     def process(snappySession: SnappySession, sinkProps: Properties,
         batchId: Long, df: Dataset[Row]): Unit
 ```
 
 The following examples illustrates how you can write into a [SnappyData table](http://snappydatainc.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
 
-```
+```no-highlight
 package io.snappydata.app;
 
 import java.util.List;
@@ -211,11 +211,11 @@ public class ProcessEvents implements SnappyStreamSink {
 ## Additional Information
 
 - **Offset Management**: </br>
-	One table per application is maintained for offset management (Offset table name for application = AppName_SNAPPY_JDBC_STREAM_CONTEXT). </br>
+	SnappyData keeps a persistent table for offset management (Offset table name for application = SNAPPY_JDBC_STREAM_OFFSET_TABLE). </br>
     The schema of the table is:
 
-    |TABLENAME  |LASTOFFSET |
-    |--------|--------|
+    |APP_NAME|TABLE_NAME|LAST_OFFSET|
+    |--------|--------|--------|
 
     Initially, the table contains no rows. The connector inserts a row for the table with minimum offset queried from the database. On subsequent intervals, it consults this table to get the offset number. </br>
     If connector application crashes, it refers to this table on a restart to query further.
@@ -227,11 +227,8 @@ public class ProcessEvents implements SnappyStreamSink {
 
 		CREATE TABLE <table_name> USING column OPTIONS(partition_by '<column_name>', buckets '<num_partitions>',key_columns '<primary_key>') AS (SELECT * FROM from external table);
 
-
 !!!Note:
 
 	- Writing data from different tables to a single table is currently not supported as the schema for incoming data frame cannot be changed. 
 
-	- To capture changed data for multiple source tables, ensure that you create an instance for each source table.
-
-	-  For every source table that needs to be tracked for changes, ensure that there is a corresponding destination table in SnappyData.
+	- For every source table that needs to be tracked for changes, ensure that there is a corresponding destination table in SnappyData.
