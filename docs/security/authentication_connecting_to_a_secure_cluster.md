@@ -60,7 +60,7 @@ val snc = SnappyContext(sc)
 The below example demonstrates how to connect to the cluster via Spark shell using the `--conf` option to specify the properties.
 
 ```scala
-$ bin/spark-shell  
+$./bin/spark-shell  
     --master local[*] 
     --conf spark.snappydata.connection=localhost:1527 
     --conf spark.snappydata.store.user=user1
@@ -90,7 +90,7 @@ $ cat /home/user1/snappy/job.config
 
 In the below example, the above configuration file is passed when submitting a job.
 ```scala
-$ bin/snappy-job.sh submit  \
+$./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \

@@ -6,7 +6,7 @@ The Snappy SQL shell can be used to execute SQL on SnappyData cluster. In the ba
 Use the `snappy-sql` and `connect client` commands on the Snappy SQL shell as follows:
 
 ```no-highlight
-$ bin/snappy-sql
+$ ./bin/snappy-sql
 snappy> connect client '<locatorHostName>:1527';
 ```
 

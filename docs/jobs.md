@@ -313,7 +313,7 @@ SnappySQLJob trait extends the SparkJobBase trait. It provides users the singlet
 Following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart.jar) and submitted to jobs server as shown below.
 
 ```
-$ bin/snappy-job.sh submit  \
+$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
@@ -339,7 +339,7 @@ The status returned by the utility is shown below:
 ```
 This job ID can be used to query the status of the running job. 
 ```
-$ bin/snappy-job.sh status  \
+$ ./bin/snappy-job.sh status  \
     --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 
@@ -355,7 +355,7 @@ $ bin/snappy-job.sh status  \
 ```
 Once the tables are created, they can be queried by firing another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) from [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for the implementation of the job. 
 ```
-$ bin/snappy-job.sh submit  \
+$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
@@ -365,7 +365,7 @@ The status of this job can be queried in the same manner as shown above. The res
 
 Python users can also submit the python script using spark-submit in split cluster mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "spark.snappydata.connection" property denotes the locator url of the snappy cluster and it is used to connect to the snappy cluster.
 ```
-$ bin/spark-submit \
+$ ./bin/spark-submit \
   --master spark://pnq-user02:7077 \
   --conf spark.snappydata.connection=localhost:10334 \
   --conf spark.ui.port=4042  
@@ -379,7 +379,7 @@ An implementation of SnappyStreamingJob can be submitted to the lead node of Sna
 For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory can be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
 
 ```
-$ bin/snappy-job.sh submit  \
+$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
@@ -398,14 +398,14 @@ $ bin/snappy-job.sh submit  \
 User needs to stop the currently running streaming job followed by its streaming context if the user intends to submit another streaming job with a new streaming context.
 
 ```
-$ bin/snappy-job.sh stop  \
+$ ./bin/snappy-job.sh stop  \
     --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
 
-$ bin/snappy-job.sh listcontexts  \
+$ ./bin/snappy-job.sh listcontexts  \
     --lead localhost:8090
 ["snappyContext1452598154529305363", "snappyStreamingContext1463987084945028747", "snappyStreamingContext"]
 
-$ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
+$ ./bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead localhost:8090
 ```
