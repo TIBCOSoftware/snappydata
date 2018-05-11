@@ -24,7 +24,7 @@ Create table IF NOT EXISTS ODS.PERSONS(
       src_sys_rec_id LONG VARCHAR NOT NULL,
       PRIMARY KEY (client_id,prsn_id)
       )
-      USING row OPTIONS(partition_by 'prsn_id', PERSISTENCE 'NONE', REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', OVERFLOW 'true', diskstore 'DISK_STORE');
+      USING row OPTIONS(partition_by 'prsn_id', PERSISTENCE 'sync', REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT', OVERFLOW 'true', diskstore 'DISK_STORE');
 
 create index ODS.IX_PERSONS_02 on ODS.PERSONS (CLIENT_ID,FIRST_NM);
 create index ODS.IX_PERSONS_03 on ODS.PERSONS (CLIENT_ID);
