@@ -19,20 +19,22 @@ package org.apache.spark.sql
 
 
 import java.io.File
+import java.util.Map.Entry
+import java.util.function.Consumer
 
 import scala.util.Try
-
 import io.snappydata.Constant
+import org.apache.spark.TaskContext
+import org.apache.spark.deploy.SparkSubmitUtils
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, ExecutorLocalRDD, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
@@ -41,6 +43,8 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+
+import scala.collection.mutable.ArrayBuffer
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -59,6 +63,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
   final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
   final def DESC: Rule0 = rule { keyword(Consts.DESC) }
+  final def DEPLOY: Rule0 = rule { keyword(Consts.DEPLOY) }
   final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
@@ -84,6 +89,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def OR: Rule0 = rule { keyword(Consts.OR) }
   final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
   final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
+  final def PACKAGE: Rule0 = rule { keyword(Consts.PACKAGE) }
+  final def PATH: Rule0 = rule { keyword(Consts.PATH) }
+  final def REPOS: Rule0 = rule { keyword(Consts.REPOS) }
   final def REVOKE: Rule0 = rule { keyword(Consts.REVOKE) }
   final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
   final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
@@ -93,6 +101,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def THEN: Rule0 = rule { keyword(Consts.THEN) }
   final def TO: Rule0 = rule { keyword(Consts.TO) }
   final def TRUE: Rule0 = rule { keyword(Consts.TRUE) }
+  final def UNDEPLOY: Rule0 = rule { keyword(Consts.UNDEPLOY) }
   final def UNION: Rule0 = rule { keyword(Consts.UNION) }
   final def UNIQUE: Rule0 = rule { keyword(Consts.UNIQUE) }
   final def UPDATE: Rule0 = rule { keyword(Consts.UPDATE) }
@@ -126,14 +135,18 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
   final def INIT: Rule0 = rule { keyword(Consts.INIT) }
   final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
+  final def JAR: Rule0 = rule { keyword(Consts.JAR) }
+  final def JARS: Rule0 = rule { keyword(Consts.JARS) }
   final def LAST: Rule0 = rule { keyword(Consts.LAST) }
   final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
+  final def LIST: Rule0 = rule { keyword(Consts.LIST) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
   final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
   final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
+  final def PACKAGES: Rule0 = rule { keyword(Consts.PACKAGES) }
   final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -484,6 +497,22 @@ abstract class SnappyDDLParser(session: SparkSession)
         "", None)), input.sliceString(0, input.length)))
   }
 
+  protected def deployPackages: Rule1[LogicalPlan] = rule {
+    DEPLOY ~ ((PACKAGE ~ tableIdentifier ~ stringLiteral ~
+        (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
+        ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
+          packages, alias.identifier, repos.asInstanceOf[Option[String]],
+          path.asInstanceOf[Option[String]]))) |
+      JAR ~ tableIdentifier ~ stringLiteral ~>
+          ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
+        alias.identifier, commaSepPaths))) |
+    UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
+    LIST ~ (
+      PACKAGES ~> (() => ListPackageJarsCommand(true)) |
+      JARS ~> (() => ListPackageJarsCommand(false))
+    )
+  }
+
   protected def streamContext: Rule1[LogicalPlan] = rule {
     STREAMING ~ (
         INIT ~ durationUnit ~> ((batchInterval: Duration) =>
@@ -723,3 +752,99 @@ case class DMLExternalTable(
 case class SetSchema(schemaName: String) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
+
+/**
+  * Returns a list of jar files that are added to resources.
+  * If jar files are provided, return the ones that are added to resources.
+  */
+case class DeployCommand(
+    coordinates: String,
+    alias: String,
+    repos: Option[String],
+    jarCache: Option[String]) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+    logInfo(s"KN: jarstr ${jarsstr}")
+    if (jarsstr.nonEmpty) {
+      val jars = jarsstr.split(",")
+      val sc = sparkSession.sparkContext
+      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      SnappySession.addJarURIs(uris)
+      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
+        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+        Iterator.empty
+      })
+      val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+    }
+    Seq.empty[Row]
+  }
+}
+
+case class DeployJarCommand(
+    alias: String,
+    paths: String) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    if (paths.nonEmpty) {
+      val jars = paths.split(",")
+      val sc = sparkSession.sparkContext
+      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      SnappySession.addJarURIs(uris)
+      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
+        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+        Iterator.empty
+      })
+      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, false)
+    }
+    Seq.empty[Row]
+  }
+}
+
+case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
+  override val output: Seq[Attribute] = {
+    AttributeReference("alias", StringType, nullable = false)() ::
+    AttributeReference("coordinate", StringType, nullable = false)() ::
+    AttributeReference("isPackage", BooleanType, nullable = false)() :: Nil
+  }
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet()
+    val rows = new ArrayBuffer[Row]
+    commands.forEach(new Consumer[Entry[String, String]] {
+      override def accept(t: Entry[String, String]) = {
+        val alias = t.getKey
+        val value = t.getValue
+        val indexOf = value.indexOf('|')
+        if (indexOf > 0) {
+          // It is a package
+          val pkg = value.substring(0, indexOf)
+          rows+= Row(alias, pkg, true)
+        }
+        else {
+          // It is a jar
+          val jars = value.split(',')
+          val jarfiles = jars.map(f => {
+            val lastIndexOf = f.lastIndexOf('/')
+            val length = f.length
+            if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
+            else {
+              f
+            }
+          })
+          rows+= Row(alias, jarfiles.mkString(","), false)
+        }
+      }
+    })
+    rows
+  }
+}
+
+case class UnDeployCommand(alias: String) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    ToolsCallbackInit.toolsCallback.removePackage(alias)
+    Seq.empty[Row]
+  }
+}

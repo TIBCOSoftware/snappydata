@@ -16,7 +16,9 @@
  */
 package io.snappydata.impl
 
-import java.lang.reflect.{Constructor, Method}
+import java.lang.reflect.{Constructor, InvocationTargetException, Method}
+import java.net.{URL, URLClassLoader}
+import java.security.Permission
 import java.sql.SQLException
 import java.util.Properties
 
@@ -24,7 +26,6 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
@@ -49,7 +50,6 @@ import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
-
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
@@ -74,6 +74,8 @@ class LeadImpl extends ServerImpl with Lead
 
   private var remoteInterpreterServerClass: Class[_] = _
   private var remoteInterpreterServerObj: Any = _
+
+  var urlclassloader: ExtendibleURLClassLoader = _
 
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
@@ -205,6 +207,10 @@ class LeadImpl extends ServerImpl with Lead
         case _ =>
       }
 
+      val parent = Thread.currentThread().getContextClassLoader
+      urlclassloader = new ExtendibleURLClassLoader(parent)
+      Thread.currentThread().setContextClassLoader(urlclassloader)
+
       val sc = new SparkContext(conf)
 
       // This will use GfxdDistributionAdvisor#distributeProfileUpdate
@@ -233,6 +239,8 @@ class LeadImpl extends ServerImpl with Lead
         // mark RUNNING (job server and zeppelin will continue to start in background)
         markLauncherRunning(if (startupString ne null) s"Starting $startupString" else null)
       }
+
+      // Add a URL classloader to the main thread so that new URIs can be added
 
       // wait for a while until servers get registered
       val endWait = System.currentTimeMillis() + 120000
@@ -649,6 +657,8 @@ class LeadImpl extends ServerImpl with Lead
         case tTransportException: TTransportException =>
           logWarning("Error while starting zeppelin interpreter.Actual exception : " +
               tTransportException.getMessage)
+        case t: Throwable => logWarning("Error starting zeppelin interpreter.Actual exception : " +
+            t.getMessage, t)
       }
       // Add memory listener for zeppelin will need it for zeppelin
       // val listener = new LeadNodeMemoryListener();
@@ -658,9 +668,42 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
+  class NoExitSecurityManager extends SecurityManager {
+    override def checkExit(status: Int): Unit = {
+      throw new SecurityException("exit not allowed")
+    }
+
+    override def checkPermission(perm: Permission): Unit = {
+      // Allow other activities by default
+    }
+  }
+
+  def closeAndReopenInterpreterServer(): Unit = {
+    if (remoteInterpreterServerClass != null) {
+      val origSecurityManager = System.getSecurityManager
+      System.setSecurityManager(new NoExitSecurityManager)
+      try {
+        remoteInterpreterServerClass.getSuperclass.
+            getDeclaredMethod("shutdown").invoke(remoteInterpreterServerObj)
+      } finally {
+        System.setSecurityManager(origSecurityManager)
+      }
+      checkAndStartZeppelinInterpreter(true, bootProperties)
+    }
+  }
+
   def getInterpreterServerClass(): Class[_] = {
     remoteInterpreterServerClass
   }
+}
+
+class ExtendibleURLClassLoader(parent: ClassLoader)
+    extends URLClassLoader(Array.empty[URL], parent) {
+  override def addURL(url: URL) {
+    super.addURL(url)
+  }
+
+  override def getURLs: Array[URL] = super.getURLs
 }
 
 object LeadImpl {
