@@ -164,7 +164,6 @@ object Constant {
     "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
     "LIKE" -> Array(1), "RLIKE" -> Array(1)))
 
-  val GEMFIRE_RELATION = "GemFireRelation"
 }
 
 /**

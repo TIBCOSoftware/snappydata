@@ -947,15 +947,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
     Seq(SnappyStrategies,
       StoreStrategy, StreamQueryStrategy) ++
         storeOptimizedRules ++
-        extraStrategies ++ (
-        FileSourceStrategy ::
-            SnappyDataSourceStrategy ::
-            DDLStrategy ::
-            SpecialLimits ::
-            Aggregation ::
-            JoinSelection ::
-            InMemoryScans ::
-            BasicOperators :: Nil)
+        super.strategies
 }
 
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
