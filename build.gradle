@@ -1226,6 +1226,8 @@ task docs(type: ScalaDoc) {
             !project.name.contains('gemfire-examples') &&
             !project.name.contains('trove') &&
             !project.name.contains('kafka') &&
+            !project.name.contains('connector') &&
+            !project.name.contains('gfeFunctions') &&
             // exclude tests
             !project.name.contains('tests')) {
       allSource.addAll(project.sourceSets.main.allJava.findAll {
