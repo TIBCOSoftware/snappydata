@@ -2135,7 +2135,6 @@ object SnappySession extends Logging {
       }
       sb.toString
     } else text
-
   }
 
   private def newId(): Int = {

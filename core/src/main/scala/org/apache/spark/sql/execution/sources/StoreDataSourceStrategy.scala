@@ -75,11 +75,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case LogicalRelation(_, _, _) => {
         var foundParamLiteral = false
         val tp = plan.transformAllExpressions {
-          case pl: ParamLiteral => {
+          case pl: ParamLiteral =>
             foundParamLiteral = true
             pl.asLiteral
-          }
         }
+        // replace ParamLiteral with TokenLiteral for external data sources so Spark's
+        // translateToFilter can push down required filters
         if (foundParamLiteral) {
           planLater(tp) :: Nil
         } else {
