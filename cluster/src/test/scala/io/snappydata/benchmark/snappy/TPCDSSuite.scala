@@ -30,6 +30,7 @@ class TPCDSSuite extends SnappyFunSuite
     with BeforeAndAfterAll {
 
   var tpcdsQueries = Seq[String]()
+  var runTPCDSSuite = ""
 
 
   val conf =
@@ -55,36 +56,44 @@ class TPCDSSuite extends SnappyFunSuite
       "q71", "q72", "q73", "q74", "q75", "q76", "q77", "q78", "q79", "q80",
       "q81", "q82", "q83", "q84", "q85", "q86", "q87", "q88", "q89", "q90",
       "q91", "q92", "q93", "q94", "q95", "q96", "q97", "q98", "q99")
+    runTPCDSSuite = System.getenv("TPCDS_SUITE")
+    if (runTPCDSSuite == null) {
+      println("TPCDS_SUITE should be set as an environment variable in order to run TPCDSSuite")
+    }
   }
 
   // Disabling the test run from precheckin as it takes around an hour.
   // TODO : Add TPCDS tests to be run as a part of smokePerf bt which will run on a dedicated
   // machine.
 
-  ignore("Test with Snappy") {
-    val sc = new SparkContext(conf)
-    TPCDSQuerySnappyBenchmark.snappy = new SnappySession(sc)
-    val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
-    val snappyHome = System.getenv("SNAPPY_HOME")
-    val snappyRepo = s"$snappyHome/../../.."
+  test("Test with Snappy") {
+    if (runTPCDSSuite.equalsIgnoreCase("true")) {
+      val sc = new SparkContext(conf)
+      TPCDSQuerySnappyBenchmark.snappy = new SnappySession(sc)
+      val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
+      val snappyHome = System.getenv("SNAPPY_HOME")
+      val snappyRepo = s"$snappyHome/../../.."
 
-    TPCDSQuerySnappyBenchmark.execute(dataLocation,
-      queries = tpcdsQueries, true, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
+      TPCDSQuerySnappyBenchmark.execute(dataLocation,
+        queries = tpcdsQueries, true, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
+    }
   }
 
   // Disabling the test run from precheckin as it takes around an hour.
   // TODO : Add TPCDS tests to be run as a part of smokePerf bt which will run on a dedicated
   // machine.
 
-  ignore("Test with Spark") {
-    TPCDSQuerySnappyBenchmark.spark = SparkSession.builder.config(conf).getOrCreate()
-    val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
-    val snappyHome = System.getenv("SNAPPY_HOME")
-    val snappyRepo = s"$snappyHome/../../..";
+  test("Test with Spark") {
+    if (runTPCDSSuite.equalsIgnoreCase("true")) {
+      TPCDSQuerySnappyBenchmark.spark = SparkSession.builder.config(conf).getOrCreate()
+      val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
+      val snappyHome = System.getenv("SNAPPY_HOME")
+      val snappyRepo = s"$snappyHome/../../..";
 
-    TPCDSQuerySnappyBenchmark.execute(dataLocation,
-      queries = tpcdsQueries, false, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
+      TPCDSQuerySnappyBenchmark.execute(dataLocation,
+        queries = tpcdsQueries, false, s"$snappyRepo/spark/sql/core/src/test/resources/tpcds")
 
+    }
   }
 
   // Disabling the validation for now as this requires the expected result files to be created

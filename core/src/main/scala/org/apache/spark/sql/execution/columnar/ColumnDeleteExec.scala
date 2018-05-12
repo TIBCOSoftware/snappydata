@@ -24,6 +24,7 @@ import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -75,7 +76,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
-    sql.append("DELETE FROM ").append(resolvedName).append(" WHERE ")
+    sql.append("DELETE FROM ").append(quotedName(resolvedName, escapeQuotes = true))
+        .append(" WHERE ")
     // only the ordinalId is required apart from partitioning columns
     if (keyColumns.length > 4) {
       JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(4).map(_.name),
@@ -160,10 +162,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |    }
          |    // finish previous encoder, put into table and re-initialize
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($position, $lastNumRows);
-         |    // delete puts an empty stats row to denote that there are changes
-         |    $externalStoreTerm.storeDelete($tableName, buffer, new byte[] { 0, 0, 0, 0 },
-         |        $lastBucketId, $lastColumnBatchId, ${compressionCodec.id},
-         |        new scala.Some($connTerm));
+         |    $externalStoreTerm.storeDelete($tableName, buffer, $lastBucketId,
+         |        $lastColumnBatchId, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoder

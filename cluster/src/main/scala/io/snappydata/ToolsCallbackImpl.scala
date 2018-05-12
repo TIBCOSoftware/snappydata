@@ -17,48 +17,109 @@
 package io.snappydata
 
 import java.io.File
+import java.net.URLClassLoader
+import java.util.UUID
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.impl.LeadImpl
+import org.apache.spark.executor.SnappyExecutor
+import org.apache.spark.{SparkContext, SparkFiles}
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
 import org.apache.spark.ui.SnappyDashboardTab
-import org.apache.spark.util.SnappyUtils
+import org.apache.spark.util.{SnappyUtils, Utils}
 
 object ToolsCallbackImpl extends ToolsCallback {
-
-  def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      partitionColumnAliases: Seq[Seq[Attribute]],
-      numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning = {
-    OrderlessHashPartitioning(partitionColumns, partitionColumnAliases,
-      numPartitions, numBuckets, tableBuckets)
-  }
-
-  override def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)] = partitioning match {
-    case p: OrderlessHashPartitioning => Some(p.expressions, p.aliases,
-      p.numPartitions, p.numBuckets, p.tableBuckets)
-    case _ => None
-  }
 
   override def updateUI(sc: SparkContext): Unit = {
     SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
   }
 
-  override def removeAddedJar(sc: SparkContext, jarName: String) : Unit =
+  override def removeAddedJar(sc: SparkContext, jarName: String): Unit =
     sc.removeAddedJar(jarName)
 
   /**
-   * Callback to spark Utils to fetch file
-   */
+    * Callback to spark Utils to fetch file
+    */
   override def doFetchFile(
       url: String,
       targetDir: File,
       filename: String): File = {
-     SnappyUtils.doFetchFile(url, targetDir, filename)
+    SnappyUtils.doFetchFile(url, targetDir, filename)
   }
 
   override def setSessionDependencies(sparkContext: SparkContext, appName: String,
       classLoader: ClassLoader): Unit = {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
+  }
+
+  override def addURIs(alias: String, jars: Array[String],
+    deploySql: String, isPackage: Boolean = true): Unit = {
+    if (alias != null) {
+      Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
+    }
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    val loader = lead.urlclassloader
+    jars.foreach(j => {
+      val url = new File(j).toURI.toURL
+      loader.addURL(url)
+    })
+    // Close and reopen interpreter
+    if (alias != null) {
+      lead.closeAndReopenInterpreterServer();
+    }
+  }
+
+  override def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
+    if (ExecutorInitiator.snappyExecBackend != null) {
+      val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+      snappyexecutor.updateMainLoader(jars)
+    }
+  }
+
+  override def getAllGlobalCmnds(): Array[String] = {
+    GemFireXDUtils.waitForNodeInitialization()
+    Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
+  }
+
+  override def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]] = {
+    GemFireXDUtils.waitForNodeInitialization()
+    Misc.getMemStore.getGlobalCmdRgn.entrySet()
+  }
+
+  override def removePackage(alias: String): Unit = {
+    GemFireXDUtils.waitForNodeInitialization()
+    val packageRegion = Misc.getMemStore.getGlobalCmdRgn()
+    packageRegion.destroy(alias)
+  }
+
+  override def setLeadClassLoader(): Unit = {
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          Thread.currentThread().setContextClassLoader(loader)
+        }
+      }
+      case _ =>
+    }
+  }
+
+  override def getLeadClassLoader(): URLClassLoader = {
+    var ret: URLClassLoader = null
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          ret = loader
+        }
+      }
+      case _ =>
+    }
+    ret
   }
 }

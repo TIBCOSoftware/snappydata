@@ -33,18 +33,16 @@
  * limitations under the License.
  */
 
-package org.apache.spark.sql.execution.datasources
+package org.apache.spark.sql.execution.sources
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.CatalystTypeConverters.convertToScala
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, DynamicReplacableConstant, EmptyRow, Expression, Literal, NamedExpression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, PredicateHelper, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{HintInfo, LogicalPlan, Project, ResolvedHint, Filter => LFilter}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
-import org.apache.spark.sql.types.StringType
-import org.apache.spark.sql.{AnalysisException, Strategy, execution, sources}
-import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.sql._
 
 import scala.collection.mutable
 
@@ -64,7 +62,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           filters,
           t.numBuckets,
           t.partitionColumns,
-          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
+          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
       case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _, _) =>
         pruneFilterProject(
           l,
@@ -72,7 +70,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           filters,
           0,
           Nil,
-          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f)) :: Nil
+          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
       case _ => Nil
     }
     case _ => Nil
@@ -84,30 +82,26 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       filterPredicates: Seq[Expression],
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Array[Filter]) =>
-          (RDD[Any], Seq[RDD[InternalRow]])) = {
-    pruneFilterProjectRaw(
-      relation,
-      projects,
-      filterPredicates,
-      numBuckets,
-      partitionColumns,
-      (requestedColumns, _, pushedFilters) => {
-        scanBuilder(requestedColumns, pushedFilters.toArray)
-      })
-  }
+      scanBuilder: (Seq[Attribute], Seq[Expression]) => (RDD[Any], Seq[RDD[InternalRow]])) = {
 
-  private def pruneFilterProjectRaw(
-      relation: LogicalRelation,
-      projects: Seq[NamedExpression],
-      filterPredicates: Seq[Expression],
-      numBuckets: Int,
-      partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) =>
-          (RDD[Any], Seq[RDD[InternalRow]])) = {
+    var allDeterministic = true
+    val projectSet = AttributeSet(projects.flatMap { p =>
+      if (allDeterministic && !p.deterministic) allDeterministic = false
+      p.references
+    })
+    val filterSet = AttributeSet(filterPredicates.flatMap { f =>
+      if (allDeterministic && !f.deterministic) allDeterministic = false
+      f.references
+    })
 
-    val projectSet = AttributeSet(projects.flatMap(_.references))
-    val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
+    if (!allDeterministic) {
+      // keep one-to-one mapping between partitions and buckets for non-deterministic
+      // expressions like spark_partition_id()
+      SparkSession.getActiveSession match {
+        case Some(session: SnappySession) => session.linkPartitionsToBuckets(flag = true)
+        case _ =>
+      }
+    }
 
     val candidatePredicates = filterPredicates.map {
       _ transform {
@@ -118,6 +112,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
     val (unhandledPredicates, pushedFilters, handledFilters) =
       selectFilters(relation.relation, candidatePredicates)
+//    val unhandledPredicates = relation.relation.asInstanceOf[PrunedUnsafeFilteredScan]
+//        .unhandledFilters(candidatePredicates)
 
     // A set of column attributes that are only referenced by pushed down
     // filters. We can eliminate them from requested columns.
@@ -146,9 +142,11 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         case a@Alias(child, _) if child.semanticEquals(j) => a.toAttribute
       })
     } else Nil
-    val metadata: Map[String, String] = if (numBuckets > 0) {
+
+    def getMetadata: Map[String, String] = if (numBuckets > 0) {
       Map.empty[String, String]
     } else {
+      val pushedFilters = candidatePredicates.flatMap(translateToFilter)
       val pairs = mutable.ArrayBuffer.empty[(String, String)]
       if (pushedFilters.nonEmpty) {
         pairs += ("PushedFilters" ->
@@ -158,7 +156,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     }
 
     val mappedProjects = projects.map(_.toAttribute)
-    if (mappedProjects == projects &&
+    val projectOnlyAttributes = mappedProjects == projects
+    if (projectOnlyAttributes &&
         projectSet.size == projects.size &&
         filterSet.subsetOf(projectSet)) {
       // When it is possible to just use column pruning to get the right projection and
@@ -170,8 +169,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           // Don't request columns that are only referenced by pushed filters.
           .filterNot(handledSet.contains)
 
-      val (rdd, otherRDDs) = scanBuilder(requestedColumns,
-        candidatePredicates, pushedFilters)
+      val (rdd, otherRDDs) = scanBuilder(requestedColumns, candidatePredicates)
       val scan = relation.relation match {
         case partitionedRelation: PartitionedDataSourceScan =>
           execution.PartitionedPhysicalScan.createFromDataSource(
@@ -184,7 +182,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             partitionedRelation,
             filterPredicates, // filter predicates for column batch screening
             relation.output,
-            (requestedColumns, pushedFilters)
+            (requestedColumns, candidatePredicates)
           )
         case baseRelation =>
           RowDataSourceScanExec(
@@ -192,10 +190,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             requestedColumns.map(relation.output.indexOf),
             pushedFilters.toSet,
             handledFilters,
-            scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+            scanBuilder(requestedColumns, candidatePredicates)
                 ._1.asInstanceOf[RDD[InternalRow]],
-            baseRelation,
-            relation.catalogTable.map(_.identifier))
+            baseRelation, relation.catalogTable.map(_.identifier))
+//            scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
+//            baseRelation, UnknownPartitioning(0), getMetadata,
+//            relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
@@ -203,8 +203,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       val requestedColumns = (projectSet ++ filterSet -- handledSet).map(
         relation.attributeMap).toSeq
 
-      val (rdd, otherRDDs) = scanBuilder(requestedColumns,
-        candidatePredicates, pushedFilters)
+      val (rdd, otherRDDs) = scanBuilder(requestedColumns, candidatePredicates)
       val scan = relation.relation match {
         case partitionedRelation: PartitionedDataSourceScan =>
           execution.PartitionedPhysicalScan.createFromDataSource(
@@ -217,7 +216,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             partitionedRelation,
             filterPredicates, // filter predicates for column batch screening
             relation.output,
-            (requestedColumns, pushedFilters)
+            (requestedColumns, candidatePredicates)
           )
         case baseRelation =>
           RowDataSourceScanExec(
@@ -225,13 +224,20 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             requestedColumns.map(relation.output.indexOf),
             pushedFilters.toSet,
             handledFilters,
-            scanBuilder(requestedColumns, candidatePredicates, pushedFilters)
+            scanBuilder(requestedColumns, candidatePredicates)
                 ._1.asInstanceOf[RDD[InternalRow]],
             baseRelation,
             relation.catalogTable.map(_.identifier))
+//            scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
+//            baseRelation, UnknownPartitioning(0), getMetadata,
+//            relation.catalogTable.map(_.identifier))
       }
-      execution.ProjectExec(projects,
-        filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
+      if (projectOnlyAttributes || allDeterministic || filterCondition.isEmpty) {
+        execution.ProjectExec(projects,
+          filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan))
+      } else {
+        execution.FilterExec(filterCondition.get, execution.ProjectExec(projects, scan))
+      }
     }
   }
 
@@ -240,46 +246,50 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
    *
    * @return a `Some[Filter]` if the input [[Expression]] is convertible, otherwise a `None`.
    */
-  protected[sql] def translateFilter(predicate: Expression): Option[Filter] = {
+  protected[sql] def translateToFilter(predicate: Expression): Option[Filter] = {
     predicate match {
-      case expressions.EqualTo(a: Attribute, l: DynamicReplacableConstant) =>
-        Some(sources.EqualTo(a.name, l))
-      case expressions.EqualTo(l: DynamicReplacableConstant, a: Attribute) =>
-        Some(sources.EqualTo(a.name, l))
+      case expressions.EqualTo(a: Attribute, TokenLiteral(v)) =>
+        Some(sources.EqualTo(a.name, v))
+      case expressions.EqualTo(TokenLiteral(v), a: Attribute) =>
+        Some(sources.EqualTo(a.name, v))
 
-      case expressions.EqualNullSafe(a: Attribute, l: DynamicReplacableConstant) =>
-        Some(sources.EqualNullSafe(a.name, l))
-      case expressions.EqualNullSafe(l: DynamicReplacableConstant, a: Attribute) =>
-        Some(sources.EqualNullSafe(a.name, l))
+      case expressions.EqualNullSafe(a: Attribute, TokenLiteral(v)) =>
+        Some(sources.EqualNullSafe(a.name, v))
+      case expressions.EqualNullSafe(TokenLiteral(v), a: Attribute) =>
+        Some(sources.EqualNullSafe(a.name, v))
 
-      case expressions.GreaterThan(a: Attribute, Literal(v, t)) =>
-        Some(sources.GreaterThan(a.name, convertToScala(v, t)))
-      case expressions.GreaterThan(Literal(v, t), a: Attribute) =>
-        Some(sources.LessThan(a.name, convertToScala(v, t)))
+      case expressions.GreaterThan(a: Attribute, TokenLiteral(v)) =>
+        Some(sources.GreaterThan(a.name, v))
+      case expressions.GreaterThan(TokenLiteral(v), a: Attribute) =>
+        Some(sources.LessThan(a.name, v))
 
-      case expressions.LessThan(a: Attribute, Literal(v, t)) =>
-        Some(sources.LessThan(a.name, convertToScala(v, t)))
-      case expressions.LessThan(Literal(v, t), a: Attribute) =>
-        Some(sources.GreaterThan(a.name, convertToScala(v, t)))
+      case expressions.LessThan(a: Attribute, TokenLiteral(v)) =>
+        Some(sources.LessThan(a.name, v))
+      case expressions.LessThan(TokenLiteral(v), a: Attribute) =>
+        Some(sources.GreaterThan(a.name, v))
 
-      case expressions.GreaterThanOrEqual(a: Attribute, Literal(v, t)) =>
-        Some(sources.GreaterThanOrEqual(a.name, convertToScala(v, t)))
-      case expressions.GreaterThanOrEqual(Literal(v, t), a: Attribute) =>
-        Some(sources.LessThanOrEqual(a.name, convertToScala(v, t)))
+      case expressions.GreaterThanOrEqual(a: Attribute, TokenLiteral(v)) =>
+        Some(sources.GreaterThanOrEqual(a.name, v))
+      case expressions.GreaterThanOrEqual(TokenLiteral(v), a: Attribute) =>
+        Some(sources.LessThanOrEqual(a.name, v))
 
-      case expressions.LessThanOrEqual(a: Attribute, Literal(v, t)) =>
-        Some(sources.LessThanOrEqual(a.name, convertToScala(v, t)))
-      case expressions.LessThanOrEqual(Literal(v, t), a: Attribute) =>
-        Some(sources.GreaterThanOrEqual(a.name, convertToScala(v, t)))
+      case expressions.LessThanOrEqual(a: Attribute, TokenLiteral(v)) =>
+        Some(sources.LessThanOrEqual(a.name, v))
+      case expressions.LessThanOrEqual(TokenLiteral(v), a: Attribute) =>
+        Some(sources.GreaterThanOrEqual(a.name, v))
 
       case expressions.InSet(a: Attribute, set) =>
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
         Some(sources.In(a.name, set.toArray.map(toScala)))
 
+      case expressions.DynamicInSet(a: Attribute, set) =>
+        val hSet = set.map(e => e.eval(EmptyRow))
+        val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
+        Some(sources.In(a.name, hSet.toArray.map(toScala)))
+
       // Because we only convert In to InSet in Optimizer when there are more than certain
-      // items. So it is possible we still get an In expression here that needs to be pushed
-      // down.
-      case expressions.In(a: Attribute, list) if !list.exists(!_.isInstanceOf[Literal]) =>
+      // items. So it is possible we still get an In expression here that needs to be pushed down.
+      case expressions.In(a: Attribute, list) if !list.exists(!TokenLiteral.isConstant(_)) =>
         val hSet = list.map(e => e.eval(EmptyRow))
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
         Some(sources.In(a.name, hSet.toArray.map(toScala)))
@@ -290,27 +300,25 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         Some(sources.IsNotNull(a.name))
 
       case expressions.And(left, right) =>
-        (translateFilter(left) ++ translateFilter(right)).reduceOption(sources.And)
+        (translateToFilter(left) ++ translateToFilter(right)).reduceOption(sources.And)
 
       case expressions.Or(left, right) =>
         for {
-          leftFilter <- translateFilter(left)
-          rightFilter <- translateFilter(right)
+          leftFilter <- translateToFilter(left)
+          rightFilter <- translateToFilter(right)
         } yield sources.Or(leftFilter, rightFilter)
 
       case expressions.Not(child) =>
-        translateFilter(child).map(sources.Not)
+        translateToFilter(child).map(sources.Not)
 
-      case expressions.StartsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
+      case expressions.StartsWith(a: Attribute, TokenLiteral(v)) =>
         Some(sources.StringStartsWith(a.name, v.toString))
 
-      /* (not used in pushdown by column/row tables)
-      case expressions.EndsWith(a: Attribute, Literal(v: UTF8String, StringType)) =>
+      case expressions.EndsWith(a: Attribute, TokenLiteral(v)) =>
         Some(sources.StringEndsWith(a.name, v.toString))
 
-      case expressions.Contains(a: Attribute, Literal(v: UTF8String, StringType)) =>
+      case expressions.Contains(a: Attribute, TokenLiteral(v)) =>
         Some(sources.StringContains(a.name, v.toString))
-      */
 
       case _ => None
     }
@@ -336,7 +344,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     val translated: Seq[(Expression, Filter)] =
       for {
         predicate <- predicates
-        filter <- translateFilter(predicate)
+        filter <- translateToFilter(predicate)
       } yield predicate -> filter
 
     // A map from original Catalyst expressions to corresponding translated data source filters.
@@ -387,7 +395,7 @@ object PhysicalScan extends PredicateHelper {
 
   def unapply(plan: LogicalPlan): Option[ReturnType] = {
     val (fields, filters, child, _) = collectProjectsAndFilters(plan)
-    Some((fields.getOrElse(child.output), filters.filter(_.deterministic), child))
+    Some((fields.getOrElse(child.output), filters, child))
   }
 
   /**

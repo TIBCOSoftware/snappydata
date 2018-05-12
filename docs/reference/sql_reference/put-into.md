@@ -27,19 +27,17 @@ The PUT INTO statement is similar to the "UPSERT" command or capability provided
 
 #### Example
 
-```pre
-PUT INTO TRADE.CUSTOMERS
-      VALUES (1, 'User 1', '07-06-2002', 'SnappyData', 1);
+```no-highlight
+PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '07-06-2002', 'SnappyData', 1);
 ```
 
 When specifying columns with table, columns should not have any [CONSTRAINT](create-table.md#constraint), as explained in the following example:
 
-```pre
+```no-highlight
 PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID)
  VALUES (1, 'User 1' , 'SnappyData', 1),
  (2, 'User 2' , 'SnappyData', 1);
 ```
-
 
 ###	For Column Tables
 
@@ -65,3 +63,4 @@ API is available from the DataFrameWriter extension.
 import org.apache.spark.sql.snappy._
 dataFrame.write.putInto("col_table")
 ```
+

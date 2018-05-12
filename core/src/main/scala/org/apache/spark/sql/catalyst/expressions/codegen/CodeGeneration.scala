@@ -27,6 +27,7 @@ import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
@@ -42,30 +43,31 @@ import org.codehaus.janino.CompilerFactory
 import scala.util.hashing.MurmurHash3
 
 /**
-  * Utilities to generate code for exchanging data from Spark layer
-  * (Row, InternalRow) to store (Statement, ExecRow).
-  * <p>
-  * This extends the Spark code generation facilities to allow lazy
-  * generation of code string itself only if not found in cache
-  * (and using some other lookup key than the code string)
-  */
+ * Utilities to generate code for exchanging data from Spark layer
+ * (Row, InternalRow) to store (Statement, ExecRow).
+ * <p>
+ * This extends the Spark code generation facilities to allow lazy
+ * generation of code string itself only if not found in cache
+ * (and using some other lookup key than the code string)
+ */
 object CodeGeneration extends Logging {
 
   override def logInfo(msg: => String): Unit = super.logInfo(msg)
 
   override def logDebug(msg: => String): Unit = super.logDebug(msg)
 
-  private[this] lazy val cacheSize = {
-    // don't need as big a cache as Spark's CodeGenerator.cache
+  private[this] lazy val (codeCacheSize, cacheSize) = {
     val env = SparkEnv.get
-    if (env ne null) {
-      env.conf.getInt("spark.sql.codegen.cacheSize", 1000) / 4
-    } else 250
+    val size = if (env ne null) {
+      env.conf.getInt("spark.sql.codegen.cacheSize", 2000)
+    } else 2000
+    // don't need as big a cache for other caches
+    (size, size >>> 2)
   }
 
   /**
-    * A loading cache of generated <code>GeneratedStatement</code>s.
-    */
+   * A loading cache of generated <code>GeneratedStatement</code>s.
+   */
   private[this] lazy val cache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[ExecuteKey, GeneratedStatement]() {
       override def load(key: ExecuteKey): GeneratedStatement = {
@@ -78,23 +80,27 @@ object CodeGeneration extends Logging {
     })
 
   /**
-    * Similar to Spark's CodeGenerator.compile cache but allows lookup using
-    * a key (name+schema) instead of the code string itself to avoid having
-    * to create the code string upfront. Code adapted from CodeGenerator.cache
-    */
-  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
+   * Similar to Spark's CodeGenerator.compile cache but allows lookup using
+   * a key (name+schema) instead of the code string itself to avoid having
+   * to create the code string upfront. Code adapted from CodeGenerator.cache
+   */
+  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(codeCacheSize).build(
     new CacheLoader[ExecuteKey, (GeneratedClass, Array[Any])]() {
       // invoke CodeGenerator.doCompile by reflection to reduce code duplication
       private val doCompileMethod = {
         val allMethods = CodeGenerator.getClass.getDeclaredMethods.toSeq
         val method = allMethods.find(_.getName.endsWith("doCompile"))
-          .getOrElse(sys.error(s"Failed to find method 'doCompile' in " +
-            s"CodeGenerator (methods=$allMethods)"))
+            .getOrElse(sys.error(s"Failed to find method 'doCompile' in " +
+                s"CodeGenerator (methods=$allMethods)"))
         method.setAccessible(true)
         method
       }
 
       override def load(key: ExecuteKey): (GeneratedClass, Array[Any]) = {
+//        if (key.projection) {
+//          // generate InternalRow to UnsafeRow projection
+//          return UnsafeProjection.create(key.schema.map(_.dataType))
+//        }
         val (code, references) = key.genCode()
         val startTime = System.nanoTime()
         val (result, _) = doCompileMethod.invoke(CodeGenerator, code)
@@ -119,8 +125,8 @@ object CodeGeneration extends Logging {
     })
 
   /**
-    * A loading cache of generated <code>SerializeComplexType</code>s.
-    */
+   * A loading cache of generated <code>SerializeComplexType</code>s.
+   */
   private[this] lazy val typeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[DataType, SerializeComplexType]() {
       override def load(key: DataType): SerializeComplexType = {
@@ -133,8 +139,8 @@ object CodeGeneration extends Logging {
     })
 
   def getColumnSetterFragment(col: Int, dataType: DataType,
-                              dialect: JdbcDialect, ev: ExprCode, stmt: String, schema: String,
-                              ctx: CodegenContext): String = {
+      dialect: JdbcDialect, ev: ExprCode, stmt: String, schema: String,
+      ctx: CodegenContext): String = {
     val timeUtilsClass = DateTimeUtils.getClass.getName.replace("$", "")
     val encoderClass = classOf[UncompressedEncoder].getName
     val utilsClass = classOf[ClientSharedUtils].getName
@@ -170,10 +176,8 @@ object CodeGeneration extends Logging {
            |} else {
            |  final $encoderClass $encoder = $encoderVar;
            |  long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |  ${
-          ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
-            arr, "0")
-        }
+           |  ${ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
+                arr, "0")}
            |  // finish and set the bytes into the statement
            |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
            |}
@@ -209,10 +213,8 @@ object CodeGeneration extends Logging {
            |} else {
            |  final $encoderClass $encoder = $encoderVar;
            |  long $cursor = $encoder.initialize($schema[$col], 1, false);
-           |  ${
-          ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
-            struct, "0")
-        }
+           |  ${ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
+                struct, "0")}
            |  // finish and set the bytes into the statement
            |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
            |}
@@ -237,25 +239,25 @@ object CodeGeneration extends Logging {
   }
 
   private[this] def defaultImports = Array(
-    classOf[Platform].getName,
-    classOf[InternalRow].getName,
-    classOf[UTF8String].getName,
-    classOf[Decimal].getName,
-    classOf[CalendarInterval].getName,
-    classOf[ArrayData].getName,
-    classOf[MapData].getName)
+      classOf[Platform].getName,
+      classOf[InternalRow].getName,
+      classOf[UTF8String].getName,
+      classOf[Decimal].getName,
+      classOf[CalendarInterval].getName,
+      classOf[ArrayData].getName,
+      classOf[MapData].getName)
 
   def getRowSetterFragment(schema: Array[StructField],
-                           dialect: JdbcDialect, row: String, stmt: String,
-                           schemaTerm: String, ctx: CodegenContext): String = {
+      dialect: JdbcDialect, row: String, stmt: String,
+      schemaTerm: String, ctx: CodegenContext): String = {
     val rowInput = (col: Int) => ExprCode("", s"$row.isNullAt($col)",
       ctx.getValue(row, schema(col).dataType, Integer.toString(col)))
     genStmtSetters(schema, dialect, rowInput, stmt, schemaTerm, ctx)
   }
 
   def genStmtSetters(schema: Array[StructField], dialect: JdbcDialect,
-                     rowInput: Int => ExprCode, stmt: String, schemaTerm: String,
-                     ctx: CodegenContext): String = {
+      rowInput: Int => ExprCode, stmt: String, schemaTerm: String,
+      ctx: CodegenContext): String = {
     schema.indices.map { col =>
       getColumnSetterFragment(col, schema(col).dataType, dialect,
         rowInput(col), stmt, schemaTerm, ctx)
@@ -263,8 +265,7 @@ object CodeGeneration extends Logging {
   }
 
   private[this] def compilePreparedUpdate(table: String,
-                                          schema: Array[StructField],
-                                          dialect: JdbcDialect): GeneratedStatement = {
+      schema: Array[StructField], dialect: JdbcDialect): GeneratedStatement = {
     val ctx = new CodegenContext
     val stmt = ctx.freshName("stmt")
     val multipleRows = ctx.freshName("multipleRows")
@@ -281,12 +282,10 @@ object CodeGeneration extends Logging {
     evaluator.setParentClassLoader(getClass.getClassLoader)
     evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
-
-    val varDeclarations = ctx.inlinedMutableStates.distinct.map { case (javaType, variableName) =>
-      s"private $javaType $variableName;"
+    val varDeclarations = ctx.inlinedMutableStates.distinct.map {
+      case (javaType, variableName) => s"private $javaType $variableName;"
     }
-    val expression =
-      s"""
+    val expression = s"""
       ${varDeclarations.mkString(separator)}
       int $rowCount = 0;
       int $result = 0;
@@ -315,11 +314,11 @@ object CodeGeneration extends Logging {
     logDebug(s"DEBUG: For update to table=$table, generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[GeneratedStatement],
       Array(stmt, multipleRows, rows, batchSize, schemaTerm))
-      .asInstanceOf[GeneratedStatement]
+        .asInstanceOf[GeneratedStatement]
   }
 
-  private[this] def compileGeneratedIndexUpdate(table: String, schema: Array[StructField],
-                                                dialect: JdbcDialect): GeneratedIndexStatement = {
+  private[this] def compileGeneratedIndexUpdate(table: String,
+      schema: Array[StructField], dialect: JdbcDialect): GeneratedIndexStatement = {
     val ctx = new CodegenContext
     val schemaTerm = ctx.freshName("schema")
     val stmt = ctx.freshName("stmt")
@@ -331,11 +330,10 @@ object CodeGeneration extends Logging {
     evaluator.setParentClassLoader(getClass.getClassLoader)
     evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
-    val varDeclarations = ctx.inlinedMutableStates.distinct.map { case (javaType, variableName) =>
-      s"private $javaType $variableName;"
+    val varDeclarations = ctx.inlinedMutableStates.distinct.map {
+      case (javaType, variableName) => s"private $javaType $variableName;"
     }
-    val expression =
-      s"""
+    val expression = s"""
       ${varDeclarations.mkString(separator)}
         $code
         stmt.addBatch();
@@ -347,7 +345,7 @@ object CodeGeneration extends Logging {
   }
 
   private[this] def compileComplexType(
-                                        dataType: DataType): SerializeComplexType = {
+      dataType: DataType): SerializeComplexType = {
     val ctx = new CodegenContext
     val inputVar = ctx.freshName("value")
     val encoderVar = ctx.freshName("encoder")
@@ -367,10 +365,8 @@ object CodeGeneration extends Logging {
            |  return (($serArrayClass)$arr).toBytes();
            |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
-           |${
-          ColumnWriter.genCodeArrayWrite(ctx, a, encoderVar, cursor,
-            arr, "0")
-        }
+           |${ColumnWriter.genCodeArrayWrite(ctx, a, encoderVar, cursor,
+              arr, "0")}
            |if ($dosVar != null) {
            |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
@@ -388,10 +384,8 @@ object CodeGeneration extends Logging {
            |  return (($serMapClass)$map).toBytes();
            |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
-           |${
-          ColumnWriter.genCodeMapWrite(ctx, m, encoderVar, cursor,
-            map, "0")
-        }
+           |${ColumnWriter.genCodeMapWrite(ctx, m, encoderVar, cursor,
+              map, "0")}
            |if ($dosVar != null) {
            |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
@@ -409,10 +403,8 @@ object CodeGeneration extends Logging {
            |  return (($serRowClass)$struct).toBytes();
            |}
            |long $cursor = $encoderVar.initialize($fieldVar, 1, false);
-           |${
-          ColumnWriter.genCodeStructWrite(ctx, s, encoderVar, cursor,
-            struct, "0")
-        }
+           |${ColumnWriter.genCodeStructWrite(ctx, s, encoderVar, cursor,
+              struct, "0")}
            |if ($dosVar != null) {
            |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
@@ -437,33 +429,29 @@ object CodeGeneration extends Logging {
       classOf[MapData].getName,
       classOf[InternalDataSerializer].getName))
     val separator = "\n      "
-    val varDeclarations = ctx.inlinedMutableStates.distinct.map { case (javaType, variableName) =>
-      s"private $javaType $variableName;"
+    val varDeclarations = ctx.inlinedMutableStates.distinct.map {
+      case (javaType, variableName) => s"private $javaType $variableName;"
     }
-    val expression =
-      s"""
+    val expression = s"""
       ${varDeclarations.mkString(separator)}
       $typeConversion"""
 
     logDebug(s"DEBUG: For complex type=$dataType, generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[SerializeComplexType],
       Array(inputVar, encoderVar, fieldVar, dosVar))
-      .asInstanceOf[SerializeComplexType]
+        .asInstanceOf[SerializeComplexType]
   }
 
   private[this] def executeUpdate(name: String, stmt: PreparedStatement,
-                                  rows: java.util.Iterator[InternalRow],
-                                  multipleRows: Boolean,
-                                  batchSize: Int,
-                                  schema: Array[StructField],
-                                  dialect: JdbcDialect): Int = {
+      rows: java.util.Iterator[InternalRow], multipleRows: Boolean,
+      batchSize: Int, schema: Array[StructField], dialect: JdbcDialect): Int = {
     val result = cache.get(new ExecuteKey(name, schema, dialect))
     result.executeStatement(stmt, multipleRows, rows, batchSize, schema)
   }
 
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
-                    multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
-                    dialect: JdbcDialect): Int = {
+      multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
+      dialect: JdbcDialect): Int = {
     val iterator = new java.util.Iterator[InternalRow] {
 
       private val baseIterator = rows.iterator
@@ -483,36 +471,37 @@ object CodeGeneration extends Logging {
   }
 
   def executeUpdate(name: String, stmt: PreparedStatement, row: Row,
-                    schema: Array[StructField], dialect: JdbcDialect): Int = {
+      schema: Array[StructField], dialect: JdbcDialect): Int = {
     val encoder = RowEncoder(StructType(schema))
     executeUpdate(name, stmt, Collections.singleton(encoder.toRow(row))
-      .iterator(), multipleRows = false, 0, schema, dialect)
+        .iterator(), multipleRows = false, 0, schema, dialect)
   }
 
   def compileCode(name: String, schema: Array[StructField],
-                  genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass,
-    Array[Any]) = {
+      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass, Array[Any]) = {
     codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
-      forIndex = false, genCode = genCode))
+      forIndex = false, genCode = genCode)).asInstanceOf[(GeneratedClass, Array[Any])]
+  }
+
+  def compileProjection(name: String, schema: Array[StructField]): UnsafeProjection = {
+    codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
+      forIndex = false, projection = true)).asInstanceOf[UnsafeProjection]
   }
 
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
     typeCache.get(dataType)
 
   def getGeneratedIndexStatement(name: String, schema: StructType,
-                                 dialect: JdbcDialect): (PreparedStatement, InternalRow) => Int = {
+      dialect: JdbcDialect): (PreparedStatement, InternalRow) => Int = {
     val result = indexCache.get(new ExecuteKey(name, schema.fields,
       dialect, forIndex = true))
     result.addBatch(schema.fields)
   }
 
-  def removeCache(name: String): Unit =
+  def removeCache(name: String): Unit = {
     cache.invalidate(new ExecuteKey(name, null, null))
-
-  def removeCache(dataType: DataType): Unit = cache.invalidate(dataType)
-
-  def removeIndexCache(indexName: String): Unit =
-    indexCache.invalidate(new ExecuteKey(indexName, null, null, true))
+    indexCache.invalidate(new ExecuteKey(name, null, null, true))
+  }
 
   def clearAllCache(skipTypeCache: Boolean = true): Unit = {
     cache.invalidateAll()
@@ -528,47 +517,38 @@ trait GeneratedStatement {
 
   @throws[java.sql.SQLException]
   def executeStatement(stmt: PreparedStatement, multipleRows: Boolean,
-                       rows: java.util.Iterator[InternalRow], batchSize: Int,
-                       schema: Array[StructField]): Int
+      rows: java.util.Iterator[InternalRow], batchSize: Int,
+      schema: Array[StructField]): Int
 }
 
 trait SerializeComplexType {
 
   @throws[java.io.IOException]
   def serialize(value: Any, encoder: UncompressedEncoder,
-                field: StructField, dos: GfxdHeapDataOutputStream): Array[Byte]
+      field: StructField, dos: GfxdHeapDataOutputStream): Array[Byte]
 }
 
 trait GeneratedIndexStatement {
 
   @throws[java.sql.SQLException]
   def addBatch(schema: Array[StructField])
-              (stmt: PreparedStatement, row: InternalRow): Int
+      (stmt: PreparedStatement, row: InternalRow): Int
 }
 
 
 final class ExecuteKey(val name: String,
-                       val schema: Array[StructField], val dialect: JdbcDialect,
-                       val forIndex: Boolean = false,
-                       val genCode: () => (CodeAndComment, Array[Any]) = null) {
+    val schema: Array[StructField], val dialect: JdbcDialect,
+    val forIndex: Boolean = false, val projection: Boolean = false,
+    val genCode: () => (CodeAndComment, Array[Any]) = null) {
 
-  override lazy val hashCode: Int = if (schema != null && !forIndex) {
+  override lazy val hashCode: Int = if ((schema ne null) && !forIndex) {
     MurmurHash3.listHash(name :: schema.toList, MurmurHash3.seqSeed)
   } else name.hashCode
 
   override def equals(other: Any): Boolean = other match {
-    case o: ExecuteKey => if (schema != null && o.schema != null && !forIndex) {
-      val numFields = schema.length
-      if (numFields == o.schema.length && name == o.name) {
-        var i = 0
-        while (i < numFields) {
-          if (!schema(i).equals(o.schema(i))) {
-            return false
-          }
-          i += 1
-        }
-        true
-      } else false
+    case o: ExecuteKey => if ((schema ne null) && (o.schema ne null) && !forIndex) {
+      schema.length == o.schema.length && name == o.name && java.util.Arrays.equals(
+        schema.asInstanceOf[Array[AnyRef]], o.schema.asInstanceOf[Array[AnyRef]])
     } else {
       name == o.name
     }

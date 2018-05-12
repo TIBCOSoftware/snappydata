@@ -1,41 +1,44 @@
-/*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
-package org.apache.spark.sql.execution.ui
-
-import org.apache.spark.scheduler.SparkListenerEvent
-import org.apache.spark.sql.execution.SparkPlanInfo
-
-/**
- * A new event that is fired when a plan is executed to get an RDD.
- */
-case class SparkListenerSQLPlanExecutionStart(
-   executionId: Long,
-   description: String,
-   details: String,
-   physicalPlanDescription: String,
-   sparkPlanInfo: SparkPlanInfo,
-   time: Long)
-  extends SparkListenerEvent {
-
-}
-// TODO_2.3_MERGE
+///*
+// * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+// *
+// * Licensed under the Apache License, Version 2.0 (the "License"); you
+// * may not use this file except in compliance with the License. You
+// * may obtain a copy of the License at
+// *
+// * http://www.apache.org/licenses/LICENSE-2.0
+// *
+// * Unless required by applicable law or agreed to in writing, software
+// * distributed under the License is distributed on an "AS IS" BASIS,
+// * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+// * implied. See the License for the specific language governing
+// * permissions and limitations under the License. See accompanying
+// * LICENSE file.
+// */
+//package org.apache.spark.sql.execution.ui
+//
+//import scala.collection.mutable
+//
+//import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
+//import org.apache.spark.sql.CachedDataFrame
+//import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
+//import org.apache.spark.{JobExecutionStatus, SparkConf}
+//
+///**
+// * A new event that is fired when a plan is executed to get an RDD.
+// */
+//case class SparkListenerSQLPlanExecutionStart(
+//   executionId: Long,
+//   description: String,
+//   details: String,
+//   physicalPlanDescription: String,
+//   sparkPlanInfo: SparkPlanInfo,
+//   time: Long)
+//  extends SparkListenerEvent
+//
 ///**
 // * Snappy's SQL Listener.
-// * @param conf
+// *
+// * @param conf SparkConf of active SparkContext
 // */
 //class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
 //  // base class variables that are private
@@ -56,7 +59,6 @@ case class SparkListenerSQLPlanExecutionStart(
 //  }
 //
 //  def getInternalField(fieldName: String): Any = {
-//    val x = classOf[SQLListener]
 //    val resultField = classOf[SQLListener].getDeclaredField(fieldName)
 //    resultField.setAccessible(true)
 //    resultField.get(this)
@@ -107,25 +109,28 @@ case class SparkListenerSQLPlanExecutionStart(
 //    event match {
 //
 //      case SparkListenerSQLExecutionStart(executionId, description, details,
-//      physicalPlanDescription, sparkPlanInfo, time) =>
-//        val executionUIData = baseExecutionIdToData.get(executionId).getOrElse({
+//      physicalPlanDescription, sparkPlanInfo, time) => synchronized {
+//        val executionUIData = baseExecutionIdToData.getOrElseUpdate(executionId, {
 //        val physicalPlanGraph = SparkPlanGraph(sparkPlanInfo)
 //        val sqlPlanMetrics = physicalPlanGraph.allNodes.flatMap { node =>
 //          node.metrics.map(metric => metric.accumulatorId -> metric)
 //        }
+//        // description and details strings being reference equals means
+//        // trim off former here
+//        val desc = if (description eq details) {
+//          CachedDataFrame.queryStringShortForm(details)
+//        } else description
 //        new SQLExecutionUIData(
 //          executionId,
-//          description,
+//          desc,
 //          details,
 //          physicalPlanDescription,
 //          physicalPlanGraph,
 //          sqlPlanMetrics.toMap,
 //          time)
 //        })
-//        synchronized {
-//          baseExecutionIdToData(executionId) = executionUIData
-//          baseActiveExecutions(executionId) = executionUIData
-//        }
+//        baseActiveExecutions(executionId) = executionUIData
+//      }
 //      case SparkListenerSQLPlanExecutionStart(executionId, description, details,
 //      physicalPlanDescription, sparkPlanInfo, time) =>
 //        val physicalPlanGraph = SparkPlanGraph(sparkPlanInfo)

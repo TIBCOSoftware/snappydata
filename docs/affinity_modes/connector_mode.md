@@ -46,7 +46,7 @@ You can either start SnappyData members using the `snappy_start_all` script or y
 **Step 2: Launch the Apache Spark program**
 
 ***_In the Local mode_***
-```bash
+```no-highlight
 
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
 ```
@@ -56,7 +56,7 @@ You can either start SnappyData members using the `snappy_start_all` script or y
  	* In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`.
 
 This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
-```scala
+```no-highlight
 // Create a SnappySession to work with SnappyData store
 $scala > val snSession = new SnappySession(spark.sparkContext)
 ```
@@ -67,11 +67,11 @@ The code example for writing a Smart Connector application program is located in
 
 **Cluster mode**
 
-```bash
+```no-highlight
 ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
 ```
 **Client mode**
-```bash
+```no-highlight
 ./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
 ```
 
@@ -79,11 +79,11 @@ The code example for writing a Smart Connector application program is located in
 ***_Using YARN as a Cluster Manager_***
 
 **Cluster mode**
-```
+```no-highlight
 ./spark-submit --master yarn  --deploy-mode cluster --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```
 
 **Client mode**
-```
+```no-highlight
 ./spark-submit --master yarn  --deploy-mode client --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```

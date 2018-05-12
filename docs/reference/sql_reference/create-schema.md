@@ -1,6 +1,6 @@
 # CREATE SCHEMA
 
-``` pre
+```no-highlight
 CREATE SCHEMA schema-name;
 ```
 
@@ -13,7 +13,7 @@ This creates a schema which provides a mechanism to logically group objects by p
 
 ## Example
 
-``` pre
+```no-highlight
 CREATE SCHEMA myschema;
 ```
 
@@ -21,3 +21,4 @@ To create a table TABLE1 in the schema SCHEMA1:
 ```
 CREATE TABLE SCHEMA1.TABLE1 ( ... )
 ```
+

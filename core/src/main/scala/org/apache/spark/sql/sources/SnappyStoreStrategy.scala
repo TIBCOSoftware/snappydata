@@ -45,7 +45,7 @@ object SnappyStoreStrategy extends Strategy {
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
-    case PutIntoColumnTable(l@LogicalRelation(p: BulkPutRelation, _, _, _), left, right) =>
+    case PutIntoColumnTable(LogicalRelation(p: BulkPutRelation, _, _, _), left, right) =>
       ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
     case Update(l@LogicalRelation(u: MutableRelation, _, _, _), child,
@@ -113,10 +113,6 @@ final class Insert(
 
   override def output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil
-
-  override def makeCopy(newArgs: Array[AnyRef]): LogicalPlan = {
-    super.makeCopy(newArgs)
-  }
 
   override def copy(table: LogicalPlan = table,
       partition: Map[String, Option[String]] = partition,

@@ -433,6 +433,12 @@ public class SnappyPrms extends BasePrms {
   public static Long conserveSockets;
 
   /**
+   * (boolean) - whether to use same data repetatively for performing insert ops. Defaults to
+   * false in case not provided.
+   */
+  public static Long insertDuplicateData;
+
+  /**
    * (int) number of BootStrap trials to be used in test.
    */
   public static Long numBootStrapTrials;
@@ -636,6 +642,12 @@ public class SnappyPrms extends BasePrms {
     String conserveSockets = " -conserve-sockets=" + isConserveSockets;
     return conserveSockets;
   }
+
+  public static boolean insertDuplicateData() {
+    Long key = insertDuplicateData;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
 
   public static int getShufflePartitions() {
     Long key = shufflePartitions;

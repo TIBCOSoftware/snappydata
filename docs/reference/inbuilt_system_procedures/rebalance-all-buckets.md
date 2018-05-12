@@ -4,7 +4,7 @@ Rebalance partitioned table data on available SnappyData members.
 
 ## Syntax
 
-``` pre
+```no-highlight
 SYS.REBALANCE_ALL_BUCKETS()
 ```
 
@@ -20,7 +20,7 @@ For efficiency, when starting multiple members, trigger the rebalance a single t
 
 ## Example
 
-``` pre
+```no-highlight
 snappy> call sys.rebalance_all_buckets();
 ```
 

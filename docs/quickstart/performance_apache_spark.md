@@ -15,24 +15,18 @@ Use any of the options mentioned below to start the Spark shell:
 * **If you are using your own Spark distribution that is compatible with version 2.1.1:**
 
         # Create a directory for SnappyData artifacts
-        $ mkdir quickstartdatadir
-        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
-        --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log 
-        --packages "SnappyDataInc:snappydata:1.0.1-s_2.11" 
-        --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+        $ mkdir quickstartdatadir 
+        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:1.0.1-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 
 * **If you have downloaded SnappyData**:
 
         # Create a directory for SnappyData artifacts
-        $ mkdir quickstartdatadir
-        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
-        --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log 
-        --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+        $ mkdir quickstartdatadir 
+        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 
 * **If you are using Docker**:
 
-        $ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g 
-        --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+        $ docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 
 ## To get the Performance Numbers
 Ensure that you are in a Spark shell, and then follow the instructions below to get the performance numbers.

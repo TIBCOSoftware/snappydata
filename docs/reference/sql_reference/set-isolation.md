@@ -4,7 +4,7 @@ Change the transaction isolation level for the connection.
 
 ## Syntax
 
-``` pre
+```no-highlight
 SET [ CURRENT ] ISOLATION [ = ]
 { 
 CS | READ COMMITTED
@@ -26,15 +26,13 @@ This statement behaves identically to the JDBC *java.sql.Connection.setTransacti
 Example
 -------
 
-``` pre
-snappy(PEERCLIENT)> set ISOLATION READ COMMITTED;
-0 rows inserted/updated/deleted
-snappy(PEERCLIENT)> VALUES CURRENT ISOLATION;
+```no-highlight
+snappy> set ISOLATION READ COMMITTED;
+
+snappy> VALUES CURRENT ISOLATION;
 1
 ----
 CS
 
 1 row selected
 ```
-
-

@@ -11,3 +11,5 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-snappyDDLExtn =
 " USING row OPTIONS(partition_by 'TerritoryID', buckets '3', redundancy '${redundantCopies}', PERSISTENT '${persistenceMode}')"
 " USING row OPTIONS(partition_by 'EmployeeID', buckets '1', redundancy '${redundantCopies}', PERSISTENT '${persistenceMode}')"
 ;
+
+INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/nwTablesDDLWithPK.inc;

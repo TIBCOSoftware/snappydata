@@ -11,26 +11,24 @@ Use the ALTER TABLE statement to add and drop columns in row tables using Snappy
 ## Syntax
 
 **SQL**
-```
+```no-highlight
 ALTER TABLE table-name
 {
   ADD COLUMN column-definition |
   DROP COLUMN column-name
 }
-
 ```
 
 **API:**
-```
+```no-highlight
 snc.alterTable(tableName, isAddColumn, column)
-
 ```
 
 ## Example
 
 **SQL:**
 
-```
+```no-highlight
 -- create a table
 CREATE TABLE trade.customers (
     cid int not null,
@@ -47,8 +45,7 @@ ALTER TABLE trade.customers ADD COLUMN addr varchar(100);
 
 **API:**
 
-```
-
+```no-highlight
 //create a table in Snappy store
 	snc.createTable("orders", "row", ordersDF.schema, Map.empty[String, String])
 
@@ -60,4 +57,3 @@ ALTER TABLE trade.customers ADD COLUMN addr varchar(100);
 // for dropping a column isAddColumn should be false
 	snc.alterTable("orders", false, StructField("FirstName", StringType, true))
 ```
-

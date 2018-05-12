@@ -3,7 +3,7 @@ io/snappydata/hydra/tpch/tpchPerf.conf
     B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
     C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
     D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
-    dataDir="/home/kishor/SNAPPY/DATA/TPCH/1GB"
+    dataDir="/export/shared/QA_DATA/TPCH/1GB"
     buckets_Order_Lineitem=113
     buckets_Cust_Part_PartSupp=113
     buckets_Nation_Region_Supp=113
