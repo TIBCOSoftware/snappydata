@@ -38,13 +38,13 @@ package org.apache.spark.sql.execution.sources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, PredicateHelper, TokenLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
-import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
 
 /**
@@ -72,6 +72,14 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           0,
           Nil,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
+      case LogicalRelation(_: BaseRelation, _, _) =>
+        // replace ParamLiteral with TokenLiteral for external data sources so Spark's
+        // translateToFilter can push down required filters
+        var hasParamLiteral = false
+        val newPlan = plan.transformAllExpressions {
+          case l: ParamLiteral => hasParamLiteral = true; l.asLiteral
+        }
+        if (hasParamLiteral) planLater(newPlan) :: Nil else Nil
       case _ => Nil
     }
     case _ => Nil
