@@ -41,7 +41,7 @@ import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.execution.sources.PhysicalScan
+import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyStoreHiveCatalog, _}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -872,7 +872,7 @@ class SnappySparkPlanner(val snappySession: SnappySession, conf: SQLConf,
   }
 
   private val storeOptimizedRules: Seq[Strategy] =
-    Seq(SnappyStoreStrategy, SnappyAggregation, HashJoinStrategies)
+    Seq(SnappyStoreStrategy, SnappyAggregation, HashJoinStrategies, StoreDataSourceStrategy)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies, SnappyStoreStrategy, StreamQueryStrategy) ++
