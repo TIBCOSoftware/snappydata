@@ -56,7 +56,7 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.util.TaskCompletionListener
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, TaskContext, TaskKilledException}
 
 /**
  * Column Store implementation for GemFireXD.
@@ -88,9 +88,18 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     schema = StructTypeSerializer.read(kryo, input, c = null)
   }
 
+  private def checkTaskCancellation(): Unit = {
+    val context = TaskContext.get()
+    if ((context ne null) && context.isInterrupted()) {
+      throw new TaskKilledException
+    }
+  }
+
   override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    // check for task cancellation before further processing
+    checkTaskCancellation()
     if (partitionId >= 0) {
       doInsertOrPut(columnTableName, batch, batchId, partitionId, maxDeltaRows,
         compressionCodecId, conn)
@@ -222,6 +231,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def storeDelete(columnTableName: String, buffer: ByteBuffer, partitionId: Int,
       batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    // check for task cancellation before further processing
+    checkTaskCancellation()
     val value = new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed = false)
     connectionType match {
       case ConnectionType.Embedded =>
