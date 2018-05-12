@@ -1,11 +1,10 @@
 # LATERAL VIEW
 
-Support for hive compatible LATERAL VIEW. It works with a table generating function like explode() and for each output row, joins it with the base table to create a view. Refer to [this document](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+LateralView) for details..
-
+Support for hive compatible LATERAL VIEW. It works with a table generating function like explode() and for each output row, joins it with the base table to create a view. Refer to [this document](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+LateralView) for details.
 
 ## Syntax
 
-```
+``` no-highlight
 FROM baseTable (lateralView)*
 lateralView: LATERAL VIEW function([expressions]) tableAlias [AS columnAlias (',' columnAlias)*]
 
@@ -13,7 +12,7 @@ lateralView: LATERAL VIEW function([expressions]) tableAlias [AS columnAlias (',
 
 ## Example
 
-```
+``` no-highlight
 "id": 1
 "purpose": "business"
 "type": sales

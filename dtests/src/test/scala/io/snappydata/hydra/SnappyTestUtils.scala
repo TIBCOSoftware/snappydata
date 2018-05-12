@@ -95,15 +95,17 @@ object SnappyTestUtils {
     val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
     val sparkFile: File = new java.io.File(sparkDest)
     val snappyFile = new java.io.File(snappyDest)
-    val col1 = sparkDF.schema.fieldNames(0)
-    val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
     if (snappyFile.listFiles() == null) {
+      val col1 = snappyDF.schema.fieldNames(0)
+      val col = snappyDF.schema.fieldNames.tail
       snappyDF = snappyDF.repartition(1).sortWithinPartitions(col1, col: _*)
       writeToFile(snappyDF, snappyDest, snc)
       // scalastyle:off println
       pw.println(s"${queryNum} Result Collected in file $snappyDest")
     }
     if (sparkFile.listFiles() == null) {
+      val col1 = sparkDF.schema.fieldNames(0)
+      val col = sparkDF.schema.fieldNames.tail
       sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
       writeToFile(sparkDF, sparkDest, snc)
       pw.println(s"${queryNum} Result Collected in file $sparkDest")

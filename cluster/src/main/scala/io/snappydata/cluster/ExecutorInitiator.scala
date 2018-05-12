@@ -51,6 +51,8 @@ object ExecutorInitiator extends Logging {
 
   var executorThread: Thread = new Thread(executorRunnable)
 
+  @volatile var snappyExecBackend: SnappyCoarseGrainedExecutorBackend = null
+
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
     private var driverDM: InternalDistributedMember = _
@@ -190,7 +192,7 @@ object ExecutorInitiator extends Logging {
                     val executor = new SnappyCoarseGrainedExecutorBackend(
                       rpcenv, url, memberId, executorHost,
                       cores, userClassPath, env)
-
+                    snappyExecBackend = executor
                     rpcenv.setupEndpoint("Executor", executor)
                   }
                   prevDriverURL = url

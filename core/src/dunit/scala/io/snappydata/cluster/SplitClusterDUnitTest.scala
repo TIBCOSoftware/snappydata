@@ -16,7 +16,6 @@
  */
 package io.snappydata.cluster
 
-import java.io.PrintWriter
 import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
@@ -115,15 +114,6 @@ class SplitClusterDUnitTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
-  }
-
-  private def writeToFile(str: String, fileName: String): Unit = {
-    val pw = new PrintWriter(fileName)
-    try {
-      pw.write(str)
-    } finally {
-      pw.close()
-    }
   }
 
   override protected def startNetworkServers(): Unit = {

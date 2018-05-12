@@ -46,7 +46,7 @@ object ColumnTableBulkOps {
 
     table.collectFirst {
       case LogicalRelation(mutable: BulkPutRelation, _, _, _) =>
-        val putKeys = mutable.getPutKeys()
+        val putKeys = mutable.getPutKeys
         if (putKeys.isEmpty) {
           throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
@@ -56,7 +56,12 @@ object ColumnTableBulkOps {
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
-        val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
+        val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
+        if (updateExpressions.isEmpty) {
+          throw new AnalysisException(
+            s"PutInto is attempted without any column which can be updated." +
+                s" Provide some columns apart from key column(s)")
+        }
 
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
@@ -68,15 +73,18 @@ object ColumnTableBulkOps {
         val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
-        val doInsertJoin = if (subQuery.stats.sizeInBytes <= cacheSize) {
+        val (doInsertJoin, isCached) = if (subQuery.stats.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
+          joinDS.cache()
+          (joinDS.count() > 0, true)
+        } else (true, false)
 
+        // Adding to context after the count operation, as count will clear the context object.
+        if (isCached) {
           sparkSession.asInstanceOf[SnappySession].
               addContextObject(SnappySession.CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
-          joinDS.cache()
-          joinDS.count() > 0
-        } else true
+        }
 
         val insertChild = if (doInsertJoin) {
           Join(subQuery, updateSubQuery, LeftAnti, condition)
@@ -151,15 +159,27 @@ object ColumnTableBulkOps {
 
     table.collectFirst {
       case LogicalRelation(mutable: BulkPutRelation, _, _, _) =>
-        val putKeys = mutable.getPutKeys()
+        val putKeys = mutable.getPutKeys
         if (putKeys.isEmpty) {
           throw new AnalysisException(
             s"DeleteFrom in a column table requires key column(s) but got empty string")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
         val exists = Join(subQuery, table, Inner, condition)
-        transFormedPlan = Delete(table, exists, Nil)
-      case _ => // Do nothing, original DeleteFromTable plan is enough
+        val deletePlan = Delete(table, exists, Nil)
+        val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
+        transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
+      case lr@LogicalRelation(mutable: MutableRelation, _, _, _) =>
+        val ks = mutable.getKeyColumns
+        if (ks.isEmpty) {
+          throw new AnalysisException(
+            s"DeleteFrom in a table requires key column(s) but got empty string")
+        }
+        val condition = prepareCondition(sparkSession, table, subQuery, ks)
+        val exists = Join(subQuery, table, Inner, condition)
+        val deletePlan = Delete(table, exists, Nil)
+        val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
+        transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
     }
     transFormedPlan
   }
@@ -169,14 +189,13 @@ case class PutIntoColumnTable(table: LogicalPlan,
     insert: Insert, update: Update) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
-    "insertCount", LongType)() :: AttributeReference(
-    "updateCount", LongType)() :: Nil
+    "count", LongType)() :: Nil
 
   override lazy val resolved: Boolean = childrenResolved &&
       update.output.zip(insert.output).forall {
-        case (childAttr, tableAttr) =>
-          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
-            tableAttr.dataType)
+        case (updateAttr, insertAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(updateAttr.dataType,
+            insertAttr.dataType)
       }
 
   override def left: LogicalPlan = update
