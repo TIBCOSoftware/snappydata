@@ -158,6 +158,7 @@ class CreateAndLoadData extends SnappySQLJob {
       }
       val qDF = snappySession.createDataset(dataRDD)
       qDF.write.insertInto("test_table")
+      qDF.registerTempTable("test_table")
     } match {
       case Success(v) =>
         s"success"
