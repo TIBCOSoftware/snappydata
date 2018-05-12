@@ -118,9 +118,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], SnappyDataVersion.AQP_VERSION_PROPERTIES)
-    if (is ne null) {
+    if (is ne null) try {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], SnappyDataVersion
           .AQP_VERSION_PROPERTIES)
+    } finally {
+      is.close()
     }
     GemFireVersion.getClusterType
   }
