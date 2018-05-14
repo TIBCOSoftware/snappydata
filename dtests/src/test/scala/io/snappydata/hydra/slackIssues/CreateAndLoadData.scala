@@ -170,8 +170,11 @@ class CreateAndLoadData extends SnappySQLJob {
       val qDF = snappySession.createDataset(dataRDD)
       //val qDFSpark = snc.createDataset(dataRDD)
       qDF.write.insertInto("test_table")
+
       qDF.write.parquet("/export/shared/QA_DATA/slackIssues")
       // qDFSpark.write.insertInto("test_table")
+      val tempDir: File = new File("/export/shared/QA_DATA/slackIssues")
+      if (tempDir.exists) tempDir.delete()
       val qDFSpark = sqlContext.read.load("/export/shared/QA_DATA/slackIssues")
       qDFSpark.registerTempTable("test_table")
       //qDF.registerTempTable("test_table")
