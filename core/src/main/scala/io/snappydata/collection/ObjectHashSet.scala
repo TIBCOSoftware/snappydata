@@ -237,12 +237,12 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     val data = _data
 
     // Probably overestimating as some of the array cell might be empty
-    val refSize = capacity * ReflectionSingleObjectSizer.REFERENCE_SIZE
+    val refSize = capacity.toLong * ReflectionSingleObjectSizer.REFERENCE_SIZE
     acquireMemory(refSize)
     totalSize += refSize
 
     // Also add potential memory usage by objects
-    val valSize = capacity * objectSize
+    val valSize = capacity.toLong * objectSize
     acquireMemory(valSize)
     totalSize += valSize
 

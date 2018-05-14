@@ -6,10 +6,11 @@ If Hive tables have data stored in Apache Parquet format or Optimized Row Column
 
 For example,
 ```no-highlight
-create external table Hive_External_Table_Name using parquet options(path path-to-parquet-or-orc)
-create table Snappy_Table_Name using column as (select * from Hive_External_Table_Name)
+CREATE EXTERNAL TABLE <hive_external_table_name> USING parquet OPTIONS(path path-to-parquet-or-orc)
+
+CREATE TABLE <table_name> USING COLUMN AS (select * from hive_external_table_name)
 ```
-For more information on creating an external table, refer to [CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table.md)
+For more information on creating an external table, refer to [CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table.md).
 
 **Option 2**
 

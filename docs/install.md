@@ -1,15 +1,15 @@
 # Download and Install
 
-SnappyData offers two editions of the product, SnappyData Community Edition and SnappyData Enterprise Edition.
+SnappyData offers two editions of the product, SnappyData Community Edition, and SnappyData Enterprise Edition.
 
-The SnappyData Community edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
-The Enterprise edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
+The SnappyData Community Edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
+The Enterprise Edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
 
-For more information on the capabilities of the Community and Enterprise edition see, [Community Edition (Open Source)/Enterprise Edition Components](additional_files/open_source_components.md).
+For more information on the capabilities of the Community and Enterprise editions see [Community Edition (Open Source)/Enterprise Edition Components](additional_files/open_source_components.md).
 
 <heading2> Download SnappyData Community Edition</heading2>
 
-[Download the SnappyData 1.0.1 Community edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
+[Download the SnappyData 1.0.1 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
 * [**SnappyData 1.0.1 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.1/snappydata-1.0.1-bin.tar.gz)
 
@@ -64,4 +64,4 @@ snappydata          hard    sigpending  unlimited
 snappydata          soft    sigpending  524288
 ```
 
-Here `snappydata` is the user name under which the SnappyData processes are started.
+Here `snappydata` is the username under which the SnappyData processes are started.
