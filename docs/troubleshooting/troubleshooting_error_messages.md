@@ -54,7 +54,7 @@ You can also configure tables for eviction so that table rows are evicted from m
 <!-- --------------------------------------------------------------------------- -->
 
 <a id="seconds-elapsed"></a>
-<!-- <error> **Error Message:** </error> -->
+<error> **Message:** </error>
 <error-text>
 {0} seconds have elapsed while waiting for reply from {1} on {2} whose current membership list is: [{3}]
 </error-text>

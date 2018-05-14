@@ -17,12 +17,19 @@
 package io.snappydata
 
 import java.io.File
+import java.net.URLClassLoader
+import java.util.UUID
 
-import org.apache.spark.SparkContext
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.impl.LeadImpl
+import org.apache.spark.executor.SnappyExecutor
+import org.apache.spark.{SparkContext, SparkFiles}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
 import org.apache.spark.ui.SnappyDashboardTab
-import org.apache.spark.util.SnappyUtils
+import org.apache.spark.util.{SnappyUtils, Utils}
 
 object ToolsCallbackImpl extends ToolsCallback {
 
@@ -46,5 +53,73 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def setSessionDependencies(sparkContext: SparkContext, appName: String,
       classLoader: ClassLoader): Unit = {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
+  }
+
+  override def addURIs(alias: String, jars: Array[String],
+    deploySql: String, isPackage: Boolean = true): Unit = {
+    if (alias != null) {
+      Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
+    }
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    val loader = lead.urlclassloader
+    jars.foreach(j => {
+      val url = new File(j).toURI.toURL
+      loader.addURL(url)
+    })
+    // Close and reopen interpreter
+    if (alias != null) {
+      lead.closeAndReopenInterpreterServer();
+    }
+  }
+
+  override def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
+    if (ExecutorInitiator.snappyExecBackend != null) {
+      val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+      snappyexecutor.updateMainLoader(jars)
+    }
+  }
+
+  override def getAllGlobalCmnds(): Array[String] = {
+    GemFireXDUtils.waitForNodeInitialization()
+    Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
+  }
+
+  override def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]] = {
+    GemFireXDUtils.waitForNodeInitialization()
+    Misc.getMemStore.getGlobalCmdRgn.entrySet()
+  }
+
+  override def removePackage(alias: String): Unit = {
+    GemFireXDUtils.waitForNodeInitialization()
+    val packageRegion = Misc.getMemStore.getGlobalCmdRgn()
+    packageRegion.destroy(alias)
+  }
+
+  override def setLeadClassLoader(): Unit = {
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          Thread.currentThread().setContextClassLoader(loader)
+        }
+      }
+      case _ =>
+    }
+  }
+
+  override def getLeadClassLoader(): URLClassLoader = {
+    var ret: URLClassLoader = null
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl => {
+        val loader = li.urlclassloader
+        if (loader != null) {
+          ret = loader
+        }
+      }
+      case _ =>
+    }
+    ret
   }
 }
