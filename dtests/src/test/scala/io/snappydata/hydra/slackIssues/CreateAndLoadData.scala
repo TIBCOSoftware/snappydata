@@ -17,38 +17,49 @@
 
 package io.snappydata.hydra.slackIssues
 
+import java.io.{File, FileOutputStream, PrintWriter}
 import java.sql.Timestamp
 import java.time.{ZoneId, ZonedDateTime}
 
 import scala.util.{Failure, Random, Success, Try}
-
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import org.apache.commons.lang.RandomStringUtils
-
+import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 
 case class Test_Table(ID: BigInt, DATEKEY: Integer, CHECKIN_DATE: Integer, CHECKOUT_DATE: Integer,
-    CRAWL_TIME: Integer, BATCH: Integer, SOURCE: Integer, IS_HIGH_STAR: Integer,
-    MT_POI_ID: BigInt, MT_ROOM_ID: BigInt, MT_BREAKFAST: Integer, MT_GOODS_ID: BigInt,
-    MT_BD_ID: Integer, MT_GOODS_VENDOR_ID: BigInt, MT_BUSINESS_TYPE: Integer,
-    MT_ROOM_STATUS: Integer, MT_POI_UV: Integer, MT_PRICE1: Integer, MT_PRICE2: Integer,
-    MT_PRICE3: Integer, MT_PRICE4: Integer, MT_PRICE5: Integer, MT_PRICE6: Integer,
-    MT_PRICE7: Integer, MT_PRICE8: Integer, MT_FLAG1: Integer, MT_FLAG2: Integer,
-    MT_FLAG3: Integer, COMP_SITE_ID: Integer, COMP_POI_ID: String, COMP_ROOM_ID: BigInt,
-    COMP_BREAKFAST: Integer, COMP_GOODS_ID: String, COMP_GOODS_VENDOR: String,
-    COMP_ROOM_STATUS: Integer, COMP_IS_PROMOTION: Integer, COMP_PAY_TYPE: Integer,
-    COMP_GOODS_TYPE: Integer, COMP_PRICE1: Integer, COMP_PRICE2: Integer, COMP_PRICE3: Integer,
-    COMP_PRICE4: Integer, COMP_PRICE5: Integer, COMP_PRICE6: Integer, COMP_PRICE7: Integer,
-    COMP_PRICE8: Integer, COMP_FLAG1: Integer, COMP_FLAG2: Integer, COMP_FLAG3: Integer,
-    VALID_STATUS: Integer, GMT_TIME: Timestamp, VERSION: Timestamp)
+                      CRAWL_TIME: Integer, BATCH: Integer, SOURCE: Integer, IS_HIGH_STAR: Integer,
+                      MT_POI_ID: BigInt, MT_ROOM_ID: BigInt, MT_BREAKFAST: Integer, MT_GOODS_ID: BigInt,
+                      MT_BD_ID: Integer, MT_GOODS_VENDOR_ID: BigInt, MT_BUSINESS_TYPE: Integer,
+                      MT_ROOM_STATUS: Integer, MT_POI_UV: Integer, MT_PRICE1: Integer, MT_PRICE2: Integer,
+                      MT_PRICE3: Integer, MT_PRICE4: Integer, MT_PRICE5: Integer, MT_PRICE6: Integer,
+                      MT_PRICE7: Integer, MT_PRICE8: Integer, MT_FLAG1: Integer, MT_FLAG2: Integer,
+                      MT_FLAG3: Integer, COMP_SITE_ID: Integer, COMP_POI_ID: String, COMP_ROOM_ID: BigInt,
+                      COMP_BREAKFAST: Integer, COMP_GOODS_ID: String, COMP_GOODS_VENDOR: String,
+                      COMP_ROOM_STATUS: Integer, COMP_IS_PROMOTION: Integer, COMP_PAY_TYPE: Integer,
+                      COMP_GOODS_TYPE: Integer, COMP_PRICE1: Integer, COMP_PRICE2: Integer, COMP_PRICE3: Integer,
+                      COMP_PRICE4: Integer, COMP_PRICE5: Integer, COMP_PRICE6: Integer, COMP_PRICE7: Integer,
+                      COMP_PRICE8: Integer, COMP_FLAG1: Integer, COMP_FLAG2: Integer, COMP_FLAG3: Integer,
+                      VALID_STATUS: Integer, GMT_TIME: Timestamp, VERSION: Timestamp)
 
 class CreateAndLoadData extends SnappySQLJob {
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
+    val snc = snappySession.sqlContext
+
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath
+
+    val outputFile = "ValidateQueries_" + jobConfig.getString("logFileName")
+    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
+    val sc = SparkContext.getOrCreate()
+    val sqlContext = SQLContext.getOrCreate(sc)
+    var query: String = null;
     Try {
       val numRows = jobConfig.getString("numRows").toLong
-      snappySession.sql("drop table if exists APP.test_table")
-      snappySession.sql("create table APP.test_table(" +
+      //snappySession.sql("set schema default")
+      snappySession.sql("drop table if exists test_table")
+      snappySession.sql("create table test_table(" +
           " ID BIGINT," +
           " DATEKEY INTEGER," +
           " CHECKIN_DATE INTEGER," +
@@ -157,8 +168,50 @@ class CreateAndLoadData extends SnappySQLJob {
         }
       }
       val qDF = snappySession.createDataset(dataRDD)
+      //val qDFSpark = snc.createDataset(dataRDD)
       qDF.write.insertInto("test_table")
-      qDF.registerTempTable("test_table")
+      qDF.write.parquet("/export/shared/QA_DATA/slackIssues")
+      // qDFSpark.write.insertInto("test_table")
+      val qDFSpark = sqlContext.read.load("/export/shared/QA_DATA/slackIssues")
+      qDFSpark.registerTempTable("test_table")
+      //qDF.registerTempTable("test_table")
+      //snc.cacheTable("test_table_spark")
+      sqlContext.cacheTable("test_table")
+      var start = System.currentTimeMillis
+      sqlContext.table("test_table").count()
+      var end = System.currentTimeMillis
+      pw.println(s"\nTime to load into table test_table in spark= " +
+          (end - start) + " ms")
+      pw.println(s"ValidateQueriesFullResultSet job started at" +
+          s" :  " + System.currentTimeMillis)
+      query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
+      start = System.currentTimeMillis
+      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
+      end = System.currentTimeMillis
+      pw.println(s"\nExecution Time for $query: " +
+          (end - start) + " ms")
+      query = "select count(*) from test_table"
+      start = System.currentTimeMillis
+      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q2", "column", pw, sqlContext)
+      end = System.currentTimeMillis
+      pw.println(s"\nExecution Time for $query: " +
+          (end - start) + " ms")
+      query = "select ID from test_table group by ID order by ID asc"
+      start = System.currentTimeMillis
+      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q3", "column", pw, sqlContext)
+      end = System.currentTimeMillis
+      pw.println(s"\nExecution Time for $query: " +
+          (end - start) + " ms")
+      query = "select COMP_PRICE1, VALID_STATUS from test_table WHERE ID >= 500"
+      start = System.currentTimeMillis
+      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q4", "column", pw, sqlContext)
+      end = System.currentTimeMillis
+      pw.println(s"\nExecution Time for $query: " +
+          (end - start) + " ms")
+      pw.println(s"ValidateQueriesFullResultSet job completed  " +
+          s"successfully at : " + System.currentTimeMillis)
+      pw.close()
+
     } match {
       case Success(v) =>
         s"success"
