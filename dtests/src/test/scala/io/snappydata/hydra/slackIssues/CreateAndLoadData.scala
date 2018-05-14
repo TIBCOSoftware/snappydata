@@ -58,8 +58,8 @@ class CreateAndLoadData extends SnappySQLJob {
     Try {
       val numRows = jobConfig.getString("numRows").toLong
       //snappySession.sql("set schema default")
-      snappySession.sql("drop table if exists test_table")
-      snappySession.sql("create table test_table(" +
+      /*snappySession.sql("drop table if exists test_table")*/
+      snappySession.sql("create table if not exists test_table(" +
           " ID BIGINT," +
           " DATEKEY INTEGER," +
           " CHECKIN_DATE INTEGER," +
