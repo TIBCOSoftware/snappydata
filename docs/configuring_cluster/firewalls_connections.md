@@ -33,7 +33,7 @@ This following tables contain properties potentially involved in firewall behavi
 |--------|--------|--------|
 |peer-to-peer config|[locators](../reference/configuration_parameters/locators.md)|The list of locators used by system members. The list must be configured consistently for every member of the distributed system.|
 |peer-to-peer config|[membership-port-range](../reference/configuration_parameters/membership-port-range.md)|The range of ephemeral ports available for unicast UDP messaging and for TCP failure detection in the peer-to-peer distributed system.|
-|member config|[-J-Dgemfirexd.hostname-for-clients](../configuring_cluster/property_description.md#host-name)|Hostname or IP address to pass to the client as the location where the server is listening.|
+|member config|[-J-Dgemfirexd.hostname-for-clients](../configuring_cluster/property_description.md#host-name)|The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection.|
 |member config|[client-port](../reference/command_line_utilities/store-run/) option to the [snappy server](../configuring_cluster/configuring_cluster.md#configuring-data-servers) and [snappy locator](../configuring_cluster/configuring_cluster.md#configuring-locators) commands|Port that the member listens on for client communication.|
 |Locator|[locator command](../configuring_cluster/configuring_cluster.md#configuring-locators)|10334|
 

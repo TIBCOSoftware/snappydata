@@ -16,8 +16,9 @@
  */
 package io.snappydata.impl
 
-import java.lang.reflect.{Constructor, Method}
+import java.lang.reflect.{Constructor, InvocationTargetException, Method}
 import java.net.{URL, URLClassLoader}
+import java.security.Permission
 import java.sql.SQLException
 import java.util.Properties
 
@@ -42,9 +43,9 @@ import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
-import io.snappydata._
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
+import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
@@ -664,6 +665,30 @@ class LeadImpl extends ServerImpl with Lead
       // Misc.getGemFireCache.getResourceManager.
       //   addResourceListener(InternalResourceManager.ResourceType.ALL, listener)
 
+    }
+  }
+
+  class NoExitSecurityManager extends SecurityManager {
+    override def checkExit(status: Int): Unit = {
+      throw new SecurityException("exit not allowed")
+    }
+
+    override def checkPermission(perm: Permission): Unit = {
+      // Allow other activities by default
+    }
+  }
+
+  def closeAndReopenInterpreterServer(): Unit = {
+    if (remoteInterpreterServerClass != null) {
+      val origSecurityManager = System.getSecurityManager
+      System.setSecurityManager(new NoExitSecurityManager)
+      try {
+        remoteInterpreterServerClass.getSuperclass.
+            getDeclaredMethod("shutdown").invoke(remoteInterpreterServerObj)
+      } finally {
+        System.setSecurityManager(origSecurityManager)
+      }
+      checkAndStartZeppelinInterpreter(true, bootProperties)
     }
   }
 

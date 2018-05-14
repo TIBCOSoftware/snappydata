@@ -18,7 +18,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
     EXPIRE 'time_to_live_in_seconds',
     COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
 	KEY_COLUMNS  'column_name,..', // Only for column table if putInto support is required
-    COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer. Only for column table.
+    COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer > 0 and < 2GB. Only for column table.
 	)
 	[AS select_statement];
 ```
@@ -84,14 +84,16 @@ Column tables can also use ARRAY, MAP and STRUCT types.</br>
 Decimal and numeric has default precision of 38 and scale of 18.</br>
 In this release, LONG is supported only for column tables. It is recommended to use BEGINT for row tables instead.
 
+If no option is specified, default values are provided. 
+
 <a id="ddl"></a>
 <a id="colocate-with"></a>
 `COLOCATE_WITH`</br>
-The COLOCATE_WITH clause specifies a partitioned table to colocate with. The referenced table must already exist. 
+The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. 
 
 <a id="partition-by"></a>
 `PARTITION_BY`</br>
-Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determines the partitioning. </br>
+Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. </br>
 If not specified, for row table (mentioned further for case of column table) it is a 'replicated row table'.</br> 
 Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
@@ -107,9 +109,13 @@ Use the REDUNDANCY clause to specify the number of redundant copies that should 
 <a id="eviction-by"></a>
 `EVICTION_BY`</br>
 Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all tables (expected to host larger data sets) overflow to disk, by default. See [best practices](../../best_practices/optimizing_query_latency.md#overflow) for more information. The value for this parameter is set in MB.
+For column tables, the default eviction setting is `LRUHEAPPERCENT` and the default action is to overflow to disk. You can also specify the `OVERFLOW` parameter along with the `EVICTION_BY` clause.
 
 !!!Note:
-	EVICTION_BY is not supported for replicated tables.
+	- EVICTION_BY is not supported for replicated tables.
+
+	- For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.
+    
 
 <a id="persistence"></a>
 `PERSISTENCE`</br>
@@ -123,14 +129,16 @@ When you specify the PERSISTENCE keyword, SnappyData persists the in-memory tabl
 
 <a id="diskstore"></a>
 `DISKSTORE`</br>
-The disk directories where you want to persist the table data. By default, SnappyData creates a "default" disk store on each member node. You can use this option to control the location where data will be stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, [refer to CREATE DISKSTORE](create-diskstore.md).
+The disk directories where you want to persist the table data. By default, SnappyData creates a "default" disk store on each member node. You can use this option to control the location where data is stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, refer to [CREATE DISKSTORE](create-diskstore.md).
 
 
 <a id="overflow"></a>
 `OVERFLOW`</br> 
-Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' is not allowed except when EVICTION_BY is set. In such case, the eviction itself is disabled.
+Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' is not allowed except when EVICTION_BY is set. In such case, the eviction itself is disabled.</br>
+When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
+
 !!! Note: 
-	The tables are evicted to disk by default.
+	The tables are evicted to disk by default, which means table data overflows to a local SnappyStore disk store.
 
 <a id="expire"></a>
 `EXPIRE`</br>
@@ -138,16 +146,16 @@ Use the EXPIRE clause with tables to control the SnappyStore memory usage. It ex
 
 <a id="column-batch-size"></a>
 `COLUMN_BATCH_SIZE`</br>
-The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)
+The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M).
 
 <a id="column-max-delta-rows"></a>
 `COLUMN_MAX_DELTA_ROWS`</br>
-The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by COLUMN_BATCH_SIZE (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. 
+The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by COLUMN_BATCH_SIZE (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The value should be > 0 and < 2GB. The default value is 10000.
 
 !!! Note
-	The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): 
+	The following corresponding SQLConf properties for `COLUMN_BATCH_SIZE` and `COLUMN_MAX_DELTA_ROWS` are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL):
 
-	* `snappydata.column.batchSize` - Explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property. 
+	* `snappydata.column.batchSize` - Explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property.
 	* `snappydata.column.maxDeltaRows` - The maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit COLUMN_MAX_DELTA_ROWS specification, then this is inherited for that table property.
 
 Tables created using the standard SQL syntax without any of SnappyData specific extensions are created as row-oriented replicated tables. Thus, each data server node in the cluster hosts a consistent replica of the table. All tables are also registered in the Spark catalog and hence visible as DataFrames.
@@ -180,7 +188,7 @@ snappy>CREATE TABLE CUSTOMER (
     C_PHONE       VARCHAR(15) NOT NULL,
     C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
     C_MKTSEGMENT  VARCHAR(10) NOT NULL,
-    C_COMMENT     VARCHAR(117) NOT NULL))
+    C_COMMENT     VARCHAR(117) NOT NULL)
     USING COLUMN OPTIONS (BUCKETS '10', PARTITION_BY 'C_CUSTKEY', PERSISTENCE 'SYNCHRONOUS');
 ```
 
@@ -233,12 +241,12 @@ For information on using the Apache Spark API, refer to [Using the Spark DataFra
 ### Example: Create Column Table with PUT INTO
 
 ```no-highlight
-snappy>CREATE TABLE COL_TABLE (
-	PRSN_EVNT_ID BIGINT NOT NULL,
-    VER bigint NOT NULL,
-    CLIENT_ID BIGINT NOT NULL,
-    SRC_TYP_ID BIGINT NOT NULL) USING COLUMN OPTIONS(PARTITION_BY 'PRSN_EVNT_ID,CLIENT_ID', BUCKETS '64',
-    KEY_COLUMNS 'PRSN_EVNT_ID,CLIENT_ID');
+snappy> CREATE TABLE COL_TABLE (
+      PRSN_EVNT_ID BIGINT NOT NULL,
+      VER bigint NOT NULL,
+      CLIENT_ID BIGINT NOT NULL,
+      SRC_TYP_ID BIGINT NOT NULL)
+      USING COLUMN OPTIONS(PARTITION_BY 'PRSN_EVNT_ID,CLIENT_ID', BUCKETS '64', KEY_COLUMNS 'PRSN_EVNT_ID, CLIENT_ID');
 ```
 
 ### Example: Create Table with Eviction Settings
@@ -261,16 +269,16 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 4. Create the table with the required eviction configuration.
 
-	For example, to evict using LRU entry count and overflow evicted rows to a disk store:
+	For example, to evict using LRU entry count and overflow evicted rows to a disk store (OverflowDiskStore):
 	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT ) USING row
-		OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
+		USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
 	
     To create a table that simply removes evicted data from memory without persisting the evicted data, use the `DESTROY` eviction action. For example:
     Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
     	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row 
-	    OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
+		USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)

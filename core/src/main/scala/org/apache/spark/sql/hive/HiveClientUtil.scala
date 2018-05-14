@@ -310,11 +310,17 @@ object HiveClientUtil {
           // deployCmds.foreach(s => logDebug(s"s"))
           deployCmds.foreach(d => {
             val cmdFields = d.split('|')
-            val coordinate = cmdFields(0)
-            val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
-            val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-            val session = SparkSession.builder().getOrCreate()
-            DeployCommand(coordinate, null, repos, cache, false).run(session)
+            if (cmdFields.length > 1) {
+              val coordinate = cmdFields(0)
+              val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+              val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+              val session = SparkSession.builder().getOrCreate()
+              DeployCommand(coordinate, null, repos, cache).run(session)
+            }
+            else {
+              // Jars we have
+              DeployJarCommand(null, cmdFields(0))
+            }
           })
         }
         case _ => // Nothing

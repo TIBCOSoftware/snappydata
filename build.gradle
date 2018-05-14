@@ -139,7 +139,7 @@ allprojects {
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
     commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
     sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
-    buildIdPrefix = System.env.USER + ' ' 
+    buildIdPrefix = System.env.USER + ' '
   }
 
   if (!buildRoot.isEmpty()) {
@@ -164,7 +164,7 @@ allprojects {
 def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
 def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
-def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists() 
+def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()
 
 if (isEnterpriseProduct) {
@@ -402,13 +402,14 @@ subprojects {
     systemProperties 'java.net.preferIPv4Stack': 'true',
                      'SNAPPY_HOME': snappyProductDir
 
-    int numTestClasses = getCandidateClassFiles().getFiles().size()
+    int numTestClasses = 0
     def testCount = new java.util.concurrent.atomic.AtomicInteger(0)
 
     doFirst {
       String eol = System.getProperty('line.separator')
       String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
       def progress = new File(workingDir, 'progress.txt')
+      numTestClasses = getCandidateClassFiles().getFiles().size()
       progress << "${eol}${now} ========== STARTING DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
     }
     beforeSuite { desc ->
@@ -1216,6 +1217,8 @@ task docs(type: ScalaDoc) {
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
     if ((project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) &&
+            // skip gemfire-connector
+            !project.path.contains('gemfire-connector') &&
             // jobserver depends on Apache Spark 1.5.x which causes conflicts
             !project.path.contains('snappy-store') &&
             !project.name.contains('jobserver') &&
