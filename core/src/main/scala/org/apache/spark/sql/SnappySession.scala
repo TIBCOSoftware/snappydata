@@ -145,8 +145,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         try {
           val ctor = aqpClass.getConstructors.head
           stateBuilder = ctor.newInstance(self, None).asInstanceOf[SnappySessionStateBuilder]
+          val state = stateBuilder.build()
           snappyContextFunctions = stateBuilder.contextFunctions
-          stateBuilder.build()
+          state
       } catch {
         case NonFatal(e) =>
           throw new IllegalArgumentException(s"Error while instantiating '$aqpClass':", e)
@@ -1256,10 +1257,38 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             data.toDF(s.fieldNames: _*)
           case None => data
         }
-        val ds = DataSource(self, className = source, userSpecifiedSchema = userSpecifiedSchema,
-          partitionColumns = partitionColumns, options = params)
-        runCommand("save") { ds.planForWriting(mode, AnalysisBarrier(df.logicalPlan)) }
-        ds.copy(userSpecifiedSchema = Some(df.schema.asNullable)).resolveRelation()
+        insertRelation match {
+          case Some(ir) =>
+            if (!overwrite) {
+              var success = false
+              try {
+                ir.insert(data, overwrite)
+                success = true
+                ir
+              } finally {
+                if (!success) ir match {
+                  case dr: DestroyRelation =>
+                    if (!dr.tableExists) dr.destroy(ifExists = false)
+                  case _ =>
+                }
+              }
+            }
+            else {
+            val ds = DataSource(self, className = source, userSpecifiedSchema = userSpecifiedSchema,
+                partitionColumns = partitionColumns, options = params)
+              runCommand("save") {
+                ds.planForWriting(mode, AnalysisBarrier(df.logicalPlan))
+              }
+              ds.copy(userSpecifiedSchema = Some(df.schema.asNullable)).resolveRelation()
+            }
+          case None =>
+            val ds = DataSource(self, className = source, userSpecifiedSchema = userSpecifiedSchema,
+              partitionColumns = partitionColumns, options = params)
+            runCommand("save") {
+              ds.planForWriting(mode, AnalysisBarrier(df.logicalPlan))
+            }
+            ds.copy(userSpecifiedSchema = Some(df.schema.asNullable)).resolveRelation()
+        }
     }
 
     // need to register if not existing in catalog
