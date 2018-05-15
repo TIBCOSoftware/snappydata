@@ -2,10 +2,10 @@
 # How to Stop a SnappyData Cluster
 
 ## Stopping the Cluster
-You can stop the cluster using the `sbin/snappy-stop-all.sh` command:
+You can stop the cluster using the `./sbin/snappy-stop-all.sh` command:
 
 ```no-highlight
-$ sbin/snappy-stop-all.sh
+$ ./sbin/snappy-stop-all.sh
 The SnappyData Leader has stopped.
 The SnappyData Server has stopped.
 The SnappyData Locator has stopped.
@@ -22,7 +22,7 @@ Instead of stopping the SnappyData cluster using the `snappy-stop-all.sh` script
 	All [configuration parameters](../configuring_cluster/configuring_cluster.md) are provided as command line arguments rather than reading from a configuration file.
 
 ```
-$ bin/snappy locator stop -dir=/node-a/locator1
-$ bin/snappy server stop -dir=/node-b/server1
-$ bin/snappy leader stop -dir=/node-c/lead1
+$ ./bin/snappy locator stop -dir=/node-a/locator1
+$ ./bin/snappy server stop -dir=/node-b/server1
+$ ./bin/snappy leader stop -dir=/node-c/lead1
 ```
