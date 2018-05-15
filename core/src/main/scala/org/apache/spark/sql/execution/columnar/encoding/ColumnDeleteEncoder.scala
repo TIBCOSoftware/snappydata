@@ -231,8 +231,8 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
         // consume position1 and move
         cursor1 += 4
         if (cursor1 < endOffset1) {
-          position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
           if (position1 < 0) insertCount += 1
+          position1 = ColumnEncoding.readInt(columnBytes1, cursor1)
         } else {
           doProcess = false
         }
@@ -240,7 +240,8 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
     }
     // consume any remaining of deletes
     while (cursor2 < endOffset2) {
-      position = writeInt(position, ColumnEncoding.readInt(columnBytes2, cursor2))
+      position2 = ColumnEncoding.readInt(columnBytes2, cursor2)
+      position = writeInt(position, insertAdjustedPosition(position2))
       cursor2 += 4
     }
 
