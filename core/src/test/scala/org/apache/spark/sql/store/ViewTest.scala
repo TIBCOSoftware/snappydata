@@ -305,7 +305,6 @@ class ViewTest extends SnappyFunSuite {
   test("SNAP-2342 nested query involving joins & union throws Exception") {
     val session = this.snc.snappySession
 
-
     session.sql(s"create table ujli ( " +
         "aagmaterial   string," +
         "accountassignmentgroup   string," +
