@@ -54,7 +54,7 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
-import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext}
+import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext, TaskKilledException}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -559,6 +559,9 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin
     } else ""
+
+    val getContext = Utils.genTaskContextFunction(ctx)
+    val taskKilledClass = classOf[TaskKilledException].getName
     ctx.addNewFunction(nextBatch,
       s"""
          |private boolean $nextBatch() throws Exception {
@@ -583,6 +586,10 @@ private[sql] final case class ColumnTableScan(
          |    $numBatchRows = 1;
          |    $incrementNumRowsSnippet
          |  } else {
+         |    // check for task cancellation before start of processing of a new batch
+         |    if ($getContext() != null && $getContext().isInterrupted()) {
+         |      throw new $taskKilledClass();
+         |    }
          |    $batchInit
          |    $deletedCount = $colInput.getDeletedRowCount();
          |    $incrementBatchOutputRows

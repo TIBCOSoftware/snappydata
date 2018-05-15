@@ -52,7 +52,6 @@ while (( "$#" )); do
       clustermode="rowstore"
     ;;
     *)
-      echo "Invalid option: $param"
     ;;
   esac
   shift
