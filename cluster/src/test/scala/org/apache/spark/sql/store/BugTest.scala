@@ -31,8 +31,9 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
-   this.stopAll()
+    this.stopAll()
   }
+  
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
       getClass.getResource("/auth.ldif").getPath)
@@ -70,10 +71,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
-  //  System.setProperty(Attribute.AUTH_PROVIDER, "NONE")
-  //  System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.AUTH_PROVIDER, "NONE")
     System.setProperty("gemfirexd.authentication.required", "false")
-
   }
 
   test("Bug SNAP-2255 connection pool exhaustion") {
@@ -83,7 +81,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     val snc1 = snc.newSession()
     snc1.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
     snc1.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
-
 
     snc1.sql(s"create table test (id  integer," +
         s" name STRING) using column")
@@ -102,6 +99,5 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       val rs = snc2.sql(s"select * from $user1.test").collect()
       assertEquals(1, rs.length)
     }
-
   }
 }

@@ -1151,15 +1151,14 @@ object SnappyContext extends Logging {
       // clear current hive catalog connection
       Hive.closeCurrent()
       if (ExternalStoreUtils.isLocalMode(sc)) {
-        val user = sc.getConf.get(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, "")
-        val props = if (!user.isEmpty) {
-          val prps = new java.util.Properties();
-          val pass = sc.getConf.get(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, "")
-          prps.put(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, user)
-          prps.put(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, pass)
-          prps
-        } else {
-          null
+        val props = sc.conf.getOption(Constant.STORE_PROPERTY_PREFIX +
+            Attribute.USERNAME_ATTR) match {
+          case Some(user) => val prps = new java.util.Properties();
+            val pass = sc.conf.get(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, "")
+            prps.put(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, user)
+            prps.put(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, pass)
+            prps
+          case None => null
         }
         ServiceUtils.invokeStopFabricServer(sc, props)
       }
