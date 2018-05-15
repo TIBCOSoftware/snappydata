@@ -19,6 +19,8 @@ package org.apache.spark.sql.store
 
 import java.io.File
 
+import scala.collection.mutable
+
 import io.snappydata.Property
 
 import org.apache.spark.{Logging, SparkConf}
@@ -345,6 +347,11 @@ object SortedColumnTests extends Logging {
     SortedColumnTests.createFixedData2(session, numElements, dataFile_2)(i => {
       i % 10 > 5 && i % 10 < 10
     })
+    val dataFile_3 = s"${testName}_3"
+    SortedColumnTests.createFixedData2(session, numElements, dataFile_3)(i => {
+      i % 10 == 3 || i % 10 == 8
+    })
+    val expected = new mutable.HashSet[Int]
 
     def doPutInto(fileName: String, dataFrameReader: DataFrameReader): Unit = {
       try {
@@ -362,6 +369,7 @@ object SortedColumnTests extends Logging {
     }
 
     def verifySelect(expectedCount: Int): Unit = {
+      val dataSet = expected.clone()
       val select_query = s"select * from $colTableName"
       val colDf = session.sql(select_query)
       val res = colDf.collect()
@@ -373,9 +381,12 @@ object SortedColumnTests extends Logging {
         // scalastyle:off
         println(s"verifySelect-$expectedCount-$i [$col0 $col1 $col2]")
         // scalastyle:on
+        assert(dataSet.contains(col0))
+        dataSet.remove(col0)
         i += 1
       })
       assert(i == expectedCount, s"$i : $expectedCount")
+      assert(dataSet.isEmpty)
     }
 
     def doDelete(whereClause: String = ""): Unit = {
@@ -400,6 +411,7 @@ object SortedColumnTests extends Logging {
       // scalastyle:off
       println(s"$testName loaded $dataFile_1")
       // scalastyle:on
+      (0 until numElements.toInt).filter(i => i % 10 < 6).foreach(i => expected.add(i))
 
       var numDeletes1 = 1
       var deleteWhereCaluse1: StringBuilder = new StringBuilder("(3")
@@ -411,9 +423,12 @@ object SortedColumnTests extends Logging {
       })
       deleteWhereCaluse1.append(s")")
       doDelete(deleteWhereCaluse1.result())
+      (0 until numElements.toInt).filter(i => i % 10 == 3).foreach(i => expected.remove(i))
 
       // ColumnTableScan.setDebugMode(true)
       doPutInto(dataFile_2, dataFrameReader)
+      (0 until numElements.toInt).filter(i => i % 10 > 5 && i % 10 < 10).
+          foreach(i => expected.add(i))
       ColumnTableScan.setDebugMode(true)
       verifySelect(numElements.toInt - numDeletes1)
       ColumnTableScan.setDebugMode(false)
@@ -428,8 +443,9 @@ object SortedColumnTests extends Logging {
       })
       deleteWhereCaluse2.append(s")")
       doDelete(deleteWhereCaluse2.result())
+      (0 until numElements.toInt).filter(i => i % 10 == 8).foreach(i => expected.remove(i))
 
-      ColumnTableScan.setDebugMode(true)
+      // ColumnTableScan.setDebugMode(true)
       verifySelect(numElements.toInt - numDeletes1 - numDeletes2)
     } catch {
       case t: Throwable =>
