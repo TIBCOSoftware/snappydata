@@ -4,3 +4,13 @@ io/snappydata/hydra/slackIssues/count1QueryValidationTestWithOverflowConfigurati
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   numRows="50000000"
+  //numRows="15000"
+  performDMLOps=false
+
+//test column table with overflow settings on OSS version
+/*io/snappydata/hydra/slackIssues/dmlOPsTestWithOverflow.conf
+  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  numRows="50000000"
+  performDMLOps=true*/

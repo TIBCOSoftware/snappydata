@@ -21,12 +21,14 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import java.sql.Timestamp
 import java.time.{ZoneId, ZonedDateTime}
 
-import scala.util.{Failure, Random, Success, Try}
 import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.RandomStringUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
+
+import scala.util.{Failure, Random, Success, Try}
 
 case class Test_Table(ID: BigInt, DATEKEY: Integer, CHECKIN_DATE: Integer, CHECKOUT_DATE: Integer,
                       CRAWL_TIME: Integer, BATCH: Integer, SOURCE: Integer, IS_HIGH_STAR: Integer,
@@ -57,6 +59,7 @@ class CreateAndLoadData extends SnappySQLJob {
     var query: String = null;
     Try {
       val numRows = jobConfig.getString("numRows").toLong
+      val performDMLOPs = jobConfig.getString("performDMLOps").toBoolean
       //snappySession.sql("set schema default")
       /*snappySession.sql("drop table if exists test_table")*/
       snappySession.sql("create table if not exists test_table(" +
@@ -172,7 +175,7 @@ class CreateAndLoadData extends SnappySQLJob {
       cacheDF.write.insertInto("test_table")
       val tempDir: File = new File("/export/shared/QA_DATA/slackIssues")
       //val tempDir: File = new File("/data/snappyHydraLogs/slackIssues")
-      if (tempDir.exists) tempDir.delete()
+      if (tempDir.exists()) FileUtils.deleteDirectory(tempDir)
       cacheDF.write.parquet("/export/shared/QA_DATA/slackIssues")
       //cacheDF.write.parquet("/data/snappyHydraLogs/slackIssues")
 
@@ -188,30 +191,34 @@ class CreateAndLoadData extends SnappySQLJob {
           (end - start) + " ms")
       pw.println(s"ValidateQueriesFullResultSet job started at" +
           s" :  " + System.currentTimeMillis)
-      query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
-      start = System.currentTimeMillis
-      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
-      end = System.currentTimeMillis
-      pw.println(s"\nExecution Time for $query: " +
-          (end - start) + " ms")
-      query = "select count(*) from test_table"
-      start = System.currentTimeMillis
-      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q2", "column", pw, sqlContext)
-      end = System.currentTimeMillis
-      pw.println(s"\nExecution Time for $query: " +
-          (end - start) + " ms")
-      query = "select ID from test_table group by ID order by ID asc"
-      start = System.currentTimeMillis
-      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q3", "column", pw, sqlContext)
-      end = System.currentTimeMillis
-      pw.println(s"\nExecution Time for $query: " +
-          (end - start) + " ms")
-      query = "select COMP_PRICE1, VALID_STATUS from test_table WHERE ID >= 500"
-      start = System.currentTimeMillis
-      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q4", "column", pw, sqlContext)
-      end = System.currentTimeMillis
-      pw.println(s"\nExecution Time for $query: " +
-          (end - start) + " ms")
+      if (performDMLOPs) {
+
+      } else {
+        query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
+        start = System.currentTimeMillis
+        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
+        end = System.currentTimeMillis
+        pw.println(s"\nExecution Time for $query: " +
+            (end - start) + " ms")
+        query = "select count(*) from test_table"
+        start = System.currentTimeMillis
+        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q2", "column", pw, sqlContext)
+        end = System.currentTimeMillis
+        pw.println(s"\nExecution Time for $query: " +
+            (end - start) + " ms")
+        query = "select ID from test_table group by ID order by ID asc"
+        start = System.currentTimeMillis
+        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q3", "column", pw, sqlContext)
+        end = System.currentTimeMillis
+        pw.println(s"\nExecution Time for $query: " +
+            (end - start) + " ms")
+        query = "select COMP_PRICE1, VALID_STATUS from test_table WHERE ID >= 500"
+        start = System.currentTimeMillis
+        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q4", "column", pw, sqlContext)
+        end = System.currentTimeMillis
+        pw.println(s"\nExecution Time for $query: " +
+            (end - start) + " ms")
+      }
       pw.println(s"ValidateQueriesFullResultSet job completed  " +
           s"successfully at : " + System.currentTimeMillis)
       pw.close()
