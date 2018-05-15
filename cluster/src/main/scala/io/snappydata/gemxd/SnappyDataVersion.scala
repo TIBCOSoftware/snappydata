@@ -86,10 +86,12 @@ object SnappyDataVersion {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
-    if (is ne null) {
+    if (is ne null) try {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
       pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
           GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
+    } finally {
+      is.close()
     }
     pw.flush()
   }
@@ -112,10 +114,12 @@ object SnappyDataVersion {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
-    if (is ne null) {
+    if (is ne null) try {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
       pw.println(GemFireVersion.getProductName)
       GemFireVersion.print(pw, printSourceInfo)
+    } finally {
+      is.close()
     }
 
     pw.flush()

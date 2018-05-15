@@ -2122,6 +2122,7 @@ object SnappySession extends Logging {
    */
   private[sql] def replaceParamLiterals(text: String,
       currentParamConstants: Array[ParamLiteral], paramsId: Int): String = {
+
     if ((currentParamConstants eq null) || currentParamConstants.length == 0) return text
     val paramStart = TokenLiteral.PARAMLITERAL_START
     var nextIndex = text.indexOf(paramStart)
