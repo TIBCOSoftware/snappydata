@@ -16,54 +16,54 @@ The code snippet below shows how to create a replicated row table using API.
 **Get a SnappySession**
 
 ```no-highlight
-    val spark: SparkSession = SparkSession
-        .builder
-        .appName("CreateReplicatedRowTable")
-        .master("local[*]")
-        .getOrCreate
+val spark: SparkSession = SparkSession
+    .builder
+    .appName("CreateReplicatedRowTable")
+    .master("local[*]")
+    .getOrCreate
 
-    val snSession = new SnappySession(spark.sparkContext)
+val snSession = new SnappySession(spark.sparkContext)
 ```
 
 **Create the Table using API**:
 First, define the table schema and then create the table using createTable API
 
 ```no-highlight
-    val schema = StructType(Array(StructField("S_SUPPKEY", IntegerType, false),
-      StructField("S_NAME", StringType, false),
-      StructField("S_ADDRESS", StringType, false),
-      StructField("S_NATIONKEY", IntegerType, false),
-      StructField("S_PHONE", StringType, false),
-      StructField("S_ACCTBAL", DecimalType(15, 2), false),
-      StructField("S_COMMENT", StringType, false)
-    ))
+val schema = StructType(Array(StructField("S_SUPPKEY", IntegerType, false),
+  StructField("S_NAME", StringType, false),
+  StructField("S_ADDRESS", StringType, false),
+  StructField("S_NATIONKEY", IntegerType, false),
+  StructField("S_PHONE", StringType, false),
+  StructField("S_ACCTBAL", DecimalType(15, 2), false),
+  StructField("S_COMMENT", StringType, false)
+))
 
-    // props1 map specifies the properties for the table to be created
-    // "PERSISTENCE" flag indicates that the table data should be persisted to
-    // disk asynchronously
-    val props1 = Map("PERSISTENCE" -> "asynchronous")
-    // create a row table using createTable API
-    snSession.createTable("SUPPLIER", "row", schema, props1)
+// props1 map specifies the properties for the table to be created
+// "PERSISTENCE" flag indicates that the table data should be persisted to
+// disk asynchronously
+val props1 = Map("PERSISTENCE" -> "asynchronous")
+// create a row table using createTable API
+snSession.createTable("SUPPLIER", "row", schema, props1)
 ```
 
 **Creating a Row table using SQL**:
 The same table can be created using SQL as shown below:
 ```no-highlight
-    // First drop the table if it exists
-    snSession.sql("DROP TABLE IF EXISTS SUPPLIER")
-    // Create a row table using SQL
-    // "PERSISTENCE" that the table data should be persisted to disk asynchronously
-    // For complete list of attributes refer the documentation
-    snSession.sql(
-      "CREATE TABLE SUPPLIER ( " +
-          "S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, " +
-          "S_NAME STRING NOT NULL, " +
-          "S_ADDRESS STRING NOT NULL, " +
-          "S_NATIONKEY INTEGER NOT NULL, " +
-          "S_PHONE STRING NOT NULL, " +
-          "S_ACCTBAL DECIMAL(15, 2) NOT NULL, " +
-          "S_COMMENT STRING NOT NULL " +
-          ") USING ROW OPTIONS (PERSISTENCE 'asynchronous')")
+// First drop the table if it exists
+snSession.sql("DROP TABLE IF EXISTS SUPPLIER")
+// Create a row table using SQL
+// "PERSISTENCE" that the table data should be persisted to disk asynchronously
+// For complete list of attributes refer the documentation
+snSession.sql(
+  "CREATE TABLE SUPPLIER ( " +
+      "S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, " +
+      "S_NAME STRING NOT NULL, " +
+      "S_ADDRESS STRING NOT NULL, " +
+      "S_NATIONKEY INTEGER NOT NULL, " +
+      "S_PHONE STRING NOT NULL, " +
+      "S_ACCTBAL DECIMAL(15, 2) NOT NULL, " +
+      "S_COMMENT STRING NOT NULL " +
+      ") USING ROW OPTIONS (PERSISTENCE 'asynchronous')")
 ```
 
 You can perform various operations such as inset data, mutate it (update/delete), select data from the table. All these operations can be done either through APIs or by using SQL queries.
@@ -72,42 +72,42 @@ For example:
 **To insert data in the SUPPLIER table:** 
 
 ```no-highlight
-	snSession.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
-    snSession.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
-    snSession.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
-    snSession.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
+snSession.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
+snSession.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
+snSession.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
+snSession.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '555-321-098', 1000, ' ')")
 ```
 
 **To print the contents of the SUPPLIER table:** 
 
 ```no-highlight
-    var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
-    tableData.foreach(println)
+var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
+tableData.foreach(println)
 ```
 
 **To update the table account balance for SUPPLIER4:** 
 
 ```no-highlight
-    snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
+snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 ```
 
 **To print contents of the SUPPLIER table after update** 
 
 ```no-highlight
-    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
-    tableData.foreach(println)
+tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
+tableData.foreach(println)
 ```
 
 **To delete the records for SUPPLIER2 and SUPPLIER3** 
 
 ```no-highlight
-    snSession.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
+snSession.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
 
 ```
 
 **To print the contents of the SUPPLIER table after delete**
 
 ```no-highlight
-    tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
-    tableData.foreach(println)
+tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
+tableData.foreach(println)
 ```

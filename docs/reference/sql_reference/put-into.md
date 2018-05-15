@@ -1,14 +1,13 @@
 # PUT INTO
 
 <note>
-	SnappyData does not support PUT INTO with a subselect query, if, the subselect query requires aggregation.
+	 Insert/PUT INTO with partial column specification is not currently supported.
 
-``` bash
-    PUT INTO table-name
-         VALUES ( column-value [ , column-value ]* ) 
+``` no-highlight
+    PUT INTO table-name VALUES ( column-value [ , column-value ]* ) 
 ```
 
-``` bash
+``` no-highlight
     PUT INTO table-name
         ( simple-column-name [ , simple-column-name ]* )
        Query
@@ -28,15 +27,20 @@ The PUT INTO statement is similar to the "UPSERT" command or capability provided
 #### Example
 
 ```no-highlight
-PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '07-06-2002', 'SnappyData', 1);
+PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '2001-10-12', 'SnappyData', 1);
 ```
 
 When specifying columns with table, columns should not have any [CONSTRAINT](create-table.md#constraint), as explained in the following example:
 
 ```no-highlight
-PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID)
- VALUES (1, 'User 1' , 'SnappyData', 1),
- (2, 'User 2' , 'SnappyData', 1);
+PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID) VALUES (1, 'User 1' , 'SnappyData', 1), (2, 'User 2' , 'SnappyData', 1);
+```
+
+PUT into another table using a select statement
+``` no-highlight
+PUT INTO TRADE.NEWCUSTOMERS SELECT * from TRADE.CUSTOMERS;
+
+PUT INTO TRADE.NEWCUSTOMERS SELECT * from TRADE.CUSTOMERS WHERE CUST_NAME='User 1'
 ```
 
 ###	For Column Tables
@@ -51,16 +55,18 @@ These columns are used to identify a row uniquely. PUT INTO is available by SQL 
 
 **For SQL**
 
-``` bash
-put into table col_table select * from row_table
+``` no-highlight
+// Insert into another table using a select statement for column tables with key columns
+PUT INTO NEWEMPLOYEES SELECT * from EMPLOYEES;
+
+PUT INTO NEWEMPLOYEES SELECT * from EMPLOYEES WHERE C_NAME='User 1'
 ```
 
 **For API**
 
 API is available from the DataFrameWriter extension.
 
-``` bash
+``` no-highlight
 import org.apache.spark.sql.snappy._
 dataFrame.write.putInto("col_table")
 ```
-
