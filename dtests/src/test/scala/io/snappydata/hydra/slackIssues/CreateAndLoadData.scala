@@ -168,17 +168,18 @@ class CreateAndLoadData extends SnappySQLJob {
         }
       }
       val qDF = snappySession.createDataset(dataRDD)
-      //val qDFSpark = snc.createDataset(dataRDD)
-      qDF.write.insertInto("test_table")
-
-      qDF.write.parquet("/export/shared/QA_DATA/slackIssues")
-      // qDFSpark.write.insertInto("test_table")
+      val cacheDF = qDF.cache();
+      cacheDF.write.insertInto("test_table")
       val tempDir: File = new File("/export/shared/QA_DATA/slackIssues")
+      //val tempDir: File = new File("/data/snappyHydraLogs/slackIssues")
       if (tempDir.exists) tempDir.delete()
+      cacheDF.write.parquet("/export/shared/QA_DATA/slackIssues")
+      //cacheDF.write.parquet("/data/snappyHydraLogs/slackIssues")
+
       val qDFSpark = sqlContext.read.load("/export/shared/QA_DATA/slackIssues")
+      //val qDFSpark = sqlContext.read.load("/data/snappyHydraLogs/slackIssues")
       qDFSpark.registerTempTable("test_table")
-      //qDF.registerTempTable("test_table")
-      //snc.cacheTable("test_table_spark")
+
       sqlContext.cacheTable("test_table")
       var start = System.currentTimeMillis
       sqlContext.table("test_table").count()

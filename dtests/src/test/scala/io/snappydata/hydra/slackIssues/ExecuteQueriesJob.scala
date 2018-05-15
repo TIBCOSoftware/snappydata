@@ -20,21 +20,20 @@ package io.snappydata.hydra.slackIssues
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
-import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 
 import scala.util.{Failure, Success, Try}
 
 
-class ValidateQueriesJob extends SnappySQLJob {
+class ExecuteQueriesJob extends SnappySQLJob {
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     val snc = snappySession.sqlContext
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
-    val outputFile = "ValidateQueries_" + jobConfig.getString("logFileName")
+    val outputFile = "ExecuteQueries_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
@@ -52,7 +51,8 @@ class ValidateQueriesJob extends SnappySQLJob {
           s" :  " + System.currentTimeMillis)
       query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
       var start = System.currentTimeMillis
-      SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
+      snc.sql(query).show(5)
+      //SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
       var end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
           (end - start) + " ms")
