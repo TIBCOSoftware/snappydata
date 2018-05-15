@@ -84,8 +84,8 @@ class SortedColumnTests extends ColumnTablesTestBase {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 551
-    SortedColumnTests.testBasicInsert2WithDelete1(snc, colTableName, numBuckets = 1, numElements)
-    SortedColumnTests.testBasicInsert2WithDelete1(snc, colTableName, numBuckets = 2, numElements)
+    SortedColumnTests.testBasicInsertWithDelete(snc, colTableName, numBuckets = 2, numElements)
+    SortedColumnTests.testBasicInsertWithDelete(snc, colTableName, numBuckets = 2, numElements)
     // Thread.sleep(50000000)
   }
 
@@ -330,7 +330,7 @@ object SortedColumnTests extends Logging {
     session.conf.unset(SQLConf.WHOLESTAGE_FALLBACK.key)
   }
 
-  def testBasicInsert2WithDelete1(session: SnappySession, colTableName: String, numBuckets: Int,
+  def testBasicInsertWithDelete(session: SnappySession, colTableName: String, numBuckets: Int,
       numElements: Long): Unit = {
     session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
     session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
@@ -401,19 +401,36 @@ object SortedColumnTests extends Logging {
       println(s"$testName loaded $dataFile_1")
       // scalastyle:on
 
-      var numDeletes = 1
-      var deleteWhereCaluse: StringBuilder = new StringBuilder("(3")
+      var numDeletes1 = 1
+      var deleteWhereCaluse1: StringBuilder = new StringBuilder("(3")
       (10 to numElements.toInt).foreach(i => {
         if (i % 10 == 3) {
-          deleteWhereCaluse.append(s", $i")
-          numDeletes += 1
+          deleteWhereCaluse1.append(s", $i")
+          numDeletes1 += 1
         }
       })
-      deleteWhereCaluse.append(s")")
-      doDelete(deleteWhereCaluse.result())
+      deleteWhereCaluse1.append(s")")
+      doDelete(deleteWhereCaluse1.result())
+
       // ColumnTableScan.setDebugMode(true)
       doPutInto(dataFile_2, dataFrameReader)
-      verifySelect(numElements.toInt - numDeletes)
+      ColumnTableScan.setDebugMode(true)
+      verifySelect(numElements.toInt - numDeletes1)
+      ColumnTableScan.setDebugMode(false)
+
+      var numDeletes2 = 1
+      var deleteWhereCaluse2: StringBuilder = new StringBuilder("(8")
+      (10 to numElements.toInt).foreach(i => {
+        if (i % 10 == 8) {
+          deleteWhereCaluse2.append(s", $i")
+          numDeletes2 += 1
+        }
+      })
+      deleteWhereCaluse2.append(s")")
+      doDelete(deleteWhereCaluse2.result())
+
+      ColumnTableScan.setDebugMode(true)
+      verifySelect(numElements.toInt - numDeletes1 - numDeletes2)
     } catch {
       case t: Throwable =>
         logError(t.getMessage, t)
