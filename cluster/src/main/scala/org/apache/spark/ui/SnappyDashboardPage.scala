@@ -113,11 +113,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     <div class="container-fluid" style="text-align: center;">
       <div id="cpuUsageContainer" class="graph-container">
       </div>
-      <div id="memoryUsageContainer" class="graph-container">
-      </div>
       <div id="heapUsageContainer" class="graph-container">
       </div>
       <div id="offheapUsageContainer" class="graph-container">
+      </div>
+      <div id="diskSpaceUsageContainer" class="graph-container">
       </div>
     </div>
   }

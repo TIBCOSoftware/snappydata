@@ -132,11 +132,12 @@ object MemberDetails {
     val offHeapMemorySize = memberDetails.getOffHeapMemorySize
     val offHeapMemoryUsed = memberDetails.getOffHeapMemoryUsed
 
-
     val jvmHeapMax = memberDetails.getJvmMaxMemory
     val jvmHeapTotal = memberDetails.getJvmTotalMemory
     val jvmHeapUsed = memberDetails.getJvmUsedMemory
     val jvmHeapFree = memberDetails.getJvmFreeMemory
+
+    val diskStoreDiskSpace = memberDetails.getDiskStoreDiskSpace
 
     val timeLine = memberDetails.getUsageTrends(MemberStatistics.TREND_TIMELINE)
     val cpuUsageTrends = memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE)
@@ -153,16 +154,18 @@ object MemberDetails {
       MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE)
     val aggrMemoryUsageTrends = memberDetails.getUsageTrends(
       MemberStatistics.TREND_AGGR_MEMORY_USAGE)
+    val diskStoreDiskSpaceTrend = memberDetails.getUsageTrends(
+      MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE);
 
     new MemberSummary(memberId, nameOrId.toString, host, shortDirName, fullDirName,
       logFile, processId, status, memberType, isLocator, isDataServer, isLead, isActiveLead,
-      cpuActive, clients, jvmHeapMax, jvmHeapUsed, jvmHeapTotal, jvmHeapFree,
-      heapStoragePoolUsed, heapStoragePoolSize, heapExecutionPoolUsed, heapExecutionPoolSize,
-      heapMemorySize, heapMemoryUsed, offHeapStoragePoolUsed, offHeapStoragePoolSize,
-      offHeapExecutionPoolUsed, offHeapExecutionPoolSize, offHeapMemorySize, offHeapMemoryUsed,
+      cpuActive, clients, jvmHeapMax, jvmHeapUsed, jvmHeapTotal, jvmHeapFree, heapStoragePoolUsed,
+      heapStoragePoolSize, heapExecutionPoolUsed, heapExecutionPoolSize, heapMemorySize,
+      heapMemoryUsed, offHeapStoragePoolUsed, offHeapStoragePoolSize, offHeapExecutionPoolUsed,
+      offHeapExecutionPoolSize, offHeapMemorySize, offHeapMemoryUsed, diskStoreDiskSpace,
       timeLine, cpuUsageTrends, jvmUsageTrends, heapUsageTrends, heapStorageUsageTrends,
       heapExecutionUsageTrends, offHeapUsageTrends, offHeapStorageUsageTrends,
-      offHeapExecutionUsageTrends, aggrMemoryUsageTrends)
+      offHeapExecutionUsageTrends, aggrMemoryUsageTrends, diskStoreDiskSpaceTrend)
   }
 
 }

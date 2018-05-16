@@ -84,6 +84,8 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
 
     val cpuUsage = memberDetails.getCpuActive.toDouble;
 
+    val diskStoreDiskSpace = memberDetails.getDiskStoreDiskSpace
+
     val heapStoragePoolUsed = memberDetails.getHeapStoragePoolUsed
     val heapStoragePoolSize = memberDetails.getHeapStoragePoolSize
     val heapExecutionPoolUsed = memberDetails.getHeapExecutionPoolUsed
@@ -210,6 +212,15 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         </div>
     }
 
+    val diskSpaceHtmlContent = {
+      <div class="basic-stats">
+        <span>Disk Space:</span> <br/>
+        <span id="currDiskSpace" class="basic-stats-value">
+          {Utils.bytesToString(diskStoreDiskSpace).toString}
+        </span>
+      </div>
+    }
+
     <div class="container-fluid" style="text-align: center;">
       <div class="basic-stats-container">
         {memberBasicDetailsContent}
@@ -217,16 +228,18 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         {heapHtmlContent}
         <div class="basic-stats-separator"></div>
         {offHeapHtmlContent}
+        <div class="basic-stats-separator"></div>
+        {diskSpaceHtmlContent}
       </div>
     </div>
     <div class="container-fluid" style="text-align: center;">
       <div id="cpuUsageContainer" class="graph-container">
       </div>
-      <div id="memoryUsageContainer" class="graph-container">
-      </div>
       <div id="heapUsageContainer" class="graph-container">
       </div>
       <div id="offheapUsageContainer" class="graph-container">
+      </div>
+      <div id="diskSpaceUsageContainer" class="graph-container">
       </div>
     </div>
   }
