@@ -27,7 +27,6 @@ import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.UnsafeProjection
 import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
@@ -56,7 +55,7 @@ object CodeGeneration extends Logging {
 
   override def logDebug(msg: => String): Unit = super.logDebug(msg)
 
-  private[this] lazy val (codeCacheSize, cacheSize) = {
+  lazy val (codeCacheSize, cacheSize) = {
     val env = SparkEnv.get
     val size = if (env ne null) {
       env.conf.getInt("spark.sql.codegen.cacheSize", 2000)
@@ -97,10 +96,6 @@ object CodeGeneration extends Logging {
       }
 
       override def load(key: ExecuteKey): (GeneratedClass, Array[Any]) = {
-//        if (key.projection) {
-//          // generate InternalRow to UnsafeRow projection
-//          return UnsafeProjection.create(key.schema.map(_.dataType))
-//        }
         val (code, references) = key.genCode()
         val startTime = System.nanoTime()
         val (result, _) = doCompileMethod.invoke(CodeGenerator, code)
@@ -483,11 +478,6 @@ object CodeGeneration extends Logging {
       forIndex = false, genCode = genCode)).asInstanceOf[(GeneratedClass, Array[Any])]
   }
 
-  def compileProjection(name: String, schema: Array[StructField]): UnsafeProjection = {
-    codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
-      forIndex = false, projection = true)).asInstanceOf[UnsafeProjection]
-  }
-
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
     typeCache.get(dataType)
 
@@ -535,11 +525,9 @@ trait GeneratedIndexStatement {
       (stmt: PreparedStatement, row: InternalRow): Int
 }
 
-
 final class ExecuteKey(val name: String,
     val schema: Array[StructField], val dialect: JdbcDialect,
-    val forIndex: Boolean = false, val projection: Boolean = false,
-    val genCode: () => (CodeAndComment, Array[Any]) = null) {
+    val forIndex: Boolean = false, val genCode: () => (CodeAndComment, Array[Any]) = null) {
 
   override lazy val hashCode: Int = if ((schema ne null) && !forIndex) {
     MurmurHash3.listHash(name :: schema.toList, MurmurHash3.seqSeed)
