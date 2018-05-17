@@ -491,9 +491,9 @@ case class SnappyHashAggregateExec(
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
+    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    hashMapTerm = ctx.addMutableState(hashSetClassName,
-      "hashMap", _ => "", forceInline = true)
+    ctx.addMutableState(hashSetClassName, hashMapTerm, _ => "", true, false)
 
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
