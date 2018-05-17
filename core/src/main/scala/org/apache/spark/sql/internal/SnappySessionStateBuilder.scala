@@ -134,7 +134,11 @@ class SnappySessionStateBuilder(sparkSession: SparkSession,
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
-  override protected lazy val conf: SQLConf = new SnappyConf(session)
+  override lazy val conf: SQLConf = {
+    val conf = parentState.map(_.conf.clone()).getOrElse(new SnappyConf(session))
+    mergeSparkConf(conf, session.sparkContext.conf)
+    conf
+  }
 
   /**
     * Create a [[SnappyStoreHiveCatalog]].
