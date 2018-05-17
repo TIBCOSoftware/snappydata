@@ -346,7 +346,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // evaluate the key and value expressions
       ${evaluateVariables(keyVars)}${evaluateVariables(valueVars)}
       // skip if any key is null
-      if (${keyVars.map(_.isNull).mkString(" ||\n")}) return;
+      if (${keyVars.map(_.isNull).mkString(" ||\n")}) continue;
       // generate hash code
       ${generateHashCode(hashVar, keyVars, keyExpressions, register = false)}
       // lookup or insert the grouping key in map
@@ -354,8 +354,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // existing register variables instead of having to fill up
       // a lookup key fields and compare against those (thus saving
       //   on memory writes/reads vs just register reads)
-      int $maskTerm = $hashMapTerm.mask();
-      $className[] $dataTerm = ($className[])$hashMapTerm.data();
       int $posVar = ${hashVar(0)} & $maskTerm;
       int $deltaVar = 1;
       while (true) {
