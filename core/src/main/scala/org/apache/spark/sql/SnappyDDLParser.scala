@@ -765,7 +765,6 @@ case class DeployCommand(
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
-    logInfo(s"KN: jarstr ${jarsstr}")
     if (jarsstr.nonEmpty) {
       val jars = jarsstr.split(",")
       val sc = sparkSession.sparkContext
