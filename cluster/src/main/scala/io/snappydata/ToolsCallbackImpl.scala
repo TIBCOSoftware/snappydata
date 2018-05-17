@@ -17,6 +17,7 @@
 package io.snappydata
 
 import java.io.File
+import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
 import java.util.UUID
 
@@ -76,7 +77,11 @@ object ToolsCallbackImpl extends ToolsCallback {
     })
     // Close and reopen interpreter
     if (alias != null) {
-      lead.closeAndReopenInterpreterServer();
+      try {
+        lead.closeAndReopenInterpreterServer();
+      } catch {
+        case ite: InvocationTargetException => assert(ite.getCause.isInstanceOf[SecurityException])
+      }
     }
   }
 
