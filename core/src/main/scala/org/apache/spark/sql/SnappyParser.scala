@@ -106,21 +106,29 @@ class SnappyParser(session: SnappySession)
 
     s.charAt(len - 1) match {
       case 'D' | 'd' =>
-        if (s.length > 2 && (s.charAt(len - 2) match {
-          case 'B' | 'b' => true
-          case _ => false
-        })) {
-          return toDecimalLiteral(s.substring(0, len - 2), checkExactNumeric = false)
+        if (s.length > 2) {
+          s.charAt(len - 2) match {
+            case 'B' | 'b' => toDecimalLiteral(s.substring(0, len - 2), checkExactNumeric = false)
+            case c if (Character.isDigit(c)) => return newTokenizedLiteral(
+              java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
+            case _ => throw new ParseException(s"Found non numeric token $s")
+          }
         } else {
           return newTokenizedLiteral(
             java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
         }
-      case 'F' | 'f' =>
+      case 'F' | 'f' => if (Character.isDigit(s.charAt(len - 2))) {
         return newTokenizedLiteral(
           java.lang.Float.parseFloat(s.substring(0, len - 1)), FloatType)
-      case 'L' | 'l' =>
+      } else {
+        throw new ParseException(s"Found non numeric token $s")
+      }
+      case 'L' | 'l' => if (Character.isDigit(s.charAt(len - 2))) {
         return newTokenizedLiteral(
           java.lang.Long.parseLong(s.substring(0, len - 1)), LongType)
+      } else {
+        throw new ParseException(s"Found non numeric token $s")
+      }
       case _ =>
     }
     while (index < len) {
