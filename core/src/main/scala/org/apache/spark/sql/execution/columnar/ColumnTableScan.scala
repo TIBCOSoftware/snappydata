@@ -851,6 +851,26 @@ private[sql] final case class ColumnTableScan(
            |final $jt $col;
            |final int $unchanged;
            |$unchangedCode
+           |if ($unchanged == ${ColumnTableScan.NOT_IN_DELTA}) {
+           |  $lastRowFromDictionary = true;
+           |}
+           |// If entry is deleted, return from here
+           |if ($isDeletedEntry) {
+           |    // TODO VB: Remove this
+           |    if (${ColumnTableScan.getDebugMode}) {
+           |      System.out.println("VB: Scan [deleted][2] " + $unchanged +
+           |      " ,batchOrdinal=" + $batchOrdinal +
+           |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
+           |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
+           |      " ,batchIndex=" + $batchIndex +
+           |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
+           |      " ,numRows=" + $numRows +
+           |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
+           |      "");
+           |    }
+           |  continue;
+           |}
            |if ($unchanged == ${ColumnTableScan.NOT_IN_DELTA}) $colAssign
            |else $updatedAssign
         """.stripMargin
