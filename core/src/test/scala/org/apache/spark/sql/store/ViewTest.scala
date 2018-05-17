@@ -302,7 +302,7 @@ class ViewTest extends SnappyFunSuite {
   }
 
 
-  test("SNAP-2342 nested query involving joins & union throws Exception") {
+  test("SNAP-2342 and SNAP-2346 nested query involving joins & union throws Exception") {
     val session = this.snc.snappySession
 
     session.sql(s"create table ujli ( " +
@@ -525,5 +525,8 @@ class ViewTest extends SnappyFunSuite {
         s"a.localCompanyCode," +
         s" a.mrcCode,a.sourceSystemId,a.glAccountCode,a.localGlAccountCode," +
         s"c.bravo,d.gtw) group by leUniversal,gfs)")
+
+    session.sql("select bravo from trialbalance group by bravo").collect
+
   }
 }
