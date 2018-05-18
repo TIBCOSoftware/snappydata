@@ -23,10 +23,10 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
-import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.RandomStringUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
+import org.apache.commons.io.FileUtils
 
 import scala.util.{Failure, Random, Success, Try}
 
@@ -56,7 +56,6 @@ class CreateAndLoadData extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
-    var query: String = null;
     Try {
       val numRows = jobConfig.getString("numRows").toLong
       val performDMLOPs = jobConfig.getString("performDMLOps").toBoolean
@@ -126,7 +125,9 @@ class CreateAndLoadData extends SnappySQLJob {
       import snappySession.implicits._
 
       val sc = snappySession.sparkContext
-      val dataRDD = sc.range(0, numRows).mapPartitions { itr =>
+      var idNum: Long = 0;
+      var rows = numRows;
+      val dataRDD = sc.range(idNum, rows).mapPartitions { itr =>
         val rnd = new Random()
         // val dateTypes = ALL_DATETYPES.map(Int)
         // val dateTypesSize = dateTypes.length
@@ -178,49 +179,25 @@ class CreateAndLoadData extends SnappySQLJob {
       if (tempDir.exists()) FileUtils.deleteDirectory(tempDir)
       cacheDF.write.parquet("/export/shared/QA_DATA/slackIssues")
       //cacheDF.write.parquet("/data/snappyHydraLogs/slackIssues")
-
-      val qDFSpark = sqlContext.read.load("/export/shared/QA_DATA/slackIssues")
+      //cacheDF.repartition(1).write.csv("/data/snappyHydraLogs/slackIssues/slackIssues")
       //val qDFSpark = sqlContext.read.load("/data/snappyHydraLogs/slackIssues")
+      val qDFSpark = sqlContext.read.load("/export/shared/QA_DATA/slackIssues")
+
+      /*val qDFSpark = sqlContext.read.format("com.databricks.spark.csv")
+          .option("header", "true")
+          .option("inferSchema", "true")
+          .option("nullValue", "NULL")
+          .option("maxCharsPerColumn", "4096")
+          .load("/data/snappyHydraLogs/slackIssues/slackIssues.csv")*/
+
       qDFSpark.registerTempTable("test_table")
-
       sqlContext.cacheTable("test_table")
-      var start = System.currentTimeMillis
-      sqlContext.table("test_table").count()
-      var end = System.currentTimeMillis
-      pw.println(s"\nTime to load into table test_table in spark= " +
-          (end - start) + " ms")
-      pw.println(s"ValidateQueriesFullResultSet job started at" +
-          s" :  " + System.currentTimeMillis)
+      validateQueries(snc, sqlContext, pw)
       if (performDMLOPs) {
-
-      } else {
-        query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
-        start = System.currentTimeMillis
-        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
-        end = System.currentTimeMillis
-        pw.println(s"\nExecution Time for $query: " +
-            (end - start) + " ms")
-        query = "select count(*) from test_table"
-        start = System.currentTimeMillis
-        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q2", "column", pw, sqlContext)
-        end = System.currentTimeMillis
-        pw.println(s"\nExecution Time for $query: " +
-            (end - start) + " ms")
-        query = "select ID from test_table group by ID order by ID asc"
-        start = System.currentTimeMillis
-        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q3", "column", pw, sqlContext)
-        end = System.currentTimeMillis
-        pw.println(s"\nExecution Time for $query: " +
-            (end - start) + " ms")
-        query = "select COMP_PRICE1, VALID_STATUS from test_table WHERE ID >= 500"
-        start = System.currentTimeMillis
-        SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q4", "column", pw, sqlContext)
-        end = System.currentTimeMillis
-        pw.println(s"\nExecution Time for $query: " +
-            (end - start) + " ms")
+        val qDF1 = snappySession.createDataset(dataRDD)
+        val cacheDF1 = qDF1.cache();
+        cacheDF1.write.insertInto("test_table")
       }
-      pw.println(s"ValidateQueriesFullResultSet job completed  " +
-          s"successfully at : " + System.currentTimeMillis)
       pw.close()
 
     } match {
@@ -229,6 +206,48 @@ class CreateAndLoadData extends SnappySQLJob {
       case Failure(e) =>
         throw e;
     }
+  }
+
+  def validateQueries(snc: SnappyContext, sqlContext: SQLContext, pw: PrintWriter): Unit = {
+    var start = System.currentTimeMillis
+    sqlContext.table("test_table").count()
+    var end = System.currentTimeMillis
+    pw.println(s"\nTime to load into table test_table in spark= " +
+        (end - start) + " ms")
+    pw.println(s"ValidateQueriesFullResultSet job started at" +
+        s" :  " + System.currentTimeMillis)
+    var query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
+    start = System.currentTimeMillis
+    SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
+    end = System.currentTimeMillis
+    pw.println(s"\nExecution Time for $query: " +
+        (end - start) + " ms")
+    query = "select count(*) from test_table"
+    start = System.currentTimeMillis
+    SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q2", "column", pw, sqlContext)
+    end = System.currentTimeMillis
+    pw.println(s"\nExecution Time for $query: " +
+        (end - start) + " ms")
+    query = "select ID from test_table group by ID order by ID asc"
+    start = System.currentTimeMillis
+    SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q3", "column", pw, sqlContext)
+    end = System.currentTimeMillis
+    pw.println(s"\nExecution Time for $query: " +
+        (end - start) + " ms")
+    query = "select COMP_PRICE1, VALID_STATUS from test_table WHERE ID >= 25000 AND ID <= 50000000"
+    start = System.currentTimeMillis
+    SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q4", "column", pw, sqlContext)
+    end = System.currentTimeMillis
+    pw.println(s"\nExecution Time for $query: " +
+        (end - start) + " ms")
+    query = "select CHECKIN_DATE, CHECKOUT_DATE from test_table WHERE ID IN (500, 25000000)"
+    start = System.currentTimeMillis
+    SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q5", "column", pw, sqlContext)
+    end = System.currentTimeMillis
+    pw.println(s"\nExecution Time for $query: " +
+        (end - start) + " ms")
+    pw.println(s"ValidateQueriesFullResultSet job completed  " +
+        s"successfully at : " + System.currentTimeMillis)
   }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = {
