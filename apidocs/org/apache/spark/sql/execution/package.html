@@ -290,23 +290,6 @@ InMemoryRelation.  This relation is automatically substituted query plans that r
       </a>
     </span>
       <p class="shortcomment cmt">Holds a cached logical plan and its data</p>
-    </li><li name="org.apache.spark.sql.execution.CachedPlanHelperExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CachedPlanHelperExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable"></a>
-      <a id="CachedPlanHelperExec:CachedPlanHelperExec"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="CachedPlanHelperExec.html"><span class="name">CachedPlanHelperExec</span></a><span class="params">(<span name="childPlan">childPlan: <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CachedPlanHelperExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.CoGroupExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CoGroupExecextendsSparkPlanwithBinaryExecNodewithObjectProducerExecwithProductwithSerializable"></a>
       <a id="CoGroupExec:CoGroupExec"></a>
@@ -1042,23 +1025,27 @@ all elements in the group.  The result of this function is flattened before bein
       <p class="shortcomment cmt">Applies the given function to input object iterator.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given function to input object iterator.
 The output of its child must be a single-field row containing the input object.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.NonRecursivePlans" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="NonRecursivePlansextendsAnyRef"></a>
+    </li><li name="org.apache.spark.sql.execution.NonRecursivePlans" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="NonRecursivePlansextendsSparkPlan"></a>
       <a id="NonRecursivePlans:NonRecursivePlans"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="NonRecursivePlans.html"><span class="name">NonRecursivePlans</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="NonRecursivePlans.html"><span class="name">NonRecursivePlans</span></a><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@NonRecursivePlansextendsAnyRef" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@NonRecursivePlansextendsSparkPlan" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Base class for SparkPlan implementations that have only the code-generated
+version and use the same for non-codegenerated case.</p><div class="fullcomment"><div class="comment cmt"><p>Base class for SparkPlan implementations that have only the code-generated
+version and use the same for non-codegenerated case. For that case this
+prevents recursive calls into code generation in case it fails for some reason.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.ObjectConsumerExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ObjectConsumerExecextendsSparkPlanwithUnaryExecNode"></a>
       <a id="ObjectConsumerExec:ObjectConsumerExec"></a>
@@ -2006,6 +1993,25 @@ or having a <a href="ProjectExec.html" class="extype" name="org.apache.spark.sql
 This could have been named TopK, but Spark's top operator does the opposite in ordering
 so we name it TakeOrdered to avoid confusion.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.TokenizedScalarSubquery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TokenizedScalarSubqueryextendsScalarSubquery"></a>
+      <a id="TokenizedScalarSubquery:TokenizedScalarSubquery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TokenizedScalarSubquery.html"><span class="name">TokenizedScalarSubquery</span></a><span class="result"> extends <a href="ScalarSubquery.html" class="extype" name="org.apache.spark.sql.execution.ScalarSubquery">ScalarSubquery</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TokenizedScalarSubqueryextendsScalarSubquery" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Extends Spark's ScalarSubquery to avoid emitting a constant in generated
+code rather pass as a reference object using <span class="extype" name="TokenLiteral">TokenLiteral</span> to enable
+generated code re-use.</p>
     </li><li name="org.apache.spark.sql.execution.TopK" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="TopKextendsSerializable"></a>
       <a id="TopK:TopK"></a>
@@ -2307,23 +2313,6 @@ used to generated code for BoundReference.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.CachedPlanHelperExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CachedPlanHelperExec"></a>
-      <a id="CachedPlanHelperExec:CachedPlanHelperExec"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="CachedPlanHelperExec$.html"><span class="name">CachedPlanHelperExec</span></a><span class="result"> extends <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CachedPlanHelperExec" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.ConnectionPool" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ConnectionPool"></a>
       <a id="ConnectionPool:ConnectionPool"></a>
@@ -2530,6 +2519,23 @@ cases), hence this optimization is currently only for string type.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.SecurityUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SecurityUtils"></a>
+      <a id="SecurityUtils:SecurityUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SecurityUtils$.html"><span class="name">SecurityUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SecurityUtils" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Common security related calls.</p>
     </li><li name="org.apache.spark.sql.execution.SnappyContextAQPFunctions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyContextAQPFunctions"></a>
       <a id="SnappyContextAQPFunctions:SnappyContextAQPFunctions"></a>
@@ -2951,6 +2957,23 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@serializer" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.sources" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sources"></a>
+      <a id="sources:sources"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="sources/package.html"><span class="name">sources</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@sources" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

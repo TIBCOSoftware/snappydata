@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(conn:java.sql.Connection,requiredColumns:Array[String],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,partitionId:Int,fetchColQuery:String):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS"></a>
+      <a id="&lt;init&gt;(conn:java.sql.Connection,projection:Array[Int],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,partitionId:Int):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS"></a>
       <a id="&lt;init&gt;:ColumnBatchIteratorOnRS"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnBatchIteratorOnRS</span><span class="params">(<span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="stmt">stmt: <span class="extype" name="java.sql.Statement">Statement</span></span>, <span name="rs">rs: <span class="extype" name="java.sql.ResultSet">ResultSet</span></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="fetchColQuery">fetchColQuery: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">ColumnBatchIteratorOnRS</span><span class="params">(<span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="projection">projection: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="stmt">stmt: <span class="extype" name="java.sql.Statement">Statement</span></span>, <span name="rs">rs: <span class="extype" name="java.sql.ResultSet">ResultSet</span></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@&lt;init&gt;(conn:java.sql.Connection,requiredColumns:Array[String],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,partitionId:Int,fetchColQuery:String):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@&lt;init&gt;(conn:java.sql.Connection,projection:Array[Int],stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,partitionId:Int):org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -897,6 +897,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getCurrentDeltaStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getCurrentDeltaStats:java.nio.ByteBuffer"></a>
+      <a id="getCurrentDeltaStats:ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCurrentDeltaStats</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@getCurrentDeltaStats:java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#getCurrentValue" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getCurrentValue:java.nio.ByteBuffer"></a>
       <a id="getCurrentValue:ByteBuffer"></a>
@@ -1033,23 +1050,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[this] </dd><dt>Definition Classes</dt><dd><a href="ResultSetIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#hasUpdatedColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="hasUpdatedColumns:Boolean"></a>
-      <a id="hasUpdatedColumns:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hasUpdatedColumns</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@hasUpdatedColumns:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1237,6 +1237,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterator</dd></dl></div>
+    </li><li name="org.apache.spark.Logging#levelFlags" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelFlags:Int"></a>
+      <a id="levelFlags:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelFlags</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@levelFlags:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -1441,6 +1458,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log_" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log_:org.slf4j.Logger"></a>
+      <a id="log_:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log_</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@log_:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="scala.collection.Iterator#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="map[B](f:A=&gt;B):Iterator[B]"></a>
       <a id="map[B]((ByteBuffer)⇒B):Iterator[B]"></a>
@@ -1577,6 +1611,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>TraversableOnce → GenTraversableOnce</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS#moveNext" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="moveNext():Boolean"></a>
+      <a id="moveNext():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">moveNext</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS@moveNext():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIteratorOnRS">ColumnBatchIteratorOnRS</a> → <a href="ResultSetIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -759,6 +768,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -822,6 +853,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1017,6 +1055,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1038,7 +1083,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1052,7 +1104,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1066,7 +1118,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1116,7 +1168,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1134,6 +1200,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1183,13 +1256,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1325,13 +1391,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1339,7 +1398,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1877,7 +1936,7 @@
 <h2 id="installing-a-jar">Installing a JAR</h2>
 <p>Related jobs may require some common libraries. These libraries can be made available to jobs by installing them. Use the SQLJ.INSTALL_JAR procedure to install a JAR file as mentioned below:</p>
 <p><strong>Syntax:</strong></p>
-<pre><code class="scala">SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
+<pre><code class="no-highlight">SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
 </code></pre>
 
 <ul>
@@ -1892,13 +1951,13 @@
 </li>
 </ul>
 <p><strong>Example:</strong></p>
-<pre><code class="scala">snappy&gt; call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
+<pre><code class="no-highlight">snappy&gt; call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
 </code></pre>
 
 <h2 id="replacing-a-jar">Replacing a JAR</h2>
 <p>Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file</p>
 <p><strong>Syntax:</strong></p>
-<pre><code class="scala">SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
+<pre><code class="no-highlight">SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
 </code></pre>
 
 <ul>
@@ -1910,13 +1969,13 @@
 </li>
 </ul>
 <p><strong>Example:</strong></p>
-<pre><code class="scala">CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
+<pre><code class="no-highlight">CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 </code></pre>
 
 <h2 id="removing-a-jar">Removing a JAR</h2>
 <p>Use SQLJ.REMOVE_JAR  procedure to remove a JAR file</p>
 <p><strong>Syntax:</strong></p>
-<pre><code class="scala">SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
+<pre><code class="no-highlight">SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 </code></pre>
 
 <ul>
@@ -1928,7 +1987,7 @@
 </li>
 </ul>
 <p><strong>Example:</strong></p>
-<pre><code class="scala">CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
+<pre><code class="no-highlight">CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 </code></pre>
               
             </div>

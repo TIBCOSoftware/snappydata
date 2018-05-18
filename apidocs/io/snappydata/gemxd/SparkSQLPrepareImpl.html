@@ -365,18 +365,18 @@
     </span>
       
     </li><li name="io.snappydata.gemxd.SparkSQLPrepareImpl#handleSubQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="handleSubQuery(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,f:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan=&gt;org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="handleSubQuery(LogicalPlan,(LogicalPlan)⇒LogicalPlan):LogicalPlan"></a>
+      <a id="handleSubQuery(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,f:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="handleSubQuery(LogicalPlan,PartialFunction[Expression,Expression]):LogicalPlan"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">handleSubQuery</span><span class="params">(<span name="plan">plan: <a href="../../../org/apache/spark/sql/catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="f">f: (<a href="../../../org/apache/spark/sql/catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>) ⇒ <a href="../../../org/apache/spark/sql/catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="../../../org/apache/spark/sql/catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+        <span class="name">handleSubQuery</span><span class="params">(<span name="plan">plan: <a href="../../../org/apache/spark/sql/catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="f">f: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="../../../org/apache/spark/sql/catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../../../org/apache/spark/sql/catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../../../org/apache/spark/sql/catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLPrepareImpl@handleSubQuery(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,f:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan=&gt;org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLPrepareImpl@handleSubQuery(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,f:PartialFunction[org.apache.spark.sql.catalyst.expressions.Expression,org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -496,6 +496,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.SparkSQLPrepareImpl@isTraceEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#levelFlags" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelFlags:Int"></a>
+      <a id="levelFlags:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelFlags</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLPrepareImpl@levelFlags:Int" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -700,6 +717,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.SparkSQLPrepareImpl@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log_" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log_:org.slf4j.Logger"></a>
+      <a id="log_:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log_</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLPrepareImpl@log_:org.slf4j.Logger" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -206,23 +206,24 @@ exchange on one side of a non-collocated join in many cases.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.ParamLiteralFolding" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ParamLiteralFolding"></a>
-      <a id="ParamLiteralFolding:ParamLiteralFolding"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState.OrderJoinConditions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OrderJoinConditions"></a>
+      <a id="OrderJoinConditions:OrderJoinConditions"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$ParamLiteralFolding$.html"><span class="name">ParamLiteralFolding</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="SnappySessionState$OrderJoinConditions$.html"><span class="name">OrderJoinConditions</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="JoinQueryPlanning.html" class="extype" name="org.apache.spark.sql.internal.JoinQueryPlanning">JoinQueryPlanning</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@ParamLiteralFolding" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@OrderJoinConditions" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <p class="shortcomment cmt">Orders the join keys as per the  underlying partitioning keys ordering of the table.</p><div class="fullcomment"><div class="comment cmt"><p>Orders the join keys as per the  underlying partitioning keys ordering of the table.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionState.PushDownWindowLogicalPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PushDownWindowLogicalPlan"></a>
       <a id="PushDownWindowLogicalPlan:PushDownWindowLogicalPlan"></a>
@@ -258,6 +259,23 @@ exchange on one side of a non-collocated join in many cases.
     </span>
       <p class="shortcomment cmt">Replaces <span class="extype" name="UnresolvedRelation">UnresolvedRelation</span>s with concrete relations from the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Replaces <span class="extype" name="UnresolvedRelation">UnresolvedRelation</span>s with concrete relations from the catalog.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState.TokenizedLiteralFolding" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TokenizedLiteralFolding"></a>
+      <a id="TokenizedLiteralFolding:TokenizedLiteralFolding"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySessionState$TokenizedLiteralFolding$.html"><span class="name">TokenizedLiteralFolding</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@TokenizedLiteralFolding" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#addJar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="addJar(path:String):Unit"></a>
       <a id="addJar(String):Unit"></a>
@@ -844,18 +862,18 @@ that listen for execution metrics.
       <p class="shortcomment cmt">Logical query plan optimizer.</p><div class="fullcomment"><div class="comment cmt"><p>Logical query plan optimizer.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappyAQPSessionState#planner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="planner:org.apache.spark.sql.execution.SparkPlanner"></a>
-      <a id="planner:SparkPlanner"></a>
+      <a id="planner:org.apache.spark.sql.internal.DefaultPlanner"></a>
+      <a id="planner:DefaultPlanner"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">planner</span><span class="result">: <a href="../execution/SparkPlanner.html" class="extype" name="org.apache.spark.sql.execution.SparkPlanner">SparkPlanner</a></span>
+        <span class="name">planner</span><span class="result">: <a href="DefaultPlanner.html" class="extype" name="org.apache.spark.sql.internal.DefaultPlanner">DefaultPlanner</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@planner:org.apache.spark.sql.execution.SparkPlanner" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@planner:org.apache.spark.sql.internal.DefaultPlanner" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

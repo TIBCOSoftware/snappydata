@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -755,6 +764,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -818,6 +849,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1013,6 +1051,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1034,7 +1079,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1048,7 +1100,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1062,7 +1114,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1112,7 +1164,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1130,6 +1196,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1179,13 +1252,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1321,13 +1387,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1335,7 +1394,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1871,38 +1930,38 @@
                 <p><a id="howto-streams"></a></p>
 <h1 id="how-to-use-stream-processing-with-snappydata">How to use Stream Processing with SnappyData</h1>
 <p>SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to the <a href="../../programming_guide/stream_processing_using_sql/">documentation</a>.</p>
-<p><strong>Code Example </strong>: </br>
+<p><strong>Code Example</strong>: </br>
 Code example for streaming is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala">StreamingExample.scala</a>. The code snippets below show how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.</p>
 <p><strong>First get a SnappySession and a SnappyStreamingContext</strong>: </br>
 Here SnappyStreamingContext is initialized in a batch duration of one second.</p>
-<pre><code class="scala">    val spark: SparkSession = SparkSession
-        .builder
-        .appName(getClass.getSimpleName)
-        .master(&quot;local[*]&quot;)
-        .getOrCreate
+<pre><code class="no-highlight">val spark: SparkSession = SparkSession
+    .builder
+    .appName(getClass.getSimpleName)
+    .master(&quot;local[*]&quot;)
+    .getOrCreate
 
-    val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
+val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
 </code></pre>
 
 <p>The example starts an embedded Kafka instance on which a few messages are published. SnappyData processes these message and updates a table based on the stream data.</p>
 <p>The SQL below shows how to declare a stream table using SQL. The rowConverter attribute specifies a class used to return Row objects from the received stream messages.</p>
-<pre><code class="scala">    snsc.sql(
-      &quot;create stream table adImpressionStream (&quot; +
-          &quot; time_stamp timestamp,&quot; +
-          &quot; publisher string,&quot; +
-          &quot; advertiser string,&quot; +
-          &quot; website string,&quot; +
-          &quot; geo string,&quot; +
-          &quot; bid double,&quot; +
-          &quot; cookie string) &quot; + &quot; using directkafka_stream options(&quot; +
-          &quot; rowConverter 'org.apache.spark.examples.snappydata.RowsConverter',&quot; +
-          s&quot; kafkaParams 'metadata.broker.list-&gt;$address;auto.offset.reset-&gt;smallest',&quot; +
-          s&quot; topics 'kafka_topic')&quot;
-    )
+<pre><code class="no-highlight">snsc.sql(
+  &quot;create stream table adImpressionStream (&quot; +
+      &quot; time_stamp timestamp,&quot; +
+      &quot; publisher string,&quot; +
+      &quot; advertiser string,&quot; +
+      &quot; website string,&quot; +
+      &quot; geo string,&quot; +
+     &quot; bid double,&quot; +
+      &quot; cookie string) &quot; + &quot; using directkafka_stream options(&quot; +
+      &quot; rowConverter 'org.apache.spark.examples.snappydata.RowsConverter',&quot; +
+      s&quot; kafkaParams 'metadata.broker.list-&gt;$address;auto.offset.reset-&gt;smallest',&quot; +
+      s&quot; topics 'kafka_topic')&quot;
+)
 </code></pre>
 
 <p>RowsConverter decodes a stream message consisting of comma separated fields and forms a Row object from it.</p>
-<pre><code class="scala">class RowsConverter extends StreamToRowsConverter with Serializable {
+<pre><code class="no-highlight">class RowsConverter extends StreamToRowsConverter with Serializable {
   override def toRows(message: Any): Seq[Row] = {
     val log = message.asInstanceOf[String]
     val fields = log.split(&quot;,&quot;)
@@ -1920,46 +1979,44 @@ Here SnappyStreamingContext is initialized in a batch duration of one second.</p
 </code></pre>
 
 <p><strong>To create a row table that is updated based on the streaming data</strong>:</p>
-<pre><code class="scala">snsc.sql(&quot;create table publisher_bid_counts(publisher string, bidCount int) using row&quot;)
+<pre><code class="no-highlight">snsc.sql(&quot;create table publisher_bid_counts(publisher string, bidCount int) using row&quot;)
 </code></pre>
 
 <p><strong>To declare a continuous query that is executed on the streaming data</strong>: This query returns a number of bids per publisher in one batch.</p>
-<pre><code class="scala">    val resultStream: SchemaDStream = snsc.registerCQ(&quot;select publisher, count(bid) as bidCount from &quot; +
-        &quot;adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher&quot;)
+<pre><code class="no-highlight">val resultStream: SchemaDStream = snsc.registerCQ(&quot;select publisher, count(bid) as bidCount from &quot; +
+    &quot;adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher&quot;)
 </code></pre>
 
 <p><strong>To process that the result of above continuous query to update the row table publisher_bid_counts</strong>:</p>
-<pre><code class="scala">    // this conf is used to get a JDBC connection
-    val conf = new ConnectionConfBuilder(snsc.snappySession).build()
+<pre><code class="no-highlight">// this conf is used to get a JDBC connection
+val conf = new ConnectionConfBuilder(snsc.snappySession).build()
 
-    resultStream.foreachDataFrame(df =&gt; {
-        println(&quot;Data received in streaming window&quot;)
-        df.show()
+resultStream.foreachDataFrame(df =&gt; {
+    println(&quot;Data received in streaming window&quot;)
+    df.show()
 
-        println(&quot;Updating table publisher_bid_counts&quot;)
-        val conn = ConnectionUtil.getConnection(conf)
-        val result = df.collect()
-        val stmt = conn.prepareStatement(&quot;update publisher_bid_counts set &quot; +
-            s&quot;bidCount = bidCount + ? where publisher = ?&quot;)
+    println(&quot;Updating table publisher_bid_counts&quot;)
+    val conn = ConnectionUtil.getConnection(conf)
+    val result = df.collect()
+    val stmt = conn.prepareStatement(&quot;update publisher_bid_counts set &quot; +
+        s&quot;bidCount = bidCount + ? where publisher = ?&quot;)
 
-        result.foreach(row =&gt; {
-          val publisher = row.getString(0)
-          val bidCount = row.getLong(1)
-          stmt.setLong(1, bidCount)
-          stmt.setString(2, publisher)
-          stmt.addBatch()
+    result.foreach(row =&gt; {
+      val publisher = row.getString(0)
+      val bidCount = row.getLong(1)
+      stmt.setLong(1, bidCount)
+      stmt.setString(2, publisher)
+      stmt.addBatch()
         }
         )
-        stmt.executeBatch()
-        conn.close()
-      }
-    })
-
+    stmt.executeBatch()
+    conn.close()
+  }
+})
 </code></pre>
 
 <p><strong>To display the total bids by each publisher by querying publisher_bid_counts table</strong>:</p>
-<pre><code class="scala">snsc.snappySession.sql(&quot;select publisher, bidCount from publisher_bid_counts&quot;).show()
-
+<pre><code class="no-highlight">snsc.snappySession.sql(&quot;select publisher, bidCount from publisher_bid_counts&quot;).show()
 </code></pre>
 
 <h2 id="sparks-structured-streaming-with-snappydata">Spark's structured streaming with SnappyData</h2>

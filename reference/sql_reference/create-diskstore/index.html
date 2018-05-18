@@ -24,6 +24,7 @@
   <link href="../../../css/menu.css" rel="stylesheet">
   <link href="../../../css/images.css" rel="stylesheet">
   <link href="../../../css/style.css" rel="stylesheet">
+  <link href="../../../css/highlight.css" rel="stylesheet">
   <link href="../../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
   <script src="../../../js/theme.js"></script> 
   <script src="../../../js/menu.js"></script>
+  <script src="../../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -746,6 +755,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -809,6 +840,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1015,6 +1053,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1036,7 +1081,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-table/">CREATE TABLE</a>
+        <a class="" href="../create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1050,7 +1102,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1064,7 +1116,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1114,7 +1166,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../drop-table/">DROP TABLE</a>
+        <a class="" href="../drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1132,6 +1198,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1181,13 +1254,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1323,13 +1389,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1337,7 +1396,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1876,7 +1935,7 @@
               
                 <h1 id="create-diskstore">CREATE DISKSTORE</h1>
 <p>Disk stores provide disk storage for tables that need to overflow or persist.</p>
-<pre><code class="pre">CREATE DISKSTORE diskstore_name
+<pre><code class="no-highlight">CREATE DISKSTORE diskstore_name
 
     [ MAXLOGSIZE max-log-size-in-mb ]
     [ AUTOCOMPACT boolean-constant ]
@@ -1912,7 +1971,7 @@
 <p>Sets the maximum number of row operations that SnappyData asynchronously queues to disk. After this number of asynchronous operations are queued, additional asynchronous operations block until existing writes are flushed to disk. A single DML operation may affect multiple rows, and each row modification, insertion, and deletion are considered a separate operation. The default QUEUESIZE value is 0, which specifies no limit.</p>
 <p><strong>dir-name</strong></p>
 <p>The optional <code>dir-name</code> entry defines a specific host system directory to use for the disk store. You can include one or more <code>dir-name</code> entries using the syntax:</p>
-<pre><code class="pre">[ ( 'dir-name' [ disk-space-in-mb ] [,'dir-name' [ disk-space-in-mb ] ]* ) ]
+<pre><code class="no-highlight">[ ( 'dir-name' [ disk-space-in-mb ] [,'dir-name' [ disk-space-in-mb ] ]* ) ]
 </code></pre>
 
 <p>In each entry:</p>
@@ -1929,14 +1988,15 @@
 <p>If you do not specify the <em>disk-space-in-mb</em> value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the <code>MAXLOGSIZE</code> value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings. If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.</p>
 </li>
 </ul>
-<p>You can specify any number of <code>dir-name</code> entries in a <code>CREATE DISKSTORE</code> statement. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.</p>
+<p>You can specify any number of <code>dir-name</code> entries in a <code>CREATE DISKSTORE</code> statement. The default diskstore does not have an option for multiple directories. It is recommended that you use separate data area from the server working directory.
+Create a separate diskstore and specify multiple directories. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.</p>
 <h2 id="example">Example</h2>
 <p>This example uses the default base directory and parameter values to create a named disk store:</p>
-<pre><code class="pre">snappy&gt; CREATE DISKSTORE STORE1;
+<pre><code class="no-highlight">snappy&gt; CREATE DISKSTORE STORE1;
 </code></pre>
 
 <p>This example configures disk store parameters and specifies a storage directory:</p>
-<pre><code class="pre">snappy&gt; CREATE DISKSTORE STORE1
+<pre><code class="no-highlight">snappy&gt; CREATE DISKSTORE STORE1
       MAXLOGSIZE 1024 
       AUTOCOMPACT TRUE
       ALLOWFORCECOMPACTION  FALSE 
@@ -1948,11 +2008,21 @@
 </code></pre>
 
 <p>This example specifies multiple storage directories and directory sizes for oplog files:</p>
-<pre><code class="pre">snappy&gt; CREATE DISKSTORE STORE1 
+<pre><code class="no-highlight">snappy&gt; CREATE DISKSTORE STORE1 
       WRITEBUFFERSIZE 19292393
       QUEUESIZE 17374
       ('dir1' 456 , 'dir2', 'dir3' 532 );
 </code></pre>
+
+<p><strong>Related Topics</strong></p>
+<ul>
+<li>
+<p><a href="../drop-diskstore/">DROP DISKSTORE</a></p>
+</li>
+<li>
+<p><a href="../../system_tables/sysdiskstores/">SYSDISKSTORES</a></p>
+</li>
+</ul>
               
             </div>
           </div>
@@ -1960,7 +2030,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../create-function/" class="btn btn-neutral float-right" title="CREATE FUNCTION">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../create-external-table/" class="btn btn-neutral float-right" title="CREATE EXTERNAL TABLE">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../create-statements/" class="btn btn-neutral" title="CREATE Statements"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -1998,7 +2068,7 @@
         <span><a href="../create-statements/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../create-function/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../create-external-table/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

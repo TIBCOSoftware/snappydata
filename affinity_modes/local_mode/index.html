@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -753,6 +762,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -816,6 +847,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1011,6 +1049,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1032,7 +1077,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1046,7 +1098,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1060,7 +1112,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1110,7 +1162,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1128,6 +1194,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1177,13 +1250,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1319,13 +1385,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1333,7 +1392,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1891,7 +1950,7 @@
 <p><strong>Example: Using the Local mode for developing SnappyData programs</strong></p>
 <p>You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:</p>
 <p><strong>Example: Maven dependency</strong></p>
-<pre><code>&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 --&gt;
+<pre><code class="no-highlight">&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 --&gt;
 &lt;dependency&gt;
     &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
     &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
@@ -1900,13 +1959,22 @@
 </code></pre>
 
 <p><strong>Example: SBT dependency</strong></p>
-<pre><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+<pre><code class="no-highlight">// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;1.0.1&quot;
-
 </code></pre>
 
-<p><strong>Create SnappySession</strong>: To start SnappyData store you need to create a SnappySession in your program</p>
-<pre><code class="scala"> val spark: SparkSession = SparkSession
+<p><strong>Note</strong>:</br>
+If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the <strong>build.sbt</strong>:</p>
+<pre><code class="no-highlight">val workaround = {
+  sys.props += &quot;packaging.type&quot; -&gt; &quot;jar&quot;
+  ()
+}
+</code></pre>
+
+<p>For more details, refer <a href="https://github.com/sbt/sbt/issues/3618">https://github.com/sbt/sbt/issues/3618</a>.</p>
+<p><strong>Create SnappySession</strong>:</p>
+<p>To start SnappyData store you need to create a SnappySession in your program:</p>
+<pre><code class="no-highlight"> val spark: SparkSession = SparkSession
          .builder
          .appName(&quot;SparkApp&quot;)
          .master(&quot;local[*]&quot;)
@@ -1914,9 +1982,9 @@ libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11
  val snappy = new SnappySession(spark.sparkContext)
 </code></pre>
 
-<p><strong>Example</strong>: <strong>Launch Apache Spark shell and provide SnappyData dependency as a Spark package</strong>:
-If you already have Spark2.0 installed in your local machine you can directly use <code>--packages</code> option to download the SnappyData binaries.</p>
-<pre><code class="bash">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot;
+<p><strong>Example</strong>: <strong>Launch Apache Spark shell and provide SnappyData dependency as a Spark package</strong>:</p>
+<p>If you already have Spark2.0 installed in your local machine you can directly use <code>--packages</code> option to download the SnappyData binaries.</p>
+<pre><code class="no-highlight">./bin/spark-shell --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot;
 </code></pre>
               
             </div>

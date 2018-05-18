@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,requiredColumns:Array[String],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,allParts:Array[org.apache.spark.Partition],partitionPruner:=&gt;Int,relDestroyVersion:Int,delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,allParts:Array[org.apache.spark.Partition],partitionPruner:=&gt;Int,relDestroyVersion:Int,delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD"></a>
       <a id="&lt;init&gt;:SmartConnectorColumnRDD"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SmartConnectorColumnRDD</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="connProperties">connProperties: <a href="../../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="store">store: <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="allParts">allParts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="partitionPruner">partitionPruner: ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="relDestroyVersion">relDestroyVersion: <span class="extype" name="scala.Int">Int</span></span>, <span name="delayRollover">delayRollover: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">SmartConnectorColumnRDD</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="projection">projection: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="connProperties">connProperties: <a href="../../../sources/ConnectionProperties.html" class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</a></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="store">store: <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>, <span name="allParts">allParts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="partitionPruner">partitionPruner: ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="relDestroyVersion">relDestroyVersion: <span class="extype" name="scala.Int">Int</span></span>, <span name="delayRollover">delayRollover: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,requiredColumns:Array[String],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,allParts:Array[org.apache.spark.Partition],partitionPruner:=&gt;Int,relDestroyVersion:Int,delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,tableName:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],connProperties:org.apache.spark.sql.sources.ConnectionProperties,schema:org.apache.spark.sql.types.StructType,store:org.apache.spark.sql.execution.columnar.ExternalStore,allParts:Array[org.apache.spark.Partition],partitionPruner:=&gt;Int,relDestroyVersion:Int,delayRollover:Boolean):org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1193,23 +1193,6 @@ elements, even if the input RDDs did.
     </span>
       <p class="shortcomment cmt">Return whether this RDD is checkpointed and materialized, either reliably or locally.</p><div class="fullcomment"><div class="comment cmt"><p>Return whether this RDD is checkpointed and materialized, either reliably or locally.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isDebugEnabled:Boolean"></a>
-      <a id="isDebugEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@isDebugEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#isEmpty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isEmpty():Boolean"></a>
       <a id="isEmpty():Boolean"></a>
@@ -1231,23 +1214,6 @@ elements, even if the input RDDs did.
 exception if called on an RDD of <code>Nothing</code> or <code>Null</code>. This may be come up in practice
 because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[Nothing]</code>.
 (<code>parallelize(Seq())</code> should be avoided anyway in favor of <code>parallelize(Seq[T]())</code>.)</p></span></dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isInfoEnabled:Boolean"></a>
-      <a id="isInfoEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@isInfoEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1266,18 +1232,18 @@ because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[N
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled:Boolean"></a>
-      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@isTraceEnabled:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SmartConnectorColumnRDD@isTraceEnabled():Boolean" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

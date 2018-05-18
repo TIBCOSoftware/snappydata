@@ -118,22 +118,42 @@ are retrieved using a JDBC URL or DataSource.
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan#buildUnsafeScan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
-      <a id="buildUnsafeScan(Array[String],Array[Filter]):(RDD[Any],Seq[RDD[InternalRow]])"></a>
+      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
+      <a id="buildUnsafeScan(Array[String],Array[Expression]):(RDD[Any],Seq[RDD[InternalRow]])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>)</span><span class="result">: (<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]])</span>
+        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: (<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan#unhandledFilters" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="unhandledFilters(filters:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
+      <a id="unhandledFilters(Seq[Expression]):Seq[Expression]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unhandledFilters</span><span class="params">(<span name="filters">filters: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@unhandledFilters(filters:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the list of <span class="extype" name="Expression">Expression</span>s that this datasource may not be able to handle.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the list of <span class="extype" name="Expression">Expression</span>s that this datasource may not be able to handle.
+By default, this function will return all filters, as it is always safe to
+double evaluate an <span class="extype" name="Expression">Expression</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -669,6 +689,23 @@ be a count of number of inserted rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#levelFlags" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelFlags:Int"></a>
+      <a id="levelFlags:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelFlags</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@levelFlags:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -873,6 +910,23 @@ be a count of number of inserted rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log_" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log_:org.slf4j.Logger"></a>
+      <a id="log_:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log_</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@log_:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#mode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="mode:org.apache.spark.sql.SaveMode"></a>
       <a id="mode:SaveMode"></a>
@@ -1050,18 +1104,18 @@ of Spark SQL should leave this as true.</p></span></dd></dl></div>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#scanTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],prunePartitions:=&gt;Int):org.apache.spark.rdd.RDD[Any]"></a>
-      <a id="scanTable(String,Array[String],Array[Filter],⇒Int):RDD[Any]"></a>
+      <a id="scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],prunePartitions:=&gt;Int):(org.apache.spark.rdd.RDD[Any],Array[Int])"></a>
+      <a id="scanTable(String,Array[String],Array[Expression],⇒Int):(RDD[Any],Array[Int])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">scanTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>, <span name="prunePartitions">prunePartitions: ⇒ <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">scanTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="prunePartitions">prunePartitions: ⇒ <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: (<a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter],prunePartitions:=&gt;Int):org.apache.spark.rdd.RDD[Any]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],prunePartitions:=&gt;Int):(org.apache.spark.rdd.RDD[Any],Array[Int])" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

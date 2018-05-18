@@ -482,18 +482,18 @@ string specification.</p>
     </span>
       <p class="shortcomment cmt">Returns the SQL for prepare to insert or put rows into a table.</p>
     </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#getTableWithSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getTableWithSchema(table:String,conn:java.sql.Connection):(String,String)"></a>
-      <a id="getTableWithSchema(String,Connection):(String,String)"></a>
+      <a id="getTableWithSchema(table:String,conn:java.sql.Connection,session:Option[()=&gt;org.apache.spark.sql.SnappySession]):(String,String)"></a>
+      <a id="getTableWithSchema(String,Connection,Option[()⇒SnappySession]):(String,String)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getTableWithSchema</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>)</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>
+        <span class="name">getTableWithSchema</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="session">session: <span class="extype" name="scala.Option">Option</span>[() ⇒ <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getTableWithSchema(table:String,conn:java.sql.Connection):(String,String)" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getTableWithSchema(table:String,conn:java.sql.Connection,session:Option[()=&gt;org.apache.spark.sql.SnappySession]):(String,String)" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -596,6 +596,23 @@ string specification.</p>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@isTraceEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#levelFlags" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelFlags:Int"></a>
+      <a id="levelFlags:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelFlags</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@levelFlags:Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -804,6 +821,23 @@ string specification.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log_" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log_:org.slf4j.Logger"></a>
+      <a id="log_:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log_</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@log_:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -855,6 +889,23 @@ string specification.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#quotedName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="quotedName(table:String,escapeQuotes:Boolean):String"></a>
+      <a id="quotedName(String,Boolean):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">quotedName</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="escapeQuotes">escapeQuotes: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@quotedName(table:String,escapeQuotes:Boolean):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">get the table name in SQL quoted form e.g.</p><div class="fullcomment"><div class="comment cmt"><p>get the table name in SQL quoted form e.g. &quot;APP&quot;.&quot;TABLE1&quot;</p></div></div>
     </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#readSplitProperty" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="readSplitProperty(propertyName:String,options:scala.collection.Map[String,String]):Option[String]"></a>
       <a id="readSplitProperty(String,Map[String,String]):Option[String]"></a>

@@ -66,7 +66,26 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.columnar.impl.AddStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AddStatsextendsAdd"></a>
+      <a id="AddStats:AddStats"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AddStats.html"><span class="name">AddStats</span></a><span class="result"> extends <a href="../../../catalyst/expressions/Add.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Add">Add</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@AddStatsextendsAdd" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Unlike the &quot;Add&quot; operator that follows SQL semantics of returning null
+if either of the expressions is, this will return the non-null value
+if either is null or add if both are non-null (like the &quot;sum&quot; aggregate).</p>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="BaseColumnFormatRelationextendsJDBCAppendableRelationwithPartitionedDataSourceScanwithRowInsertableRelationwithMutableRelation"></a>
       <a id="BaseColumnFormatRelation:BaseColumnFormatRelation"></a>
       <h4 class="signature">
@@ -399,6 +418,26 @@ to allow adding of any index specific functionality in future.</p>
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StatsPredicate" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="StatsPredicateextendsAnyRef"></a>
+      <a id="StatsPredicate:StatsPredicate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StatsPredicate.html"><span class="name">StatsPredicate</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.package@StatsPredicateextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The type of the generated class used by column stats check for a column batch.</p><div class="fullcomment"><div class="comment cmt"><p>The type of the generated class used by column stats check for a column batch.
+Since there can be up-to two stats rows (full stats and delta stats), this has
+an additional argument for the same to determine whether to update metrics or not.
+</p></div></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallback" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="StoreCallbackextendsSerializable"></a>
       <a id="StoreCallback:StoreCallback"></a>

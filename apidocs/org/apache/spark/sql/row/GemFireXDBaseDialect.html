@@ -441,7 +441,7 @@ ever merged we can remove this method here.</p></div><dl class="paramcmts block"
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.GemFireXDBaseDialect">GemFireXDBaseDialect</a> → <a href="../sources/JdbcExtendedDialect.html" class="extype" name="org.apache.spark.sql.sources.JdbcExtendedDialect">JdbcExtendedDialect</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.jdbc.JdbcDialect#getSchemaQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.row.GemFireXDBaseDialect#getSchemaQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getSchemaQuery(table:String):String"></a>
       <a id="getSchemaQuery(String):String"></a>
       <h4 class="signature">
@@ -460,13 +460,7 @@ ever merged we can remove this method here.</p></div><dl class="paramcmts block"
       <p class="shortcomment cmt">The SQL query that should be used to discover the schema of a table.</p><div class="fullcomment"><div class="comment cmt"><p>The SQL query that should be used to discover the schema of a table. It only needs to
 ensure that the result set has the same schema as the table, such as by calling
 &quot;SELECT * ...&quot;. Dialects can override this method to return a query that works best in a
-particular database.</p></div><dl class="paramcmts block"><dt class="param">table</dt><dd class="cmt"><p>The name of the table.</p></dd><dt>returns</dt><dd class="cmt"><p>The SQL query to use for discovering the schema.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></dd><dt>Annotations</dt><dd>
-                <span class="name">@Since</span><span class="args">(<span>
-      
-      <span class="symbol">&quot;2.1.0&quot;</span>
-    </span>)</span>
-              
-        </dd></dl></div>
+particular database.</p></div><dl class="paramcmts block"><dt class="param">table</dt><dd class="cmt"><p>The name of the table.</p></dd><dt>returns</dt><dd class="cmt"><p>The SQL query to use for discovering the schema.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.GemFireXDBaseDialect">GemFireXDBaseDialect</a> → <a href="../jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.row.GemFireXDBaseDialect#getTableExistsQuery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getTableExistsQuery(table:String):String"></a>
       <a id="getTableExistsQuery(String):String"></a>
@@ -661,8 +655,8 @@ name is a reserved keyword, or in case it contains characters that require quote
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.JdbcExtendedDialect#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="tableExists(tableName:String,conn:java.sql.Connection,context:org.apache.spark.sql.SQLContext):Boolean"></a>
+    </li><li name="org.apache.spark.sql.row.GemFireXDBaseDialect#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="tableExists(table:String,conn:java.sql.Connection,context:org.apache.spark.sql.SQLContext):Boolean"></a>
       <a id="tableExists(String,Connection,SQLContext):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -670,14 +664,14 @@ name is a reserved keyword, or in case it contains characters that require quote
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">tableExists</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="context">context: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">tableExists</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="context">context: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.row.GemFireXDBaseDialect@tableExists(tableName:String,conn:java.sql.Connection,context:org.apache.spark.sql.SQLContext):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.GemFireXDBaseDialect@tableExists(table:String,conn:java.sql.Connection,context:org.apache.spark.sql.SQLContext):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Query string to check for existence of a table</p><div class="fullcomment"><div class="comment cmt"><p>Query string to check for existence of a table</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/JdbcExtendedDialect.html" class="extype" name="org.apache.spark.sql.sources.JdbcExtendedDialect">JdbcExtendedDialect</a></dd></dl></div>
+      <p class="shortcomment cmt">Query string to check for existence of a table</p><div class="fullcomment"><div class="comment cmt"><p>Query string to check for existence of a table</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.GemFireXDBaseDialect">GemFireXDBaseDialect</a> → <a href="../sources/JdbcExtendedDialect.html" class="extype" name="org.apache.spark.sql.sources.JdbcExtendedDialect">JdbcExtendedDialect</a></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

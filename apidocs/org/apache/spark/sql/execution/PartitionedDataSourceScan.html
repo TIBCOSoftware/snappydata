@@ -96,18 +96,18 @@
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan#buildUnsafeScan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
-      <a id="buildUnsafeScan(Array[String],Array[Filter]):(RDD[Any],Seq[RDD[InternalRow]])"></a>
+      <a id="buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])"></a>
+      <a id="buildUnsafeScan(Array[String],Array[Expression]):(RDD[Any],Seq[RDD[InternalRow]])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>)</span><span class="result">: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]])</span>
+        <span class="name">buildUnsafeScan</span><span class="params">(<span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: (<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>], <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]])</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.PartitionedDataSourceScan@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.sources.Filter]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.PartitionedDataSourceScan@buildUnsafeScan(requiredColumns:Array[String],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression]):(org.apache.spark.rdd.RDD[Any],Seq[org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]])" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -231,6 +231,26 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan#unhandledFilters" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="unhandledFilters(filters:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
+      <a id="unhandledFilters(Seq[Expression]):Seq[Expression]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unhandledFilters</span><span class="params">(<span name="filters">filters: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.PartitionedDataSourceScan@unhandledFilters(filters:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the list of <span class="extype" name="Expression">Expression</span>s that this datasource may not be able to handle.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the list of <span class="extype" name="Expression">Expression</span>s that this datasource may not be able to handle.
+By default, this function will return all filters, as it is always safe to
+double evaluate an <span class="extype" name="Expression">Expression</span>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></dd></dl></div>
     </li></ol>
             </div>
 

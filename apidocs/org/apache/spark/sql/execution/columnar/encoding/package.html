@@ -473,14 +473,14 @@ V   V   V     V
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="ColumnStatsSchema.html"><span class="name">ColumnStatsSchema</span></a><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="ColumnStatsSchema.html"><span class="name">ColumnStatsSchema</span></a><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="nullCountNullable">nullCountNullable: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.package@ColumnStatsSchemaextendsProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Full stats row has &quot;nullCount&quot; as non-nullable while delta stats row has it as nullable.</p>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.DeltaWriter" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="DeltaWriterextendsAnyRef"></a>
       <a id="DeltaWriter:DeltaWriter"></a>

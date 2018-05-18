@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -753,6 +762,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -816,6 +847,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1011,6 +1049,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1032,7 +1077,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1046,7 +1098,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1060,7 +1112,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1110,7 +1162,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1128,6 +1194,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1177,13 +1250,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1319,13 +1385,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1333,7 +1392,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1868,9 +1927,9 @@
               
                 <p><a id="howto-python"></a></p>
 <h1 id="how-to-use-python-to-create-tables-and-run-queries">How to use Python to Create Tables and Run Queries</h1>
-<p>Developers can write programs in Python to use SnappyData features.</p>
+<p>Developers can write programs in Python to use SnappyData features. </p>
 <p><strong>First create a SnappySession</strong>:</p>
-<pre><code class="scala"> from pyspark.sql.snappy import SnappySession
+<pre><code class="no-highlight"> from pyspark.sql.snappy import SnappySession
  from pyspark import SparkContext, SparkConf
 
  conf = SparkConf().setAppName(appName).setMaster(master)
@@ -1879,79 +1938,83 @@
 </code></pre>
 
 <p><strong>Create table using SnappySession</strong>:</p>
-<pre><code class="scala">    # Creating partitioned table PARTSUPP using SQL
-    snappy.sql(&quot;DROP TABLE IF EXISTS PARTSUPP&quot;)
-    # &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
-    # For complete list of table attributes refer the documentation
-    # http://snappydatainc.github.io/snappydata/programming_guide
-    snappy.sql(&quot;CREATE TABLE PARTSUPP ( &quot; +
-                  &quot;PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY,&quot; +
-                  &quot;PS_SUPPKEY     INTEGER NOT NULL,&quot; +
-                  &quot;PS_AVAILQTY    INTEGER NOT NULL,&quot; +
-                  &quot;PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)&quot; +
-                  &quot;USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY' )&quot;)
+<pre><code class="no-highlight"># Creating partitioned table PARTSUPP using SQL
+snappy.sql(&quot;DROP TABLE IF EXISTS PARTSUPP&quot;)
+# &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
+# For complete list of table attributes refer the documentation
+# http://snappydatainc.github.io/snappydata/programming_guide
+snappy.sql(&quot;CREATE TABLE PARTSUPP ( &quot; +
+      &quot;PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY,&quot; +
+      &quot;PS_SUPPKEY     INTEGER NOT NULL,&quot; +
+      &quot;PS_AVAILQTY    INTEGER NOT NULL,&quot; +
+      &quot;PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL)&quot; +
+      &quot;USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY' )&quot;)
 </code></pre>
 
 <p><strong>Inserting data in table using INSERT query</strong>:</p>
-<pre><code class="scala">    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)&quot;)
-    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)&quot;)
-    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)&quot;)
-    snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)&quot;)
-    # Printing the contents of the PARTSUPP table
-    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+<pre><code class="no-highlight">snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)&quot;)
+snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)&quot;)
+snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)&quot;)
+snappy.sql(&quot;INSERT INTO PARTSUPP VALUES(400, 4, 200, 30)&quot;)
+# Printing the contents of the PARTSUPP table
+snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 </code></pre>
 
 <p><strong>Update the data using SQL</strong>:</p>
-<pre><code class="scala">    # Update the available quantity for PARTKEY 100
-    snappy.sql(&quot;UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100&quot;)
-    # Printing the contents of the PARTSUPP table after update
-    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+<pre><code class="no-highlight"># Update the available quantity for PARTKEY 100
+snappy.sql(&quot;UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100&quot;)
+# Printing the contents of the PARTSUPP table after update
+snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 </code></pre>
 
 <p><strong>Delete records from the table</strong>:</p>
-<pre><code class="scala">    # Delete the records for PARTKEY 400
-    snappy.sql(&quot;DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400&quot;)
-    # Printing the contents of the PARTSUPP table after delete
-    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+<pre><code class="no-highlight"># Delete the records for PARTKEY 400
+snappy.sql(&quot;DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400&quot;)
+# Printing the contents of the PARTSUPP table after delete
+snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 </code></pre>
 
 <p><strong>Create table using API</strong>:
 This same table can be created by using createTable API. First create a schema and then create the table, and then mutate the table data using API:</p>
-<pre><code class="scala">    # drop the table if it exists
-    snappy.dropTable('PARTSUPP', True)
+<pre><code class="no-highlight"># drop the table if it exists
+snappy.dropTable('PARTSUPP', True)
 
-    schema = StructType([StructField('PS_PARTKEY', IntegerType(), False),
-                     StructField('PS_SUPPKEY', IntegerType(), False),
-                     StructField('PS_AVAILQTY', IntegerType(),False),
-                     StructField('PS_SUPPLYCOST', DecimalType(15, 2), False)
-                     ])
+schema = StructType([StructField('PS_PARTKEY', IntegerType(), False),
+      StructField('PS_SUPPKEY', IntegerType(), False),
+      StructField('PS_AVAILQTY', IntegerType(),False),
+      StructField('PS_SUPPLYCOST', DecimalType(15, 2), False)
+      ])
 
-    # &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
-    # For complete list of table attributes refer the documentation at
-    # http://snappydatainc.github.io/snappydata/programming_guide
-    snappy.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
+ # &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
+ # For complete list of table attributes refer the documentation at
+ # http://snappydatainc.github.io/snappydata/programming_guide
+ snappy.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
 
-    # Inserting data in PARTSUPP table using DataFrame
-    tuples = [(100, 1, 5000, Decimal(100)), (200, 2, 50, Decimal(10)),
-              (300, 3, 1000, Decimal(20)), (400, 4, 200, Decimal(30))]
-    rdd = sc.parallelize(tuples)
-    tuplesDF = snappy.createDataFrame(rdd, schema)
-    tuplesDF.write.insertInto(&quot;PARTSUPP&quot;)
-    #Printing the contents of the PARTSUPP table
-    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+ # Inserting data in PARTSUPP table using DataFrame
+tuples = [(100, 1, 5000, Decimal(100)), (200, 2, 50, Decimal(10)),
+         (300, 3, 1000, Decimal(20)), (400, 4, 200, Decimal(30))]
+rdd = sc.parallelize(tuples)
+tuplesDF = snappy.createDataFrame(rdd, schema)
+tuplesDF.write.insertInto(&quot;PARTSUPP&quot;)
+#Printing the contents of the PARTSUPP table
+snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 
-    # Update the available quantity for PARTKEY 100
-    snappy.update(&quot;PARTSUPP&quot;, &quot;PS_PARTKEY =100&quot;, [50000], [&quot;PS_AVAILQTY&quot;])
-    # Printing the contents of the PARTSUPP table after update
-    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+# Update the available quantity for PARTKEY 100
+snappy.update(&quot;PARTSUPP&quot;, &quot;PS_PARTKEY =100&quot;, [50000], [&quot;PS_AVAILQTY&quot;])
+# Printing the contents of the PARTSUPP table after update
+snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 
-    # Delete the records for PARTKEY 400
-    snappy.delete(&quot;PARTSUPP&quot;, &quot;PS_PARTKEY =400&quot;)
-    # Printing the contents of the PARTSUPP table after delete
-    snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
+# Delete the records for PARTKEY 400
+snappy.delete(&quot;PARTSUPP&quot;, &quot;PS_PARTKEY =400&quot;)
+# Printing the contents of the PARTSUPP table after delete
+snappy.sql(&quot;SELECT * FROM PARTSUPP&quot;).show()
 </code></pre>
 
 <p>The complete source code for the above example is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py">CreateTable.py</a></p>
+<p><strong>Related Topics:</strong></p>
+<ul>
+<li><a href="../../programming_guide/snappydata_jobs/#running-python-applications">Running Python Applications</a></li>
+</ul>
               
             </div>
           </div>

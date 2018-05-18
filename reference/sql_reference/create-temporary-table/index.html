@@ -24,6 +24,7 @@
   <link href="../../../css/menu.css" rel="stylesheet">
   <link href="../../../css/images.css" rel="stylesheet">
   <link href="../../../css/style.css" rel="stylesheet">
+  <link href="../../../css/highlight.css" rel="stylesheet">
   <link href="../../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
   <script src="../../../js/theme.js"></script> 
   <script src="../../../js/menu.js"></script>
+  <script src="../../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -746,6 +755,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -809,6 +840,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1004,6 +1042,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1025,7 +1070,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-table/">CREATE TABLE</a>
+        <a class="" href="../create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1039,7 +1091,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1054,6 +1106,8 @@
                 
                     <li><a class="toctree-l4" href="#examples">Examples</a></li>
                 
+                    <li><a class="toctree-l4" href="#create-global-temporary-table">CREATE GLOBAL TEMPORARY TABLE</a></li>
+                
             
             </ul>
         
@@ -1062,7 +1116,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1112,7 +1166,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../drop-table/">DROP TABLE</a>
+        <a class="" href="../drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1130,6 +1198,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1179,13 +1254,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1321,13 +1389,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1335,7 +1396,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1873,11 +1934,9 @@
             <div class="section">
               
                 <h1 id="create-temporary-table">CREATE TEMPORARY TABLE</h1>
-<pre><code>CREATE TEMPORARY TABLE [schema_name.]table_name
-    ( column-definition [ , column-definition  ] * )
+<pre><code class="no-highlight">CREATE TEMPORARY TABLE table_name
     USING datasource
-    [OPTIONS (key1=val1, key2=val2, ...)]
-    [AS select_statement]
+    [AS select_statement];
 </code></pre>
 
 <p>For more information on column-definition, refer to <a href="../create-table/#column-definition">Column Definition For Column Table</a>.</p>
@@ -1889,19 +1948,33 @@
 <p><strong>AS <select_statement></strong>
 Populate the table with input data from the select statement. </p>
 <h2 id="examples">Examples</h2>
-<p><strong>Create a Temporary Table</strong></p>
-<pre><code>snappy&gt; CREATE TEMPORARY TABLE STAGING_AIRLINEREF USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
+<pre><code class="no-highlight">snappy&gt; CREATE TEMPORARY TABLE STAGING_AIRLINEREF USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
 </code></pre>
 
-<pre><code>snappy&gt; CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP (CODE2 string, DESCRIPTION2 String) AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
-</code></pre>
-
-<pre><code>snappy&gt; CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP2 AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
+<pre><code class="no-highlight">snappy&gt; CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP2 AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
 </code></pre>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br>Ensure that you create temporary tables with a unique name.</p>
+</div>
+<h2 id="create-global-temporary-table">CREATE GLOBAL TEMPORARY TABLE</h2>
+<pre><code class="no-highlight">snappy&gt; CREATE GLOBAL TEMPORARY TABLE [global-temporary-table-name] USING PARQUET OPTIONS(path 'path-to-parquet');
+
+snappy&gt; CREATE GLOBAL TEMPORARY TABLE [global-temporary-table-name] AS SELECT [column-name], [column-name] FROM [table-name];
+</code></pre>
+
+<h3 id="description">Description</h3>
+<p>Specifies a table definition that is visible to all sessions. Temporary table data is visible only to the session that inserts the data into the table.</p>
+<h3 id="examples_1">Examples</h3>
+<pre><code class="no-highlight">snappy&gt; CREATE GLOBAL TEMPORARY TABLE STAGING_AIRLINEREF1 USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
+
+snappy&gt; CREATE GLOBAL TEMPORARY TABLE STAGING_AIRLINE2 AS SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF;
+</code></pre>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions.</p>
 </div>
               
             </div>
@@ -1910,10 +1983,10 @@ Populate the table with input data from the select statement. </p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../create-stream-table/" class="btn btn-neutral float-right" title="CREATE STREAM TABLE">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../create-view/" class="btn btn-neutral float-right" title="CREATE VIEW">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../create-external-table/" class="btn btn-neutral" title="CREATE EXTERNAL TABLE"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../create-table/" class="btn btn-neutral" title="CREATE TABLE"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1945,10 +2018,10 @@ Populate the table with input data from the select statement. </p>
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../create-external-table/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../create-table/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../create-stream-table/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../create-view/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

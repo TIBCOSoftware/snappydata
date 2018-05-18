@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -170,6 +172,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -755,6 +764,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -818,6 +849,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1013,6 +1051,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1034,7 +1079,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1048,7 +1100,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1062,7 +1114,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1112,7 +1164,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1130,6 +1196,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1179,13 +1252,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1321,13 +1387,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1335,7 +1394,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1874,43 +1933,43 @@
 You can use any SQL client tool (for example, Snappy shell). For an example, refer to the <a href="../../howto/use_snappy_shell/">How-to</a> section.</p>
 <p><strong>Create a column table with a simple schema [Int, String] and default options</strong></p>
 <p>For more information on the available options, refer to the <a href="../../programming_guide/tables_in_snappydata/">Row and Column Tables</a> section.</p>
-<pre><code class="scala">scala&gt;  snappy.sql(&quot;create table colTable(CustKey Integer, CustName String) using column options()&quot;)
+<pre><code class="no-highlight">scala&gt;  snappy.sql(&quot;create table colTable(CustKey Integer, CustName String) using column options()&quot;)
 </code></pre>
 
-<pre><code>//Insert couple of records to the column table
+<pre><code class="no-highlight">//Insert couple of records to the column table
 scala&gt;  snappy.sql(&quot;insert into colTable values(1, 'a')&quot;)
 scala&gt;  snappy.sql(&quot;insert into colTable values(2, 'b')&quot;)
 scala&gt;  snappy.sql(&quot;insert into colTable values(3, '3')&quot;)
 </code></pre>
 
-<pre><code class="scala">// Check the total row count now
+<pre><code class="no-highlight">// Check the total row count now
 scala&gt;  snappy.sql(&quot;select count(*) from colTable&quot;).show
 </code></pre>
 
 <p><strong>Create a row table with a primary key</strong>:</p>
-<pre><code class="scala">// Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
+<pre><code class="no-highlight">// Row formatted tables are better when data sets constantly change or access is selective (like based on a key).
 scala&gt;  snappy.sql(&quot;create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, &quot; +
             &quot;CustName String) using row options()&quot;)
 </code></pre>
 
 <p>If you create a table using standard SQL (that is, no 'row options' clause) it creates a replicated row table.</p>
-<pre><code class="scala">//Insert couple of records to the row table
+<pre><code class="no-highlight">//Insert couple of records to the row table
 scala&gt;  snappy.sql(&quot;insert into rowTable values(1, 'a')&quot;)
 scala&gt;  snappy.sql(&quot;insert into rowTable values(2, 'b')&quot;)
 scala&gt;  snappy.sql(&quot;insert into rowTable values(3, '3')&quot;)
 </code></pre>
 
-<pre><code class="scala">//Update some rows
+<pre><code class="no-highlight">//Update some rows
 scala&gt;  snappy.sql(&quot;update rowTable set CustName='d' where custkey = 1&quot;)
 scala&gt;  snappy.sql(&quot;select * from rowTable order by custkey&quot;).show
 </code></pre>
 
-<pre><code class="scala">//Drop the existing tables
+<pre><code class="no-highlight">//Drop the existing tables
 scala&gt;  snappy.sql(&quot;drop table if exists rowTable &quot;)
 scala&gt;  snappy.sql(&quot;drop table if exists colTable &quot;)
 </code></pre>
 
-<pre><code>scala&gt; :q //Quit the Spark Shell
+<pre><code class="no-highlight">scala&gt; :q //Quit the Spark Shell
 </code></pre>
 
 <p>Now that you have seen the basic working of SnappyData tables, let us run the <a href="../performance_apache_spark/">benchmark</a> code to see the performance of SnappyData and compare it to Spark's native cache performance.</p>

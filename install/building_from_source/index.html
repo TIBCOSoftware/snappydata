@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -166,11 +168,11 @@
             
                 <li class="toctree-l3"><a href="#building-from-source">Building from Source</a></li>
                 
-                    <li><a class="toctree-l4" href="#build-all-components-of-snappydata">Build all components of SnappyData</a></li>
+                    <li><a class="toctree-l4" href="#build-all-components-of-snappydata">Build all Components of SnappyData</a></li>
                 
-                    <li><a class="toctree-l4" href="#build-only-the-top-level-components">Build only the top-level components</a></li>
+                    <li><a class="toctree-l4" href="#build-only-the-top-level-components">Build only the Top-level Components</a></li>
                 
-                    <li><a class="toctree-l4" href="#repository-layout">Repository layout</a></li>
+                    <li><a class="toctree-l4" href="#repository-layout">Repository Layout</a></li>
                 
                     <li><a class="toctree-l4" href="#building">Building</a></li>
                 
@@ -180,6 +182,13 @@
                 
             
             </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -765,6 +774,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -828,6 +859,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1023,6 +1061,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1044,7 +1089,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1058,7 +1110,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1072,7 +1124,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1122,7 +1174,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1140,6 +1206,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1189,13 +1262,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1331,13 +1397,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1345,7 +1404,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1884,35 +1943,35 @@
 <p class="admonition-title">Note</p>
 <p>Building SnappyData requires JDK 8 installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>).</p>
 </div>
-<h2 id="build-all-components-of-snappydata">Build all components of SnappyData</h2>
+<h2 id="build-all-components-of-snappydata">Build all Components of SnappyData</h2>
 <p><strong>Latest release branch</strong></p>
-<pre><code class="bash">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt; --recursive
+<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt; --recursive
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
 
 <p><strong>Master</strong></p>
-<pre><code class="bash">&gt; git clone https://github.com/SnappyDataInc/snappydata.git --recursive
+<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
 
 <p>The product is in <strong>build-artifacts/scala-2.11/snappy</strong></p>
-<h2 id="build-only-the-top-level-components">Build only the top-level components</h2>
+<h2 id="build-only-the-top-level-components">Build only the Top-level Components</h2>
 <p>Use this option if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):</p>
 <p><strong>Latest release branch</strong></p>
-<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt;
+<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt;
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
 
 <p><strong>Master</strong></p>
-<pre><code class="sh">&gt; git clone https://github.com/SnappyDataInc/snappydata.git
+<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
 
-<h2 id="repository-layout">Repository layout</h2>
+<h2 id="repository-layout">Repository Layout</h2>
 <ul>
 <li>
 <p><strong>core</strong> - Extensions to Apache Spark that should not be dependent on SnappyData Spark additions, job server etc. It is also the bridge between <em>spark</em> and <em>store</em> (GemFireXD). For example, SnappyContext, row and column store, streaming additions etc.</p>
@@ -1934,7 +1993,7 @@
 </li>
 </ul>
 <p>The <em>spark</em>, <em>store</em>, and <em>spark-jobserver</em> directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">git submodules</a>. One can add some aliases in gitconfig to aid pull/push like:</p>
-<pre><code>[alias]
+<pre><code class="no-highlight">[alias]
   spull = !git pull &amp;&amp; git submodule sync --recursive &amp;&amp; git submodule update --init --recursive
   spush = push --recurse-submodules=on-demand
 </code></pre>
@@ -1945,7 +2004,7 @@
 <p>If you do not want to deal with sub-modules and only work on a SnappyData project, you can clone only the SnappyData repository (without the <code>--recursive</code> option) and the build pulls those SnappyData project jar dependencies from Maven central.</p>
 <p>If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build recognizes the same and build those projects too and includes the same in the top-level product distribution jar. The <em>spark</em> and <em>store</em> submodules can also be built and published independently.</p>
 <p>Useful build and test targets:</p>
-<pre><code>./gradlew assemble      -  build all the sources
+<pre><code class="no-highlight">./gradlew assemble      -  build all the sources
 ./gradlew testClasses   -  build all the tests
 ./gradlew product       -  build and place the product distribution
                            (in build-artifacts/scala_2.11/snappy)
@@ -1964,9 +2023,9 @@
                            and also full SnappyData store testsuite
 </code></pre>
 
-<p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em>build-artifacts/;os</em>; where; <em>;os;</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
+<p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em><em>build-artifacts/<os></em></em>; where; <em>os</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
 <p>The usual Gradle test run targets (<em>test</em>, <em>check</em>) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (<em>scalaTest</em>) while the <em>check</em> target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <code>--tests</code> option:</p>
-<pre><code class="sh">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
+<pre><code class="no-highlight">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
 &gt; ./gradlew core:scalaTest \
 &gt;    --tests &quot;Test the creation/dropping of table using SQL&quot;  # run a single test (use full name)
 </code></pre>
@@ -1981,7 +2040,7 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 <p>Upgrade IntelliJ IDEA to version 2016.x, including the latest Scala plug-in. Older versions (pre 14.x) have trouble dealing with Scala code, particularly some of the code in Spark. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via <em>JAVA_HOME</em>).</p>
 </li>
 <li>
-<p>Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase <code>-Xmx</code> option to be something like <em>-Xmx=2g</em> for comfortable use.</p>
+<p>Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase <code>-Xmx</code> option to be something like <em>-Xmx2g</em> for comfortable use.</p>
 </li>
 <li>
 <p>Select <strong>Import Project</strong>, and then select the SnappyData directory. Use external Gradle import. Clear the <strong>Create separate module per source set</strong> option, while other options can continue with the default . Click <strong>Next</strong> in the following screens.<br/></p>
@@ -2062,7 +2121,7 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../howto/" class="btn btn-neutral float-right" title="How Tos">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../upgrade/" class="btn btn-neutral float-right" title="Upgrade Instructions (1.0.0 to 1.0.1)">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../setting_up_cluster_on_amazon_web_services/" class="btn btn-neutral" title="Setting up Cluster on Amazon Web Services"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -2100,7 +2159,7 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
         <span><a href="../setting_up_cluster_on_amazon_web_services/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../howto/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../upgrade/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

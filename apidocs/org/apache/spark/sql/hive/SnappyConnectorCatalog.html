@@ -312,6 +312,23 @@ temp view is matched and altered, false otherwise.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#caseSensitiveAnalysis" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="caseSensitiveAnalysis:Boolean"></a>
+      <a id="caseSensitiveAnalysis:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">caseSensitiveAnalysis</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@caseSensitiveAnalysis:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#clearTempTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clearTempTables():Unit"></a>
       <a id="clearTempTables():Unit"></a>
@@ -439,7 +456,7 @@ For testing only.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#createFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createFunction(funcDefinition:org.apache.spark.sql.catalyst.catalog.CatalogFunction,ignoreIfExists:Boolean):Unit"></a>
       <a id="createFunction(CatalogFunction,Boolean):Unit"></a>
       <h4 class="signature">
@@ -457,7 +474,7 @@ For testing only.
     </span>
       <p class="shortcomment cmt">Create a metastore function in the database specified in <code>funcDefinition</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Create a metastore function in the database specified in <code>funcDefinition</code>.
 If no such database is specified, create it in the current database.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+If the specified database is not present in catalog, create that database.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#createGlobalTempView" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createGlobalTempView(name:String,viewDefinition:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,overrideIfExists:Boolean):Unit"></a>
       <a id="createGlobalTempView(String,LogicalPlan,Boolean):Unit"></a>
@@ -584,7 +601,7 @@ This assumes no database is specified in <code>funcDefinition</code>.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#databaseExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="databaseExists(db:String):Boolean"></a>
       <a id="databaseExists(String):Boolean"></a>
@@ -1031,23 +1048,6 @@ the same name, then, if that does not exist, drop the table from the current dat
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getCurrentSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getCurrentSchema:String"></a>
-      <a id="getCurrentSchema:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getCurrentSchema</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@getCurrentSchema:String" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#getDataSourceRelations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getDataSourceRelations[T](tableTypes:Seq[org.apache.spark.sql.hive.ExternalTableType],baseTable:Option[String]):Seq[T]"></a>
       <a id="getDataSourceRelations[T](Seq[ExternalTableType],Option[String]):Seq[T]"></a>
@@ -1374,40 +1374,6 @@ current database.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isDebugEnabled:Boolean"></a>
-      <a id="isDebugEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@isDebugEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isInfoEnabled:Boolean"></a>
-      <a id="isInfoEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@isInfoEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1481,18 +1447,18 @@ current database.
 explicitly specified.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled:Boolean"></a>
-      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@isTraceEnabled:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@isTraceEnabled():Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2112,6 +2078,23 @@ track the name of the view.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@newQualifiedTempTableName(tableIdent:String):org.apache.spark.sql.hive.QualifiedTableName" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog#normalizeField" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="normalizeField(f:org.apache.spark.sql.types.StructField,fieldName:String):org.apache.spark.sql.types.StructField"></a>
+      <a id="normalizeField(StructField,String):StructField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeField</span><span class="params">(<span name="f">f: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappyConnectorCatalog@normalizeField(f:org.apache.spark.sql.types.StructField,fieldName:String):org.apache.spark.sql.types.StructField" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

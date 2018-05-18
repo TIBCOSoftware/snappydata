@@ -449,6 +449,23 @@ field is stored (and rendered) as CHAR by SnappyStore.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.collection.Utils#createStatsBuffer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="createStatsBuffer(statsData:Array[Byte],allocator:com.gemstone.gemfire.internal.shared.BufferAllocator):java.nio.ByteBuffer"></a>
+      <a id="createStatsBuffer(Array[Byte],BufferAllocator):ByteBuffer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createStatsBuffer</span><span class="params">(<span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="allocator">allocator: <span class="extype" name="com.gemstone.gemfire.internal.shared.BufferAllocator">BufferAllocator</span></span>)</span><span class="result">: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@createStatsBuffer(statsData:Array[Byte],allocator:com.gemstone.gemfire.internal.shared.BufferAllocator):java.nio.ByteBuffer" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -483,6 +500,23 @@ field is stored (and rendered) as CHAR by SnappyStore.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.collection.Utils#executorsListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="executorsListener(sc:org.apache.spark.SparkContext):Option[org.apache.spark.ui.exec.ExecutorsListener]"></a>
+      <a id="executorsListener(SparkContext):Option[ExecutorsListener]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executorsListener</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../ui/exec/ExecutorsListener.html" class="extype" name="org.apache.spark.ui.exec.ExecutorsListener">ExecutorsListener</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@executorsListener(sc:org.apache.spark.SparkContext):Option[org.apache.spark.ui.exec.ExecutorsListener]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.collection.Utils#fieldIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="fieldIndex(relationOutput:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],columnName:String,caseSensitive:Boolean):Int"></a>
       <a id="fieldIndex(Seq[Attribute],String,Boolean):Int"></a>
@@ -677,7 +711,7 @@ field is stored (and rendered) as CHAR by SnappyStore.
     </span>
       
     </li><li name="org.apache.spark.sql.collection.Utils#getFixedPartitionRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getFixedPartitionRDD[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],partitioner:org.apache.spark.Partitioner,numPartitions:Int)(implicitevidence$3:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]"></a>
+      <a id="getFixedPartitionRDD[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],partitioner:org.apache.spark.Partitioner,numPartitions:Int)(implicitevidence$4:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]"></a>
       <a id="getFixedPartitionRDD[T](SparkContext,(TaskContext,Partition)⇒Iterator[T],Partitioner,Int)(ClassTag[T]):RDD[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -688,7 +722,7 @@ field is stored (and rendered) as CHAR by SnappyStore.
         <span class="name">getFixedPartitionRDD</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="f">f: (<a href="../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a>, <a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>) ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.getFixedPartitionRDD.T">T</span>]</span>, <span name="partitioner">partitioner: <a href="../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.collection.Utils.getFixedPartitionRDD.T">T</span>]</span>)</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.getFixedPartitionRDD.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@getFixedPartitionRDD[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],partitioner:org.apache.spark.Partitioner,numPartitions:Int)(implicitevidence$3:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@getFixedPartitionRDD[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],partitioner:org.apache.spark.Partitioner,numPartitions:Int)(implicitevidence$4:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -920,35 +954,35 @@ In case both are specified, then check compatibility between the two.
     </span>
       
     </li><li name="org.apache.spark.sql.collection.Utils#mapExecutors" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mapExecutors[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.sql.collection.ExecutorLocalPartition)=&gt;Iterator[T])(implicitevidence$2:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="mapExecutors[T](SparkContext,(TaskContext,ExecutorLocalPartition)⇒Iterator[T])(ClassTag[T]):RDD[T]"></a>
+      <a id="mapExecutors[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.sql.collection.ExecutorLocalPartition)=&gt;Iterator[T],maxTries:Int)(implicitevidence$2:scala.reflect.ClassTag[T]):Array[T]"></a>
+      <a id="mapExecutors[T](SparkContext,(TaskContext,ExecutorLocalPartition)⇒Iterator[T],Int)(ClassTag[T]):Array[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapExecutors</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="f">f: (<a href="../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a>, <a href="ExecutorLocalPartition.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalPartition">ExecutorLocalPartition</a>) ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>)</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>
+        <span class="name">mapExecutors</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="f">f: (<a href="../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a>, <a href="ExecutorLocalPartition.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalPartition">ExecutorLocalPartition</a>) ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>, <span name="maxTries">maxTries: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@mapExecutors[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.sql.collection.ExecutorLocalPartition)=&gt;Iterator[T])(implicitevidence$2:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@mapExecutors[T](sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.sql.collection.ExecutorLocalPartition)=&gt;Iterator[T],maxTries:Int)(implicitevidence$2:scala.reflect.ClassTag[T]):Array[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.collection.Utils#mapExecutors" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="mapExecutors[T](sqlContext:org.apache.spark.sql.SQLContext,f:()=&gt;Iterator[T])(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]"></a>
-      <a id="mapExecutors[T](SQLContext,()⇒Iterator[T])(ClassTag[T]):RDD[T]"></a>
+      <a id="mapExecutors[T](sc:org.apache.spark.SparkContext,f:()=&gt;Iterator[T],maxTries:Int,blockManagerIds:Seq[org.apache.spark.storage.BlockManagerId])(implicitevidence$1:scala.reflect.ClassTag[T]):Array[T]"></a>
+      <a id="mapExecutors[T](SparkContext,()⇒Iterator[T],Int,Seq[BlockManagerId])(ClassTag[T]):Array[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mapExecutors</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="sqlContext">sqlContext: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>, <span name="f">f: () ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>)</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>
+        <span class="name">mapExecutors</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="f">f: () ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>, <span name="maxTries">maxTries: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">30</span></span>, <span name="blockManagerIds">blockManagerIds: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a>] = <span class="symbol">Seq.empty</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.collection.Utils.mapExecutors.T">T</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@mapExecutors[T](sqlContext:org.apache.spark.sql.SQLContext,f:()=&gt;Iterator[T])(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.rdd.RDD[T]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@mapExecutors[T](sc:org.apache.spark.SparkContext,f:()=&gt;Iterator[T],maxTries:Int,blockManagerIds:Seq[org.apache.spark.storage.BlockManagerId])(implicitevidence$1:scala.reflect.ClassTag[T]):Array[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

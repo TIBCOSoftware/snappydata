@@ -936,40 +936,6 @@ For example, this can be used to show sub-queries.
     </span>
       <p class="shortcomment cmt">The set of all attributes that are input to this operator by its children.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are input to this operator by its children.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isDebugEnabled:Boolean"></a>
-      <a id="isDebugEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExecutePlan@isDebugEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isInfoEnabled:Boolean"></a>
-      <a id="isInfoEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExecutePlan@isInfoEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -988,18 +954,18 @@ For example, this can be used to show sub-queries.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled:Boolean"></a>
-      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExecutePlan@isTraceEnabled:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ExecutePlan@isTraceEnabled():Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1477,7 +1443,7 @@ assertions designed to prevent the construction of invalid plans.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.ExecutePlan#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nodeName:String"></a>
       <a id="nodeName:String"></a>
       <h4 class="signature">
@@ -1495,7 +1461,7 @@ assertions designed to prevent the construction of invalid plans.
     </span>
       <p class="shortcomment cmt">Returns the name of this type of TreeNode.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of this type of TreeNode.  Defaults to the class name.
 Note that we remove the &quot;Exec&quot; suffix for physical operators here.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ExecutePlan">ExecutePlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -1924,7 +1890,7 @@ can do better should override this function.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#simpleString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.ExecutePlan#simpleString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="simpleString:String"></a>
       <a id="simpleString:String"></a>
       <h4 class="signature">
@@ -1940,7 +1906,7 @@ can do better should override this function.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+      <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ExecutePlan">ExecutePlan</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#sparkContext" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sparkContext:org.apache.spark.SparkContext"></a>
       <a id="sparkContext:SparkContext"></a>

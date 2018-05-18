@@ -24,6 +24,7 @@
   <link href="../css/menu.css" rel="stylesheet">
   <link href="../css/images.css" rel="stylesheet">
   <link href="../css/style.css" rel="stylesheet">
+  <link href="../css/highlight.css" rel="stylesheet">
   <link href="../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../js/highlight.pack.js"></script>
   <script src="../js/theme.js"></script> 
   <script src="../js/menu.js"></script>
+  <script src="../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href=".." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -168,6 +170,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -753,6 +762,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -816,6 +847,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1011,6 +1049,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1032,7 +1077,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1046,7 +1098,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1060,7 +1112,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1110,7 +1162,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1128,6 +1194,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1177,13 +1250,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1319,13 +1385,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1333,7 +1392,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1863,12 +1922,12 @@
             <div class="section">
               
                 <h1 id="download-and-install">Download and Install</h1>
-<p>SnappyData offers two editions of the product, SnappyData Community Edition and SnappyData Enterprise Edition.</p>
-<p>The SnappyData Community edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
-The Enterprise edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.</p>
-<p>For more information on the capabilities of the Community and Enterprise edition see, <a href="../additional_files/open_source_components/">Community Edition (Open Source)/Enterprise Edition Components</a>.</p>
+<p>SnappyData offers two editions of the product, SnappyData Community Edition, and SnappyData Enterprise Edition.</p>
+<p>The SnappyData Community Edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
+The Enterprise Edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.</p>
+<p>For more information on the capabilities of the Community and Enterprise editions see <a href="../additional_files/open_source_components/">Community Edition (Open Source)/Enterprise Edition Components</a>.</p>
 <p><heading2> Download SnappyData Community Edition</heading2></p>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/">Download the SnappyData 1.0.1 Community edition (Open Source)</a> from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).</p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/">Download the SnappyData 1.0.1 Community Edition (Open Source)</a> from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).</p>
 <ul>
 <li>
 <p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.1/snappydata-1.0.1-bin.tar.gz"><strong>SnappyData 1.0.1 Release download link</strong></a></p>
@@ -1924,14 +1983,12 @@ The Enterprise edition includes several additional capabilities that are closed 
 <p><a href="building_from_source/">Building from Source</a><a id="building-from-source"></a></p>
 </li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><strong>Configuring the limit for open files and threads/processes</strong> </br> 
-On a Linux system, you can set the limit of open files and thread processes in the <strong>/etc/security/limits.conf</strong> file. 
-</br>A minimum of <strong>8192</strong> is recommended for open file descriptors limit and <strong>&gt;128K</strong> is recommended for the number of active threads. 
-</br>A typical configuration used for SnappyData servers and leads can look like:</p>
-</div>
-<pre><code>snappydata          hard    nofile      81920
+<p><strong>Note</strong>:</br>
+    <strong>Configuring the limit for open files and threads/processes</strong> </br> 
+    On a Linux system, you can set the limit of open files and thread processes in the <strong>/etc/security/limits.conf</strong> file. 
+    </br>A minimum of <strong>8192</strong> is recommended for open file descriptors limit and <strong>&gt;128K</strong> is recommended for the number of active threads. 
+    </br>A typical configuration used for SnappyData servers and leads can look like:</p>
+<pre><code class="no-highlight">snappydata          hard    nofile      81920
 snappydata          soft    nofile      8192
 snappydata          hard    nproc       unlimited
 snappydata          soft    nproc       524288
@@ -1939,7 +1996,7 @@ snappydata          hard    sigpending  unlimited
 snappydata          soft    sigpending  524288
 </code></pre>
 
-<p>Here <code>snappydata</code> is the user name under which the SnappyData processes are started.</p>
+<p>Here <code>snappydata</code> is the username under which the SnappyData processes are started.</p>
               
             </div>
           </div>

@@ -378,23 +378,6 @@ of times compression was done.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../../com$gemstone$gemfire$internal$cache$store.html" class="extype" name="com.gemstone.gemfire.internal.cache.store">com.gemstone.gemfire.internal.cache.store</a>] </dd><dt>Definition Classes</dt><dd>SerializedDiskBuffer</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#diskId" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="diskId:com.gemstone.gemfire.internal.cache.DiskId"></a>
-      <a id="diskId:DiskId"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">var</span>
-      </span>
-      <span class="symbol">
-        <span class="name">diskId</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.DiskId">DiskId</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@diskId:com.gemstone.gemfire.internal.cache.DiskId" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#duplicateBuffer" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="duplicateBuffer(buffer:java.nio.ByteBuffer):java.nio.ByteBuffer"></a>
       <a id="duplicateBuffer(ByteBuffer):ByteBuffer"></a>
@@ -415,6 +398,23 @@ of times compression was done.
                 <span class="name">@inline</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#entry" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="entry:com.gemstone.gemfire.internal.cache.AbstractOplogDiskRegionEntry"></a>
+      <a id="entry:AbstractOplogDiskRegionEntry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">entry</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.AbstractOplogDiskRegionEntry">AbstractOplogDiskRegionEntry</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@entry:com.gemstone.gemfire.internal.cache.AbstractOplogDiskRegionEntry" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -523,7 +523,7 @@ of times compression was done.
       </a>
     </span>
       <p class="shortcomment cmt">Return the data as a ByteBuffer.</p><div class="fullcomment"><div class="comment cmt"><p>Return the data as a ByteBuffer. Should be invoked only after a <a href="#retain():Boolean" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#retain">retain</a>
-or <a href="#getValueRetain(decompress:Boolean,compress:Boolean):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getValueRetain">getValueRetain</a> call.
+or <a href="#getValueRetain(fetchRequest:com.gemstone.gemfire.internal.shared.FetchRequest):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue" class="extmbr" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getValueRetain">getValueRetain</a> call.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → ByteBufferReference</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getBufferRetain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getBufferRetain():java.nio.ByteBuffer"></a>
@@ -655,18 +655,18 @@ about the same.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a> → Sizeable</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#getValueRetain" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getValueRetain(decompress:Boolean,compress:Boolean):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue"></a>
-      <a id="getValueRetain(Boolean,Boolean):ColumnFormatValue"></a>
+      <a id="getValueRetain(fetchRequest:com.gemstone.gemfire.internal.shared.FetchRequest):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue"></a>
+      <a id="getValueRetain(FetchRequest):ColumnFormatValue"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getValueRetain</span><span class="params">(<span name="decompress">decompress: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="compress">compress: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></span>
+        <span class="name">getValueRetain</span><span class="params">(<span name="fetchRequest">fetchRequest: <span class="extype" name="com.gemstone.gemfire.internal.shared.FetchRequest">FetchRequest</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@getValueRetain(decompress:Boolean,compress:Boolean):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@getValueRetain(fetchRequest:com.gemstone.gemfire.internal.shared.FetchRequest):org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -912,19 +912,19 @@ about the same.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#setDiskLocation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setDiskLocation(id:com.gemstone.gemfire.internal.cache.DiskId,context:com.gemstone.gemfire.internal.cache.RegionEntryContext):Unit"></a>
-      <a id="setDiskLocation(DiskId,RegionEntryContext):Unit"></a>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue#setDiskEntry" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setDiskEntry(entry:com.gemstone.gemfire.internal.cache.AbstractOplogDiskRegionEntry,context:com.gemstone.gemfire.internal.cache.RegionEntryContext):Unit"></a>
+      <a id="setDiskEntry(AbstractOplogDiskRegionEntry,RegionEntryContext):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setDiskLocation</span><span class="params">(<span name="id">id: <span class="extype" name="com.gemstone.gemfire.internal.cache.DiskId">DiskId</span></span>, <span name="context">context: <span class="extype" name="com.gemstone.gemfire.internal.cache.RegionEntryContext">RegionEntryContext</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setDiskEntry</span><span class="params">(<span name="entry">entry: <span class="extype" name="com.gemstone.gemfire.internal.cache.AbstractOplogDiskRegionEntry">AbstractOplogDiskRegionEntry</span></span>, <span name="context">context: <span class="extype" name="com.gemstone.gemfire.internal.cache.RegionEntryContext">RegionEntryContext</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@setDiskLocation(id:com.gemstone.gemfire.internal.cache.DiskId,context:com.gemstone.gemfire.internal.cache.RegionEntryContext):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue@setDiskEntry(entry:com.gemstone.gemfire.internal.cache.AbstractOplogDiskRegionEntry,context:com.gemstone.gemfire.internal.cache.RegionEntryContext):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

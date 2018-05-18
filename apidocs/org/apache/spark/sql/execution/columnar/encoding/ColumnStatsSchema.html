@@ -47,11 +47,12 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnStatsSchema</span><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">ColumnStatsSchema</span><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="nullCountNullable">nullCountNullable: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Full stats row has &quot;nullCount&quot; as non-nullable while delta stats row has it as nullable.
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -91,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(fieldName:String,dataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema"></a>
+      <a id="&lt;init&gt;(fieldName:String,dataType:org.apache.spark.sql.types.DataType,nullCountNullable:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema"></a>
       <a id="&lt;init&gt;:ColumnStatsSchema"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ColumnStatsSchema</span><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span>
+        <span class="name">ColumnStatsSchema</span><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="nullCountNullable">nullCountNullable: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema@&lt;init&gt;(fieldName:String,dataType:org.apache.spark.sql.types.DataType):org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema@&lt;init&gt;(fieldName:String,dataType:org.apache.spark.sql.types.DataType,nullCountNullable:Boolean):org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -396,6 +397,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema@nullCount:org.apache.spark.sql.catalyst.expressions.AttributeReference" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema#nullCountNullable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="nullCountNullable:Boolean"></a>
+      <a id="nullCountNullable:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nullCountNullable</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema@nullCountNullable:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -24,6 +24,7 @@
   <link href="../../../css/menu.css" rel="stylesheet">
   <link href="../../../css/images.css" rel="stylesheet">
   <link href="../../../css/style.css" rel="stylesheet">
+  <link href="../../../css/highlight.css" rel="stylesheet">
   <link href="../../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
   <script src="../../../js/theme.js"></script> 
   <script src="../../../js/menu.js"></script>
+  <script src="../../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -746,6 +755,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -809,6 +840,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1004,6 +1042,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1025,7 +1070,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-table/">CREATE TABLE</a>
+        <a class="" href="../create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1039,7 +1091,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1053,7 +1105,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1103,7 +1155,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../drop-table/">DROP TABLE</a>
+        <a class="" href="../drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1121,6 +1187,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1187,13 +1260,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1329,13 +1395,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1343,7 +1402,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1881,7 +1940,7 @@
             <div class="section">
               
                 <h1 id="select">SELECT</h1>
-<pre><code>SELECT [DISTINCT] named_expression[, named_expression, ...]
+<pre><code class="no-highlight">SELECT [DISTINCT] named_expression[, named_expression, ...]
     FROM relation[, relation, ...]
     [WHERE boolean_expression]
     [aggregation [HAVING boolean_expression]]
@@ -1904,7 +1963,6 @@ expressions:
 
 sort_expressions:
     : expression [ASC|DESC][, expression [ASC|DESC], ...]
-
 </code></pre>
 
 <p>For information on executing queries on Synopsis Data Engine, refer to <a href="../../../aqp/">SDE</a>.</p>
@@ -1930,7 +1988,7 @@ Assign an identifier to a window specification.</p>
 <p><code>LIMIT</code></br>
 Limit the number of rows returned.</p>
 <h2 id="example">Example</h2>
-<pre><code>    SELECT * FROM boxes
+<pre><code class="no-highlight">    SELECT * FROM boxes
     SELECT width, length FROM boxes WHERE height=3
     SELECT DISTINCT width, length FROM boxes WHERE height=3 LIMIT 2
     SELECT * FROM VALUES (1, 2, 3) AS (width, length, height)
@@ -1941,7 +1999,7 @@ Limit the number of rows returned.</p>
 </code></pre>
 
 <h2 id="joins">JOINS</h2>
-<pre><code>    join_relation:
+<pre><code class="no-highlight">    join_relation:
         | relation join_type JOIN relation (ON boolean_expression | USING (column_name[, column_name, ...]))
         : relation NATURAL join_type JOIN relation
     join_type:
@@ -1960,13 +2018,13 @@ Select only rows from the side of the SEMI JOIN where there is a match. If one r
 <p><code>LEFT ANTI JOIN</code></br>
 Select only rows from the left side that match no rows on the right side.</p>
 <p><strong>Example</strong>:</p>
-<pre><code>    SELECT * FROM boxes INNER JOIN rectangles ON boxes.width = rectangles.width
+<pre><code class="no-highlight">    SELECT * FROM boxes INNER JOIN rectangles ON boxes.width = rectangles.width
     SELECT * FROM boxes FULL OUTER JOIN rectangles USING (width, length)
     SELECT * FROM boxes NATURAL JOIN rectangles
 </code></pre>
 
 <h2 id="aggregation">AGGREGATION</h2>
-<pre><code>    aggregation:
+<pre><code class="no-highlight">    aggregation:
         : GROUP BY expressions [(WITH ROLLUP | WITH CUBE | GROUPING SETS (expressions))]
 </code></pre>
 
@@ -1978,14 +2036,14 @@ Create a grouping set for each possible combination of a set of the specified ex
 <p><code>GROUPING SETS</code></br>
 Perform a group by for each subset of the group expressions specified in the grouping sets. For instance, GROUP BY x, y GROUPING SETS (x, y) is equivalent to the result of GROUP BY x unioned with that of GROUP BY y.</p>
 <p><strong>Example</strong>:</p>
-<pre><code>    SELECT height, COUNT(*) AS num_rows FROM boxes GROUP BY height
+<pre><code class="no-highlight">    SELECT height, COUNT(*) AS num_rows FROM boxes GROUP BY height
     SELECT width, AVG(length) AS average_length FROM boxes GROUP BY width
     SELECT width, length, height FROM boxes GROUP BY width, length, height WITH ROLLUP
     SELECT width, length, avg(height) FROM boxes GROUP BY width, length GROUPING SETS (width, length)
 </code></pre>
 
 <h2 id="window-functions">Window Functions</h2>
-<pre><code>window_expression:
+<pre><code class="no-highlight">window_expression:
     : expression OVER window_spec
 
 named_window:

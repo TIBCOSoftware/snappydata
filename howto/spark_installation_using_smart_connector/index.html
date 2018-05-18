@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -759,6 +768,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -822,6 +853,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1017,6 +1055,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1038,7 +1083,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1052,7 +1104,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1066,7 +1118,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1116,7 +1168,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1134,6 +1200,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1183,13 +1256,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1325,13 +1391,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1339,7 +1398,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1880,7 +1939,7 @@
 <p>The code example for this mode is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample.scala</a></p>
 <p><strong>Configure a SnappySession</strong>:</br>
 The code below shows how to initialize a SparkSession. Here the property <code>snappydata.connection</code> instructs the connector to acquire cluster connectivity, catalog metadata and register it locally in the Spark cluster. The values consists of <em>locator host</em> and <em>JDBC client port</em> on which the locator listens for connections (default 1527).</p>
-<pre><code class="scala">val spark: SparkSession = SparkSession
+<pre><code class="no-highlight">val spark: SparkSession = SparkSession
     .builder
     .appName(&quot;SmartConnectorExample&quot;)
     // It can be any master URL
@@ -1894,7 +1953,7 @@ val snSession = new SnappySession(spark.sparkContext)
 
 <p><strong>Create Table and Run Queries</strong>: 
 You can now create tables and run queries in SnappyData store using your Apache Spark program.</p>
-<pre><code class="scala">// reading an already created SnappyStore table SNAPPY_COL_TABLE
+<pre><code class="no-highlight">// reading an already created SnappyStore table SNAPPY_COL_TABLE
 val colTable = snSession.table(&quot;SNAPPY_COL_TABLE&quot;)
 colTable.show(10)
 
@@ -1910,11 +1969,10 @@ dataFrame.write.insertInto(&quot;TestColumnTable&quot;)
 </code></pre>
 
 <h2 id="running-a-smart-connector-application">Running a Smart Connector Application</h2>
-<p><a href="../start_snappy_cluster/">Start a SnappyData cluster</a> and create a table.</p>
-<pre><code class="bash">
-$ &lt;SnappyData_home&gt;/sbin/snappy-start-all.sh
+<p>Start a SnappyData cluster and create a table.</p>
+<pre><code class="no-highlight">$ ./sbin/snappy-start-all.sh
 
-$ &lt;SnappyData_home&gt;/bin/snappy
+$ ./bin/snappy
 SnappyData version 1.0.1
 snappy&gt;  connect client 'localhost:1527';
 Using CONNECTION0
@@ -1923,19 +1981,19 @@ snappy&gt; insert into SNAPPY_COL_TABLE VALUES(1,1);
 1 row inserted/updated/deleted
 snappy&gt; insert into SNAPPY_COL_TABLE VALUES(2,2);
 1 row inserted/updated/deleted
+exit;
 </code></pre>
 
 <p>The Smart Connector Application can now connect to this SnappyData cluster. </br></p>
 <p>The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the SnappyData cluster. </br>SnappyData package has to be specified along with the application jar to run the Smart Connector application.</p>
-<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.1-s_2.11       &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
+<pre><code class="no-highlight">$ ./bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.1-s_2.11       $SNAPPY_HOME/examples/jars/quickstart.jar
 </code></pre>
 
 <h2 id="execute-a-smart-connector-application">Execute a Smart Connector Application</h2>
 <p>Start a SnappyData cluster and create a table inside it.</p>
-<pre><code class="bash">
-$ &lt;SnappyData_Product_Home&gt;/sbin/snappy-start-all.sh
+<pre><code class="no-highlight">$ ./sbin/snappy-start-all.sh
 
-$ &lt;SnappyData_Product_Home&gt;/bin/snappy
+$ ./bin/snappy
 SnappyData version 1.0.1
 snappy&gt;  connect client 'localhost:1527';
 Using CONNECTION0
@@ -1944,12 +2002,11 @@ snappy&gt; insert into SNAPPY_COL_TABLE VALUES(1,1);
 1 row inserted/updated/deleted
 snappy&gt; insert into SNAPPY_COL_TABLE VALUES(2,2);
 1 row inserted/updated/deleted
-
+exit;
 </code></pre>
 
 <p>A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. </p>
-<pre><code class="bash">$ &lt;Spark_Product_Home&gt;/bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.0.1-s_2.11 &lt;SnappyData_Product_Home&gt;/examples/jars/quickstart.jar
-
+<pre><code class="no-highlight">$ ./bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.0.1-s_2.11 $SNAPPY_HOME/examples/jars/quickstart.jar
 </code></pre>
               
             </div>

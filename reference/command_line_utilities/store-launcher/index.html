@@ -24,6 +24,7 @@
   <link href="../../../css/menu.css" rel="stylesheet">
   <link href="../../../css/images.css" rel="stylesheet">
   <link href="../../../css/style.css" rel="stylesheet">
+  <link href="../../../css/highlight.css" rel="stylesheet">
   <link href="../../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
   <script src="../../../js/theme.js"></script> 
   <script src="../../../js/menu.js"></script>
+  <script src="../../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -746,6 +755,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -809,6 +840,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1004,6 +1042,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1025,7 +1070,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1039,7 +1091,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1053,7 +1105,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1103,7 +1155,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1121,6 +1187,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1170,13 +1243,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1283,7 +1349,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#command-line-utilites">Command Line Utilites</a></li>
+                <li class="toctree-l3"><a href="#command-line-utilities">Command Line Utilities</a></li>
                 
             
             </ul>
@@ -1319,13 +1385,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1333,7 +1392,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1866,37 +1925,34 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="command-line-utilites">Command Line Utilites</h1>
+                <h1 id="command-line-utilities">Command Line Utilities</h1>
 <p>Use the <em>snappy</em> command-line utility to launch SnappyData utilities.</p>
 <p>To display a full list of snappy commands and options:</p>
-<pre><code class="pre">snappy --help
+<pre><code class="no-highlight">./bin/snappy --help
 </code></pre>
 
 <p>The command form to display a particular utility's usage is:</p>
-<pre><code class="pre">snappy &lt;utility&gt; --help
+<pre><code class="no-highlight">./bin/snappy &lt;utility&gt; --help
 </code></pre>
 
 <p>With no arguments, <code>snappy</code> starts an <a href="../../interactive_commands/store_command_reference/">interactive SQL command shell</a>:</p>
-<pre><code class="pre">snappy
-</code></pre>
+<pre><code class="no-highlight">./bin/snappy
 
-<p>To specify a system property for an interactive <code>snappy</code> session, you must define the JAVA_ARGS environment variable before starting <code>snappy</code>. For example, <code>snappy</code> uses the <code>snappy.history</code> system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA_ARGS variable:</p>
-<pre><code class="pre">$ export JAVA_ARGS=&quot;-Dsnappy.history=/Users/user1/snappystore-history.sql&quot;
+
+
+To specify a system property for an interactive `snappy` session, you must define the JAVA_ARGS environment variable before starting `snappy`. For example, `snappy` uses the `snappy.history` system property to define the file that stores a list of the commands that are executed during an interactive session. To change this property, you would define it as part of the JAVA_ARGS variable:
+
+```no-highlight
+$ export JAVA_ARGS=&quot;-Dsnappy.history=/Users/user1/snappystore-history.sql&quot;
 $ snappy
 </code></pre>
 
 <p>To launch and exit a <code>snappy</code> utility (rather than start an interactive <code>snappy</code> shell) use the syntax:</p>
-<pre><code class="pre">snappy &lt;utility&gt; &lt;arguments for specified utility&gt;
+<pre><code class="no-highlight">./bin/snappy &lt;utility&gt; &lt;arguments for specified utility&gt;
 </code></pre>
 
 <p>To specify a system property when launching a <code>snappy</code> utility, use -J-D<em>property_name</em>=<em>property_value</em> argument.</p>
-<p>In addition to launching various utilities provided with SnappyData, when launched without any arguments, <code>snappy</code> starts an interactive command shell that you can use to connect to a SnappyData system and execute various commands, including SQL statements.
-<!-- The launcher honors the current CLASSPATH environment variable and adds it to the CLASSPATH of the utility or command shell being launched. To pass additional arguments to the JVM, set the <code>JAVA_ARGS</code> environment variable when invoking the *gfxd* script.--></p>
-<!--!!!Note:
-    The `JAVA_ARGS` environment variable does not apply to the `snappy server` and `snappy locator` tools that launch a separate background process. To pass Java properties to those tools, use the `-J` option as described in the help for those tools. </p>-->
-
-<!--The launcher uses the `java` executable that is found in the PATH. To override this behavior, set the <mark> TO VERIFY `GFXD_JAVA`</mark> environment variable to point to the desired Java executable. (note the supported JRE versions in [Supported Configurations and System Requirements](../../sys_requirement.md).-->
-
+<p>In addition to launching various utilities provided with SnappyData, when launched without any arguments, <code>snappy</code> starts an interactive command shell that you can use to connect to a SnappyData system and execute various commands, including SQL statements.</p>
 <ul>
 <li>
 <p><strong><a href="../store-backup/">backup and restore</a></strong>
@@ -1906,11 +1962,9 @@ $ snappy
 <p><strong><a href="../store-compact-all-disk-stores/">compact-all-disk-stores</a></strong> Performs online compaction of SnappyData disk stores.</p>
 </li>
 <li>
-<p><strong><a href="../store-compact-disk-store/">compact-disk-store</a></strong> Performs offline compaction of a single SnappyData disk store.</p>
-</li>
-<li>
-<p><strong><a href="../store-list-missing-disk-stores/">list-missing-disk-stores</a></strong>
-    Lists all disk stores with the most recent data for which other members are waiting.</p>
+<p><strong><a href="../store-compact-disk-store/">compact-disk-store</a></strong> Performs offline compaction of a single SnappyData disk store.
+<!--**<a href="../../reference/command_line_utilities/store-list-missing-disk-stores.md">list-missing-disk-stores</a>**
+    Lists all disk stores with the most recent data for which other members are waiting.--></p>
 </li>
 <li>
 <p><strong><a href="../store-revoke-missing-disk-stores/">revoke-missing-disk-store</a></strong>

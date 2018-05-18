@@ -28,12 +28,10 @@
         </head>
         <body class="type">
       <div id="definition">
-        <a href="ParamLiteral$.html" title="See companion object"><img alt="Class/Object" src="../../../../../../lib/class_to_object_big.png" /></a>
+        <img alt="Class" src="../../../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">expressions</a></p>
-        <h1><a href="ParamLiteral$.html" title="See companion object">ParamLiteral</a></h1><h3><span class="morelinks"><div>
-            Related Docs:
-            <a href="ParamLiteral$.html" title="See companion object">object ParamLiteral</a>
-            | <a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">package expressions</a>
+        <h1>ParamLiteral</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">package expressions</a>
           </div></span></h3><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
@@ -44,16 +42,24 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
-        <span class="kind">class</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">ParamLiteral</span><span class="result"> extends <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> with <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></span>
+        <span class="name">ParamLiteral</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Any">Any</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="pos">pos: <span class="extype" name="scala.Int">Int</span></span>, <span name="execId">execId: <span class="extype" name="scala.Int">Int</span></span>, <span name="tokenized">tokenized: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result"> extends <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a> with <a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>In addition to <a href="TokenLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenLiteral">TokenLiteral</a>, this class can also be used in plan caching
+so allows for internal value to be updated in subsequent runs when the
+plan is re-used with different constants. For that reason this does not
+extend Literal (to avoid Analyzer/Optimizer etc doing constant propagation
+for example) and its hash/equals ignores the value matching and only the position
+of the literal in the plan is used with the data type.</p><p>Where ever ParamLiteral case matching is required, it must match
+for DynamicReplacableConstant and use .eval(..) for code generation.
+see SNAP-1597 for more details.
+</p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a>, <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="codegen/CodegenFallback.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">CodegenFallback</a>, <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span>, <a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a>, <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a>, <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a>, <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -71,7 +77,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral"><span>ParamLiteral</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant"><span>DynamicReplacableConstant</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Literal"><span>Literal</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback"><span>CodegenFallback</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.LeafExpression"><span>LeafExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral"><span>ParamLiteral</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="com.esotericsoftware.kryo.KryoSerializable"><span>KryoSerializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral"><span>TokenizedLiteral</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant"><span>DynamicReplacableConstant</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.LeafExpression"><span>LeafExpression</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.Expression"><span>Expression</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -91,7 +97,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(value:Any,_dataType:org.apache.spark.sql.types.DataType,pos:Int):org.apache.spark.sql.catalyst.expressions.ParamLiteral"></a>
+      <a id="&lt;init&gt;(value:Any,dataType:org.apache.spark.sql.types.DataType,pos:Int,execId:Int,tokenized:Boolean):org.apache.spark.sql.catalyst.expressions.ParamLiteral"></a>
       <a id="&lt;init&gt;:ParamLiteral"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +105,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ParamLiteral</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Any">Any</span></span>, <span name="_dataType">_dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="pos">pos: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">ParamLiteral</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Any">Any</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="pos">pos: <span class="extype" name="scala.Int">Int</span></span>, <span name="execId">execId: <span class="extype" name="scala.Int">Int</span></span>, <span name="tokenized">tokenized: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@&lt;init&gt;(value:Any,_dataType:org.apache.spark.sql.types.DataType,pos:Int):org.apache.spark.sql.catalyst.expressions.ParamLiteral" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@&lt;init&gt;(value:Any,dataType:org.apache.spark.sql.types.DataType,pos:Int,execId:Int,tokenized:Boolean):org.apache.spark.sql.catalyst.expressions.ParamLiteral" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -167,6 +173,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral#_foldable" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="_foldable:Boolean"></a>
+      <a id="_foldable:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_foldable</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@_foldable:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply(number:Int):org.apache.spark.sql.catalyst.trees.TreeNode[_]"></a>
       <a id="apply(Int):TreeNode[_]"></a>
@@ -243,23 +266,23 @@ pasted in the REPL to build an equivalent Tree.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#canEqual" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="canEqual(that:Any):Boolean"></a>
-      <a id="canEqual(Any):Boolean"></a>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#asLiteral" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="asLiteral:org.apache.spark.sql.catalyst.expressions.TokenLiteral"></a>
+      <a id="asLiteral:TokenLiteral"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">canEqual</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">asLiteral</span><span class="result">: <a href="TokenLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenLiteral">TokenLiteral</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@canEqual(that:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@asLiteral:org.apache.spark.sql.catalyst.expressions.TokenLiteral" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → Equals</dd></dl></div>
+      
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#canonicalized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="canonicalized:org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="canonicalized:Expression"></a>
@@ -441,30 +464,13 @@ is defined (pre-order), and applies the partial function to it.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#convertedLiteral" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="convertedLiteral:Any"></a>
-      <a id="convertedLiteral:Any"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">convertedLiteral</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@convertedLiteral:Any" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Literal#dataType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#dataType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dataType:org.apache.spark.sql.types.DataType"></a>
       <a id="dataType:DataType"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">dataType</span><span class="result">: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>
@@ -476,13 +482,13 @@ is defined (pre-order), and applies the partial function to it.
     </span>
       <p class="shortcomment cmt">Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the <span class="extype" name="DataType">DataType</span> of the result of evaluating this expression.  It is
 invalid to query the dataType of an unresolved expression (i.e., when <code>resolved</code> == false).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#deterministic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant#deterministic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="deterministic:Boolean"></a>
       <a id="deterministic:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -500,13 +506,13 @@ children.</p><p>Note that this means that an expression should be considered as 
 - it relies on some implicit input that is not part of the children expression list.
 - it has non-deterministic child or children.</p><p>An example would be <code>SparkPartitionID</code> that relies on the partition id returned by TaskContext.
 By default leaf expressions are deterministic as Nil.forall(_.deterministic) returns true.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#doGenCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant#doGenCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doGenCode(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a>
       <a id="doGenCode(CodegenContext,ExprCode):ExprCode"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -520,7 +526,7 @@ By default leaf expressions are deterministic as Nil.forall(_.deterministic) ret
       <p class="shortcomment cmt">Returns Java source code that can be compiled to evaluate this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns Java source code that can be compiled to evaluate this expression.
 The default behavior is to call the eval method of the expression. Concrete expression
 implementations should override this to do actual code generation.
-</p></div><dl class="paramcmts block"><dt class="param">ctx</dt><dd class="cmt"><p>a <span class="extype" name="CodegenContext">CodegenContext</span></p></dd><dt class="param">ev</dt><dd class="cmt"><p>an <span class="extype" name="ExprCode">ExprCode</span> with unique terms.</p></dd><dt>returns</dt><dd class="cmt"><p>an <span class="extype" name="ExprCode">ExprCode</span> containing the Java source code to generate the given expression</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="codegen/CodegenFallback.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">CodegenFallback</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">ctx</dt><dd class="cmt"><p>a <span class="extype" name="CodegenContext">CodegenContext</span></p></dd><dt class="param">ev</dt><dd class="cmt"><p>an <span class="extype" name="ExprCode">ExprCode</span> with unique terms.</p></dd><dt>returns</dt><dd class="cmt"><p>an <span class="extype" name="ExprCode">ExprCode</span> containing the Java source code to generate the given expression</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -554,7 +560,7 @@ implementations should override this to do actual code generation.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → Equals → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#eval" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eval(input:org.apache.spark.sql.catalyst.InternalRow):Any"></a>
       <a id="eval(InternalRow):Any"></a>
@@ -571,7 +577,7 @@ implementations should override this to do actual code generation.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Returns the result of evaluating this expression on a given input Row</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of evaluating this expression on a given input Row</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns the result of evaluating this expression on a given input Row</p><div class="fullcomment"><div class="comment cmt"><p>Returns the result of evaluating this expression on a given input Row</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#fastEquals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="fastEquals(other:org.apache.spark.sql.catalyst.trees.TreeNode[_]):Boolean"></a>
       <a id="fastEquals(TreeNode[_]):Boolean"></a>
@@ -671,7 +677,7 @@ The condition is recursively applied to this node and all of its children (pre-o
 resulting collections.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq by applying a function to all nodes in this tree and using the elements of the
 resulting collections.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#foldable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral#foldable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foldable:Boolean"></a>
       <a id="foldable:Boolean"></a>
       <h4 class="signature">
@@ -690,7 +696,7 @@ resulting collections.
       <p class="shortcomment cmt">Returns true when an expression is a candidate for static evaluation before the query is
 executed.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true when an expression is a candidate for static evaluation before the query is
 executed.</p><p>The following conditions are used to determine suitability for constant folding:</p><ul><li>A <a href="Coalesce.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Coalesce">Coalesce</a> is foldable if all of its children are foldable</li><li>A <a href="BinaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BinaryExpression">BinaryExpression</a> is foldable if its both left and right child are foldable</li><li>A <a href="Not.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Not">Not</a>, <a href="IsNull.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.IsNull">IsNull</a>, or <a href="IsNotNull.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.IsNotNull">IsNotNull</a> is foldable if its child is foldable</li><li>A <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> is foldable</li><li>A <a href="Cast.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Cast">Cast</a> or <a href="UnaryMinus.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryMinus">UnaryMinus</a> is foldable if its child is foldable
-</li></ul></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+</li></ul></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#foreach" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="foreach(f:BaseType=&gt;Unit):Unit"></a>
       <a id="foreach((Expression)⇒Unit):Unit"></a>
@@ -798,7 +804,7 @@ depth <code>i + 1</code> is the last child of its own parent node.  The depth of
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#innerChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="innerChildren:Seq[org.apache.spark.sql.catalyst.trees.TreeNode[_]]"></a>
       <a id="innerChildren:Seq[TreeNode[_]]"></a>
@@ -835,7 +841,24 @@ For example, this can be used to show sub-queries.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Literal#jsonFields" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant#isNull" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isNull:String"></a>
+      <a id="isNull:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNull</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@isNull:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#jsonFields" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="jsonFields:List[org.json4s.JsonAST.JField]"></a>
       <a id="jsonFields:List[JField]"></a>
       <h4 class="signature">
@@ -851,26 +874,43 @@ For example, this can be used to show sub-queries.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#makeCopy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="makeCopy(newArgs:Array[AnyRef]):BaseType"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant#literalValueRef" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="literalValueRef:String"></a>
+      <a id="literalValueRef:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">literalValueRef</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@literalValueRef:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral#makeCopy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="makeCopy(newArgs:Array[AnyRef]):org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="makeCopy(Array[AnyRef]):Expression"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
         <span class="name">makeCopy</span><span class="params">(<span name="newArgs">newArgs: <span class="extype" name="scala.Array">Array</span>[<a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@makeCopy(newArgs:Array[AnyRef]):BaseType" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@makeCopy(newArgs:Array[AnyRef]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Creates a copy of this type of tree node after a transformation.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a copy of this type of tree node after a transformation.
 Must be overridden by child classes that have constructor arguments
-that are not present in the productIterator.</p></div><dl class="paramcmts block"><dt class="param">newArgs</dt><dd class="cmt"><p>the new product arguments.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+that are not present in the productIterator.</p></div><dl class="paramcmts block"><dt class="param">newArgs</dt><dd class="cmt"><p>the new product arguments.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#map" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="map[A](f:BaseType=&gt;A):Seq[A]"></a>
       <a id="map[A]((Expression)⇒A):Seq[A]"></a>
@@ -926,23 +966,23 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Efficient alternative to <code>productIterator.map(f).toArray</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Efficient alternative to <code>productIterator.map(f).toArray</code>.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#markFoldable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="markFoldable(param:Boolean):Unit"></a>
-      <a id="markFoldable(Boolean):Unit"></a>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral#markFoldable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="markFoldable(b:Boolean):org.apache.spark.sql.catalyst.expressions.TokenizedLiteral"></a>
+      <a id="markFoldable(Boolean):TokenizedLiteral"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">markFoldable</span><span class="params">(<span name="param">param: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">markFoldable</span><span class="params">(<span name="b">b: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@markFoldable(param:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@markFoldable(b:Boolean):org.apache.spark.sql.catalyst.expressions.TokenizedLiteral" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -960,7 +1000,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#nodeName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="nodeName:String"></a>
       <a id="nodeName:String"></a>
       <h4 class="signature">
@@ -978,7 +1018,7 @@ node in this tree in a preorder traversal.</p></div><dl class="paramcmts block">
     </span>
       <p class="shortcomment cmt">Returns the name of this type of TreeNode.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of this type of TreeNode.  Defaults to the class name.
 Note that we remove the &quot;Exec&quot; suffix for physical operators here.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -1029,7 +1069,7 @@ Note that we remove the &quot;Exec&quot; suffix for physical operators here.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#numberedTreeString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="numberedTreeString:String"></a>
       <a id="numberedTreeString:String"></a>
@@ -1110,7 +1150,7 @@ Numbers for each node can be found in the <a href="../trees/TreeNode.html#number
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">pos</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
@@ -1138,7 +1178,7 @@ Numbers for each node can be found in the <a href="../trees/TreeNode.html#number
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#prettyName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#prettyName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="prettyName:String"></a>
       <a id="prettyName:String"></a>
       <h4 class="signature">
@@ -1156,41 +1196,24 @@ Numbers for each node can be found in the <a href="../trees/TreeNode.html#number
     </span>
       <p class="shortcomment cmt">Returns a user-facing string representation of this expression's name.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a user-facing string representation of this expression's name.
 This should usually match the name of the function in SQL.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#productArity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="productArity:Int"></a>
-      <a id="productArity:Int"></a>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#read" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="read(kryo:com.esotericsoftware.kryo.Kryo,input:com.esotericsoftware.kryo.io.Input):Unit"></a>
+      <a id="read(Kryo,Input):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">productArity</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+        <span class="name">read</span><span class="params">(<span name="kryo">kryo: <span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span></span>, <span name="input">input: <span class="extype" name="com.esotericsoftware.kryo.io.Input">Input</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@productArity:Int" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@read(kryo:com.esotericsoftware.kryo.Kryo,input:com.esotericsoftware.kryo.io.Input):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → Product</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#productElement" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="productElement(n:Int):Any"></a>
-      <a id="productElement(Int):Any"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">productElement</span><span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@productElement(n:Int):Any" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → Product</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → KryoSerializable</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#references" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="references:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="references:AttributeSet"></a>
@@ -1288,7 +1311,7 @@ cosmetically (i.e. capitalization of names in attributes may be different).</p><
       </a>
     </span>
       <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Literal#sql" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#sql" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sql:String"></a>
       <a id="sql:String"></a>
       <h4 class="signature">
@@ -1306,7 +1329,7 @@ cosmetically (i.e. capitalization of names in attributes may be different).</p><
     </span>
       <p class="shortcomment cmt">Returns SQL representation of this expression.</p><div class="fullcomment"><div class="comment cmt"><p>Returns SQL representation of this expression.  For expressions extending <a href="NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a>,
 this method may return an arbitrary user facing string.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#stringArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stringArgs:Iterator[Any]"></a>
       <a id="stringArgs:Iterator[Any]"></a>
@@ -1359,7 +1382,7 @@ this method may return an arbitrary user facing string.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.expressions.Literal#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -1375,7 +1398,7 @@ this method may return an arbitrary user facing string.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#transform" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="transform(rule:PartialFunction[BaseType,BaseType]):BaseType"></a>
       <a id="transform(PartialFunction[Expression,Expression]):Expression"></a>
@@ -1478,7 +1501,7 @@ unchanged.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">value</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
@@ -1488,7 +1511,41 @@ unchanged.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#valueString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="valueString:String"></a>
+      <a id="valueString:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valueString</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@valueString:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → <a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant#valueTerm" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="valueTerm:String"></a>
+      <a id="valueTerm:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valueTerm</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@valueTerm:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.expressions.Expression#verboseString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="verboseString:String"></a>
       <a id="verboseString:String"></a>
@@ -1575,25 +1632,42 @@ unchanged.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#withNewChildren" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="withNewChildren(newChildren:Seq[BaseType]):BaseType"></a>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral#withNewChildren" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withNewChildren(newChildren:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression"></a>
       <a id="withNewChildren(Seq[Expression]):Expression"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
         <span class="name">withNewChildren</span><span class="params">(<span name="newChildren">newChildren: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@withNewChildren(newChildren:Seq[BaseType]):BaseType" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@withNewChildren(newChildren:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Returns a copy of this node with the children replaced.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a copy of this node with the children replaced.
 TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a> → <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.ParamLiteral#write" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="write(kryo:com.esotericsoftware.kryo.Kryo,output:com.esotericsoftware.kryo.io.Output):Unit"></a>
+      <a id="write(Kryo,Output):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">write</span><span class="params">(<span name="kryo">kryo: <span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span></span>, <span name="output">output: <span class="extype" name="com.esotericsoftware.kryo.io.Output">Output</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.ParamLiteral@write(kryo:com.esotericsoftware.kryo.Kryo,output:com.esotericsoftware.kryo.io.Output):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteral">ParamLiteral</a> → KryoSerializable</dd></dl></div>
     </li></ol>
             </div>
 
@@ -1603,16 +1677,16 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">
-              <h3>Inherited from <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></h3>
-            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.Literal">
-              <h3>Inherited from <a href="Literal.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Literal">Literal</a></h3>
-            </div><div class="parent" name="scala.Serializable">
+        <div class="parent" name="scala.Serializable">
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">
-              <h3>Inherited from <a href="codegen/CodegenFallback.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">CodegenFallback</a></h3>
+            </div><div class="parent" name="com.esotericsoftware.kryo.KryoSerializable">
+              <h3>Inherited from <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">
+              <h3>Inherited from <a href="TokenizedLiteral.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.TokenizedLiteral">TokenizedLiteral</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">
+              <h3>Inherited from <a href="DynamicReplacableConstant.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.DynamicReplacableConstant">DynamicReplacableConstant</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">
               <h3>Inherited from <a href="LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.Expression">

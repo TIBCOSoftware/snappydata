@@ -145,6 +145,26 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnWriter#SUPPORTED_STATS_TYPES" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SUPPORTED_STATS_TYPES:io.snappydata.collection.OpenHashSet[org.apache.spark.sql.types.DataType]"></a>
+      <a id="SUPPORTED_STATS_TYPES:OpenHashSet[DataType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SUPPORTED_STATS_TYPES</span><span class="result">: <span class="extype" name="io.snappydata.collection.OpenHashSet">OpenHashSet</span>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnWriter$@SUPPORTED_STATS_TYPES:io.snappydata.collection.OpenHashSet[org.apache.spark.sql.types.DataType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Supported types for which column statistics are maintained and can be used
+for statistics checks.</p><div class="fullcomment"><div class="comment cmt"><p>Supported types for which column statistics are maintained and can be used
+for statistics checks. Excludes DecimalType that should be checked explicitly.
+</p></div></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -259,6 +279,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnWriter#genCodeColumnStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="genCodeColumnStats(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,field:org.apache.spark.sql.types.StructField,encoder:String,nullCountNullable:Boolean):(Seq[org.apache.spark.sql.catalyst.expressions.Attribute],Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode])"></a>
+      <a id="genCodeColumnStats(CodegenContext,StructField,String,Boolean):(Seq[Attribute],Seq[ExprCode])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genCodeColumnStats</span><span class="params">(<span name="ctx">ctx: <a href="../../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="field">field: <a href="../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="encoder">encoder: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullCountNullable">nullCountNullable: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: (<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>], <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>])</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnWriter$@genCodeColumnStats(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,field:org.apache.spark.sql.types.StructField,encoder:String,nullCountNullable:Boolean):(Seq[org.apache.spark.sql.catalyst.expressions.Attribute],Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode])" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnWriter#genCodeColumnWrite" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="genCodeColumnWrite(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,dataType:org.apache.spark.sql.types.DataType,nullable:Boolean,encoder:String,nullEncoder:String,cursorTerm:String,ev:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,batchSizeTerm:String,offsetTerm:String,baseOffsetTerm:String):String"></a>
       <a id="genCodeColumnWrite(CodegenContext,DataType,Boolean,String,String,String,ExprCode,String,String,String):String"></a>
@@ -306,6 +343,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnWriter$@genCodeStructWrite(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,s:org.apache.spark.sql.types.StructType,encoder:String,cursorTerm:String,input:String,batchSizeTerm:String,offsetTerm:String,baseOffsetTerm:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnWriter#genStatsRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="genStatsRow(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,batchSizeTerm:String,stats:Seq[Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]],statsSchema:Seq[Seq[org.apache.spark.sql.catalyst.expressions.Attribute]]):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode"></a>
+      <a id="genStatsRow(CodegenContext,String,Seq[Seq[ExprCode]],Seq[Seq[Attribute]]):ExprCode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genStatsRow</span><span class="params">(<span name="ctx">ctx: <a href="../../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="batchSizeTerm">batchSizeTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="stats">stats: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]]</span>, <span name="statsSchema">statsSchema: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]]</span>)</span><span class="result">: <a href="../../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnWriter$@genStatsRow(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,batchSizeTerm:String,stats:Seq[Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode]],statsSchema:Seq[Seq[org.apache.spark.sql.catalyst.expressions.Attribute]]):org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

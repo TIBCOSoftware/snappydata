@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -765,6 +774,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -828,6 +859,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1023,6 +1061,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1044,7 +1089,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1058,7 +1110,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1072,7 +1124,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1122,7 +1174,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1140,6 +1206,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1189,13 +1262,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1331,13 +1397,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1345,7 +1404,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1882,12 +1941,11 @@
 <h1 id="how-to-load-data-from-external-data-stores-eg-hdfs-cassandra-hive-etc">How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)</h1>
 <p>SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.</p>
 <h2 id="example-loading-data-from-csv-file-using-sql">Example - Loading data from CSV file using SQL</h2>
-<pre><code class="scala">-- Create an external table based on CSV file
+<pre><code class="no-highlight">// Create an external table based on CSV file
 CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 USING csv OPTIONS (path '../../quickstart/src/main/resources/customer_with_headers.csv', header 'true', inferSchema 'true');
 
--- create a snappydata table and load data into CUSTOMER table
+// Create a SnappyData table and load data into CUSTOMER table
 CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_1);
-
 </code></pre>
 
 <div class="admonition tip">
@@ -1896,21 +1954,21 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 </div>
 <h2 id="example-loading-csv-files-from-hdfs-using-api">Example - Loading CSV Files from HDFS using API</h2>
 <p>The example below demonstrates how you can read CSV files from HDFS using an API:</p>
-<pre><code class="scala">val dataDF=snc.read.option(&quot;header&quot;,&quot;true&quot;).csv (&quot;../../quickstart/src/main/resources/customer_with_headers.csv'&quot;)
+<pre><code class="no-highlight">val dataDF=snc.read.option(&quot;header&quot;,&quot;true&quot;).csv (&quot;../../quickstart/src/main/resources/customer_with_headers.csv&quot;)
 
-// drop table if exist
+// Drop table if it exists
 snc.sql(&quot;drop table if exists CUSTOMER&quot;)
 
 // Load data into table
-dataDF.write.saveAsTable(&quot;CUSTOMER&quot;)
+dataDF.write.format(&quot;column&quot;).saveAsTable(&quot;CUSTOMER&quot;)
 </code></pre>
 
 <h2 id="example-loading-and-enriching-csv-data-from-hdfs">Example - Loading and Enriching CSV Data from HDFS</h2>
 <p>The example below demonstrates how you can load and enrich CSV Data from HDFS:</p>
-<pre><code class="scala">val dataDF = snappy.read.option(&quot;header&quot;, &quot;true&quot;)
+<pre><code class="no-highlight">val dataDF = snappy.read.option(&quot;header&quot;, &quot;true&quot;)
     .csv(&quot;../examples/src/main/resources/customer_with_headers.csv&quot;)
 
-// drop table if exist and create it with only required fields
+// Drop table if it exists and create it with only required fields
 snappy.sql(&quot;drop table if exists CUSTOMER&quot;)
 snappy.sql(&quot;create table CUSTOMER(C_CUSTKEY INTEGER NOT NULL&quot; +
     &quot;, C_NAME VARCHAR(25) NOT NULL,&quot; +
@@ -1936,7 +1994,7 @@ dataDF.select($&quot;C_CUSTKEY&quot;,
 <h2 id="example-loading-from-hive">Example - Loading from Hive</h2>
 <p>As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with <strong>enableHiveSupport</strong> set to <strong>true</strong>). 
 Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. </p>
-<pre><code class="scala">val ds = spark.table(&quot;hiveTable&quot;)
+<pre><code class="no-highlight">val ds = spark.table(&quot;hiveTable&quot;)
 val rdd = ds.rdd
 val session = new SnappySession(sparkContext)
 val df = session.createDataFrame(rdd, ds.schema)
@@ -1993,10 +2051,11 @@ df.show()
 </ol>
 <p><strong> Using SQL to access external RDB tables </strong>
 You can also use plain SQL to access any external RDB using external tables. Create external table on RDBMS table and query it directly from SnappyData as described below:</p>
-<pre><code>    snc.sql("drop table if exists external_table")
-    snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')")
-    snc.sql("select * from external_table").show
+<pre><code class="no-highlight">snc.sql(&quot;drop table if exists external_table&quot;)
+snc.sql(s&quot;CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')&quot;)
+snc.sql(&quot;select * from external_table&quot;).show
 </code></pre>
+
 <p>Refer to the <a href="https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases">Spark SQL JDBC source access for how to parallelize access when dealing with large data sets</a>.</p>
 <h2 id="loading-data-from-nosql-store-cassandra">Loading Data from NoSQL store (Cassandra)</h2>
 <p>The example below demonstrates how you can load data from a NoSQL store:</p>
@@ -2007,8 +2066,7 @@ You can also use plain SQL to access any external RDB using external tables. Cre
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->
 
-<pre><code class="scala">
-val df = snc.read.format(&quot;org.apache.spark.sql.cassandra&quot;).options(Map( &quot;table&quot; -&gt; &quot;CUSTOMER&quot;, &quot;keyspace&quot; -&gt; &quot;test&quot;)) .load
+<pre><code class="no-highlight">val df = snc.read.format(&quot;org.apache.spark.sql.cassandra&quot;).options(Map( &quot;table&quot; -&gt; &quot;CUSTOMER&quot;, &quot;keyspace&quot; -&gt; &quot;test&quot;)) .load
 df.write.format(&quot;column&quot;).mode(SaveMode.Append).saveAsTable(&quot;CUSTOMER&quot;)
 snc.sql(&quot;select * from CUSTOMER&quot;).show
 </code></pre>

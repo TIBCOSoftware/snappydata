@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.collection.FixedPartitionRDD#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],numPartitions:Int,partitioner:Option[org.apache.spark.Partitioner])(implicitevidence$5:scala.reflect.ClassTag[T]):org.apache.spark.sql.collection.FixedPartitionRDD[T]"></a>
+      <a id="&lt;init&gt;(_sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],numPartitions:Int,partitioner:Option[org.apache.spark.Partitioner])(implicitevidence$6:scala.reflect.ClassTag[T]):org.apache.spark.sql.collection.FixedPartitionRDD[T]"></a>
       <a id="&lt;init&gt;:FixedPartitionRDD[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,7 +100,7 @@
         <span class="name">FixedPartitionRDD</span><span class="params">(<span name="_sc">_sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="f">f: (<a href="../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a>, <a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>) ⇒ <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.collection.FixedPartitionRDD.T">T</span>]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="partitioner">partitioner: <span class="extype" name="scala.Option">Option</span>[<a href="../../Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.collection.FixedPartitionRDD.T">T</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.FixedPartitionRDD@&lt;init&gt;(_sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],numPartitions:Int,partitioner:Option[org.apache.spark.Partitioner])(implicitevidence$5:scala.reflect.ClassTag[T]):org.apache.spark.sql.collection.FixedPartitionRDD[T]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.FixedPartitionRDD@&lt;init&gt;(_sc:org.apache.spark.SparkContext,f:(org.apache.spark.TaskContext,org.apache.spark.Partition)=&gt;Iterator[T],numPartitions:Int,partitioner:Option[org.apache.spark.Partitioner])(implicitevidence$6:scala.reflect.ClassTag[T]):org.apache.spark.sql.collection.FixedPartitionRDD[T]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1176,23 +1176,6 @@ elements, even if the input RDDs did.
     </span>
       <p class="shortcomment cmt">Return whether this RDD is checkpointed and materialized, either reliably or locally.</p><div class="fullcomment"><div class="comment cmt"><p>Return whether this RDD is checkpointed and materialized, either reliably or locally.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a></dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isDebugEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isDebugEnabled:Boolean"></a>
-      <a id="isDebugEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isDebugEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.FixedPartitionRDD@isDebugEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.rdd.RDD#isEmpty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isEmpty():Boolean"></a>
       <a id="isEmpty():Boolean"></a>
@@ -1214,23 +1197,6 @@ elements, even if the input RDDs did.
 exception if called on an RDD of <code>Nothing</code> or <code>Null</code>. This may be come up in practice
 because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[Nothing]</code>.
 (<code>parallelize(Seq())</code> should be avoided anyway in favor of <code>parallelize(Seq[T]())</code>.)</p></span></dd></dl></div>
-    </li><li name="org.apache.spark.internal.Logging#isInfoEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isInfoEnabled:Boolean"></a>
-      <a id="isInfoEnabled:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isInfoEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.FixedPartitionRDD@isInfoEnabled:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -1249,18 +1215,18 @@ because, for example, the type of <code>parallelize(Seq())</code> is <code>RDD[N
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isTraceEnabled:Boolean"></a>
-      <a id="isTraceEnabled:Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">isTraceEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.FixedPartitionRDD@isTraceEnabled:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.FixedPartitionRDD@isTraceEnabled():Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

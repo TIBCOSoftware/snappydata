@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -765,6 +774,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -828,6 +859,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1023,6 +1061,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1044,7 +1089,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1058,7 +1110,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1072,7 +1124,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1122,7 +1174,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1140,6 +1206,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1189,13 +1262,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1331,13 +1397,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1345,7 +1404,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1884,7 +1943,14 @@
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
+<ul>
+<li>
 <p>For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the <code>-J</code> prefix.</p>
+</li>
+<li>
+<p>Instead of starting the SnappyData cluster, you can <a href="../../howto/start_snappy_cluster/">start</a> and <a href="../../howto/stop_snappy_cluster/">stop</a> individual components on a system locally.</p>
+</li>
+</ul>
 </div>
 <p><a id="locator"></a></p>
 <h2 id="configuring-locators">Configuring Locators</h2>
@@ -1957,7 +2023,7 @@ These files should contain the hostnames of the nodes (one per line) where you i
 </table>
 <p><a id="locator-example"></a>
 <strong>Example</strong>: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:</p>
-<pre><code class="scala">$ cat conf/locators
+<pre><code class="no-highlight">$ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
 </code></pre>
@@ -1966,6 +2032,10 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <h2 id="configuring-leads">Configuring Leads</h2>
 <p>Lead Nodes primarily runs the SnappyData managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the <strong>conf/leads.template</strong> file for some examples. </p>
 <p>Create the configuration file (<strong>leads</strong>) for leads in the <strong>&lt;<em>SnappyData_home</em>&gt;/conf</strong> directory.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the <strong>conf/spark-env.sh</strong> file, set the <code>SPARK_PUBLIC_DNS</code> property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.</p>
+</div>
 <h3 id="list-of-lead-properties">List of Lead Properties</h3>
 <p>Refer to the <a href="../property_description/">SnappyData properties</a> for the complete list of SnappyData properties.</p>
 <table>
@@ -2047,7 +2117,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tbody>
 </table>
 <p><strong>Example</strong>: To start a lead (node-l), set <code>spark.executor.cores</code> as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:</p>
-<pre><code>$ cat conf/leads
+<pre><code class="no-highlight">$ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 </code></pre>
 
@@ -2062,99 +2132,77 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tr>
 <th>Property</th>
 <th>Description</br></th>
-<th></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>-bind-address</td>
 <td>IP address on which the locator is bound. The default behavior is to bind to all local addresses.</td>
-<td></td>
 </tr>
 <tr>
 <td>-classpath</td>
 <td>Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.</td>
-<td></td>
 </tr>
 <tr>
 <td>-critical-heap-percentage</td>
 <td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
-<td></td>
 </tr>
 <tr>
 <td>-critical-off-heap-percentage</td>
 <td>Sets the critical threshold for off-heap memory usage in percentage, 0-100. </br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of off-heap memory.</td>
-<td></td>
 </tr>
 <tr>
 <td>-dir</td>
 <td>The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
-<td></td>
 </tr>
 <tr>
 <td>-eviction-heap-percentage</td>
 <td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
-<td></td>
 </tr>
 <tr>
 <td>-eviction-off-heap-percentage</td>
 <td>Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 81% of whatever is set for <code>-critical-off-heap-percentage</code>. </br>Use this switch to override the default.</td>
-<td></td>
 </tr>
 <tr>
 <td>-heap-size</td>
 <td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the <code>eviction-heap-percentage</code> to 81% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
-<td></td>
 </tr>
 <tr>
 <td>-J</td>
 <td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
-<td></td>
 </tr>
 <tr>
 <td>-J-Dgemfirexd.hostname-for-clients</td>
-<td>Hostname or IP address that is sent to clients so they can connect to the locator. The default is the <code>bind-address</code> of the locator.</td>
-<td></td>
-</tr>
-<tr>
-<td>-locators</td>
-<td>List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.</td>
-<td></td>
+<td>The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the <code>client-bind-address</code> to be given to clients. </br> This value can be different from <code>client-bind-address</code> for cases where the servers/locators are behind a NAT firewall (AWS for example) where <code>client-bind-address</code> needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by the hostname translation itself, that is, the hostname used in <code>client-bind-address</code> resolves to internal IP address from inside and to the public IP address from outside, but for other cases, this property is required</td>
 </tr>
 <tr>
 <td>-log-file</td>
 <td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
-<td></td>
 </tr>
 <tr>
 <td>-memory-size</td>
 <td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
-<td></td>
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
 <td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
-<td></td>
 </tr>
 <tr>
 <td>-rebalance<a id="rebalance"></a></td>
 <td>Causes the new member to trigger a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option.</td>
-<td></td>
 </tr>
 <tr>
 <td>-thrift-ssl<a id="thrift-properties"></a></td>
 <td>Specifies if you want to enable or disable SSL. Values: true or false</td>
-<td></td>
 </tr>
 <tr>
 <td>-thrift-ssl-properties</td>
 <td>Comma-separated SSL properties including:</br><code>protocol</code>: default "TLS",</br><code>enabled-protocols</code>: enabled protocols separated by ":"</br><code>cipher-suites</code>: enabled cipher suites separated by ":"</br><code>client-auth</code>=(true or false): if client also needs to be authenticated </br><code>keystore</code>: path to key store file </br><code>keystore-type</code>: the type of key-store (default "JKS") </br><code>keystore-password</code>: password for the key store file</br><code>keymanager-type</code>: the type of key manager factory </br><code>truststore</code>: path to trust store file</br><code>truststore-type</code>: the type of trust-store (default "JKS")</br><code>truststore-password</code>: password for the trust store file </br><code>trustmanager-type</code>: the type of trust manager factory </br></td>
-<td></td>
 </tr>
 </tbody>
 </table>
 <p><strong>Example</strong>: To start a two servers (node-c and node-c), update the configuration file as follows:</p>
-<pre><code>$ cat conf/servers
+<pre><code class="no-highlight">$ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 </code></pre>
@@ -2177,7 +2225,7 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 </tbody>
 </table>
 <p><strong>Example</strong>:</p>
-<pre><code class="bash">$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
+<pre><code class="no-highlight">$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
     --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
     --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot; 
 </code></pre>
@@ -2189,26 +2237,14 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 <h3 id="hadoop-provided-settings">Hadoop Provided Settings</h3>
 <p>If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.</p>
 <p>To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:</p>
-<pre><code>export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
-</code></pre>
-
-<p><a id="command-line"></a></p>
-<h3 id="snappydata-command-line-utility">SnappyData Command Line Utility</h3>
-<p>Instead of starting SnappyData cluster using the <code>snappy-start-all.sh</code> script, individual components can be configured, started and stopped on a system locally using these commands.</p>
-<pre><code>$ bin/snappy locator start  -dir=/node-a/locator1 
-$ bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g 
-$ bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
-
-$ bin/snappy locator stop -dir=/node-a/locator1
-$ bin/snappy server stop -dir=/node-b/server1
-$ bin/snappy leader stop -dir=/node-c/lead1
+<pre><code class="no-highlight">export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 </code></pre>
 
 <p><a id="logging"></a></p>
 <h2 id="logging">Logging</h2>
 <p>Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property <em>-log-file</em> as the path of the directory. </br>
 The logging levels can be modified by adding a <em>conf/log4j.properties</em> file in the product directory. </p>
-<pre><code class="bash">$ cat conf/log4j.properties 
+<pre><code class="no-highlight">$ cat conf/log4j.properties 
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 </code></pre>

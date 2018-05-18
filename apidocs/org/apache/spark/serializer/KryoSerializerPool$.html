@@ -219,6 +219,40 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.serializer.KryoSerializerPool#deserialize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="deserialize[T](bytes:Array[Byte],offset:Int,count:Int,f:(com.esotericsoftware.kryo.Kryo,com.esotericsoftware.kryo.io.Input)=&gt;T)(implicitevidence$2:scala.reflect.ClassTag[T]):T"></a>
+      <a id="deserialize[T](Array[Byte],Int,Int,(Kryo,Input)⇒T)(ClassTag[T]):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deserialize</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="bytes">bytes: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="offset">offset: <span class="extype" name="scala.Int">Int</span></span>, <span name="count">count: <span class="extype" name="scala.Int">Int</span></span>, <span name="f">f: (<span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span>, <span class="extype" name="com.esotericsoftware.kryo.io.Input">Input</span>) ⇒ <span class="extype" name="org.apache.spark.serializer.KryoSerializerPool.deserialize.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.serializer.KryoSerializerPool.deserialize.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.serializer.KryoSerializerPool.deserialize.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.KryoSerializerPool$@deserialize[T](bytes:Array[Byte],offset:Int,count:Int,f:(com.esotericsoftware.kryo.Kryo,com.esotericsoftware.kryo.io.Input)=&gt;T)(implicitevidence$2:scala.reflect.ClassTag[T]):T" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.serializer.KryoSerializerPool#deserialize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="deserialize[T](buffer:java.nio.ByteBuffer,f:(com.esotericsoftware.kryo.Kryo,com.esotericsoftware.kryo.io.Input)=&gt;T)(implicitevidence$1:scala.reflect.ClassTag[T]):T"></a>
+      <a id="deserialize[T](ByteBuffer,(Kryo,Input)⇒T)(ClassTag[T]):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deserialize</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="f">f: (<span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span>, <span class="extype" name="com.esotericsoftware.kryo.io.Input">Input</span>) ⇒ <span class="extype" name="org.apache.spark.serializer.KryoSerializerPool.deserialize.T">T</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.serializer.KryoSerializerPool.deserialize.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.serializer.KryoSerializerPool.deserialize.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.KryoSerializerPool$@deserialize[T](buffer:java.nio.ByteBuffer,f:(com.esotericsoftware.kryo.Kryo,com.esotericsoftware.kryo.io.Input)=&gt;T)(implicitevidence$1:scala.reflect.ClassTag[T]):T" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -391,6 +425,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.serializer.KryoSerializerPool$@release(poolObject:org.apache.spark.serializer.PooledObject,clearInputBuffer:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.serializer.KryoSerializerPool#serialize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="serialize(f:(com.esotericsoftware.kryo.Kryo,com.esotericsoftware.kryo.io.ByteBufferOutput)=&gt;Unit,bufferSize:Int):Array[Byte]"></a>
+      <a id="serialize((Kryo,ByteBufferOutput)⇒Unit,Int):Array[Byte]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serialize</span><span class="params">(<span name="f">f: (<span class="extype" name="com.esotericsoftware.kryo.Kryo">Kryo</span>, <span class="extype" name="com.esotericsoftware.kryo.io.ByteBufferOutput">ByteBufferOutput</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>, <span name="bufferSize">bufferSize: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">1</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.serializer.KryoSerializerPool$@serialize(f:(com.esotericsoftware.kryo.Kryo,com.esotericsoftware.kryo.io.ByteBufferOutput)=&gt;Unit,bufferSize:Int):Array[Byte]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

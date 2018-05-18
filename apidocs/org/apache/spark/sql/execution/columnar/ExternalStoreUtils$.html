@@ -809,18 +809,35 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getExternalTableMetaData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getExternalTableMetaData(schema:String,table:String):com.gemstone.gemfire.internal.cache.ExternalTableMetaData"></a>
-      <a id="getExternalTableMetaData(String,String):ExternalTableMetaData"></a>
+      <a id="getExternalTableMetaData(qualifiedTable:String,container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,checkColumnStore:Boolean):com.gemstone.gemfire.internal.cache.ExternalTableMetaData"></a>
+      <a id="getExternalTableMetaData(String,GemFireContainer,Boolean):ExternalTableMetaData"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getExternalTableMetaData</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.ExternalTableMetaData">ExternalTableMetaData</span></span>
+        <span class="name">getExternalTableMetaData</span><span class="params">(<span name="qualifiedTable">qualifiedTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="container">container: <span class="extype" name="com.pivotal.gemfirexd.internal.engine.store.GemFireContainer">GemFireContainer</span></span>, <span name="checkColumnStore">checkColumnStore: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.ExternalTableMetaData">ExternalTableMetaData</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getExternalTableMetaData(schema:String,table:String):com.gemstone.gemfire.internal.cache.ExternalTableMetaData" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getExternalTableMetaData(qualifiedTable:String,container:com.pivotal.gemfirexd.internal.engine.store.GemFireContainer,checkColumnStore:Boolean):com.gemstone.gemfire.internal.cache.ExternalTableMetaData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#getExternalTableMetaData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getExternalTableMetaData(qualifiedTable:String):com.gemstone.gemfire.internal.cache.ExternalTableMetaData"></a>
+      <a id="getExternalTableMetaData(String):ExternalTableMetaData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getExternalTableMetaData</span><span class="params">(<span name="qualifiedTable">qualifiedTable: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.ExternalTableMetaData">ExternalTableMetaData</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@getExternalTableMetaData(qualifiedTable:String):com.gemstone.gemfire.internal.cache.ExternalTableMetaData" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -894,18 +911,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#handledFilter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="handledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Option[org.apache.spark.sql.sources.Filter]"></a>
-      <a id="handledFilter(Filter,Set[String]):Option[Filter]"></a>
+      <a id="handledFilter(f:org.apache.spark.sql.catalyst.expressions.Expression,indexedCols:scala.collection.Set[String]):Option[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
+      <a id="handledFilter(Expression,Set[String]):Option[Expression]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">handledFilter</span><span class="params">(<span name="f">f: <a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a></span>, <span name="indexedCols">indexedCols: <span class="extype" name="scala.collection.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a>]</span>
+        <span class="name">handledFilter</span><span class="params">(<span name="f">f: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="indexedCols">indexedCols: <span class="extype" name="scala.collection.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@handledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Option[org.apache.spark.sql.sources.Filter]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@handledFilter(f:org.apache.spark.sql.catalyst.expressions.Expression,indexedCols:scala.collection.Set[String]):Option[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1218,35 +1235,35 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#unhandledFilter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="unhandledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Boolean"></a>
-      <a id="unhandledFilter(Filter,Set[String]):Boolean"></a>
+      <a id="unhandledFilter(f:org.apache.spark.sql.catalyst.expressions.Expression,indexedCols:scala.collection.Set[String]):Boolean"></a>
+      <a id="unhandledFilter(Expression,Set[String]):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unhandledFilter</span><span class="params">(<span name="f">f: <a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a></span>, <span name="indexedCols">indexedCols: <span class="extype" name="scala.collection.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">unhandledFilter</span><span class="params">(<span name="f">f: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="indexedCols">indexedCols: <span class="extype" name="scala.collection.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@unhandledFilter(f:org.apache.spark.sql.sources.Filter,indexedCols:scala.collection.Set[String]):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@unhandledFilter(f:org.apache.spark.sql.catalyst.expressions.Expression,indexedCols:scala.collection.Set[String]):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils#unhandledFilter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="unhandledFilter(f:org.apache.spark.sql.sources.Filter):Boolean"></a>
-      <a id="unhandledFilter(Filter):Boolean"></a>
+      <a id="unhandledFilter(f:org.apache.spark.sql.catalyst.expressions.Expression):Boolean"></a>
+      <a id="unhandledFilter(Expression):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unhandledFilter</span><span class="params">(<span name="f">f: <a href="../../sources/Filter.html" class="extype" name="org.apache.spark.sql.sources.Filter">Filter</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">unhandledFilter</span><span class="params">(<span name="f">f: <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@unhandledFilter(f:org.apache.spark.sql.sources.Filter):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStoreUtils$@unhandledFilter(f:org.apache.spark.sql.catalyst.expressions.Expression):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

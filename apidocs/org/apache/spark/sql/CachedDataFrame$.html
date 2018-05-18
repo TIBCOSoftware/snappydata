@@ -435,6 +435,23 @@ before being consumed to store data from multiple partitions safely.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#levelFlags" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelFlags:Int"></a>
+      <a id="levelFlags:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelFlags</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame$@levelFlags:Int" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.CachedDataFrame#localBlockStoreDecoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="localBlockStoreDecoder(numFields:Int,bm:org.apache.spark.storage.BlockManager)(block:Any):Iterator[org.apache.spark.sql.catalyst.expressions.UnsafeRow]"></a>
       <a id="localBlockStoreDecoder(Int,BlockManager)(Any):Iterator[UnsafeRow]"></a>
@@ -673,6 +690,23 @@ before being consumed to store data from multiple partitions safely.</p>
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log_" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log_:org.slf4j.Logger"></a>
+      <a id="log_:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log_</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame$@log_:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -882,18 +916,18 @@ before being consumed to store data from multiple partitions safely.</p>
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.CachedDataFrame#withNewExecutionId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="withNewExecutionId[T](sparkSession:org.apache.spark.sql.SparkSession,queryShortForm:String,queryLongForm:String,queryExecutionStr:String,queryPlanInfo:org.apache.spark.sql.execution.SparkPlanInfo,currentExecutionId:Option[Long],planProcessingTime:Long)(body:=&gt;T):T"></a>
-      <a id="withNewExecutionId[T](SparkSession,String,String,String,SparkPlanInfo,Option[Long],Long)(⇒T):T"></a>
+      <a id="withNewExecutionId[T](snappySession:org.apache.spark.sql.SnappySession,queryShortForm:String,queryLongForm:String,queryExecutionStr:String,queryPlanInfo:org.apache.spark.sql.execution.SparkPlanInfo,currentExecutionId:Long,planStartTime:Long,planEndTime:Long)(body:=&gt;T):(T,Long)"></a>
+      <a id="withNewExecutionId[T](SnappySession,String,String,String,SparkPlanInfo,Long,Long,Long)(⇒T):(T,Long)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">withNewExecutionId</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="sparkSession">sparkSession: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="queryShortForm">queryShortForm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="queryLongForm">queryLongForm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="queryExecutionStr">queryExecutionStr: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="queryPlanInfo">queryPlanInfo: <a href="execution/SparkPlanInfo.html" class="extype" name="org.apache.spark.sql.execution.SparkPlanInfo">SparkPlanInfo</a></span>, <span name="currentExecutionId">currentExecutionId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Long">Long</span>] = <span class="symbol"><span class="name"><a href="../../../../scala/package.html">None</a></span></span></span>, <span name="planProcessingTime">planProcessingTime: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">0</span></span>)</span><span class="params">(<span name="body">body: ⇒ <span class="extype" name="org.apache.spark.sql.CachedDataFrame.withNewExecutionId.T">T</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.CachedDataFrame.withNewExecutionId.T">T</span></span>
+        <span class="name">withNewExecutionId</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="snappySession">snappySession: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="queryShortForm">queryShortForm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="queryLongForm">queryLongForm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="queryExecutionStr">queryExecutionStr: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="queryPlanInfo">queryPlanInfo: <a href="execution/SparkPlanInfo.html" class="extype" name="org.apache.spark.sql.execution.SparkPlanInfo">SparkPlanInfo</a></span>, <span name="currentExecutionId">currentExecutionId: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">1L</span></span>, <span name="planStartTime">planStartTime: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">1L</span></span>, <span name="planEndTime">planEndTime: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">1L</span></span>)</span><span class="params">(<span name="body">body: ⇒ <span class="extype" name="org.apache.spark.sql.CachedDataFrame.withNewExecutionId.T">T</span></span>)</span><span class="result">: (<span class="extype" name="org.apache.spark.sql.CachedDataFrame.withNewExecutionId.T">T</span>, <span class="extype" name="scala.Long">Long</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame$@withNewExecutionId[T](sparkSession:org.apache.spark.sql.SparkSession,queryShortForm:String,queryLongForm:String,queryExecutionStr:String,queryPlanInfo:org.apache.spark.sql.execution.SparkPlanInfo,currentExecutionId:Option[Long],planProcessingTime:Long)(body:=&gt;T):T" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.CachedDataFrame$@withNewExecutionId[T](snappySession:org.apache.spark.sql.SnappySession,queryShortForm:String,queryLongForm:String,queryExecutionStr:String,queryPlanInfo:org.apache.spark.sql.execution.SparkPlanInfo,currentExecutionId:Long,planStartTime:Long,planEndTime:Long)(body:=&gt;T):(T,Long)" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -24,6 +24,7 @@
   <link href="../css/menu.css" rel="stylesheet">
   <link href="../css/images.css" rel="stylesheet">
   <link href="../css/style.css" rel="stylesheet">
+  <link href="../css/highlight.css" rel="stylesheet">
   <link href="../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../js/highlight.pack.js"></script>
   <script src="../js/theme.js"></script> 
   <script src="../js/menu.js"></script>
+  <script src="../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href=".." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -745,6 +754,28 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
     <li class="toctree-l1 current">
         <a class="current" href="./">Using SnappyData CloudBuilder</a>
         
@@ -816,6 +847,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1011,6 +1049,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1032,7 +1077,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1046,7 +1098,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1060,7 +1112,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1110,7 +1162,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1128,6 +1194,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1177,13 +1250,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1319,13 +1385,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1333,7 +1392,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1893,7 +1952,7 @@ With <!--iSight-Cloud-->CloudBuilder, you can speed up the process of understand
         <a href="../isight/key_components/" class="btn btn-neutral float-right" title="Key Components">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../sde/sketching/" class="btn btn-neutral" title="Sketching"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../connectors/cdc_connector/" class="btn btn-neutral" title="Using the SnappyData CDC (Change Data Capture) Connector"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -1925,7 +1984,7 @@ With <!--iSight-Cloud-->CloudBuilder, you can speed up the process of understand
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../sde/sketching/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../connectors/cdc_connector/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../isight/key_components/" style="color: #fcfcfc">Next &raquo;</a></span>

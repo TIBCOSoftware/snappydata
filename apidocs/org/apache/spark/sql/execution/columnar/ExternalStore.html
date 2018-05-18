@@ -113,18 +113,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#getColumnBatchRDD" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="getColumnBatchRDD(tableName:String,rowBuffer:String,requiredColumns:Array[String],projection:Array[Int],fullScan:Boolean,prunePartitions:=&gt;Int,session:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType,delayRollover:Boolean):org.apache.spark.rdd.RDD[Any]"></a>
-      <a id="getColumnBatchRDD(String,String,Array[String],Array[Int],Boolean,⇒Int,SparkSession,StructType,Boolean):RDD[Any]"></a>
+      <a id="getColumnBatchRDD(tableName:String,rowBuffer:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],prunePartitions:=&gt;Int,session:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType,delayRollover:Boolean):org.apache.spark.rdd.RDD[Any]"></a>
+      <a id="getColumnBatchRDD(String,String,Array[Int],Array[Expression],⇒Int,SparkSession,StructType,Boolean):RDD[Any]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getColumnBatchRDD</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rowBuffer">rowBuffer: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="requiredColumns">requiredColumns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="projection">projection: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="fullScan">fullScan: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="prunePartitions">prunePartitions: ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="delayRollover">delayRollover: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
+        <span class="name">getColumnBatchRDD</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="rowBuffer">rowBuffer: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="projection">projection: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="prunePartitions">prunePartitions: ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="session">session: <a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="delayRollover">delayRollover: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="../../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<span class="extype" name="scala.Any">Any</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@getColumnBatchRDD(tableName:String,rowBuffer:String,requiredColumns:Array[String],projection:Array[Int],fullScan:Boolean,prunePartitions:=&gt;Int,session:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType,delayRollover:Boolean):org.apache.spark.rdd.RDD[Any]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@getColumnBatchRDD(tableName:String,rowBuffer:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],prunePartitions:=&gt;Int,session:org.apache.spark.sql.SparkSession,schema:org.apache.spark.sql.types.StructType,delayRollover:Boolean):org.apache.spark.rdd.RDD[Any]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -181,18 +181,18 @@
     </span>
       
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#storeDelete" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="storeDelete(tableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,compressionCodecId:Int,conn:Option[java.sql.Connection]):Unit"></a>
-      <a id="storeDelete(String,ByteBuffer,Array[Byte],Int,Long,Int,Option[Connection]):Unit"></a>
+      <a id="storeDelete(tableName:String,buffer:java.nio.ByteBuffer,partitionId:Int,batchId:Long,compressionCodecId:Int,conn:Option[java.sql.Connection]):Unit"></a>
+      <a id="storeDelete(String,ByteBuffer,Int,Long,Int,Option[Connection]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">storeDelete</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="statsData">statsData: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="compressionCodecId">compressionCodecId: <span class="extype" name="scala.Int">Int</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">storeDelete</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="buffer">buffer: <span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span></span>, <span name="partitionId">partitionId: <span class="extype" name="scala.Int">Int</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>, <span name="compressionCodecId">compressionCodecId: <span class="extype" name="scala.Int">Int</span></span>, <span name="conn">conn: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="java.sql.Connection">Connection</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@storeDelete(tableName:String,buffer:java.nio.ByteBuffer,statsData:Array[Byte],partitionId:Int,batchId:Long,compressionCodecId:Int,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@storeDelete(tableName:String,buffer:java.nio.ByteBuffer,partitionId:Int,batchId:Long,compressionCodecId:Int,conn:Option[java.sql.Connection]):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -520,6 +520,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#levelFlags" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelFlags:Int"></a>
+      <a id="levelFlags:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelFlags</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@levelFlags:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -720,6 +737,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log_" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log_:org.slf4j.Logger"></a>
+      <a id="log_:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log_</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ExternalStore@log_:org.slf4j.Logger" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

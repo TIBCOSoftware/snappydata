@@ -212,6 +212,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.CachedKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CachedKeyextendsAnyRef"></a>
+      <a id="CachedKey:CachedKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CachedKey.html"><span class="name">CachedKey</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@CachedKeyextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.ClusterMode" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ClusterModeextendsAnyRef"></a>
       <a id="ClusterMode:ClusterMode"></a>
@@ -619,6 +636,42 @@ people.filter(<span class="lit">"age"</span>.gt(<span class="num">30</span>))
       <p class="shortcomment cmt">RDD that delegates calls to the base RDD.</p><div class="fullcomment"><div class="comment cmt"><p>RDD that delegates calls to the base RDD. However the dependencies
 and preferred locations of this RDD can be altered.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.DeployCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DeployCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="DeployCommand:DeployCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DeployCommand.html"><span class="name">DeployCommand</span></a><span class="params">(<span name="coordinates">coordinates: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="repos">repos: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="jarCache">jarCache: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@DeployCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a list of jar files that are added to resources.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a list of jar files that are added to resources.
+If jar files are provided, return the ones that are added to resources.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.DeployJarCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DeployJarCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="DeployJarCommand:DeployJarCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DeployJarCommand.html"><span class="name">DeployJarCommand</span></a><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="paths">paths: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@DeployJarCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.DropIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DropIndexextendsLeafNodewithCommandwithProductwithSerializable"></a>
       <a id="DropIndex:DropIndex"></a>
@@ -788,19 +841,19 @@ in the <code>open</code> method.</p><p>Scala example:</p><pre>datasetOfString.wr
                 <span class="name">@Evolving</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.InsertCachedPlanHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="InsertCachedPlanHelperextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
-      <a id="InsertCachedPlanHelper:InsertCachedPlanHelper"></a>
+    </li><li name="org.apache.spark.sql.InsertCachedPlanFallback" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InsertCachedPlanFallbackextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
+      <a id="InsertCachedPlanFallback:InsertCachedPlanFallback"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InsertCachedPlanHelper.html"><span class="name">InsertCachedPlanHelper</span></a><span class="params">(<span name="session">session: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="topLevel">topLevel: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InsertCachedPlanFallback.html"><span class="name">InsertCachedPlanFallback</span></a><span class="params">(<span name="session">session: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="topLevel">topLevel: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@InsertCachedPlanHelperextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.package@InsertCachedPlanFallbackextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -867,6 +920,23 @@ an existing <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dat
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.ListPackageJarsCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ListPackageJarsCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="ListPackageJarsCommand:ListPackageJarsCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ListPackageJarsCommand.html"><span class="name">ListPackageJarsCommand</span></a><span class="params">(<span name="isJar">isJar: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@ListPackageJarsCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.LocalMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="LocalModeextendsClusterModewithProductwithSerializable"></a>
       <a id="LocalMode:LocalMode"></a>
@@ -885,6 +955,23 @@ an existing <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dat
     </span>
       <p class="shortcomment cmt">The local mode which hosts the data, executor, driver
 (and optionally even jobserver) all in the same node.</p>
+    </li><li name="org.apache.spark.sql.ParseException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParseExceptionextendsAnalysisException"></a>
+      <a id="ParseException:ParseException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ParseException.html"><span class="name">ParseException</span></a><span class="result"> extends <a href="AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@ParseExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.PartitionResult" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PartitionResultextends(Array[Byte],Int)withSerializable"></a>
       <a id="PartitionResult:PartitionResult"></a>
@@ -1387,7 +1474,7 @@ Spark driver that also hosts a job-server and GemFireXD accessor.
     </span>
       
     </li><li name="org.apache.spark.sql.SnappyParser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyParserextendsSnappyDDLParser"></a>
+      <a id="SnappyParserextendsSnappyDDLParserwithParamLiteralHolder"></a>
       <a id="SnappyParser:SnappyParser"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1395,10 +1482,10 @@ Spark driver that also hosts a job-server and GemFireXD accessor.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyParser.html"><span class="name">SnappyParser</span></a><span class="result"> extends <a href="SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a></span>
+        <a href="SnappyParser.html"><span class="name">SnappyParser</span></a><span class="result"> extends <a href="SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> with <a href="catalyst/expressions/ParamLiteralHolder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ParamLiteralHolder">ParamLiteralHolder</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@SnappyParserextendsSnappyDDLParser" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SnappyParserextendsSnappyDDLParserwithParamLiteralHolder" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1593,6 +1680,25 @@ remains like an external datastore.</p>
       </a>
     </span>
       <p class="shortcomment cmt">Manages a time epoch and how to index into it.</p>
+    </li><li name="org.apache.spark.sql.TokenizeSubqueries" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TokenizeSubqueriesextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
+      <a id="TokenizeSubqueries:TokenizeSubqueries"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TokenizeSubqueries.html"><span class="name">TokenizeSubqueries</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@TokenizeSubqueriesextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Plans scalar subqueries like the Spark's PlanSubqueries but uses customized
+ScalarSubquery to insert a tokenized literal instead of literal value embedded
+in code to allow generated code re-use and improve performance substantially.</p>
     </li><li name="org.apache.spark.sql.TruncateManagedTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TruncateManagedTableextendsLeafNodewithCommandwithProductwithSerializable"></a>
       <a id="TruncateManagedTable:TruncateManagedTable"></a>
@@ -1653,6 +1759,23 @@ To create a <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql
                 <span class="name">@Stable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The user-defined functions must be deterministic.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.sql.UnDeployCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnDeployCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="UnDeployCommand:UnDeployCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnDeployCommand.html"><span class="name">UnDeployCommand</span></a><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@UnDeployCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li></ol>
             </div>
 
@@ -1673,6 +1796,23 @@ To create a <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@CachedDataFrame" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.CachedKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CachedKey"></a>
+      <a id="CachedKey:CachedKey"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CachedKey$.html"><span class="name">CachedKey</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@CachedKey" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

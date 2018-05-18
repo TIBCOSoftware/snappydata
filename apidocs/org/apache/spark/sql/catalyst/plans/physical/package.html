@@ -212,28 +212,6 @@ in the same partition.
 same value for the ordering expressions are contiguous and will never be split across
 partitions.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.physical.OrderlessHashPartitioning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="OrderlessHashPartitioningextendsExpressionwithPartitioningwithUnevaluablewithProductwithSerializable"></a>
-      <a id="OrderlessHashPartitioning:OrderlessHashPartitioning"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="OrderlessHashPartitioning.html"><span class="name">OrderlessHashPartitioning</span></a><span class="params">(<span name="expressions">expressions: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="aliases">aliases: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]]</span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>, <span name="numBuckets">numBuckets: <span class="extype" name="scala.Int">Int</span></span>, <span name="tableBuckets">tableBuckets: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="../../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="Partitioning.html" class="extype" name="org.apache.spark.sql.catalyst.plans.physical.Partitioning">Partitioning</a> with <a href="../../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.physical.package@OrderlessHashPartitioningextendsExpressionwithPartitioningwithUnevaluablewithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Represents a partitioning where rows are split up across partitions based on the hash
-of <code>expressions</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Represents a partitioning where rows are split up across partitions based on the hash
-of <code>expressions</code>.  All rows where <code>expressions</code> evaluate to the same values are guaranteed to be
-in the same partition. Moreover while evaluating expressions if they are given in different order
-than this partitioning then also it is considered equal.
-</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.physical.Partitioning" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="PartitioningextendsAnyRef"></a>
       <a id="Partitioning:Partitioning"></a>
@@ -387,23 +365,6 @@ fashion. This partitioning is used when implementing the DataFrame.repartition()
     </span>
       <p class="shortcomment cmt">Represents a distribution that only has a single partition and all tuples of the dataset
 are co-located.</p>
-    </li><li name="org.apache.spark.sql.catalyst.plans.physical.HashPartitioning" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="HashPartitioning"></a>
-      <a id="HashPartitioning:HashPartitioning"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="HashPartitioning$.html"><span class="name">HashPartitioning</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.plans.physical.package@HashPartitioning" title="Permalink" target="_top">
-        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.plans.physical.IdentityBroadcastMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="IdentityBroadcastMode"></a>
       <a id="IdentityBroadcastMode:IdentityBroadcastMode"></a>

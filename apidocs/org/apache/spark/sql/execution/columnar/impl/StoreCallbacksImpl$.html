@@ -179,6 +179,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#clearConnectionPools" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clearConnectionPools():Unit"></a>
+      <a id="clearConnectionPools():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clearConnectionPools</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@clearConnectionPools():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -219,6 +236,29 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#columnTableScan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="columnTableScan(columnTable:String,projection:Array[Int],serializedFilters:Array[Byte],bucketIds:java.util.Set[Integer]):com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator[com.gemstone.gemfire.internal.snappy.ColumnTableEntry]"></a>
+      <a id="columnTableScan(String,Array[Int],Array[Byte],Set[Integer]):CloseableIterator[ColumnTableEntry]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">columnTableScan</span><span class="params">(<span name="columnTable">columnTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="projection">projection: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="serializedFilters">serializedFilters: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="bucketIds">bucketIds: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>)</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator">CloseableIterator</span>[<span class="extype" name="com.gemstone.gemfire.internal.snappy.ColumnTableEntry">ColumnTableEntry</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@columnTableScan(columnTable:String,projection:Array[Int],serializedFilters:Array[Byte],bucketIds:java.util.Set[Integer]):com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator[com.gemstone.gemfire.internal.snappy.ColumnTableEntry]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl">StoreCallbacksImpl</a> → StoreCallbacks</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[SQLException]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl#createColumnBatch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createColumnBatch(region:com.gemstone.gemfire.internal.cache.BucketRegion,batchID:Long,bucketID:Int):java.util.Set[AnyRef]"></a>
       <a id="createColumnBatch(BucketRegion,Long,Int):Set[AnyRef]"></a>
@@ -684,6 +724,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#levelFlags" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="levelFlags:Int"></a>
+      <a id="levelFlags:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">levelFlags</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@levelFlags:Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
     </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="log:org.slf4j.Logger"></a>
       <a id="log:Logger"></a>
@@ -901,6 +958,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log_" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log_:org.slf4j.Logger"></a>
+      <a id="log_:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log_</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl$@log_:org.slf4j.Logger" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

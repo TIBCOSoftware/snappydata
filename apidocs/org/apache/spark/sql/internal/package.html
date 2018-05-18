@@ -209,6 +209,23 @@ are subject to change between minor releases.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.JoinQueryPlanning" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="JoinQueryPlanningextendsAnyRef"></a>
+      <a id="JoinQueryPlanning:JoinQueryPlanning"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="JoinQueryPlanning.html"><span class="name">JoinQueryPlanning</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@JoinQueryPlanningextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.internal.PutIntoColumnTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PutIntoColumnTableextendsBinaryNodewithProductwithSerializable"></a>
       <a id="PutIntoColumnTable:PutIntoColumnTable"></a>
@@ -444,7 +461,7 @@ adding classloader at query time.</p></div></div>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="LikeEscapeSimplification$.html"><span class="name">LikeEscapeSimplification</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="LikeEscapeSimplification$.html"><span class="name">LikeEscapeSimplification</span></a>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@LikeEscapeSimplification" title="Permalink" target="_top">
@@ -454,6 +471,29 @@ adding classloader at query time.</p></div></div>
       <p class="shortcomment cmt">Deals with any escape characters in the LIKE pattern in optimization.</p><div class="fullcomment"><div class="comment cmt"><p>Deals with any escape characters in the LIKE pattern in optimization.
 Does not deal with startsAndEndsWith equivalent of Spark's LikeSimplification
 so 'a%b' kind of pattern with additional escaped chars will not be optimized.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.internal.ResolveAggregationExpressions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ResolveAggregationExpressions"></a>
+      <a id="ResolveAggregationExpressions:ResolveAggregationExpressions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ResolveAggregationExpressions$.html"><span class="name">ResolveAggregationExpressions</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@ResolveAggregationExpressions" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Rule to &quot;normalize&quot; ParamLiterals for the case of aggregation expression being used
+in projection.</p><div class="fullcomment"><div class="comment cmt"><p>Rule to &quot;normalize&quot; ParamLiterals for the case of aggregation expression being used
+in projection. Specifically the ParamLiterals from aggregations need to be replaced
+into projection so that latter can be resolved successfully in plan execution
+because ParamLiterals will match expression only by position and not value at the
+time of execution. This rule is useful only before plan caching after parsing.</p><p>See Spark's PhysicalAggregation rule for more details.
 </p></div></div>
     </li><li name="org.apache.spark.sql.internal.SQLConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SQLConf"></a>

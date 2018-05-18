@@ -24,6 +24,7 @@
   <link href="../../css/menu.css" rel="stylesheet">
   <link href="../../css/images.css" rel="stylesheet">
   <link href="../../css/style.css" rel="stylesheet">
+  <link href="../../css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
 
   
@@ -39,6 +40,7 @@
   <script type="text/javascript" src="../../js/highlight.pack.js"></script>
   <script src="../../js/theme.js"></script> 
   <script src="../../js/menu.js"></script>
+  <script src="../../js/highlight.pack.js"></script>
 
   
 </head>
@@ -53,7 +55,7 @@
         <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search..." />
   </form>
 </div>
       </div>
@@ -161,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../install/building_from_source/">Building from Source</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
         
     </li>
 
@@ -755,6 +764,28 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Using Database Connectors</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
         
     </li>
@@ -818,6 +849,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../monitoring/configure_logging/">Configuring Logging</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
         
     </li>
 
@@ -1013,6 +1051,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-function/">CREATE FUNCTION</a>
         
     </li>
@@ -1034,7 +1079,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
 
@@ -1048,7 +1100,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-external-table/">CREATE EXTERNAL TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-table/">CREATE TABLE</a>
         
     </li>
 
@@ -1062,7 +1114,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
+        <a class="" href="../../reference/sql_reference/create-view/">CREATE VIEW</a>
         
     </li>
 
@@ -1112,7 +1164,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE</a>
+        <a class="" href="../../reference/sql_reference/drop-table/">DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-schema/">DROP SCHEMA</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
         
     </li>
 
@@ -1130,6 +1196,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/insert/">INSERT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1179,13 +1252,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/update/">UPDATE</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/lateral-view/">LATERAL VIEW</a>
         
     </li>
 
@@ -1321,13 +1387,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1335,7 +1394,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-missing-disk-store</a>
+        <a class="" href="../../reference/command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
@@ -1877,32 +1936,32 @@
 <img alt="Column Table" src="../../Images/row_table.png" /></p>
 <p>Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.</p>
 <h3 id="ddl-and-dml-syntax-for-tables">DDL and DML Syntax for Tables</h3>
-<pre><code class="scala">CREATE TABLE [IF NOT EXISTS] table_name
-   (
-  COLUMN_DEFINITION
-   )
-USING row | column
-OPTIONS (
-COLOCATE_WITH 'table_name',  // Default none
-PARTITION_BY 'PRIMARY KEY' | 'column name', // If not specified, a replicated table is created
-BUCKETS  'NumPartitions', // Default 128
-REDUNDANCY '1' ,
-EVICTION_BY 'LRUMEMSIZE 200' | 'LRUCOUNT 200' | 'LRUHEAPPERCENT',
-OVERFLOW 'true',
-PERSISTENCE  'ASYNCHRONOUS' | 'ASYNC' | 'SYNCHRONOUS' | 'SYNC' | 'NONE',
-DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
-EXPIRE 'TIMETOLIVE_in_seconds',
-COLUMN_BATCH_SIZE '32000000',
-COLUMN_MAX_DELTA_ROWS '10000',
-)
-[AS select_statement];
+<pre><code class="no-highlight">CREATE TABLE [IF NOT EXISTS] table_name 
+    ( column-definition [ , column-definition  ] * )    
+    USING [row | column]
+    OPTIONS (
+    COLOCATE_WITH 'table-name',  // Default none
+    PARTITION_BY 'column-name', // If not specified, replicated table for row tables, and partitioned internally for column tables.
+    BUCKETS  'num-partitions', // Default 128. Must be an integer.
+    REDUNDANCY        'num-of-copies' , // Must be an integer
+    EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
+    PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
+    DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
+    OVERFLOW 'true | false', // specifies the action to be executed upon eviction event, 'false' allowed only when EVCITON_BY is not set.
+    EXPIRE 'time_to_live_in_seconds',
+    COLUMN_BATCH_SIZE 'column-batch-size-in-bytes', // Must be an integer. Only for column table.
+    KEY_COLUMNS  'column_name,..', // Only for column table if putInto support is required
+    COLUMN_MAX_DELTA_ROWS 'number-of-rows-in-each-bucket', // Must be an integer &gt; 0 and &lt; 2GB. Only for column table.
+    )
+    [AS select_statement];
 
 DROP TABLE [IF EXISTS] table_name
 </code></pre>
 
-<p>Refer to the <a href="../../howto/">How-Tos</a> section for more information on partitioning and colocating data and <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> for information on creating a row/column table.</p>
-<p>You can also define complex types (Map, Array and StructType) as columns for column tables.</p>
-<pre><code>snappy.sql(&quot;CREATE TABLE tableName (
+<p>Refer to the <a href="../../best_practices/design_schema/">Best Practices</a> section for more information on partitioning and colocating data and <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> for information on creating a row/column table.</br>
+DDL extensions are required to <a href="../../reference/sql_reference/create-table/#ddl">configure a table</a> based on user requirements. </p>
+<p>You can also define complex types (Map, Array and StructType) as columns for column tables. </p>
+<pre><code class="no-highlight">snappy.sql(&quot;CREATE TABLE tableName (
 col1 INT , 
 col2 Array&lt;Decimal&gt;, 
 col3 Map&lt;Timestamp, Struct&lt;x: Int, y: String, z: Decimal(10,5)&gt;&gt;, 
@@ -1920,7 +1979,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 <pre><code>val snappy: SnappySession = new SnappySession(spark.sparkContext)
 </code></pre>
 <p>Create a SnappyStore table using Spark APIs</p>
-<pre><code class="scala">    val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
+<pre><code class="no-highlight">    val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
     case class Data(col1: Int, col2: Int, col3: Int)
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sparkContext.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
@@ -1933,73 +1992,6 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 <p><strong>Drop a SnappyStore table using Spark APIs</strong>:</p>
 <pre><code>snappy.dropTable(tableName, ifExists = true)
 </code></pre>
-<p><a id="ddl"></a></p>
-<h3 id="ddl-extensions-to-snappystore-tables">DDL extensions to SnappyStore Tables</h3>
-<p>The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. </p>
-<ul>
-<li>
-<p><b>COLOCATE_WITH:</b> The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.</p>
-</li>
-<li>
-<p><b>PARTITION_BY:</b> Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. If not specified, it is a replicated table.</br> Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally on a generated scheme.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode and two times the number of cores in local mode. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.</p>
-</li>
-<li>
-<p><b>BUCKETS:</b>  The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 128.</p>
-</li>
-<li>
-<p><b>REDUNDANCY:</b>  Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.</p>
-</li>
-<li>
-<p><b>EVICTION_BY:</b>  Use the EVICTION_BY clause to evict rows automatically from the in-memory table, based on different criteria. </br>For column tables, the default eviction setting is LRUHEAPPERCENT and the default action is to overflow to disk. You can also specify the OVERFLOW parameter along with the EVICTION_BY clause.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.</p>
-</div>
-</li>
-<li>
-<p><b>OVERFLOW:</b>  By default it is set to <strong>true</strong> which means table data overflows to a local SnappyStore disk store. Setting it to <strong>false</strong> is not allowed except when EVICTION_BY is not set. In such case, the eviction itself is disabled.
-    When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).</p>
-</li>
-<li>
-<p><b>PERSISTENCE:</b>  When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul>
-<li>
-<p>By default, both row and column tables are persistent.</p>
-</li>
-<li>
-<p>The option <code>PERSISTENT</code> has been deprecated as of SnappyData 0.9. <!--DO NOT CHANGE RELEASE NO. -->. Although it does work, it is recommended to use <code>PERSISTENCE</code> instead.</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><b>DISKSTORE:</b>  The disk directory where you want to persist the table data. For more information, <a href="../../reference/sql_reference/create-diskstore/">refer to this document</a>.</p>
-</li>
-<li>
-<p><b>EXPIRE:</b>  You can use the EXPIRE clause with tables to control the SnappyStore memory usage. It expires the rows after configured TTL.</p>
-</li>
-<li>
-<p><b>COLUMN_BATCH_SIZE:</b>  The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M)</p>
-</li>
-<li>
-<p><b>COLUMN_MAX_DELTA_ROWS:</b>  The maximum number of rows that can be in the delta buffer of a column table for each bucket, before it is flushed into the column store. Although the size of column batches is limited by <code>COLUMN_BATCH_SIZE</code> (and thus limits the size of row buffer for each bucket as well), this property allows a lower limit on the number of rows for better scan performance. The default value is 10000. </br></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The following corresponding SQLConf properties for <code>COLUMN_BATCH_SIZE</code> and <code>COLUMN_MAX_DELTA_ROWS</code> are set if the table creation is done in that session (and the properties have not been explicitly specified in the DDL): </p>
-<ul>
-<li>
-<p><code>snappydata.column.batchSize</code> - explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit <code>COLUMN_BATCH_SIZE</code> specification, then this is inherited for that table property. </p>
-</li>
-<li>
-<p><code>snappydata.column.maxDeltaRows</code> - the maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit <code>COLUMN_MAX_DELTA_ROWS</code> specification, then this is inherited for that table property. </p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-<p>Refer to the <a href="../../sql_reference/">SQL Reference Guide</a> for information on the extensions.</p>
 <h3 id="restrictions-on-column-tables">Restrictions on Column Tables</h3>
 <ul>
 <li>
@@ -2019,7 +2011,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 </li>
 </ul>
 <h3 id="dml-operations-on-tables">DML Operations on Tables</h3>
-<pre><code class="scala">INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
+<pre><code class="no-highlight">INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
 UPDATE tablename SET column = value [, column = value ...] [WHERE expression]
@@ -2030,7 +2022,7 @@ TRUNCATE TABLE tablename1;
 
 <h3 id="api-extensions-provided-in-snappycontext">API Extensions Provided in SnappyContext</h3>
 <p>Several APIs have been added in <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.</p>
-<pre><code class="scala">//  Applicable for both row and column tables
+<pre><code class="no-highlight">//  Applicable for both row and column tables
 def insert(tableName: String, rows: Row*): Int .
 
 // Only for row tables
@@ -2041,7 +2033,7 @@ def delete(tableName: String, filterExpr: String): Int
 </code></pre>
 
 <p><strong>Usage SnappySession.insert()</strong>: Insert one or more [[org.apache.spark.sql.Row]] into an existing table</p>
-<pre><code class="scala">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+<pre><code class="no-highlight">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =&gt;
   snappy.insert(&quot;tableName&quot;, Row.fromSeq(r))
@@ -2049,7 +2041,7 @@ data.map { r =&gt;
 </code></pre>
 
 <p><strong>Usage SnappySession.put()</strong>: Upsert one or more [[org.apache.spark.sql.Row]] into an existing table</p>
-<pre><code class="scala">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+<pre><code class="no-highlight">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =&gt;
   snappy.put(tableName, Row.fromSeq(r))
@@ -2057,57 +2049,12 @@ data.map { r =&gt;
 </code></pre>
 
 <p>Usage SnappySession.update(): Update all rows in table that match passed filter expression</p>
-<pre><code class="scala">snappy.update(tableName, &quot;ITEMREF = 3&quot; , Row(99) , &quot;ITEMREF&quot; )
+<pre><code class="no-highlight">snappy.update(tableName, &quot;ITEMREF = 3&quot; , Row(99) , &quot;ITEMREF&quot; )
 </code></pre>
 
 <p><strong>Usage SnappySession.delete()</strong>: Delete all rows in table that match passed filter expression</p>
-<pre><code class="scala">snappy.delete(tableName, &quot;ITEMREF = 3&quot;)
+<pre><code class="no-highlight">snappy.delete(tableName, &quot;ITEMREF = 3&quot;)
 </code></pre>
-
-<!--
-### String/CHAR/VARCHAR Data Types
-SnappyData supports CHAR and VARCHAR datatypes in addition to Spark's String datatype. For performance reasons, it is recommended that you use either CHAR or VARCHAR type, if your column data fits in maximum CHAR size (254) or VARCHAR size (32768), respectively. For larger column data size, String type should be used as product stores its data in CLOB format internally.
-
-**Create a table with columns of CHAR and VARCHAR datatype using SQL**:
-
-wzxhzdk:9
-
-
-**Create a table with columns of CHAR and VARCHAR datatype using API**:
-
-wzxhzdk:10
-
-!!! Note: 
-    STRING columns are handled differently when queried over a JDBC connection.
-
-To ensure optimal performance for SELECT queries executed over JDBC connection (more specifically, those that get routed to lead node), the data of STRING columns is returned in VARCHAR format, by default. This also helps the data visualization tools to render the data effectively.
-<br/>However, if the STRING column size is larger than VARCHAR limit (32768), you can enforce the returned data format to be in CLOB in following ways:
-
-Using the system property `spark-string-as-clob` when starting the lead node(s). This applies to all the STRING columns in all the tables in cluster.
-
-
-wzxhzdk:11
-
-
-Defining the column(s) itself as CLOB, either using SQL or API. In the example below, column 'Col2' is defined as CLOB.
-
-
-wzxhzdk:12
-
-
-wzxhzdk:13
-
-
-Using the query-hint `columnsAsClob in the SELECT query.
-
-
-wzxhzdk:14
-
-The usage of `*` above causes all the STRING columns in the table to be rendered as CLOB. You can also provide comma-separated specific column name(s) instead of `*` above so that data of only those column(s) is returned as CLOB.
-
-wzxhzdk:15
-
--->
 
 <h3 id="row-buffers-for-column-tables">Row Buffers for Column Tables</h3>
 <p>Generally, the column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.</p>
