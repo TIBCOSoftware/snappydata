@@ -319,6 +319,8 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
 
   override def children: Seq[SparkPlan] = basePlan :: withShuffle :: Nil
 
+  override def needCopyResult: Boolean = false
+
   override def requiredChildDistribution: Seq[Distribution] =
     ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
 
