@@ -1060,7 +1060,7 @@ class SnappyParser(session: SnappySession)
   protected final def ctes: Rule1[LogicalPlan] = rule {
     WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + commaSep) ~
-        (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
+        (query | insert | delete | update) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
         With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2, None)))))
   }
 

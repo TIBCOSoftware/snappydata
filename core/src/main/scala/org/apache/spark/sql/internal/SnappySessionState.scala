@@ -424,6 +424,25 @@ class SnappySessionState(snappySession: SnappySession)
       }
     }
 
+    def projectKeyAttributes(table: LogicalPlan,
+        newChild: LogicalPlan,
+        keyAttrs: Seq[NamedExpression]): (LogicalPlan, LogicalPlan) = {
+      val transformedChild = newChild.transformUp {
+        case Project(attr, ch)
+          if keyAttrs.forall(k => ch.output.map(_.name).contains(k.name)) =>
+          Project(attr ++ keyAttrs, ch)
+      }
+      val physicalTables = table.collect {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _) => lr
+      }
+      if (physicalTables.size > 1 || physicalTables.isEmpty) {
+        throw new AnalysisException("You need to update/delete on one and only one mutable table." +
+            " If you are using a subquery/CTE in the FROM clause ensure" +
+            " it is only on one mutable relation")
+      }
+      (physicalTables.head, transformedChild)
+    }
+
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
@@ -469,9 +488,15 @@ class SnappySessionState(snappySession: SnappySession)
           // any extra columns
           val allReferences = newChild.references ++
               AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
-          u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
+
+          val (physicalTable, transformedChild) = projectKeyAttributes(table, newChild, keyAttrs)
+
+          u.copy(child = Project(transformedChild.output.filter(allReferences.contains),
+            transformedChild),
             keyColumns = keyAttrs.map(_.toAttribute),
-            updateColumns = updateAttrs.map(_.toAttribute), updateExpressions = newUpdateExprs)
+            updateColumns = updateAttrs.map(_.toAttribute),
+            updateExpressions = newUpdateExprs,
+            table = physicalTable)
         }
 
       case d@Delete(table, child, keyColumns) if keyColumns.isEmpty && child.resolved =>
@@ -480,7 +505,8 @@ class SnappySessionState(snappySession: SnappySession)
         // if this is a row table with no PK, then fallback to direct execution
         if (keyAttrs.isEmpty) newChild
         else {
-          d.copy(child = Project(keyAttrs, newChild),
+          val (physicalTable, transformedChild) = projectKeyAttributes(table, newChild, keyAttrs)
+          d.copy(table = physicalTable, child = Project(keyAttrs, transformedChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
       case d@DeleteFromTable(_, child) if child.resolved =>
