@@ -138,6 +138,47 @@ class ColumnTableTest
     count
   }
 
+  test("Test Bug SNAP-2308 view creation fails if query contains decimal numbers not suffixed") {
+
+    val tableName = "TEST_COLUMN"
+    val viewName = "TEST_VIEW"
+    snc.sql(s"CREATE TABLE $tableName (Col1 String, Col2 String) " +
+        s" USING column " + options)
+
+    val data = Seq(("1.1", "2.2"), ("1", "2"), ("3.57", "3"), ("4.3", "4"), ("5.341", "5"))
+    val rdd = sc.parallelize(data)
+    val dataDF = snc.createDataFrame(rdd)
+
+
+    dataDF.write.insertInto(tableName)
+
+
+    var query = s"SELECT sum(Col1) as summ FROM $tableName where col1 > .0001 having summ > .001"
+    var result = snc.sql(query)
+    result.collect
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName where col1 > .0001BD having summ > .001bD"
+    result = snc.sql(query)
+    result.collect
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName having summ > .001f"
+    result = snc.sql(query)
+    result.collect
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName having summ > .001d"
+    result = snc.sql(query)
+    result.collect
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    snc.sql(s"drop view $viewName")
+    snc.sql(s"drop table $tableName")
+
+    logInfo("Successful")
+  }
+
   test("More columns -- SNAP-1345") {
     snc.sql(s"Create Table coltab (a INT) " +
         "using column options()")
