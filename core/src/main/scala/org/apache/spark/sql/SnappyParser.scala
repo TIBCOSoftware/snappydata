@@ -108,7 +108,8 @@ class SnappyParser(session: SnappySession)
       case 'D' | 'd' =>
         if (s.length > 2) {
           s.charAt(len - 2) match {
-            case 'B' | 'b' => toDecimalLiteral(s.substring(0, len - 2), checkExactNumeric = false)
+            case 'B' | 'b' => return toDecimalLiteral(s.substring(0, len - 2),
+              checkExactNumeric = false)
             case c if (Character.isDigit(c)) => return newTokenizedLiteral(
               java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
             case _ => throw new ParseException(s"Found non numeric token $s")
