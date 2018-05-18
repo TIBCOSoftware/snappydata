@@ -446,10 +446,12 @@ abstract class BaseColumnFormatRelation(
             pass.asInstanceOf[String])
         }
         JdbcExtendedUtils.executeUpdate(sql, conn)
+        /* (initialization will be done by child column table)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
             sqlContext.conf.caseSensitiveAnalysis, conn)
         }
+        */
         createExternalTableForColumnBatches(externalColumnTableName,
           externalStore)
       }
