@@ -90,7 +90,7 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(this)(codegenStageId = 0).execute()
+    WholeStageCodegenExec(this)(codegenStageId = 1).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
@@ -369,7 +369,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   }
 
   override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(this)(codegenStageId = 0).execute()
+    WholeStageCodegenExec(this)(codegenStageId = 1).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output

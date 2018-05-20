@@ -92,7 +92,7 @@ final class ColumnBatchCreator(
           // this is only used for local code generation while its RDD semantics
           // and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan)(codegenStageId = 0), insertPlan)
+            WholeStageCodegenExec(insertPlan)(codegenStageId = 1), insertPlan)
           val references = ctx.references
           // also push the index of batchId reference at the end which can be
           // used by caller to update the reference objects before execution
@@ -144,7 +144,7 @@ final class ColumnBatchCreator(
       // this is only used for local code generation while its RDD semantics
       // and related methods are all ignored
       val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-        WholeStageCodegenExec(insertPlan)(codegenStageId = 0), insertPlan)
+        WholeStageCodegenExec(insertPlan)(codegenStageId = 1), insertPlan)
       val references = ctx.references.toArray
       (code, references)
     })
