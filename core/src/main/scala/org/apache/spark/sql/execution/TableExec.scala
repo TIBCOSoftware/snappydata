@@ -99,7 +99,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 
   override protected def doExecute(): RDD[InternalRow] = {
     // don't expect code generation to fail
-    WholeStageCodegenExec(this)(codegenStageId = 0).execute()
+    WholeStageCodegenExec(this)(codegenStageId = 1).execute()
   }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
