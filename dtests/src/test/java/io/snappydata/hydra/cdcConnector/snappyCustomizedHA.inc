@@ -9,6 +9,16 @@ TASK        taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMeth
             maxTimesToRun = 1;
 
 TASK        taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
+            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeInfoforHA="dev11 -dir=/nfs/users/spillai/tmgdata/locator"
+            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = "/export/dev11a/users/spillai/snappydata/build-artifacts/scala-2.11/snappy"
+            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = locator
+            startInterval = 7200 //after 2 hours
+            endInterval   = 7200
+            threadGroups = snappyHAThread
+            maxThreads = 1
+            maxTimesToRun = 1;
+
+TASK        taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
             io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeInfoforHA="dev7 -locators=dev11:10334 -heap-size=10g -memory-size=80g -dir=/nfs/users/spillai/tmgdata/dev7 -spark.executor.cores=16 -J-XX:+HeapDumpOnOutOfMemoryError -critical-heap-percentage=95 -spark.local.dir=/nfs/users/spillai/tmp -hostname-for-clients=10.80.141.111"
             io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = "/export/dev11a/users/spillai/snappydata/build-artifacts/scala-2.11/snappy"
             io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = servers
@@ -29,7 +39,7 @@ TASK        taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMeth
             maxTimesToRun = 1;
 
 TASK        taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
-            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeInfoforHA="dev9 -locators=dev11:10334 -heap-size=10g -memory-size=80g -dir=/nfs/users/spillai/tmgdata/dev9-spark.executor.cores=16 -J-XX:+HeapDumpOnOutOfMemoryError -critical-heap-percentage=95 -spark.local.dir=/nfs/users/spillai/tmp -hostname-for-clients=10.80.141.111"
+            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeInfoforHA="dev9 -locators=dev11:10334 -heap-size=10g -memory-size=80g -dir=/nfs/users/spillai/tmgdata/dev9 -spark.executor.cores=16 -J-XX:+HeapDumpOnOutOfMemoryError -critical-heap-percentage=95 -spark.local.dir=/nfs/users/spillai/tmp -hostname-for-clients=10.80.141.111"
             io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = "/export/dev11a/users/spillai/snappydata/build-artifacts/scala-2.11/snappy"
             io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = servers
             startInterval = 36000 //after 10 hours
@@ -44,6 +54,16 @@ TASK        taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMeth
             io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = servers
             startInterval = 50400  //after 14 hours
             endInterval   = 50400
+            threadGroups = snappyHAThread
+            maxThreads = 1
+            maxTimesToRun = 1;
+
+TASK        taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
+            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeInfoforHA="dev11 -locators=dev11:10334 -heap-size=10g -memory-size=80g -dir=/nfs/users/spillai/tmgdata/dev11 -spark.executor.cores=16 -J-XX:+HeapDumpOnOutOfMemoryError -critical-heap-percentage=95 -spark.local.dir=/nfs/users/spillai/tmp -hostname-for-clients=10.80.141.111"
+            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = "/export/dev11a/users/spillai/snappydata/build-artifacts/scala-2.11/snappy"
+            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = allNodes
+            startInterval = 54000  //after 15 hours
+            endInterval   = 54000
             threadGroups = snappyHAThread
             maxThreads = 1
             maxTimesToRun = 1;
