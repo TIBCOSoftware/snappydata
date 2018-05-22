@@ -89,17 +89,9 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] lazy val colTypes = getColumnTypes
 
   // check for query hint to serialize complex types as JSON strings
-  private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
-    QueryHint.ComplexTypeAsJson.toString) match {
-    case null => true
-    case v => Misc.parseBoolean(v)
-  }
+  private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
 
-  private val (allAsClob, columnsAsClob) = session.getPreviousQueryHints.get(
-    QueryHint.ColumnsAsClob.toString) match {
-    case null => (false, Set.empty[String])
-    case v => Utils.parseColumnsAsClob(v)
-  }
+  private val (allAsClob, columnsAsClob) = SparkSQLExecuteImpl.getClobProperties(session)
 
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
@@ -201,24 +193,45 @@ class SparkSQLExecuteImpl(val sql: String,
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    querySchema.map(f => getSQLType(f)).toArray
+    querySchema.map(f => SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
+      Some(f.metadata), Some(f.name), Some(allAsClob), Some(columnsAsClob))).toArray
 
-  private def getSQLType(f: StructField): (Int, Int, Int) = {
-    val dataType = f.dataType
+  private def getColumnDataTypes: Array[DataType] =
+    querySchema.map(_.dataType).toArray
+}
+
+object SparkSQLExecuteImpl {
+
+  def getJsonProperties(session: SnappySession): Boolean = session.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsJson.toString) match {
+    case null => true
+    case v => Misc.parseBoolean(v)
+  }
+
+  def getClobProperties(session: SnappySession): (Boolean, Set[String]) =
+    session.getPreviousQueryHints.get(QueryHint.ColumnsAsClob.toString) match {
+    case null => (false, Set.empty[String])
+    case v => Utils.parseColumnsAsClob(v)
+  }
+
+  def getSQLType(dataType: DataType, complexTypeAsJson: Boolean,
+      metaData: Option[Metadata] = None, metaName: Option[String] = None,
+      allAsClob: Option[Boolean] = None, columnsAsClob: Option[Set[String]] = None): (Int,
+      Int, Int) = {
     dataType match {
       case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
-      case StringType =>
+      case StringType if metaData.isDefined =>
         TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP,
-          f.metadata) match {
+          metaData.get) match {
           case Some(base) if base != "CLOB" =>
             lazy val size = TypeUtilities.getMetadata[Long](
-              Constant.CHAR_TYPE_SIZE_PROP, f.metadata)
+              Constant.CHAR_TYPE_SIZE_PROP, metaData.get)
             lazy val varcharSize = size.getOrElse(
               Constant.MAX_VARCHAR_SIZE.toLong).toInt
             lazy val charSize = size.getOrElse(
               Constant.MAX_CHAR_SIZE.toLong).toInt
-            if (allAsClob ||
-                (columnsAsClob.nonEmpty && columnsAsClob.contains(f.name))) {
+            if (allAsClob.get ||
+                (columnsAsClob.get.nonEmpty && columnsAsClob.get.contains(metaName.get))) {
               if (base != "STRING") {
                 if (base == "VARCHAR") {
                   (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
@@ -239,6 +252,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
           case _ => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
         }
+      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
       case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
       case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
       case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)
@@ -260,11 +274,6 @@ class SparkSQLExecuteImpl(val sql: String,
     }
   }
 
-  private def getColumnDataTypes: Array[DataType] =
-    querySchema.map(_.dataType).toArray
-}
-
-object SparkSQLExecuteImpl {
   def getTableNamesAndNullability(output: Seq[expressions.Attribute]):
   (Array[String], Array[Boolean]) = {
     var i = 0
