@@ -26,7 +26,6 @@ import io.snappydata.hydra.SnappyTestUtils
 import org.apache.commons.lang.RandomStringUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
-import org.apache.commons.io.FileUtils
 
 import scala.util.{Failure, Random, Success, Try}
 
@@ -112,7 +111,7 @@ class LoadDataAndValidateQueriesJob extends SnappySQLJob {
       val qDF = snappySession.createDataset(dataRDD)
       val cacheDF = qDF.cache();
       cacheDF.write.insertInto("test_table")
-      val tempDir: File = new File("/export/shared/QA_DATA/slackIssues")
+      /*val tempDir: File = new File("/export/shared/QA_DATA/slackIssues")
       //val tempDir: File = new File("/data/snappyHydraLogs/slackIssues")
       if (tempDir.exists()) FileUtils.deleteDirectory(tempDir)
       cacheDF.write.parquet("/export/shared/QA_DATA/slackIssues")
@@ -130,7 +129,7 @@ class LoadDataAndValidateQueriesJob extends SnappySQLJob {
 
       qDFSpark.registerTempTable("test_table")
       sqlContext.cacheTable("test_table")
-      validateQueries(snc, sqlContext, pw)
+      validateQueries(snc, sqlContext, pw)*/
       if (performDMLOPs) {
         val qDF1 = snappySession.createDataset(dataRDD)
         val cacheDF1 = qDF1.cache();

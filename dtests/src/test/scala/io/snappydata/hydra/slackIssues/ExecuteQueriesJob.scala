@@ -42,14 +42,15 @@ class ExecuteQueriesJob extends SnappySQLJob {
 
       pw.println(s"ExecuteQueries job started at" +
           s" :  " + System.currentTimeMillis)
-      query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
+      //query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
+      query = "select count(1) from test_table";
       var start = System.currentTimeMillis
-      snc.sql(query).show(5)
+      snc.sql(query)
       //SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
       var end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
           (end - start) + " ms")
-      query = "select count(*) from test_table"
+      /*query = "select count(*) from test_table"
       start = System.currentTimeMillis
       snc.sql(query).show(5)
       end = System.currentTimeMillis
@@ -72,7 +73,7 @@ class ExecuteQueriesJob extends SnappySQLJob {
       snc.sql(query).show(5)
       end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
-          (end - start) + " ms")
+          (end - start) + " ms")*/
       pw.println(s"ExecuteQueries job completed  " +
           s"successfully at : " + System.currentTimeMillis)
       pw.close()
