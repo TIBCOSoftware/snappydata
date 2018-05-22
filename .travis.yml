@@ -9,7 +9,7 @@ notifications:
 # whitelist
 branches:
   only:
-    - master
+    - trilok_travis_ci
     
 sudo: false 
 
