@@ -10,6 +10,7 @@ notifications:
 branches:
   only:
     - trilok_travis_ci
+    - master
     
 sudo: false 
 
