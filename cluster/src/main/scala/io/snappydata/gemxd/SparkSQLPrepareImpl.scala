@@ -33,8 +33,9 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Distinct, Expand, LogicalPlan, Project, Window}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -71,9 +72,24 @@ class SparkSQLPrepareImpl(val sql: String,
   protected[this] val hdos = new GfxdHeapDataOutputStream(
     thresholdListener, sql, true, senderVersion)
 
+  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
+      getTableNamesAndNullability(analyzedPlan.output)
+
+  private lazy val (columnNames, columnDataTypes) = SparkSQLPrepareImpl.
+      getTableNamesAndDatatype(analyzedPlan.output)
+
+  // check for query hint to serialize complex types as JSON strings
+  private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
+
+  private def getColumnTypes: Array[(Int, Int, Int)] =
+    columnDataTypes.map(d => SparkSQLExecuteImpl.getSQLType(d, complexTypeAsJson))
+
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
+    SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, columnNames,
+      getColumnTypes, columnDataTypes)
+
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
@@ -222,6 +238,22 @@ class SparkSQLPrepareImpl(val sql: String,
       case p@PredicateSubquery(query, x, y, z) => p.copy(handleSubQuery(query, f), x, y, z)
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
+  }
+}
+
+object SparkSQLPrepareImpl{
+
+  def getTableNamesAndDatatype(output: Seq[expressions.Attribute]):
+  (Array[String], Array[DataType]) = {
+    var i = 0
+    val columns = new Array[String](output.length)
+    val dataTypes = new Array[DataType](output.length)
+    output.foreach { a =>
+      columns(i) = a.name
+      dataTypes(i) = a.dataType
+      i += 1
+    }
+    (columns, dataTypes)
   }
 }
 
