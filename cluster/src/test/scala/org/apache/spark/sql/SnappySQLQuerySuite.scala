@@ -253,7 +253,7 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
         "(exists (select col1 from r2 where r2.col1=r1.col1) " +
         "or exists(select col1 from r3 where r3.col1=r1.col1))")
 
-    val result = df.collect()
+    df.collect()
     checkAnswer(df, Seq(Row(1, "1", "1", 100),
       Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
   }
