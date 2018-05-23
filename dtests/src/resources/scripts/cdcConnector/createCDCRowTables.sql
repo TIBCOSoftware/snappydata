@@ -1,223 +1,3 @@
-DROP TABLE IF EXISTS PERSON_EVENT;
-DROP TABLE IF EXISTS staging_PERSON_EVENT;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_EVENT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/PERSON_EVENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS PERSON_EVENT USING column OPTIONS(partition_by 'PRSN_EVNT_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_EVNT_ID ' ) AS (SELECT * FROM staging_PERSON_EVENT);
-
-DROP TABLE IF EXISTS PERSON_EVENT_ATTRIBUTE;
-DROP TABLE IF EXISTS staging_PERSON_EVENT_ATTRIBUTE;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_EVENT_ATTRIBUTE
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/PERSON_EVENT_ATTRIBUTE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS PERSON_EVENT_ATTRIBUTE USING column OPTIONS(partition_by 'PRSN_EVNT_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,PRSN_EVNT_ID,PRSN_EVNT_ATTR_ID ' ) AS (SELECT * FROM staging_PERSON_EVENT_ATTRIBUTE);
-
-DROP TABLE IF EXISTS CLAIM_STATUS;
-DROP TABLE IF EXISTS staging_CLAIM_STATUS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_STATUS
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLAIM_STATUS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_STATUS USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,SEQ_NUM,CLM_STAT_ID ' ) AS (SELECT * FROM staging_CLAIM_STATUS);
-
-DROP TABLE IF EXISTS CLAIM_ADDITIONAL_DIAGNOSIS;
-DROP TABLE IF EXISTS staging_CLAIM_ADDITIONAL_DIAGNOSIS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_ADDITIONAL_DIAGNOSIS
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLAIM_ADDITIONAL_DIAGNOSIS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_ADDITIONAL_DIAGNOSIS USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,CLM_ADD_DIAG_ID ' ) AS (SELECT * FROM staging_CLAIM_ADDITIONAL_DIAGNOSIS);
-
-DROP TABLE IF EXISTS CLAIM_DETAIL;
-DROP TABLE IF EXISTS staging_CLAIM_DETAIL;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_DETAIL
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLAIM_DETAIL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_DETAIL USING column OPTIONS(partition_by 'PRSN_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,SEQ_NUM,CLM_DTL_ID ' ) AS (SELECT * FROM staging_CLAIM_DETAIL);
-
-DROP TABLE IF EXISTS CLAIM_PAYMENT_DETAIL;
-DROP TABLE IF EXISTS staging_CLAIM_PAYMENT_DETAIL;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_PAYMENT_DETAIL
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLAIM_PAYMENT_DETAIL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_PAYMENT_DETAIL USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,CLM_PAY_ID,CLM_PAY_DTL_ID ' ) AS (SELECT * FROM staging_CLAIM_PAYMENT_DETAIL);
-
-DROP TABLE IF EXISTS CLAIM_ATTRIBUTE;
-DROP TABLE IF EXISTS staging_CLAIM_ATTRIBUTE;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_ATTRIBUTE
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLAIM_ATTRIBUTE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_ATTRIBUTE USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,CLM_ATTR_ID ' ) AS (SELECT * FROM staging_CLAIM_ATTRIBUTE);
-
-DROP TABLE IF EXISTS CLAIM;
-DROP TABLE IF EXISTS staging_CLAIM;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLAIM.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID ' ) AS (SELECT * FROM staging_CLAIM);
-
-DROP TABLE IF EXISTS PERSON_CONTACT;
-DROP TABLE IF EXISTS staging_PERSON_CONTACT;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_CONTACT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/PERSON_CONTACT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS PERSON_CONTACT USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CNTC_ID,PRSN_CNTC_ID ' ) AS (SELECT * FROM staging_PERSON_CONTACT);
-
-DROP TABLE IF EXISTS ORGANIZATION_CODE;
-DROP TABLE IF EXISTS staging_ORGANIZATION_CODE;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ORGANIZATION_CODE
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/ORGANIZATION_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS ORGANIZATION_CODE USING column OPTIONS(partition_by 'ORG_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID,ORG_ID,CD_VAL_ID,ORG_CD_ID ' ) AS (SELECT * FROM staging_ORGANIZATION_CODE);
-
-DROP TABLE IF EXISTS COMPLAINT_STATUS;
-DROP TABLE IF EXISTS staging_COMPLAINT_STATUS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_COMPLAINT_STATUS
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/COMPLAINT_STATUS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS COMPLAINT_STATUS USING column OPTIONS(partition_by 'INQ_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,INQ_ID,COMPLAINT_ID,COMPLAINT_STAT_ID ' ) AS (SELECT * FROM staging_COMPLAINT_STATUS);
-
-DROP TABLE IF EXISTS CONTACT;
-DROP TABLE IF EXISTS staging_CONTACT;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CONTACT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CONTACT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CONTACT USING column OPTIONS(partition_by 'CNTC_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,CNTC_ID' ) AS (SELECT * FROM staging_CONTACT);
-
-DROP TABLE IF EXISTS CLAIM_PAYMENT;
-DROP TABLE IF EXISTS staging_CLAIM_PAYMENT;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_PAYMENT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLAIM_PAYMENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_PAYMENT USING column OPTIONS(partition_by 'CLM_PAY_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,CLM_PAY_ID ' ) AS (SELECT * FROM staging_CLAIM_PAYMENT);
-
-DROP TABLE IF EXISTS TOPIC_COMMUNICATION;
-DROP TABLE IF EXISTS staging_TOPIC_COMMUNICATION;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TOPIC_COMMUNICATION
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/TOPIC_COMMUNICATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS TOPIC_COMMUNICATION USING column OPTIONS(partition_by 'CMCN_INQ_ID',redundancy '1', buckets '32',key_columns ' CLIENT_ID,CMCN_INQ_ID,TPC_INQ_ID,CMCN_ID,TPC_ID' ) AS (SELECT * FROM staging_TOPIC_COMMUNICATION);
-
-DROP TABLE IF EXISTS CONTACT_TYPE_CONTACT;
-DROP TABLE IF EXISTS staging_CONTACT_TYPE_CONTACT;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CONTACT_TYPE_CONTACT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CONTACT_TYPE_CONTACT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CONTACT_TYPE_CONTACT USING column OPTIONS(partition_by 'CNTC_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,CNTC_ID,ORG_CNTC_TYP_ID,CNTC_TYP_CNTC_ID ' ) AS (SELECT * FROM staging_CONTACT_TYPE_CONTACT);
-
-DROP TABLE IF EXISTS TOPIC;
-DROP TABLE IF EXISTS staging_TOPIC;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TOPIC
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/TOPIC.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS TOPIC USING column OPTIONS(partition_by 'INQ_ID',buckets '32',redundancy '1',key_columns 'CLIENT_ID,INQ_ID,TPC_ID ' ) AS (SELECT * FROM staging_TOPIC);
-
-DROP TABLE IF EXISTS LINE_ADDITIONAL_DIAGNOSIS;
-DROP TABLE IF EXISTS staging_LINE_ADDITIONAL_DIAGNOSIS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LINE_ADDITIONAL_DIAGNOSIS
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/LINE_ADDITIONAL_DIAGNOSIS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS LINE_ADDITIONAL_DIAGNOSIS USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,SEQ_NUM,CLM_ADD_DIAG_ID,LN_ADD_DIAG_ID ' ) AS (SELECT * FROM staging_LINE_ADDITIONAL_DIAGNOSIS);
-
-DROP TABLE IF EXISTS PROCEDURE_CODE;
-DROP TABLE IF EXISTS staging_PROCEDURE_CODE;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PROCEDURE_CODE
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/PROCEDURE_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS PROCEDURE_CODE USING column OPTIONS(partition_by 'PR_CD_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID,PR_CD_ID ' ) AS (SELECT * FROM staging_PROCEDURE_CODE);
-
-DROP TABLE IF EXISTS CODE_VALUE;
-DROP TABLE IF EXISTS staging_CODE_VALUE;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CODE_VALUE
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CODE_VALUE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CODE_VALUE USING column OPTIONS(partition_by 'CD_VAL_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID,CD_VAL_ID') AS (SELECT * FROM staging_CODE_VALUE);
-
-DROP TABLE IF EXISTS POSTAL_ADDRESS;
-DROP TABLE IF EXISTS staging_POSTAL_ADDRESS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_POSTAL_ADDRESS
-            USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/POSTAL_ADDRESS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS POSTAL_ADDRESS USING column OPTIONS(partition_by 'CNTC_ID',redundancy '1',key_columns 'CLIENT_ID,CNTC_ID,PSTL_ADDR_ID') AS (SELECT * FROM staging_POSTAL_ADDRESS);
-
-DROP TABLE IF EXISTS CLIENTS;
-DROP TABLE IF EXISTS staging_CLIENTS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLIENTS
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/CLIENTS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLIENTS USING column OPTIONS(partition_by 'CLIENT_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID ' ) AS (SELECT * FROM staging_CLIENTS);
-
-DROP TABLE IF EXISTS PERSONS;
-DROP TABLE IF EXISTS staging_PERSONS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSONS
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/PERSONS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS PERSONS USING column OPTIONS(partition_by 'PRSN_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID ' ) AS (SELECT * FROM staging_PERSONS);
-
-DROP TABLE IF EXISTS BANK;
-DROP TABLE IF EXISTS staging_BANK;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BANK
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/BANK.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS BANK USING column OPTIONS(partition_by 'BNK_ORG_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,BNK_ORG_ID,BNK_ID ' ) AS (SELECT * FROM staging_BANK);
-
-DROP TABLE IF EXISTS BILLING_ENTITY;
-DROP TABLE IF EXISTS staging_BILLING_ENTITY;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BILLING_ENTITY
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/BILLING_ENTITY.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS BILLING_ENTITY USING column OPTIONS(partition_by 'BILL_ENT_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,BILL_ENT_ID') AS (SELECT * FROM staging_BILLING_ENTITY);
-
-DROP TABLE IF EXISTS BENEFIT_PACKAGE;
-DROP TABLE IF EXISTS staging_BENEFIT_PACKAGE;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BENEFIT_PACKAGE
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/BENEFIT_PACKAGE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS BENEFIT_PACKAGE USING column OPTIONS(partition_by 'BENE_PKG_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,BENE_PKG_ID' ) AS (SELECT * FROM staging_BENEFIT_PACKAGE);
-
-DROP TABLE IF EXISTS GROUPS;
-DROP TABLE IF EXISTS staging_GROUPS;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_GROUPS
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/GROUPS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS GROUPS USING column OPTIONS(partition_by 'GRP_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,GRP_ID' ) AS (SELECT * FROM staging_GROUPS);
-
-DROP TABLE IF EXISTS COMMUNICATION;
-DROP TABLE IF EXISTS staging_COMMUNICATION;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_COMMUNICATION
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/COMMUNICATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS COMMUNICATION USING column OPTIONS(partition_by 'INQ_ID',redundancy '1', buckets '32',key_columns ' CLIENT_ID,INQ_ID,CMCN_ID' ) AS (SELECT * FROM staging_COMMUNICATION);
-
-DROP TABLE IF EXISTS COMPLAINT;
-DROP TABLE IF EXISTS staging_COMPLAINT;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_COMPLAINT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/COMPLAINT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS COMPLAINT USING column OPTIONS(partition_by 'INQ_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,INQ_ID,COMPLAINT_ID ' ) AS (SELECT * FROM staging_COMPLAINT);
-
-DROP TABLE IF EXISTS ADJUSTMENT;
-DROP TABLE IF EXISTS staging_ADJUSTMENT;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ADJUSTMENT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/ADJUSTMENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS ADJUSTMENT USING column OPTIONS(partition_by 'BILL_ENT_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,BILL_ENT_ID,ADJ_ID ' ) AS (SELECT * FROM staging_ADJUSTMENT);
-
-DROP TABLE IF EXISTS CLAIM_PAYMENT_REDUCTION;
-DROP TABLE IF EXISTS staging_CLAIM_PAYMENT_REDUCTION;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_PAYMENT_REDUCTION
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data_20G/CLAIM_PAYMENT_REDUCTION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_PAYMENT_REDUCTION USING column OPTIONS(partition_by 'CLM_PAY_RDCTN_ID',redundancy '1', buckets '32',key_columns 'CLIENT_ID,CLM_PAY_RDCTN_ID ' ) AS (SELECT * FROM staging_CLAIM_PAYMENT_REDUCTION);
-
-DROP TABLE IF EXISTS CLAIM_REDUCTION_DETAIL;
-DROP TABLE IF EXISTS staging_CLAIM_REDUCTION_DETAIL;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_REDUCTION_DETAIL
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data_20G/CLAIM_REDUCTION_DETAIL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_REDUCTION_DETAIL USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,CLM_PAY_RDCTN_ID,CLM_RDCTN_DTL_ID ' ) AS (SELECT * FROM staging_CLAIM_REDUCTION_DETAIL);
-
-DROP TABLE IF EXISTS CLAIM_REDUCTION_HISTORY;
-DROP TABLE IF EXISTS staging_CLAIM_REDUCTION_HISTORY;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_REDUCTION_HISTORY
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data_20G/CLAIM_REDUCTION_HISTORY.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS CLAIM_REDUCTION_HISTORY USING column OPTIONS(partition_by 'CLM_PAY_RDCTN_ID', redundancy '1',buckets '32',key_columns 'CLIENT_ID,CLM_PAY_RDCTN_ID,CLM_RDCTN_HIST_ID ' ) AS (SELECT * FROM staging_CLAIM_REDUCTION_HISTORY);
-
-DROP TABLE IF EXISTS CLAIM_COB;
-DROP TABLE IF EXISTS staging_CLAIM_COB;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_COB
-      USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data_20G/CLAIM_COB.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-  CREATE TABLE IF NOT EXISTS CLAIM_COB USING column OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,CLM_COB_ID ' ) AS (SELECT * FROM staging_CLAIM_COB);
-
-DROP TABLE IF EXISTS CLAIM_HOSPITAL;
-DROP TABLE IF EXISTS staging_CLAIM_HOSPITAL;
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_HOSPITAL
-      USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data_20G/CLAIM_HOSPITAL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-  CREATE TABLE IF NOT EXISTS CLAIM_HOSPITAL USING column OPTIONS(partition_by 'PRSN_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,PRSN_ID,CLM_ID,CLM_HOSP_ID ' ) AS (SELECT * FROM staging_CLAIM_HOSPITAL);
-
-DROP TABLE IF EXISTS UM_INPATIENT;
-DROP TABLE IF EXISTS staging_UM_INPATIENT;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_INPATIENT
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/UM_INPATIENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS UM_INPATIENT USING column OPTIONS(partition_by 'UM_RVW_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,UM_RVW_ID,UM_INPT_ID ' ) AS (SELECT * FROM staging_UM_INPATIENT);
-
-DROP TABLE IF EXISTS UM_SERVICE;
-DROP TABLE IF EXISTS staging_UM_SERVICE;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
-CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_SERVICE
-    USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data/UM_SERVICE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE IF NOT EXISTS UM_SERVICE USING column OPTIONS(partition_by 'UM_RVW_ID',redundancy '1',buckets '32',key_columns 'CLIENT_ID,UM_RVW_ID,UM_SERV_ID ' ) AS (SELECT * FROM staging_UM_SERVICE);
-
-DROP TABLE IF EXISTS INQUIRY;
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_INQUIRY
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/INQUIRY.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS INQUIRY(  INQ_ID BIGINT   NOT NULL,
@@ -234,8 +14,6 @@ CREATE TABLE IF NOT EXISTS INQUIRY(  INQ_ID BIGINT   NOT NULL,
 USING row OPTIONS(partition_by 'INQ_ID', buckets '32',redundancy '1');
 INSERT INTO INQUIRY SELECT * FROM staging_INQUIRY;
 
-DROP TABLE IF EXISTS ORGANIZATIONS;
-DROP TABLE IF EXISTS staging_ORGANIZATIONS;
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ORGANIZATIONS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/ORGANIZATIONS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS ORGANIZATIONS(ORG_ID BIGINT   NOT NULL,
@@ -256,8 +34,6 @@ CREATE TABLE IF NOT EXISTS ORGANIZATIONS(ORG_ID BIGINT   NOT NULL,
 USING row OPTIONS(partition_by 'ORG_ID', buckets '32',redundancy '1');
 INSERT INTO ORGANIZATIONS SELECT * FROM staging_ORGANIZATIONS;
 
-DROP TABLE IF EXISTS UM_REVIEW;
-DROP TABLE IF EXISTS staging_UM_REVIEW;
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_REVIEW
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_REVIEW.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS UM_REVIEW(UM_RVW_ID BIGINT   NOT NULL,
@@ -304,9 +80,7 @@ CREATE TABLE IF NOT EXISTS UM_REVIEW(UM_RVW_ID BIGINT   NOT NULL,
 INSERT INTO UM_REVIEW SELECT * FROM staging_UM_REVIEW;
 
 
-DROP TABLE IF EXISTS INVOICE_DETAIL;
-DROP TABLE IF EXISTS staging_INVOICE_DETAIL;
-  ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
+ ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_INVOICE_DETAIL
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/INVOICE_DETAIL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS  INVOICE_DETAIL(
@@ -333,9 +107,7 @@ CREATE TABLE IF NOT EXISTS  INVOICE_DETAIL(
  USING row OPTIONS(partition_by 'INV_ID', buckets '32',redundancy '1');
 INSERT INTO INVOICE_DETAIL SELECT * FROM staging_INVOICE_DETAIL;
 
-DROP TABLE IF EXISTS BENEFIT_GROUP_NAME;
-DROP TABLE IF EXISTS staging_BENEFIT_GROUP_NAME;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
+---- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BENEFIT_GROUP_NAME
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BENEFIT_GROUP_NAME.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS BENEFIT_GROUP_NAME(
@@ -357,9 +129,7 @@ CREATE TABLE IF NOT EXISTS BENEFIT_GROUP_NAME(
  USING row OPTIONS(partition_by 'GRP_ID', buckets '32',redundancy '1');
   INSERT INTO BENEFIT_GROUP_NAME SELECT * FROM staging_BENEFIT_GROUP_NAME;
 
-DROP TABLE IF EXISTS BENEFIT_GROUPS;
-DROP TABLE IF EXISTS staging_BENEFIT_GROUPS;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
+---- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BENEFIT_GROUPS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BENEFIT_GROUPS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS BENEFIT_GROUPS(
@@ -380,8 +150,6 @@ CREATE TABLE IF NOT EXISTS BENEFIT_GROUPS(
  USING row OPTIONS(partition_by 'GRP_ID', buckets '32',redundancy '1');
  INSERT INTO BENEFIT_GROUPS SELECT * FROM staging_BENEFIT_GROUPS;
 
-DROP TABLE IF EXISTS BILLING_RECONCILIATION;
-DROP TABLE IF EXISTS staging_BILLING_RECONCILIATION;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BILLING_RECONCILIATION
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BILLING_RECONCILIATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -405,8 +173,6 @@ CREATE TABLE IF NOT EXISTS BILLING_RECONCILIATION(
  USING row OPTIONS(partition_by 'BILL_ENT_ID', buckets '32',redundancy '1');
  INSERT INTO BILLING_RECONCILIATION SELECT * FROM staging_BILLING_RECONCILIATION;
 
-DROP TABLE IF EXISTS CHECKS;
-DROP TABLE IF EXISTS staging_CHECKS;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CHECKS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/CHECKS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -431,8 +197,6 @@ CREATE TABLE IF NOT EXISTS CHECKS(
  USING row OPTIONS(partition_by 'CLM_PAY_ID', buckets '32',redundancy '1');
  INSERT INTO CHECKS SELECT * FROM staging_CHECKS;
 
-DROP TABLE IF EXISTS CLIENT_REFERENCE_DATA;
-DROP TABLE IF EXISTS staging_CLIENT_REFERENCE_DATA;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLIENT_REFERENCE_DATA
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/CLIENT_REFERENCE_DATA.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -454,8 +218,6 @@ CREATE TABLE IF NOT EXISTS CLIENT_REFERENCE_DATA(
  USING row OPTIONS(partition_by 'CLIENT_REF_DTA_ID', buckets '32',redundancy '1' );
  INSERT INTO CLIENT_REFERENCE_DATA SELECT * FROM staging_CLIENT_REFERENCE_DATA;
 
-DROP TABLE IF EXISTS COB_CLAIM_DIAGNOSIS;
-DROP TABLE IF EXISTS staging_COB_CLAIM_DIAGNOSIS;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_COB_CLAIM_DIAGNOSIS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/COB_CLAIM_DIAGNOSIS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -476,8 +238,6 @@ CREATE TABLE IF NOT EXISTS COB_CLAIM_DIAGNOSIS(
  USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO COB_CLAIM_DIAGNOSIS SELECT * FROM staging_COB_CLAIM_DIAGNOSIS;
 
-DROP TABLE IF EXISTS COB_ORGANIZATION_PERSON;
-DROP TABLE IF EXISTS staging_COB_ORGANIZATION_PERSON;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_COB_ORGANIZATION_PERSON
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/COB_ORGANIZATION_PERSON.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -509,9 +269,7 @@ CREATE TABLE IF NOT EXISTS COB_ORGANIZATION_PERSON(
 INSERT INTO COB_ORGANIZATION_PERSON SELECT * FROM staging_COB_ORGANIZATION_PERSON;
 
 
-DROP TABLE IF EXISTS DIAGNOSIS_CODE;
-DROP TABLE IF EXISTS staging_DIAGNOSIS_CODE;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
+---- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_DIAGNOSIS_CODE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/DIAGNOSIS_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS DIAGNOSIS_CODE(
@@ -535,9 +293,7 @@ CREATE TABLE IF NOT EXISTS DIAGNOSIS_CODE(
    USING row OPTIONS(partition_by 'DIAG_CD_ID', buckets '32',redundancy '1');
  INSERT INTO DIAGNOSIS_CODE SELECT * FROM staging_DIAGNOSIS_CODE;
 
-DROP TABLE IF EXISTS ELECTRONIC_ADDRESS;
-DROP TABLE IF EXISTS staging_ELECTRONIC_ADDRESS;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
+---- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ELECTRONIC_ADDRESS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/ELECTRONIC_ADDRESS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS ELECTRONIC_ADDRESS(
@@ -556,8 +312,7 @@ CREATE TABLE IF NOT EXISTS ELECTRONIC_ADDRESS(
  USING row OPTIONS(partition_by 'CNTC_ID',buckets '32',redundancy '1');
  INSERT INTO ELECTRONIC_ADDRESS SELECT * FROM staging_ELECTRONIC_ADDRESS;
 
-DROP TABLE IF EXISTS ENTITY_BANK_ACCOUNT;
-DROP TABLE IF EXISTS staging_ENTITY_BANK_ACCOUNT;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ENTITY_BANK_ACCOUNT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/ENTITY_BANK_ACCOUNT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -577,8 +332,6 @@ CREATE TABLE IF NOT EXISTS ENTITY_BANK_ACCOUNT(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID', buckets '32',redundancy '1');
  INSERT INTO ENTITY_BANK_ACCOUNT SELECT * FROM staging_ENTITY_BANK_ACCOUNT;
 
-DROP TABLE IF EXISTS ETL_METADATA;
-DROP TABLE IF EXISTS staging_ETL_METADATA;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ETL_METADATA
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/ETL_METADATA.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -602,8 +355,6 @@ CREATE TABLE IF NOT EXISTS ETL_METADATA(
   ) USING row OPTIONS(partition_by 'COL_ORD_NUM', buckets '32',redundancy '1');
  INSERT INTO ETL_METADATA SELECT * FROM staging_ETL_METADATA;
 
-DROP TABLE IF EXISTS EXHIBIT;
-DROP TABLE IF EXISTS staging_EXHIBIT;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_EXHIBIT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/EXHIBIT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -620,8 +371,6 @@ CREATE TABLE IF NOT EXISTS EXHIBIT(
   ) USING row OPTIONS(partition_by 'EXHIBIT_ID', buckets '32',redundancy '1');
  INSERT INTO EXHIBIT SELECT * FROM staging_EXHIBIT;
 
-DROP TABLE IF EXISTS EXPLANATION_CODE;
-DROP TABLE IF EXISTS staging_EXPLANATION_CODE;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_EXPLANATION_CODE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/EXPLANATION_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -649,8 +398,6 @@ CREATE TABLE IF NOT EXISTS EXPLANATION_CODE(
   ) USING row OPTIONS(partition_by 'EXPLAIN_CD_ID', buckets '32',redundancy '1');
  INSERT INTO EXPLANATION_CODE SELECT * FROM staging_EXPLANATION_CODE;
 
-DROP TABLE IF EXISTS FILE_TRANSFER_RUN;
-DROP TABLE IF EXISTS staging_FILE_TRANSFER_RUN;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_FILE_TRANSFER_RUN
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/FILE_TRANSFER_RUN.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -683,8 +430,6 @@ CREATE TABLE IF NOT EXISTS FILE_TRANSFER_RUN(
   ) USING row OPTIONS(partition_by 'FL_TRANS_RUN_ID', buckets '32',redundancy '1');
  INSERT INTO FILE_TRANSFER_RUN SELECT * FROM staging_FILE_TRANSFER_RUN;
 
-DROP TABLE IF EXISTS FILE_TRANSFER_STAT;
-DROP TABLE IF EXISTS staging_FILE_TRANSFER_STAT;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_FILE_TRANSFER_STAT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/FILE_TRANSFER_STAT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -722,8 +467,6 @@ CREATE TABLE IF NOT EXISTS FILE_TRANSFER_STAT(
   ) USING row OPTIONS(partition_by 'FL_TRANS_STAT_ID', buckets '32',redundancy '1');
  INSERT INTO FILE_TRANSFER_STAT SELECT * FROM staging_FILE_TRANSFER_STAT;
 
-DROP TABLE IF EXISTS GENERAL_LEDGER;
-DROP TABLE IF EXISTS staging_GENERAL_LEDGER;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_GENERAL_LEDGER
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/GENERAL_LEDGER.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -749,8 +492,6 @@ CREATE TABLE IF NOT EXISTS GENERAL_LEDGER(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID',buckets '32',redundancy '1');
  INSERT INTO GENERAL_LEDGER SELECT * FROM staging_GENERAL_LEDGER;
 
-DROP TABLE IF EXISTS GROUP_RELATION;
-DROP TABLE IF EXISTS staging_GROUP_RELATION;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_GROUP_RELATION
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/GROUP_RELATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -769,8 +510,6 @@ CREATE TABLE IF NOT EXISTS GROUP_RELATION(
   ) USING row OPTIONS(partition_by 'GRP_ID',buckets '32',redundancy '1');
  INSERT INTO GROUP_RELATION SELECT * FROM staging_GROUP_RELATION;
 
-DROP TABLE IF EXISTS LEP_APPEAL;
-DROP TABLE IF EXISTS staging_LEP_APPEAL;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LEP_APPEAL
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LEP_APPEAL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -791,8 +530,6 @@ CREATE TABLE IF NOT EXISTS LEP_APPEAL(
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO LEP_APPEAL SELECT * FROM staging_LEP_APPEAL;
 
-DROP TABLE IF EXISTS LETTER;
-DROP TABLE IF EXISTS staging_LETTER;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LETTER
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LETTER.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -809,8 +546,6 @@ CREATE TABLE IF NOT EXISTS LETTER(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO LETTER SELECT * FROM staging_LETTER;
 
-DROP TABLE IF EXISTS LINE_DISALLOW_EXPLANATION;
-DROP TABLE IF EXISTS staging_BLINE_DISALLOW_EXPLANATION;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LINE_DISALLOW_EXPLANATION
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LINE_DISALLOW_EXPLANATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -832,9 +567,7 @@ CREATE TABLE IF NOT EXISTS LINE_DISALLOW_EXPLANATION(
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO LINE_DISALLOW_EXPLANATION SELECT * FROM staging_LINE_DISALLOW_EXPLANATION;
 
-DROP TABLE IF EXISTS LINE_PROCEDURE_MODIFIER;
-DROP TABLE IF EXISTS staging_LINE_PROCEDURE_MODIFIER;
------ CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
+---- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LINE_PROCEDURE_MODIFIER
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LINE_PROCEDURE_MODIFIER.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE IF NOT EXISTS LINE_PROCEDURE_MODIFIER(
@@ -854,8 +587,6 @@ CREATE TABLE IF NOT EXISTS LINE_PROCEDURE_MODIFIER(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO LINE_PROCEDURE_MODIFIER SELECT * FROM staging_LINE_PROCEDURE_MODIFIER;
 
-DROP TABLE IF EXISTS MARX_CALENDAR;
-DROP TABLE IF EXISTS staging_MARX_CALENDAR;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_MARX_CALENDAR
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/MARX_CALENDAR.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -876,8 +607,6 @@ CREATE TABLE IF NOT EXISTS MARX_CALENDAR(
   ) USING row OPTIONS(partition_by 'MARX_CAL_ID', buckets '32',redundancy '1');
  INSERT INTO MARX_CALENDAR SELECT * FROM staging_MARX_CALENDAR;
 
-DROP TABLE IF EXISTS NOTE;
-DROP TABLE IF EXISTS staging_NOTE;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_NOTE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/NOTE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -901,8 +630,6 @@ CREATE TABLE IF NOT EXISTS NOTE(
   ) USING row OPTIONS(partition_by 'INQ_ID',buckets '32',redundancy '1');
  INSERT INTO NOTE SELECT * FROM staging_NOTE;
 
-DROP TABLE IF EXISTS ORGANIZATION_CONTACT_TYPE;
-DROP TABLE IF EXISTS staging_ORGANIZATION_CONTACT_TYPE;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ORGANIZATION_CONTACT_TYPE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/ORGANIZATION_CONTACT_TYPE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -920,8 +647,6 @@ CREATE TABLE IF NOT EXISTS ORGANIZATION_CONTACT_TYPE(
   ) USING row OPTIONS(partition_by 'ORG_ID', buckets '32',redundancy '1');
  INSERT INTO ORGANIZATION_CONTACT_TYPE SELECT * FROM staging_ORGANIZATION_CONTACT_TYPE;
 
-DROP TABLE IF EXISTS PAYMENT;
-DROP TABLE IF EXISTS staging_PAYMENT;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PAYMENT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PAYMENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -948,8 +673,6 @@ CREATE TABLE IF NOT EXISTS PAYMENT(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID',buckets '32',redundancy '1');
  INSERT INTO PAYMENT SELECT * FROM staging_PAYMENT;
 
-DROP TABLE IF EXISTS PERSON_COB;
-DROP TABLE IF EXISTS staging_PERSON_COB;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_COB
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_COB.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -999,8 +722,7 @@ CREATE TABLE IF NOT EXISTS PERSON_COB(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_COB SELECT * FROM staging_PERSON_COB;
 
-DROP TABLE IF EXISTS PERSON_CODE;
-DROP TABLE IF EXISTS staging_PERSON_CODE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_CODE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1020,8 +742,7 @@ CREATE TABLE IF NOT EXISTS PERSON_CODE(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_CODE SELECT * FROM staging_PERSON_CODE;
 
-DROP TABLE IF EXISTS PERSON_LEP_EVENT;
-DROP TABLE IF EXISTS staging_PERSON_LEP_EVENT;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_LEP_EVENT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_LEP_EVENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1042,8 +763,7 @@ CREATE TABLE IF NOT EXISTS PERSON_LEP_EVENT(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_LEP_EVENT SELECT * FROM staging_PERSON_LEP_EVENT;
 
-DROP TABLE IF EXISTS PERSON_LEP_PROFILE;
-DROP TABLE IF EXISTS staging_PERSON_LEP_PROFILE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_LEP_PROFILE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_LEP_PROFILE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1062,8 +782,7 @@ CREATE TABLE IF NOT EXISTS PERSON_LEP_PROFILE(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_LEP_PROFILE SELECT * FROM staging_PERSON_LEP_PROFILE;
 
-DROP TABLE IF EXISTS PERSON_ORGANIZATION_RELATION;
-DROP TABLE IF EXISTS staging_PERSON_ORGANIZATION_RELATION;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_ORGANIZATION_RELATION
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_ORGANIZATION_RELATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1084,8 +803,7 @@ CREATE TABLE IF NOT EXISTS PERSON_ORGANIZATION_RELATION(
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO PERSON_ORGANIZATION_RELATION SELECT * FROM staging_PERSON_ORGANIZATION_RELATION;
 
-DROP TABLE IF EXISTS PERSON_PAYMENT_OPTIONS;
-DROP TABLE IF EXISTS staging_PERSON_PAYMENT_OPTIONS;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_PAYMENT_OPTIONS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_PAYMENT_OPTIONS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1106,8 +824,7 @@ CREATE TABLE IF NOT EXISTS PERSON_PAYMENT_OPTIONS(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_PAYMENT_OPTIONS SELECT * FROM staging_PERSON_PAYMENT_OPTIONS;
 
-DROP TABLE IF EXISTS PERSON_RELATION;
-DROP TABLE IF EXISTS staging_PERSON_RELATION;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_RELATION
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_RELATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1128,8 +845,7 @@ CREATE TABLE IF NOT EXISTS PERSON_RELATION(
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO PERSON_RELATION SELECT * FROM staging_PERSON_RELATION;
 
-DROP TABLE IF EXISTS PERSON_ROLE;
-DROP TABLE IF EXISTS staging_PERSON_ROLE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_ROLE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_ROLE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1149,8 +865,7 @@ CREATE TABLE IF NOT EXISTS PERSON_ROLE(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_ROLE SELECT * FROM staging_PERSON_ROLE;
 
-DROP TABLE IF EXISTS PERSON_SUBSIDY_PROFILE;
-DROP TABLE IF EXISTS staging_PERSON_SUBSIDY_PROFILE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_SUBSIDY_PROFILE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_SUBSIDY_PROFILE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1172,8 +887,7 @@ CREATE TABLE IF NOT EXISTS PERSON_SUBSIDY_PROFILE(
 ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_SUBSIDY_PROFILE SELECT * FROM staging_PERSON_SUBSIDY_PROFILE;
 
-DROP TABLE IF EXISTS PERSON_WORK_ITEM;
-DROP TABLE IF EXISTS staging_PERSON_WORK_ITEM;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_WORK_ITEM
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_WORK_ITEM.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1195,8 +909,7 @@ CREATE TABLE IF NOT EXISTS PERSON_WORK_ITEM(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_WORK_ITEM SELECT * FROM staging_PERSON_WORK_ITEM;
 
-DROP TABLE IF EXISTS PHONE;
-DROP TABLE IF EXISTS staging_PHONE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PHONE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PHONE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1217,8 +930,7 @@ CREATE TABLE IF NOT EXISTS PHONE(
   ) USING row OPTIONS(partition_by 'CNTC_ID',buckets '32',redundancy '1');
  INSERT INTO PHONE SELECT * FROM staging_PHONE;
 
-DROP TABLE IF EXISTS PLAN_MEMBERSHIPS;
-DROP TABLE IF EXISTS staging_PLAN_MEMBERSHIPS;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PLAN_MEMBERSHIPS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PLAN_MEMBERSHIPS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1244,8 +956,7 @@ CREATE TABLE IF NOT EXISTS PLAN_MEMBERSHIPS(
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO PLAN_MEMBERSHIPS SELECT * FROM staging_PLAN_MEMBERSHIPS;
 
-DROP TABLE IF EXISTS POS_CODE;
-DROP TABLE IF EXISTS staging_POS_CODE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_POS_CODE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/POS_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1266,8 +977,7 @@ CREATE TABLE IF NOT EXISTS POS_CODE(
   ) USING row OPTIONS(partition_by 'POS_CD_ID', buckets '32',redundancy '1');
  INSERT INTO POS_CODE SELECT * FROM staging_POS_CODE;
 
-DROP TABLE IF EXISTS PREMIUM;
-DROP TABLE IF EXISTS staging_PREMIUM;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PREMIUM
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PREMIUM.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1290,8 +1000,7 @@ CREATE TABLE IF NOT EXISTS PREMIUM(
   ) USING row OPTIONS(partition_by 'GRP_ID', buckets '32',redundancy '1');
  INSERT INTO PREMIUM SELECT * FROM staging_PREMIUM;
 
-DROP TABLE IF EXISTS REFERENCE_DATA;
-DROP TABLE IF EXISTS staging_REFERENCE_DATAY;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_REFERENCE_DATA
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/REFERENCE_DATA.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1307,8 +1016,7 @@ CREATE TABLE IF NOT EXISTS REFERENCE_DATA(
   ) USING row OPTIONS(partition_by 'REF_DTA_ID', buckets '32',redundancy '1');
  INSERT INTO REFERENCE_DATA SELECT * FROM staging_REFERENCE_DATA;
 
-DROP TABLE IF EXISTS RETURNED_MAIL;
-DROP TABLE IF EXISTS staging_RETURNED_MAIL;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_RETURNED_MAIL
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/RETURNED_MAIL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1329,8 +1037,7 @@ CREATE TABLE IF NOT EXISTS RETURNED_MAIL(
   ) USING row OPTIONS(partition_by 'RTRN_MAIL_ID', buckets '32',redundancy '1');
  INSERT INTO RETURNED_MAIL SELECT * FROM staging_RETURNED_MAIL;
 
-DROP TABLE IF EXISTS UM_ACTIVITY;
-DROP TABLE IF EXISTS staging_UM_ACTIVITY;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_ACTIVITY
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_ACTIVITY.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1358,8 +1065,7 @@ CREATE TABLE IF NOT EXISTS UM_ACTIVITY(
   ) USING row OPTIONS(partition_by 'UM_RVW_ID', buckets '32',redundancy '1');
  INSERT INTO  UM_ACTIVITY SELECT * FROM staging_UM_ACTIVITY;
 
-DROP TABLE IF EXISTS UM_DIAGNOSIS_LINE;
-DROP TABLE IF EXISTS staging_UM_DIAGNOSIS_LINE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_DIAGNOSIS_LINE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_DIAGNOSIS_LINE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1381,8 +1087,7 @@ CREATE TABLE IF NOT EXISTS UM_DIAGNOSIS_LINE(
   ) USING row OPTIONS(partition_by 'UM_RVW_ID', buckets '32',redundancy '1');
  INSERT INTO UM_DIAGNOSIS_LINE SELECT * FROM staging_UM_DIAGNOSIS_LINE;
 
-DROP TABLE IF EXISTS UM_DIAGNOSIS_SET;
-DROP TABLE IF EXISTS staging_UM_DIAGNOSIS_SET;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_DIAGNOSIS_SET
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_DIAGNOSIS_SET.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1402,8 +1107,7 @@ CREATE TABLE IF NOT EXISTS UM_DIAGNOSIS_SET(
  INSERT INTO UM_DIAGNOSIS_SET SELECT * FROM staging_UM_DIAGNOSIS_SET;
 
 
-DROP TABLE IF EXISTS BENEFIT_PACKAGE_RELATION;
-DROP TABLE IF EXISTS staging_BENEFIT_PACKAGE_RELATION;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BENEFIT_PACKAGE_RELATION
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BENEFIT_PACKAGE_RELATION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1422,8 +1126,6 @@ CREATE TABLE IF NOT EXISTS BENEFIT_PACKAGE_RELATION(
   ) USING row OPTIONS(partition_by 'BENE_PKG_ID', buckets '32',redundancy '1');
  INSERT INTO BENEFIT_PACKAGE_RELATION SELECT * FROM staging_BENEFIT_PACKAGE_RELATION;
 
-DROP TABLE IF EXISTS BILLING_ENTITY_CONTACT;
-DROP TABLE IF EXISTS staging_BILLING_ENTITY_CONTACT;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BILLING_ENTITY_CONTACT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BILLING_ENTITY_CONTACT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1444,8 +1146,7 @@ CREATE TABLE IF NOT EXISTS BILLING_ENTITY_CONTACT(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID',buckets '32',redundancy '1');
  INSERT INTO BILLING_ENTITY_CONTACT SELECT * FROM staging_BILLING_ENTITY_CONTACT;
 
-DROP TABLE IF EXISTS BILLING_ENTITY_DETAIL;
-DROP TABLE IF EXISTS staging_BILLING_ENTITY_DETAIL;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BILLING_ENTITY_DETAIL
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BILLING_ENTITY_DETAIL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1464,8 +1165,6 @@ CREATE TABLE IF NOT EXISTS BILLING_ENTITY_DETAIL(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID', buckets '32',redundancy '1');
  INSERT INTO BILLING_ENTITY_DETAIL SELECT * FROM staging_BILLING_ENTITY_DETAIL;
 
-DROP TABLE IF EXISTS CHECK_STATUS;
-DROP TABLE IF EXISTS staging_CHECK_STATUS;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CHECK_STATUS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/CHECK_STATUS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1488,9 +1187,6 @@ CREATE TABLE IF NOT EXISTS CHECK_STATUS(
   ) USING row OPTIONS(partition_by 'CLM_PAY_ID',buckets '32',redundancy '1');
  INSERT INTO CHECK_STATUS SELECT * FROM staging_CHECK_STATUS;
 
-
-DROP TABLE IF EXISTS EXHIBIT_GROUP;
-DROP TABLE IF EXISTS staging_EXHIBIT_GROUP;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_EXHIBIT_GROUP
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/EXHIBIT_GROUP.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1512,8 +1208,7 @@ CREATE TABLE IF NOT EXISTS EXHIBIT_GROUP(
   ) USING row OPTIONS(partition_by 'EXHIBIT_GRP_ID', buckets '32',redundancy '1' );
  INSERT INTO EXHIBIT_GROUP SELECT * FROM staging_EXHIBIT_GROUP;
 
-DROP TABLE IF EXISTS EXHIBIT_GROUP_EXHIBIT;
-DROP TABLE IF EXISTS staging_EXHIBIT_GROUP_EXHIBIT;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_EXHIBIT_GROUP_EXHIBIT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/EXHIBIT_GROUP_EXHIBIT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1534,8 +1229,6 @@ CREATE TABLE IF NOT EXISTS EXHIBIT_GROUP_EXHIBIT(
   ) USING row OPTIONS(partition_by 'EXHIBIT_ID', buckets '32',redundancy '1');
  INSERT INTO EXHIBIT_GROUP_EXHIBIT SELECT * FROM staging_EXHIBIT_GROUP_EXHIBIT;
 
-DROP TABLE IF EXISTS GENERAL_LEDGER_MAP;
-DROP TABLE IF EXISTS staging_GENERAL_LEDGER_MAP;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_GENERAL_LEDGER_MAP
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/GENERAL_LEDGER_MAP.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1555,8 +1248,7 @@ CREATE TABLE IF NOT EXISTS GENERAL_LEDGER_MAP(
   ) USING row OPTIONS(partition_by 'GL_MAP_ID', buckets '32',redundancy '1');
  INSERT INTO GENERAL_LEDGER_MAP SELECT * FROM staging_GENERAL_LEDGER_MAP;
 
-DROP TABLE IF EXISTS LEP_APPEAL_DECISION;
-DROP TABLE IF EXISTS staging_LEP_APPEAL_DECISION;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LEP_APPEAL_DECISION
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LEP_APPEAL_DECISION.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1578,8 +1270,7 @@ CREATE TABLE IF NOT EXISTS LEP_APPEAL_DECISION(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO LEP_APPEAL_DECISION SELECT * FROM staging_LEP_APPEAL_DECISION;
 
-DROP TABLE IF EXISTS LETTER_DETAIL;
-DROP TABLE IF EXISTS staging_LETTER_DETAIL;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LETTER_DETAIL
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LETTER_DETAIL.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1597,8 +1288,6 @@ CREATE TABLE IF NOT EXISTS LETTER_DETAIL(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO LETTER_DETAIL SELECT * FROM staging_LETTER_DETAIL;
 
-DROP TABLE IF EXISTS LETTER_JOB;
-DROP TABLE IF EXISTS staging_LETTER_JOB;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LETTER_JOB
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LETTER_JOB.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1622,8 +1311,7 @@ CREATE TABLE IF NOT EXISTS LETTER_JOB(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO LETTER_JOB SELECT * FROM staging_LETTER_JOB;
 
-DROP TABLE IF EXISTS LETTER_REGISTER;
-DROP TABLE IF EXISTS staging_LETTER_REGISTER;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LETTER_REGISTER
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LETTER_REGISTER.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1646,8 +1334,7 @@ CREATE TABLE IF NOT EXISTS LETTER_REGISTER(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO LETTER_REGISTER SELECT * FROM staging_LETTER_REGISTER;
 
-DROP TABLE IF EXISTS LETTER_WORK_ITEM;
-DROP TABLE IF EXISTS staging_LETTER_WORK_ITEM;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_LETTER_WORK_ITEM
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/LETTER_WORK_ITEM.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1667,8 +1354,6 @@ CREATE TABLE IF NOT EXISTS LETTER_WORK_ITEM(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO LETTER_WORK_ITEM SELECT * FROM staging_LETTER_WORK_ITEM;
 
-DROP TABLE IF EXISTS PERSON_EVENT_STATUS;
-DROP TABLE IF EXISTS staging_PERSON_EVENT_STATUS;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_EVENT_STATUS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_EVENT_STATUS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1687,8 +1372,7 @@ CREATE TABLE IF NOT EXISTS PERSON_EVENT_STATUS(
   ) USING row OPTIONS(partition_by 'PRSN_EVNT_ID', buckets '32',redundancy '1');
  INSERT INTO PERSON_EVENT_STATUS SELECT * FROM staging_PERSON_EVENT_STATUS;
 
-DROP TABLE IF EXISTS PERSON_EVENT_STATUS_REASON;
-DROP TABLE IF EXISTS staging_PERSON_EVENT_STATUS_REASON;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_EVENT_STATUS_REASON
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_EVENT_STATUS_REASON.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1706,8 +1390,7 @@ CREATE TABLE IF NOT EXISTS PERSON_EVENT_STATUS_REASON(
   ) USING row OPTIONS(partition_by 'PRSN_EVNT_STAT_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_EVENT_STATUS_REASON SELECT * FROM staging_PERSON_EVENT_STATUS_REASON;
 
-DROP TABLE IF EXISTS PERSON_LEP_PROFILE_RECORD;
-DROP TABLE IF EXISTS staging_PERSON_LEP_PROFILE_RECORD;
+
  ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_LEP_PROFILE_RECORD
  USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_LEP_PROFILE_RECORD.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1737,8 +1420,6 @@ CREATE TABLE IF NOT EXISTS PERSON_LEP_PROFILE_RECORD(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO PERSON_LEP_PROFILE_RECORD SELECT * FROM staging_PERSON_LEP_PROFILE_RECORD;
 
-DROP TABLE IF EXISTS PREMIUM_CATEGORY;
-DROP TABLE IF EXISTS staging_PREMIUM_CATEGORY;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PREMIUM_CATEGORY
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PREMIUM_CATEGORY.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1758,8 +1439,7 @@ CREATE TABLE IF NOT EXISTS PREMIUM_CATEGORY(
   ) USING row OPTIONS(partition_by 'GRP_ID',buckets '32',redundancy '1');
  INSERT INTO PREMIUM_CATEGORY SELECT * FROM staging_PREMIUM_CATEGORY;
 
-DROP TABLE IF EXISTS PREMIUM_PART;
-DROP TABLE IF EXISTS staging_PREMIUM_PART;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PREMIUM_PART
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PREMIUM_PART.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1781,8 +1461,7 @@ CREATE TABLE IF NOT EXISTS PREMIUM_PART(
   ) USING row OPTIONS(partition_by 'GRP_ID',buckets '32',redundancy '1');
  INSERT INTO PREMIUM_PART SELECT * FROM staging_PREMIUM_PART;
 
-DROP TABLE IF EXISTS PREMIUM_TABLE;
-DROP TABLE IF EXISTS staging_PREMIUM_TABLE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PREMIUM_TABLE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PREMIUM_TABLE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1803,8 +1482,7 @@ CREATE TABLE IF NOT EXISTS PREMIUM_TABLE(
   ) USING row OPTIONS(partition_by 'GRP_ID',buckets '32',redundancy '1');
  INSERT INTO PREMIUM_TABLE SELECT * FROM staging_PREMIUM_TABLE;
 
-DROP TABLE IF EXISTS UM_INPATIENT_REVIEW;
-DROP TABLE IF EXISTS staging_UM_INPATIENT_REVIEW;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_INPATIENT_REVIEW
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_INPATIENT_REVIEW.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1832,8 +1510,7 @@ CREATE TABLE IF NOT EXISTS UM_INPATIENT_REVIEW(
   ) USING row OPTIONS(partition_by 'UM_RVW_ID',buckets '32',redundancy '1');
    INSERT INTO UM_INPATIENT_REVIEW SELECT * FROM staging_UM_INPATIENT_REVIEW);
 
-DROP TABLE IF EXISTS UM_INPATIENT_STATUS;
-DROP TABLE IF EXISTS staging_UM_INPATIENT_STATUS;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_INPATIENT_STATUS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_INPATIENT_STATUS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1856,8 +1533,7 @@ CREATE TABLE IF NOT EXISTS UM_INPATIENT_STATUS(
   ) USING row OPTIONS(partition_by 'UM_RVW_ID',buckets '32',redundancy '1' );
  INSERT INTO UM_INPATIENT_STATUS SELECT * FROM staging_UM_INPATIENT_STATUS;
 
-DROP TABLE IF EXISTS UM_SERVICE_OVERRIDE;
-DROP TABLE IF EXISTS staging_UM_SERVICE_OVERRIDE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_SERVICE_OVERRIDE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_SERVICE_OVERRIDE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1883,8 +1559,7 @@ CREATE TABLE IF NOT EXISTS UM_SERVICE_OVERRIDE(
   ) USING row OPTIONS(partition_by 'UM_RVW_ID',buckets '32',redundancy '1') ;
 INSERT INTO UM_SERVICE_OVERRIDE SELECT * FROM staging_UM_SERVICE_OVERRIDE;
 
-DROP TABLE IF EXISTS BANK_ACCOUNT;
-DROP TABLE IF EXISTS staging_BANK_ACCOUNT;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BANK_ACCOUNT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BANK_ACCOUNT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1905,8 +1580,7 @@ CREATE TABLE IF NOT EXISTS BANK_ACCOUNT(
   ) USING row OPTIONS(partition_by 'BNK_ORG_ID',buckets '32',redundancy '1' );
    INSERT INTO BANK_ACCOUNT SELECT * FROM staging_BANK_ACCOUNT);
 
-DROP TABLE IF EXISTS UM_INPATIENT_STAY_LENGTH;
-DROP TABLE IF EXISTS staging_UM_INPATIENT_STAY_LENGTH;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UM_INPATIENT_STAY_LENGTH
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UM_INPATIENT_STAY_LENGTH.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1940,8 +1614,7 @@ CREATE TABLE IF NOT EXISTS UM_INPATIENT_STAY_LENGTH(
   ) USING row OPTIONS(partition_by 'UM_RVW_ID',buckets '32',redundancy '1');
  INSERT INTO UM_INPATIENT_STAY_LENGTH SELECT * FROM staging_UM_INPATIENT_STAY_LENGTH;
 
-DROP TABLE IF EXISTS REVENUE_CODE;
-DROP TABLE IF EXISTS staging_REVENUE_CODE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_REVENUE_CODE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/REVENUE_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1963,8 +1636,7 @@ CREATE TABLE IF NOT EXISTS REVENUE_CODE(
   ) USING row OPTIONS(partition_by 'REV_CD_ID', buckets '32',redundancy '1');
    INSERT INTO REVENUE_CODE SELECT * FROM staging_REVENUE_CODE);
 
-DROP TABLE IF EXISTS SERVICE_CODE;
-DROP TABLE IF EXISTS staging_SERVICE_CODE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_SERVICE_CODE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/SERVICE_CODE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -1984,8 +1656,6 @@ CREATE TABLE IF NOT EXISTS SERVICE_CODE(
  INSERT INTO SERVICE_CODE SELECT * FROM staging_SERVICE_CODE;
 
 
-DROP TABLE IF EXISTS AGREEMENT;
-DROP TABLE IF EXISTS staging_AGREEMENT;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_AGREEMENT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/AGREEMENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2005,8 +1675,6 @@ CREATE TABLE IF NOT EXISTS AGREEMENT(
   ) USING row OPTIONS(partition_by 'AGREE_ID', buckets '32',redundancy '1');
    INSERT INTO AGREEMENT SELECT * FROM staging_AGREEMENT;
 
-DROP TABLE IF EXISTS ORGANIZATION_EVENT;
-DROP TABLE IF EXISTS staging_ORGANIZATION_EVENT;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_ORGANIZATION_EVENT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/ORGANIZATION_EVENT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2027,8 +1695,7 @@ CREATE TABLE IF NOT EXISTS ORGANIZATION_EVENT(
   ) USING row OPTIONS(partition_by 'ORG_ID', buckets '32',redundancy '1');
  INSERT INTO ORGANIZATION_EVENT SELECT * FROM staging_ORGANIZATION_EVENT;
 
-DROP TABLE IF EXISTS FDI_TX_IDCARD;
-DROP TABLE IF EXISTS staging_FDI_TX_IDCARD;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_FDI_TX_IDCARD
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/FDI_TX_IDCARD.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2066,8 +1733,7 @@ CREATE TABLE IF NOT EXISTS FDI_TX_IDCARD
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO FDI_TX_IDCARD SELECT * FROM staging_FDI_TX_IDCARD;
 
-DROP TABLE IF EXISTS FDI_TX_LETTER;
-DROP TABLE IF EXISTS staging_FDI_TX_LETTER;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_FDI_TX_LETTER
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/FDI_TX_LETTER.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2102,8 +1768,6 @@ CREATE TABLE IF NOT EXISTS FDI_TX_LETTER
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO FDI_TX_LETTER SELECT * FROM staging_FDI_TX_LETTER;
 
-DROP TABLE IF EXISTS BENEFIT_PACKAGE_ATTRIBUTE;
-DROP TABLE IF EXISTS staging_BENEFIT_PACKAGE_ATTRIBUTE;
  ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BENEFIT_PACKAGE_ATTRIBUTE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BENEFIT_PACKAGE_ATTRIBUTE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2123,8 +1787,6 @@ CREATE TABLE IF NOT EXISTS  BENEFIT_PACKAGE_ATTRIBUTE(
   ) USING row OPTIONS(partition_by 'BENE_PKG_ID', buckets '32',redundancy '1');
    INSERT INTO BENEFIT_PACKAGE_ATTRIBUTE SELECT * FROM staging_BENEFIT_PACKAGE_ATTRIBUTE;
 
-DROP TABLE IF EXISTS BILLING_ENTITY_SCHEDULE;
-DROP TABLE IF EXISTS staging_BILLING_ENTITY_SCHEDULE;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BILLING_ENTITY_SCHEDULE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BILLING_ENTITY_SCHEDULE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2146,8 +1808,7 @@ CREATE TABLE IF NOT EXISTS  BILLING_ENTITY_SCHEDULE(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID', buckets '32',redundancy '1');
  INSERT INTO BILLING_ENTITY_SCHEDULE SELECT * FROM staging_BILLING_ENTITY_SCHEDULE;
 
-DROP TABLE IF EXISTS BILLING_SCHEDULE;
-DROP TABLE IF EXISTS staging_BILLING_SCHEDULE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BILLING_SCHEDULE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BILLING_SCHEDULE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2167,8 +1828,7 @@ CREATE TABLE IF NOT EXISTS  BILLING_SCHEDULE(
   ) USING row OPTIONS(partition_by 'BILL_SCHD_ID', buckets '32',redundancy '1');
  INSERT INTO BILLING_SCHEDULE SELECT * FROM staging_BILLING_SCHEDULE;
 
-DROP TABLE IF EXISTS BILLING_SOURCE;
-DROP TABLE IF EXISTS staging_BILLING_SOURCE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_BILLING_SOURCE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/BILLING_SOURCE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2186,8 +1846,7 @@ CREATE TABLE IF NOT EXISTS  BILLING_SOURCE(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID', buckets '32',redundancy '1');
  INSERT INTO BILLING_SOURCE SELECT * FROM staging_BILLING_SOURCE;
 
-DROP TABLE IF EXISTS CHARGE_ITEM;
-DROP TABLE IF EXISTS staging_CHARGE_ITEM;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CHARGE_ITEM
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/CHARGE_ITEM.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2212,8 +1871,6 @@ CREATE TABLE IF NOT EXISTS  CHARGE_ITEM(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID', buckets '32',redundancy '1');
  INSERT INTO CHARGE_ITEM SELECT * FROM staging_CHARGE_ITEM;
 
-DROP TABLE IF EXISTS CLAIM_COSHARE_TRACKING;
-DROP TABLE IF EXISTS staging_CLAIM_COSHARE_TRACKING;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_COSHARE_TRACKING
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/CLAIM_COSHARE_TRACKING.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2241,8 +1898,7 @@ CREATE TABLE IF NOT EXISTS  CLAIM_COSHARE_TRACKING(
   ) USING row OPTIONS(partition_by 'PRSN_ID',buckets '32',redundancy '1');
  INSERT INTO CLAIM_COSHARE_TRACKING SELECT * FROM staging_CLAIM_COSHARE_TRACKING;
 
-DROP TABLE IF EXISTS CLAIM_LINE_ATTRIBUTE;
-DROP TABLE IF EXISTS staging_CLAIM_LINE_ATTRIBUTE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_CLAIM_LINE_ATTRIBUTE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/CLAIM_LINE_ATTRIBUTE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2266,8 +1922,7 @@ CREATE TABLE IF NOT EXISTS  CLAIM_LINE_ATTRIBUTE(
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO CLAIM_LINE_ATTRIBUTE SELECT * FROM staging_CLAIM_LINE_ATTRIBUTE;
 
-DROP TABLE IF EXISTS FDI_CORRESPONDENCE;
-DROP TABLE IF EXISTS staging_FDI_CORRESPONDENCE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_FDI_CORRESPONDENCE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/FDI_CORRESPONDENCE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2289,8 +1944,6 @@ CREATE TABLE IF NOT EXISTS  FDI_CORRESPONDENCE
   ) USING row OPTIONS(partition_by 'CLIENT_ID, ENTITY_ID, DCN_ID', buckets '32',redundancy '1');
  INSERT INTO FDI_CORRESPONDENCE SELECT * FROM staging_FDI_CORRESPONDENCE;
 
-DROP TABLE IF EXISTS INVOICE;
-DROP TABLE IF EXISTS staging_INVOICE;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_INVOICE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/INVOICE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2326,8 +1979,6 @@ CREATE TABLE IF NOT EXISTS  INVOICE(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID', buckets '32',redundancy '1');
  INSERT INTO INVOICE SELECT * FROM staging_INVOICE;
 
-DROP TABLE IF EXISTS INVOICE_STATUS;
-DROP TABLE IF EXISTS staging_INVOICE_STATUS;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_INVOICE_STATUS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/INVOICE_STATUS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2347,8 +1998,7 @@ CREATE TABLE IF NOT EXISTS  INVOICE_STATUS(
   ) USING row OPTIONS(partition_by 'INV_ID',buckets '32',redundancy '1');
  INSERT INTO INVOICE_STATUS SELECT * FROM staging_INVOICE_STATUS;
 
-DROP TABLE IF EXISTS MOOP_BALANCE_EXCEPTIONS;
-DROP TABLE IF EXISTS staging_MOOP_BALANCE_EXCEPTIONS;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_MOOP_BALANCE_EXCEPTIONS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/MOOP_BALANCE_EXCEPTIONS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2371,8 +2021,6 @@ CREATE TABLE IF NOT EXISTS  MOOP_BALANCE_EXCEPTIONS(
   ) USING row OPTIONS(partition_by 'MEMBER_ID', buckets '32',redundancy '1');
  INSERT INTO MOOP_BALANCE_EXCEPTIONS SELECT * FROM staging_MOOP_BALANCE_EXCEPTIONS;
 
-DROP TABLE IF EXISTS MOOP_BALANCE;
-DROP TABLE IF EXISTS staging_MOOP_BALANCE;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_MOOP_BALANCE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/MOOP_BALANCE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2397,8 +2045,6 @@ CREATE TABLE IF NOT EXISTS  MOOP_BALANCE(
   ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO MOOP_BALANCE SELECT * FROM staging_MOOP_BALANCE;
 
-DROP TABLE IF EXISTS MOOP_ACCUMULATOR;
-DROP TABLE IF EXISTS staging_MOOP_ACCUMULATOR;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_MOOP_ACCUMULATOR
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/MOOP_ACCUMULATOR.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2419,8 +2065,7 @@ SUPPL_ID VARCHAR(15) NOT NULL,
 ) USING row OPTIONS(partition_by 'CLIENT_ID,FAMILY_ID', buckets '32',redundancy '1' );
  INSERT INTO MOOP_ACCUMULATOR SELECT * FROM staging_MOOP_ACCUMULATOR;
 
-DROP TABLE IF EXISTS PERSON_ACCUMULATOR;
-DROP TABLE IF EXISTS staging_PERSON_ACCUMULATOR;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PERSON_ACCUMULATOR
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PERSON_ACCUMULATOR.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2450,8 +2095,7 @@ CREATE TABLE IF NOT EXISTS  PERSON_ACCUMULATOR(
 ) USING row OPTIONS(partition_by 'PRSN_ID', buckets '32',redundancy '1');
  INSERT INTO PERSON_ACCUMULATOR SELECT * FROM staging_PERSON_ACCUMULATOR;
 
-DROP TABLE IF EXISTS PROCEDURE_PRICE;
-DROP TABLE IF EXISTS staging_PROCEDURE_PRICE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_PROCEDURE_PRICE
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/PROCEDURE_PRICE.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2474,8 +2118,6 @@ CREATE TABLE IF NOT EXISTS  PROCEDURE_PRICE(
   ) USING row OPTIONS(partition_by 'PR_CD_ID', buckets '32',redundancy '1');
  INSERT INTO  PROCEDURE_PRICE SELECT * FROM staging_PROCEDURE_PRICE;
 
-DROP TABLE IF EXISTS RECEIPT;
-DROP TABLE IF EXISTS staging_RECEIPT;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_RECEIPT
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/RECEIPT.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2519,8 +2161,7 @@ CREATE TABLE IF NOT EXISTS  RECEIPT(
   ) USING row OPTIONS(partition_by 'BILL_ENT_ID',buckets '32',redundancy '1');
  INSERT INTO RECEIPT SELECT * FROM staging_RECEIPT;
 
-DROP TABLE IF EXISTS TMGSERVICES_PLAN_CODE_CONFIG;
-DROP TABLE IF EXISTS staging_TMGSERVICES_PLAN_CODE_CONFIG;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_PLAN_CODE_CONFIG
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_PLAN_CODE_CONFIG.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2556,8 +2197,7 @@ CREATE TABLE IF NOT EXISTS  TMGSERVICES_PLAN_CODE_CONFIG
   ) USING row OPTIONS(partition_by 'PLAN_CODE_ID,CLIENT_ID', buckets '32',redundancy '1');
  INSERT INTO  TMGSERVICES_PLAN_CODE_CONFIG SELECT * FROM staging_TMGSERVICES_PLAN_CODE_CONFIG;
 
-DROP TABLE IF EXISTS TMGSERVICES_KEY_GENERATOR;
-DROP TABLE IF EXISTS staging_TMGSERVICES_KEY_GENERATOR;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_KEY_GENERATOR
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_KEY_GENERATOR.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2581,8 +2221,7 @@ CREATE TABLE IF NOT EXISTS  TMGSERVICES_KEY_GENERATOR
   ) USING row OPTIONS(partition_by 'KEY_GEN_ID,CLIENT_ID', buckets '32',redundancy '1' );
  INSERT INTO TMGSERVICES_KEY_GENERATOR SELECT * FROM staging_TMGSERVICES_KEY_GENERATOR;
 
-DROP TABLE IF EXISTS TMGSERVICES_GROUP_CODE_CONFIG;
-DROP TABLE IF EXISTS staging_TMGSERVICES_GROUP_CODE_CONFIG;
+
   ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_GROUP_CODE_CONFIG
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_GROUP_CODE_CONFIG.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2607,8 +2246,6 @@ CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_GROUP_CODE_CONFIG
     USING row OPTIONS(partition_by 'GROUP_ID,CLIENT_ID', buckets '32',redundancy '1');
  INSERT INTO TMGSERVICES_GROUP_CODE_CONFIG SELECT * FROM staging_TMGSERVICES_GROUP_CODE_CONFIG;
 
-DROP TABLE IF EXISTS TMGSERVICES_DNIS_CONFIG;
-DROP TABLE IF EXISTS staging_TMGSERVICES_DNIS_CONFIG;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_DNIS_CONFIG
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_DNIS_CONFIG.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2633,8 +2270,6 @@ CREATE TABLE IF NOT EXISTS  TMGSERVICES_DNIS_CONFIG
   ) USING row OPTIONS(partition_by 'DNIS_ID,CLIENT_ID', buckets '32',redundancy '1');
  INSERT INTO TMGSERVICES_DNIS_CONFIG SELECT * FROM staging_TMGSERVICES_DNIS_CONFIG;
 
-DROP TABLE IF EXISTS TMGSERVICES_DENIAL_REASON_CONFIG;
-DROP TABLE IF EXISTS staging_TMGSERVICES_DENIAL_REASON_CONFIG;
   ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_DENIAL_REASON_CONFIG
       USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_DENIAL_REASON_CONFIG.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2657,8 +2292,7 @@ CREATE TABLE IF NOT EXISTS TMGSERVICES_DENIAL_REASON_CONFIG
   ) USING row OPTIONS(partition_by 'DENIAL_REASON_ID,CLIENT_ID', buckets '32',redundancy '1');
  INSERT INTO TMGSERVICES_DENIAL_REASON_CONFIG SELECT * FROM staging_TMGSERVICES_DENIAL_REASON_CONFIG;
 
-DROP TABLE IF EXISTS TMGSERVICES_CLIENT_MASTER;
-DROP TABLE IF EXISTS staging_TMGSERVICES_CLIENT_MASTER;
+
   ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_CLIENT_MASTER
       USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_CLIENT_MASTER.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2682,8 +2316,6 @@ CREATE TABLE IF NOT EXISTS TMGSERVICES_CLIENT_MASTER
   ) USING row OPTIONS(partition_by 'CLIENT_REF_ID,CLIENT_ID', buckets '32',redundancy '1');
  INSERT INTO TMGSERVICES_CLIENT_MASTER SELECT * FROM staging_TMGSERVICES_CLIENT_MASTER;
 
-DROP TABLE IF EXISTS TMGSERVICES_SUBJECT_CATEGORY_TRANSLATIONS;
-DROP TABLE IF EXISTS staging_TMGSERVICES_SUBJECT_CATEGORY_TRANSLATIONS;
   ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_SUBJECT_CATEGORY_TRANSLATIONS
      USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_SUBJECT_CATEGORY_TRANSLATIONS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2711,8 +2343,7 @@ CREATE TABLE IF NOT EXISTS  TMGSERVICES_SUBJECT_CATEGORY_TRANSLATIONS
   ) USING row OPTIONS(partition_by 'SUBJ_CAT_ID,CLIENT_ID', buckets '32',redundancy '1');
  INSERT INTO TMGSERVICES_SUBJECT_CATEGORY_TRANSLATIONS SELECT * FROM staging_TMGSERVICES_SUBJECT_CATEGORY_TRANSLATIONS;
 
-DROP TABLE IF EXISTS TMGSERVICES_PTMR_VARIABLE_TRANSLATIONS;
-DROP TABLE IF EXISTS staging_TMGSERVICES_PTMR_VARIABLE_TRANSLATIONS;
+
   ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_PTMR_VARIABLE_TRANSLATIONS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_PTMR_VARIABLE_TRANSLATIONS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2736,8 +2367,7 @@ CREATE TABLE IF NOT EXISTS  TMGSERVICES_PTMR_VARIABLE_TRANSLATIONS
    USING row OPTIONS(partition_by 'VARIABLE_ID', buckets '32',redundancy '1');
  INSERT INTO TMGSERVICES_PTMR_VARIABLE_TRANSLATIONS SELECT * FROM staging_TMGSERVICES_PTMR_VARIABLE_TRANSLATIONS;
 
-DROP TABLE IF EXISTS TMGSERVICES_ACCOUNTING_CODES;
-DROP TABLE IF EXISTS staging_TMGSERVICES_ACCOUNTING_CODES;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_TMGSERVICES_ACCOUNTING_CODES
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/TMGSERVICES_ACCOUNTING_CODES.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2766,8 +2396,7 @@ CREATE TABLE IF NOT EXISTS  TMGSERVICES_ACCOUNTING_CODES
   ) USING row OPTIONS(partition_by 'ACCOUNTING_CODE_ID,CLIENT_ID', buckets '32',redundancy '1');
  INSERT INTO TMGSERVICES_ACCOUNTING_CODES SELECT * FROM staging_TMGSERVICES_ACCOUNTING_CODES;
 
-DROP TABLE IF EXISTS UNAPPLIED_CASH;
-DROP TABLE IF EXISTS staging_UNAPPLIED_CASHE;
+
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_UNAPPLIED_CASH
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/UNAPPLIED_CASH.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -2789,8 +2418,6 @@ CREATE TABLE IF NOT EXISTS  UNAPPLIED_CASH(
   ) USING row OPTIONS(partition_by 'UNAPP_CSH_ID', buckets '32',redundancy '1');
  INSERT INTO UNAPPLIED_CASH SELECT * FROM staging_UNAPPLIED_CASH;
 
-DROP TABLE IF EXISTS WORK_GENERATED_KEYS;
-DROP TABLE IF EXISTS staging_WORK_GENERATED_KEYS;
  ----- CREATE TEMPORARY STAGING TABLE TO LOAD CSV FORMATTED DATA -----
 CREATE EXTERNAL TABLE IF NOT EXISTS  staging_WORK_GENERATED_KEYS
     USING com.databricks.spark.csv OPTIONS (path '/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data/WORK_GENERATED_KEYS.dat', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096');
