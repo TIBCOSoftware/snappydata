@@ -695,15 +695,18 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     logTestHistory();
     testName = getName();
 
+    Class<?> thisClass = getClass();
     if (!beforeClassDone) {
       beforeClass();
       beforeClassDone = true;
       lastTest = null;
+      System.out.println("\n[setup] Invoked beforeClass for " +
+          thisClass.getSimpleName() + "." + testName + "\n");
     }
     if (lastTest == null) {
       // for class-level afterClass, list the test methods and do the
       // afterClass in the tearDown of last method
-      Class<?> scanClass = getClass();
+      Class<?> scanClass = thisClass;
       while (Test.class.isAssignableFrom(scanClass)) {
         for (Method m : MethodSorter.getDeclaredMethods(scanClass)) {
           String methodName = m.getName();
@@ -716,16 +719,15 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         scanClass = scanClass.getSuperclass();
       }
       if (lastTest == null) {
-        fail("Could not find any last test in " + getClass().getName());
+        fail("Could not find any last test in " + thisClass.getName());
       } else {
         getLogWriter().info(
-            "Last test for " + getClass().getName() + ": " + lastTest);
+            "Last test for " + thisClass.getName() + ": " + lastTest);
       }
     }
 
     if (testName != null) {
       String baseDefaultDiskStoreName = getTestClass().getCanonicalName() + "." + getTestName();
-      final String className = getClass().getName();
       for (int h = 0; h < Host.getHostCount(); h++) {
         Host host = Host.getHost(h);
         for (int v = 0; v < host.getVMCount(); v++) {
@@ -736,7 +738,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         }
       }
     }
-    System.out.println("\n\n[setup] START TEST " + getClass().getSimpleName() + "." + testName + "\n\n");
+    System.out.println("\n\n[setup] START TEST " + thisClass.getSimpleName() +
+        "." + testName + "\n\n");
   }
 
   /**
@@ -786,6 +789,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         afterClass();
         beforeClassDone = false;
         lastTest = null;
+        System.out.println("\n[tearDown] Invoked afterClass for " +
+            getClass().getSimpleName() + "." + testName + "\n");
       }
     }
   }
