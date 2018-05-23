@@ -131,9 +131,11 @@ class LoadDataAndValidateQueriesJob extends SnappySQLJob {
       sqlContext.cacheTable("test_table")
       validateQueries(snc, sqlContext, pw)*/
       if (performDMLOPs) {
-        val qDF1 = snappySession.createDataset(dataRDD)
-        val cacheDF1 = qDF1.cache();
-        cacheDF1.write.insertInto("test_table")
+        for (_ <- 1 to 10) {
+          val qDF1 = snappySession.createDataset(dataRDD)
+          val cacheDF1 = qDF1.cache();
+          cacheDF1.write.insertInto("test_table")
+        }
       }
       pw.close()
 
