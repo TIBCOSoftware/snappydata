@@ -275,15 +275,15 @@ subprojects {
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
-    // minHeapSize '4g'
-    // maxHeapSize '8g'
-    // jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
-    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
-    // for benchmarking
-    minHeapSize '12g'
-    maxHeapSize '12g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
+    minHeapSize '4g'
+    maxHeapSize '4g'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
+    // for benchmarking
+    // minHeapSize '12g'
+    // maxHeapSize '12g'
+    // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
 
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.events = TestLogEvent.values() as Set
@@ -357,10 +357,10 @@ subprojects {
     dependsOn ':copyShadowJars'
     maxParallelForks = 1
     minHeapSize '1536m'
-    maxHeapSize '4096m'
+    maxHeapSize '1536m'
 
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
-               '-XX:+UseParNewGC', '-XX:MaxNewSize=2g', '-XX:+UseConcMarkSweepGC',
+               '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea']
 
