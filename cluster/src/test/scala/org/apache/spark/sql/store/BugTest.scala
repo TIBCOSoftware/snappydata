@@ -30,7 +30,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     this.stopAll()
   }
-  
+
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
       getClass.getResource("/auth.ldif").getPath)
@@ -64,7 +64,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.clearProperty(k)
       System.clearProperty("gemfirexd." + k)
-      System.clearProperty(Constant.STORE_PROPERTY_PREFIX  + k)
+      System.clearProperty(Constant.STORE_PROPERTY_PREFIX + k)
     }
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
@@ -102,7 +102,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     val session = snc.newSession()
     session.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
     session.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
-    
+
     session.sql(s"create table ujli ( " +
         "aagmaterial   string," +
         "accountassignmentgroup   string," +
@@ -208,7 +208,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         "vendor   string," +
         "versioncode   string )")
 
-    session.sql ("create table ujs (" +
+    session.sql("create table ujs (" +
         "uuid   string," +
         "bravoequitycode   string," +
         "controllingarea   string," +
