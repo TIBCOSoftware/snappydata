@@ -16,14 +16,11 @@
  */
 package org.apache.spark.sql.store
 
-import java.util.Properties
-
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.util.TestUtils
-import io.snappydata.{Constant, PlanTest, SnappyFunSuite}
+import io.snappydata.{Constant, SnappyFunSuite}
+import org.junit.Assert.assertEquals
 import org.scalatest.BeforeAndAfterAll
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 
 import org.apache.spark.SparkConf
 
@@ -33,11 +30,11 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     this.stopAll()
   }
-  
+
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
       getClass.getResource("/auth.ldif").getPath)
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.setProperty(k, ldapProperties.getProperty(k))
     }
@@ -63,11 +60,11 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
     }
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.clearProperty(k)
       System.clearProperty("gemfirexd." + k)
-      System.clearProperty(Constant.STORE_PROPERTY_PREFIX  + k)
+      System.clearProperty(Constant.STORE_PROPERTY_PREFIX + k)
     }
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
@@ -89,8 +86,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     // TODO : Use the actual connection pool limit
     val limit = 500
-
-    for (i <- 1 to limit) {
+    for (_ <- 1 to limit) {
       val snc2 = snc.newSession()
       snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
       snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
@@ -106,7 +102,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     val session = snc.newSession()
     session.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
     session.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
-    
+
     session.sql(s"create table ujli ( " +
         "aagmaterial   string," +
         "accountassignmentgroup   string," +
@@ -212,7 +208,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         "vendor   string," +
         "versioncode   string )")
 
-    session.sql ("create table ujs (" +
+    session.sql("create table ujs (" +
         "uuid   string," +
         "bravoequitycode   string," +
         "controllingarea   string," +
