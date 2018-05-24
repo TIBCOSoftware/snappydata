@@ -696,8 +696,11 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     testName = getName();
 
     Class<?> thisClass = getClass();
+    Logger logger = getLogWriter();
     if (!beforeClassDone) {
       lastTest = null;
+      logger.info("[setup] Invoking beforeClass for " +
+          thisClass.getSimpleName() + "." + testName + "\n");
       beforeClass();
       beforeClassDone = true;
       System.out.println("\n[setup] Invoked beforeClass for " +
@@ -721,8 +724,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
       if (lastTest == null) {
         fail("Could not find any last test in " + thisClass.getName());
       } else {
-        getLogWriter().info(
-            "Last test for " + thisClass.getName() + ": " + lastTest);
+        logger.info("[setup] Last test for " + thisClass.getName() +
+            ": " + lastTest);
       }
     }
 
