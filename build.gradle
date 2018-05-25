@@ -1105,7 +1105,7 @@ task checkAll {
     dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
-    dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+    dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:check"
   }
   mustRunAfter buildAll
 }
