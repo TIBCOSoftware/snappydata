@@ -209,6 +209,14 @@ object MemoryManagerCallback extends Logging {
     }
     allocator.allocate(size, owner).order(ByteOrder.LITTLE_ENDIAN)
   }
+
+  /** release and accounting for byte buffer allocated by [[allocateExecutionMemory]] */
+  def releaseExecutionMemory(buffer: ByteBuffer, owner: String, releaseBuffer: Boolean): Unit = {
+    if (releaseBuffer) BufferAllocator.releaseBuffer(buffer)
+    if (buffer.hasArray) {
+      StoreCallbacksImpl.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
+    }
+  }
 }
 
 final class DefaultMemoryConsumer(taskMemoryManager: TaskMemoryManager,

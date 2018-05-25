@@ -26,14 +26,14 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.EntryDestroyedException
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
-import com.gemstone.gemfire.internal.shared.FetchRequest
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, FetchRequest}
 import com.koloboke.function.IntObjPredicate
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
+import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.row.PRValuesIterator
@@ -333,7 +333,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
       val result = CompressionUtils.codecDecompressIfRequired(
         buffer.order(ByteOrder.LITTLE_ENDIAN), allocator)
       if (result ne buffer) {
-        UnsafeHolder.releaseIfDirectBuffer(buffer)
+        BufferAllocator.releaseBuffer(buffer)
         // decompressed buffer will be ordered by LITTLE_ENDIAN while non-decompressed
         // is returned with BIG_ENDIAN in order to distinguish the two cases
         result
@@ -404,11 +404,11 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
         override def test(col: Int, buffer: ByteBuffer): Boolean = {
           // release previous set of buffers immediately
           if (buffer ne null) {
-            if (buffer.isDirect) UnsafeHolder.releaseDirectBuffer(buffer)
             // release from accounting if decompressed buffer
-            else if (buffer.order() eq ByteOrder.LITTLE_ENDIAN) {
-              StoreCallbacksImpl.releaseStorageMemory(CompressionUtils.DECOMPRESSION_OWNER,
-                buffer.capacity(), offHeap = false)
+            if (!BufferAllocator.releaseBuffer(buffer) &&
+                (buffer.order() eq ByteOrder.LITTLE_ENDIAN)) {
+              MemoryManagerCallback.releaseExecutionMemory(buffer,
+                CompressionUtils.DECOMPRESSION_OWNER, releaseBuffer = false)
             }
           }
           true

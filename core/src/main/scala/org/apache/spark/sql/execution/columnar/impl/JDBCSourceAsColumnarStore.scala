@@ -23,9 +23,8 @@ import java.util.Collections
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
-import com.gemstone.gemfire.internal.cache._
-import com.gemstone.gemfire.internal.shared.SystemProperties
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
@@ -599,7 +598,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         iter.next()
       }
       // release the batch buffers
-      batch.buffers.foreach(UnsafeHolder.releaseIfDirectBuffer)
+      batch.buffers.foreach(b => if (b ne null) BufferAllocator.releaseBuffer(b))
     }
   }
 
