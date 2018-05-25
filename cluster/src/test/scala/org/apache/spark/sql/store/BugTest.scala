@@ -16,94 +16,24 @@
  */
 package org.apache.spark.sql.store
 
-import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.{Constant, SnappyFunSuite}
-import org.junit.Assert.assertEquals
+import java.sql.DriverManager
+
+import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.SparkConf
-
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
-  private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
-    this.stopAll()
-  }
-
-  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
-    val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
-      getClass.getResource("/auth.ldif").getPath)
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.setProperty(k, ldapProperties.getProperty(k))
-    }
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-    val conf = new org.apache.spark.SparkConf()
-        .setAppName("BugTest")
-        .setMaster("local[3]")
-        .set(Attribute.AUTH_PROVIDER, ldapProperties.getProperty(Attribute.AUTH_PROVIDER))
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-
-    if (addOn != null) {
-      addOn(conf)
-    } else {
-      conf
-    }
+    super.beforeAll()
   }
 
   override def afterAll(): Unit = {
-    this.stopAll()
-    val ldapServer = LdapTestServer.getInstance()
-    if (ldapServer.isServerStarted) {
-      ldapServer.stopService()
-    }
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.clearProperty(k)
-      System.clearProperty("gemfirexd." + k)
-      System.clearProperty(Constant.STORE_PROPERTY_PREFIX + k)
-    }
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
-    System.setProperty("gemfirexd.authentication.required", "false")
-  }
-
-  test("Bug SNAP-2255 connection pool exhaustion") {
-    val user1 = "gemfire1"
-    val user2 = "gemfire2"
-
-    val snc1 = snc.newSession()
-    snc1.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
-    snc1.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
-
-    snc1.sql(s"create table test (id  integer," +
-        s" name STRING) using column")
-    snc1.sql("insert into test values (1, 'name1')")
-    snc1.sql(s"GRANT select ON TABLE  test TO  $user2")
-
-    // TODO : Use the actual connection pool limit
-    val limit = 500
-    for (_ <- 1 to limit) {
-      val snc2 = snc.newSession()
-      snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
-      snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
-
-
-      val rs = snc2.sql(s"select * from $user1.test").collect()
-      assertEquals(1, rs.length)
-    }
+    super.afterAll()
   }
 
   test("SNAP-2342 nested query involving joins & union throws Exception") {
-    val user1 = "gemfire1"
-    val session = snc.newSession()
-    session.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
-    session.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
-
-    session.sql(s"create table ujli ( " +
+    snc.sql(s"create table ujli ( " +
         "aagmaterial   string," +
         "accountassignmentgroup   string," +
         "accounttype   string," +
@@ -208,7 +138,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         "vendor   string," +
         "versioncode   string )")
 
-    session.sql("create table ujs (" +
+    snc.sql("create table ujs (" +
         "uuid   string," +
         "bravoequitycode   string," +
         "controllingarea   string," +
@@ -250,24 +180,24 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         "transactiontype   string," +
         "versioncode   string)")
 
-    session.sql("create table gfs (" +
+    snc.sql("create table gfs (" +
         "gfs string, " +
         " gfsdescription string, " +
         " globalfunctionalarea string )")
 
-    session.sql("create table bravo (" +
+    snc.sql("create table bravo (" +
         " bravo  string," +
         "bravodescription  string," +
         " gfs string, " +
         " gfsdescription string)")
 
-    session.sql("create table gtw (" +
+    snc.sql("create table gtw (" +
         "gfs string," +
         "gfsdescription  string," +
         "gtw  string," +
         "gtwdescription  string)")
 
-    session.sql("create table coa (" +
+    snc.sql("create table coa (" +
         "accounttype   string," +
         "errorcode   string," +
         "errormessage   string," +
@@ -280,7 +210,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         "localgl   string," +
         "localgldescription   string)")
 
-    session.sql(s"create or replace view TrialBalance as " +
+    snc.sql(s"create or replace view TrialBalance as " +
         s"( select  leUniversal,gfs,first(gfsDescription) as gfsDescription, " +
         s"first(bravo) as bravo, " +
         s"first(bravoDescription) as bravoDescription,  first(gtw) as gtw, " +
@@ -323,5 +253,243 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"a.localCompanyCode," +
         s" a.mrcCode,a.sourceSystemId,a.glAccountCode,a.localGlAccountCode," +
         s"c.bravo,d.gtw) group by leUniversal,gfs)")
+  }
+
+  test("Bug SNAP-2332 . ParamLiteral found in First/Last Aggregate Function") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+
+    val insertDF = snappy.range(50).selectExpr("id", "(id * 12) as k",
+      "concat('val', cast(100 as string)) as s")
+
+    snappy.sql("drop table if exists test")
+    snappy.sql("create table test (id bigint, k bigint, s varchar(10)) " +
+        "using column options(buckets '8')")
+    insertDF.write.insertInto("test")
+    val query1 = "select sum(id) as summ, first(s, true) as firstt, last(s, true) as lastt" +
+        " from test having (first(s, true) = 'val100' or last(s, true) = 'val100' )"
+
+
+    var ps = conn.prepareStatement(query1)
+    var resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    var rs = snappy.sql(query1)
+    rs.collect()
+    rs = snappy.sql(query1)
+    rs.collect()
+
+    resultset = stmt.executeQuery(query1)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    val query2 = "select sum(id) summ , first(s) firstt, last(s) lastt " +
+        " from test having (first(s) = 'val100' or last(s) = 'val100' )"
+
+    ps = conn.prepareStatement(query2)
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    resultset = stmt.executeQuery(query2)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    rs = snappy.sql(query2)
+    rs.collect()
+
+
+    stmt.execute(s"create or replace view X as ($query2)")
+    val query3 = "select * from X where summ > 0"
+    ps = conn.prepareStatement(query3)
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    rs = snappy.sql(query3)
+    rs.collect()
+    rs = snappy.sql(query3)
+    rs.collect()
+    resultset = stmt.executeQuery(query3)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    val table1 = "create table ujli (" +
+        "aagmaterial string," +
+        "accountassignmentgroup string," +
+        "accounttype string," +
+        "allocationcycle string," +
+        "allocationsegment string," +
+        "asset string," +
+        "billingdocument string," +
+        "billingdocumentitem string," +
+        "bravoequitycode string," +
+        "bravominorcode string," +
+        "bsegdocumentlinenumber string," +
+        "businessplace string," +
+        "businesstransaction string," +
+        "controllingarea string," +
+        "copadocumentnumber string," +
+        "copaobjectnumber string," +
+        "costcenter string," +
+        "costelement string," +
+        "countryofshiptocustomer string," +
+        "createdby string," +
+        "creationtime string," +
+        "customer string," +
+        "customergroup string," +
+        "debitcreditindicator string," +
+        "distributionchannel string," +
+        "division string," +
+        "documentdate string," +
+        "documentheadertext string," +
+        "documentlinenumberinsourcesystem string," +
+        "documentnumberinsourcesystem string," +
+        "documenttype string," +
+        "edgcreateditemindoc string," +
+        "entrydate string," +
+        "errorstatus string," +
+        "fidocumentquantity string," +
+        "fiscalperiod string," +
+        "fiscalyear string," +
+        "fsid string," +
+        "functionalareacode string," +
+        "glaccountcode string," +
+        "hleamount string," +
+        "indexfromcopa string," +
+        "itemcategory string," +
+        "itemtext string," +
+        "kitmaterial string," +
+        "kittype string," +
+        "leamount string," +
+        "lebillingtype string," +
+        "lecode string," +
+        "lecurrencycode string," +
+        "lesalesqty string," +
+        "lesalesqtyuom string," +
+        "ledgercode string," +
+        "localcompanycode string," +
+        "localdocumenttype string," +
+        "localfiscalperiod string," +
+        "localfiscalyear string," +
+        "localfunctionalareacode string," +
+        "localglaccountcode string," +
+        "locallecurrencycode string," +
+        "localledgercode string," +
+        "localmrccode string," +
+        "localprofitcenter string," +
+        "localsku string," +
+        "localversioncode string," +
+        "mrccode string," +
+        "orderx string," +
+        "orderreason string," +
+        "parentdocumentnumberinsourcesystem string," +
+        "partnercostcenter string," +
+        "partnerfunctionalarea string," +
+        "partnerprofitcenter string," +
+        "partnersegment string," +
+        "payer string," +
+        "pcadocnumber string," +
+        "pcaitemnumber string," +
+        "plant string," +
+        "postingdate string," +
+        "postingkey string," +
+        "producthierarchy string," +
+        "psegment string," +
+        "rclnt string," +
+        "reference string," +
+        "referencedocument string," +
+        "referencetransaction string," +
+        "regionofshiptocustomer string," +
+        "salesdoctype string," +
+        "salesgroup string," +
+        "salesoffice string," +
+        "salesorder string," +
+        "salesorderitem string," +
+        "salesorganization string," +
+        "sectorproductgroup string," +
+        "shipto string," +
+        "sleamount string," +
+        "sourcesystemid string," +
+        "tradingpartner string," +
+        "transactioncode string," +
+        "transactioncurrencyamount string," +
+        "transactioncurrencycode string," +
+        "transactiontype string," +
+        "ujlkey string," +
+        "valuefieldfromcopa string," +
+        "vendor string," +
+        "versioncode string)"
+
+    val table2 = "create table ledger (" +
+        "globalledgercode string," +
+        "globalledgercodedescription string," +
+        "localledgercode string, " +
+        "localledgercodedescription string," +
+        "sourcesystemid string)"
+
+    val table3 = "create table bravo_hier (" +
+        "effectivedate string," +
+        "enddate string," +
+        "franchisecode string," +
+        "franchisedesc string," +
+        "majorproductgroupcode string," +
+        "majorproductgroupdesc string," +
+        "minorproductgroupcode string," +
+        "minorproductgroupdesc string," +
+        "publicreportingsegmentcode string," +
+        "publicreportingsegmentdesc string," +
+        "subfranchisecode string," +
+        "subfranchisedesc string," +
+        "worldwidefranchisecode string," +
+        "worldwidefranchisedesc string)"
+
+    stmt.execute(table1)
+    stmt.execute(table2)
+    stmt.execute(table3)
+
+    val view = "CREATE or replace view C1C2_V as (SELECT " +
+        "A.fiscalYear,first(A.fiscalPeriod) as fiscalPeriod,A.leCode, A.localLedgerCode," +
+        "A.sourceSystemId,  A.glAccountCode,A.bravoMinorCode, A.mrccode, " +
+        " first(A.leCurrencyCode) as leCurrencyCode," +
+        " first(A.versionCode) as versionCode, first(A.functionalAreaCode) as functionalAreaCode," +
+        "SUM(A.leAmount ) as leAmount,  " +
+        "first(B.globalLedgerCodeDescription) as globalLedgerCodeDescription," +
+        " first(C.publicReportingSegmentCode) as publicReportingSegmentCode," +
+        " first(C.franchiseCode) as franchiseCode,  " +
+        "first(C.worldwideFranchiseCode) as worldwideFranchiseCode," +
+        " first(C.subFranchiseCode) as subFranchiseCode, " +
+        "first(C.majorProductGroupCode) as majorProductGroupCode" +
+        " FROM ujli A  LEFT JOIN ledger B " +
+        " ON A.sourceSystemId = B.sourceSystemId AND " +
+        " B.globalLedgerCode = A.localLedgerCode LEFT JOIN bravo_hier C ON " +
+        " A.bravoMinorCode = minorProductGroupCode WHERE A.localLedgerCode ='0L' " +
+        " GROUP BY A.leCode, A.mrcCode, " +
+        "A.fiscalYear, A.sourceSystemId, A.glAccountCode, A.bravoMinorCode, A.localLedgerCode " +
+        "having ( SUM(A.leAmount ) > 0.001F or SUM(A.leAmount ) < -0.001F) );"
+
+    stmt.execute(view)
+
+    val q = "SELECT lecode FROM C1C2_V GROUP BY 1"
+    ps = conn.prepareStatement(q)
+
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getString(1)
+    }
+
+    conn.close()
+    TestUtil.stopNetServer()
+
   }
 }
