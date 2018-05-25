@@ -2,9 +2,14 @@ language: java
 
 jdk:
   - oraclejdk8
+  
+git:
+  depth: false
 
 notifications:
-  email: false
+  email:
+    recipients:
+      - process@snappydata.io
   
 # whitelist
 branches:
@@ -15,4 +20,4 @@ branches:
 sudo: false 
 
 script: 
-  ./gradlew product
+  ./gradlew precheckin
