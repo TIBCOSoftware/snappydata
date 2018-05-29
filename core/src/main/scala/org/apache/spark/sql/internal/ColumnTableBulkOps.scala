@@ -19,11 +19,10 @@ package org.apache.spark.sql.internal
 import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
-import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftAnti}
+import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
@@ -52,15 +51,12 @@ object ColumnTableBulkOps {
           throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
         }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get,
-          ColumnTableScan.getCaseOfSortedInsertValue)
+        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
 
         val keyColumns = getKeyColumns(table)
-        var updateSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
-        val updateColumns = if (!ColumnTableScan.getCaseOfSortedInsertValue) {
-          table.output.filterNot(a => keyColumns.contains(a.name))
-        } else table.output
-        val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
+        var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
+        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
+        val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
         if (updateExpressions.isEmpty) {
           throw new AnalysisException(
             s"PutInto is attempted without any column which can be updated." +
@@ -77,9 +73,7 @@ object ColumnTableBulkOps {
         val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
-        val (doInsertJoin, isCached) = if (ColumnTableScan.getCaseOfSortedInsertValue) {
-          (false, false)
-        } else if (subQuery.statistics.sizeInBytes <= cacheSize) {
+        val (doInsertJoin, isCached) = if (subQuery.statistics.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
           joinDS.cache()
@@ -93,7 +87,6 @@ object ColumnTableBulkOps {
         }
 
         val insertChild = if (doInsertJoin) {
-          val condition = prepareCondition(sparkSession, subQuery, updateSubQuery, putKeys.get)
           Join(subQuery, updateSubQuery, LeftAnti, condition)
         } else subQuery
         val insertPlan = new Insert(table, Map.empty[String,
@@ -122,8 +115,10 @@ object ColumnTableBulkOps {
     }
   }
 
-  private def prepareCondition(sparkSession: SparkSession, table: LogicalPlan, child: LogicalPlan,
-      columnNames: Seq[String], changeCondition: Boolean = false) = {
+  private def prepareCondition(sparkSession: SparkSession,
+      table: LogicalPlan,
+      child: LogicalPlan,
+      columnNames: Seq[String]): Option[Expression] = {
     val analyzer = sparkSession.sessionState.analyzer
     val leftKeys = columnNames.map { keyName =>
       table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
@@ -144,12 +139,7 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = if (changeCondition) {
-      val newCondition1 = joinPairs.map(EqualTo.tupled)
-      val newCondition2 = joinPairs.map(a =>
-        org.apache.spark.sql.catalyst.expressions.Not(EqualTo(a._1, a._2)))
-      (newCondition1 ++ newCondition2).reduceOption(And)
-    } else joinPairs.map(EqualTo.tupled).reduceOption(And)
+    val newCondition = joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
   }
 
