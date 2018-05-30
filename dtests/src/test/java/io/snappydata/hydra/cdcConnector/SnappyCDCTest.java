@@ -1,15 +1,12 @@
 package io.snappydata.hydra.cdcConnector;
 
-import akka.io.Tcp;
 import hydra.*;
-
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
-import io.snappydata.test.util.TestException;
 
 import java.io.*;
-
+import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -270,7 +267,7 @@ public class SnappyCDCTest extends SnappyTest {
     catch(SQLException ex) {}
   }
 
-  public static void HydraTask_runConcurrencyJob() {
+    public static void HydraTask_runConcurrencyJob() {
     Log.getLogWriter().info("Inside HydraTask_runConcurrencyJob");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
@@ -290,7 +287,9 @@ public class SnappyCDCTest extends SnappyTest {
       snappyCDCTest = new SnappyCDCTest();
     }
     try{
-      curlCmd = "curl -d \"name="+appName+"&terminate=true\" -X POST http://pnq-spillai3:8080/app/killByName/";
+      InetAddress myHost = InetAddress.getLocalHost();
+      String hostName[] = myHost.toString().split("/");
+      curlCmd = "curl -d \"name="+appName+"&terminate=true\" -X POST http://"+hostName[0]+":8080/app/killByName/";
       Log.getLogWriter().info("The curlCmd  is " + curlCmd);
       pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
       log = new File(".");
@@ -327,10 +326,11 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void performHA() {
+   public static void performHA() {
     File orgName = null;
     File bkName = null;
     File tempConfFile = null;
+    String scriptName = "";
     try {
       String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
       Log.getLogWriter().info("snappyPath File path is " + snappyPath);
@@ -349,48 +349,74 @@ public class SnappyCDCTest extends SnappyTest {
         Log.getLogWriter().info("Error");
       }
 
-      //write a new file in conf
-      try {
         tempConfFile = new File(snappyPath + "/conf/" + nodeType);
         FileWriter fw = new FileWriter(tempConfFile);
         fw.write(nodeInfoforHA);
         fw.close();
-        File log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
-        Log.getLogWriter().info("The destination file is " + dest);
-        File logFile = new File(dest);
-        ProcessBuilder pbStop = new ProcessBuilder(snappyPath + "/sbin/snappy-servers.sh", "stop");
-        snappyTest.executeProcess(pbStop, logFile);
 
-        Thread.sleep(30000); //sleep for 3 min before restarting the node.
+        if (nodeType.equals("allNodes")) {
+          File log = new File(".");
+          String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
+          Log.getLogWriter().info("The destination file is " + dest);
+          File logFile = new File(dest);
+          ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
+          Long startTime = System.currentTimeMillis();
+          snappyTest.executeProcess(pbClustStop, logFile);
+          Long totalTime = (System.currentTimeMillis() - startTime);
+          Log.getLogWriter().info("The cluster took " + totalTime + " ms to shut down");
 
-        ProcessBuilder pbStart = new ProcessBuilder(snappyPath + "/sbin/snappy-servers.sh", "start");
-        snappyTest.executeProcess(pbStart, logFile);
-
-        Thread.sleep(60000);
-
-        //delete the temp conf file created.
-        if (tempConfFile.delete()) {
-          System.out.println(tempConfFile.getName() + " is deleted!");
+          //Restart the cluster after 10 mins
+          Thread.sleep(600000);
+          ProcessBuilder pbClustStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
+          Long startTime1 = System.currentTimeMillis();
+          snappyTest.executeProcess(pbClustStart, logFile);
+          Long totalTime1 = (System.currentTimeMillis() - startTime1);
+          Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to shut down");
         } else {
-          System.out.println("Delete operation is failed.");
-        }
+          if (nodeType.equalsIgnoreCase("servers"))
+            scriptName = "/sbin/snappy-servers.sh";
+          else if (nodeType.equalsIgnoreCase("leads"))
+            scriptName = "/sbin/snappy-leads.sh";
+          else
+            scriptName = "/sbin/snappy-locators.sh";
 
-        //restore the back up to its originals.
-        if (bkName.renameTo(orgName)) {
-          Log.getLogWriter().info("File renamed to " + orgName);
-        } else {
-          Log.getLogWriter().info("Error");
-        }
-      } catch (FileNotFoundException e) {
-        // File not found
-        e.printStackTrace();
-      } catch (IOException e) {
-        // Error when writing to the file
-        e.printStackTrace();
-      }
+          File log = new File(".");
+          String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
+          Log.getLogWriter().info("The destination file is " + dest);
+          File logFile = new File(dest);
 
-    } catch (Exception e) {
+          Log.getLogWriter().info("The nodeType is " + nodeType + " script to stop is " + scriptName);
+          ProcessBuilder pbStop = new ProcessBuilder(snappyPath + scriptName, "stop");
+          snappyTest.executeProcess(pbStop, logFile);
+
+          Thread.sleep(30000); //sleep for 3 min before restarting the node.
+
+          Log.getLogWriter().info("The nodeType is " + nodeType + " script to start is " + scriptName);
+          ProcessBuilder pbStart = new ProcessBuilder(snappyPath + scriptName, "start");
+          snappyTest.executeProcess(pbStart, logFile);
+          Thread.sleep(60000);
+
+          //delete the temp conf file created.
+          if (tempConfFile.delete()) {
+            System.out.println(tempConfFile.getName() + " is deleted!");
+          } else {
+            System.out.println("Delete operation is failed.");
+          }
+
+          //restore the back up to its originals.
+          if (bkName.renameTo(orgName)) {
+            Log.getLogWriter().info("File renamed to " + orgName);
+          } else {
+            Log.getLogWriter().info("Error");
+          }
+        }
+      }catch (FileNotFoundException e) {
+          // File not found
+          e.printStackTrace();
+        } catch (IOException e) {
+          // Error when writing to the file
+          e.printStackTrace();
+        } catch (Exception e) {
       Log.getLogWriter().info("Caught Exception in performHA " + e.getMessage());
     }
   }
