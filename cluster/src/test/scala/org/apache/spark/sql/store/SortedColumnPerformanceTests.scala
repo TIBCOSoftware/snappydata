@@ -28,7 +28,6 @@ import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{DataFrame, DataFrameReader, SnappySession}
 import org.apache.spark.util.{Benchmark, MultiThreadedBenchmark}
-import org.apache.spark.sql.snappy._
 import scala.concurrent.duration._
 
 /**
@@ -138,7 +137,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
         insertDF.write.insertInto(colTableName)
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        updateDF.write.putInto(colTableName)
+        updateDF.write.insertInto(colTableName)
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
         session.conf.unset(Property.ColumnBatchSize.name)
@@ -189,8 +188,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         insertDF.write.insertInto(joinTableName)
 
         ColumnTableScan.setCaseOfSortedInsertValue(true)
-        updateDF.write.putInto(colTableName)
-        updateDF.write.putInto(joinTableName)
+        updateDF.write.insertInto(colTableName)
+        updateDF.write.insertInto(joinTableName)
       } finally {
         ColumnTableScan.setCaseOfSortedInsertValue(false)
         session.conf.unset(Property.ColumnBatchSize.name)
@@ -400,9 +399,9 @@ object SortedColumnPerformanceTests {
             insertDF.write.insertInto(joinTableName.get)
           }
           ColumnTableScan.setCaseOfSortedInsertValue(true)
-          updateDF.write.putInto(colTableName)
+          updateDF.write.insertInto(colTableName)
           if (joinTableName.isDefined) {
-            updateDF.write.putInto(joinTableName.get)
+            updateDF.write.insertInto(joinTableName.get)
           }
           if (doVerifyFullSize) {
             SortedColumnTests.verifyTotalRows(session, colTableName, numElements, finalCall = true,

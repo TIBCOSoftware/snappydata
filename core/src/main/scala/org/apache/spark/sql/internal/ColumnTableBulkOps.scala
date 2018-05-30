@@ -20,10 +20,10 @@ import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
-import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
+import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, InsertIntoTable, Join, LogicalPlan, OverwriteOptions, Project}
+import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -36,7 +36,41 @@ import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSes
   */
 object ColumnTableBulkOps {
 
+  def transformInsertPlan(sparkSession: SparkSession,
+      originalPlan: InsertIntoTable): LogicalPlan = {
+    val table = originalPlan.table
+    val subQuery = originalPlan.child
+    var transFormedPlan: LogicalPlan = originalPlan
 
+    table.collectFirst {
+      case lr@LogicalRelation(mutable: MutableRelation, _, _)
+        if ColumnTableScan.getCaseOfSortedInsertValue =>
+        val partitionColumns = mutable.partitionColumns
+        if (partitionColumns.isEmpty) {
+          throw new AnalysisException(
+            s"Insert in a table requires partitioning column(s) but got empty string")
+        }
+        val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
+          changeCondition = true)
+
+        val keyColumns = getKeyColumns(table)
+        var updateSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
+        val updateColumns = table.output
+        val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
+        if (updateExpressions.isEmpty) {
+          throw new AnalysisException(
+            s"PutInto is attempted without any column which can be updated." +
+                s" Provide some columns apart from key column(s)")
+        }
+
+        val updatePlan = Update(table, updateSubQuery, Seq.empty,
+          updateColumns, updateExpressions)
+        val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
+        transFormedPlan = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+      case _ => // Do nothing, original insert plan is enough
+    }
+    transFormedPlan
+  }
 
   def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
@@ -118,7 +152,8 @@ object ColumnTableBulkOps {
   private def prepareCondition(sparkSession: SparkSession,
       table: LogicalPlan,
       child: LogicalPlan,
-      columnNames: Seq[String]): Option[Expression] = {
+      columnNames: Seq[String],
+      changeCondition: Boolean = false): Option[Expression] = {
     val analyzer = sparkSession.sessionState.analyzer
     val leftKeys = columnNames.map { keyName =>
       table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
@@ -139,7 +174,12 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = joinPairs.map(EqualTo.tupled).reduceOption(And)
+    val newCondition = if (changeCondition) {
+      val newCondition1 = joinPairs.map(EqualTo.tupled)
+      val newCondition2 = joinPairs.map(a =>
+        org.apache.spark.sql.catalyst.expressions.Not(EqualTo(a._1, a._2)))
+      (newCondition1 ++ newCondition2).reduceOption(And)
+    } else joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
   }
 
