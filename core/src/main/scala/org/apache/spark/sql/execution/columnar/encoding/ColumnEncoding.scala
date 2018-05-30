@@ -788,9 +788,9 @@ object ColumnEncoding {
     val typeId = readInt(columnBytes, cursor)
     cursor += 4
     val dataType = Utils.getSQLDataType(field.dataType)
-    if (typeId >= allDecoders.length || typeId < 0) {
+    if (typeId >= allDecoders.length) {
       val bytesStr = columnBytes match {
-        case null => s" bytes: null"
+        case null => ""
         case bytes: Array[Byte] => s" bytes: ${bytes.toSeq}"
         case _ => ""
       }
