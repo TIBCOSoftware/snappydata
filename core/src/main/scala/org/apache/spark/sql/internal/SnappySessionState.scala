@@ -21,7 +21,6 @@ import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
-import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
@@ -41,7 +40,6 @@ import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, 
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
@@ -487,6 +485,8 @@ class SnappySessionState(snappySession: SnappySession)
         ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
       case p@PutIntoTable(_, child) if child.resolved =>
         ColumnTableBulkOps.transformPutPlan(sparkSession, p)
+      case i@InsertIntoTable(table: LogicalPlan, _, child, _, _) if child.resolved =>
+        ColumnTableBulkOps.transformInsertPlan(sparkSession, i)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
