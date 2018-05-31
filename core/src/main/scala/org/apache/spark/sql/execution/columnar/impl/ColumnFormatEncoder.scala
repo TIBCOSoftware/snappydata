@@ -32,6 +32,7 @@ import io.snappydata.thrift.internal.ClientBlob
 
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.store.CompressionCodecId
+import org.apache.spark.sql.types.StructType
 
 /**
  * A [[RowEncoder]] implementation for [[ColumnFormatValue]] and child classes.
@@ -134,8 +135,9 @@ final class ColumnFormatEncoder extends RowEncoder {
           deleteDelta.release()
         }
         if (deleteBatch) {
-          ColumnDelta.deleteBatch(deleteKey, region,
-            region.getUserAttribute.asInstanceOf[GemFireContainer].getQualifiedTableName)
+          val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
+          val schema = container.fetchHiveMetaData(false).schema.asInstanceOf[StructType]
+          ColumnDelta.deleteBatch(deleteKey, region, schema.length)
         }
       case _ =>
     })

@@ -16,11 +16,18 @@
  */
 package org.apache.spark.sql.execution.ui
 
+import java.util.AbstractMap.SimpleEntry
+import java.util.function.BiFunction
+
+import scala.collection.JavaConverters._
 import scala.collection.mutable
+
+import com.gemstone.gnu.trove.TLongArrayList
+import io.snappydata.collection.ObjectObjectHashMap
 
 import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
 import org.apache.spark.sql.CachedDataFrame
-import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
+import org.apache.spark.sql.execution.{SQLExecution, SnappyMetrics, SparkPlanInfo}
 import org.apache.spark.{JobExecutionStatus, SparkConf}
 
 /**
@@ -150,6 +157,92 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
         }
       case _ => super.onOtherEvent(event)
     }
+  }
 
+  /**
+   * Get all accumulator updates from all tasks which belong to this execution and merge them.
+   */
+  override def getExecutionMetrics(executionId: Long): Map[Long, String] = synchronized {
+    baseExecutionIdToData.get(executionId) match {
+      case Some(executionUIData) =>
+        val accumulatorUpdates = {
+          for (stageId <- executionUIData.stages;
+               stageMetrics <- baseStageIdToStageMetrics.get(stageId).toIterable;
+               taskMetrics <- stageMetrics.taskIdToMetricUpdates.values;
+               accumulatorUpdate <- taskMetrics.accumulatorUpdates) yield {
+            (accumulatorUpdate._1, accumulatorUpdate._2)
+          }
+        }
+
+        val driverUpdates = executionUIData.driverAccumUpdates.toSeq
+        val totalUpdates = (accumulatorUpdates ++ driverUpdates).filter {
+          case (id, _) => executionUIData.accumulatorMetrics.contains(id)
+        }
+        mergeAccumulatorUpdates(totalUpdates, accumulatorId =>
+          executionUIData.accumulatorMetrics(accumulatorId).metricType)
+      case None =>
+        // This execution has been dropped
+        Map.empty
+    }
+  }
+
+  private def mergeAccumulatorUpdates(
+      accumulatorUpdates: Seq[(Long, Any)],
+      metricTypeFunc: Long => String): Map[Long, String] = {
+    // Group by accumulatorId but also group on splitSum metric
+    // to include display of all into the first accumulator of a split series.
+    // The map below either has accumulatorId as key or the splitSum metric series type
+    // as the key, and second part of value is metric type for former case while
+    // accumulatorId of the first in series for latter case.
+    type MapValue = SimpleEntry[Any, Any]
+    val accumulatorMap = ObjectObjectHashMap.withExpectedSize[Any, MapValue](8)
+    for ((accumulatorId, value) <- accumulatorUpdates) {
+      val metricType = metricTypeFunc(accumulatorId)
+      if (metricType.startsWith(SnappyMetrics.SPLIT_SUM_METRIC)) {
+        val splitIndex = metricType.indexOf('_')
+        val key = metricType.substring(0, splitIndex)
+        val index = metricType.substring(splitIndex + 1).toInt
+        accumulatorMap.compute(key, new BiFunction[Any, MapValue, MapValue] {
+          private def expandBuffer(b: mutable.ArrayBuffer[TLongArrayList], size: Int): Unit = {
+            var i = b.length
+            while (i < size) {
+              b += null
+              i += 1
+            }
+          }
+
+          override def apply(key: Any, v: MapValue): MapValue = {
+            val mapValue = if (v ne null) v
+            else new MapValue(new mutable.ArrayBuffer[TLongArrayList](math.max(index + 1, 4)), 0L)
+            val valueList = mapValue.getKey.asInstanceOf[mutable.ArrayBuffer[TLongArrayList]]
+            expandBuffer(valueList, index + 1)
+            val values = valueList(index) match {
+              case null => val l = new TLongArrayList(4); valueList(index) = l; l
+              case l => l
+            }
+            values.add(value.asInstanceOf[Long])
+            if (index == 0) mapValue.setValue(accumulatorId)
+            mapValue
+          }
+        })
+      } else {
+        accumulatorMap.compute(accumulatorId, new BiFunction[Any, MapValue, MapValue] {
+          override def apply(key: Any, v: MapValue): MapValue = {
+            val mapValue = if (v ne null) v
+            else new MapValue(new TLongArrayList(4), metricType)
+            mapValue.getKey.asInstanceOf[TLongArrayList].add(value.asInstanceOf[Long])
+            mapValue
+          }
+        })
+      }
+    }
+    // now create a map on accumulatorId and the values (which are either a
+    // list of longs or a list of list of longs) as string
+    accumulatorMap.asScala.map {
+      case (id: Long, entry) =>
+        id -> SnappyMetrics.stringValue(entry.getValue.asInstanceOf[String], entry.getKey)
+      case (metricType: String, entry) =>
+        entry.getValue.asInstanceOf[Long] -> SnappyMetrics.stringValue(metricType, entry.getKey)
+    }.toMap
   }
 }

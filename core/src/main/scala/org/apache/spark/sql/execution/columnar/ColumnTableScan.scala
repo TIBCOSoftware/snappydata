@@ -48,6 +48,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.ColumnTableScan.{NUM_BATCHES_DISK_FULL, NUM_BATCHES_DISK_PARTIAL, NUM_ROWS_DISK}
 import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -64,7 +65,7 @@ import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkC
  * This plan overrides outputPartitioning and makes it inline with the
  * partitioning of the underlying DataSource.
  */
-private[sql] final case class ColumnTableScan(
+final case class ColumnTableScan(
     output: Seq[Attribute],
     dataRDD: RDD[Any],
     otherRDDs: Seq[RDD[InternalRow]],
@@ -102,14 +103,20 @@ private[sql] final case class ColumnTableScan(
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
     else super.getMetrics ++ Map(
-      "numRowsBuffer" -> SQLMetrics.createMetric(sparkContext,
-        "number of output rows from row buffer"),
-      "columnBatchesSeen" -> SQLMetrics.createMetric(sparkContext,
-        "column batches seen"),
-      "updatedColumnCount" -> SQLMetrics.createMetric(sparkContext,
-        "total updated columns in batches"),
-      "deletedBatchCount" -> SQLMetrics.createMetric(sparkContext,
-        "column batches having deletes"),
+      "numRowsBuffer" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+        "rows read from row buffer (total / disk)", 0, 0),
+      NUM_ROWS_DISK -> SnappyMetrics.createSplitSumMetric(sparkContext,
+        "number of rows on disk from row buffer", 0, 1),
+      "columnBatchesSeen" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+        "column batches read (total / disk-partial / disk-full)", 1, 0),
+      NUM_BATCHES_DISK_PARTIAL -> SnappyMetrics.createSplitSumMetric(sparkContext,
+        "column batches read from disk (partial)", 1, 1),
+      NUM_BATCHES_DISK_FULL -> SnappyMetrics.createSplitSumMetric(sparkContext,
+        "column batches read from disk (full)", 1, 2),
+      "updatedColumnCount" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+        "deltas (updated columns / batches having deletes)", 2, 0),
+      "deletedBatchCount" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+        "column batches having deletes", 2, 1),
       "columnBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
         "column batches skipped by the predicate")) ++ (
         if (otherRDDs.isEmpty) Map.empty
@@ -177,10 +184,13 @@ private[sql] final case class ColumnTableScan(
   override def doProduce(ctx: CodegenContext): String = {
     val numOutputRows = metricTerm(ctx, "numOutputRows")
     val numRowsBuffer = metricTerm(ctx, "numRowsBuffer")
+    val numRowsBufferDisk = metricTerm(ctx, NUM_ROWS_DISK)
+    val numBatchesDiskPartial = metricTerm(ctx, NUM_BATCHES_DISK_PARTIAL)
+    val numBatchesDiskFull = metricTerm(ctx, NUM_BATCHES_DISK_FULL)
     val numRowsOther =
       if (otherRDDs.isEmpty) null else metricTerm(ctx, "numRowsOtherRDDs")
     val embedded = (baseRelation eq null) ||
-      (baseRelation.connectionType == ConnectionType.Embedded)
+        (baseRelation.connectionType == ConnectionType.Embedded)
     // PartitionedPhysicalRDD always has one input.
     // It returns an iterator of iterators (row + column)
     // except when doing union with multiple RDDs where other
@@ -216,6 +226,7 @@ private[sql] final case class ColumnTableScan(
     val iteratorClass = "scala.collection.Iterator"
     val colIteratorClass = if (embedded) classOf[ColumnBatchIterator].getName
     else classOf[ColumnBatchIteratorOnRS].getName
+    val iteratorWithMetricsClass = classOf[IteratorWithMetrics[_]].getName
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         ctx.addMutableState(iteratorClass, rowInputSRR,
@@ -320,6 +331,24 @@ private[sql] final case class ColumnTableScan(
           $numRowsOther.${metricAdd("1")};
         } else {
           $numRowsBuffer.${metricAdd("1")};
+        }
+      """
+    }
+    val setRowDiskMetricsSnippet = if (numRowsBufferDisk eq null) ""
+    else {
+      s"""
+        if ($rowInput instanceof $iteratorWithMetricsClass) {
+          (($iteratorWithMetricsClass)$rowInput).setMetric("$NUM_ROWS_DISK", $numRowsBufferDisk);
+        }
+      """
+    }
+    val setColumnDiskMetricsSnippet = if (numBatchesDiskPartial eq null) ""
+    else {
+      s"""
+        if ($colInput instanceof $iteratorWithMetricsClass) {
+          $iteratorWithMetricsClass mIter = ($iteratorWithMetricsClass)$colInput;
+          mIter.setMetric("$NUM_BATCHES_DISK_PARTIAL", $numBatchesDiskPartial);
+          mIter.setMetric("$NUM_BATCHES_DISK_FULL", $numBatchesDiskFull);
         }
       """
     }
@@ -476,7 +505,8 @@ private[sql] final case class ColumnTableScan(
     val deltaStatsRow = ctx.freshName("deltaStatsRow")
     val colNextBytes = ctx.freshName("colNextBytes")
     val numTableColumns = if (ordinalIdTerm eq null) relationSchema.size
-    else relationSchema.size - ColumnDelta.mutableKeyNames.length // for update/delete
+    // for update/delete
+    else relationSchema.size - ColumnDelta.mutableKeyNames.length
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(numTableColumns)
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
@@ -616,6 +646,7 @@ private[sql] final case class ColumnTableScan(
        |// case when partition is of otherRDDs by iterating over it
        |// using an UnsafeRow adapter.
        |try {
+       |  $setRowDiskMetricsSnippet$setColumnDiskMetricsSnippet
        |  while ($nextBatch()) {
        |    $bufferInitCodeStr
        |    $assignBatchId
@@ -793,6 +824,10 @@ private[sql] final case class ColumnTableScan(
 }
 
 object ColumnTableScan extends Logging {
+
+  val NUM_ROWS_DISK = "numRowsBufferDisk"
+  val NUM_BATCHES_DISK_PARTIAL = "columnBatchesDiskPartial"
+  val NUM_BATCHES_DISK_FULL = "columnBatchesDiskFull"
 
   def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
       schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,

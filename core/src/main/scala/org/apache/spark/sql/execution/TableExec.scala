@@ -172,3 +172,18 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
     childProduce
   }
 }
+
+/**
+ * An iterator that will update provided metrics (those supported by an implementation).
+ */
+trait IteratorWithMetrics[A] extends Iterator[A] {
+
+  /**
+   * Set a metric to be updated during iteration.
+   *
+   * @param name   name of the metric
+   * @param metric the metric to be updated during iteration
+   * @return true if given metric is supported else false
+   */
+  def setMetric(name: String, metric: SQLMetric): Boolean
+}
