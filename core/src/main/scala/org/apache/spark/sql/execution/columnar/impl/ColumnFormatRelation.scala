@@ -794,10 +794,12 @@ final class DefaultSource extends SchemaRelationProvider
     val table = Utils.toUpperCase(ExternalStoreUtils.removeInternalProps(parameters))
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
+    val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)
+    // TODO: VB: parse partitioningColumns to see ASC/DESC and set into a separate
+    // property in parameters
     val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
-    val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)
     // change the schema to use VARCHAR for StringType for partitioning columns
     // so that the row buffer table can use it as part of primary key
     val (primaryKeyClause, stringPKCols) = StoreUtils.getPrimaryKeyClause(
