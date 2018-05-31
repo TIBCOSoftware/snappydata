@@ -33,8 +33,7 @@ import com.gemstone.gemfire.internal.shared._
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.RegionKey
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
@@ -46,6 +45,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
+import org.apache.spark.sql.types.StructType
 
 /**
  * Utility methods for column format storage keys and values.
@@ -106,18 +106,15 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   // to be used only by deserialization
   def this() = this(-1L, -1, -1)
 
-  override def getNumColumnsInTable(columnTableName: String): Int = {
-    val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
-    GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
-  }
+  override def getNumColumnsInTable(columnTable: GemFireContainer): Int =
+    columnTable.fetchHiveMetaData(false).schema.asInstanceOf[StructType].length
 
   override def getColumnBatchRowCount(itr: PREntriesIterator[_],
-      re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
+      re: RegionEntry, numColumnsInTable: Int): Int = {
     val currentBucketRegion = itr.getHostedBucketRegion
-    if ((columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+    if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
-        columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) &&
-        !re.isDestroyedOrRemoved) {
+        columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
       val statsOrDeleteVal = re.getValue(currentBucketRegion)
       if (statsOrDeleteVal ne null) {
         val statsOrDelete = statsOrDeleteVal.asInstanceOf[ColumnFormatValue]
@@ -320,7 +317,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   }
 
   @GuardedBy("this")
-  protected final def isCompressed: Boolean = decompressionState == 0
+  final def isCompressed: Boolean = decompressionState == 0
 
   override final def copyToHeap(owner: String): Unit = synchronized {
     columnBuffer = HeapBufferAllocator.instance().transfer(columnBuffer, owner)
@@ -598,8 +595,9 @@ class ColumnFormatValue extends SerializedDiskBuffer
   override final def setDiskEntry(entry: AbstractOplogDiskRegionEntry,
       context: RegionEntryContext): Unit = synchronized {
     this.entry = entry
-    // set/update diskRegion only if incoming value has been provided
-    if (context ne null) {
+    // set/update diskRegion only if incoming value has been provided and is "better"
+    if ((context ne null) &&
+        (!this.regionContext.isInstanceOf[LocalRegion] || context.isInstanceOf[LocalRegion])) {
       this.regionContext = context
       val codec = context.getColumnCompressionCodec
       if (codec ne null) {
@@ -607,6 +605,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
       }
     }
   }
+
+  override def getRegionContext: RegionEntryContext = this.regionContext
 
   override final def write(channel: OutputStreamChannel): Unit = {
     // write the pre-serialized buffer as is

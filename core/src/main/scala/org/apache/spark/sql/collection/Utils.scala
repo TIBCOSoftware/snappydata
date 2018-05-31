@@ -23,6 +23,7 @@ import java.util.TimeZone
 
 import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
+import scala.concurrent.ExecutionContext
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
@@ -30,6 +31,7 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -45,7 +47,7 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, GenericRow, UnsafeRow}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
@@ -389,6 +391,15 @@ object Utils {
   final def isLoner(sc: SparkContext): Boolean =
     (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
+  def executionContext(cache: GemFireCacheImpl): ExecutionContext = {
+    if (cache eq null) scala.concurrent.ExecutionContext.Implicits.global
+    else {
+      val dm = cache.getDistributionManager
+      if (dm.isLoner) scala.concurrent.ExecutionContext.Implicits.global
+      else ExecutionContext.fromExecutorService(dm.getWaitingThreadPool)
+    }
+  }
+
   def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
@@ -513,6 +524,8 @@ object Utils {
       Iterator((name, f))
     }: _*)
   }
+
+  def schemaAttributes(schema: StructType): Seq[AttributeReference] = schema.toAttributes
 
   def getFields(o: Any): Map[String, Any] = {
     val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {

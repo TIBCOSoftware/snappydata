@@ -42,9 +42,10 @@ import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
-import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{RDDKryo, SecurityUtils}
+import org.apache.spark.sql.execution.{IteratorWithMetrics, RDDKryo, SecurityUtils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext}
@@ -295,7 +296,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         }
 
         val txId = if (tx ne null) tx.getTransactionId else null
-        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId)
+        // always fault-in for row buffers
+        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId,
+          faultIn = container.isRowBuffer)
         if (useResultSet) {
           // row buffer of column table: wrap a result set around the scan
           val dataItr = itr.map(r =>
@@ -436,7 +439,7 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer,
-    region: LocalRegion, bucketIds: java.util.Set[Integer]) extends Iterator[T] {
+    region: LocalRegion, bucketIds: java.util.Set[Integer]) extends IteratorWithMetrics[T] {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
@@ -448,12 +451,10 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 
   protected def createIterator(container: GemFireContainer, region: LocalRegion,
       tx: TXStateInterface): PRIterator = if (container ne null) {
-    container.getEntrySetIteratorForBucketSet(
-      bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
+    container.getEntrySetIteratorForBucketSet(bucketIds, null, tx, 0,
       false, true).asInstanceOf[PRIterator]
   } else if (region ne null) {
-    region.getDataView(tx).getLocalEntriesIterator(
-      bucketIds.asInstanceOf[java.util.Set[Integer]], false, false, true,
+    region.getDataView(tx).getLocalEntriesIterator(bucketIds, false, false, true,
       region, true).asInstanceOf[PRIterator]
   } else null
 
@@ -479,24 +480,40 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], txId: TXId)
+    bucketIds: java.util.Set[Integer], txId: TXId, faultIn: Boolean)
     extends PRValuesIterator[AbstractCompactExecRow](container,
       region = null, bucketIds) {
 
   override protected[sql] val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
+  private var diskRowsMetric: SQLMetric = _
 
   override protected[sql] def moveNext(): Unit = {
     val itr = this.itr
     while (itr.hasNext) {
-      val rl = itr.next()
+      val rl = itr.next().asInstanceOf[RowLocation]
       val owner = itr.getHostedBucketRegion
-      if (((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) &&
-          RegionEntryUtils.fillRowWithoutFaultInOptimized(container, owner,
-            rl.asInstanceOf[RowLocation], currentVal)) {
-        return
+      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
+        val valueWasNull = (diskRowsMetric ne null) && rl.isValueNull
+        if (faultIn) {
+          if (RegionEntryUtils.fillRowFaultInOptimized(container, owner, rl, currentVal)) {
+            if (valueWasNull) diskRowsMetric.add(1)
+            return
+          }
+        } else if (RegionEntryUtils.fillRowWithoutFaultInOptimized(
+          container, owner, rl, currentVal)) {
+          if (valueWasNull) diskRowsMetric.add(1)
+          return
+        }
       }
     }
     hasNextValue = false
+  }
+
+  override def setMetric(name: String, metric: SQLMetric): Boolean = {
+    if (name == ColumnTableScan.NUM_ROWS_DISK) {
+      diskRowsMetric = metric
+      true
+    } else false
   }
 }

@@ -36,6 +36,7 @@ import io.snappydata.thrift.common.BufferedBlob
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl._
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
@@ -110,7 +111,6 @@ abstract class ResultSetIterator[A](conn: Connection,
         case NonFatal(e) => logWarning("Exception closing statement", e)
       }
       hasNextValue = false
-
   }
 }
 
@@ -119,18 +119,26 @@ object ColumnBatchIterator {
   def apply(region: LocalRegion,
       bucketIds: java.util.Set[Integer], projection: Array[Int],
       fullScan: Boolean, context: TaskContext): ColumnBatchIterator = {
-    new ColumnBatchIterator(region, batch = null, bucketIds, projection, fullScan, context)
+    new ColumnBatchIterator(region, batch = null, statsEntries = null, bucketIds,
+      projection, fullScan, context)
   }
 
   def apply(batch: ColumnBatch): ColumnBatchIterator = {
-    new ColumnBatchIterator(region = null, batch, bucketIds = null,
+    new ColumnBatchIterator(region = null, batch, statsEntries = null, bucketIds = null,
       projection = null, fullScan = false, context = null)
+  }
+
+  def apply(bucketRegion: BucketRegion, statsEntries: Iterator[RegionEntry],
+      projection: Array[Int], context: TaskContext): ColumnBatchIterator = {
+    new ColumnBatchIterator(bucketRegion.getPartitionedRegion, batch = null,
+      statsEntries, java.util.Collections.singleton[Integer](bucketRegion.getId),
+      projection, fullScan = false, context)
   }
 }
 
-final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
-    bucketIds: java.util.Set[Integer], projection: Array[Int],
-    fullScan: Boolean, context: TaskContext)
+final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
+    statsEntries: Iterator[RegionEntry], bucketIds: java.util.Set[Integer],
+    projection: Array[Int], fullScan: Boolean, context: TaskContext)
     extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
 
   if (region ne null) {
@@ -144,10 +152,12 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 
   protected[sql] var currentVal: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
-  private var currentKeyPartitionId: Int = _
-  private var currentKeyUUID: Long = _
+  private var currentKey: ColumnFormatKey = _
   private var batchProcessed = false
   private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
+
+  private var diskBatchesFullMetric: SQLMetric = _
+  private var diskBatchesPartialMetric: SQLMetric = _
 
   override protected def createIterator(container: GemFireContainer, region: LocalRegion,
       tx: TXStateInterface): PRIterator = if (region ne null) {
@@ -156,7 +166,8 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
         java.util.Iterator[RegionEntry]] {
       override def apply(br: BucketRegion,
           numEntries: java.lang.Long): java.util.Iterator[RegionEntry] = {
-        new ColumnFormatIterator(br, projection, fullScan, txState)
+        if (statsEntries eq null) new ColumnFormatIterator(br, projection, fullScan, txState)
+        else new ColumnFormatStatsIterator(br, statsEntries, tx)
       }
     }
     val createRemoteIterator = new BiFunction[java.lang.Integer, PRIterator,
@@ -171,18 +182,17 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
       false, true, true)
   } else null
 
-  def getCurrentBatchId: Long = currentKeyUUID
+  def getCurrentBatchId: Long = currentKey.uuid
 
-  def getCurrentBucketId: Int = currentKeyPartitionId
+  def getCurrentBucketId: Int = currentKey.partitionId
 
   private[execution] def getCurrentStatsColumn: ColumnFormatValue = currentColumns(0)
 
   private[sql] def getColumnBuffer(columnPosition: Int, throwIfMissing: Boolean): ByteBuffer = {
     val value = itr.getBucketEntriesIterator.asInstanceOf[ClusteredColumnIterator]
-        .getColumnValue(columnPosition)
+        .getColumnValue(columnPosition).asInstanceOf[ColumnFormatValue]
     if (value ne null) {
-      val columnValue = value.asInstanceOf[ColumnFormatValue].getValueRetain(
-        FetchRequest.DECOMPRESS)
+      val columnValue = value.getValueRetain(FetchRequest.DECOMPRESS)
       val buffer = columnValue.getBuffer
       if (buffer.remaining() > 0) {
         currentColumns += columnValue
@@ -192,7 +202,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     if (throwIfMissing) {
       // empty buffer indicates value removed from region
       throw new EntryDestroyedException(s"Iteration on column=$columnPosition " +
-          s"partition=$currentKeyPartitionId batchUUID=$currentKeyUUID " +
+          s"partition=${currentKey.partitionId} batchUUID=${currentKey.uuid} " +
           "failed due to missing value")
     } else null
   }
@@ -248,10 +258,21 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     if ((previousColumns ne null) && previousColumns.nonEmpty) {
       currentColumns = null
       val len = previousColumns.length
+      val checkDiskColumns = (diskBatchesFullMetric ne null) || (diskBatchesPartialMetric ne null)
+      var numDiskColumns = 0
       var i = 0
       while (i < len) {
-        previousColumns(i).release()
+        val v = previousColumns(i)
+        if (checkDiskColumns && (v.getRegionContext eq null)) numDiskColumns += 1
+        v.release()
         i += 1
+      }
+      if (numDiskColumns > 0) {
+        if (numDiskColumns == len) {
+          if (diskBatchesFullMetric ne null) diskBatchesFullMetric.add(1)
+        } else if (diskBatchesPartialMetric ne null) {
+          diskBatchesPartialMetric.add(1)
+        }
       }
       len
     } else 0
@@ -280,8 +301,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
               val buffer = columnValue.getBuffer
               // empty buffer indicates value removed from region
               if (buffer.remaining() > 0) {
-                currentKeyPartitionId = key.partitionId
-                currentKeyUUID = key.uuid
+                currentKey = key
                 currentVal = buffer
                 currentColumns += columnValue
                 // check for update/delete stats row
@@ -301,6 +321,12 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     } else {
       hasNextValue = false
     }
+  }
+
+  override def setMetric(name: String, metric: SQLMetric): Boolean = name match {
+    case ColumnTableScan.NUM_BATCHES_DISK_PARTIAL => diskBatchesPartialMetric = metric; true
+    case ColumnTableScan.NUM_BATCHES_DISK_FULL => diskBatchesFullMetric = metric; true
+    case _ => false
   }
 
   def close(): Unit = {

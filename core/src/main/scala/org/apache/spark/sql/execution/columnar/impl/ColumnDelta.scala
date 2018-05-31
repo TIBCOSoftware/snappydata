@@ -296,8 +296,7 @@ object ColumnDelta {
    * Delete entire batch from column store for the batchId and partitionId
    * matching those of given key.
    */
-  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
-      columnTableName: String): Unit = {
+  def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _], numColumns: Int): Unit = {
 
     // delete all the rows with matching batchId
     def destroyKey(key: ColumnFormatKey): Unit = {
@@ -308,7 +307,6 @@ object ColumnDelta {
       }
     }
 
-    val numColumns = key.getNumColumnsInTable(columnTableName)
     // delete the stats rows first
     destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
     destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))

@@ -242,7 +242,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
         // check for full batch delete
         if (ColumnDelta.checkBatchDeleted(buffer)) {
-          ColumnDelta.deleteBatch(key, region, columnTableName)
+          ColumnDelta.deleteBatch(key, region, schema.length)
           return
         }
         region.put(key, value)
@@ -345,7 +345,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  private def doSnappyInsertOrPut(region: LocalRegion, batch: ColumnBatch,
+  private def doSnappyInsertOrPut(region: PartitionedRegion, batch: ColumnBatch,
       batchId: Long, partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int): Unit = {
     val deltaUpdate = batch.deltaIndexes ne null
     val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
@@ -366,6 +366,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       }
       // add the stats row
       val key = new ColumnFormatKey(batchId, partitionId, statRowIndex)
+      if (maxDeltaRows > 0 && maxDeltaRows < region.getColumnMaxDeltaRows) {
+        // log at info level for the case of column batch merges
+        logInfo(s"Putting batch of size = ${batch.numRows} into ${region.getName}: $key")
+      } else {
+        logDebug(s"Putting batch of size = ${batch.numRows} into ${region.getName}: $key")
+      }
       val allocator = Misc.getGemFireCache.getBufferAllocator
       val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
       val value = if (deltaUpdate) {

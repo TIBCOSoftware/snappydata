@@ -419,7 +419,8 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    val overflow = parameters.get(OVERFLOW).forall(_.toBoolean)
+    // no overflow for row buffer tables
+    val overflow = (isRowTable || isShadowTable) && parameters.get(OVERFLOW).forall(_.toBoolean)
     val defaultEviction = if (overflow) s"$GEM_HEAPPERCENT $GEM_OVERFLOW" else EMPTY_STRING
     sb.append(parameters.remove(EVICTION_BY).map(v => {
       if (v.contains(LRUCOUNT) && isShadowTable) {
@@ -459,7 +460,8 @@ object StoreUtils {
       parameters.remove(DISKSTORE) match {
         case Some(v) =>
           if (!isPersistent && !overflow) {
-            throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+            throw Utils.analysisException(
+              s"Option '$DISKSTORE' requires '$PERSISTENCE' or '$OVERFLOW' option")
           }
           if (v == GfxdConstants.GFXD_DEFAULT_DISKSTORE_NAME) {
             sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
@@ -473,7 +475,7 @@ object StoreUtils {
       parameters.remove(DISKSTORE).foreach { v =>
         if (isPersistent) sb.append(s"'$v' ")
         else if (!isPersistent && !overflow) throw Utils.analysisException(
-          s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+          s"Option '$DISKSTORE' requires '$PERSISTENCE' or '$OVERFLOW' option")
       }
     }
     sb.append(parameters.remove(SERVER_GROUPS)

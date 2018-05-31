@@ -411,3 +411,40 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
     }
   }
 }
+
+/**
+ * A customized iterator for a single bucket of a column table that uses a list of stats rows
+ * to fetch entire batches as required by ColumnTableScan. This does not honour
+ * disk order so should be used only for a small list of rows while other cases
+ * should use the normal <code>ColumnFormatIterator</code>.
+ */
+final class ColumnFormatStatsIterator(bucketRegion: BucketRegion,
+    statsEntries: Iterator[RegionEntry], tx: TXStateInterface) extends ClusteredColumnIterator {
+
+  try {
+    bucketRegion.checkReadiness()
+  } catch {
+    case e: RegionDestroyedException => if (bucketRegion.isUsedForPartitionedRegionBucket) {
+      bucketRegion.getPartitionedRegion.checkReadiness()
+      throw new BucketNotFoundException(e.getMessage)
+    } else throw e
+  }
+
+  private var currentKey: ColumnFormatKey = _
+
+  override def hasNext: Boolean = statsEntries.hasNext
+
+  override def next(): RegionEntry = {
+    val re = statsEntries.next()
+    currentKey = re.getRawKey.asInstanceOf[ColumnFormatKey]
+    assert(currentKey.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX)
+    re
+  }
+
+  override def getColumnValue(columnIndex: Int): AnyRef = {
+    val key = currentKey.withColumnIndex(columnIndex)
+    bucketRegion.get(key, null, false, true, false, null, tx, null, null, false, false)
+  }
+
+  override def close(): Unit = currentKey = null
+}
