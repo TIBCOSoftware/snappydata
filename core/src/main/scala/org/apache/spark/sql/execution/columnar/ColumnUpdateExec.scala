@@ -264,7 +264,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
           val nullcountExpr = ExprCode(s"final int $nullCount = -1;", "false", nullCount)
           // write null for unchanged columns (by this update)
           (ColumnStatsSchema(field.name, field.dataType,
-            nullCountNullable = false).schema, allNullsExprs :+ nullcountExpr)
+            nullCountNullable = true).schema, allNullsExprs :+ nullcountExpr)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,
           s"$deltaEncoders[$u].getRealEncoder()", nullCountNullable = true)
       }
