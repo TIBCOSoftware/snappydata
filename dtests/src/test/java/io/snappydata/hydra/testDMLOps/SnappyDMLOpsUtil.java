@@ -51,6 +51,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static boolean hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
   public static boolean testUniqueKeys = TestConfig.tab().booleanAt(SnappySchemaPrms.testUniqueKeys, true);
   public static boolean isHATest = TestConfig.tab().booleanAt(SnappySchemaPrms.isHATest, false);
+  public static boolean overflow = TestConfig.tab().booleanAt(SnappySchemaPrms.overflow, false);
   public static boolean largeDataSet = TestConfig.tab().booleanAt(SnappySchemaPrms
       .largeDataSet, false);
 
@@ -179,8 +180,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try {
       Connection conn = getLocatorConnection();
       String[] tableNames = SnappySchemaPrms.getTableNames();
+      ResultSet rs = null;
       for (String table : tableNames) {
-        ResultSet rs = conn.createStatement().executeQuery("select * from " + table);
+        if (overflow){
+          rs = conn.createStatement().executeQuery("select * from " + table + " where ID=500");
+        }
+        else rs = conn.createStatement().executeQuery("select * from " + table);
         ResultSetMetaData rsmd = rs.getMetaData();
         int numOfColumns = rsmd.getColumnCount();
 

@@ -71,6 +71,8 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long isHATest;
 
+  public static Long overflow;
+
   public static Long largeDataSet;
 
   /* boolean : For fast data loading, slipt the data files and load them parallely*/
