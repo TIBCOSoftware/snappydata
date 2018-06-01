@@ -863,7 +863,8 @@ object ColumnTableScan extends Logging {
         StartsWithForStats(stats.upperBound, stats.lowerBound, pattern)
 
       case IsNull(a: Attribute) => statsFor(a).nullCount > 0
-      case IsNotNull(a: Attribute) => numBatchRows > statsFor(a).nullCount
+      case IsNotNull(a: Attribute) => statsFor(a).nullCount >= 0 &&
+          numBatchRows > statsFor(a).nullCount
     }
 
     // This code is picked up from InMemoryTableScanExec

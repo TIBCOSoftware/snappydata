@@ -241,19 +241,30 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       // code for invoking the function
       s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
+    // Old code(Keeping the comment for better understanding)
     // Write the delta stats row for all table columns at the end of a batch.
     // Columns that have not been updated will write nulls for all three stats
     // columns so this costs 3 bits per non-updated column (worst case of say
     // 100 column table will be ~38 bytes).
+    // New Code : Stats rows are written as UnsafeRow. Unsafe row irrespective
+    // of nullability keeps nullbits.
+    // So if 100 columns are  there stats row will contain 100 * 3 and UnsafeRow will contain
+    // 300 nullbits plus bits required for 8 bytes word allignment. Hence setting unused columns
+    // as null does not really saves much.
+
+    // These nullbits are set based on platform endianness. SD ColumnFormatValue
+    // assumes LITTLE_ENDIAN bytes.
     val allNullsExprs = Seq(ExprCode("", "true", ""),
-      ExprCode("", "true", ""), ExprCode("", "true", ""))
+      ExprCode("", "true", ""))
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
         case null =>
+          val nullCount = ctx.freshName("nullCount")
+          val nullcountExpr = ExprCode(s"final int $nullCount = -1;", "false", nullCount)
           // write null for unchanged columns (by this update)
           (ColumnStatsSchema(field.name, field.dataType,
-            nullCountNullable = true).schema, allNullsExprs)
+            nullCountNullable = false).schema, allNullsExprs :+ nullcountExpr)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,
           s"$deltaEncoders[$u].getRealEncoder()", nullCountNullable = true)
       }
