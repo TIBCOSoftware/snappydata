@@ -53,8 +53,7 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.columnar.impl.{DefaultSource => ColumnSource}
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{IndexColumnFormatRelation, DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
@@ -127,7 +126,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ =>
         // Initialize default database if it doesn't already exist
         val defaultDbDefinition =
-          CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
+          CatalogDatabase(defaultName, "default user database", sqlConf.warehousePath, Map())
         externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
         client.setCurrentDatabase(defaultName)
     }
@@ -922,7 +921,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     * Create a metastore function in the database specified in `funcDefinition`.
     * If no such database is specified, create it in the current database.
     * If the specified database is not present in catalog, create that database.
-    * @TODO Ideally create schema from gfxd should get routed to create the database in
+    * @todo Ideally create schema from gfxd should get routed to create the database in
     * the Hive catalog.
     */
   override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit = {

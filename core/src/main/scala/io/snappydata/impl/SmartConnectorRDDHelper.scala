@@ -185,9 +185,7 @@ object SmartConnectorRDDHelper {
           val netUrls = new ArrayBuffer[(String, String)](1)
           netUrls += host -> netUrl
           allNetUrls(bid) = netUrls
-          if (!availableNetUrls.containsKey(host)) {
-            availableNetUrls.put(host, netUrl)
-          }
+          availableNetUrls.putIfAbsent(host, netUrl)
         } else {
           // Save the bucket which does not have a neturl,
           // and later assign available ones to it.

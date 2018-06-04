@@ -19,8 +19,10 @@ package org.apache.spark.sql.execution.columnar.impl
 import com.gemstone.gemfire.internal.cache.RegionEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
 
+import org.apache.spark.sql.execution.metric.SQLMetric
+
 /**
- * Base trait for iterators that are capable of reading and returning
+ * Base class for iterators that are capable of reading and returning
  * the entire set of columns of a column batch. These can be local region
  * iterators or those fetching entries from remote nodes.
  */
@@ -32,4 +34,22 @@ abstract class ClusteredColumnIterator extends CloseableIterator[RegionEntry] {
    * throw an NullPointerException.
    */
   def getColumnValue(column: Int): AnyRef
+}
+
+/**
+ * Base class for local [[ClusteredColumnIterator]]s that can read from memory or disk.
+ */
+abstract class ClusteredDiskIterator extends ClusteredColumnIterator {
+
+  protected final var diskBatchesFull: SQLMetric = _
+  protected final var diskBatchesPartial: SQLMetric = _
+  protected final var checkDiskRead = false
+
+  /**
+   * Set metrics to track disk reads by this iterator.
+   */
+  def setDiskMetric(diskRead: SQLMetric, isPartialMetric: Boolean): Unit = {
+    checkDiskRead = true
+    if (isPartialMetric) this.diskBatchesPartial = diskRead else this.diskBatchesFull = diskRead
+  }
 }

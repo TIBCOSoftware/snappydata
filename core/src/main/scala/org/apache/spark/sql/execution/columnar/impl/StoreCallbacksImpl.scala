@@ -29,6 +29,7 @@ import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, Extern
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
+import com.google.common.cache.Cache
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -620,6 +621,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def clearConnectionPools(): Unit = {
     ConnectionPool.clear()
+  }
+
+  override def clearCodegenCaches(): Unit = {
+    CodeGeneration.clearAllCache()
+    val cacheField = CodeGenerator.getClass.getDeclaredFields.find(_.getName.endsWith("cache")).get
+    cacheField.setAccessible(true)
+    val cache = cacheField.get(CodeGenerator).asInstanceOf[Cache[_, _]]
+    cache.invalidateAll()
   }
 }
 

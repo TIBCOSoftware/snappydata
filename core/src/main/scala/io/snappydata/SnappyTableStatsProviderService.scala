@@ -19,9 +19,9 @@
 
 package io.snappydata
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.Collections
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
-import java.util.function.{BiFunction, Predicate}
+import java.util.function.{BiFunction, Predicate, Function => JFunction}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -145,19 +145,21 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
         val map = new ConcurrentHashMap[String, Any](8, 0.7f, 1).asScala
-        val keyItr = memMap.keySet().iterator()
+        val entryItr = memMap.entrySet().iterator()
 
-        while (keyItr.hasNext) {
-          val key = keyItr.next()
-          map.put(key, memMap.get(key))
+        while (entryItr.hasNext) {
+          val e = entryItr.next()
+          if ((e.getKey ne null) && e.getValue != null) {
+            map.put(e.getKey, e.getValue)
+          }
         }
         map.put("status", "Running")
 
         val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
         if (dssUUID != null) {
-          members.put(dssUUID.toString, map)
+          members.justPut(dssUUID.toString, map)
         } else {
-          members.put(memMap.get("id").asInstanceOf[String], map)
+          members.justPut(memMap.get("id").asInstanceOf[String], map)
         }
       }
       membersInfo ++= members.asScala
@@ -257,11 +259,13 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
   }
 
-  private def withExceptionHandling(f: => Unit): Unit = {
+  private def withExceptionHandling(f: => Unit, doFinally: () => Unit = null): Unit = {
     try {
       f
     } catch {
       case t: Throwable => handleException(t)
+    } finally {
+      if (doFinally ne null) doFinally()
     }
   }
 
@@ -270,15 +274,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
     val cache = Misc.getGemFireCache
     val regions = asSerializable(cache.getApplicationRegions.asScala)
-    // Transaction started to check for committed entries if required.
-    val txManager = cache.getCacheTransactionManager
-    var context: TXManagerImpl.TXContext = null
-    val tx = if (cache.snapshotEnabled) {
-      context = TXManagerImpl.getOrCreateTXContext()
-      txManager.beginTX(context, IsolationLevel.SNAPSHOT, null, null)
-    } else null
-    var success = true
-    try for (region: LocalRegion <- regions) {
+    for (region: LocalRegion <- regions) {
       if (region.getDataPolicy.withPartitioning()) {
         val pr = region.asInstanceOf[PartitionedRegion]
         val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
@@ -299,8 +295,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               null /* not required since includeValues is false */ ,
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             val maxDeltaRows = pr.getColumnMaxDeltaRows
-            val smallBatchBuckets = ObjectObjectHashMap.withExpectedSize[
-                BucketRegion, mutable.ArrayBuffer[RegionEntry]](4)
+            var smallBucketRegion: BucketRegion = null
+            val smallBatchBuckets = new mutable.ArrayBuffer[BucketRegion](2)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[RegionEntry]
@@ -309,15 +305,11 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
                 val batchRowCount = key.getColumnBatchRowCount(itr, re, numColumnsInTable)
                 rowsInColumnBatch += batchRowCount
                 // check if bucket has multiple small batches
-                val br = itr.getHostedBucketRegion
                 if (key.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX &&
                     batchRowCount < maxDeltaRows) {
-                  var batches = smallBatchBuckets.get(br)
-                  if (batches eq null) {
-                    batches = new mutable.ArrayBuffer[RegionEntry](2)
-                    smallBatchBuckets.put(br, batches)
-                  }
-                  batches += re
+                  val br = itr.getHostedBucketRegion
+                  if (br eq smallBucketRegion) smallBatchBuckets += br
+                  else smallBucketRegion = br
                 }
                 re._getValue() match {
                   case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
@@ -325,25 +317,25 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
                 }
               }
             }
+            itr.close()
             // submit a task to merge small batches if required
-            if (smallBatchBuckets.size() > 0) {
-              mergeSmallColumnBatches(tx, pr, container, metaData,
-                smallBatchBuckets.asScala.filter(_._2.length > 1))
+            if (smallBatchBuckets.nonEmpty) {
+              mergeSmallColumnBatches(pr, container, metaData, smallBatchBuckets)
             }
           }
           val stats = pr.getPrStats
           stats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
           stats.setOffHeapSizeInBytes(offHeapSize)
         } else if (!isColumnTable && pr.getLocalMaxMemory > 0 && container.isRowBuffer) {
-          rolloverRowBuffers(pr)
+          rolloverTasks.computeIfAbsent(pr, rolloverRowBuffersTask)
         }
       }
-    } catch {
-      case t: Throwable => success = false; handleException(t)
-    } finally {
-      handleTransaction(cache, tx, context, success)
     }
   }
+
+  // Ensure max one background task per table
+  private val rolloverTasks = new ConcurrentHashMap[PartitionedRegion, Future[Unit]]()
+  private val mergeTasks = new ConcurrentHashMap[PartitionedRegion, Future[Unit]]()
 
   private def minSizeForRollover(pr: PartitionedRegion): Int =
     math.max(pr.getColumnMaxDeltaRows >>> 3, pr.getColumnMinDeltaRows)
@@ -352,138 +344,142 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
    * Check if row buffers are large and have not been touched for a while
    * then roll it over into the column table
    */
-  private def rolloverRowBuffers(pr: PartitionedRegion): Unit = {
-    val localPrimaries = pr.getDataStore.getAllLocalPrimaryBucketRegions
-    if ((localPrimaries ne null) && localPrimaries.size() > 0) {
-      val doRollover = new Predicate[BucketRegion] {
-        private val minModTime = pr.getCache.cacheTimeMillis() - delayMillis
+  private val rolloverRowBuffersTask = new JFunction[PartitionedRegion, Future[Unit]] {
+    override def apply(pr: PartitionedRegion): Future[Unit] = {
+      val localPrimaries = pr.getDataStore.getAllLocalPrimaryBucketRegions
+      if ((localPrimaries ne null) && localPrimaries.size() > 0) {
+        val doRollover = new Predicate[BucketRegion] {
+          private val minModTime = pr.getCache.cacheTimeMillis() - delayMillis
 
-        override def test(br: BucketRegion): Boolean = {
-          br.getLastModifiedTime <= minModTime && br.getRegionSize >= minSizeForRollover(pr)
+          override def test(br: BucketRegion): Boolean = {
+            br.getLastModifiedTime <= minModTime && br.getRegionSize >= minSizeForRollover(pr)
+          }
         }
-      }
-      val rolloverBuckets = localPrimaries.asScala.filter(
-        br => doRollover.test(br) && !br.columnBatchFlushLock.isWriteLocked)
-      // enqueue a job to roll over required row buffers into column table
-      // (each bucket will perform a last minute check before rollover inside lock)
-      if (rolloverBuckets.nonEmpty) {
-        // logInfo(
-        //  s"SW:111: will rollover buckets for ${pr.getFullPath}: ${rolloverBuckets.map(_.getId)}")
-        implicit val executionContext = Utils.executionContext(pr.getGemFireCache)
-        Future(rolloverBuckets.foreach(bucket => withExceptionHandling(
-          bucket.createAndInsertColumnBatch(null, true, doRollover))))
-      }
+        val rolloverBuckets = localPrimaries.asScala.filter(
+          br => doRollover.test(br) && !br.columnBatchFlushLock.isWriteLocked)
+        // enqueue a job to roll over required row buffers into column table
+        // (each bucket will perform a last minute check before rollover inside lock)
+        if (rolloverBuckets.nonEmpty) {
+          implicit val executionContext = Utils.executionContext(pr.getGemFireCache)
+          Future {
+            try {
+              rolloverBuckets.foreach(bucket => withExceptionHandling(
+                bucket.createAndInsertColumnBatch(null, true, doRollover)))
+            } finally {
+              rolloverTasks.remove(pr)
+            }
+          }
+        } else null
+      } else null
     }
   }
-
-  private val mergeTask = new AtomicReference[Future[Unit]]()
 
   /**
    * Merge multiple column batches that are small in size in a bucket.
    * These can get created due to a small "tail" in bulk imports (large enough
    * to exceed minimal size that would have pushed them into row buffers),
    * or a time-based flush that tolerates small sized column batches due to
-   * [[rolloverRowBuffers]] or a forced flush of even smaller size for sample tables.
+   * [[rolloverRowBuffersTask]] or a forced flush of even smaller size for sample tables.
    */
-  private def mergeSmallColumnBatches(tx: TXStateProxy, pr: PartitionedRegion,
-      container: GemFireContainer, metaData: ExternalTableMetaData,
-      smallBatches: mutable.Map[BucketRegion, mutable.ArrayBuffer[RegionEntry]]): Unit = {
-    if (mergeTask.get() ne null) return
-    // skip uncommitted entries for merge
-    val txState = tx.getTXStateForRead
-    // reverse iteration of entries so that remove does not change indices to be iterated
-    var skip = false
-    for ((br, entries) <- smallBatches; j <- (entries.length - 1) to 0) {
-      val entry = entries(j)
-      val re = entry match {
-        case e: AbstractRegionEntry => txState.getLocalEntry(pr, br, -1, e, false)
-        case _ => entry
-      }
-      if (re eq null) {
-        entries.remove(j)
-        if (entries.length <= 1) skip = true
-      } else if (re ne entry) {
-        entries(j) = re.asInstanceOf[RegionEntry]
-      }
-    }
-    // keep only batches with size > 1
-    val batchBuckets = if (skip) smallBatches.filter(_._2.length > 1) else smallBatches
-    if (batchBuckets.nonEmpty) mergeTask.synchronized {
-      // synchronized instead of compareAndSet to avoid creating Future execution
-      if (mergeTask.get() ne null) return
-      logInfo(
-        s"Found small batches for ${pr.getName}: ${batchBuckets.map(_._2.map(_.getRawKey))}")
-      val cache = pr.getGemFireCache
-      implicit val executionContext = Utils.executionContext(cache)
-      mergeTask.set(Future(withExceptionHandling {
-        val tableName = container.getQualifiedTableName
-        val schema = metaData.schema.asInstanceOf[StructType]
-        val compileKey = tableName.concat(".MERGE_SMALL_BATCHES")
-        val gen = CodeGeneration.compileCode(compileKey, schema.fields, () => {
-          val schemaAttrs = Utils.schemaAttributes(schema)
-          val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
-            otherRDDs = Nil, numBuckets = -1, partitionColumns = Nil,
-            partitionColumnAliases = Nil, baseRelation = null, schema, allFilters = Nil,
-            schemaAttrs, caseSensitive = true)
-          // reduce min delta row size to avoid going through rolloverRowBuffers again
-          val insertPlan = ColumnInsertExec(tableScan, Nil, Nil,
-            numBuckets = -1, isPartitioned = false, None,
-            (pr.getColumnBatchSize, minSizeForRollover(pr), metaData.compressionCodec),
-            tableName, onExecutor = true, schema,
-            metaData.externalStore.asInstanceOf[ExternalStore], useMemberVariables = false)
-          // now generate the code with the help of WholeStageCodegenExec
-          // this is only used for local code generation while its RDD semantics
-          // and related methods are all ignored
-          val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan), insertPlan)
-          val references = ctx.references
-          // also push the index of batchId reference at the end which can be
-          // used by caller to update the reference objects before execution
-          references += insertPlan.getBatchIdRef
-          (code, references.toArray)
-        })
-        val references = gen._2.clone()
-        // full projection for the iterators
-        val numColumns = schema.length
-        val projection = (1 to numColumns).toArray
-        var success = false
-        var txState: TXStateProxy = null
-        var context: TXManagerImpl.TXContext = null
-        // for each bucket, create an iterator to scan and insert the result batches;
-        // a separate iterator is required because one ColumnInsertExec assumes a single batchId
-        for ((br, entries) <- batchBuckets) try {
-          success = false
-          // start a new transaction for each bucket
-          txState = null
-          txState = if (cache.snapshotEnabled) {
-            context = TXManagerImpl.getOrCreateTXContext()
-            cache.getCacheTransactionManager.beginTX(context, IsolationLevel.SNAPSHOT, null, null)
-          } else null
-          // update the bucketId as per the current bucket
-          val batchIdRef = references(references.length - 1).asInstanceOf[Int]
-          val bucketId = br.getId
-          references(batchIdRef + 1) = bucketId
-          val keys = entries.map(_.getRawKey.asInstanceOf[ColumnFormatKey])
-          logInfo(s"Merging batches for ${pr.getName}:$bucketId :: $keys")
-          // no harm in passing a references array with an extra element at end
-          val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
-          // use the entries already determined for the iterator read by generated code
-          val batchIter = ColumnBatchIterator(br, entries.iterator, projection, context = null)
-          iter.init(bucketId, Array(Iterator[Any](new ResultSetTraversal(conn = null, stmt = null,
-            rs = null, context = null), batchIter).asInstanceOf[Iterator[InternalRow]]))
-          while (iter.hasNext) {
-            iter.next() // ignore result which is number of inserted rows
+  private def mergeSmallColumnBatches(pr: PartitionedRegion, container: GemFireContainer,
+      metaData: ExternalTableMetaData, smallBatches: mutable.ArrayBuffer[BucketRegion]): Unit = {
+    mergeTasks.computeIfAbsent(pr, new JFunction[PartitionedRegion, Future[Unit]] {
+      override def apply(pr: PartitionedRegion): Future[Unit] = {
+        logInfo(s"Found small batches in ${pr.getName}: ${smallBatches.map(_.getId)}")
+        val cache = pr.getGemFireCache
+        implicit val executionContext = Utils.executionContext(cache)
+        Future(withExceptionHandling({
+          val tableName = container.getQualifiedTableName
+          val schema = metaData.schema.asInstanceOf[StructType]
+          val maxDeltaRows = pr.getColumnMaxDeltaRows
+          val compileKey = tableName.concat(".MERGE_SMALL_BATCHES")
+          val gen = CodeGeneration.compileCode(compileKey, schema.fields, () => {
+            val schemaAttrs = Utils.schemaAttributes(schema)
+            val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
+              otherRDDs = Nil, numBuckets = -1, partitionColumns = Nil,
+              partitionColumnAliases = Nil, baseRelation = null, schema, allFilters = Nil,
+              schemaAttrs, caseSensitive = true)
+            // reduce min delta row size to avoid going through rolloverRowBuffers again
+            val insertPlan = ColumnInsertExec(tableScan, Nil, Nil,
+              numBuckets = -1, isPartitioned = false, None,
+              (pr.getColumnBatchSize, minSizeForRollover(pr), metaData.compressionCodec),
+              tableName, onExecutor = true, schema,
+              metaData.externalStore.asInstanceOf[ExternalStore], useMemberVariables = false)
+            // now generate the code with the help of WholeStageCodegenExec
+            // this is only used for local code generation while its RDD semantics
+            // and related methods are all ignored
+            val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
+              WholeStageCodegenExec(insertPlan), insertPlan)
+            val references = ctx.references
+            // also push the index of batchId reference at the end which can be
+            // used by caller to update the reference objects before execution
+            references += insertPlan.getBatchIdRef
+            (code, references.toArray)
+          })
+          val references = gen._2.clone()
+          // full projection for the iterators
+          val numColumns = schema.length
+          val projection = (1 to numColumns).toArray
+          var success = false
+          var tx: TXStateProxy = null
+          var context: TXManagerImpl.TXContext = null
+          // for each bucket, create an iterator to scan and insert the result batches;
+          // a separate iterator is required because one ColumnInsertExec assumes a single batchId
+          for (br <- smallBatches) try {
+            success = false
+            // start a new transaction for each bucket
+            tx = null
+            tx = if (cache.snapshotEnabled) {
+              context = TXManagerImpl.getOrCreateTXContext()
+              cache.getCacheTransactionManager.beginTX(context, IsolationLevel.SNAPSHOT, null, null)
+            } else null
+            // find the committed entries with small batches under the transaction
+            val bucketId = br.getId
+            val itr = new pr.PRLocalScanIterator(Collections.singleton(bucketId),
+              tx.getTXStateForRead, false /* forUpdate */ , false /* includeValues */ ,
+              false /* fetchRemote */)
+            val entries = new mutable.ArrayBuffer[RegionEntry](2)
+            while (itr.hasNext) {
+              val re = itr.next().asInstanceOf[RegionEntry]
+              if (!re.isDestroyedOrRemoved) {
+                val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
+                val batchRowCount = key.getColumnBatchRowCount(itr, re, schema.length)
+                // check if bucket has multiple small batches
+                if (key.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX &&
+                    batchRowCount < maxDeltaRows) {
+                  entries += re
+                }
+              }
+            }
+            itr.close()
+            if (entries.length > 1) {
+              // update the bucketId as per the current bucket
+              val batchIdRef = references(references.length - 1).asInstanceOf[Int]
+              references(batchIdRef + 1) = bucketId
+              val keys = entries.map(_.getRawKey.asInstanceOf[ColumnFormatKey])
+              logInfo(s"Merging batches for ${pr.getName}:$bucketId :: $keys")
+              // no harm in passing a references array with an extra element at end
+              val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
+              // use the entries already determined for the iterator read by generated code
+              val batchIter = ColumnBatchIterator(br, entries.iterator, projection, context = null)
+              iter.init(bucketId, Array(Iterator[Any](new ResultSetTraversal(
+                conn = null, stmt = null, rs = null, context = null), batchIter)
+                  .asInstanceOf[Iterator[InternalRow]]))
+              while (iter.hasNext) {
+                iter.next() // ignore result which is number of inserted rows
+              }
+              // now delete the keys that have been inserted above
+              logInfo(s"Deleting merged batches for ${pr.getName}:$bucketId :: $keys")
+              keys.foreach(ColumnDelta.deleteBatch(_, pr, numColumns))
+            }
+            success = true
+          } catch {
+            case t: Throwable => handleException(t)
+          } finally {
+            handleTransaction(cache, tx, context, success)
           }
-          // now delete the keys that have been inserted above
-          logInfo(s"Deleting merged batches for ${pr.getName}:$bucketId :: $keys")
-          keys.foreach(ColumnDelta.deleteBatch(_, pr, numColumns))
-          success = true
-        } catch {
-          case t: Throwable => handleException(t)
-        } finally {
-          handleTransaction(cache, txState, context, success)
-        }
-      }))
-    }
+        }, () => mergeTasks.remove(pr)))
+      }
+    })
   }
 }

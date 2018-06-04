@@ -660,7 +660,7 @@ object Utils {
 
   def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): ObjectObjectHashMap[K, V] = {
     val m = ObjectObjectHashMap.withExpectedSize[K, V](map.size)
-    map.foreach(p => m.put(p._1, p._2))
+    map.foreach(p => m.justPut(p._1, p._2))
     m
   }
 

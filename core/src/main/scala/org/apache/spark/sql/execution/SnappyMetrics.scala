@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution
 
 import java.text.NumberFormat
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.mutable
 
@@ -38,11 +39,29 @@ object SnappyMetrics {
    */
   val SPLIT_SUM_METRIC = "splitSum"
 
+  // in-built metric names for ColumnTableScan
+  val NUM_ROWS_DISK = "numRowsBufferDisk"
+  val NUM_BATCHES_DISK_FULL = "columnBatchesDiskFull"
+  val NUM_BATCHES_DISK_PARTIAL = "columnBatchesDiskPartial"
+  val NUM_BATCHES_REMOTE = "columnBatchesRemote"
+
+  private val splitMetricId = new AtomicLong(0L)
+
+  /**
+   * Get a new ID that can be used for [[createSplitSumMetric]].
+   */
+  def newSplitMetricId(): Long = math.abs(splitMetricId.getAndIncrement())
+
   /**
    * Create a metric to report multiple sums as a single metric. All metrics are combined
    * and displayed as comma-separated values against the name for "splitIndex" = 0.
+   *
+   * The ID should be a positive long common for all metrics that need to be displayed
+   * together and should be unique across all instances of the plan.
+   * The [[newSplitMetricId]] provides a convenient way to generate a new unique ID.
    */
-  def createSplitSumMetric(sc: SparkContext, name: String, id: Int, splitIndex: Int): SQLMetric = {
+  def createSplitSumMetric(sc: SparkContext, name: String,
+      id: Long, splitIndex: Int): SQLMetric = {
     // The final result of this metric in physical operator UI may looks like:
     // data size total (min, med, max):
     // 100GB (100MB, 1GB, 10GB)
@@ -61,7 +80,7 @@ object SnappyMetrics {
       val numberFormat = NumberFormat.getIntegerInstance(Locale.US)
       valueList.collect {
         case l if l ne null => numberFormat.format(l.toNativeArray.sum)
-      }.mkString(" / ")
+      }.mkString("|")
     } else SQLMetrics.stringValue(metricType, values.asInstanceOf[TLongArrayList].toNativeArray)
   }
 }
