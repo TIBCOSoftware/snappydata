@@ -140,7 +140,7 @@ object ColumnBatchIterator {
 final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
     statsEntries: Iterator[RegionEntry], bucketIds: java.util.Set[Integer],
     projection: Array[Int], fullScan: Boolean, context: TaskContext)
-    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) with Logging {
+    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
 
   if (region ne null) {
     assert(!region.getEnableOffHeapMemory,
