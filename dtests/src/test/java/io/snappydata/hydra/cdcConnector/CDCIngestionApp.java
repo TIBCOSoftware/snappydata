@@ -15,39 +15,45 @@ import java.util.Random;
 import hydra.Log;
 import org.apache.spark.sql.catalyst.plans.logical.Except;
 
-class cdcObject implements Runnable {
-  public String path;
+public class CDCIngestionApp implements Runnable {
+  public String filePath;
   private Thread t;
   private String threadName;
   private String sqlServer;
-  private String dataBaseName;
   private int startRange;
   private int endRange;
+  private String endPoint;
 
-  cdcObject(String name, int strNum, int endNum, String qPath, String sqlSer) {
+
+  /* CDCIngestionApp(String name, int strNum, int endNum, String qPath, String sqlSer,String ep) {
     threadName = name;
     startRange = strNum;
     endRange = endNum;
     path = qPath;
     sqlServer = sqlSer;
+    endPoint = ep;
     System.out.println("Creating " + threadName);
-  }
+  }*/
 
   public void run() {
     System.out.println("Running " + threadName);
     try {
-      Connection conn = getConnection();
-      String filePath = path;
-      ArrayList qArr = getQuery(filePath);
+      Connection conn ;
+      if(sqlServer.isEmpty())
+         conn = getSnappyConnection();
+      else
+         conn = getConnection();
+      String path = filePath;
+      ArrayList qArr = getQuery(path);
       insertData(qArr,conn);
     } catch (Exception e) {
       System.out.println("Caught exception " + e.getMessage());
     }
   }
 
-  public static Connection getSnappyConnection() {
+  public Connection getSnappyConnection() {
     Connection conn = null;
-    String url = "jdbc:snappydata://dev11:1527";
+    String url = "jdbc:snappydata://"+endPoint;
     String driver = "io.snappydata.jdbc.ClientDriver";
     try {
       Class.forName(driver);
@@ -89,7 +95,8 @@ class cdcObject implements Runnable {
     try {
       for (int i = 0; i < queryArray.size(); i++) {
         String qStr = queryArray.get(i);
-        System.out.println("Query = " + qStr);
+        System.out.println("Query = " + qStr );
+        System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
         for (int j = startRange; j <= endRange; j++) {
           PreparedStatement ps = conn.prepareStatement(qStr);
           int KEY_ID = j;
@@ -138,6 +145,7 @@ class cdcObject implements Runnable {
       br.close();
 
     } catch (FileNotFoundException e) {
+      System.out.println("Caught exception in getQuery() " + e.getMessage());
     } catch (IOException io) {
     }
     return queryList;
@@ -155,21 +163,39 @@ class cdcObject implements Runnable {
     } catch (Exception ex) {
     }
   }
-}
+//}
 
-public class CDCIngestionApp {
+//public class CDCIngestionApp {
+
+  public void runIngestionApp(Integer thCnt,Integer sRange,Integer eRange,String path, String sqlServerInst,String hostName){
+    for (int i = 1; i <= thCnt; i++) {
+    //  CDCIngestionApp obj = new CDCIngestionApp("Thread-" + i, sRange, eRange, path+"/insert"+i+".sql", sqlServerInst,hostName);
+      threadName = "Thread-" + i;
+      startRange = sRange;
+      endRange = eRange;
+      filePath = path+"/insert"+i+".sql";
+      sqlServer = sqlServerInst;
+      endPoint = hostName;
+      System.out.println("Creating " + threadName);
+      this.start();
+    }
+  }
 
   public static void main(String args[]) {
     try {
-      int sRange = Integer.parseInt(args[0]);
-      int eRange = Integer.parseInt(args[1]);
-      String insertQPAth = args[2];
-      String sqlServerInstance = args[3];
+      int threadCnt = Integer.parseInt(args[0]);
+      int sRange = Integer.parseInt(args[1]);
+      int eRange = Integer.parseInt(args[2]);
+      String insertQPAth = args[3];
+      String sqlServerInstance = args[4];
+      String hostname = args[5];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
-      for (int i = 1; i <= 5; i++) {
-        cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth+"/insert"+i+".sql", sqlServerInstance);
+      CDCIngestionApp obj = new CDCIngestionApp();
+      obj.runIngestionApp(threadCnt,sRange,eRange,insertQPAth,sqlServerInstance,hostname);
+      /*for (int i = 1; i <= 5; i++) {
+        CDCIngestionApp obj = new CDCIngestionApp("Thread-" + i, sRange, eRange, insertQPAth+"/insert"+i+".sql", sqlServerInstance);
         obj.start();
-     }
+     }*/
     } catch (Exception e) {
     } finally {
       System.out.println("Spark ApplicationEnd: ");

@@ -1,0 +1,9 @@
+io/snappydata/hydra/clusterRecovery/newNodeRebalanceMeanKill.conf
+    A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+    D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
+    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery"
+    snappyPath="$GEMFIRE"

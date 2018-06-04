@@ -73,7 +73,7 @@ public class CDCPerfSparkJob {
     return conn;
   }
 
-  public static HashMap<List<Integer>, Map<String, Long>> runPointLookupQueries(ArrayList<String> qlist, Integer ThreadId) {
+  public static HashMap<List<Integer>, Map<String, Long>> runPointLookupQueries(ArrayList<String> qlist, int startRange,Integer ThreadId) {
     long timeTaken = 0l;
     long startTime;
     long endTime;
@@ -89,10 +89,15 @@ public class CDCPerfSparkJob {
       else {
         int queryPos = rnd.nextInt(qlist.size());
         System.out.println(ThreadId + " warm up query = " + qlist.get(queryPos));
+        PreparedStatement ps = conn.prepareStatement(qlist.get(queryPos));
+        Random rnd1 = new Random();
+        int val = rnd1.nextInt(10) + startRange;
 
         // warm up task loop:
         for (int i = 0; i < 100; i++) {  // iterrate each query 100 times.
-          conn.createStatement().executeQuery(qlist.get(queryPos));
+          ps.setInt(1,val);
+         // conn.createStatement().executeQuery(qlist.get(queryPos));
+          ps.executeQuery();
         }
 
         threadname.add(ThreadId);
@@ -139,7 +144,7 @@ public class CDCPerfSparkJob {
         }
         else
         {
-          System.out.println("Query contains insert/delete");
+          System.out.println("Query contains insert/delete/update");
           sqlConn.createStatement().execute(query);
         }
       }
@@ -149,7 +154,6 @@ public class CDCPerfSparkJob {
       try {
         if(!sqlConn.isClosed())
           sqlConn.close();
-
       } catch (SQLException e) {
         e.printStackTrace();
       }
@@ -198,7 +202,6 @@ public class CDCPerfSparkJob {
       for (int i = 0; i < 100; i++) {
         ps.executeQuery();
       }
-
       // actuall query execution task
       startTime = System.currentTimeMillis();
       for (int i = 0; i < numItr; i++) {
@@ -285,7 +288,7 @@ public class CDCPerfSparkJob {
                 System.out.println("Thread " + iterationIndex + " finished ");
               }
               if (isPointLookUp)
-                plQryTimeList.add(runPointLookupQueries(queryList, iterationIndex));
+                plQryTimeList.add(runPointLookupQueries(queryList,startRange, iterationIndex));
 
               finishBarierr.countDown(); //current thread finished, send mark
             } catch (InterruptedException e) {

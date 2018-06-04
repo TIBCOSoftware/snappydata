@@ -25,6 +25,12 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**Boolean value to determine if the test is run with CDC enabled*/
   public static Long isCDC;
 
+  /**Boolean value to determine if its only individual node stop*/
+  public static Long isOnlyStop;
+
+  /**Boolean value to determine whether to only start the cluster or stop-start the cluster,default is only start*/
+  public static Long isStopStartCluster;
+
   /**Int value that determines the number of threads used for a particular application*/
   public static Long threadCnt;
 
@@ -35,13 +41,19 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static Long dataBaseName;
 
   /**config file parameters for the node required during HA*/
-  public static Long nodeInfoforHA;
+  public static Long nodeConfig;
 
   /**File path that consists of the confs and cluster scripts*/
   public static Long snappyFileLoc;
 
   /**Type of nodes(servers,leads,locators) for HA*/
   public static Long nodeType;
+
+  /**Name of host node */
+  public static Long hostName;
+
+  /**Boolean value to determine if the new node be added in the beginning */
+  public static Long isNewNodeFirst;
 
   /**startRange is integer value used for giving
    *  the starting range from where the ingestion
@@ -57,9 +69,9 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**Name of the sqlServer instance to be used*/
   public static Long sqlServerInstance;
 
-  public static String getNodeInfoforHA(){
-    String nodeInfo = tasktab().stringAt(nodeInfoforHA, tab().stringAt
-        (nodeInfoforHA, null));
+  public static String getNodeConfig(){
+    String nodeInfo = tasktab().stringAt(SnappyCDCPrms.nodeConfig, tab().stringAt
+        (SnappyCDCPrms.nodeConfig, null));
     if (nodeInfo == null) return "";
     return nodeInfo;
   }
@@ -93,6 +105,13 @@ public class SnappyCDCPrms extends SnappyPrms {
     return nodeName;
   }
 
+  public static String getHostName(){
+    String nodeName = tasktab().stringAt(hostName, tab().stringAt
+        (hostName, null));
+    if (nodeName == null) return "";
+    return nodeName;
+  }
+
   public static String getDataBaseName(){
     String name = tasktab().stringAt(dataBaseName, tab().stringAt
         (dataBaseName, null));
@@ -104,8 +123,18 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static String getSqlServerInstance(){
     String name = tasktab().stringAt(sqlServerInstance, tab().stringAt
         (sqlServerInstance, null));
-    if (name == null) return "sqlServer1";
+    if (name == null) return "";
     return name;
+  }
+
+  public static boolean getIsOnlyStop() {
+    Long key = isOnlyStop;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsStopStartCluster() {
+    Long key = isStopStartCluster;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static boolean getIsScanQuery() {
@@ -115,6 +144,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static boolean getIsBulkDelete() {
     Long key = isBulkDelete;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsNewNodeFirst() {
+    Long key = isNewNodeFirst;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
