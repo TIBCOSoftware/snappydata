@@ -36,9 +36,10 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.util.ReuseFactory
 import io.snappydata.collection.LongObjectHashMap
 
+import org.apache.spark.sql.catalyst
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateOrdering
-import org.apache.spark.sql.catalyst.expressions.{Ascending, BindReferences, Expression, SortOrder, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, BindReferences, BoundReference, Expression, SortOrder, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
@@ -77,7 +78,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
    */
   private val inMemoryBatches = new java.util.ArrayList[LongObjectHashMap[AnyRef]](4)
   private var inMemoryBatchIndex: Int = _
-  private val inMemorySortedBatches = new ArrayBuffer[(InternalRow, LongObjectHashMap[AnyRef])]()
+  private var inMemorySortedBatches: Array[(InternalRow, LongObjectHashMap[AnyRef])] = _
 
   private val container = distributedRegion.getUserAttribute
       .asInstanceOf[GemFireContainer]
@@ -96,7 +97,10 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       ColumnStatsSchema(f.name, f.dataType, nullCountNullable = true))
     val fullStatsSchema = ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatMap(_.schema)
     val partitioningExprs = paritioningPositions.map(pos => statsSchema(pos - 1).lowerBound).
-        map(ae => BindReferences.bindReference(ae.asInstanceOf[Expression], fullStatsSchema))
+        map(ae => {
+          BindReferences.bindReference(ae.asInstanceOf[Expression], fullStatsSchema).
+            asInstanceOf[BoundReference]
+        })
     // TODO: VB: right now sort order is fixed as Ascending but should come from table meta-data
     val ordering = GenerateOrdering.generate(partitioningExprs.map(SortOrder(_, Ascending)))
     (UnsafeProjection.create(partitioningExprs), fullStatsSchema.length, ordering)
@@ -156,7 +160,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     currentRegion = region
     entryIterator = region.entries.regionEntries().iterator().asInstanceOf[MapValueIterator]
     if (hasPrimaryIndex) {
-      initSortedBatchSets()
+      inMemorySortedBatches = initSortedBatchSets()
     } else advanceToNextBatchSet()
   }
 
@@ -179,7 +183,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
 
   override def hasNext: Boolean = {
     if (hasPrimaryIndex) {
-      inMemoryBatchIndex + 1 < inMemorySortedBatches.size
+      inMemoryBatchIndex + 1 < inMemorySortedBatches.length
     } else if (entryIterator ne null) {
       if (inMemoryBatchIndex + 1 < inMemoryBatches.size()) true else advanceToNextBatchSet()
     } else nextDiskBatch ne null
@@ -188,7 +192,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   override def next(): RegionEntry = {
     if (hasPrimaryIndex) {
       inMemoryBatchIndex += 1
-      if (inMemoryBatchIndex >= inMemorySortedBatches.size) {
+      if (inMemoryBatchIndex >= inMemorySortedBatches.length) {
         if (!advanceToNextBatchSet()) throw new NoSuchElementException
       }
       val map = inMemorySortedBatches(inMemoryBatchIndex)
@@ -347,14 +351,14 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     false
   }
 
-  def initSortedBatchSets(): Unit = {
-    inMemorySortedBatches.clear()
+  def initSortedBatchSets(): Array[(InternalRow, LongObjectHashMap[AnyRef])] = {
+    val inMemorySortedBatchBuffer = new ArrayBuffer[(InternalRow, LongObjectHashMap[AnyRef])]()
     inMemoryBatchIndex = -1
     while (entryIterator.hasNext) {
       /**
        * Maintains the current set of batches that are being iterated.
        * When all columns provided in the projectionBitSet have been marked as
-       * [[inMemorySortedBatches]] then the batch is cleared from the map.
+       * [[inMemorySortedBatchBuffer]] then the batch is cleared from the map.
        */
       val activeBatches = LongObjectHashMap.withExpectedSize[LongObjectHashMap[AnyRef]](4)
       val partitionRows = LongObjectHashMap.withExpectedSize[InternalRow](4)
@@ -385,7 +389,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
             val statsVal = statsValue.getValueRetain(FetchRequest.DECOMPRESS)
             try {
               val statsRow = Utils.toUnsafeRow(statsVal.getBuffer, statsLen)
-              partitionRows.justPut(key.uuid, partitioningProjection(statsRow))
+              partitionRows.justPut(key.uuid, partitioningProjection(statsRow).copy())
             } finally {
               statsValue.release()
             }
@@ -408,14 +412,28 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
         activeBatches.forEachWhile(new LongObjPredicate[LongObjectHashMap[AnyRef]] {
           override def test(uuid: Long, map: LongObjectHashMap[AnyRef]): Boolean = {
             if (map.getGlobalState ne null) {
-              inMemorySortedBatches += partitionRows.get(uuid) -> map
+              inMemorySortedBatchBuffer += partitionRows.get(uuid) -> map
             }
             true
           }
         })
       }
     }
-    inMemorySortedBatches.sortBy(_._1)(partitioningOrdering)
+    val unsorted = inMemorySortedBatchBuffer.toArray
+    // TODO VB: Discuss with Sumedh for using partitioningOrdering
+    // val sorted = unsorted.sortBy(_._1)(partitioningOrdering)
+    val sorted = unsorted.sortBy(_._1)(new TemporaryRowComparator)
+    sorted
+  }
+}
+
+private final class TemporaryRowComparator extends Ordering[InternalRow] {
+
+  @Override
+  def compare(r1: catalyst.InternalRow, r2: catalyst.InternalRow): Int = {
+    val a = r1.getInt(0)
+    val b = r2.getInt(0)
+    r1.getInt(0).compareTo(r2.getInt(0))
   }
 }
 
