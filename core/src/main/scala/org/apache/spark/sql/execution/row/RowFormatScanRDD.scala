@@ -42,10 +42,10 @@ import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{IteratorWithMetrics, RDDKryo, SecurityUtils}
+import org.apache.spark.sql.execution.{IteratorWithMetrics, RDDKryo, SecurityUtils, SnappyMetrics}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext}
@@ -304,7 +304,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           val dataItr = itr.map(r =>
             if (r.hasByteArrays) r.getRowByteArrays(null) else r.getRowBytes(null): AnyRef).asJava
           val rs = new RawStoreResultSet(dataItr, container, container.getCurrentRowFormatter)
-          new ResultSetTraversal(conn = null, stmt = null, rs, context)
+          new ResultSetTraversal(conn = null, stmt = null, rs, context, Some(itr))
         } else itr
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart, context)
@@ -419,13 +419,19 @@ class RowFormatScanRDD(@transient val session: SnappySession,
  * This is primarily intended to be used for cleanup.
  */
 final class ResultSetTraversal(conn: Connection,
-    stmt: Statement, val rs: ResultSet, context: TaskContext)
-    extends ResultSetIterator[Void](conn, stmt, rs, context) {
+    stmt: Statement, val rs: ResultSet, context: TaskContext,
+    source: Option[IteratorWithMetrics[_]] = None)
+    extends ResultSetIterator[Void](conn, stmt, rs, context) with IteratorWithMetrics[Void] {
 
   lazy val defaultCal: GregorianCalendar =
     ClientSharedData.getDefaultCleanCalendar
 
   override protected def getCurrentValue: Void = null
+
+  override def setMetric(name: String, metric: SQLMetric): Boolean = source match {
+    case Some(s) => s.setMetric(name, metric)
+    case None => false
+  }
 }
 
 final class CompactExecRowIteratorOnRS(conn: Connection,
@@ -493,8 +499,9 @@ final class CompactExecRowIteratorOnScan(container: GemFireContainer,
     while (itr.hasNext) {
       val rl = itr.next().asInstanceOf[RowLocation]
       val owner = itr.getHostedBucketRegion
-      if ((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) {
-        val valueWasNull = (diskRowsMetric ne null) && rl.isValueNull
+      val isNonLocalEntry = rl.isInstanceOf[NonLocalRegionEntry]
+      if ((owner ne null) || isNonLocalEntry) {
+        val valueWasNull = !isNonLocalEntry && (diskRowsMetric ne null) && rl.isValueNull
         if (faultIn) {
           if (RegionEntryUtils.fillRowFaultInOptimized(container, owner, rl, currentVal)) {
             if (valueWasNull) diskRowsMetric.add(1)
@@ -511,7 +518,7 @@ final class CompactExecRowIteratorOnScan(container: GemFireContainer,
   }
 
   override def setMetric(name: String, metric: SQLMetric): Boolean = {
-    if (name == ColumnTableScan.NUM_ROWS_DISK) {
+    if (name == SnappyMetrics.NUM_ROWS_DISK) {
       diskRowsMetric = metric
       true
     } else false

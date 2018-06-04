@@ -47,8 +47,8 @@ import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.SnappyMetrics.{NUM_BATCHES_DISK_FULL, NUM_BATCHES_DISK_PARTIAL, NUM_BATCHES_REMOTE, NUM_ROWS_DISK}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.ColumnTableScan.{NUM_BATCHES_DISK_FULL, NUM_BATCHES_DISK_PARTIAL, NUM_ROWS_DISK}
 import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -102,26 +102,33 @@ final case class ColumnTableScan(
 
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
-    else super.getMetrics ++ Map(
-      "numRowsBuffer" -> SnappyMetrics.createSplitSumMetric(sparkContext,
-        "rows read from row buffer (total / disk)", 0, 0),
-      NUM_ROWS_DISK -> SnappyMetrics.createSplitSumMetric(sparkContext,
-        "number of rows on disk from row buffer", 0, 1),
-      "columnBatchesSeen" -> SnappyMetrics.createSplitSumMetric(sparkContext,
-        "column batches read (total / disk-partial / disk-full)", 1, 0),
-      NUM_BATCHES_DISK_PARTIAL -> SnappyMetrics.createSplitSumMetric(sparkContext,
-        "column batches read from disk (partial)", 1, 1),
-      NUM_BATCHES_DISK_FULL -> SnappyMetrics.createSplitSumMetric(sparkContext,
-        "column batches read from disk (full)", 1, 2),
-      "updatedColumnCount" -> SnappyMetrics.createSplitSumMetric(sparkContext,
-        "deltas (updated columns / batches having deletes)", 2, 0),
-      "deletedBatchCount" -> SnappyMetrics.createSplitSumMetric(sparkContext,
-        "column batches having deletes", 2, 1),
-      "columnBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
-        "column batches skipped by the predicate")) ++ (
-        if (otherRDDs.isEmpty) Map.empty
-        else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
-          "number of output rows from other RDDs")))
+    else {
+      val id0 = SnappyMetrics.newSplitMetricId()
+      val id1 = SnappyMetrics.newSplitMetricId()
+      val id2 = SnappyMetrics.newSplitMetricId()
+      super.getMetrics ++ Map(
+        "numRowsBuffer" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "row buffer reads (total)", id0, 1),
+        NUM_ROWS_DISK -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "row buffer reads (disk|total)", id0, 0),
+        "columnBatchesSeen" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "batches (total)", id1, 3),
+        NUM_BATCHES_DISK_FULL -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "batches (disk)", id1, 2),
+        NUM_BATCHES_DISK_PARTIAL -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "batches (disk-partial)", id1, 1),
+        NUM_BATCHES_REMOTE -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "batches (remote|disk-partial|disk|total)", id1, 0),
+        "updatedColumnCount" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "deltas (updated columns)", id2, 1),
+        "deletedBatchCount" -> SnappyMetrics.createSplitSumMetric(sparkContext,
+          "deltas (deletes|updated columns)", id2, 0),
+        "columnBatchesSkipped" -> SQLMetrics.createMetric(sparkContext,
+          "batches skipped by predicates")) ++ (
+          if (otherRDDs.isEmpty) Map.empty
+          else Map("numRowsOtherRDDs" -> SQLMetrics.createMetric(sparkContext,
+            "number of output rows from other RDDs")))
+    }
   }
 
   override def metricTerm(ctx: CodegenContext, name: String): String =
@@ -187,6 +194,7 @@ final case class ColumnTableScan(
     val numRowsBufferDisk = metricTerm(ctx, NUM_ROWS_DISK)
     val numBatchesDiskPartial = metricTerm(ctx, NUM_BATCHES_DISK_PARTIAL)
     val numBatchesDiskFull = metricTerm(ctx, NUM_BATCHES_DISK_FULL)
+    val numBatchesRemote = metricTerm(ctx, NUM_BATCHES_REMOTE)
     val numRowsOther =
       if (otherRDDs.isEmpty) null else metricTerm(ctx, "numRowsOtherRDDs")
     val embedded = (baseRelation eq null) ||
@@ -349,6 +357,7 @@ final case class ColumnTableScan(
           $iteratorWithMetricsClass mIter = ($iteratorWithMetricsClass)$colInput;
           mIter.setMetric("$NUM_BATCHES_DISK_PARTIAL", $numBatchesDiskPartial);
           mIter.setMetric("$NUM_BATCHES_DISK_FULL", $numBatchesDiskFull);
+          mIter.setMetric("$NUM_BATCHES_REMOTE", $numBatchesRemote);
         }
       """
     }
@@ -824,10 +833,6 @@ final case class ColumnTableScan(
 }
 
 object ColumnTableScan extends Logging {
-
-  val NUM_ROWS_DISK = "numRowsBufferDisk"
-  val NUM_BATCHES_DISK_PARTIAL = "columnBatchesDiskPartial"
-  val NUM_BATCHES_DISK_FULL = "columnBatchesDiskFull"
 
   def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
       schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,

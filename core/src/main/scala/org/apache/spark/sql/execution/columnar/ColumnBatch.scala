@@ -34,6 +34,7 @@ import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
 import org.apache.spark.memory.MemoryManagerCallback
+import org.apache.spark.sql.execution.SnappyMetrics
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -139,7 +140,7 @@ object ColumnBatchIterator {
 final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
     statsEntries: Iterator[RegionEntry], bucketIds: java.util.Set[Integer],
     projection: Array[Int], fullScan: Boolean, context: TaskContext)
-    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
+    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) with Logging {
 
   if (region ne null) {
     assert(!region.getEnableOffHeapMemory,
@@ -158,6 +159,7 @@ final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
 
   private var diskBatchesFullMetric: SQLMetric = _
   private var diskBatchesPartialMetric: SQLMetric = _
+  private var remoteBatchesMetric: SQLMetric = _
 
   override protected def createIterator(container: GemFireContainer, region: LocalRegion,
       tx: TXStateInterface): PRIterator = if (region ne null) {
@@ -166,15 +168,21 @@ final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
         java.util.Iterator[RegionEntry]] {
       override def apply(br: BucketRegion,
           numEntries: java.lang.Long): java.util.Iterator[RegionEntry] = {
-        if (statsEntries eq null) new ColumnFormatIterator(br, projection, fullScan, txState)
-        else new ColumnFormatStatsIterator(br, statsEntries, tx)
+        val itr = if (statsEntries eq null) {
+          new ColumnFormatIterator(br, projection, fullScan, txState)
+        } else new ColumnFormatStatsIterator(br, statsEntries, tx)
+        itr.setDiskMetric(diskBatchesFullMetric, isPartialMetric = false)
+        itr.setDiskMetric(diskBatchesPartialMetric, isPartialMetric = true)
+        itr
       }
     }
     val createRemoteIterator = new BiFunction[java.lang.Integer, PRIterator,
         java.util.Iterator[RegionEntry]] {
       override def apply(bucketId: Integer,
           iter: PRIterator): java.util.Iterator[RegionEntry] = {
-        new RemoteEntriesIterator(bucketId, projection, iter.getPartitionedRegion, tx)
+        val itr = new RemoteEntriesIterator(bucketId, projection, iter.getPartitionedRegion, tx)
+        itr.setMetric(remoteBatchesMetric)
+        itr
       }
     }
     val pr = region.asInstanceOf[PartitionedRegion]
@@ -284,6 +292,7 @@ final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
       currentColumns = new ArrayBuffer[ColumnFormatValue](math.max(1, releaseColumns()))
       currentVal = null
       currentDeltaStats = null
+      val itr = this.itr
       while (itr.hasNext) {
         val re = itr.next().asInstanceOf[RegionEntry]
         // the underlying ClusteredColumnIterator allows fetching entire projected
@@ -324,8 +333,9 @@ final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
   }
 
   override def setMetric(name: String, metric: SQLMetric): Boolean = name match {
-    case ColumnTableScan.NUM_BATCHES_DISK_PARTIAL => diskBatchesPartialMetric = metric; true
-    case ColumnTableScan.NUM_BATCHES_DISK_FULL => diskBatchesFullMetric = metric; true
+    case SnappyMetrics.NUM_BATCHES_DISK_FULL => diskBatchesFullMetric = metric; true
+    case SnappyMetrics.NUM_BATCHES_DISK_PARTIAL => diskBatchesPartialMetric = metric; true
+    case SnappyMetrics.NUM_BATCHES_REMOTE => remoteBatchesMetric = metric; true
     case _ => false
   }
 

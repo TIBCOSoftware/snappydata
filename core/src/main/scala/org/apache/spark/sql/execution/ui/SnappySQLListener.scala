@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.ui
 
 import java.util.AbstractMap.SimpleEntry
-import java.util.function.BiFunction
+import java.util.function.{Function => JFunction}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -186,6 +186,14 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
     }
   }
 
+  private def expandBuffer(b: mutable.ArrayBuffer[TLongArrayList], size: Int): Unit = {
+    var i = b.length
+    while (i < size) {
+      b += null
+      i += 1
+    }
+  }
+
   private def mergeAccumulatorUpdates(
       accumulatorUpdates: Seq[(Long, Any)],
       metricTypeFunc: Long => String): Map[Long, String] = {
@@ -202,38 +210,23 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
         val splitIndex = metricType.indexOf('_')
         val key = metricType.substring(0, splitIndex)
         val index = metricType.substring(splitIndex + 1).toInt
-        accumulatorMap.compute(key, new BiFunction[Any, MapValue, MapValue] {
-          private def expandBuffer(b: mutable.ArrayBuffer[TLongArrayList], size: Int): Unit = {
-            var i = b.length
-            while (i < size) {
-              b += null
-              i += 1
-            }
-          }
-
-          override def apply(key: Any, v: MapValue): MapValue = {
-            val mapValue = if (v ne null) v
-            else new MapValue(new mutable.ArrayBuffer[TLongArrayList](math.max(index + 1, 4)), 0L)
-            val valueList = mapValue.getKey.asInstanceOf[mutable.ArrayBuffer[TLongArrayList]]
-            expandBuffer(valueList, index + 1)
-            val values = valueList(index) match {
-              case null => val l = new TLongArrayList(4); valueList(index) = l; l
-              case l => l
-            }
-            values.add(value.asInstanceOf[Long])
-            if (index == 0) mapValue.setValue(accumulatorId)
-            mapValue
-          }
+        val mapValue = accumulatorMap.computeIfAbsent(key, new JFunction[Any, MapValue] {
+          override def apply(k: Any): MapValue =
+            new MapValue(new mutable.ArrayBuffer[TLongArrayList](math.max(index + 1, 4)), 0L)
         })
+        val valueList = mapValue.getKey.asInstanceOf[mutable.ArrayBuffer[TLongArrayList]]
+        expandBuffer(valueList, index + 1)
+        val values = valueList(index) match {
+          case null => val l = new TLongArrayList(4); valueList(index) = l; l
+          case l => l
+        }
+        values.add(value.asInstanceOf[Long])
+        if (index == 0) mapValue.setValue(accumulatorId)
       } else {
-        accumulatorMap.compute(accumulatorId, new BiFunction[Any, MapValue, MapValue] {
-          override def apply(key: Any, v: MapValue): MapValue = {
-            val mapValue = if (v ne null) v
-            else new MapValue(new TLongArrayList(4), metricType)
-            mapValue.getKey.asInstanceOf[TLongArrayList].add(value.asInstanceOf[Long])
-            mapValue
-          }
+        val mapValue = accumulatorMap.computeIfAbsent(accumulatorId, new JFunction[Any, MapValue] {
+          override def apply(k: Any): MapValue = new MapValue(new TLongArrayList(4), metricType)
         })
+        mapValue.getKey.asInstanceOf[TLongArrayList].add(value.asInstanceOf[Long])
       }
     }
     // now create a map on accumulatorId and the values (which are either a
