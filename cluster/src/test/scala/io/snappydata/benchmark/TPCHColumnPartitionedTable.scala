@@ -132,9 +132,10 @@ object TPCHColumnPartitionedTable {
       if (isParquet) {
         orderDF = sqlContext.read.format("parquet").load(s"$path/parquet_orders_$i")
       } else {
-        var stage = ""; // apply a tbl.i suffix to table filename only when data is loaded in more than one stages.
+        // apply a tbl.i suffix to table filename only when data is loaded in more than one stages.
+        var stage = ""
         if (numberOfLoadingStages > 1) {
-          stage = s".$i";
+          stage = s".$i"
         }
         val orderData = sc.textFile(s"$path/orders.tbl$stage")
         val orderReadings = orderData.map(s => s.split('|')).map(
@@ -221,9 +222,9 @@ object TPCHColumnPartitionedTable {
       if (isParquet) {
         lineItemDF = sqlContext.read.format("parquet").load(s"$path/parquet_lineitem_$i")
       } else {
-        var stage = "";
+        var stage = ""
         if (numberOfLoadingStages > 1) {
-          stage = s".$i";
+          stage = s".$i"
         }
         val lineItemData = sc.textFile(s"$path/lineitem.tbl$stage")
         val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => TPCHTableSchema
@@ -311,9 +312,9 @@ object TPCHColumnPartitionedTable {
       if (isParquet) {
         customerDF = sqlContext.read.format("parquet").load(s"$path/parquet_customer_$i")
       } else {
-        var stage = "";
+        var stage = ""
         if (numberOfLoadingStages > 1) {
-          stage = s".$i";
+          stage = s".$i"
         }
         val customerData = sc.textFile(s"$path/customer.tbl$stage")
         val customerReadings = customerData.map(s => s.split('|')).map(s => TPCHTableSchema
@@ -378,9 +379,9 @@ object TPCHColumnPartitionedTable {
       if (isParquet) {
         partDF = sqlContext.read.format("parquet").load(s"$path/parquet_part_$i")
       } else {
-        var stage = "";
+        var stage = ""
         if (numberOfLoadingStages > 1) {
-          stage = s".$i";
+          stage = s".$i"
         }
         val partData = sc.textFile(s"$path/part.tbl$stage")
         val partReadings = partData.map(s => s.split('|')).map(s => TPCHTableSchema.parsePartRow(s))
@@ -442,9 +443,9 @@ object TPCHColumnPartitionedTable {
       if (isParquet) {
         partSuppDF = sqlContext.read.format("parquet").load(s"$path/parquet_partsupp_$i")
       } else {
-        var stage = "";
+        var stage = ""
         if (numberOfLoadingStages > 1) {
-          stage = s".$i";
+          stage = s".$i"
         }
         val partSuppData = sc.textFile(s"$path/partsupp.tbl$stage")
         val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => TPCHTableSchema
@@ -587,9 +588,9 @@ object TPCHColumnPartitionedTable {
       if (isParquet && new File(parquetDir).exists()) {
         suppDF = sqlContext.read.format("parquet").load(parquetDir)
       } else {
-        var stage = "";
+        var stage = ""
         if (numberOfLoadingStages > 1) {
-          stage = s".$i";
+          stage = s".$i"
         }
         val suppData = sc.textFile(s"$path/supplier.tbl$stage")
         val suppReadings = suppData.map(s => s.split('|')).map(s => TPCHTableSchema
