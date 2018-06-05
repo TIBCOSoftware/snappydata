@@ -23,7 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeRefer
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, InsertIntoTable, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
@@ -43,8 +43,7 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case lr@LogicalRelation(mutable: MutableRelation, _, _)
-        if ColumnTableScan.getCaseOfSortedInsertValue =>
+      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
         val partitionColumns = mutable.partitionColumns
         if (partitionColumns.isEmpty) {
           throw new AnalysisException(

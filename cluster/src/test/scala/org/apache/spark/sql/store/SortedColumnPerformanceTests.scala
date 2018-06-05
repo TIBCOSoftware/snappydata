@@ -136,10 +136,8 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         session.conf.set(Property.ColumnBatchSize.name, "24M") // default
         session.conf.set(Property.ColumnMaxDeltaRows.name, "100")
         insertDF.write.insertInto(colTableName)
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
         updateDF.write.insertInto(colTableName)
       } finally {
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
         session.conf.unset(Property.ColumnBatchSize.name)
         session.conf.unset(Property.ColumnMaxDeltaRows.name)
       }
@@ -187,11 +185,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
         insertDF.write.insertInto(colTableName)
         insertDF.write.insertInto(joinTableName)
 
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
         updateDF.write.insertInto(colTableName)
         updateDF.write.insertInto(joinTableName)
       } finally {
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
         session.conf.unset(Property.ColumnBatchSize.name)
         session.conf.unset(Property.ColumnMaxDeltaRows.name)
       }
@@ -398,7 +394,6 @@ object SortedColumnPerformanceTests {
           if (joinTableName.isDefined) {
             insertDF.write.insertInto(joinTableName.get)
           }
-          ColumnTableScan.setCaseOfSortedInsertValue(true)
           updateDF.write.insertInto(colTableName)
           if (joinTableName.isDefined) {
             updateDF.write.insertInto(joinTableName.get)
@@ -412,7 +407,6 @@ object SortedColumnPerformanceTests {
             }
           }
         } finally {
-          ColumnTableScan.setCaseOfSortedInsertValue(false)
           session.conf.unset(Property.ColumnBatchSize.name)
           session.conf.unset(Property.ColumnMaxDeltaRows.name)
           session.conf.unset(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key)
