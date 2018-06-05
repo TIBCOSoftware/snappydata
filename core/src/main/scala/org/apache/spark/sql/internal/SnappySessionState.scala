@@ -28,21 +28,20 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Colocation
 import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
-import org.apache.spark.sql._
+import org.apache.spark.sql.{catalyst, _}
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Distinct, Filter, InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.util.{TaggedAttribute, TransformableTag}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -57,7 +56,7 @@ import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.types.{DecimalType, NumericType, StringType}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Partition, SparkConf}
+import org.apache.spark.{Partition, SparkConf, sql}
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -108,6 +107,7 @@ class SnappySessionState(snappySession: SnappySession)
         ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
+        GemFireRelationLimitFetch::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
@@ -371,6 +371,58 @@ class SnappySessionState(snappySession: SnappySession)
       val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
       val allConditions = (newJoin ++ otherCondition).reduceOption(And)
       Join(left, right, joinType, allConditions)
+    }
+  }
+
+  object GemFireRelationLimitFetch extends  Rule[LogicalPlan] {
+    val indexes = (0, 1, 2, 3, 4)
+    val (create_tv_bool, filter_bool, agg_func_bool, gfeRelation_bool, allProjectionBool) = indexes
+
+    def apply(plan: LogicalPlan): LogicalPlan = limitExternalDataFetch(plan) match {
+      case Some(gfeRelation) => val attribute = plan.output(0)
+        val taggedAttrib = TaggedAttribute(GemFireLimitTag, attribute.name, attribute.dataType,
+          true)(attribute.exprId)
+        Filter(catalyst.expressions.IsNotNull(taggedAttrib), plan)
+      case None => plan
+    }
+
+    def limitExternalDataFetch(plan: LogicalPlan): Option[BaseRelation] = {
+      // if plan is pure select with or without limit , has GemFireRelation,
+      // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
+      // or a CreateView
+      // TODO: Deal with View
+      val boolsArray = Array.ofDim[Boolean](indexes.productArity)
+      // by default assume all projections are fetched
+      boolsArray(allProjectionBool) = true
+      var gfeBaseRelation: BaseRelation = null
+      plan.foreachUp(pln => {
+        pln match {
+          case LogicalRelation(baseRelation, _, _) =>
+            if (baseRelation.getClass.getSimpleName.equals("GemFireRelation")) {
+              boolsArray(gfeRelation_bool) = true
+              gfeBaseRelation = baseRelation
+            }
+          case  _: CreateMetastoreTableUsing => boolsArray(create_tv_bool) = true
+          case  _: CreateMetastoreTableUsingSelect => boolsArray(create_tv_bool) = true
+          case  _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+            boolsArray(filter_bool) = true
+          case _: Aggregate => boolsArray(agg_func_bool) = true
+          case Project(projs, _) => if (!(boolsArray(gfeRelation_bool) &&
+              ((projs.length == gfeBaseRelation.schema.length &&
+              projs.zip(gfeBaseRelation.schema).forall{
+                case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)})
+              || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
+            boolsArray(allProjectionBool) = false
+          }
+
+        }
+      })
+      if(boolsArray(gfeRelation_bool) && !boolsArray(create_tv_bool) && !boolsArray(filter_bool) &&
+           !boolsArray(agg_func_bool) && boolsArray(allProjectionBool)) {
+        Some(gfeBaseRelation)
+      } else {
+        None
+      }
     }
   }
 
@@ -1310,4 +1362,12 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
       }
       Aggregate(groupingExpressions, newResultExpressions, child)
   }
+}
+
+object GemFireLimitTag extends TransformableTag {
+  val symbol = ":"
+
+  def toTag: TransformableTag = this
+
+  override lazy val simpleString = "GemFireLimitTag."
 }

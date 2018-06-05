@@ -41,9 +41,11 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
+import org.apache.spark.sql.catalyst.util.TaggedAttribute
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
+import org.apache.spark.sql.internal.GemFireLimitTag
 import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
 
@@ -297,8 +299,13 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
       case expressions.IsNull(a: Attribute) =>
         Some(sources.IsNull(a.name))
+
       case expressions.IsNotNull(a: Attribute) =>
-        Some(sources.IsNotNull(a.name))
+        val name = a match {
+          case TaggedAttribute(tag@GemFireLimitTag, namex, _, _, _) => tag.simpleString + namex
+          case _ => a.name
+        }
+        Some(sources.IsNotNull(name))
 
       case expressions.And(left, right) =>
         (translateToFilter(left) ++ translateToFilter(right)).reduceOption(sources.And)
