@@ -4,6 +4,7 @@ import hydra.*;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -184,12 +185,18 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
+ /* public void clusterRestart(){
+
+  }*/
+
   public static void clusterRestart(String snappyPath, Boolean isStopStart, String nodeType) {
     try {
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
       Log.getLogWriter().info("The destination file is " + dest);
       File logFile = new File(dest);
+      Boolean isBackupRecovery = SnappyCDCPrms.getIsBackUpRecovery();
+      String dirPath = SnappyCDCPrms.getDataLocation();
       //Stop cluster
       if (isStopStart) {
         ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
@@ -206,7 +213,16 @@ public class SnappyCDCTest extends SnappyTest {
         ProcessBuilder pb1 = new ProcessBuilder(snappyPath + "/sbin/snappy-leads.sh", "start");
         snappyTest.executeProcess(pb1, logFile);
       }
-
+      if (isBackupRecovery)
+      {
+        //delete the  .idxkrf files which is created after cluster stop.
+        //  BACKUPGFXD-DEFAULT-DISKSTORE_60.1.idxkrf
+        // BACKUPGFXD-DEFAULT-DISKSTORE_60.crf
+        //BACKUPGFXD-DEFAULT-DISKSTORE_60.drf
+        // BACKUPGFXD-DEFAULT-DISKSTORE_60.krf
+        Log.getLogWriter().info("Inside isBackupRecovery true loop");
+        getFileWithDiffExt(dirPath);
+      }
       //Start the cluster after 1 min
       Thread.sleep(60000);
       ProcessBuilder pbClustStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
@@ -294,6 +310,17 @@ public class SnappyCDCTest extends SnappyTest {
      snappyCDCTest.runConcurrencyTestJob();
   }
 
+  public static void HydraTask_clusterRestart() {
+    Log.getLogWriter().info("Inside HydraTask_clusterRestart");
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    Boolean isStopStart = SnappyCDCPrms.getIsStopStartCluster();
+    String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+    String nodeType = SnappyCDCPrms.getNodeType();
+    snappyCDCTest.clusterRestart(snappyPath,isStopStart,nodeType);
+  }
+
   public void runConcurrencyTestJob() {
     try {
       CDCPerfSparkJob cdcPerfSparkJob = new CDCPerfSparkJob();
@@ -369,8 +396,6 @@ public class SnappyCDCTest extends SnappyTest {
       Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() "+ ex.getMessage());
     }
   }
-
-
 
   public static void performHA() {
     String scriptName;
@@ -461,6 +486,12 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
+  public static void removeDiskStore(){
+    String dirPath = SnappyCDCPrms.getDataLocation();
+    Log.getLogWriter().info("the dirPath is " + dirPath);
+    getFileWithDiffExt(dirPath);
+   }
+
   public static void stopIndividualNode(String snappyPath,String script,File logFile){
     ProcessBuilder pbStop = new ProcessBuilder(snappyPath + script, "stop");
     snappyTest.executeProcess(pbStop, logFile);
@@ -470,5 +501,28 @@ public class SnappyCDCTest extends SnappyTest {
     ProcessBuilder pbStart = new ProcessBuilder(snappyPath + script, "start");
     snappyTest.executeProcess(pbStart, logFile);
   }
+
+  public static void getFileWithDiffExt(String dirPath) {
+     try {
+      File dir = new File(dirPath);
+      String[] extensions = new String[] {"crf","drf","krf","idxkrf","if"};
+      Log.getLogWriter().info("Getting files with specified extension " + dir.getCanonicalPath());
+      List<File> files = (List<File>) FileUtils.listFiles(dir, extensions,false);
+      Log.getLogWriter().info("The files length is " + files.size());
+      for (File file : files) {
+        Log.getLogWriter().info("file: " + file.getCanonicalPath());
+        String fileName = file.getName();
+        if(file.delete())
+          Log.getLogWriter().info("The diskstore file deleted is "+ fileName);
+        else
+          Log.getLogWriter().info("The diskstore file "+ fileName+ " is not deleted");
+        }
+     }
+    catch(IOException io) {
+      Log.getLogWriter().info("Caught exception in getFileWithDiffExt() " + io.getMessage());
+    }
+   }
+
+
 
 }

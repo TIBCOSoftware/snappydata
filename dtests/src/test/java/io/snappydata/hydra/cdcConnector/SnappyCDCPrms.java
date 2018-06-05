@@ -10,6 +10,9 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**Boolean value to determine if the query is a scan type query*/
   public static Long isScanQuery;
 
+  /**Boolean value to determine if the test does back and recovery*/
+  public static Long isbackUpRecovery;
+
   /**Boolean value to determine if the query is a pointLookUp type query*/
   public static Long isPointLookUP;
 
@@ -125,6 +128,11 @@ public class SnappyCDCPrms extends SnappyPrms {
         (sqlServerInstance, null));
     if (name == null) return "";
     return name;
+  }
+
+  public static boolean getIsBackUpRecovery() {
+    Long key = isbackUpRecovery;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static boolean getIsOnlyStop() {
