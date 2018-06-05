@@ -18,9 +18,6 @@
  */
 package org.apache.spark.status.api.v1
 
-import scala.collection.mutable.ListBuffer
-import scala.util.control._
-
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import io.snappydata.SnappyTableStatsProviderService
 
@@ -28,42 +25,13 @@ object MemberDetails {
 
   def getAllMembersInfo: Seq[MemberSummary] = {
     val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-    val membersBuff: ListBuffer[MemberSummary] = ListBuffer.empty[MemberSummary]
-
-    allMembers.foreach(mem => {
-      val memberDetails = mem._2
-
-      val ms = getMemberSummary(memberDetails)
-
-      membersBuff += ms
-
-    })
-
-    membersBuff.toList
+    allMembers.mapValues(mem => {getMemberSummary(mem)}).values.toList
   }
 
   def getMembersInfo(memId: String): Seq[MemberSummary] = {
     val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-    val membersBuff: ListBuffer[MemberSummary] = ListBuffer.empty[MemberSummary]
-
-    val loop = new Breaks;
-    loop.breakable {
-      allMembers.foreach(mem => {
-        val memberDetails = mem._2
-
-        if (memberDetails.getId.equalsIgnoreCase(memId)) {
-
-          val ms = getMemberSummary(memberDetails)
-
-          membersBuff += ms
-
-          loop.break;
-        }
-
-      })
-    }
-
-    membersBuff.toList
+    allMembers.filter(_._2.getId.equalsIgnoreCase(memId))
+        .mapValues(mem => {getMemberSummary(mem)}).values.toList
   }
 
   def getMemberSummary(memberDetails: MemberStatistics): MemberSummary = {

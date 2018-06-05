@@ -18,20 +18,16 @@
  */
 package org.apache.spark.status.api.v1
 
-import scala.collection.mutable.ListBuffer
-
 import io.snappydata.SnappyTableStatsProviderService
 
 object TableDetails {
 
   def getAllTablesInfo: Seq[TableSummary] = {
-    val tablesBuff: ListBuffer[TableSummary] = ListBuffer.empty[TableSummary]
+
     val (tableBuff, indexBuff, externalTableBuff) =
       SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
 
-    tableBuff.foreach(tb => {
-      val table = tb._2
-
+    tableBuff.mapValues(table =>{
       val storageModel = {
         if (table.isColumnTable) {
           "COLOUMN"
@@ -48,26 +44,21 @@ object TableDetails {
         }
       }
 
-      tablesBuff += new TableSummary(table.getTableName, storageModel, distributionType,
+      new TableSummary(table.getTableName, storageModel, distributionType,
         table.isColumnTable, table.isReplicatedTable, table.getRowCount, table.getSizeInMemory,
         table.getTotalSize, table.getBucketCount)
-    })
+    }).values.toList
 
-    tablesBuff.toList
   }
 
   def getAllExternalTablesInfo: Seq[ExternalTableSummary] = {
-    val extTables: ListBuffer[ExternalTableSummary] = ListBuffer.empty[ExternalTableSummary]
+
     val (tableBuff, indexBuff, externalTableBuff) =
       SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
 
-    externalTableBuff.foreach(tb => {
-      val table = tb._2
-
-      extTables += new ExternalTableSummary(table.getTableName, table.getProvider,
+    externalTableBuff.mapValues(table => {
+      new ExternalTableSummary(table.getTableName, table.getProvider,
         table.getDataSourcePath)
-    })
-
-    extTables.toList
+    }).values.toList
   }
 }
