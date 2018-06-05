@@ -228,12 +228,10 @@ object SortedColumnTests extends Logging {
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false,
         numTimesInsert = 1, numTimesUpdate = 1)
       try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
         ColumnTableScan.setDebugMode(false)
         updateDF.write.insertInto(colTableName)
       } finally {
         ColumnTableScan.setDebugMode(false)
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true,
         numTimesInsert = 1, numTimesUpdate = 1)
@@ -272,18 +270,13 @@ object SortedColumnTests extends Logging {
     })
 
     def doIncrementalInsert(fileName: String, dataFrameReader: DataFrameReader): Unit = {
-      try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
-        // scalastyle:off
-        println(s"$testName start loading $fileName")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $fileName")
-        // scalastyle:on
-      } finally {
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
-      }
+      // scalastyle:off
+      println(s"$testName start loading $fileName")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $fileName")
+      // scalastyle:on
     }
 
     def verifySelect(expectedCount: Int): Unit = {
@@ -365,18 +358,13 @@ object SortedColumnTests extends Logging {
     }
 
     def doIncrementalInsert(fileName: String, dataFrameReader: DataFrameReader): Unit = {
-      try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
-        // scalastyle:off
-        println(s"$testName start loading $fileName")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $fileName")
-        // scalastyle:on
-      } finally {
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
-      }
+      // scalastyle:off
+      println(s"$testName start loading $fileName")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $fileName")
+      // scalastyle:on
     }
 
     def verifySelect(expectedCount: Int, doPrint: Boolean = false): Unit = {
@@ -567,7 +555,6 @@ object SortedColumnTests extends Logging {
       // scalastyle:on
 
       try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
         ColumnTableScan.setDebugMode(false)
         dataFrameReader.load(fixedFilePath(dataFile_2)).write.insertInto(colTableName)
         // scalastyle:off
@@ -591,7 +578,6 @@ object SortedColumnTests extends Logging {
         // scalastyle:on
       } finally {
         ColumnTableScan.setDebugMode(false)
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
       }
 
       ColumnTableScan.setDebugMode(true)
@@ -673,18 +659,13 @@ object SortedColumnTests extends Logging {
     }
 
     def doIncrementalInsert(fileName: String, dataFrameReader: DataFrameReader): Unit = {
-      try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
-        // scalastyle:off
-        println(s"$testName start loading $fileName")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $fileName")
-        // scalastyle:on
-      } finally {
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
-      }
+      // scalastyle:off
+      println(s"$testName start loading $fileName")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $fileName")
+      // scalastyle:on
     }
 
     def verifyUpdate(expected: String, expectedCount: Int): Unit = {
@@ -819,18 +800,13 @@ object SortedColumnTests extends Logging {
     }
 
     def doIncrementalInsert(fileName: String, dataFrameReader: DataFrameReader): Unit = {
-      try {
-        ColumnTableScan.setCaseOfSortedInsertValue(true)
-        // scalastyle:off
-        println(s"$testName start loading $fileName")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $fileName")
-        // scalastyle:on
-      } finally {
-        ColumnTableScan.setCaseOfSortedInsertValue(false)
-      }
+      // scalastyle:off
+      println(s"$testName start loading $fileName")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(fileName)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $fileName")
+      // scalastyle:on
     }
 
     def verifySelect(expectedCount: Int): Unit = {
@@ -965,11 +941,9 @@ object SortedColumnTests extends Logging {
       insertDF.write.insertInto(colTableName)
       insertDF.write.insertInto(joinTableName)
 
-      ColumnTableScan.setCaseOfSortedInsertValue(true)
       updateDF.write.insertInto(colTableName)
       updateDF.write.insertInto(joinTableName)
     } finally {
-      ColumnTableScan.setCaseOfSortedInsertValue(false)
       session.conf.unset(Property.ColumnBatchSize.name)
       session.conf.unset(Property.ColumnMaxDeltaRows.name)
     }

@@ -906,14 +906,11 @@ private[sql] final case class ColumnTableScan(
 }
 
 object ColumnTableScan extends Logging {
-
   // TODO VB: Temporary, remove this
-  def setCaseOfSortedInsertValue(v: Boolean): Unit =
-    ToolsCallbackInit.toolsCallback.setCaseOfSortedInsertValue(v)
-  def getCaseOfSortedInsertValue: Boolean =
-    ToolsCallbackInit.toolsCallback.getCaseOfSortedInsertValue
-  def setDebugMode(v: Boolean): Unit = ToolsCallbackInit.toolsCallback.setDebugMode(v)
-  def getDebugMode: Boolean = ToolsCallbackInit.toolsCallback.getDebugMode
+  def setCaseOfSortedInsertValue(v: Boolean): Unit = getCaseOfSortedInsertValue = v
+  var getCaseOfSortedInsertValue: Boolean = false
+  def setDebugMode(v: Boolean): Unit = getDebugMode = v
+  var getDebugMode: Boolean = false
 
   // Handle inverted bytes that denote incremental insert
   def getPositive(p: Int): Int = if (p < 0) ~p else p

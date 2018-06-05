@@ -29,7 +29,6 @@ import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.{SparkContext, SparkFiles}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
-import org.apache.spark.sql.execution.joins.SortMergeJoinExec
 import org.apache.spark.ui.SnappyDashboardTab
 import org.apache.spark.util.{SnappyUtils, Utils}
 
@@ -56,13 +55,6 @@ object ToolsCallbackImpl extends ToolsCallback {
       classLoader: ClassLoader): Unit = {
     SnappyUtils.setSessionDependencies(sparkContext, appName, classLoader)
   }
-
-  // TODO VB: Temporary, remove this
-  def setCaseOfSortedInsertValue(v: Boolean): Unit =
-    SortMergeJoinExec.isCaseOfSortedInsertValue = v
-  def getCaseOfSortedInsertValue: Boolean = SortMergeJoinExec.isCaseOfSortedInsertValue
-  def setDebugMode(v: Boolean): Unit = SortMergeJoinExec.isDebugMode = v
-  def getDebugMode: Boolean = SortMergeJoinExec.isDebugMode
 
   override def addURIs(alias: String, jars: Array[String],
     deploySql: String, isPackage: Boolean = true): Unit = {

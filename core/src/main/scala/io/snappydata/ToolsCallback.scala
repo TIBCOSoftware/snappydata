@@ -51,12 +51,6 @@ trait ToolsCallback {
       classLoader: ClassLoader): Unit = {
   }
 
-  // TODO VB: Temporary, remove this
-  def setCaseOfSortedInsertValue(v: Boolean): Unit
-  def getCaseOfSortedInsertValue: Boolean
-  def setDebugMode(v: Boolean): Unit
-  def getDebugMode: Boolean
-
   def addURIs(alias: String, jars: Array[String],
     deploySql: String, isPackage: Boolean = true): Unit
 
