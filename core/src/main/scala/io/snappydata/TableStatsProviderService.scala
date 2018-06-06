@@ -29,7 +29,7 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant.{DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL, PROPERTY_PREFIX, SPARK_SNAPPY_PREFIX}
 
 import org.apache.spark.sql.SnappySession
@@ -43,8 +43,8 @@ trait TableStatsProviderService extends Logging {
   private var externalTableSizeInfo = Map.empty[String, SnappyExternalTableStats]
   @volatile
   private var indexesInfo = Map.empty[String, SnappyIndexStats]
-  protected val membersInfo: mutable.Map[String, mutable.Map[String, Any]] =
-    new ConcurrentHashMap[String, mutable.Map[String, Any]](8, 0.7f, 1).asScala
+  protected val membersInfo: mutable.Map[String, MemberStatistics] =
+    new ConcurrentHashMap[String, MemberStatistics](8, 0.7f, 1).asScala
 
   protected[snappydata] lazy val delayMillis: Long = SparkEnv.get match {
     case null => DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL
@@ -78,6 +78,7 @@ trait TableStatsProviderService extends Logging {
           // Commenting this call to avoid periodic refresh of members stats
           // get members details
           // fillAggregatedMemberStatsOnDemand()
+          val memInfo = getMembersStatsOnDemand
 
         } finally {
           running = false
@@ -109,7 +110,7 @@ trait TableStatsProviderService extends Logging {
   def fillAggregatedMemberStatsOnDemand(): Unit = {
   }
 
-  def getMembersStatsOnDemand: mutable.Map[String, mutable.Map[String, Any]] = {
+  def getMembersStatsOnDemand: mutable.Map[String, MemberStatistics] = {
     // wait for updated stats for sometime else return the previous information
     val future = synchronized(memberStatsFuture match {
       case Some(f) => f
@@ -136,6 +137,14 @@ trait TableStatsProviderService extends Logging {
     synchronized {
       if (running) wait(10000)
     }
+  }
+
+  def getMembersStatsFromService: mutable.Map[String, MemberStatistics] = {
+    if (this.membersInfo.isEmpty) {
+      // force run
+      aggregateStats()
+    }
+    this.membersInfo
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
