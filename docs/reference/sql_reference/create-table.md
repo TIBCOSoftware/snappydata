@@ -271,14 +271,13 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 	For example, to evict using LRU entry count and overflow evicted rows to a disk store (OverflowDiskStore):
 	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
-		USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
+
 	
     To create a table that simply removes evicted data from memory without persisting the evicted data, use the `DESTROY` eviction action. For example:
     Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
     	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
-		USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)
