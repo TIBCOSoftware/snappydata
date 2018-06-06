@@ -20,8 +20,8 @@ import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, InsertIntoTable, Join, LogicalPlan, OverwriteOptions, Project}
-import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftAnti}
+import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, DeltaInsertFullOuterJoin, InsertIntoTable, Join, LogicalPlan, OverwriteOptions, Project}
+import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -53,7 +53,7 @@ object ColumnTableBulkOps {
           changeCondition = true)
 
         val keyColumns = getKeyColumns(table)
-        var updateSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
+        var updateSubQuery: LogicalPlan = DeltaInsertFullOuterJoin(table, subQuery, condition)
         val updateColumns = table.output
         val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
         if (updateExpressions.isEmpty) {

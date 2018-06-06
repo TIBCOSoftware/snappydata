@@ -941,7 +941,8 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
   }
 
   private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
+    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies,
+      SortMergeJoinForDeltaInsertStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

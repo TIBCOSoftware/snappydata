@@ -115,10 +115,9 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         }
       } finally {
         oldColValue.release()
-        // Do not release delta buffer if case of delta insert
-        if (!ColumnTableScan.getCaseOfSortedInsertValue) {
-          newValue.release()
-        }
+        // TODO VB: Do not release delta buffer if case of delta insert
+        // newValue.release()
+
         // release own buffer too and delta should be unusable now
         release()
       }
