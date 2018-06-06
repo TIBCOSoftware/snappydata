@@ -48,8 +48,6 @@ trait DynamicReplacableConstant extends Expression {
 
   def value: Any
 
-  override final def deterministic: Boolean = true
-
   private def checkValueType(value: Any, expectedClass: Class[_]): Unit = {
     val valueClass = if (value != null) value.getClass else null
     assert((valueClass eq expectedClass) || (valueClass eq null),
@@ -115,7 +113,7 @@ trait DynamicReplacableConstant extends Expression {
         val memoryManagerClass = classOf[TaskMemoryManager].getName
         val memoryModeClass = classOf[MemoryMode].getName
         val consumerClass = classOf[DirectStringConsumer].getName
-        ctx.addMutableState(javaType, valueTerm,
+        ctx.addMutableState(javaType, valueTerm, _ =>
           s"""
              |if (($isNull = $valueRef.value() == null)) {
              |  $valueTerm = ${ctx.defaultValue(dataType)};
@@ -131,18 +129,18 @@ trait DynamicReplacableConstant extends Expression {
              |    }
              |  }
              |}
-          """.stripMargin)
+          """.stripMargin, true, false)
         // indicate that code for valueTerm has already been generated
         null.asInstanceOf[String]
       case _ => ""
     }
-    ctx.addMutableState("boolean", isNull, "")
+    ctx.addMutableState("boolean", isNull, _ => "", true, false)
     if (unbox ne null) {
-      ctx.addMutableState(javaType, valueTerm,
+      ctx.addMutableState(javaType, valueTerm, _ =>
         s"""
            |$isNull = $valueRef.value() == null;
            |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
-        """.stripMargin)
+        """.stripMargin, true, false)
     }
     ev.copy(initCode, isNullLocal, valueLocal)
   }
@@ -502,12 +500,10 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     val exprClass = classOf[Expression].getName
     val elements = new Array[AnyRef](hset.length)
     val childGen = child.genCode(ctx)
-    val hsetTerm = ctx.freshName("hset")
     val elementsTerm = ctx.freshName("elements")
     val idxTerm = ctx.freshName("idx")
     val idx = ctx.references.length
     ctx.references += elements
-    val hasNullTerm = ctx.freshName("hasNull")
 
     for (i <- hset.indices) {
       val e = hset(i)
@@ -518,21 +514,21 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
       elements(i) = v
     }
 
-    ctx.addMutableState("boolean", hasNullTerm, "")
-    ctx.addMutableState(setName, hsetTerm,
+    val hasNullTerm = ctx.addMutableState("boolean", "hasNull", _ => "", forceInline = true)
+    val hsetTerm = ctx.addMutableState(setName, "hasNullTerm", v =>
       s"""
          |Object[] $elementsTerm = (Object[])references[$idx];
-         |$hsetTerm = new $setName($elementsTerm.length, 0.7f, 1);
+         |$v = new $setName($elementsTerm.length, 0.7f, 1);
          |for (int $idxTerm = 0; $idxTerm < $elementsTerm.length; $idxTerm++) {
          |  Object e = $elementsTerm[$idxTerm];
          |  if (e instanceof $exprClass) e = (($exprClass)e).eval(null);
          |  if (e != null) {
-         |    $hsetTerm.put(e, e);
+         |    $v.put(e, e);
          |  } else if (!$hasNullTerm) {
          |    $hasNullTerm = true;
          |  }
          |}
-      """.stripMargin)
+      """.stripMargin, forceInline = true)
 
     ev.copy(code = s"""
       ${childGen.code}

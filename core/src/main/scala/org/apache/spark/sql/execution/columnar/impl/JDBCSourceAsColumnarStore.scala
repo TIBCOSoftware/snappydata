@@ -20,11 +20,6 @@ import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 import java.util.Collections
 
-import scala.annotation.meta.param
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
-import scala.util.control.NonFatal
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
@@ -37,11 +32,11 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectio
 import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
@@ -51,11 +46,16 @@ import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDK
 import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.util.TaskCompletionListener
 import org.apache.spark.{Partition, TaskContext, TaskKilledException}
+
+import scala.annotation.meta.param
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
+import scala.util.control.NonFatal
 
 /**
  * Column Store implementation for GemFireXD.
@@ -561,7 +561,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   private def doRowBufferPut(batch: ColumnBatch,
       partitionId: Int): (Connection => Unit) = {
     (connection: Connection) => {
-      val gen = CodeGeneration.compileCode(
+      val (gen, r) = CodeGeneration.compileCode(
         tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
           val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
@@ -576,19 +576,19 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           // this is only used for local code generation while its RDD
           // semantics and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan), insertPlan)
+            WholeStageCodegenExec(insertPlan)(codegenStageId = 0), insertPlan)
           val references = ctx.references
           // also push the index of connection reference at the end which
           // will be used below to update connection before execution
           references += insertPlan.connRef
           (code, references.toArray)
         })
-      val refs = gen._2.clone()
+      val refs = r.clone()
       // set the connection object for current execution
       val connectionRef = refs(refs.length - 1).asInstanceOf[Int]
       refs(connectionRef) = connection
       // no harm in passing a references array with extra element at end
-      val iter = gen._1.generate(refs).asInstanceOf[BufferedRowIterator]
+      val iter = gen.generate(refs).asInstanceOf[BufferedRowIterator]
       // put the single ColumnBatch in the iterator read by generated code
       iter.init(partitionId, Array(Iterator[Any](new ResultSetTraversal(
         conn = null, stmt = null, rs = null, context = null),
@@ -670,12 +670,12 @@ final class ColumnarStorePartitionedRDD(
       case -1 if allPartitions != null =>
         allPartitions
       case -1 =>
-        allPartitions = session.sessionState.getTablePartitions(
+        allPartitions = session.getTablePartitions(
           region.asInstanceOf[PartitionedRegion])
         allPartitions
       case bucketId: Int =>
         if (!session.partitionPruning) {
-          allPartitions = session.sessionState.getTablePartitions(
+          allPartitions = session.getTablePartitions(
             region.asInstanceOf[PartitionedRegion])
           allPartitions
         } else {

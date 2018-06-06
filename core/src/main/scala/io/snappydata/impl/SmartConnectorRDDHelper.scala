@@ -19,25 +19,24 @@ package io.snappydata.impl
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import java.util.Collections
 
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
-
 import com.gemstone.gemfire.internal.SocketCreator
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.thrift.internal.ClientPreparedStatement
-
 import org.apache.spark.Partition
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
+import org.apache.spark.sql.collection.SmartExecutorBucketPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 final class SmartConnectorRDDHelper {
 
@@ -142,7 +141,7 @@ object SmartConnectorRDDHelper {
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
     hostList.isEmpty
 
-  private def preferHostName(session: SnappySession): Boolean = {
+/*  private def preferHostName(session: SnappySession): Boolean = {
     // check if Spark executors are using IP addresses or host names
     Utils.executorsListener(session.sparkContext) match {
       case Some(l) =>
@@ -154,7 +153,7 @@ object SmartConnectorRDDHelper {
         preferHost.isDefined && preferHost.get
       case _ => false
     }
-  }
+  } */
 
   def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
@@ -164,7 +163,7 @@ object SmartConnectorRDDHelper {
         ClientAttribute.LOAD_BALANCE + "=false"
     if (bucketToServerMappingStr != null) {
       // check if Spark executors are using IP addresses or host names
-      val preferHost = preferHostName(session)
+//      val preferHost = preferHostName(session)
       val arr: Array[String] = bucketToServerMappingStr.split(":")
       var orphanBuckets: ArrayBuffer[Int] = null
       val noOfBuckets = arr(0).toInt
@@ -179,9 +178,11 @@ object SmartConnectorRDDHelper {
         if (!(aBucketInfo(1) == "null")) {
           // get (host,addr,port)
           val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
-          val hostName = hostAddressPort._1
-          val host = if (preferHost) hostName else hostAddressPort._2
-          val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
+//          val hostName = hostAddressPort._1
+//          val host = if (preferHost) hostName else hostAddressPort._2
+//          val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
+            val host = hostAddressPort._1
+            val netUrl = urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix
           val netUrls = new ArrayBuffer[(String, String)](1)
           netUrls += host -> netUrl
           allNetUrls(bid) = netUrls
@@ -216,7 +217,7 @@ object SmartConnectorRDDHelper {
   def setReplicasToServerMappingInfo(replicaNodesStr: String,
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     // check if Spark executors are using IP addresses or host names
-    val preferHost = preferHostName(session)
+//    val preferHost = preferHostName(session)
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
@@ -225,10 +226,12 @@ object SmartConnectorRDDHelper {
     val netUrls = ArrayBuffer.empty[(String, String)]
     for (host <- hostInfo) {
       val hostAddressPort = returnHostPortFromServerString(host)
-      val hostName = hostAddressPort._1
-      val h = if (preferHost) hostName else hostAddressPort._2
-      netUrls += h ->
-          (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
+      netUrls += hostAddressPort._1 ->
+        (urlPrefix + hostAddressPort._2 + "[" + hostAddressPort._3 + "]" + urlSuffix)
+//      val hostName = hostAddressPort._1
+//      val h = if (preferHost) hostName else hostAddressPort._2
+//      netUrls += h ->
+//          (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
     }
     Array(netUrls)
   }

@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
-
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.Attribute
@@ -33,7 +32,6 @@ import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.apache.hadoop.hive.ql.metadata.Hive
-
 import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
@@ -47,9 +45,9 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
 import org.apache.spark.sql.execution.joins.HashedObjectCache
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappySharedState}
-import org.apache.spark.sql.internal.SnappySessionState
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.SessionState
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{SnappyParserConsts => ParserConsts}
@@ -95,7 +93,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   override def newSession(): SnappyContext =
     snappySession.newSession().snappyContext
 
-  override def sessionState: SnappySessionState = snappySession.sessionState
+  override def sessionState: SessionState = snappySession.sessionState
 
   def clear(): Unit = {
     snappySession.clear()
@@ -841,7 +839,7 @@ object SnappyContext extends Logging {
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
-  private val builtinSources = new CaseInsensitiveMap(Map(
+  private val builtinSources = CaseInsensitiveMap(Map(
     ParserConsts.COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ParserConsts.ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> SAMPLE_SOURCE_CLASS,
@@ -1188,7 +1186,7 @@ object SnappyContext extends Logging {
     ConnectionPool.clear()
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
-    SparkSession.sqlListener.set(null)
+    // SparkSession.sqlListener.set(null)
     ServiceUtils.clearStaticArtifacts()
   }
 
@@ -1231,7 +1229,8 @@ object SnappyContext extends Logging {
     builtinSourcesShortNames.getOrElse(provider, provider)
 
   def flushSampleTables(): Unit = {
-    val sampleRelations = _anySNContext.sessionState.catalog.
+    val sampleRelations = _anySNContext.sessionState
+      .catalog.asInstanceOf[SnappyStoreHiveCatalog].
         getDataSourceRelations[AnyRef](Seq(ExternalTableType.Sample), None)
     try {
       val clazz = org.apache.spark.util.Utils.classForName(

@@ -28,6 +28,7 @@ import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
@@ -42,7 +43,7 @@ import org.apache.spark.sql.hive.{ConnectorCatalog, RelationInfo, SnappyStoreHiv
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
@@ -294,7 +295,7 @@ class RowFormatRelation(
   override def recoverDependentRelations(properties: Map[String, String]): Unit = {
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val sncCatalog = snappySession.sessionState.catalog
+    val sncCatalog = snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
     var dependentRelations: Array[String] = Array()
     if (properties.get(ExternalStoreUtils.DEPENDENT_RELATIONS).isDefined) {
@@ -302,7 +303,7 @@ class RowFormatRelation(
     }
     dependentRelations.foreach(rel => {
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
-        case LogicalRelation(r: DependentRelation, _, _) => r
+        case LogicalRelation(r: DependentRelation, _, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })
@@ -324,7 +325,7 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
     ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters,
       forManagedTable = true, forColumnTable = false)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = CaseInsensitiveMap(parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"

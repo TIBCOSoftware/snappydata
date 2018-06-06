@@ -19,17 +19,13 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.JavaConverters._
-
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.collection.ObjectLongHashMap
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
-
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -39,6 +35,8 @@ import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
+
+import scala.collection.JavaConverters._
 
 
 /**
@@ -141,7 +139,7 @@ abstract case class JDBCAppendableRelation(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
-        OverwriteOptions(overwrite),
+        overwrite,
         ifNotExists = false)).toRdd
   }
 

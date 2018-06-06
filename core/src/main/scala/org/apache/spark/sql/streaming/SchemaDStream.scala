@@ -17,14 +17,14 @@
 package org.apache.spark.sql.streaming
 
 import scala.reflect.ClassTag
-
 import org.apache.spark.api.java.function.{VoidFunction => JVoidFunction, VoidFunction2 => JVoidFunction2}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.collection.WrappedInternalRow
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.exchange.ShuffleExchange
+import org.apache.spark.sql.execution.exchange.ShuffleExchangeExec
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappySession}
 import org.apache.spark.storage.StorageLevel
@@ -50,7 +50,8 @@ class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   @transient private val snappySession: SnappySession = snsc.snappySession
 
-  @transient private val catalog = snappySession.sessionState.catalog
+  @transient private val catalog = snappySession.sessionState
+    .catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
     this(ssc, ssc.snappySession.sessionState.executePlan(logicalPlan))
@@ -275,8 +276,7 @@ class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   /** Registers this SchemaDStream as a table in the catalog. */
   def registerAsTable(tableName: String): Unit = {
     catalog.registerTable(
-      catalog.newQualifiedTempTableName(tableName),
-      logicalPlan)
+      catalog.newQualifiedTempTableName(tableName), logicalPlan)
   }
 
   /** Returns the schema of this SchemaDStream (represented by
@@ -292,7 +292,7 @@ class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   }
 
   private val _cachedField = {
-    val f = classOf[ShuffleExchange].getDeclaredFields.find(
+    val f = classOf[ShuffleExchangeExec].getDeclaredFields.find(
       _.getName.contains("cachedShuffleRDD")).get
     f.setAccessible(true)
     f
@@ -300,7 +300,7 @@ class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   private def executionPlan: SparkPlan = {
     queryExecution.executedPlan.foreach {
-      case s: ShuffleExchange => _cachedField.set(s, null)
+      case s: ShuffleExchangeExec => _cachedField.set(s, null)
       case _ =>
     }
     queryExecution.executedPlan

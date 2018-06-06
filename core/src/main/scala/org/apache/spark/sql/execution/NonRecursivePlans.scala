@@ -38,7 +38,7 @@ abstract class NonRecursivePlans extends SparkPlan {
       throw new CodeGenerationException("Code generation failed for some of the child plans")
     }
     nonCodeGeneratedPlan = true
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(this)(codegenStageId = 1).execute()
   }
 
   override def makeCopy(newArgs: Array[AnyRef]): NonRecursivePlans = {

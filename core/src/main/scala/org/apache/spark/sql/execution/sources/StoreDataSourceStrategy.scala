@@ -35,17 +35,16 @@
 
 package org.apache.spark.sql.execution.sources
 
-import scala.collection.mutable
-
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.plans.logical.{HintInfo, LogicalPlan, Project, ResolvedHint, Filter => LFilter}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
-import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
-import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
-import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql._
+
+import scala.collection.mutable
 
 /**
  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
@@ -56,7 +55,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalScan(projects, filters, scan) => scan match {
-      case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
+      case l@LogicalRelation(t: PartitionedDataSourceScan, _, _, _) =>
         pruneFilterProject(
           l,
           projects,
@@ -64,7 +63,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           t.numBuckets,
           t.partitionColumns,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
+      case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _, _) =>
         pruneFilterProject(
           l,
           projects,
@@ -72,7 +71,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           0,
           Nil,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case LogicalRelation(_, _, _) => {
+      case LogicalRelation(_, _, _, _) => {
         var foundParamLiteral = false
         val tp = plan.transformAllExpressions {
           case pl: ParamLiteral =>
@@ -126,8 +125,10 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       }
     }
 
-    val unhandledPredicates = relation.relation.asInstanceOf[PrunedUnsafeFilteredScan]
-        .unhandledFilters(candidatePredicates)
+    val (unhandledPredicates, pushedFilters, handledFilters) =
+      selectFilters(relation.relation, candidatePredicates)
+//    val unhandledPredicates = relation.relation.asInstanceOf[PrunedUnsafeFilteredScan]
+//        .unhandledFilters(candidatePredicates)
 
     // A set of column attributes that are only referenced by pushed down
     // filters. We can eliminate them from requested columns.
@@ -201,9 +202,15 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         case baseRelation =>
           RowDataSourceScanExec(
             mappedProjects,
-            scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
-            baseRelation, UnknownPartitioning(0), getMetadata,
-            relation.catalogTable.map(_.identifier))
+            requestedColumns.map(relation.output.indexOf),
+            pushedFilters.toSet,
+            handledFilters,
+            scanBuilder(requestedColumns, candidatePredicates)
+                ._1.asInstanceOf[RDD[InternalRow]],
+            baseRelation, relation.catalogTable.map(_.identifier))
+//            scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
+//            baseRelation, UnknownPartitioning(0), getMetadata,
+//            relation.catalogTable.map(_.identifier))
       }
       filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
@@ -229,9 +236,16 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         case baseRelation =>
           RowDataSourceScanExec(
             mappedProjects,
-            scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
-            baseRelation, UnknownPartitioning(0), getMetadata,
+            requestedColumns.map(relation.output.indexOf),
+            pushedFilters.toSet,
+            handledFilters,
+            scanBuilder(requestedColumns, candidatePredicates)
+                ._1.asInstanceOf[RDD[InternalRow]],
+            baseRelation,
             relation.catalogTable.map(_.identifier))
+//            scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
+//            baseRelation, UnknownPartitioning(0), getMetadata,
+//            relation.catalogTable.map(_.identifier))
       }
       if (projectOnlyAttributes || allDeterministic || filterCondition.isEmpty) {
         execution.ProjectExec(projects,
@@ -324,6 +338,60 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case _ => None
     }
   }
+
+  /**
+   * Selects Catalyst predicate [[Expression]]s which are convertible into data source [[Filter]]s
+   * and can be handled by `relation`.
+   *
+   * @return A pair of `Seq[Expression]` and `Seq[Filter]`. The first element contains all Catalyst
+   *         predicate [[Expression]]s that are either not convertible or cannot be handled by
+   *         `relation`. The second element contains all converted data source [[Filter]]s that
+   *         will be pushed down to the data source.
+   */
+  protected[sql] def selectFilters(
+      relation: BaseRelation,
+      predicates: Seq[Expression]): (Seq[Expression], Seq[Filter], Set[Filter]) = {
+
+    // For conciseness, all Catalyst filter expressions of type `expressions.Expression` below are
+    // called `predicate`s, while all data source filters of type `sources.Filter` are simply called
+    // `filter`s.
+
+    val translated: Seq[(Expression, Filter)] =
+      for {
+        predicate <- predicates
+        filter <- translateToFilter(predicate)
+      } yield predicate -> filter
+
+    // A map from original Catalyst expressions to corresponding translated data source filters.
+    val translatedMap: Map[Expression, Filter] = translated.toMap
+
+    // Catalyst predicate expressions that cannot be translated to data source filters.
+    val unrecognizedPredicates = predicates.filterNot(translatedMap.contains)
+
+    // Data source filters that cannot be handled by `relation`. The semantic of a unhandled filter
+    // at here is that a data source may not be able to apply this filter to every row
+    // of the underlying dataset.
+    val unhandledFilters = relation.unhandledFilters(translatedMap.values.toArray).toSet
+
+    val (unhandled, _) = translated.partition {
+      case (_, filter) =>
+        unhandledFilters.contains(filter)
+    }
+
+    // Catalyst predicate expressions that can be translated to data source filters, but cannot be
+    // handled by `relation`.
+    val (unhandledPredicates, _) = unhandled.unzip
+
+    // Translated data source filters that can be handled by `relation`
+    // val (_, handledFilters) = handled.unzip
+
+    // translated contains all filters that have been converted to the public Filter interface.
+    // We should always push them to the data source no matter whether the data source can apply
+    // a filter to every row or not.
+    val (_, translatedFilters) = translated.unzip
+
+    (unrecognizedPredicates ++ unhandledPredicates, translatedFilters, unhandledFilters)
+  }
 }
 
 /**
@@ -372,7 +440,7 @@ object PhysicalScan extends PredicateHelper {
         val substitutedCondition = substitute(aliases)(condition)
         (fields, filters ++ splitConjunctivePredicates(substitutedCondition), other, aliases)
 
-      case BroadcastHint(child) => collectProjectsAndFilters(child)
+      case ResolvedHint(child, HintInfo(true)) => collectProjectsAndFilters(child)
 
       case other => (None, Nil, other, Map.empty)
     }
@@ -385,12 +453,12 @@ object PhysicalScan extends PredicateHelper {
     expr.transform {
       case a@Alias(ref: AttributeReference, name) =>
         aliases.get(ref)
-            .map(Alias(_, name)(a.exprId, a.qualifier, isGenerated = a.isGenerated))
+            .map(Alias(_, name)(a.exprId, a.qualifier))
             .getOrElse(a)
 
       case a: AttributeReference =>
         aliases.get(a)
-            .map(Alias(_, a.name)(a.exprId, a.qualifier, isGenerated = a.isGenerated)).getOrElse(a)
+            .map(Alias(_, a.name)(a.exprId, a.qualifier)).getOrElse(a)
     }
   }
 }

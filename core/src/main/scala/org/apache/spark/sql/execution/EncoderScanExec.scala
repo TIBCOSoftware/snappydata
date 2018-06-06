@@ -45,9 +45,8 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val dateTimeClass = DateTimeUtils.getClass.getName.replace("$", "")
-    val iterator = ctx.freshName("iterator")
-    ctx.addMutableState("scala.collection.Iterator", iterator,
-      s"$iterator = inputs[0];")
+    val iterator = ctx.addMutableState("scala.collection.Iterator", "iterator",
+      v => s"$v = inputs[0];", forceInline = true)
 
     val javaTypeName = encoder.clsTag.runtimeClass.getName
     val objVar = ctx.freshName("object")
@@ -70,7 +69,7 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
     val declarations = new StringBuilder
 
     def optimizeDate(expr: Expression): ExprCode = expr match {
-      case s@StaticInvoke(_, _, "fromJavaDate", inputValue :: Nil, _) =>
+      case s@StaticInvoke(_, _, "fromJavaDate", inputValue :: Nil, _, _) =>
         // optimization to re-use previous date since it may remain
         // same for a while in many cases
         val prevJavaDate = ctx.freshName("prevJavaDate")

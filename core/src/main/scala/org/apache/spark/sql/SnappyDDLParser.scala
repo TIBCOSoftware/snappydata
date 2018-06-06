@@ -22,19 +22,15 @@ import java.io.File
 import java.util.Map.Entry
 import java.util.function.Consumer
 
-import scala.util.Try
 import io.snappydata.Constant
-import org.apache.spark.TaskContext
 import org.apache.spark.deploy.SparkSubmitUtils
-import org.parboiled2._
-import shapeless.{::, HNil}
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, ExecutorLocalRDD, ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
@@ -43,8 +39,11 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import org.parboiled2._
+import shapeless.{::, HNil}
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -458,7 +457,7 @@ abstract class SnappyDDLParser(session: SparkSession)
             functionIdent.funcName,
             classNameWithType,
             funcResources,
-            isTemp)
+            isTemp, false, false)
         }
   }
 
@@ -531,7 +530,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     DESCRIBE ~ (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
           DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-              .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
+              .asInstanceOf[Option[Boolean]].isDefined))
   }
 
   protected def refreshTable: Rule1[LogicalPlan] = rule {
@@ -550,7 +549,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     UNCACHE ~ TABLE ~ ifExists ~ tableIdentifier ~>
         ((ifExists: Boolean, tableIdent: TableIdentifier) =>
           UncacheTableCommand(tableIdent, ifExists)) |
-    CLEAR ~ CACHE ~> (() => ClearCacheCommand)
+    CLEAR ~ CACHE ~> (() => ClearCacheCommand())
   }
 
   protected def set: Rule1[LogicalPlan] = rule {
@@ -740,8 +739,7 @@ case class DropIndex(ifExists: Boolean, indexName: TableIdentifier) extends Comm
 case class DMLExternalTable(
     tableName: TableIdentifier,
     query: LogicalPlan,
-    command: String)
-    extends LeafNode with Command {
+    command: String) extends Command {
 
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
 
@@ -764,7 +762,8 @@ case class DeployCommand(
     jarCache: Option[String]) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+    val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+      SparkSubmitUtils.buildIvySettings(repos, jarCache))
     if (jarsstr.nonEmpty) {
       val jars = jarsstr.split(",")
       val sc = sparkSession.sparkContext

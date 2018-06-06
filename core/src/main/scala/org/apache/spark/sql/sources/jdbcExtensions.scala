@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -288,7 +288,7 @@ object JdbcExtendedUtils extends Logging {
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
         dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
+            CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
             schemaString, JdbcExtendedUtils.SCHEMADDL_PROPERTY, options).toMap),
           schemaString, data)
 
@@ -365,7 +365,7 @@ object JdbcExtendedUtils extends Logging {
         table = UnresolvedRelation(tableIdent),
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,
-        overwrite = OverwriteOptions(enabled = false),
+        overwrite = false,
         ifNotExists = false)
     }
     session.sessionState.executePlan(plan).executedPlan.executeCollect()

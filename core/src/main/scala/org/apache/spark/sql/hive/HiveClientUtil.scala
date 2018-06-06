@@ -48,7 +48,7 @@ import org.apache.spark.{Logging, SparkContext}
 private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
 
   /** The version of hive used internally by Spark SQL. */
-  private val hiveExecutionVersion = HiveUtils.hiveExecutionVersion
+  private val hiveExecutionVersion = HiveUtils.builtinHiveVersion
 
   val HIVE_METASTORE_VERSION = HiveUtils.HIVE_METASTORE_VERSION
   val HIVE_METASTORE_JARS = HiveUtils.HIVE_METASTORE_JARS

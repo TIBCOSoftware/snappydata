@@ -18,9 +18,8 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.SystemFailure
-
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyConf, SnappySession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
@@ -86,7 +85,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
           case Some(exec) =>
             logInfo("SnappyData code generation failed. Falling back to Spark plans.")
-            session.sessionState.disableStoreOptimizations = true
+            session.disableStoreOptimizations = true
             try {
               val plan = exec().executedPlan
               val result = f(plan)
@@ -94,7 +93,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
               child = plan
               result
             } finally {
-              session.sessionState.disableStoreOptimizations = false
+              session.disableStoreOptimizations = false
             }
           case None => throw t
         }
@@ -117,16 +116,17 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
     executeWithFallback(_.execute(), plan)
 
   override def generateTreeString(depth: Int, lastChildren: Seq[Boolean],
-      builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
-    child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
+      builder: StringBuilder, verbose: Boolean, prefix: String,
+      addSuffix: Boolean = false): StringBuilder =
+    child.generateTreeString(depth, lastChildren, builder, verbose, prefix, addSuffix)
 
-  // override def children: Seq[SparkPlan] = child.children
-
-  // override private[sql] def metrics = child.metrics
-
-  // override private[sql] def metadata = child.metadata
-
-  // override def subqueries: Seq[SparkPlan] = child.subqueries
+//   override def children: Seq[SparkPlan] = child.children
+//
+//   override private[sql] def metrics = child.metrics
+//
+//   override private[sql] def metadata = child.metadata
+//
+//   override def subqueries: Seq[SparkPlan] = child.subqueries
 
   override def nodeName: String = "CollectResults"
 

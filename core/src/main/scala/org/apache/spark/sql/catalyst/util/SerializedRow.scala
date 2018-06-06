@@ -326,7 +326,7 @@ trait SerializedRowData extends SpecializedGetters
     }
   }
 
-  final def anyNull: Boolean = {
+  final def isAnyNull: Boolean = {
     if (skipBytes == 0) {
       BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes >> 3)
     } else {

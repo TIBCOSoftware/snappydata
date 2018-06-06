@@ -102,14 +102,14 @@ object TPCDSQuerySnappyBenchmark {
           ds = spark.sql(queryString)
 
         ds.queryExecution.logical.map {
-          case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+          case ur@UnresolvedRelation(t: TableIdentifier) =>
             queryRelations.add(t.table)
           case lp: LogicalPlan =>
             lp.expressions.foreach {
               _ foreach {
                 case subquery: SubqueryExpression =>
                   subquery.plan.foreach {
-                    case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+                    case ur@UnresolvedRelation(t: TableIdentifier) =>
                       queryRelations.add(t.table)
                     case _ =>
                   }

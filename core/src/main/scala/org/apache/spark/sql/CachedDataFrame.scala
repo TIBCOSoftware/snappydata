@@ -182,7 +182,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   }
 
   private def setPoolForExecution(): Unit = {
-    var pool = snappySession.sessionState.conf.activeSchedulerPool
+    var pool = snappySession.sessionState.conf.asInstanceOf[SnappyConf].activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
     if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
@@ -249,7 +249,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     collectInternal().map(boundEnc.fromRow).toArray
   }
 
-  override def withNewExecutionId[T](body: => T): T = withNewExecutionIdTiming(body)._1
+  def withNewExecutionId[T](body: => T): T = withNewExecutionIdTiming(body)._1
 
   private def withNewExecutionIdTiming[T](body: => T): (T, Long) = if (noSideEffects) {
     var didPrepare = false

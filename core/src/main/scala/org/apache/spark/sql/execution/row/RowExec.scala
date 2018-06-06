@@ -20,11 +20,11 @@ package org.apache.spark.sql.execution.row
 import java.sql.Connection
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression}
 import org.apache.spark.sql.execution.TableExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.{StructField, StructType}
 
 /**
@@ -57,7 +57,7 @@ trait RowExec extends TableExec {
       (s"final $connectionClass $connTerm = $connObj;", "", "")
     } else {
       val utilsClass = ExternalStoreUtils.getClass.getName
-      ctx.addMutableState(connectionClass, connTerm, "")
+      ctx.addMutableState(connectionClass, connTerm, _ => "", true, false)
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       val initCode =
         s"""
@@ -98,10 +98,10 @@ trait RowExec extends TableExec {
     val numOperations = ctx.freshName("numOperations")
     val childProduce = doChildProduce(ctx)
     val mutateTable = ctx.freshName("mutateTable")
+    ctx.addMutableState("long", result, v => s"$v = -1L;", true, false)
+    ctx.addMutableState("java.sql.PreparedStatement", stmt, _ => "", true, false)
+    ctx.addMutableState("long", rowCount, _ => "", true, false)
 
-    ctx.addMutableState("java.sql.PreparedStatement", stmt, "")
-    ctx.addMutableState("long", result, s"$result = -1L;")
-    ctx.addMutableState("long", rowCount, "")
     ctx.addNewFunction(mutateTable,
       s"""
          |private void $mutateTable() throws java.io.IOException, java.sql.SQLException {
@@ -143,10 +143,10 @@ trait RowExec extends TableExec {
   protected def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       schema: StructType): String = {
     val schemaTerm = ctx.addReferenceObj("schema", schema)
-    val schemaFields = ctx.freshName("schemaFields")
+//    val schemaFields = ctx.freshName("schemaFields")
     val structFieldClass = classOf[StructField].getName
-    ctx.addMutableState(s"$structFieldClass[]", schemaFields,
-      s"$schemaFields = $schemaTerm.fields();")
+    val schemaFields = ctx.addMutableState(s"$structFieldClass[]", "schemaFields",
+      v => s"$v = $schemaTerm.fields();", forceInline = true)
     val batchSize = connProps.executorConnProps
         .getProperty("batchsize", "1000").toInt
     val numOpRowsMetric = if (onExecutor) null
@@ -166,8 +166,12 @@ trait RowExec extends TableExec {
       ctx.addNewFunction(columnSetterFunction,
         s"""
            |private void $columnSetterFunction(final boolean $isNull,
-           |    final $dataType $field) throws java.sql.SQLException {
+           |    final $dataType $field) throws java.io.IOException {
+           |try{
            |  $columnSetterCode
+           |} catch (java.sql.SQLException sqle) {
+           |throw new java.io.IOException(sqle.toString(), sqle);
+           |}
            |}
         """.stripMargin)
       s"$columnSetterFunction(${ev.isNull}, ${ev.value});"
@@ -176,9 +180,17 @@ trait RowExec extends TableExec {
        |$inputCode
        |$functionCalls
        |$rowCount++;
+       |try{
        |$stmt.addBatch();
+       |} catch (java.sql.SQLException sqle) {
+       |throw new java.io.IOException(sqle.toString(), sqle);
+       |}
        |if (($rowCount % $batchSize) == 0) {
+       |try{
        |  ${executeBatchCode(numOperations, numOpRowsMetric)}
+       |} catch (java.sql.SQLException sqle) {
+       |throw new java.io.IOException(sqle.toString(), sqle);
+       |}
        |  $rowCount = 0;
        |}
     """.stripMargin

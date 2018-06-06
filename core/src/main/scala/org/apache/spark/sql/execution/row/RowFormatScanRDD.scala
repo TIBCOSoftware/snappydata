@@ -338,8 +338,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     }
 
     Misc.getRegionForTable(tableName, true).asInstanceOf[CacheDistributionAdvisee] match {
-      case pr: PartitionedRegion => session.sessionState.getTablePartitions(pr)
-      case dr => session.sessionState.getTablePartitions(dr)
+      case pr: PartitionedRegion => session.getTablePartitions(pr)
+      case dr => session.getTablePartitions(dr)
     }
   }
 

@@ -21,11 +21,10 @@ import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
-import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, LocalRegion, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
@@ -41,22 +40,21 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.SnappyTableStatsProviderService
-
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, SortDirection, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
-import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
+import org.apache.spark.sql.store.StoreHashFunction
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, SparkContext}
@@ -214,8 +212,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val ctx = new CodegenContext
     val rowClass = classOf[UnsafeRow].getName
     // create the code snippet for applying the filters
-    val numRows = ctx.freshName("numRows")
-    ctx.addMutableState("int", numRows, "")
+    val numRows = ctx.addMutableState("int", "numRows", _ => "", forceInline = true)
     val filterFunction = ColumnTableScan.generateStatPredicate(ctx, isColumnTable = true,
       schemaAttrs, batchFilterExprs, numRows, metricTerm = null, metricAdd = null)
     val filterPredicate = if (filterFunction.isEmpty) null
@@ -258,7 +255,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
       CodeGeneration.logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
 
-      val clazz = CodeGenerator.compile(cleanedSource)
+      val (clazz, _) = CodeGenerator.compile(cleanedSource)
       clazz.generate(ctx.references.toArray).asInstanceOf[StatsPredicate]
     }
     val batchIterator = ColumnBatchIterator(region, bucketIds, projection,

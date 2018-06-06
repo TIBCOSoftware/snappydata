@@ -18,8 +18,7 @@
 package io.snappydata
 
 import com.pivotal.gemfirexd.internal.engine.Misc
-
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, LeafExpression}
@@ -32,7 +31,7 @@ import org.apache.spark.unsafe.types.UTF8String
 object SnappyDataFunctions {
 
   def registerSnappyFunctions(functionRegistry: FunctionRegistry): Unit = {
-    functionRegistry.registerFunction("DSID", _ => DSID())
+    functionRegistry.registerFunction(FunctionIdentifier("DSID"), _ => DSID())
   }
 }
 
@@ -54,7 +53,7 @@ case class DSID() extends LeafExpression {
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    ctx.addMutableState("UTF8String", ev.value, s"${ev.value} = UTF8String" +
+    ctx.addMutableState("UTF8String", ev.value, _ => s"${ev.value} = UTF8String" +
         ".fromString(com.pivotal.gemfirexd.internal.engine.Misc.getMyId().getId());")
     ev.code = ""
     ev.isNull = "false"

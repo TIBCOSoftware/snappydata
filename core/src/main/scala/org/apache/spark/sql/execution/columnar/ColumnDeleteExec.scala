@@ -114,12 +114,13 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |$position = $deleteEncoder.initialize(8); // start with a default size
       """.stripMargin
 
-    ctx.addMutableState(deleteEncoderClass, deleteEncoder, "")
-    ctx.addMutableState("int", position, initializeEncoder)
-    ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
-    ctx.addMutableState("int", lastBucketId, "")
-    ctx.addMutableState("int", lastNumRows, "")
+    ctx.addMutableState(deleteEncoderClass, deleteEncoder, _ => "", true, false)
+    ctx.addMutableState("int", position, _ => initializeEncoder, true, false)
+    ctx.addMutableState("int", batchOrdinal, _ => "", true, false)
+    ctx.addMutableState("long", lastColumnBatchId,
+      _ => s"$lastColumnBatchId = $invalidUUID;", true, false)
+    ctx.addMutableState("int", lastBucketId, _ => "", true, false)
+    ctx.addMutableState("int", lastNumRows, _ => "", true, false)
 
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
 

@@ -57,7 +57,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
-import org.apache.spark.ui.exec.ExecutorsListener
+//import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
@@ -604,14 +604,6 @@ object Utils {
     driver
   }
 
-  /**
-   * Wrap a DataFrame action to track all Spark jobs in the body so that
-   * we can connect them with an execution.
-   */
-  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
-    df.withNewExecutionId(body)
-  }
-
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
 
     private[this] val map = m
@@ -719,11 +711,13 @@ object Utils {
     }
   }
 
-  def getJsonGenerator(dataType: DataType, columnName: String,
-      writer: java.io.Writer): AnyRef = {
+  def getJsonGenerator(dataType: DataType,
+                       columnName: String, writer: java.io.Writer): AnyRef = {
     val schema = StructType(Seq(StructField(columnName, dataType)))
     JacksonUtils.verifySchema(schema)
-    new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String]))
+    val conf = SparkSession.getDefaultSession.get.sessionState.conf
+    new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String],
+      conf.sessionLocalTimeZone, conf.columnNameOfCorruptRecord))
   }
 
   def generateJson(gen: AnyRef, row: InternalRow, columnIndex: Int,
@@ -769,10 +763,10 @@ object Utils {
 
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
-    if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
-      val taskContextVar = ctx.freshName("taskContext")
+    if (!ctx.declareAddedFunctions().contains(TASKCONTEXT_FUNCTION)) { // TODO_2.3_MERGE
       val contextClass = classOf[TaskContext].getName
-      ctx.addMutableState(contextClass, taskContextVar, "")
+      val taskContextVar = ctx.addMutableState(contextClass,
+        "taskContext", _ => "", forceInline = true)
       ctx.addNewFunction(TASKCONTEXT_FUNCTION,
         s"""
            |private $contextClass $TASKCONTEXT_FUNCTION() {
@@ -785,10 +779,10 @@ object Utils {
     TASKCONTEXT_FUNCTION
   }
 
-  def executorsListener(sc: SparkContext): Option[ExecutorsListener] = sc.ui match {
+/*  def executorsListener(sc: SparkContext): Option[ExecutorsListener] = sc.ui match {
     case Some(ui) => Some(ui.executorsListener)
     case _ => None
-  }
+  } */
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],

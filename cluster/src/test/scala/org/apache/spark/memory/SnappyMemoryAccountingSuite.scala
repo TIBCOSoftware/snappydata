@@ -22,14 +22,13 @@ import java.sql.SQLException
 import java.util.Properties
 
 import scala.actors.Futures._
-
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.externalstore.Data
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-
+import org.apache.spark.executor.TaskMetrics
 import org.apache.spark.sql.catalyst.expressions.{SpecificInternalRow, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
@@ -617,7 +616,8 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val taskMemoryManager =
       new TaskMemoryManager(sparkSession.sparkContext.env.memoryManager, 0L)
     val taskContext =
-      new TaskContextImpl(0, 0, taskAttemptId = 1, 0, taskMemoryManager, new Properties, null)
+      new TaskContextImpl(0, 0, 0, 1, 0, taskMemoryManager,
+        new Properties, null, TaskMetrics.empty)
     try {
       CachedDataFrame(taskContext, Seq(unsafeRow).iterator)
       assert(false , "Should not have obtained memory")

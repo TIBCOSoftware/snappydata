@@ -40,6 +40,7 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-mllib-local_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-kvstore_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion
@@ -72,6 +73,8 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   project(':snappy-spark:snappy-spark-mllib-local_' + scalaBinaryVersion).projectDir =
       "$rootDir/spark/mllib-local" as File
   project(':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion).projectDir = "$rootDir/spark/tools" as File
+  project(':snappy-spark:snappy-spark-kvstore_' + scalaBinaryVersion).projectDir =
+          "$rootDir/spark/common/kvstore" as File
   project(':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion).projectDir =
       "$rootDir/spark/common/network-common" as File
   project(':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion).projectDir =

@@ -18,9 +18,9 @@ package org.apache.spark.sql
 
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfter
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 
 
 class SnappyTempTableTest extends SnappyFunSuite
@@ -43,11 +43,11 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     df.createOrReplaceTempView(tableName)
 
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     val qName = catalog.newQualifiedTableName(tableName)
     val plan = catalog.lookupRelation(qName)
     plan match {
-      case LogicalRelation(br, _, _) => fail(" A RDD based temp table " +
+      case LogicalRelation(_, _, _, _) => fail(" A RDD based temp table " +
           "should have been matched with LogicalPlan")
       case _ =>
     }
@@ -58,7 +58,7 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     snc.sql(s"drop table $tableName")
 
-    assert(!snc.sessionState.catalog.tableExists(tableName))
+    assert(!catalog.tableExists(tableName))
   }
 
   test("test drop table from a relational source") {
@@ -70,11 +70,11 @@ class SnappyTempTableTest extends SnappyFunSuite
         .load(file)
 
     df.createOrReplaceTempView(tableName)
-    val catalog = snc.sessionState.catalog
+    val catalog = snc.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     val qName = catalog.newQualifiedTableName(tableName)
     val plan = catalog.lookupRelation(qName)
     plan match {
-      case LogicalRelation(br, _, _) =>
+      case LogicalRelation(_, _, _, _) =>
       case _ => fail("A CSV relation temp table should have been " +
           "matched with LogicalRelation")
     }
@@ -83,6 +83,6 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     snc.sql(s"drop table $tableName")
 
-    assert(!snc.sessionState.catalog.tableExists(tableName))
+    assert(!catalog.tableExists(tableName))
   }
 }

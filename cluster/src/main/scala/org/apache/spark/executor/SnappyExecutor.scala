@@ -21,18 +21,17 @@ import java.net.URL
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.tcp.ConnectionTable
 import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
+
+import scala.collection.mutable.Map
 
 class SnappyExecutor(
     executorId: String,
@@ -117,8 +116,8 @@ class SnappyExecutor(
     }
   }
 
-  override def updateDependencies(newFiles: mutable.HashMap[String, Long],
-      newJars: mutable.HashMap[String, Long]): Unit = {
+    override def updateDependencies(newFiles: Map[String, Long],
+                                  newJars: Map[String, Long]): Unit = {
     super.updateDependencies(newFiles, newJars)
     synchronized {
       val taskDeserializationProps = Executor.taskDeserializationProps.get()

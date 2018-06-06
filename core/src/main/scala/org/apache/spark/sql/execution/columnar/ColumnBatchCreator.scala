@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode, WholeStageCodegenExec}
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.types._
 
 final class ColumnBatchCreator(
@@ -78,7 +78,7 @@ final class ColumnBatchCreator(
       try {
         // the lookup key does not depend on tableName since the generated
         // code does not (which is passed in the references separately)
-        val gen = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
+        val (gen, r) = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
             dataRDD = null, numBuckets = -1, partitionColumns = Nil,
             partitionColumnAliases = Nil, baseRelation = null, caseSensitive = true)
@@ -92,14 +92,14 @@ final class ColumnBatchCreator(
           // this is only used for local code generation while its RDD semantics
           // and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan), insertPlan)
+            WholeStageCodegenExec(insertPlan)(codegenStageId = 1), insertPlan)
           val references = ctx.references
           // also push the index of batchId reference at the end which can be
           // used by caller to update the reference objects before execution
           references += insertPlan.batchIdRef
           (code, references.toArray)
         })
-        val references = gen._2.clone()
+        val references = r.clone()
         // update the batchUUID and bucketId as per the passed values
         // the index of the batchId (and bucketId after that) has already
         // been pushed in during compilation above
@@ -108,7 +108,7 @@ final class ColumnBatchCreator(
         references(batchIdRef + 1) = bucketID
         references(batchIdRef + 2) = tableName
         // no harm in passing a references array with an extra element at end
-        val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
+        val iter = gen.generate(references).asInstanceOf[BufferedRowIterator]
         iter.init(bucketID, Array(execRows.asInstanceOf[Iterator[InternalRow]]))
         while (iter.hasNext) {
           iter.next() // ignore result which is number of inserted rows
@@ -132,7 +132,7 @@ final class ColumnBatchCreator(
    */
   def createColumnBatchBuffer(columnBatchSize: Int,
       columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
-    val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
+    val (gen, r) = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc
@@ -144,11 +144,11 @@ final class ColumnBatchCreator(
       // this is only used for local code generation while its RDD semantics
       // and related methods are all ignored
       val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-        WholeStageCodegenExec(insertPlan), insertPlan)
+        WholeStageCodegenExec(insertPlan)(codegenStageId = 1), insertPlan)
       val references = ctx.references.toArray
       (code, references)
     })
-    val iter = gen._1.generate(gen._2).asInstanceOf[BufferedRowIterator]
+    val iter = gen.generate(r).asInstanceOf[BufferedRowIterator]
     iter.init(0, Array.empty)
     // get the ColumnBatchRowsBuffer by reflection
     val rowsBufferMethod = iter.getClass.getMethod("getRowsBuffer")
@@ -187,13 +187,12 @@ case class CallbackColumnInsert(_schema: StructType)
     val row = ctx.freshName("row")
     val hasResults = ctx.freshName("hasResults")
     val clearResults = ctx.freshName("clearResults")
-    val rowsBuffer = ctx.freshName("rowsBuffer")
     val rowsBufferClass = classOf[ColumnBatchRowsBuffer].getName
-    ctx.addMutableState(rowsBufferClass, rowsBuffer, "")
+    val rowsBuffer = ctx.addMutableState(rowsBufferClass, "rowsBuffer",
+      _ => "", forceInline = true)
     // add bucketId variable set to -1 by default
-    bucketIdTerm = ctx.freshName("bucketId")
     resetInsertions = ctx.freshName("resetInsertionsCount")
-    ctx.addMutableState("int", bucketIdTerm, s"$bucketIdTerm = -1;")
+    bucketIdTerm = ctx.addMutableState("int", "bucketId", v => s"$v = -1;", forceInline = true)
     val columnsExpr = output.zipWithIndex.map { case (a, i) =>
       BoundReference(i, a.dataType, a.nullable)
     }

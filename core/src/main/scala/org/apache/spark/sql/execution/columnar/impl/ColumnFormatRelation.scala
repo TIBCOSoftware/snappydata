@@ -29,6 +29,7 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGeneration
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
@@ -41,7 +42,7 @@ import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition}
 
@@ -543,7 +544,8 @@ class ColumnFormatRelation(
       cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+      output = relation.output ++ ColumnDelta.mutableKeyAttributes,
+      catalogTable = relation.catalogTable, isStreaming = false)
   }
 
   override def addDependent(dependent: DependentRelation,
@@ -558,7 +560,8 @@ class ColumnFormatRelation(
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    snappySession.sessionState.catalog.removeDependentRelation(tableIdent, indexIdent)
+    snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+      .removeDependentRelation(tableIdent, indexIdent)
     // Remove the actual index
     snappySession.dropTable(indexIdent, ifExists)
   }
@@ -574,10 +577,10 @@ class ColumnFormatRelation(
     }
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val sncCatalog = snappySession.sessionState.catalog
+    val sncCatalog = snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
     dependentRelations.foreach(rel => {
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(rel)) match {
-        case LogicalRelation(r: DependentRelation, _, _) => r
+        case LogicalRelation(r: DependentRelation, _, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })
@@ -653,8 +656,8 @@ class ColumnFormatRelation(
     // index. Also, there are multiple things (like implementing HiveIndexHandler)
     // that are hive specific and can create issues for us from maintenance perspective
     try {
-      snappySession.sessionState.catalog.addDependentRelation(
-        tableIdent, snappySession.getIndexTable(indexIdent))
+      snappySession.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+        .addDependentRelation(tableIdent, snappySession.getIndexTable(indexIdent))
 
       val df = Dataset.ofRows(snappySession,
         snappySession.sessionCatalog.lookupRelation(tableIdent))
@@ -734,13 +737,14 @@ class IndexColumnFormatRelation(
       cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+      output = relation.output ++ ColumnDelta.mutableKeyAttributes,
+      catalogTable = relation.catalogTable, isStreaming = false)
   }
 
   def getBaseTableRelation: ColumnFormatRelation = {
     val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
     catalog.lookupRelation(catalog.newQualifiedTableName(baseTableName)) match {
-      case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
+      case LogicalRelation(cr: ColumnFormatRelation, _, _, _) =>
         cr
       case _ =>
         throw new UnsupportedOperationException("Index scan other than Column table unsupported")
@@ -794,7 +798,7 @@ final class DefaultSource extends SchemaRelationProvider
     val table = Utils.toUpperCase(ExternalStoreUtils.removeInternalProps(parameters))
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)

@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -29,7 +28,7 @@ import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
+import org.apache.spark.sql._
 
 /**
  * Base class for bulk insert/mutation operations for column and row tables.
@@ -65,7 +64,8 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
   // Only one insert plan possible in the plan tree, so no clashes.
   if (partitioned) {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.sessionState.conf.setExecutionShufflePartitions(numBuckets)
+    session.sessionState.conf
+      .asInstanceOf[SnappyConf].setExecutionShufflePartitions(numBuckets)
   }
 
   /** Specifies how data is partitioned for the table. */
@@ -99,7 +99,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 
   override protected def doExecute(): RDD[InternalRow] = {
     // don't expect code generation to fail
-    WholeStageCodegenExec(this).execute()
+    WholeStageCodegenExec(this)(codegenStageId = 1).execute()
   }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
@@ -159,7 +159,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       case _ => throw new UnsupportedOperationException(
         s"Expected a child supporting code generation. Got: $child")
     }
-    if (!ctx.addedFunctions.contains("shouldStop")) {
+    if (!ctx.declareAddedFunctions().contains("shouldStop")) { // TODO_2.3_MERGE
       // no need to stop in iteration at any point
       ctx.addNewFunction("shouldStop",
         s"""

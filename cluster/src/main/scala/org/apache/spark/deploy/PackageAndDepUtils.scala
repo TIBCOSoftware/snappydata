@@ -56,6 +56,7 @@ object GetJarsAndDependencies {
 object PackageAndDepUtils {
   def resolveMavenCoordinates(coordinates: String, remoteRepos: Option[String],
         ivyPath: Option[String], exclusions: Seq[String] = Nil, isTest: Boolean = false): String = {
-    SparkSubmitUtils.resolveMavenCoordinates(coordinates, remoteRepos, ivyPath, exclusions, isTest)
+    SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+      SparkSubmitUtils.buildIvySettings(remoteRepos, ivyPath), exclusions, isTest)
   }
 }

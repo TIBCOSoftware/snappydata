@@ -42,6 +42,8 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
@@ -60,6 +62,8 @@ dependencies {
     compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
@@ -79,6 +83,8 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
@@ -123,6 +129,8 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }

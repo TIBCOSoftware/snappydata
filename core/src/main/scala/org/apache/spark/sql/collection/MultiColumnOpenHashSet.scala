@@ -1178,7 +1178,8 @@ object QCSSQLColumnHandler {
 
   def newSqlHandler(qcsPlan: (CodeAndComment, ArrayBuffer[Any], Array[DataType], Array[DataType]),
       hashColHandler: ColumnHandler): ColumnHandler = {
-    new QCSSQLColumnHandler( (CodeGenerator.compile(qcsPlan._1), qcsPlan._2, qcsPlan._3, qcsPlan._4), hashColHandler)
+    val (clazz, _) = CodeGenerator.compile(qcsPlan._1)
+    new QCSSQLColumnHandler( (clazz, qcsPlan._2, qcsPlan._3, qcsPlan._4), hashColHandler)
   }
 
   val func: (Int, Iterator[InternalRow], GeneratedClass, ArrayBuffer[Any]) => Iterator[InternalRow] = {
@@ -1211,7 +1212,8 @@ object RowToInternalRow extends BaseGenericInternalRow {
     converters(ordinal)(row.getAs(ordinal))
   }
 
-  override def copy(): InternalRow = throw new UnsupportedOperationException("Not implemented")
+  override def copy(): GenericInternalRow =
+    throw new UnsupportedOperationException("Not implemented")
 
   override def setNullAt(i: Int): Unit = {}
 

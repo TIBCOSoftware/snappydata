@@ -16,15 +16,15 @@
  */
 package org.apache.spark.sql
 
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
-import org.apache.spark.sql.internal.ColumnTableBulkOps
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
+
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 /**
  * Implicit conversions used by Snappy.
@@ -63,7 +63,7 @@ object snappy extends Serializable {
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case SubqueryAlias(_, child, _) => unwrapSubquery(child)
+      case SubqueryAlias(_, child) => unwrapSubquery(child)
       case _ => plan
     }
   }
@@ -153,13 +153,13 @@ object snappy extends Serializable {
     f => f.getName == "df" || f.getName.endsWith("$df")
   }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
 
-  private[this] val parColsMethod = classOf[DataFrameWriter[_]]
-      .getDeclaredMethods.find(_.getName.contains("$normalizedParCols"))
+  private[this] val partitioningColumns = classOf[DataFrameWriter[_]]
+      .getDeclaredFields.find(_.getName.contains("partitioningColumns"))
       .getOrElse(sys.error("Failed to obtain method  " +
-      "normalizedParCols from DataFrameWriter"))
+      "partitioningColumns from DataFrameWriter"))
 
   dfField.setAccessible(true)
-  parColsMethod.setAccessible(true)
+  partitioningColumns.setAccessible(true)
 
   implicit class DataFrameWriterExtensions(writer: DataFrameWriter[_])
       extends Serializable {
@@ -177,7 +177,7 @@ object snappy extends Serializable {
         case sc: SnappySession => sc
         case _ => sys.error("Expected a SnappyContext for putInto operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
+      val normalizedParCols = partitioningColumns.get(writer)
           .asInstanceOf[Option[Seq[String]]]
       // A partitioned relation's schema can be different from the input
       // logicalPlan, since partition columns are all moved after data columns.
@@ -191,7 +191,8 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        session.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+          .newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
 
       session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
@@ -206,7 +207,7 @@ object snappy extends Serializable {
         case sc: SnappySession => sc
         case _ => sys.error("Expected a SnappyContext for putInto operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
+      val normalizedParCols = partitioningColumns.get(writer)
           .asInstanceOf[Option[Seq[String]]]
       // A partitioned relation's schema can be different from the input
       // logicalPlan, since partition columns are all moved after data columns.
@@ -220,7 +221,8 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        session.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+          .newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
     }
 

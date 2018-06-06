@@ -14,25 +14,20 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.store
+package org.apache.spark.sql.catalyst.expressions.codegen
 
 import java.sql.PreparedStatement
 import java.util.Collections
-
-import scala.util.hashing.MurmurHash3
 
 import com.gemstone.gemfire.internal.InternalDataSerializer
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
-import org.codehaus.janino.CompilerFactory
-
 import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.codegen._
-import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData, SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.catalyst.util._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
@@ -42,6 +37,9 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.{Logging, SparkEnv}
+import org.codehaus.janino.CompilerFactory
+
+import scala.util.hashing.MurmurHash3
 
 /**
  * Utilities to generate code for exchanging data from Spark layer
@@ -86,7 +84,7 @@ object CodeGeneration extends Logging {
    * to create the code string upfront. Code adapted from CodeGenerator.cache
    */
   private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(codeCacheSize).build(
-    new CacheLoader[ExecuteKey, AnyRef]() {
+    new CacheLoader[ExecuteKey, (GeneratedClass, Array[Any])]() {
       // invoke CodeGenerator.doCompile by reflection to reduce code duplication
       private val doCompileMethod = {
         val allMethods = CodeGenerator.getClass.getDeclaredMethods.toSeq
@@ -97,10 +95,10 @@ object CodeGeneration extends Logging {
         method
       }
 
-      override def load(key: ExecuteKey): AnyRef = {
+      override def load(key: ExecuteKey): (GeneratedClass, Array[Any]) = {
         val (code, references) = key.genCode()
         val startTime = System.nanoTime()
-        val result = doCompileMethod.invoke(CodeGenerator, code)
+        val (result, _) = doCompileMethod.invoke(CodeGenerator, code)
         val endTime = System.nanoTime()
         val timeMs = (endTime - startTime).toDouble / 1000000.0
         CodegenMetrics.METRIC_SOURCE_CODE_SIZE.update(code.body.length)
@@ -161,12 +159,11 @@ object CodeGeneration extends Logging {
       case _: DecimalType =>
         s"$stmt.setBigDecimal(${col + 1}, ${ev.value}.toJavaBigDecimal());"
       case a: ArrayType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val arr = ctx.freshName("arr")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+        val encoderVar = ctx.addMutableState(encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();" , forceInline = true)
         s"""
            |final ArrayData $arr = ${ev.value};
            |if ($arr instanceof $serArrayClass) {
@@ -181,12 +178,11 @@ object CodeGeneration extends Logging {
            |}
         """.stripMargin
       case m: MapType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val map = ctx.freshName("mapValue")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+        val encoderVar = ctx.addMutableState(encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();", forceInline = true)
         s"""
            |final MapData $map = ${ev.value};
            |if ($map instanceof $serMapClass) {
@@ -200,12 +196,11 @@ object CodeGeneration extends Logging {
            |}
         """.stripMargin
       case s: StructType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val struct = ctx.freshName("structValue")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+        val encoderVar = ctx.addMutableState(encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();", forceInline = true)
         s"""
            |final InternalRow $struct = ${ev.value};
            |if ($struct instanceof $serRowClass) {
@@ -282,8 +277,8 @@ object CodeGeneration extends Logging {
     evaluator.setParentClassLoader(getClass.getClassLoader)
     evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
-      s"$javaType $name;$separator${init.replace("this.", "")}"
+    val varDeclarations = ctx.inlinedMutableStates.distinct.map {
+      case (javaType, variableName) => s"private $javaType $variableName;"
     }
     val expression = s"""
       ${varDeclarations.mkString(separator)}
@@ -330,8 +325,8 @@ object CodeGeneration extends Logging {
     evaluator.setParentClassLoader(getClass.getClassLoader)
     evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
-      s"$javaType $name;$separator${init.replace("this.", "")}"
+    val varDeclarations = ctx.inlinedMutableStates.distinct.map {
+      case (javaType, variableName) => s"private $javaType $variableName;"
     }
     val expression = s"""
       ${varDeclarations.mkString(separator)}
@@ -429,8 +424,8 @@ object CodeGeneration extends Logging {
       classOf[MapData].getName,
       classOf[InternalDataSerializer].getName))
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
-      s"$javaType $name;$separator${init.replace("this.", "")}"
+    val varDeclarations = ctx.inlinedMutableStates.distinct.map {
+      case (javaType, variableName) => s"private $javaType $variableName;"
     }
     val expression = s"""
       ${varDeclarations.mkString(separator)}
@@ -529,7 +524,6 @@ trait GeneratedIndexStatement {
   def addBatch(schema: Array[StructField])
       (stmt: PreparedStatement, row: InternalRow): Int
 }
-
 
 final class ExecuteKey(val name: String,
     val schema: Array[StructField], val dialect: JdbcDialect,
