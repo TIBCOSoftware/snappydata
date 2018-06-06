@@ -28,14 +28,7 @@ import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan, UnaryExecNode}
 /**
  * Performs a sort merge join of two child relations.
  */
-case class ColumnSortedInsertExec(
-/*    leftKeys: Seq[Expression],
-    rightKeys: Seq[Expression],
-    joinType: JoinType,
-    condition: Option[Expression],
-    left: SparkPlan,
-    right: SparkPlan,*/
-    child: SparkPlan) extends UnaryExecNode with CodegenSupport {
+case class DeltaInsertExec(child: SparkPlan) extends UnaryExecNode with CodegenSupport {
 
   override def output: Seq[Attribute] = child.output
 

@@ -253,7 +253,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |    updatedOrdinalIdVar = $ordinalIdVar;
            |  }
            |  // VB TODO: Remove this
-           |  if (${ColumnTableScan.getDebugMode}) {
+           |  if (${ColumnTableScan.isDebugMode}) {
            |    System.out.println("vivek ordinal=" + $ordinal +
            |     " ,ordinal-id=" + $ordinalIdVar +
            |     " [" + ~$ordinalIdVar + "]" +

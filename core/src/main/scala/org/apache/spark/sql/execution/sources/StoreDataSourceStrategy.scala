@@ -39,7 +39,7 @@ import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
+import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, DeltaInsertFullOuterJoin, Join, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -54,42 +54,54 @@ import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Str
  */
 private[sql] object StoreDataSourceStrategy extends Strategy {
 
-  def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
-    case PhysicalScan(projects, filters, scan) => scan match {
-      case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
-        pruneFilterProject(
-          l,
-          projects,
-          filters,
-          t.numBuckets,
-          t.partitionColumns,
-          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
-        pruneFilterProject(
-          l,
-          projects,
-          filters,
-          0,
-          Nil,
-          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case LogicalRelation(_, _, _) => {
-        var foundParamLiteral = false
-        val tp = plan.transformAllExpressions {
-          case pl: ParamLiteral =>
-            foundParamLiteral = true
-            pl.asLiteral
+  def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = {
+    val caseOfDeltaInsert: Boolean = (plan find {
+      case d: DeltaInsertFullOuterJoin => true
+      case _ => false
+    }).isDefined
+    val v2: Boolean = (plan find {
+      case d: Join => true
+      case _ => false
+    }).isDefined
+    plan match {
+      case PhysicalScan(projects, filters, scan) => scan match {
+        case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
+          pruneFilterProject(
+            l,
+            projects,
+            filters,
+            t.numBuckets,
+            t.partitionColumns,
+            (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray),
+            caseOfDeltaInsert) :: Nil
+        case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
+          pruneFilterProject(
+            l,
+            projects,
+            filters,
+            0,
+            Nil,
+            (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray),
+            caseOfDeltaInsert) :: Nil
+        case LogicalRelation(_, _, _) => {
+          var foundParamLiteral = false
+          val tp = plan.transformAllExpressions {
+            case pl: ParamLiteral =>
+              foundParamLiteral = true
+              pl.asLiteral
+          }
+          // replace ParamLiteral with TokenLiteral for external data sources so Spark's
+          // translateToFilter can push down required filters
+          if (foundParamLiteral) {
+            planLater(tp) :: Nil
+          } else {
+            Nil
+          }
         }
-        // replace ParamLiteral with TokenLiteral for external data sources so Spark's
-        // translateToFilter can push down required filters
-        if (foundParamLiteral) {
-          planLater(tp) :: Nil
-        } else {
-          Nil
-        }
+        case _ => Nil
       }
       case _ => Nil
     }
-    case _ => Nil
   }
 
   private def pruneFilterProject(
@@ -98,7 +110,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       filterPredicates: Seq[Expression],
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Expression]) => (RDD[Any], Seq[RDD[InternalRow]])) = {
+      scanBuilder: (Seq[Attribute], Seq[Expression]) => (RDD[Any], Seq[RDD[InternalRow]]),
+      caseOfDeltaInsert: Boolean = false) = {
 
     var allDeterministic = true
     val projectSet = AttributeSet(projects.flatMap { p =>
@@ -196,7 +209,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             partitionedRelation,
             filterPredicates, // filter predicates for column batch screening
             relation.output,
-            (requestedColumns, candidatePredicates)
+            (requestedColumns, candidatePredicates),
+            caseOfDeltaInsert
           )
         case baseRelation =>
           RowDataSourceScanExec(
@@ -224,7 +238,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             partitionedRelation,
             filterPredicates, // filter predicates for column batch screening
             relation.output,
-            (requestedColumns, candidatePredicates)
+            (requestedColumns, candidatePredicates),
+            caseOfDeltaInsert
           )
         case baseRelation =>
           RowDataSourceScanExec(

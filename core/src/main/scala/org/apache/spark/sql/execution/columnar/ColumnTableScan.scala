@@ -75,7 +75,8 @@ private[sql] final case class ColumnTableScan(
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
     caseSensitive: Boolean,
-    isForSampleReservoirAsRegion: Boolean = false)
+    isForSampleReservoirAsRegion: Boolean = false,
+    caseOfDeltaInsert: Boolean = false)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
@@ -269,7 +270,6 @@ private[sql] final case class ColumnTableScan(
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
     val lastRowFromDictionary = ctx.freshName("lastRowFromDictionary")
-    val isCaseOfSortedInsert = ctx.freshName("isCaseOfSortedInsert")
     val isDeletedEntry = ctx.freshName("isDeletedEntry")
     val deletedDecoder = s"${batch}Deleted"
     val deletedDecoderLocal = s"${deletedDecoder}Local"
@@ -284,7 +284,6 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("int", batchDictionaryIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
-    ctx.addMutableState("boolean", isCaseOfSortedInsert, s"")
     ctx.addMutableState("boolean", lastRowFromDictionary, s"")
     ctx.addMutableState("boolean", isDeletedEntry, s"")
 
@@ -428,13 +427,11 @@ private[sql] final case class ColumnTableScan(
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDictionary,
-          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDictionaryIndex,
-          isDeletedEntry)
+          numRows, colInput, inputIsRow, batchIndex, batchDictionaryIndex, isDeletedEntry)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDictionary,
-          isCaseOfSortedInsert, numRows, colInput, inputIsRow, batchIndex, batchDictionaryIndex,
-          isDeletedEntry)
+          numRows, colInput, inputIsRow, batchIndex, batchDictionaryIndex, isDeletedEntry)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -518,7 +515,7 @@ private[sql] final case class ColumnTableScan(
           $countIndexInSchema) : 0;
         $numBatchRows = $numFullRows + $numDeltaRows;
         // TODO VB: Remove this
-        if (${ColumnTableScan.getDebugMode}) {
+        if (${ColumnTableScan.isDebugMode}) {
           System.out.println("VB: ColumnTableScan numBatchRows=" + $numBatchRows +
             " ,numFullRows=" + $numFullRows + " ,numDeltaRows=" + $numDeltaRows);
         }
@@ -621,7 +618,7 @@ private[sql] final case class ColumnTableScan(
         s"""
            |final long $ordinalIdTerm = $inputIsRow ? $rs.getLong(
            |    ${if (embedded) relationSchema.length - 3 else output.length - 3})
-           |    :  ${if (ColumnTableScan.getCaseOfSortedInsertValue) {
+           |    :  ${if (caseOfDeltaInsert) {
                    ~batchOrdinal} else batchOrdinal}; // Inverted bytes for incremental insert
         """.stripMargin)
     else ("", "")
@@ -647,8 +644,6 @@ private[sql] final case class ColumnTableScan(
        |    $batchConsume
        |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck;
-       |    $isCaseOfSortedInsert = ${ordinalIdTerm ne null} &&
-       |      ${ColumnTableScan.getCaseOfSortedInsertValue};
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      if ($lastRowFromDictionary) {
@@ -665,7 +660,7 @@ private[sql] final case class ColumnTableScan(
        |        $batchIndex = $batchOrdinal + 1;
        |        return;
        |      }
-       |      if ($isCaseOfSortedInsert) {
+       |      if ($caseOfDeltaInsert) {
        |        $batchOrdinal = $numRows; // exit the loop
        |      }
        |    }
@@ -698,8 +693,8 @@ private[sql] final case class ColumnTableScan(
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
       numNullsVar: String, attr: Attribute, weightVar: String, lastRowFromDictionary: String,
-      isCaseOfSortedInsert: String, numRows: String, colInput: String, inputIsRow: String,
-      batchIndex: String, batchDictionaryIndex: String, isDeletedEntry: String): ExprCode = {
+      numRows: String, colInput: String, inputIsRow: String, batchIndex: String,
+      batchDictionaryIndex: String, isDeletedEntry: String): ExprCode = {
     // scalastyle:on
     val nonNullPosition = if (attr.nullable) {
       s"$batchDictionaryIndex - $numNullsVar"
@@ -791,7 +786,7 @@ private[sql] final case class ColumnTableScan(
            |// If entry is deleted, return from here
            |if ($isDeletedEntry) {
            |    // TODO VB: Remove this
-           |    if (${ColumnTableScan.getDebugMode}) {
+           |    if (${ColumnTableScan.isDebugMode}) {
            |      System.out.println("VB: Scan [deleted] " + $unchanged +
            |      " ,batchOrdinal=" + $batchOrdinal +
            |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
@@ -799,7 +794,7 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |      " ,numRows=" + $numRows +
-           |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |      " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
            |      "");
            |    }
@@ -809,7 +804,7 @@ private[sql] final case class ColumnTableScan(
            |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
            |    $colAssign
            |    // TODO VB: Remove this
-           |    if (${ColumnTableScan.getDebugMode}) {
+           |    if (${ColumnTableScan.isDebugMode}) {
            |      System.out.println("VB: Scan [inserted] " + $col +
            |      " ,batchOrdinal=" + $batchOrdinal +
            |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
@@ -817,7 +812,7 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |      " ,numRows=" + $numRows +
-           |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |      " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
            |      "");
            |    }
@@ -828,7 +823,7 @@ private[sql] final case class ColumnTableScan(
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
            |  // TODO VB: Remove this
-           |  if (${ColumnTableScan.getDebugMode}) {
+           |  if (${ColumnTableScan.isDebugMode}) {
            |    System.out.println("VB: Scan [updated] " + $col +
            |     " ,batchOrdinal=" + $batchOrdinal +
            |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
@@ -836,7 +831,7 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchIndex=" + $batchIndex +
            |    " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |    " ,numRows=" + $numRows +
-           |    " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |    " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |    "");
            |    }
            |} else {
@@ -857,7 +852,7 @@ private[sql] final case class ColumnTableScan(
            |// If entry is deleted, return from here
            |if ($isDeletedEntry) {
            |    // TODO VB: Remove this
-           |    if (${ColumnTableScan.getDebugMode}) {
+           |    if (${ColumnTableScan.isDebugMode}) {
            |      System.out.println("VB: Scan [deleted][2] " + $unchanged +
            |      " ,batchOrdinal=" + $batchOrdinal +
            |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
@@ -865,7 +860,7 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |      " ,numRows=" + $numRows +
-           |      " ,isCaseOfSortedInsert=" + $isCaseOfSortedInsert +
+           |      " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
            |      "");
            |    }
@@ -907,10 +902,8 @@ private[sql] final case class ColumnTableScan(
 
 object ColumnTableScan extends Logging {
   // TODO VB: Temporary, remove this
-  def setCaseOfSortedInsertValue(v: Boolean): Unit = getCaseOfSortedInsertValue = v
-  var getCaseOfSortedInsertValue: Boolean = false
-  def setDebugMode(v: Boolean): Unit = getDebugMode = v
-  var getDebugMode: Boolean = false
+  var isDebugMode = false
+  def setDebugMode(debug: Boolean): Unit = isDebugMode = debug
 
   // Handle inverted bytes that denote incremental insert
   def getPositive(p: Int): Int = if (p < 0) ~p else p

@@ -121,6 +121,8 @@ private[sql] object PartitionedPhysicalScan {
   private[sql] val CT_BLOB_POSITION = 4
   private val EMPTY_PARAMS = Array.empty[ParamLiteral]
 
+  // TODO VB: can number of parameters be reduced?
+  // scalastyle:off
   def createFromDataSource(
       output: Seq[Attribute],
       numBuckets: Int,
@@ -131,7 +133,9 @@ private[sql] object PartitionedPhysicalScan {
       relation: PartitionedDataSourceScan,
       allFilters: Seq[Expression],
       schemaAttributes: Seq[AttributeReference],
-      scanBuilderArgs: => (Seq[AttributeReference], Seq[Expression])): SparkPlan =
+      scanBuilderArgs: => (Seq[AttributeReference], Seq[Expression]),
+      caseOfDeltaInsert: Boolean = false): SparkPlan =
+  // scalastyle:on
     relation match {
       case i: IndexColumnFormatRelation =>
         val caseSensitive = i.sqlContext.conf.caseSensitiveAnalysis
@@ -161,7 +165,7 @@ private[sql] object PartitionedPhysicalScan {
       case c: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, partitionColumnAliases, relation, relation.schema,
-          allFilters, schemaAttributes, c.sqlContext.conf.caseSensitiveAnalysis)
+          allFilters, schemaAttributes, c.sqlContext.conf.caseSensitiveAnalysis, caseOfDeltaInsert)
       case r: SamplingRelation =>
         if (r.isReservoirAsRegion) {
           ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
