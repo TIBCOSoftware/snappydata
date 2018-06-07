@@ -143,6 +143,7 @@ public class SnappyCDCTest extends SnappyTest {
         //restart the cluster
         clusterRestart(snappyPath,false,nodeType,false,"",false);
       } else {
+       // stopCluster(snappyPath,);
         File tempConfFile = new File(snappyPath + "/conf/" + nodeType);
         if (nodeType.equalsIgnoreCase("servers")) {
           FileWriter fw = new FileWriter(tempConfFile);
@@ -161,7 +162,7 @@ public class SnappyCDCTest extends SnappyTest {
           }
           br.close();
           bw.close();
-          clusterRestart(snappyPath, false, nodeType,false,"",false);
+          clusterRestart(snappyPath, false, "",false,"",false);
         } else if (nodeType.equalsIgnoreCase("leads")) {
           clusterRestart(snappyPath, true, nodeType,false,"",false);
         }
