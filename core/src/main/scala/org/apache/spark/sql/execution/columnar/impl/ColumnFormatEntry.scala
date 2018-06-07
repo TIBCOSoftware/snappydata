@@ -30,7 +30,7 @@ import com.gemstone.gemfire.internal.cache.partitioned.PREntriesIterator
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.shared._
-import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -93,6 +93,10 @@ object ColumnFormatEntry {
 
 /**
  * Key object in the column store.
+ *
+ * @param uuid        an ID for the key which should be unique in the cluster for a region
+ * @param partitionId the bucket ID of the key; must be same as ID of bucket where key is put
+ * @param columnIndex 1-based column index for the key (negative for meta-data and delta columns)
  */
 final class ColumnFormatKey(private[columnar] var uuid: Long,
     private[columnar] var partitionId: Int,
@@ -461,14 +465,13 @@ class ColumnFormatValue extends SerializedDiskBuffer
       val perfStats = getCachePerfStats(context)
       val startDecompression = perfStats.startDecompression()
       val decompressed = CompressionUtils.codecDecompress(buffer, allocator, position, -typeId)
-      val isManagedDirect = allocator.isManagedDirect
       try {
         // update decompression stats
         perfStats.endDecompression(startDecompression)
         val newValue = copy(decompressed, isCompressed = false, changeOwnerToStorage = false)
         if (!isDirect || this.refCount <= 2) {
           val updateStats = (context ne null) && !fromDisk
-          if (updateStats && !isManagedDirect) {
+          if (updateStats && !isDirect) {
             // acquire the increased memory after decompression
             val numBytes = decompressed.capacity() - buffer.capacity()
             if (!StoreCallbacksImpl.acquireStorageMemory(context.getFullPath,
@@ -483,9 +486,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
           }
           this.columnBuffer = newBuffer
           this.decompressionState = 1
-          if (isDirect) {
-            UnsafeHolder.releaseDirectBuffer(buffer)
-          }
+          allocator.release(buffer)
           perfStats.incDecompressedReplaced()
           this
         } else {
@@ -493,12 +494,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
           newValue
         }
       } finally {
-        if (!isManagedDirect) {
-          // release the memory acquired for decompression
-          // (any on-the-fly returned buffer will be part of runtime overhead)
-          StoreCallbacksImpl.releaseStorageMemory(CompressionUtils.DECOMPRESSION_OWNER,
-            decompressed.capacity(), offHeap = false)
-        }
+        // release the memory acquired for decompression
+        // (any on-the-fly returned buffer will be part of runtime overhead)
+        MemoryManagerCallback.releaseExecutionMemory(decompressed,
+          CompressionUtils.DECOMPRESSION_OWNER, releaseBuffer = false)
       }
     }
   }
@@ -523,7 +522,6 @@ class ColumnFormatValue extends SerializedDiskBuffer
         val compressed = CompressionUtils.codecCompress(compressionCodecId,
           buffer, bufferLen, allocator)
         if (compressed ne buffer) {
-          val isManagedDirect = allocator.isManagedDirect
           try {
             // update compression stats
             perfStats.endCompression(startCompression, bufferLen, compressed.limit())
@@ -534,9 +532,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
               val newBuffer = if (compressed.capacity() >= size + 32) {
                 val trimmed = allocator.allocateForStorage(size).order(ByteOrder.LITTLE_ENDIAN)
                 trimmed.put(compressed)
-                if (isDirect) {
-                  UnsafeHolder.releaseDirectBuffer(compressed)
-                }
+                allocator.release(compressed)
                 trimmed.rewind()
                 trimmed
               } else transferToStorage(compressed, allocator)
@@ -547,11 +543,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
               }
               this.columnBuffer = newBuffer
               this.decompressionState = 0
-              if (isDirect) {
-                UnsafeHolder.releaseDirectBuffer(buffer)
-              }
-              // release storage memory
-              if (updateStats && !isManagedDirect) {
+              allocator.release(buffer)
+              // release storage memory for the buffer being transferred to storage
+              // (memory for compressed buffer will be marked released in any case)
+              if (updateStats && !isDirect) {
                 StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
                   buffer.capacity() - newBuffer.capacity(), offHeap = false)
               }
@@ -566,10 +561,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
           } finally {
             // release the memory acquired for compression
             // (any on-the-fly returned buffer will be part of runtime overhead)
-            if (!isManagedDirect) {
-              StoreCallbacksImpl.releaseStorageMemory(CompressionUtils.COMPRESSION_OWNER,
-                compressed.capacity(), offHeap = false)
-            }
+            MemoryManagerCallback.releaseExecutionMemory(compressed,
+              CompressionUtils.COMPRESSION_OWNER, releaseBuffer = false)
           }
         } else {
           // update skipped compression stats
