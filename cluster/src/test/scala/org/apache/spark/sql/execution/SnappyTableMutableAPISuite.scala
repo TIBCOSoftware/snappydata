@@ -22,8 +22,8 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.Decimal
-import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession}
 
 case class DataDiffCol(column1: Int, column2: Int, column3: Int)
 
@@ -813,4 +813,190 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(message.contains("DeleteFrom in a table requires key column(s) but got empty string"))
   }
 
+  private def bug2348Test(): Unit = {
+    var snc = new SnappySession(sc)
+    snc.sql("create table t1(id long," +
+        "datekey int," +
+        "checkin_date int," +
+        "checkout_date int," +
+        "crawl_time int," +
+        "batch tinyint," +
+        "source tinyint," +
+        "is_high_star tinyint," +
+        "mt_poi_id bigint," +
+        "mt_room_id bigint," +
+        "mt_breakfast tinyint," +
+        "mt_goods_id bigint," +
+        "mt_bd_id int," +
+        "mt_goods_vendor_id long," +
+        "mt_business_type tinyint," +
+        "mt_room_status tinyint," +
+        "mt_poi_uv int," +
+        "mt_price1 int," +
+        "mt_price2 int," +
+        "mt_price3 int," +
+        "mt_price4 int," +
+        "mt_price5 int," +
+        "mt_price6 int," +
+        "mt_price7 int," +
+        "mt_price8 int," +
+        "mt_flag1 tinyint," +
+        "mt_flag2 tinyint," +
+        "mt_flag3 tinyint," +
+        "comp_site_id int," +
+        "comp_poi_id varchar(200)," +
+        "comp_room_id long," +
+        "comp_breakfast tinyint," +
+        "comp_goods_id varchar(200)," +
+        "comp_goods_vendor varchar(200)," +
+        "comp_room_status tinyint," +
+        "comp_is_promotion tinyint," +
+        "comp_pay_type tinyint," +
+        "comp_goods_type tinyint," +
+        "comp_price1 int," +
+        "comp_price2 int," +
+        "comp_price3 int," +
+        "comp_price4 int," +
+        "comp_price5 int," +
+        "comp_price6 int," +
+        "comp_price7 int," +
+        "comp_price8 int," +
+        "comp_flag1 tinyint," +
+        "comp_flag2 tinyint," +
+        "comp_flag3 tinyint," +
+        "valid_status tinyint," +
+        "gmt_time timestamp," +
+        "version timestamp," +
+        "interval_days int," +
+        "real_batch bigint," +
+        "start_time_long bigint," +
+        "end_time_long bigint," +
+        "start_time bigint," +
+        "end_time bigint," +
+        "start_real_batch bigint," +
+        "end_real_batch bigint," +
+        "flag int," +
+        "insert_time bigint) " +
+        "USING column OPTIONS (PARTITION_BY 'mt_poi_id'," +
+        "REDUNDANCY '0',BUCKETS '1'," +
+        "PERSISTENCE 'ASYNC', OVERFLOW 'true')")
+
+    snc.sql("create table t2(id bigint," +
+        "datekey int," +
+        "checkin_date int," +
+        "checkout_date int," +
+        "crawl_time bigint," +
+        "batch int," +
+        "source int," +
+        "is_high_star int," +
+        "mt_poi_id bigint," +
+        "mr_room_id bigint," +
+        "mt_breakfast int," +
+        "mt_goods_id bigint," +
+        "mt_bd_id int," +
+        "mt_goods_vendor_id bigint," +
+        "mr_business_type int," +
+        "mt_room_status int," +
+        "mt_poi_uv int," +
+        "mt_price1 int," +
+        "mt_price2 int," +
+        "mt_price3 int," +
+        "mt_price4 int," +
+        "mt_price5 int," +
+        "mt_price6 int," +
+        "mt_price7 int," +
+        "mt_price8 int," +
+        "mt_flag1 int," +
+        "mt_flag2 int," +
+        "mt_flag3 int," +
+        "comp_site_id int," +
+        "comp_poi_id varchar(200)," +
+        "comp_room_id long," +
+        "comp_breakfast tinyint," +
+        "comp_goods_id varchar(200)," +
+        "comp_goods_vendor varchar(200)," +
+        "comp_room_status tinyint," +
+        "comp_is_promotion tinyint," +
+        "comp_pay_type tinyint," +
+        "comp_goods_type tinyint," +
+        "comp_price1 int," +
+        "comp_price2 int," +
+        "comp_price3 int," +
+        "comp_price4 int," +
+        "comp_price5 int," +
+        "comp_price6 int," +
+        "comp_price7 int," +
+        "comp_price8 int," +
+        "comp_flag1 tinyint," +
+        "comp_flag2 tinyint," +
+        "comp_flag3 tinyint," +
+        "valid_status tinyint," +
+        "gmt_time timestamp," +
+        "version timestamp," +
+        "interval_days int," +
+        "real_batch bigint," +
+        "start_time_long bigint," +
+        "end_time_long bigint," +
+        "start_time bigint," +
+        "end_time bigint," +
+        "start_real_batch bigint," +
+        "end_real_batch bigint," +
+        "flag int," +
+        "insert_time bigint) USING " +
+        "column OPTIONS (PARTITION_BY 'mt_poi_id'," +
+        "REDUNDANCY '0',BUCKETS '1'," +
+        "PERSISTENCE 'ASYNC',OVERFLOW 'true')")
+
+    val table1 = snc.table("t1")
+    val df1 = DataGenerator.generateDataFrame(snc, table1.schema, 20000)
+    df1.write.insertInto("t1")
+    val table2 = snc.table("t2")
+    val df2 = DataGenerator.generateDataFrame(snc, table2.schema, 20000)
+    df2.write.insertInto("t2")
+    snc.sql("update t1 set a.flag = 0 from t1 a join" +
+        " t2 b on a.mt_poi_id = b.mt_poi_id and a.comp_goods_id = b.comp_goods_id " +
+        "and a.mt_goods_id = b.mt_goods_id and a.datekey = b.datekey and" +
+        " a.CHECKIN_DATE = b.CHECKIN_DATE and b.start_time_long > a.end_time_long where a.flag = 1")
+
+    snc.sql("update t1 set a.flag = 0,a.end_time_long = b.start_time_long," +
+        " a.end_time = b.start_time,a.end_real_batch = b.start_real_batch" +
+        " from t1 a join t2 b on a.mt_poi_id = b.mt_poi_id" +
+        " and a.comp_goods_id = b.comp_goods_id and a.mt_goods_id = b.mt_goods_id" +
+        " and a.datekey = b.datekey and a.CHECKIN_DATE = b.CHECKIN_DATE" +
+        " and b.start_time_long <= a.end_time_long AND" +
+        " (a.comp_price1 <> b.comp_price1 or a.comp_price3 <> b.comp_price3" +
+        " or a.mt_price1 <> b.mt_price1 or a.mt_price3 <> b.mt_price3 or" +
+        " a.mt_price4 <> b.mt_price4 or a.mt_price5 <> b.mt_price5 or" +
+        " a.mt_room_status <> b.mt_room_status or" +
+        " a.comp_room_status <> b.comp_room_status) where a.flag = 1")
+
+    snc.sql("update t1 set a.end_time_long = b.start_time_long + 2 * 60 * 60 * 1000," +
+        "a.end_time= b.start_time,a.end_real_batch = b.start_real_batch" +
+        " from t1 a join t2 b on a.mt_poi_id = b.mt_poi_id and" +
+        " a.comp_goods_id = b.comp_goods_id and a.mt_goods_id = b.mt_goods_id" +
+        " and a.datekey = b.datekey and a.CHECKIN_DATE = b.CHECKIN_DATE and" +
+        " b.start_time_long <= a.end_time_long AND a.comp_price1 = b.comp_price1" +
+        " and a.comp_price3 = b.comp_price3 and a.mt_price1 = b.mt_price1" +
+        " and a.mt_price3 = b.mt_price3 and a.mt_price4 = b.mt_price4 and" +
+        " a.mt_price5 = b.mt_price5 and a.mt_room_status = b.mt_room_status" +
+        " and a.comp_room_status = b.comp_room_status where a.flag = 1")
+
+    SnappyContext.globalSparkContext.stop()
+
+    snc = new SnappySession(sc)
+    snc.sql("select count(1) from t1").show
+  }
+
+  test("Bug-2348 : Invalid stats bitmap") {
+    try {
+      bug2348Test()
+    } catch {
+      case t: Throwable => throw t
+    } finally {
+      val snc = new SnappySession(sc)
+      snc.dropTable("t1", ifExists = true)
+      snc.dropTable("t2", ifExists = true)
+    }
+
+  }
 }
