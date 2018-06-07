@@ -18,14 +18,13 @@ package io.snappydata.hydra
 
 import java.io.File
 
-import io.snappydata.SnappyTestRunner
-import org.apache.commons.io.FileUtils
-
 import scala.sys.process._
 
+import org.apache.commons.io.FileUtils
+
 /**
-  * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt and smokePerf.bt
-  */
+ * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt and smokePerf.bt
+ */
 class SnappyHydraRunner extends SnappyHydraTestRunner {
 
   override def afterAll(): Unit = {
@@ -56,6 +55,7 @@ class SnappyHydraRunner extends SnappyHydraTestRunner {
     catch {
       case r: java.lang.RuntimeException =>
         if (r.getMessage().contains("Nonzero exit value: 1")) {
+          // scalastyle:off println
           println("smoke bt run is successful.")
         }
         else {
