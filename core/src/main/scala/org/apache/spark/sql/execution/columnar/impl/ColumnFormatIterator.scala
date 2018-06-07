@@ -82,6 +82,11 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
 
   private val container = distributedRegion.getUserAttribute
       .asInstanceOf[GemFireContainer]
+  /**
+   * TODO VB: restrict its usage in only two cases :
+   * 1. Case of Delta Insert
+   * 2. case of Colocated join
+   */
   private val hasPrimaryIndex = container.fetchHiveMetaData(false).hasPrimaryIndex
 
   private val canOverflow = !hasPrimaryIndex &&
