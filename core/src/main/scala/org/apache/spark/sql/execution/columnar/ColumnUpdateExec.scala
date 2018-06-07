@@ -241,17 +241,34 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       // code for invoking the function
       s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
+    // Old code(Keeping the comment for better understanding)
     // Write the delta stats row for all table columns at the end of a batch.
     // Columns that have not been updated will write nulls for all three stats
     // columns so this costs 3 bits per non-updated column (worst case of say
     // 100 column table will be ~38 bytes).
+
+    // New Code : Stats rows are written as UnsafeRow. Unsafe row irrespective
+    // of nullability keeps nullbits.
+    // So if 100 columns are  there stats row will contain 100 * 3 and UnsafeRow will contain
+    // 300 nullbits plus bits required for 8 bytes word allignment. Hence setting unused columns
+    // as null does not really saves much.
+
+    // These nullbits are set based on platform endianness. SD ColumnFormatValue
+    // assumes LITTLE_ENDIAN bytes. However, Unsafe row itself does not force any endianness
+    // and picks up from the platform. Hence a lower byte of the bit set  can be represented as
+    // [11111110]. The 0th bit is for batch count which can never be null.
+    // This causes SD ColumnFormatValue to understand stats row as a compressed byte
+    // array( as first int is 1, hence -1 which after taking a negative
+    // equals to 1 i.e LZ4 compression codec id ).
+    // Hence setting each 3rd bit( null count stats) with not null flag. This will never cause
+    // the word to be read as negative number.
     val allNullsExprs = Seq(ExprCode("", "true", ""),
-      ExprCode("", "true", ""), ExprCode("", "true", ""))
+      ExprCode("", "true", ""), ExprCode("", "false", "-1"))
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
         case null =>
-          // write null for unchanged columns (by this update)
+             // write null for unchanged columns apart from null count field (by this update)
           (ColumnStatsSchema(field.name, field.dataType,
             nullCountNullable = true).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,
