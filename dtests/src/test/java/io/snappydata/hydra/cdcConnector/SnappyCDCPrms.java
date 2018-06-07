@@ -8,6 +8,9 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static Long dataLocation;
 
   /**Boolean value to determine if the query is a scan type query*/
+  public static Long isModifyConf;
+
+  /**Boolean value to determine if the query is a scan type query*/
   public static Long isScanQuery;
 
   /**Boolean value to determine if the test does back and recovery*/
@@ -36,6 +39,9 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   /**Int value that determines the number of threads used for a particular application*/
   public static Long threadCnt;
+
+  /**Int value that determines the number of nodes to be stopped*/
+  public static Long numNodes;
 
   /**Name of individual applications*/
   public static Long appName;
@@ -130,6 +136,11 @@ public class SnappyCDCPrms extends SnappyPrms {
     return name;
   }
 
+  public static boolean getIsModifyConf() {
+    Long key = isModifyConf;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static boolean getIsBackUpRecovery() {
     Long key = isbackUpRecovery;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
@@ -187,6 +198,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static int getInitEndRange() {
     Long key = initEndRange;
+    return tasktab().intAt(key, tab().intAt(key, 1));
+  }
+
+  public static int getNumNodes() {
+    Long key = numNodes;
     return tasktab().intAt(key, tab().intAt(key, 1));
   }
 
