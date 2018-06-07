@@ -36,7 +36,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, DeltaInsertFullOuterJoin, InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
@@ -428,6 +428,10 @@ class SnappySessionState(snappySession: SnappySession)
 
       case u@Update(table, child, keyColumns, updateCols, updateExprs)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
+        val caseOfDeltaInsert: Boolean = (u find {
+          case d: DeltaInsertFullOuterJoin => true
+          case _ => false
+        }).isDefined
         // add the key columns to the plan
         val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)
         // if this is a row table with no PK, then fallback to direct execution
@@ -445,9 +449,9 @@ class SnappySessionState(snappySession: SnappySession)
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
             val colName = Utils.toUpperCase(c.name)
-            if (nonUpdatableColumns.contains(colName)) {
-//              throw new AnalysisException("Cannot update partitioning/key column " +
-//                  s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
+            if (!caseOfDeltaInsert && nonUpdatableColumns.contains(colName)) {
+              throw new AnalysisException("Cannot update partitioning/key column " +
+                  s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
             }
             // cast the update expressions if required
             val newExpr = if (attr.dataType.sameType(expr.dataType)) {
