@@ -58,5 +58,7 @@ If all your machines can share a path over an NFS or similar protocol, then foll
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP Address of each SnappyData member machine.
 
+* Copy and extract the downloaded binaries on each machine. Ensure that the directory structure is the same on all machines.
+
 * On each host, create a working directory for each SnappyData member, that you want to run on the host. <br> The member working directory provides a default location for the log, persistence, and status files for that member.
 <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
