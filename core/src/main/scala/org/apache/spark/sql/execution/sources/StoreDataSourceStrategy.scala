@@ -59,10 +59,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case d: DeltaInsertFullOuterJoin => true
       case _ => false
     }).isDefined
-    val v2: Boolean = (plan find {
-      case d: Join => true
-      case _ => false
-    }).isDefined
     plan match {
       case PhysicalScan(projects, filters, scan) => scan match {
         case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
