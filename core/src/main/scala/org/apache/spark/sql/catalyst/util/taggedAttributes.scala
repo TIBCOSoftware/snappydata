@@ -19,8 +19,9 @@ package org.apache.spark.sql.catalyst.util
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, ExprId, Expression, NamedExpression, Unevaluable}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, ExprId, Expression, NamedExpression, Unevaluable}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
+import org.apache.spark.sql.internal.GemFireLimitTag
 import org.apache.spark.sql.types.{DataType, Metadata}
 
 trait Tag {
@@ -93,6 +94,11 @@ case class TaggedAttribute(
       TaggedAttribute(tag, name, dataType, nullable,
         metadata)(exprId, newQualifier)
     }
+  }
+
+  override def references: AttributeSet = tag match {
+    case GemFireLimitTag => AttributeSet(this.toAttributeReference)
+    case _ => super.references
   }
 
   def toAttributeReference: AttributeReference = AttributeReference(name,

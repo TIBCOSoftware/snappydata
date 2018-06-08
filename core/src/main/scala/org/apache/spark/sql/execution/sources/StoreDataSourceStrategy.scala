@@ -46,7 +46,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analy
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.internal.GemFireLimitTag
-import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.sources.{Filter, IsNotNull, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
 
 /**
