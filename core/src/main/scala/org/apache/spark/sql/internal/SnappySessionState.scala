@@ -163,9 +163,8 @@ class SnappySessionState(snappySession: SnappySession)
 
   object GemFireTaggedAttributeConversion extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = plan.transformAllExpressions {
-      case tg @ TaggedAttribute(GemFireLimitTag, _, _, _, _) =>
-        AttributeReference(GemFireLimitTag.simpleString + tg.name, tg.dataType, tg.nullable,
-          tg.metadata)(tg.exprId, tg.qualifier)
+      case tg @ TaggedAttribute(GemFireLimitTag, _, _, _, _) => tg.withName(
+        GemFireLimitTag.simpleString + tg.name)
     }
   }
   // copy of ConstantFolding that will turn a constant up/down cast into

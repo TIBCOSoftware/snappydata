@@ -301,11 +301,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         Some(sources.IsNull(a.name))
 
       case expressions.IsNotNull(a: Attribute) =>
-        val name = a match {
-          case TaggedAttribute(tag@GemFireLimitTag, namex, _, _, _) => tag.simpleString + namex
-          case _ => a.name
-        }
-        Some(sources.IsNotNull(name))
+        Some(sources.IsNotNull(a.name))
 
       case expressions.And(left, right) =>
         (translateToFilter(left) ++ translateToFilter(right)).reduceOption(sources.And)
