@@ -166,8 +166,6 @@ theme_dir: 'docs/custom_theme'
 
 markdown_extensions:
   - admonition
-  - toc:
-      permalink: Link
       
 extra_javascript:
     - 'js/menu.js'
@@ -180,8 +178,5 @@ extra_css:
     - 'css/style.css'
     - 'css/highlight.css'
     - 'extra.css'
-    
-#plugins:
-#    - search
-    
+
 copyright: Copyright &copy; 2018 SnappyData Inc.
