@@ -181,7 +181,7 @@ extra_css:
     - 'css/highlight.css'
     - 'extra.css'
     
-plugins:
-    - search
+#plugins:
+#    - search
     
-config.copyright: Copyright &copy; 2018 SnappyData Inc.
+copyright: Copyright &copy; 2018 SnappyData Inc.
