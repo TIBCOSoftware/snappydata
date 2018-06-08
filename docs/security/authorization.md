@@ -4,13 +4,13 @@
 
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.
 
-The administrator can manage user permissions in a secure cluster using the [GRANT](../reference/sql_reference/grant.md) and [REVOKE](../reference/sql_reference/revoke.md) SQL statements which allow you to set permission for the user for specific database objects or for specific SQL actions. 
+The administrator can manage user permissions in a secure cluster using the [GRANT](http://snappydatainc.github.io/snappydata/reference/sql_reference/grant) and [REVOKE](http://snappydatainc.github.io/snappydata/referencesql_reference/revoke) SQL statements which allow you to set permission for the user for specific database objects or for specific SQL actions. 
 
-The [GRANT](../reference/sql_reference/grant.md) statement is used to grant specific permissions to users. The [REVOKE](../reference/sql_reference/revoke.md) statement is used to revoke permissions.
+The [GRANT](http://snappydatainc.github.io/snappydata/reference/sql_reference/grant) statement is used to grant specific permissions to users. The [REVOKE](http://snappydatainc.github.io/snappydata/reference/sql_reference/revoke) statement is used to revoke permissions.
 
 !!!Note:
 
-	* A user requiring [INSERT](../reference/sql_reference/insert.md), [UPDATE](../reference/sql_reference/update.md) or [DELETE](../reference/sql_reference/delete.md) permissions may also require explicit [SELECT](../reference/sql_reference/select.md) permission on a table
+	* A user requiring [INSERT](http://snappydatainc.github.io/snappydata/reference/sql_reference/insert), [UPDATE](http://snappydatainc.github.io/snappydata/reference/sql_reference/update.md) or [DELETE](http://snappydatainc.github.io/snappydata/reference/sql_reference/delete) permissions may also require explicit [SELECT](http://snappydatainc.github.io/snappydata/reference/sql_reference/select) permission on a table
 	
 	* Only administrators can execute built-in procedures (like INSTALL-JAR)
 

@@ -25,7 +25,7 @@ The number of buckets has an impact on query performance, storage density, and a
 
 If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.
 
-For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when [creating a table](../reference/sql_reference/create-table.md).
+For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when [creating a table](http://snappydatainc.github.io/snappydata/reference/sql_reference/create-table).
 
 <a id="member-timeout"></a>
 ## member-timeout

@@ -26,6 +26,6 @@ To the extent possible, model your database so that most transactions operate on
 
 **More information**
 
-- [Overview of SnappyData Distributed Transactions](../consistency/transactions_about.md)
+- [Overview of SnappyData Distributed Transactions](http://snappydatainc.github.io/snappydata/consistency/transactions_about)
 
-- [How to use Transactions Isolation Levels](../howto/use_transactions_isolation_levels.md)
+- [How to use Transactions Isolation Levels](http://snappydatainc.github.io/snappydata/howto/use_transactions_isolation_levels)

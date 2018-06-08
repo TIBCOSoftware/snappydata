@@ -13,7 +13,7 @@
 
 2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.0.zip** file.
 
-3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the  SnappyData ODBC driver.
+3. Follow [steps 1 and 2](http://snappydatainc.github.io/snappydata/howto/connect_using_odbc_driver) to install the  SnappyData ODBC driver.
 
 ## Step 2: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit
 

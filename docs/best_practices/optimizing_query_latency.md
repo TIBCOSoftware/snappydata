@@ -55,7 +55,7 @@ When designing a database schema for SnappyData, the main goal with a typical st
 ### Colocated Joins
 In SQL, a JOIN clause is used to combine data from two or more tables, based on a related column between them. JOINS have traditionally been expensive in distributed systems because the data for the tables involved in the JOIN may reside on different physical nodes and the operation has to first move/shuffle the relevant data to one node and perform the operation. </br>
 SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data. Eliminating data shuffling improves performance significantly.</br>
-For examples refer to, [How to colocate tables for doing a colocated join](../howto/perform_a_colocated_join.md).
+For examples refer to, [How to colocate tables for doing a colocated join](http://snappydatainc.github.io/snappydata/howto/perform_a_colocated_join).
 
 <a id="buckets"></a>
 ### Buckets
@@ -68,7 +68,7 @@ The number of buckets has an impact on query performance, storage density, and a
 When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 
 The  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
-You can also set the system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) to trigger rebalance.
+You can also set the system procedure [call sys.rebalance_all_buckets()](http://snappydatainc.github.io/snappydata/reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets) to trigger rebalance.
 
 <a id="dimension"></a>
 ### Criteria for Column Partitioning
@@ -78,11 +78,11 @@ If only a single partition is active and is used largely by queries (especially 
 <a id="redundancy"></a>
 ## Using Redundancy
 
-REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md) specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. 
+REDUNDANCY clause of [CREATE TABLE](http://snappydatainc.github.io/snappydata/reference/sql_reference/create-table) specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. 
 
 A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.
 
-For an example on the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide/tables_in_snappydata.md).
+For an example on the REDUNDANCY clause refer to [Tables in SnappyData](http://snappydatainc.github.io/snappydata/programming_guide/tables_in_snappydata).
 
 <a id="overflow"></a>
 ## Overflow Configuration
@@ -91,7 +91,7 @@ In SnappyData, row and column tables by default overflow to disk (which is equiv
 
 For example, setting EVICTION_BY to `LRUHEAPPERCENT` allows table data to be evicted to disk based on the current memory consumption of the server.
 
-Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure [OVERFLOW](../reference/sql_reference/create-table.md#overflow) and [EVICTION_BY](../reference/sql_reference/create-table.md#eviction-by) clauses.
+Refer to [CREATE TABLE](http://snappydatainc.github.io/snappydata/reference/sql_reference/create-table.md) link to understand how to configure [OVERFLOW](http://snappydatainc.github.io/snappydata/reference/sql_reference/create-table/#overflow) and [EVICTION_BY](http://snappydatainc.github.io/snappydata/reference/sql_reference/create-table/#eviction-by) clauses.
 
 !!! Tip:
 	By default eviction is set to `overflow-to-disk`.

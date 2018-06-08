@@ -33,7 +33,7 @@ You can also connect to the SnappyData Cluster using SnappyData ODBC Driver usin
 Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 ```
 
-For more information refer to, [How to Connect using ODBC Driver](../howto/connect_using_odbc_driver.md).
+For more information refer to, [How to Connect using ODBC Driver](http://snappydatainc.github.io/snappydata/howto/connect_using_odbc_driver).
 
 ## Using Smart Connector Mode 
 

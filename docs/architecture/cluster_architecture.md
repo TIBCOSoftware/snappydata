@@ -9,7 +9,7 @@ A SnappyData cluster is a peer-to-peer (P2P) network comprised of three distinct
 
 ![ClusterArchitecture](../GettingStarted_Architecture.png)
 
-SnappyData also has multiple deployment options. For more information refer to, [Deployment Options](../deployment.md).
+SnappyData also has multiple deployment options. For more information refer to, [Deployment Options](http://snappydatainc.github.io/snappydata/deployment).
 
 ## Interacting with SnappyData
 
@@ -26,7 +26,7 @@ Unlike Apache Spark, which is primarily a computational engine, the SnappyData c
 
 2. **Driver runs in HA configuration**: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shut down, taking down all cached state with it. Instead, SnappyData leverages the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA).
 
-In this document, mostly the same set of features via the Spark API or using SQL is showcased. If you are familiar with Scala and understand Spark concepts you can choose to skip the SQL part go directly to the [Spark API section](../programming_guide/sparksession_snappysession_and_snappystreamingcontext.md).
+In this document, mostly the same set of features via the Spark API or using SQL is showcased. If you are familiar with Scala and understand Spark concepts you can choose to skip the SQL part go directly to the [Spark API section](http://snappydatainc.github.io/snappydata/programming_guide/sparksession_snappysession_and_snappystreamingcontext).
 
 ## High Concurrency in SnappyData
 Thousands of concurrent ODBC and JDBC clients can simultaneously connect to a SnappyData cluster. To support this degree of concurrency, SnappyData categorizes incoming requests from these clients into low latency requests and high latency ones.

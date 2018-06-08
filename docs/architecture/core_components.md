@@ -3,9 +3,9 @@ The following depicts the core components of SnappyData, where Spark’s origina
 
 ![Core components](../CoreComponents.png)
 
-The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row-oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. Refer to the [Row/Column table](../programming_guide/tables_in_snappydata.md) section for details on the syntax and available features. 
+The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row-oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. Refer to the [Row/Column table](http://snappydatainc.github.io/snappydata/programming_guide/tables_in_snappydata) section for details on the syntax and available features. 
 
-Two primary programming models are supported by SnappyData — SQL and Spark’s API. SQL access is through JDBC/ODBC and it supports the Spark SQL dialect with several extensions, to make the language compatible with the SQL standard. One could perceive SnappyData as an SQL database that uses Spark API as its language for stored procedures. Our [stream processing](../programming_guide/stream_processing_using_sql.md) is primarily through Spark Streaming, but it is integrated and runs within our store.
+Two primary programming models are supported by SnappyData — SQL and Spark’s API. SQL access is through JDBC/ODBC and it supports the Spark SQL dialect with several extensions, to make the language compatible with the SQL standard. One could perceive SnappyData as an SQL database that uses Spark API as its language for stored procedures. Our [stream processing](http://snappydatainc.github.io/snappydata/programming_guide/stream_processing_using_sql) is primarily through Spark Streaming, but it is integrated and runs within our store.
 
 The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are capable of working with external cluster managers, such as YARN or Mesos (not yet supported). All OLTP operations are routed immediately to appropriate data partitions without incurring any scheduling overhead.
 

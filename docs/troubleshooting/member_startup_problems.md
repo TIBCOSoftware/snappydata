@@ -46,7 +46,7 @@ To avoid this type of delayed startup and recovery:
 
 2.  Make that that sure all persistent members are restarted properly. See [Recovering from a ConflictingPersistentDataException](recovering_from_a_conflictingpersistentdataexception.md) for more information.
 
-3.  If a member cannot be restarted and it is preventing other data stores from starting, then [revoke-missing-disk-store](../reference/command_line_utilities/store-revoke-missing-disk-stores.md) command can be used to revoke the disk stores that are preventing startup. 
+3.  If a member cannot be restarted and it is preventing other data stores from starting, then [revoke-missing-disk-store](http://snappydatainc.github.io/snappydata/reference/command_line_utilities/store-revoke-missing-disk-stores) command can be used to revoke the disk stores that are preventing startup. 
 
 	!!!Note
     	This can cause some loss of data if the revoked disk store actually contains recent changes to the data dictionary or to table data. The revoked disk stores cannot be added back to the system later. If you revoke a disk store on a member you need to delete the associated disk files from that member in order to start it again. Only use the `revoke-missing-disk-store` command as a last resort.  Contact [support@snappydata.io](mailto:support@snappydata.io) if you need to use the `revoke-missing-disk-store` command.

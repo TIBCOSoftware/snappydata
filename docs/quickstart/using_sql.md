@@ -2,11 +2,11 @@
 # Using SQL
 
 In this section, you can also connect to SQL using Snappy Session API. </br>
-You can use any SQL client tool (for example, Snappy shell). For an example, refer to the [How-to](../howto/use_snappy_shell.md) section.
+You can use any SQL client tool (for example, Snappy shell). For an example, refer to the [How-to](http://snappydatainc.github.io/snappydata/howto/use_snappy_shell) section.
 
 **Create a column table with a simple schema [Int, String] and default options**
 
-For more information on the available options, refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md) section.
+For more information on the available options, refer to the [Row and Column Tables](http://snappydatainc.github.io/snappydata/programming_guide/tables_in_snappydata) section.
 
 ```no-highlight
 scala>  snappy.sql("create table colTable(CustKey Integer, CustName String) using column options()")
@@ -60,6 +60,6 @@ Now that you have seen the basic working of SnappyData tables, let us run the [b
 
 ## More Information
 
-For more examples of the common operations, you can refer to the [How-tos](../howto.md) section. 
+For more examples of the common operations, you can refer to the [How-tos](http://snappydatainc.github.io/snappydata/howto) section. 
 
 If you have questions or queries you can contact us through our [community channels](../techsupport.md#community).

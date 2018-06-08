@@ -13,7 +13,7 @@ Create a backup of the locator, lead, and server configuration files that exist 
 
 3. Stop the cluster and verify that all members are stopped: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command. </br>To ensure that all the members have been shut down correctly, use the `sbin/snappy-status-all.sh` command.
 
-4. Create a [backup of the operational disk store files](../reference/command_line_utilities/store-backup.md) for all members in the distributed system.
+4. Create a [backup of the operational disk store files](http://snappydatainc.github.io/snappydata/reference/command_line_utilities/store-backup) for all members in the distributed system.
 
 5. Reinstall SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install.md).
 
@@ -21,7 +21,7 @@ Create a backup of the locator, lead, and server configuration files that exist 
 
 7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.
 
-8. [Restart the SnappyData cluster](../howto/start_snappy_cluster.md).
+8. [Restart the SnappyData cluster](http://snappydatainc.github.io/snappydata/howto/start_snappy_cluster).
 
 
 ## Additional Steps

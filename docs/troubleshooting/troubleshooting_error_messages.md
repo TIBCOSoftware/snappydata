@@ -27,7 +27,7 @@ Members with potentially new data:</br>
 
 <diagnosis> **Diagnosis:**</br>
 The above message is typically displayed during start up when a member waits for other members in the cluster to be available, as the table data on disk is not the most current. </br>
-The status of the member is displayed as *waiting* in such cases when you [check the status](../howto/check_status_cluster.md) of the cluster using the `snappy-status-all.sh` command.
+The status of the member is displayed as *waiting* in such cases when you [check the status](http://snappydatainc.github.io/snappydata/howto/check_status_cluster) of the cluster using the `snappy-status-all.sh` command.
 </diagnosis>
 
 <action> **Solution:** </br>

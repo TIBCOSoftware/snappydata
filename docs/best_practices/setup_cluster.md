@@ -62,8 +62,8 @@ For more information see, [How to design your schema](design_schema.md).
 
 ## Using Smart Connector for Expanding Capacity of the Cluster
 
-One of the instances, when [SnappyData Smart connector mode](../affinity_modes/connector_mode.md) is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. 
-<br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster. See, [How to Access SnappyData store from an Existing Spark Installation using Smart Connector](../howto/spark_installation_using_smart_connector.md).
+One of the instances, when [SnappyData Smart connector mode](http://snappydatainc.github.io/snappydata/affinity_modes/connector_mode) is useful, is when the computations is separate from the data. This allows  you to increase the computational capacity without adding more servers to the SnappyData cluster. Thus, more executors can be provisioned for a Smart Connector application than the number of SnappyData servers. 
+<br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the SnappyData cluster. See, [How to Access SnappyData store from an Existing Spark Installation using Smart Connector](http://snappydatainc.github.io/snappydata/howto/spark_installation_using_smart_connector).
 
 
 

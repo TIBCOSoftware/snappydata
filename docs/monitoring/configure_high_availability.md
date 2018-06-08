@@ -4,13 +4,13 @@ Configure in-memory high availability for your partitioned table. Set other high
 
 ## Set the Number of Redundant Copies
 
-Configure in-memory high availability for your partitioned table by specifying the number of secondary copies you want to maintain REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md#redundancy).
+Configure in-memory high availability for your partitioned table by specifying the number of secondary copies you want to maintain REDUNDANCY clause of [CREATE TABLE](http://snappydatainc.github.io/snappydata/reference/sql_reference/create-table/#redundancy).
 
 ## Configure Redundancy Zones for Members
 Group members into redundancy zones so that SnappyData places redundant data copies in different zones.
 
-Understand how to set a member's **gemfirexd.properties** settings. [See Configuration Properties](../reference/configuration_parameters/config_parameters.md).
-Group the datastore members that host partitioned tables into redundancy zones by using the setting [redundancy-zone](../reference/configuration_parameters/redundancy-zone.md).
+Understand how to set a member's **gemfirexd.properties** settings. [See Configuration Properties](http://snappydatainc.github.io/snappydata/reference/configuration_parameters/config_parameters).
+Group the datastore members that host partitioned tables into redundancy zones by using the setting [redundancy-zone](http://snappydatainc.github.io/snappydata/reference/configuration_parameters/redundancy-zone).
 
 For example, if you had redundancy set to 1, so you have one primary and one secondary copy of each data entry, you could split primary and secondary data copies between two machine racks by defining one redundancy zone for each rack. To do this, you set this zone in the **gemfirexd.properties** file for all members that run on one rack:
 ```
@@ -26,9 +26,9 @@ Each secondary copy would be hosted on the rack opposite the rack where its prim
 
 Configure SnappyData to use only unique physical machines for redundant copies of partitioned table data.
 
-Understand how to set a member's **gemfirexd.properties** settings. See [Configuration Properties](../reference/configuration_parameters/config_parameters.md).
+Understand how to set a member's **gemfirexd.properties** settings. See [Configuration Properties](http://snappydatainc.github.io/snappydata/reference/configuration_parameters/config_parameters).
 
-Configure your members so SnappyData always uses different physical machines for redundant copies of partitioned table data using the setting [enforce-unique-host](../reference/configuration_parameters/enforce-unique-host.md#enforce-unique-host). The default for this setting is **false**.
+Configure your members so SnappyData always uses different physical machines for redundant copies of partitioned table data using the setting [enforce-unique-host](http://snappydatainc.github.io/snappydata/reference/configuration_parameters/enforce-unique-host/#enforce-unique-host). The default for this setting is **false**.
 
 Example:
 ```

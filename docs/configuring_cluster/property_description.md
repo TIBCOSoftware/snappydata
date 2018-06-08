@@ -60,7 +60,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 ## SDE Properties
 
-The [SDE](../aqp.md) properties can be set using a Snappy SQL shell (snappy-sql) command or using the configuration properties in the **conf/leads** file. </br>
+The [SDE](http://snappydatainc.github.io/snappydata/aqp) properties can be set using a Snappy SQL shell (snappy-sql) command or using the configuration properties in the **conf/leads** file. </br>
 The command sets the property for the current SnappySession while setting it in **conf/leads** file sets the property for all SnappySession. 
 
 For example: Set in the  Snappy SQL shell (snappy-sql)

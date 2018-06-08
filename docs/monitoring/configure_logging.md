@@ -105,7 +105,7 @@ To enable logging of specific features of SnappyData, set the required trace fla
 localhost -J-Dsnappydata.debug.true=QueryDistribution,TraceIndex
 ```
 
-If you need to set a trace flag in a running system, use the [SYS.SET_TRACE_FLAG](../reference/inbuilt_system_procedures/set-trace-flag.md) system procedure. The procedure sets the trace flag in all members of the distributed system, including locators. You must execute the procedure as a system user. For example:
+If you need to set a trace flag in a running system, use the [SYS.SET_TRACE_FLAG](http://snappydatainc.github.io/snappydata/reference/inbuilt_system_procedures/set-trace-flag) system procedure. The procedure sets the trace flag in all members of the distributed system, including locators. You must execute the procedure as a system user. For example:
 
 ``` pre
 snappy> call sys.set_trace_flag('traceindex', 'true');

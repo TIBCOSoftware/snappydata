@@ -19,7 +19,7 @@
                   StructField("CustName", StringType, false)))
 
 4. **Create a "column" table with a simple schema [String, Int] and default options**</br>
-    For detailed option refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md#row-and-column-tables) section.
+    For detailed option refer to the [Row and Column Tables](http://snappydatainc.github.io/snappydata/programming_guide/tables_in_snappydata/#row-and-column-tables) section.
 
         // Column tables manage data is columnar form and offer superior performance for analytic class queries.
         scala>  snappy.createTable(tableName = "colTable",
@@ -46,7 +46,7 @@
         scala>  snappy.table("colTable").count
 
 7. **Create a "row" table with a simple schema [String, Int] and default options** </br>
-	For detailed option refer to the [Row and Column Tables](../programming_guide/tables_in_snappydata.md#row-and-column-tables) section.
+	For detailed option refer to the [Row and Column Tables](http://snappydatainc.github.io/snappydata/programming_guide/tables_in_snappydata/#row-and-column-tables) section.
 
         // Row formatted tables are better when datasets constantly change or access is selective (like based on a key)
         scala>  snappy.createTable(tableName = "rowTable",

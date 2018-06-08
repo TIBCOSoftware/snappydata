@@ -19,7 +19,7 @@ All SnappyData metadata, as well as persistent data, is stored in the directory 
 <a id="Start_quickStart"></a>
 In this document, it is assumed that you are either familiar with Spark or SQL (not necessarily both). Basic database capabilities like working with Columnar and Row-oriented tables, querying and updating these tables is showcased.
 
-Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the [detailed documentation](../programming_guide/tables_in_snappydata.md). 
+Tables in SnappyData exhibit many operational capabilities like disk persistence, redundancy for HA, eviction, etc. For more information, you can refer to the [detailed documentation](http://snappydatainc.github.io/snappydata/programming_guide/tables_in_snappydata). 
 
 While SnappyData supports Scala, Java, Python, SQL APIs for this quick start you can choose to work with Scala APIs or SQL depending on your preference.
 
