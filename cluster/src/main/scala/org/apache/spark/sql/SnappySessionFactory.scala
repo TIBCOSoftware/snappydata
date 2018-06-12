@@ -19,12 +19,11 @@ package org.apache.spark.sql
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.typesafe.config.{Config, ConfigException}
-import io.snappydata.Constant
+import io.snappydata.{Constant, ServiceManager}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
-
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.util.SnappyUtils
 
@@ -88,7 +87,15 @@ object SnappySessionFactory {
       // If Job class directly refers to any jars which has been provided
       // by install_jars, this can help.
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
-        SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val cl = SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+        val loader = lead.urlclassloader
+        if (loader != null) {
+          loader.getURLs.foreach(u => {
+            cl.addURL(u)
+          })
+        }
+        cl
       }
     }
 }

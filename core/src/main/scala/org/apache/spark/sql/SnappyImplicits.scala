@@ -194,6 +194,10 @@ object snappy extends Serializable {
         session.sessionState.catalog.newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
 
+      session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
+          foreach { cachedPlan =>
+            session.sharedState.cacheManager.uncacheQuery(session, cachedPlan, blocking = true)
+          }
     }
 
     def deleteFrom(tableName: String): Unit = {

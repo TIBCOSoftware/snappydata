@@ -63,6 +63,7 @@ The following topics are covered in this section:
 
 * [How to use Apache Zeppelin with SnappyData](howto/use_apache_zeppelin_with_snappydata.md)<a id="howto-zeppelin"></a>
 
+* [How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster](howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md)<a id="howto-concurrentzeppelin"></a>
 
 <heading2> Known Issue</heading2>
 

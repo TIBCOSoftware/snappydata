@@ -21,7 +21,6 @@ import java.net.{URL, URLClassLoader}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -31,8 +30,8 @@ import io.snappydata.impl.SnappyHiveCatalog
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.util.VersionInfo
 import org.apache.log4j.LogManager
-
 import org.apache.spark.sql._
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.client.{HiveClient, IsolatedClientLoader}
@@ -301,7 +300,33 @@ object HiveClientUtil {
   ExternalStoreUtils.registerBuiltinDrivers()
 
   def newClient(sparkContext: SparkContext): HiveClient = synchronized {
-    new HiveClientUtil(sparkContext).newClientWithLogSetting()
+    val client = new HiveClientUtil(sparkContext).newClientWithLogSetting()
+    // replay global sql commands
+    if (ToolsCallbackInit.toolsCallback != null) {
+      SnappyContext.getClusterMode(sparkContext) match {
+        case _: SnappyEmbeddedMode => {
+          val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
+          // logInfo(s"deploycmnds size = ${deployCmds.size}")
+          // deployCmds.foreach(s => logDebug(s"s"))
+          deployCmds.foreach(d => {
+            val cmdFields = d.split('|')
+            if (cmdFields.length > 1) {
+              val coordinate = cmdFields(0)
+              val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+              val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+              val session = SparkSession.builder().getOrCreate()
+              DeployCommand(coordinate, null, repos, cache).run(session)
+            }
+            else {
+              // Jars we have
+              DeployJarCommand(null, cmdFields(0))
+            }
+          })
+        }
+        case _ => // Nothing
+      }
+    }
+    client
   }
 
   def isHiveExecPlan(plan: SparkPlan): Boolean = plan.isInstanceOf[HiveTableScanExec]

@@ -120,6 +120,10 @@ The Dashboard offers the following capabilities and benefits:
 
 * **Total Size**</br>
    Displays the collective physical memory and disk overflow space used by the data table to store its data/records.
+<!--
+ **BUCKETS**</br>
+   Displays the total number of buckets in the data table.
+-->
 
 ![Dashboard](../Images/monitoring_external_table.png)
 <a id="external-table"></a>
@@ -167,8 +171,8 @@ The top-right side of the page displays the last updated date and time for the m
 * **Member Status**</br> Displays the current status of the member which can be either Running or Stopped.
    
     | Status | Description |
-	  |--------|--------|
-	  |![Running Member](../Images/running-status.png)|Member is running|
+	|--------|--------|
+	|![Running Member](../Images/running-status.png)|Member is running|
     |![Stopped Member](../Images/stopped-status.png)|Member has been stopped or is unavailable|
 
 * **CPU Usage**</br> The CPU utilized by the member's host.
@@ -182,7 +186,7 @@ The top-right side of the page displays the last updated date and time for the m
 
 ![MemberLogs](../Images/monitoring_memberdetails_logs.png)
 
-* **Log File Location **</br>Displays the absolute path of the member's primary log file on a host where the current member process is running. 
+* **Log File Location**</br>Displays the absolute path of the member's primary log file on a host where the current member process is running. 
 	
 * **Log Details**</br>Displays details of the loaded logs like Loaded Bytes, Start and End Indexes of Loaded Bytes and Total Bytes of logs content.
 

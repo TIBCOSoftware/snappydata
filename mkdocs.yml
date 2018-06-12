@@ -15,7 +15,6 @@ pages:
 - 'Getting Started in 5 minutes or Less': 
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'Getting Started by Installing SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
-#    - 'Getting Started with Amazon Web Services': 'quickstart/getting_started_on_aws.md'
     - 'Getting Started with Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
@@ -74,8 +73,8 @@ pages:
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
-    - 'List of Properties':    
-        - 'Property Details': 'configuring_cluster/property_details.md'
+#    - 'List of Properties':    (to be updated later)
+#        - 'Property Details': 'configuring_cluster/property_details.md'
     - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
@@ -120,10 +119,10 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-#- 'Using Connectors': 'connectors/connector.md'
-#- 'Using Connectors':
+- 'Using Database Connectors': 'connectors/connector.md'
+- 'Using Database Connectors':
 #    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
-#    - 'Getting Started with SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
+    - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Using SnappyData CloudBuilder': 'aqp_aws.md'
 - 'Using SnappyData CloudBuilder': 
     - 'Key Components': 'isight/key_components.md'
@@ -134,7 +133,7 @@ pages:
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
-#    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
+    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
@@ -197,13 +196,11 @@ pages:
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
-#        - 'SET_EVICTION_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_eviction_heap_percentage.md'
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
         - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
-#        - 'MEMORYANALYTICS': 'reference/system_tables/memoryanalytics.md'
         - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'
         - 'SYSDISKSTOREIDS': 'reference/system_tables/sysdiskstoreids.md'
         - 'SYSTABLES': 'reference/system_tables/systables.md'
@@ -212,9 +209,9 @@ pages:
         - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
         - 'compact-all-disk-stores': 'reference/command_line_utilities/store-compact-all-disk-stores.md'
         - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
-        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md'
+#        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md' (to be confirmed later 1.0.2)
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
-        - 'unblock-missing-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
+        - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
@@ -311,13 +308,15 @@ theme: readthedocs
 theme_dir: 'docs/custom_theme'
 
 extra_javascript:
-  - 'js/menu.js'
+    - 'js/menu.js'
+    - 'js/highlight.pack.js'
 
 extra_css:
     - 'css/toc.css'
     - 'css/menu.css'
     - 'css/images.css'
     - 'css/style.css'
+    - 'css/highlight.css'
     - 'extra.css'
     
 markdown_extensions:
