@@ -48,4 +48,8 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
   override def parsePlan(sqlText: String): LogicalPlan = {
     sqlParser.parse(sqlText, sqlParser.sql.run())
   }
+
+  def parsePlan(sqlText: String, clearExecutionData: Boolean): LogicalPlan = {
+    sqlParser.parse(sqlText, sqlParser.sql.run(), clearExecutionData)
+  }
 }
