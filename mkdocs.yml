@@ -168,12 +168,12 @@ markdown_extensions:
   - admonition
       
 extra_javascript:
-    - 'js/menu.js'
+#    - 'js/menu.js'
     - 'js/highlight.pack.js'
 
 extra_css:
     - 'css/toc.css'
-    - 'css/menu.css'
+#    - 'css/menu.css'
     - 'css/images.css'
     - 'css/style.css'
     - 'css/highlight.css'
