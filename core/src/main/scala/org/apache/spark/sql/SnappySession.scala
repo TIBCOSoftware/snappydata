@@ -213,7 +213,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   final def prepareSQL(sqlText: String): LogicalPlan = {
-    val logical = sessionState.sqlParser.parsePlan(sqlText)
+    val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     sessionState.analyzerPrepare.execute(logical)
   }
@@ -2067,7 +2067,7 @@ object SnappySession extends Logging {
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
-    val parsed = parser.parsePlan(sqlText)
+    val parsed = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
     val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
