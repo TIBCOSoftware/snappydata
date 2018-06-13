@@ -383,7 +383,7 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = limitExternalDataFetch(plan) match {
       case Some(externalRelation) if externalRelation.getLimit > 0 =>
         Limit(Literal(externalRelation.getLimit), plan)
-      case None => plan
+      case _ => plan
     }
 
     def limitExternalDataFetch(plan: LogicalPlan): Option[ApplyLimitOnExternalRelation] = {
