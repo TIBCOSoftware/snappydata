@@ -139,7 +139,6 @@ object Constant {
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
-  val implicitLimitKey = s"${PROPERTY_PREFIX}external.limit"
 
   // -10 in sequence will mean all arguments, -1 will mean all odd argument and
   // -2 will mean all even arguments.

@@ -106,7 +106,7 @@ class SnappySessionState(snappySession: SnappySession)
         ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
-        GemFireRelationLimitFetch::
+        ExternalRelationLimitFetch::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
@@ -375,40 +375,38 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  object GemFireRelationLimitFetch extends Rule[LogicalPlan] {
-    val implicitLimit = System.getProperty(Constant.implicitLimitKey, "-1").toInt
+  object ExternalRelationLimitFetch extends Rule[LogicalPlan] {
     val indexes = (0, 1, 2, 3, 4, 5)
-    val (create_tv_bool, filter_bool, agg_func_bool, gfeRelation_bool, allProjectionBool,
+    val (create_tv_bool, filter_bool, agg_func_bool, extRelation_bool, allProjectionBool,
     alreadyProcessed_bool) = indexes
 
     def apply(plan: LogicalPlan): LogicalPlan = limitExternalDataFetch(plan) match {
-      case Some(gfeRelation) => Limit(Literal(implicitLimit), plan)
+      case Some(externalRelation) if externalRelation.getLimit > 0 =>
+        Limit(Literal(externalRelation.getLimit), plan)
       case None => plan
     }
 
-    def limitExternalDataFetch(plan: LogicalPlan): Option[BaseRelation] = {
+    def limitExternalDataFetch(plan: LogicalPlan): Option[ApplyLimitOnExternalRelation] = {
       // if plan is pure select with or without limit , has GemFireRelation,
       // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
       // or a CreateView
       // TODO: Deal with View
-      if (implicitLimit > 0) {
+
         val boolsArray = Array.ofDim[Boolean](indexes.productArity)
         // by default assume all projections are fetched
         boolsArray(allProjectionBool) = true
-        var gfeBaseRelation: BaseRelation = null
+        var externalRelation: ApplyLimitOnExternalRelation = null
         plan.foreachUp(pln => {
           pln match {
-            case LogicalRelation(baseRelation, _, _) =>
-              if (baseRelation.getClass.getSimpleName.equals("GemFireRelation")) {
-                boolsArray(gfeRelation_bool) = true
-                gfeBaseRelation = baseRelation
-              }
+            case LogicalRelation(baseRelation: ApplyLimitOnExternalRelation, _, _) =>
+                boolsArray(extRelation_bool) = true
+                externalRelation = baseRelation
 
             case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
             case _: Aggregate => boolsArray(agg_func_bool) = true
-            case Project(projs, _) => if (!(boolsArray(gfeRelation_bool) &&
-                ((projs.length == gfeBaseRelation.schema.length &&
-                    projs.zip(gfeBaseRelation.schema).forall {
+            case Project(projs, _) => if (!(boolsArray(extRelation_bool) &&
+                ((projs.length == externalRelation.asInstanceOf[BaseRelation].schema.length &&
+                    projs.zip(externalRelation.asInstanceOf[BaseRelation].schema).forall {
                       case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
                     })
                     || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
@@ -421,16 +419,14 @@ class SnappySessionState(snappySession: SnappySession)
           }
         })
 
-        if (boolsArray(gfeRelation_bool) && boolsArray(allProjectionBool) &&
+        if (boolsArray(extRelation_bool) && boolsArray(allProjectionBool) &&
             !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
                 boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
-          Some(gfeBaseRelation)
+          Some(externalRelation)
         } else {
           None
         }
-      } else {
-        None
-      }
+
     }
 
   }
