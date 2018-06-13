@@ -165,8 +165,6 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan.transformAllExpressions {
       case tg @ TaggedAttribute(GemFireLimitTag, _, _, _, _) => tg.withName(
         GemFireLimitTag.simpleString + tg.name)
-    }.transformUp {
-      case MarkerForCreateTableAsSelect(child) => child
     }
   }
   // copy of ConstantFolding that will turn a constant up/down cast into
@@ -1016,6 +1014,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
         with SnappyStrategies {
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
     case _ => Nil
   }
 
