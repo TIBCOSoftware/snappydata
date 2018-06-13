@@ -193,7 +193,10 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
     catch {
-      case NonFatal(e) => log.warn(e.getMessage, e)
+      case NonFatal(e) => {
+        log.warn("Exception occurred while collecting Table Statistics: "
+            + e.getMessage, e)
+      }
     }
 
     try {
@@ -207,11 +210,28 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
     catch {
-      case NonFatal(e) => log.warn(e.getMessage, e)
+      case NonFatal(e) => {
+        log.warn("Exception occurred while collecting External Table Statistics: "
+            + e.getMessage, e)
+      }
     }
 
     if(result.flatMap(_.getRegionStats.asScala).size == 0) {
-      // Return last updated tableSizeInfo
+      // Return last successfully updated tableSizeInfo
+      // Check for if any table is present in catalog
+      val allStoreTables = Misc.getMemStore.getExternalCatalog.getAllStoreTablesInCatalog(true)
+      val allTablesList = scala.collection.mutable.Buffer.empty[String]
+      allStoreTables.asScala.keys.foreach(schema => {
+        allTablesList ++= allStoreTables.get(schema).asScala.map(tbl => {
+          schema.concat(".").concat(tbl)
+        })
+      })
+
+      if(allTablesList.size == 0 && tableSizeInfo.size > 0){
+        // No table is present in any db schema, reset tableSizeInfo
+        tableSizeInfo = Map.empty[String, SnappyRegionStats]
+      }
+
       (tableSizeInfo.values.toSeq,
        result.flatMap(_.getIndexStats.asScala),
        externalTables)
