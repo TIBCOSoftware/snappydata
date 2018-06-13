@@ -165,6 +165,8 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan.transformAllExpressions {
       case tg @ TaggedAttribute(GemFireLimitTag, _, _, _, _) => tg.withName(
         GemFireLimitTag.simpleString + tg.name)
+    }.transformUp {
+      case MarkerForCreateTableAsSelect(child) => child
     }
   }
   // copy of ConstantFolding that will turn a constant up/down cast into
@@ -383,28 +385,42 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   object GemFireRelationLimitFetch extends  Rule[LogicalPlan] {
-    val indexes = (0, 1, 2, 3, 4, 5)
+    val indexes = (0, 1, 2, 3, 4, 5, 6)
     val (create_tv_bool, filter_bool, agg_func_bool, gfeRelation_bool, allProjectionBool,
-    alreadyProcessed_bool) = indexes
+    alreadyProcessed_bool, unresolved_relation_bool) = indexes
 
-    def apply(plan: LogicalPlan): LogicalPlan = limitExternalDataFetch(plan) match {
-      case Some(gfeRelation) => val attribute = plan.output(0)
-        val taggedAttrib = TaggedAttribute(GemFireLimitTag, attribute.name, attribute.dataType,
-          true)(attribute.exprId)
-        plan.transformUp {
-          case lr@LogicalRelation(br, _, _) if br.eq(gfeRelation) =>
-            Filter(catalyst.expressions.IsNotNull(taggedAttrib), lr)
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      val (createTableAsSelect, gfRelation) = limitExternalDataFetch(plan)
+      gfRelation match {
+        case Some(gfeRelation) => val attribute = plan.output(0)
+          val taggedAttrib = TaggedAttribute(GemFireLimitTag, attribute.name, attribute.dataType,
+            true)(attribute.exprId)
+          plan.transformUp {
+            case lr@LogicalRelation(br, _, _) if br.eq(gfeRelation) =>
+              Filter(catalyst.expressions.IsNotNull(taggedAttrib), lr)
 
-          case sq @ SubqueryAlias(_, Filter(catalyst.expressions.IsNotNull(
-          tg @ TaggedAttribute(GemFireLimitTag, _, _, _, _)), childx ), _) =>
-            Filter(catalyst.expressions.IsNotNull(tg), sq.copy(child = childx))
+            case sq@SubqueryAlias(_, Filter(catalyst.expressions.IsNotNull(
+            tg@TaggedAttribute(GemFireLimitTag, _, _, _, _)), childx), _) =>
+              Filter(catalyst.expressions.IsNotNull(tg), sq.copy(child = childx))
+
+          }
+        case None => if (createTableAsSelect) {
+          plan.transformUp {
+            case crt@CreateTableUsingSelect(_, _, _, _, _, _, _, _, query, _) if (query match {
+              case _: MarkerForCreateTableAsSelect => false
+              case _ => true
+            })
+            => {
+              crt.copy(query = MarkerForCreateTableAsSelect(query))
+            }
+          }
+        } else {
+          plan
         }
-
-
-      case None => plan
+      }
     }
 
-    def limitExternalDataFetch(plan: LogicalPlan): Option[BaseRelation] = {
+    def limitExternalDataFetch(plan: LogicalPlan): (Boolean, Option[BaseRelation]) = {
       // if plan is pure select with or without limit , has GemFireRelation,
       // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
       // or a CreateView
@@ -420,10 +436,9 @@ class SnappySessionState(snappySession: SnappySession)
               boolsArray(gfeRelation_bool) = true
               gfeBaseRelation = baseRelation
             }
-          case (_: CreateMetastoreTableUsing | _: CreateMetastoreTableUsingSelect |
-                _: CreateTable) => boolsArray(create_tv_bool) = true
-
-
+          case _: UnresolvedRelation => boolsArray(unresolved_relation_bool) = true
+          case (_: CreateTableUsingSelect | _: MarkerForCreateTableAsSelect) =>
+            boolsArray(create_tv_bool) = true
           case _: Aggregate => boolsArray(agg_func_bool) = true
           case Project(projs, _) => if (!(boolsArray(gfeRelation_bool) &&
               ((projs.length == gfeBaseRelation.schema.length &&
@@ -440,15 +455,20 @@ class SnappySessionState(snappySession: SnappySession)
           case _ =>
         }
       })
-      if(boolsArray(gfeRelation_bool) && boolsArray(allProjectionBool) &&
-          !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
-           boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
-        Some(gfeBaseRelation)
+      if (boolsArray(unresolved_relation_bool)) {
+        (false, None)
       } else {
-        None
+        if (boolsArray(gfeRelation_bool) && boolsArray(allProjectionBool) &&
+            !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
+                boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
+          (boolsArray(create_tv_bool), Some(gfeBaseRelation))
+        } else {
+          (boolsArray(create_tv_bool), None)
+        }
       }
     }
   }
+
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
@@ -1394,4 +1414,8 @@ object GemFireLimitTag extends TransformableTag {
   def toTag: TransformableTag = this
 
   override lazy val simpleString = "GemFireLimitTag."
+}
+
+case class MarkerForCreateTableAsSelect(val child: LogicalPlan) extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
 }
