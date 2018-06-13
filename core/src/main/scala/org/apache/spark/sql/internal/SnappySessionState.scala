@@ -25,7 +25,7 @@ import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
-import io.snappydata.Property
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql.{catalyst, _}
@@ -41,7 +41,6 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
-import org.apache.spark.sql.catalyst.util.{TaggedAttribute, TransformableTag}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -155,18 +154,12 @@ class SnappySessionState(snappySession: SnappySession)
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
           Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets) :+
           Batch("TokenizedLiteral Folding Optimization", Once, TokenizedLiteralFolding) :+
-          Batch("GemFireTaggedAttributeConversion", Once, GemFireTaggedAttributeConversion) :+
           Batch("Order join conditions ", Once, OrderJoinConditions)
     }
   }
 
 
-  object GemFireTaggedAttributeConversion extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = plan.transformAllExpressions {
-      case tg @ TaggedAttribute(GemFireLimitTag, _, _, _, _) => tg.withName(
-        GemFireLimitTag.simpleString + tg.name)
-    }
-  }
+
   // copy of ConstantFolding that will turn a constant up/down cast into
   // a static value.
   object TokenizedLiteralFolding extends Rule[LogicalPlan] {
@@ -383,71 +376,63 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   object GemFireRelationLimitFetch extends Rule[LogicalPlan] {
+    val implicitLimit = System.getProperty(Constant.implicitLimitKey, "-1").toInt
     val indexes = (0, 1, 2, 3, 4, 5)
     val (create_tv_bool, filter_bool, agg_func_bool, gfeRelation_bool, allProjectionBool,
     alreadyProcessed_bool) = indexes
 
     def apply(plan: LogicalPlan): LogicalPlan = limitExternalDataFetch(plan) match {
-      case Some(gfeRelation) => val attribute = plan.output(0)
-        val taggedAttrib = TaggedAttribute(GemFireLimitTag, attribute.name, attribute.dataType,
-          true)(attribute.exprId)
-        plan.transformUp {
-          case lr@LogicalRelation(br, _, _) if br.eq(gfeRelation) =>
-            Filter(catalyst.expressions.IsNotNull(taggedAttrib), lr)
-
-          case sq@SubqueryAlias(_, Filter(catalyst.expressions.IsNotNull(
-          tg@TaggedAttribute(GemFireLimitTag, _, _, _, _)), childx), _) =>
-            Filter(catalyst.expressions.IsNotNull(tg), sq.copy(child = childx))
-
-        }
+      case Some(gfeRelation) => Limit(Literal(implicitLimit), plan)
       case None => plan
     }
-
 
     def limitExternalDataFetch(plan: LogicalPlan): Option[BaseRelation] = {
       // if plan is pure select with or without limit , has GemFireRelation,
       // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
       // or a CreateView
       // TODO: Deal with View
-      val boolsArray = Array.ofDim[Boolean](indexes.productArity)
-      // by default assume all projections are fetched
-      boolsArray(allProjectionBool) = true
-      var gfeBaseRelation: BaseRelation = null
-      plan.foreachUp(pln => {
-        pln match {
-          case LogicalRelation(baseRelation, _, _) =>
-            if (baseRelation.getClass.getSimpleName.equals("GemFireRelation")) {
-              boolsArray(gfeRelation_bool) = true
-              gfeBaseRelation = baseRelation
+      if (implicitLimit > 0) {
+        val boolsArray = Array.ofDim[Boolean](indexes.productArity)
+        // by default assume all projections are fetched
+        boolsArray(allProjectionBool) = true
+        var gfeBaseRelation: BaseRelation = null
+        plan.foreachUp(pln => {
+          pln match {
+            case LogicalRelation(baseRelation, _, _) =>
+              if (baseRelation.getClass.getSimpleName.equals("GemFireRelation")) {
+                boolsArray(gfeRelation_bool) = true
+                gfeBaseRelation = baseRelation
+              }
+
+            case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
+            case _: Aggregate => boolsArray(agg_func_bool) = true
+            case Project(projs, _) => if (!(boolsArray(gfeRelation_bool) &&
+                ((projs.length == gfeBaseRelation.schema.length &&
+                    projs.zip(gfeBaseRelation.schema).forall {
+                      case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
+                    })
+                    || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
+              boolsArray(allProjectionBool) = false
             }
-
-          case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
-          case _: Aggregate => boolsArray(agg_func_bool) = true
-          case Project(projs, _) => if (!(boolsArray(gfeRelation_bool) &&
-              ((projs.length == gfeBaseRelation.schema.length &&
-                  projs.zip(gfeBaseRelation.schema).forall {
-                    case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
-                  })
-                  || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
-            boolsArray(allProjectionBool) = false
+            case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+            case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+              boolsArray(filter_bool) = true
+            case _ =>
           }
-          case Filter(catalyst.expressions.IsNotNull(
-          TaggedAttribute(GemFireLimitTag, _, _, _, _)), _) =>
-            boolsArray(alreadyProcessed_bool) = true
-          case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
-            boolsArray(filter_bool) = true
-          case _ =>
-        }
-      })
+        })
 
-      if (boolsArray(gfeRelation_bool) && boolsArray(allProjectionBool) &&
-          !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
-              boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
-        Some(gfeBaseRelation)
+        if (boolsArray(gfeRelation_bool) && boolsArray(allProjectionBool) &&
+            !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
+                boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
+          Some(gfeBaseRelation)
+        } else {
+          None
+        }
       } else {
         None
       }
     }
+
   }
 
 
@@ -1390,13 +1375,7 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
   }
 }
 
-object GemFireLimitTag extends TransformableTag {
-  val symbol = ":"
 
-  def toTag: TransformableTag = this
-
-  override lazy val simpleString = "GemFireLimitTag."
-}
 
 case class MarkerForCreateTableAsSelect(val child: LogicalPlan) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
