@@ -39,10 +39,11 @@ import io.snappydata.collection.LongObjectHashMap
 import org.apache.spark.sql.catalyst
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateOrdering
-import org.apache.spark.sql.catalyst.expressions.{Ascending, BindReferences, BoundReference, Expression, SortOrder, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, BindReferences, BoundReference, Descending, Expression, SortOrder, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.unsafe.Platform
 
@@ -87,12 +88,14 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
    * 1. Case of Delta Insert
    * 2. case of Colocated join
    */
-  private val hasPrimaryIndex = container.fetchHiveMetaData(false).hasPrimaryIndex
+  val columnTableSorting = container.fetchHiveMetaData(false).columnTableSortOrder
+  private val isColumnBatchSorted = StoreUtils.isColumnBatchSortedAscending(columnTableSorting) ||
+      StoreUtils.isColumnBatchSortedDescending(columnTableSorting)
 
-  private val canOverflow = !hasPrimaryIndex &&
+  private val canOverflow = !isColumnBatchSorted &&
     distributedRegion.isOverflowEnabled && distributedRegion.getDataPolicy.withPersistence()
 
-  private val (partitioningProjection, statsLen, partitioningOrdering) = if (hasPrimaryIndex) {
+  private val (partitioningProjection, statsLen, partitioningOrdering) = if (isColumnBatchSorted) {
     val rowBufferTable = GemFireContainer.getRowBufferTableName(container.getQualifiedTableName)
     val rowBufferRegion = Misc.getRegionForTable(rowBufferTable, true).asInstanceOf[LocalRegion]
     val paritioningPositions = GemFireXDUtils.getResolver(rowBufferRegion)
@@ -106,8 +109,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
           BindReferences.bindReference(ae.asInstanceOf[Expression], fullStatsSchema).
             asInstanceOf[BoundReference]
         })
-    // TODO: VB: right now sort order is fixed as Ascending but should come from table meta-data
-    val ordering = GenerateOrdering.generate(partitioningExprs.map(SortOrder(_, Ascending)))
+    val ordering = if (StoreUtils.isColumnBatchSortedAscending(columnTableSorting)) {
+      GenerateOrdering.generate(partitioningExprs.map(SortOrder(_, Ascending)))
+    } else GenerateOrdering.generate(partitioningExprs.map(SortOrder(_, Descending)))
     (UnsafeProjection.create(partitioningExprs), fullStatsSchema.length, ordering)
   } else (null, 0, null)
 
@@ -164,7 +168,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     checkRegion(region)
     currentRegion = region
     entryIterator = region.entries.regionEntries().iterator().asInstanceOf[MapValueIterator]
-    if (hasPrimaryIndex) {
+    if (isColumnBatchSorted) {
       inMemorySortedBatches = initSortedBatchSets()
     } else advanceToNextBatchSet()
   }
@@ -187,7 +191,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   }
 
   override def hasNext: Boolean = {
-    if (hasPrimaryIndex) {
+    if (isColumnBatchSorted) {
       inMemoryBatchIndex + 1 < inMemorySortedBatches.length
     } else if (entryIterator ne null) {
       if (inMemoryBatchIndex + 1 < inMemoryBatches.size()) true else advanceToNextBatchSet()
@@ -195,7 +199,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   }
 
   override def next(): RegionEntry = {
-    if (hasPrimaryIndex) {
+    if (isColumnBatchSorted) {
       inMemoryBatchIndex += 1
       if (inMemoryBatchIndex >= inMemorySortedBatches.length) {
         if (!advanceToNextBatchSet()) throw new NoSuchElementException
@@ -222,7 +226,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
 
   override def getColumnValue(columnIndex: Int): AnyRef = {
     val column = columnIndex & 0xffffffffL
-    if (hasPrimaryIndex) {
+    if (isColumnBatchSorted) {
       inMemorySortedBatches(inMemoryBatchIndex)._2.get(column)
     } else if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)
     else if (columnIndex == DELTA_STATROW_COL_INDEX) currentDiskBatch.getDeltaStatsValue

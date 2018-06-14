@@ -193,7 +193,7 @@ object SortedColumnTests extends Logging {
       s", COLOCATE_WITH '${colocateTableName.get}'"
     } else ""
     session.sql(s"create table $colTableName (id int, addr string, status boolean) " +
-        s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id' " +
+        s"using column options(buckets '$numBuckets', partition_by 'id SORTING ASC'" +
         additionalString + s")")
   }
 
@@ -204,7 +204,7 @@ object SortedColumnTests extends Logging {
       s", COLOCATE_WITH '${colocateTableName.get}'"
     } else ""
     session.sql(s"create table $colTableName (id int, addr int, status int) " +
-        s"using column options(buckets '$numBuckets', partition_by 'id', key_columns 'id' " +
+        s"using column options(buckets '$numBuckets', partition_by 'id SORTING ASC'" +
         additionalString + s")")
   }
 

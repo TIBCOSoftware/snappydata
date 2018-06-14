@@ -73,6 +73,7 @@ object StoreUtils {
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
   val GEM_INDEXED_TABLE = "INDEXED_TABLE"
+  val COLUMN_BATCH_SORTED = "COLUMN_BATCH_SORTED"
 
   // int values for Spark SQL types for efficient switching avoiding reflection
   val STRING_TYPE = 0
@@ -95,7 +96,7 @@ object StoreUtils {
   val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
     COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
     PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW, COMPRESSION_CODEC_DEPRECATED,
-    GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
+    GEM_INDEXED_TABLE, COLUMN_BATCH_SORTED) ++ ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
@@ -336,7 +337,8 @@ object StoreUtils {
                 .asInstanceOf[SnappyStoreHiveCatalog]
                 .normalizeSchema(schema)
             val schemaFields = Utils.schemaFields(normalizedSchema)
-            val cols = v.split(",") map (_.trim)
+            val partitioningCols = v.split("SORTING").toSeq.map(a => a.trim).head
+            val cols = partitioningCols.split(",") map (_.trim)
             // always use case-insensitive analysis for partitioning columns
             // since table creation can use case-insensitive in creation
             val normalizedCols = cols.map(Utils.toUpperCase)
@@ -355,7 +357,7 @@ object StoreUtils {
               */
             }
             if (includeInPK) {
-              s"$PRIMARY_KEY ($v, $ROWID_COLUMN_NAME)"
+              s"$PRIMARY_KEY ($partitioningCols, $ROWID_COLUMN_NAME)"
             } else {
               s"$PRIMARY_KEY ($ROWID_COLUMN_NAME)"
             }
@@ -381,7 +383,10 @@ object StoreUtils {
                 throw Utils.analysisException("Column table cannot be " +
                     "partitioned on PRIMARY KEY as no primary key")
               }
-            case _ => s"sparkhash COLUMN($v)"
+            case _ =>
+              val partitioningParams = v.split("SORTING").toSeq.map(a => a.trim)
+              val partitioningCols = partitioningParams.head
+              s"sparkhash COLUMN($partitioningCols)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "
@@ -493,10 +498,13 @@ object StoreUtils {
   }
 
   def getPartitioningColumns(
-      parameters: mutable.Map[String, String]): Seq[String] = {
-    parameters.get(PARTITION_BY).map(v => {
-      v.split(",").toSeq.map(a => a.trim)
+      parameters: mutable.Map[String, String]): (Seq[String], String) = {
+    val partitioningParams = parameters.get(PARTITION_BY).map(v => {
+      v.split("SORTING").toSeq.map(a => a.trim)
     }).getOrElse(Nil)
+    val partitioningCols = partitioningParams.head.split(",").toSeq.map(a => a.trim)
+    val sortingParams = partitioningParams.tail.head
+    (partitioningCols, sortingParams)
   }
 
   def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {
@@ -553,4 +561,10 @@ object StoreUtils {
     }
     result
   }
+
+  def isColumnBatchSortedAscending(columnTableSorting: String): Boolean =
+    columnTableSorting.equalsIgnoreCase("ASC") || columnTableSorting.equalsIgnoreCase("Ascending")
+
+  def isColumnBatchSortedDescending(columnTableSorting: String): Boolean =
+    columnTableSorting.equalsIgnoreCase("DESC") || columnTableSorting.equalsIgnoreCase("Descending")
 }

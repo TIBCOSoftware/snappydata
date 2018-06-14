@@ -425,7 +425,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
                       Utils.toUpperCase(table.getDbName()),
                       tableType, null, -1, -1,
                       null, null, null, null,
-                      tblDataSourcePath, driverClass);
+                      tblDataSourcePath, "", driverClass);
                   metaData.provider = table.getParameters().get(
                       SnappyStoreHiveCatalog.HIVE_PROVIDER());
                   metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
@@ -505,6 +505,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
           String driverClass = table.getMetadata().getProperty("driver");
           driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
+          String columnBatchSorting = parameters.get(StoreUtils.COLUMN_BATCH_SORTED());
           return new ExternalTableMetaData(
               fullyQualifiedName,
               schema,
@@ -518,6 +519,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               dmls,
               dependentRelations,
               tblDataSourcePath,
+              columnBatchSorting,
               driverClass);
 
         case CLOSE_HMC:
