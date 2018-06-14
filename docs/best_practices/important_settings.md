@@ -30,11 +30,11 @@ For column tables, it is recommended to set a number of buckets such that each b
 <a id="member-timeout"></a>
 ## member-timeout
 
-The default [member-timeout](../configuring_cluster/property_description.md#member-timeout) in SnappyData cluster is 30 seconds. The default `spark.network.timeout` is 120 seconds and `spark.executor.heartbeatInterval` is 10 seconds as noted in the [Spark documents](https://spark.apache.org/docs/latest/configuration.html). </br> 
+The default [member-timeout](http://snappydatainc.github.io/snappydata/configuring_cluster/property_description/#member-timeout) in SnappyData cluster is 30 seconds. The default `spark.network.timeout` is 120 seconds and `spark.executor.heartbeatInterval` is 10 seconds as noted in the [Spark documents](https://spark.apache.org/docs/latest/configuration.html). </br> 
 If applications require node failure detection to be faster, then these properties should be reduced accordingly (`spark.executor.heartbeatInterval` but must always be much lower than `spark.network.timeout` as specified in the Spark Documents). </br>
 However, note that this can cause spurious node failures to be reported due to GC pauses. For example, the applications with reduced settings need to be resistant to job failures due to GC settings.
 
-This attribute is set in the [configuration files](../configuring_cluster/configuring_cluster.md) **conf/locators**, **conf/servers** and **conf/leads** files. 
+This attribute is set in the [configuration files](http://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster) **conf/locators**, **conf/servers** and **conf/leads** files. 
 
 <a id="spark-local-dir"></a>
 ## spark.local.dir  
@@ -43,7 +43,7 @@ SnappyData writes table data on disk.  By default, the disk location that Snappy
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
 To achieve better performance, it is recommended to store temporary data on a different disk (preferably SSD) than the table data. This can be done by setting the `spark.local.dir` parameter.
 
-This attribute is set in the [leads configuration files](../configuring_cluster/configuring_cluster.md#lead) **conf/leads**.
+This attribute is set in the [leads configuration files](http://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#lead) **conf/leads**.
 
 <a id="os_setting"></a>
 ##  Operating System Settings 

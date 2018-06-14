@@ -131,7 +131,7 @@ The status of this job can be queried in the same manner as shown above. The res
 
 ### Jar Dependencies for Jobs
 
-For writing jobs users need to include [Maven/SBT dependencies for the latest released version of SnappyData](../howto/run_spark_job_inside_cluster.md) to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
+For writing jobs users need to include [Maven/SBT dependencies for the latest released version of SnappyData](http://snappydatainc.github.io/snappydata/howto/run_spark_job_inside_cluster) to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.
 
 For example, gradle can be configured as:
 
@@ -213,4 +213,4 @@ $ ./bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
 
 **Related Topic**:
 
-- [How to use Python to Create Tables and Run Queries](../howto/use_python_to_create_tables_and_run_queries.md)
+- [How to use Python to Create Tables and Run Queries](http://snappydatainc.github.io/snappydata/howto/use_python_to_create_tables_and_run_queries)

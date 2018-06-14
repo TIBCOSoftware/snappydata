@@ -67,7 +67,7 @@ The number of buckets has an impact on query performance, storage density, and a
 
 When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.
 
-The  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
+The  [-rebalance](http://snappydatainc.github.io/snappydata/configuring_cluster/property_description#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
 You can also set the system procedure [call sys.rebalance_all_buckets()](http://snappydatainc.github.io/snappydata/reference/inbuilt_system_procedures/rebalance-all-buckets/#sysrebalance_all_buckets) to trigger rebalance.
 
 <a id="dimension"></a>

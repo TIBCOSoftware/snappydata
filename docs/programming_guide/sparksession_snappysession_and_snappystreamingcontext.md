@@ -104,7 +104,7 @@ To create a SnappyStreamingContext:
  snsc = SnappyStreamingContext(sc, duration)
 ```
 
-Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [Affinity modes](../deployment.md).
+Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [Affinity modes](http://snappydatainc.github.io/snappydata/deployment).
 
 If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
 If you are in the Embedded Mode, applications typically submit jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext.
