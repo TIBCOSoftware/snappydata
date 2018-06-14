@@ -56,7 +56,7 @@ object ColumnTableBulkOps {
           case _ => ""
         }
         if (StoreUtils.isColumnBatchSortedAscending(columnSorting) ||
-            StoreUtils.isColumnBatchSortedAscending(columnSorting)) {
+            StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
           val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
             changeCondition = true)
 
