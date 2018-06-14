@@ -385,8 +385,7 @@ object StoreUtils {
               }
             case _ =>
               val partitioningParams = v.split("SORTING").toSeq.map(a => a.trim)
-              val partitioningCols = partitioningParams.head
-              s"sparkhash COLUMN($partitioningCols)"
+              s"sparkhash COLUMN(${partitioningParams.head})"
           }
         }
         s"$GEM_PARTITION_BY $parClause "
@@ -501,9 +500,13 @@ object StoreUtils {
       parameters: mutable.Map[String, String]): (Seq[String], String) = {
     val partitioningParams = parameters.get(PARTITION_BY).map(v => {
       v.split("SORTING").toSeq.map(a => a.trim)
-    }).getOrElse(Nil)
-    val partitioningCols = partitioningParams.head.split(",").toSeq.map(a => a.trim)
-    val sortingParams = partitioningParams.tail.head
+    })
+    val partitioningCols = if (partitioningParams.isDefined) {
+      partitioningParams.get.head.split(",").toSeq.map(a => a.trim)
+    } else Nil
+    val sortingParams = if (partitioningParams.isDefined && partitioningParams.get.size > 1) {
+      partitioningParams.get.tail.head
+    } else ""
     (partitioningCols, sortingParams)
   }
 
