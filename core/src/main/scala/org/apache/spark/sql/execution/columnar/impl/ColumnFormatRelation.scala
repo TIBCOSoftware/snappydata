@@ -514,7 +514,8 @@ class ColumnFormatRelation(
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
-    _context: SQLContext)
+    _context: SQLContext,
+    val columnSortedOrder: String = "")
   extends BaseColumnFormatRelation(
     _table,
     _provider,
@@ -794,10 +795,10 @@ final class DefaultSource extends SchemaRelationProvider
     val table = Utils.toUpperCase(ExternalStoreUtils.removeInternalProps(parameters))
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
-    val (partitioningColumns, sortedAscending) = StoreUtils.getPartitioningColumns(parameters)
+    val (partitioningColumns, columnSorting) = StoreUtils.getPartitioningColumns(parameters)
     // TODO: VB: parse partitioningColumns to see ASC/DESC and set into a separate
     // property in parameters
-    parameters.put(StoreUtils.COLUMN_BATCH_SORTED, sortedAscending)
+    parameters.put(StoreUtils.COLUMN_BATCH_SORTED, columnSorting)
     val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
@@ -869,7 +870,8 @@ final class DefaultSource extends SchemaRelationProvider
         tableOptions,
         externalStore,
         partitioningColumns,
-        sqlContext)
+        sqlContext,
+        columnSorting)
     }
     val isRelationforSample = parameters.get(ExternalStoreUtils.RELATION_FOR_SAMPLE)
         .exists(_.toBoolean)
