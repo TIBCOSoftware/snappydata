@@ -380,52 +380,55 @@ class SnappySessionState(snappySession: SnappySession)
     val (create_tv_bool, filter_bool, agg_func_bool, extRelation_bool, allProjectionBool,
     alreadyProcessed_bool) = indexes
 
-    def apply(plan: LogicalPlan): LogicalPlan = limitExternalDataFetch(plan) match {
-      case Some(externalRelation) if externalRelation.getLimit > 0 =>
-        Limit(Literal(externalRelation.getLimit), plan)
-      case _ => plan
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      val limit = limitExternalDataFetch(plan)
+      if (limit > 0) {
+        Limit(Literal(limit), plan)
+      } else {
+        plan
+      }
     }
 
-    def limitExternalDataFetch(plan: LogicalPlan): Option[ApplyLimitOnExternalRelation] = {
+    def limitExternalDataFetch(plan: LogicalPlan): Int = {
       // if plan is pure select with or without limit , has GemFireRelation,
       // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
       // or a CreateView
       // TODO: Deal with View
 
-        val boolsArray = Array.ofDim[Boolean](indexes.productArity)
-        // by default assume all projections are fetched
-        boolsArray(allProjectionBool) = true
-        var externalRelation: ApplyLimitOnExternalRelation = null
-        plan.foreachUp(pln => {
-          pln match {
-            case LogicalRelation(baseRelation: ApplyLimitOnExternalRelation, _, _) =>
-                boolsArray(extRelation_bool) = true
-                externalRelation = baseRelation
+      val boolsArray = Array.ofDim[Boolean](indexes.productArity)
+      // by default assume all projections are fetched
+      boolsArray(allProjectionBool) = true
+      var externalRelation: ApplyLimitOnExternalRelation = null
+      plan.foreachUp(pln => {
+        pln match {
+          case LogicalRelation(baseRelation: ApplyLimitOnExternalRelation, _, _) =>
+            boolsArray(extRelation_bool) = true
+            externalRelation = baseRelation
 
-            case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
-            case _: Aggregate => boolsArray(agg_func_bool) = true
-            case Project(projs, _) => if (!(boolsArray(extRelation_bool) &&
-                ((projs.length == externalRelation.asInstanceOf[BaseRelation].schema.length &&
-                    projs.zip(externalRelation.asInstanceOf[BaseRelation].schema).forall {
-                      case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
-                    })
-                    || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
-              boolsArray(allProjectionBool) = false
-            }
-            case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
-            case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
-              boolsArray(filter_bool) = true
-            case _ =>
+          case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
+          case _: Aggregate => boolsArray(agg_func_bool) = true
+          case Project(projs, _) => if (!(boolsArray(extRelation_bool) &&
+              ((projs.length == externalRelation.asInstanceOf[BaseRelation].schema.length &&
+                  projs.zip(externalRelation.asInstanceOf[BaseRelation].schema).forall {
+                    case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
+                  })
+                  || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
+            boolsArray(allProjectionBool) = false
           }
-        })
-
-        if (boolsArray(extRelation_bool) && boolsArray(allProjectionBool) &&
-            !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
-                boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
-          Some(externalRelation)
-        } else {
-          None
+          case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+          case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+            boolsArray(filter_bool) = true
+          case _ =>
         }
+      })
+
+      if (boolsArray(extRelation_bool) && boolsArray(allProjectionBool) &&
+          !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
+              boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
+        externalRelation.getLimit
+      } else {
+        -1
+      }
 
     }
 
