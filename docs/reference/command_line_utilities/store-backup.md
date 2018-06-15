@@ -53,29 +53,37 @@ You can use one of two formats:
 
 <a id="directory-structure"></a>
 ## Backup Directory Structure and Contents
-Below is the structure of files and directories backed up in a distributed system:
+The backup directory contains a backup of the persistent data.  Below is the structure of files and directories backed up in a distributed system:
 
 ```no-highlight
-2018-02-28-13-00-21 /:
-127_0_0_1_12755_ec_v0_5506 127_0_0_1_12893_v1_48175
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506:
-config diskstores README.txt restore.sh user
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/config:
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/diskstores:
-GFXD-DD-DISKSTORE_40bf5411-4fba-495b-b783-26cfc6505839
-GFXD-DEFAULT-DISKSTORE_a9b5f827-d0a8-4a3a-9031-00443a3ef535
+2018-03-15-05-31-46:
+10_80_141_112_10715_ec_v0_7393 10_80_141_112_10962_v1_57099
 
-2018-02-28-13-00-21/127_0_0_1_12755_ec_v0_5506/user:
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175:
+2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393:
 config diskstores README.txt restore.sh user
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/config:
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/diskstores:
-GFXD-DD-DISKSTORE_e958efda-b6d6-473c-ae56-2327bfdca094
-GFXD-DEFAULT-DISKSTORE_0c8be336-5a6a-48bb-8b6c-372efaddb721
-2018-02-28-13-00-21/127_0_0_1_12893_v1_48175/user:
+2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393/config:
+2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393/user:
+2018-03-15-05-31-46/2018-03-15-05-31-46/10_80_141_112_10715_ec_v0_7393/diskstores/
+GFXD-DD-DISKSTORE_4d9fa95e-7746-4d4d-b404-2648d64cf35e GFXD-DEFAULT-DISKSTORE_3c446ce4-43e4-4c14-bce5-e4336b6570e5
+
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099:
+config diskstores README.txt restore.sh user
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099/config
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099/user
+2018-03-15-05-31-46/10_80_141_112_10962_v1_57099/diskstores:
+GFXD-DD-DISKSTORE_76705038-10de-4b3e-955b-446546fe4036 GFXD-DEFAULT-DISKSTORE_157fa93d-c8a9-4585-ba78-9c10eb9c2ab6 USERDISKSTORE_216d5484-86f7-4e82-be81-d5bf7c2ba59f USERDISKSTORE-SNAPPY-DELTA_e7e12e86-3907-49e6-8f4c-f8a7a0d4156c
 ```
 
+| Directory  | Contents                                                     |
+| ---------- | ------------------------------------------------------------ |
+| config     | For internal use                                             |
+| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using the [CREATE DISKSTORE](../reference/sql_reference/create-diskstore) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
+| user       | For internal use                                             |
+| README.txt | The file contains information about other files in a directory. |
+| restore.sh | Script that copies files back to their original locations.   |
+
 <a id="full-backup"></a>
+
 ## Performing a Full Backup
 
 For each member with persistent data, the backup includes:
@@ -153,10 +161,10 @@ To make additional incremental backups, execute the same backup command describe
 
 | Option | Description |
 |--------|--------|
-|baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the backup location you specified when the last backup was performed. (For example, a baseline directory can resemble <_fileServerDirectory_>/<_SnappyDataBackupLocation_>.). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option. Optionally, you can provide the directory with the time stamp details, to perform an incremental backup (For example, <_fileServerDirectory_>/<_SnappyDataBackupLocation_>/<_TimeStamp_>).|
-|target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
-|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the peer-discovery-port used when starting the cluster (default 10334). This is a mandatory field. For example, `-locators=localhost:10334`|
-|bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
+|-baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the backup location you specified when the last backup was performed. (For example, a baseline directory can resemble <_fileServerDirectory_>/<_SnappyDataBackupLocation_>.). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option. Optionally, you can provide the directory with the time stamp details, to perform an incremental backup (For example, <_fileServerDirectory_>/<_SnappyDataBackupLocation_>/<_TimeStamp_>).|
+|-target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
+|-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the peer-discovery-port used when starting the cluster (default 10334). This is a mandatory field. For example, `-locators=localhost:10334`|
+|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
 |-J-D=|Sets Java system property. For example: `-J-Dgemfire.ack-wait-threshold=20`|
 |-J|Prefix for any JVM property. For example `-J-Xmx4g`|
 

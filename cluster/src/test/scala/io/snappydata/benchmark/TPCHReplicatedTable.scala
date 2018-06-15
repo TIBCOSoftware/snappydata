@@ -119,14 +119,19 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateSupplierTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStage : Int = 1)
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStages : Int = 1)
       : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var unionSupplierDF : DataFrame = null
 
-    for(i <- 1 to numberOfLoadingStage) {
-      val supplierData = sc.textFile(s"$path/supplier.tbl.$i")
+    for(i <- 1 to numberOfLoadingStages) {
+      // apply a tbl.i suffix to table filename only when data is loaded in more than one stages.
+      var stage = ""
+      if (numberOfLoadingStages > 1) {
+        stage = s".$i"
+      }
+      val supplierData = sc.textFile(s"$path/supplier.tbl$stage")
       val supplierReadings = supplierData.map(s => s.split('|')).map(s => TPCHTableSchema
           .parseSupplierRow(s))
       val supplierDF = sqlContext.createDataFrame(supplierReadings)

@@ -18,7 +18,7 @@ CREATE SCHEMA myschema;
 ```
 
 To create a table TABLE1 in the schema SCHEMA1:
-
-```no-highlight
+```
 CREATE TABLE SCHEMA1.TABLE1 ( ... )
 ```
+
