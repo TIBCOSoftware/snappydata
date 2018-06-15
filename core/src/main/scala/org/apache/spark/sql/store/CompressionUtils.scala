@@ -19,7 +19,6 @@ package org.apache.spark.sql.store
 
 import java.nio.{ByteBuffer, ByteOrder}
 
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, HeapBufferAllocator, SystemProperties}
 import com.ning.compress.lzf.{LZFDecoder, LZFEncoder}
 import io.snappydata.Constant
@@ -27,7 +26,7 @@ import net.jpountz.lz4.LZ4Factory
 import org.xerial.snappy.Snappy
 
 import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
-import org.apache.spark.memory.MemoryManagerCallback.allocateExecutionMemory
+import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, releaseExecutionMemory}
 
 /**
  * Utility methods for compression/decompression.
@@ -92,8 +91,8 @@ object CompressionUtils {
       result.limit(resultLen + COMPRESSION_HEADER_SIZE)
       result
     } else {
-      // release the compressed buffer if required
-      UnsafeHolder.releaseIfDirectBuffer(result)
+      // release the compressed buffer
+      releaseExecutionMemory(result, COMPRESSION_OWNER, releaseBuffer = true)
       input
     }
   }
