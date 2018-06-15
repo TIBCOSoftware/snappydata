@@ -43,7 +43,8 @@ object CompressionCodecId extends Enumeration {
    * in rare cases if first integer is a negative value. However it should never be match
    * with the IDs here because negative of codecId which is written are -1, -2, -3 resolve
    * to 0xfffffff... which should never happen since nullCount fields are non-nullable
-   * in the UnsafeRow created, so bitset cannot have 'ff' kind of patterns.
+   * (for not updated columns we keep -1 in null count)
+    * in the UnsafeRow created, so bitset cannot have 'ff' kind of patterns.
    */
   def isCompressed(codec: Int): Boolean = codec > 0 && codec <= MAX_ID
 

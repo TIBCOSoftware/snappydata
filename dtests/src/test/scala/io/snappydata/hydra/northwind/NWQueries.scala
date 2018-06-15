@@ -430,6 +430,11 @@ object NWQueries {
       " year(OrderDate)" +
       " order by a.ProductName, d.CompanyName"
 
+  val Q61: String = "SELECT OrderDate, count(1) from Orders group by OrderDate order by  " +
+      "OrderDate asc"
+
+  val Q62: String = "SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate"
+
   val queries = List(
     "Q1" -> Q1,
     "Q2" -> Q2,
@@ -461,6 +466,8 @@ object NWQueries {
     "Q28" -> Q28,
     "Q29" -> Q29,
     "Q30" -> Q30,
+    "Q61" -> Q61,
+    "Q62" -> Q62,
     "Q31" -> Q31,
     "Q32" -> Q32,
     "Q33" -> Q33,

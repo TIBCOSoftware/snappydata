@@ -39,7 +39,7 @@ Provides different trade-offs between memory usage and CPU efficiency.
 
 `rowConverter`</br>
 Converts the unstructured streaming data to a set of rows.
-      
+
 `topics`</br>
 Subscribed Kafka topics.
 
@@ -88,7 +88,7 @@ snappy> create stream table streamTable (id long, text string, fullName string, 
 snappy> streaming start;
 
 //Run ad-hoc queries on the streamTable on current batch of data
-snappy> select id, text, fullName from streamTable where text like '%snappy%'
+snappy> select id, text, fullName from streamTable where text like '%snappy%';
 
 // Drop the streamTable
 snappy> drop table streamTable;

@@ -4,7 +4,7 @@
 !!! Note:
 	Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
-## Build all components of SnappyData
+## Build all Components of SnappyData
  
 **Latest release branch**
 ```no-highlight
@@ -22,7 +22,7 @@
 
 The product is in **build-artifacts/scala-2.11/snappy**
 
-## Build only the top-level components
+## Build only the Top-level Components
 
 Use this option if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):
 
@@ -40,7 +40,7 @@ Use this option if you want to build only the top-level SnappyData project and p
 > ./gradlew product
 ```
 
-## Repository layout
+## Repository Layout
 
 - **core** - Extensions to Apache Spark that should not be dependent on SnappyData Spark additions, job server etc. It is also the bridge between _spark_ and _store_ (GemFireXD). For example, SnappyContext, row and column store, streaming additions etc.
 
@@ -95,7 +95,7 @@ Useful build and test targets:
                            and also full SnappyData store testsuite
 ```
 
-The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is *store* project, where the default build directory is *build-artifacts/;os*; where; *;os;* is *linux* on Linux systems, *osx* on Mac, *windows* on Windows.
+The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is *store* project, where the default build directory is *_build-artifacts/<os>_*; where; *os* is *linux* on Linux systems, *osx* on Mac, *windows* on Windows.
 
 The usual Gradle test run targets (_test_, _check_) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (_scalaTest_) while the _check_ target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with _singleSuite_ option while running a single test within some suite works with the `--tests` option:
 
@@ -116,7 +116,7 @@ To import into IntelliJ IDEA:
 
 * Upgrade IntelliJ IDEA to version 2016.x, including the latest Scala plug-in. Older versions (pre 14.x) have trouble dealing with Scala code, particularly some of the code in Spark. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via *JAVA_HOME*).
 
-* Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase `-Xmx` option to be something like *-Xmx=2g* for comfortable use.
+* Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase `-Xmx` option to be something like *-Xmx2g* for comfortable use.
 
 * Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Clear the **Create separate module per source set** option, while other options can continue with the default . Click **Next** in the following screens.<br/>
     
