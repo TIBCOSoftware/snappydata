@@ -1,6 +1,6 @@
 <a id="howto-statuscluster"></a>
 # How to Check the Status of the SnappyData Cluster
-You can check the status of a running cluster using the following command:
+You can check the status of a **running cluster** using the following command:
 
 
 ```no-highlight
