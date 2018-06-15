@@ -34,46 +34,44 @@ class ExecuteQueriesJob extends SnappySQLJob {
 
     val outputFile = "ExecuteQueries_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
-    /*val sc = SparkContext.getOrCreate()
-    val sqlContext = SQLContext.getOrCreate(sc)*/
     var query: String = null;
     Try {
-      //snc.sql("set spark.sql.shuffle.partitions=23")
-
+      // scalastyle:off println
       pw.println(s"ExecuteQueries job started at" +
           s" :  " + System.currentTimeMillis)
-      //query = "select datekey, count(1) from test_table group by datekey order by datekey asc";
-      query = "select count(1) from test_table";
+      // query = "select datekey, count(1) from mbl_test_scd group by datekey order by datekey asc";
+      query = "select count(1) from mbl_test_scd";
       var start = System.currentTimeMillis
       snc.sql(query)
-      //SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
+      // SnappyTestUtils.assertQueryFullResultSet(snc, query, "Q1", "column", pw, sqlContext)
       var end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
           (end - start) + " ms")
-      /*query = "select count(*) from test_table"
+      query = "select count(*) from mbl_test_scd"
       start = System.currentTimeMillis
       snc.sql(query).show(5)
       end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
           (end - start) + " ms")
-      query = "select ID from test_table group by ID order by ID asc"
+      query = "select ID from mbl_test_scd group by ID order by ID asc"
       start = System.currentTimeMillis
       snc.sql(query).show(5)
       end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
           (end - start) + " ms")
-      query = "select COMP_PRICE1, VALID_STATUS from test_table WHERE ID >= 25000 AND ID <= 50000000"
+      query = "select COMP_PRICE1, VALID_STATUS from mbl_test_scd" +
+          " WHERE ID >= 25000 AND ID <= 50000000"
       start = System.currentTimeMillis
       snc.sql(query).show(5)
       end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
           (end - start) + " ms")
-      query = "select CHECKIN_DATE, CHECKOUT_DATE from test_table WHERE ID IN (500, 25000000)"
+      query = "select CHECKIN_DATE, CHECKOUT_DATE from mbl_test_scd WHERE ID IN (500, 25000000)"
       start = System.currentTimeMillis
       snc.sql(query).show(5)
       end = System.currentTimeMillis
       pw.println(s"\nExecution Time for $query: " +
-          (end - start) + " ms")*/
+          (end - start) + " ms")
       pw.println(s"ExecuteQueries job completed  " +
           s"successfully at : " + System.currentTimeMillis)
       pw.close()

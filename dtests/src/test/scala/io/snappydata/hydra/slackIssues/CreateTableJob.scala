@@ -30,7 +30,7 @@ class CreateTableJob extends SnappySQLJob {
     val outputFile = "CreateTableJob_" + jobConfig.getString("logFileName")
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     Try {
-      snappySession.sql("create table if not exists test_table(" +
+      snappySession.sql("create table if not exists mbl_test_scd(" +
           " ID BIGINT," +
           " DATEKEY INTEGER," +
           " CHECKIN_DATE INTEGER," +
@@ -90,6 +90,151 @@ class CreateTableJob extends SnappySQLJob {
           // " COLOCATE_WITH 'OE_DIM_POI'," +
           " REDUNDANCY '0'," +
           " PERSISTENCE 'ASYNC', OVERFLOW 'true')")
+
+      snappySession.sql("create table if not exists comp_5_min( " +
+          " id bigint, " +
+          " datekey int, " +
+          " checkin_date int, " +
+          " checkout_date int, " +
+          " crawl_time bigint, " +
+          " batch int, " +
+          " source int, " +
+          " is_high_star int, " +
+          " mt_poi_id bigint, " +
+          " mr_room_id bigint, " +
+          " mt_breakfast int, " +
+          " mt_goods_id bigint, " +
+          " mt_bd_id int, " +
+          " mt_goods_vendor_id bigint, " +
+          " mr_business_type int, " +
+          " mt_room_status int, " +
+          " mt_poi_uv int, " +
+          " mt_price1 int, " +
+          " mt_price2 int, " +
+          " mt_price3 int, " +
+          " mt_price4 int, " +
+          " mt_price5 int, " +
+          " mt_price6 int, " +
+          " mt_price7 int, " +
+          " mt_price8 int, " +
+          " mt_flag1 int, " +
+          " mt_flag2 int, " +
+          " mt_flag3 int, " +
+          " comp_site_id int, " +
+          " comp_poi_id varchar(200), " +
+          " comp_room_id long, " +
+          " comp_breakfast tinyint, " +
+          " comp_goods_id varchar(200), " +
+          " comp_goods_vendor varchar(200), " +
+          " comp_room_status tinyint, " +
+          " comp_is_promotion tinyint, " +
+          " comp_pay_type tinyint, " +
+          " comp_goods_type tinyint, " +
+          " comp_price1 int, " +
+          " comp_price2 int, " +
+          " comp_price3 int, " +
+          " comp_price4 int, " +
+          " comp_price5 int, " +
+          " comp_price6 int, " +
+          " comp_price7 int, " +
+          " comp_price8 int, " +
+          " comp_flag1 tinyint, " +
+          " comp_flag2 tinyint, " +
+          " comp_flag3 tinyint, " +
+          " valid_status tinyint, " +
+          " gmt_time timestamp, " +
+          " version timestamp, " +
+          " interval_days int, " +
+          " real_batch bigint, " +
+          " start_time_long bigint, " +
+          " end_time_long bigint, " +
+          " start_time bigint, " +
+          " end_time bigint, " +
+          " start_real_batch bigint, " +
+          " end_real_batch bigint, " +
+          " flag int, " +
+          " insert_time bigint " +
+          " )USING column OPTIONS( " +
+          " PARTITION_BY 'mt_poi_id', " +
+          /* " DISKSTORE 'mblStore1', " + */
+          /* " COLOCATE_WITH 'test_table', " + */
+          " REDUNDANCY '0', " +
+          " BUCKETS '383', " +
+          " PERSISTENCE 'ASYNC', " +
+          " OVERFLOW 'true')")
+
+      snappySession.sql("create table if not exists oe_stream_comp_data_for_mbl( " +
+          " id long, " +
+          " datekey int, " +
+          " checkin_date int, " +
+          " checkout_date int, " +
+          " crawl_time int, " +
+          " batch tinyint, " +
+          " source tinyint, " +
+          " is_high_star tinyint, " +
+          " mt_poi_id bigint, " +
+          " mt_room_id bigint, " +
+          " mt_breakfast tinyint, " +
+          " mt_goods_id bigint, " +
+          " mt_bd_id int, " +
+          " mt_goods_vendor_id long, " +
+          " mt_business_type tinyint, " +
+          " mt_room_status tinyint, " +
+          " mt_poi_uv int, " +
+          " mt_price1 int, " +
+          " mt_price2 int, " +
+          " mt_price3 int, " +
+          " mt_price4 int, " +
+          " mt_price5 int, " +
+          " mt_price6 int, " +
+          " mt_price7 int, " +
+          " mt_price8 int, " +
+          " mt_flag1 tinyint, " +
+          " mt_flag2 tinyint, " +
+          " mt_flag3 tinyint, " +
+          " comp_site_id int, " +
+          " comp_poi_id varchar(200), " +
+          " comp_room_id long, " +
+          " comp_breakfast tinyint, " +
+          " comp_goods_id varchar(200), " +
+          " comp_goods_vendor varchar(200), " +
+          " comp_room_status tinyint, " +
+          " comp_is_promotion tinyint, " +
+          " comp_pay_type tinyint, " +
+          " comp_goods_type tinyint, " +
+          " comp_price1 int, " +
+          " comp_price2 int, " +
+          " comp_price3 int, " +
+          " comp_price4 int, " +
+          " comp_price5 int, " +
+          " comp_price6 int, " +
+          " comp_price7 int, " +
+          " comp_price8 int, " +
+          " comp_flag1 tinyint, " +
+          " comp_flag2 tinyint, " +
+          " comp_flag3 tinyint, " +
+          " valid_status tinyint, " +
+          " gmt_time timestamp, " +
+          " version timestamp, " +
+          " interval_days int, " +
+          " real_batch bigint, " +
+          " start_time_long bigint, " +
+          " end_time_long bigint, " +
+          " start_time bigint, " +
+          " end_time bigint, " +
+          " start_real_batch bigint, " +
+          " end_real_batch bigint, " +
+          " flag int, " +
+          " insert_time bigint " +
+          " )USING column OPTIONS(" +
+          " PARTITION_BY 'mt_poi_id', " +
+          /* " DISKSTORE 'mblStore1', " +
+          " COLOCATE_WITH 'OE_DIM_POI', " + */
+          " REDUNDANCY '0', " +
+          " BUCKETS '383', " +
+          " PERSISTENCE 'ASYNC', " +
+          " OVERFLOW 'true' " +
+          " )")
 
       pw.close()
 

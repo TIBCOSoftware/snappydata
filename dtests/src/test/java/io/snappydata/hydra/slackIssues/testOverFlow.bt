@@ -12,6 +12,6 @@ io/snappydata/hydra/slackIssues/dmlOPsTestWithOverflow.conf
   A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=20
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  numRows="25000000"
-  //numRows="40000"
+  numRows="10000000"
+  //numRows="1000"
   performDMLOps=true
