@@ -50,3 +50,31 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
     Array(resultRow)
   }
 }
+
+case class ColumnDeltaInsertExec(insertPlan: SparkPlan,
+    updatePlan: SparkPlan) extends BinaryExecNode {
+
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
+
+  override def left: SparkPlan = insertPlan
+
+  override def right: SparkPlan = updatePlan
+
+  override protected def doExecute(): RDD[InternalRow] = {
+    val resultRow = executeCollect()
+    sqlContext.sparkContext.parallelize(resultRow, 1)
+  }
+
+  override def executeCollect(): Array[InternalRow] = {
+    // Then insert the rows which are not there in the table
+    val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
+    // First update the rows which are present in the table
+    val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
+    val resultRow = new UnsafeRow(1)
+    val data = new Array[Byte](32)
+    resultRow.pointTo(data, 32)
+    resultRow.setLong(0, i + u)
+    Array(resultRow)
+  }
+}

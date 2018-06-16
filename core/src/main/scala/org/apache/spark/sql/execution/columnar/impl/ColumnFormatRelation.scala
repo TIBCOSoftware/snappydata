@@ -515,7 +515,8 @@ class ColumnFormatRelation(
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
-    val columnSortedOrder: String = "")
+    val columnSortedOrder: String = "",
+    val isDeltaInsert: Boolean = false)
   extends BaseColumnFormatRelation(
     _table,
     _provider,
@@ -527,7 +528,7 @@ class ColumnFormatRelation(
     _externalStore,
     _partitioningColumns,
     _context)
-  with ParentRelation with DependentRelation with BulkPutRelation {
+  with ParentRelation with DependentRelation with BulkPutRelation with DeltaInsertRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
@@ -675,6 +676,10 @@ class ColumnFormatRelation(
   /** Name of this relation in the catalog. */
   override def name: String = table
 
+  override def getDeltaInsertPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
+    ColumnDeltaInsertExec(insertPlan, updatePlan)
+  }
+
   /**
     * Get a spark plan for puts. If the row is already present, it gets updated
     * otherwise it gets inserted into the table represented by this relation.
@@ -690,6 +695,19 @@ class ColumnFormatRelation(
       case Some(x) => Some(x.split(",").map(s => s.trim).toSeq)
       case None => None
     }
+  }
+
+  override def equals(that: Any): Boolean = {
+    val se = super.equals(that)
+    // Handle InsertIntoTable rule of PreWriteCheck
+    if (se && (StoreUtils.isColumnBatchSortedAscending(columnSortedOrder) ||
+        StoreUtils.isColumnBatchSortedDescending(columnSortedOrder))) {
+      that match {
+        case cfr: ColumnFormatRelation if cfr.isDeltaInsert =>
+          isDeltaInsert
+        case _ => se
+      }
+    } else se
   }
 }
 

@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, DeltaInsertFullO
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -41,41 +41,52 @@ object ColumnTableBulkOps {
   def transformInsertPlan(sparkSession: SparkSession,
       originalPlan: InsertIntoTable): LogicalPlan = {
     val table = originalPlan.table
-    val subQuery = originalPlan.child
+    val newTableOption = table match {
+      case LogicalRelation(cr: ColumnFormatRelation, b, a) =>
+        Some(LogicalRelation(new ColumnFormatRelation(cr.table, cr.provider,
+          cr.mode, originalPlan.table.schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
+          cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
+          cr.columnSortedOrder, isDeltaInsert = true), b, a))
+      case _ => None
+    }
     var transFormedPlan: LogicalPlan = originalPlan
 
-    table.collectFirst {
-      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
-        val partitionColumns = mutable.partitionColumns
-        if (partitionColumns.isEmpty) {
-          throw new AnalysisException(
-            s"Insert in a table requires partitioning column(s) but got empty string")
-        }
-        val columnSorting = mutable match {
-          case c: ColumnFormatRelation => c.columnSortedOrder
-          case _ => ""
-        }
-        if (StoreUtils.isColumnBatchSortedAscending(columnSorting) ||
-            StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
-          val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
-            changeCondition = true)
+    if (newTableOption.isDefined) {
+      val newTable = newTableOption.get
+      val subQuery = originalPlan.child
 
-          val keyColumns = getKeyColumns(table)
-          var updateSubQuery: LogicalPlan = DeltaInsertFullOuterJoin(table, subQuery, condition)
-          val updateColumns = table.output
-          val updateExpressions = updateSubQuery.output.takeRight(updateColumns.length)
-          if (updateExpressions.isEmpty) {
+      table.collectFirst {
+        case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+          val partitionColumns = mutable.partitionColumns
+          if (partitionColumns.isEmpty) {
             throw new AnalysisException(
-              s"PutInto is attempted without any column which can be updated." +
-                  s" Provide some columns apart from key column(s)")
+              s"Insert in a table requires partitioning column(s) but got empty string")
           }
+          val columnSorting = mutable match {
+            case c: ColumnFormatRelation => c.columnSortedOrder
+            case _ => ""
+          }
+          if (StoreUtils.isColumnBatchSortedAscending(columnSorting) ||
+              StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
+            val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
+              changeCondition = true)
+            var updateSubQuery: LogicalPlan = DeltaInsertFullOuterJoin(table, subQuery, condition)
+            val updatePlan = Update(table, updateSubQuery,
+              // Project(table.output ++ ColumnDelta.mutableKeyAttributes, updateSubQuery),
+              Seq.empty, table.output, subQuery.output)
+            val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
+            val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+            // updateSubQuery = analyzedUpdate.child
 
-          val updatePlan = Update(table, updateSubQuery, Seq.empty,
-            updateColumns, updateExpressions)
-          val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
-          transFormedPlan = updateDS.queryExecution.analyzed.asInstanceOf[Update]
-        } else originalPlan
-      case _ => // Do nothing, original insert plan is enough
+            var insertSubQuery: LogicalPlan = DeltaInsertFullOuterJoin(table, subQuery, condition)
+            val insertPlan = new Insert(newTable, Map.empty[String,
+                Option[String]], Project(subQuery.output, insertSubQuery),
+              OverwriteOptions(enabled = false), ifNotExists = false)
+
+            transFormedPlan = DeltaInsertIntoColumnTable(table, insertPlan, analyzedUpdate)
+          } else originalPlan
+        case _ => // Do nothing, original insert plan is enough
+      }
     }
     transFormedPlan
   }
@@ -234,6 +245,24 @@ object ColumnTableBulkOps {
 }
 
 case class PutIntoColumnTable(table: LogicalPlan,
+    insert: Insert, update: Update) extends BinaryNode {
+
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
+
+  override lazy val resolved: Boolean = childrenResolved &&
+      update.output.zip(insert.output).forall {
+        case (updateAttr, insertAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(updateAttr.dataType,
+            insertAttr.dataType)
+      }
+
+  override def left: LogicalPlan = update
+
+  override def right: LogicalPlan = insert
+}
+
+case class DeltaInsertIntoColumnTable(table: LogicalPlan,
     insert: Insert, update: Update) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
