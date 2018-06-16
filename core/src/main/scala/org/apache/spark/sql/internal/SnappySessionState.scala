@@ -489,7 +489,11 @@ class SnappySessionState(snappySession: SnappySession)
         ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
       case p@PutIntoTable(_, child) if child.resolved =>
         ColumnTableBulkOps.transformPutPlan(sparkSession, p)
-      case i@InsertIntoTable(table: LogicalPlan, _, child, _, _) if child.resolved =>
+      case i@InsertIntoTable(table: LogicalPlan, _, child, _, _) if child.resolved
+        && (child find {
+          case d: DeltaInsertFullOuterJoin => true
+          case _ => false
+        }).isEmpty =>
         ColumnTableBulkOps.transformInsertPlan(sparkSession, i)
     }
 

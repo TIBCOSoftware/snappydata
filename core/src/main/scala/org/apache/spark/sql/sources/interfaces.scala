@@ -82,6 +82,11 @@ trait BulkPutRelation extends DestroyRelation {
   def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan
 }
 
+trait DeltaInsertRelation extends DestroyRelation {
+
+  def getDeltaInsertPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan
+}
+
 @DeveloperApi
 trait SingleRowInsertableRelation {
   /**
