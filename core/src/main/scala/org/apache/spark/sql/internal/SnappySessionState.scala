@@ -36,7 +36,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, DeltaInsertFullOuterJoin, InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
@@ -429,7 +429,7 @@ class SnappySessionState(snappySession: SnappySession)
       case u@Update(table, child, keyColumns, updateCols, updateExprs)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         val caseOfDeltaInsert: Boolean = (u find {
-          case d: DeltaInsertFullOuterJoin => true
+          case d: DeltaInsertNode => true
           case _ => false
         }).isDefined
         // add the key columns to the plan
@@ -491,7 +491,7 @@ class SnappySessionState(snappySession: SnappySession)
         ColumnTableBulkOps.transformPutPlan(sparkSession, p)
       case i@InsertIntoTable(table: LogicalPlan, _, child, _, _) if child.resolved
         && (child find {
-          case d: DeltaInsertFullOuterJoin => true
+          case d: DeltaInsertNode => true
           case _ => false
         }).isEmpty =>
         ColumnTableBulkOps.transformInsertPlan(sparkSession, i)
@@ -950,7 +950,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
 
   private val storeOptimizedRules: Seq[Strategy] =
     Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies,
-      SortMergeJoinForDeltaInsertStrategies)
+      DeltaInsertOnSortMergeJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

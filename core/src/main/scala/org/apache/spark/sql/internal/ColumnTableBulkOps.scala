@@ -19,9 +19,9 @@ package org.apache.spark.sql.internal
 import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, DeltaInsertFullOuterJoin, InsertIntoTable, Join, LogicalPlan, OverwriteOptions, Project}
-import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, InsertIntoTable, Join, LogicalPlan, OverwriteOptions, Project, UnaryNode}
+import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatRelation}
@@ -70,20 +70,20 @@ object ColumnTableBulkOps {
               StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
             val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
               changeCondition = true)
-            var updateSubQuery: LogicalPlan = DeltaInsertFullOuterJoin(table, subQuery, condition)
-            val updatePlan = Update(table, updateSubQuery,
-              // Project(table.output ++ ColumnDelta.mutableKeyAttributes, updateSubQuery),
-              Seq.empty, table.output, subQuery.output)
-            val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
-            val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
-            // updateSubQuery = analyzedUpdate.child
+            var joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
+            val joinDS = new Dataset(sparkSession, joinSubQuery, RowEncoder(joinSubQuery.schema))
+            joinDS.cache()
+            val analyzedJoin = joinDS.queryExecution.analyzed.asInstanceOf[Join]
 
-            var insertSubQuery: LogicalPlan = DeltaInsertFullOuterJoin(table, subQuery, condition)
+            val updateSubQuery: LogicalPlan = DeltaInsertNode(analyzedJoin, false)
+            val updatePlan = Update(table, updateSubQuery, Seq.empty, table.output, subQuery.output)
+
+            val insertSubQuery: LogicalPlan = DeltaInsertNode(analyzedJoin, true)
             val insertPlan = new Insert(newTable, Map.empty[String,
                 Option[String]], Project(subQuery.output, insertSubQuery),
               OverwriteOptions(enabled = false), ifNotExists = false)
 
-            transFormedPlan = DeltaInsertIntoColumnTable(table, insertPlan, analyzedUpdate)
+            transFormedPlan = ColumnTableInsert(table, insertPlan, updatePlan)
           } else originalPlan
         case _ => // Do nothing, original insert plan is enough
       }
@@ -244,7 +244,7 @@ object ColumnTableBulkOps {
   }
 }
 
-case class PutIntoColumnTable(table: LogicalPlan,
+abstract class BasePutIntoColumnTable(table: LogicalPlan,
     insert: Insert, update: Update) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
@@ -262,20 +262,13 @@ case class PutIntoColumnTable(table: LogicalPlan,
   override def right: LogicalPlan = insert
 }
 
-case class DeltaInsertIntoColumnTable(table: LogicalPlan,
-    insert: Insert, update: Update) extends BinaryNode {
+case class PutIntoColumnTable(table: LogicalPlan, insert: Insert, update: Update) extends
+    BasePutIntoColumnTable(table, insert, update)
 
-  override lazy val output: Seq[Attribute] = AttributeReference(
-    "count", LongType)() :: Nil
+case class ColumnTableInsert(table: LogicalPlan, insert: Insert, update: Update) extends
+    BasePutIntoColumnTable(table, insert, update)
 
-  override lazy val resolved: Boolean = childrenResolved &&
-      update.output.zip(insert.output).forall {
-        case (updateAttr, insertAttr) =>
-          DataType.equalsIgnoreCompatibleNullability(updateAttr.dataType,
-            insertAttr.dataType)
-      }
-
-  override def left: LogicalPlan = update
-
-  override def right: LogicalPlan = insert
+case class DeltaInsertNode(child: LogicalPlan, isDirectInsert: Boolean) extends UnaryNode with
+    PredicateHelper {
+  override def output: Seq[Attribute] = child.output
 }
