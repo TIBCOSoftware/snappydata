@@ -21,6 +21,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.joins.SortMergeJoinExec
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan, UnaryExecNode}
@@ -63,23 +64,33 @@ case class DeltaInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child) 
 
   protected override def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
-    val out = output
-    // TODO VB: remove this
-    // scalastyle:off println
-    println(s" DeltaInsertExec $out")
-    // scalastyle:on println
+    val keyAttributes = ColumnDelta.mutableKeyAttributes.map(_.name)
+    val out = output.map(_.name)
+    val keyAttributeIndices = Seq(out.indexOf(keyAttributes.head), out.indexOf(keyAttributes(1)),
+      out.indexOf(keyAttributes(2)), out.indexOf(keyAttributes(3)))
+
     child.execute().mapPartitionsWithIndexInternal { (index, iter) =>
+      var lastRowOrdinal: Long = Long.MinValue
+      var lastBatchId: Long = Long.MinValue
+      var lastBucketOrdinal: Integer = Int.MinValue
+      var lastBatchNumrows: Integer = Int.MinValue
       iter.filter { row =>
-        out.indices.foreach(i => {
-          val attr = out(i)
-          print(s" [$i, ${row.get(i, attr.dataType)}]")
-        })
-        // TODO VB: remove this
-        // scalastyle:off println
-        println()
-        // scalastyle:on println
+        val allNulls = keyAttributeIndices.forall(i => row.isNullAt(i))
+        if (!allNulls) {
+          lastRowOrdinal = row.getLong(keyAttributeIndices.head)
+          lastBatchId = row.getLong(keyAttributeIndices(1))
+          lastBucketOrdinal = row.getInt(keyAttributeIndices(2))
+          lastBatchNumrows = row.getInt(keyAttributeIndices(3))
+        }
+        allNulls && (lastRowOrdinal > Long.MinValue) && (lastBatchId > Long.MinValue) &&
+            (lastBucketOrdinal > Int.MinValue) && (lastBatchNumrows > Int.MinValue)
+      }.map { row =>
         numOutputRows += 1
-        true
+        row.setLong(keyAttributeIndices.head, lastRowOrdinal)
+        row.setLong(keyAttributeIndices(1), lastBatchId)
+        row.setInt(keyAttributeIndices(2), lastBucketOrdinal)
+        row.setInt(keyAttributeIndices(3), lastBatchNumrows)
+        row
       }
     }
   }
@@ -92,16 +103,16 @@ case class DirectInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child)
     child.execute().mapPartitionsWithIndexInternal { (index, iter) =>
       var stopScan = false
       iter.filter { row =>
-          if (!stopScan) {
-            val allNulls = output.indices.forall(i => row.isNullAt(i))
-            if (!allNulls) {
-              numOutputRows += 1
-              true
-            } else {
-              stopScan = true
-              false
-            }
-          } else false
+        if (!stopScan) {
+          val allNulls = output.indices.forall(i => row.isNullAt(i))
+          if (!allNulls) {
+            numOutputRows += 1
+            true
+          } else {
+            stopScan = true
+            false
+          }
+        } else false
       }
     }
   }
