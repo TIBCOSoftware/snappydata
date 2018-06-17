@@ -89,23 +89,19 @@ case class DirectInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child)
 
   protected override def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
-    val out = output
-    // TODO VB: remove this
-    // scalastyle:off println
-    println(s" DirectInsertExec $out")
-    // scalastyle:on println
     child.execute().mapPartitionsWithIndexInternal { (index, iter) =>
+      var stopScan = false
       iter.filter { row =>
-        out.indices.foreach(i => {
-          val attr = out(i)
-          print(s" [$i, ${row.get(i, attr.dataType)}]")
-        })
-        // TODO VB: remove this
-        // scalastyle:off println
-        println()
-        // scalastyle:on println
-        numOutputRows += 1
-        true
+          if (!stopScan) {
+            val allNulls = output.indices.forall(i => row.isNullAt(i))
+            if (!allNulls) {
+              numOutputRows += 1
+              true
+            } else {
+              stopScan = true
+              false
+            }
+          } else false
       }
     }
   }
