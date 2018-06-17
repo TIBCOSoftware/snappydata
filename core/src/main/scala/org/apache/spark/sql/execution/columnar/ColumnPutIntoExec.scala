@@ -43,10 +43,6 @@ abstract class BaseColumnPutIntoExec(insertPlan: SparkPlan,
     val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table
     val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
-    returnExecuteCollect(i, u)
-  }
-
-  protected def returnExecuteCollect(i: Long, u: Long): Array[InternalRow] = {
     val resultRow = new UnsafeRow(1)
     val data = new Array[Byte](32)
     resultRow.pointTo(data, 32)
@@ -60,12 +56,4 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan, updatePlan: SparkPlan) exten
 
 case class ColumnTableInsertExec(insertPlan: SparkPlan, updatePlan: SparkPlan) extends
     BaseColumnPutIntoExec(insertPlan, updatePlan) {
-
-  override def executeCollect(): Array[InternalRow] = {
-    // First insert the rows which are not there in the table
-    val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
-    // then update the rows which are present in the table
-    val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
-    returnExecuteCollect(i, u)
-  }
 }
