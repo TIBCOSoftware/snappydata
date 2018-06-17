@@ -23,7 +23,7 @@ import org.apache.spark.sql.execution.{BinaryExecNode, SparkPlan}
 import org.apache.spark.sql.types.LongType
 
 
-case class ColumnPutIntoExec(insertPlan: SparkPlan,
+abstract class BaseColumnPutIntoExec(insertPlan: SparkPlan,
     updatePlan: SparkPlan) extends BinaryExecNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
@@ -43,6 +43,10 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
     val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table
     val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
+    returnExecuteCollect(i, u)
+  }
+
+  protected def returnExecuteCollect(i: Long, u: Long): Array[InternalRow] = {
     val resultRow = new UnsafeRow(1)
     val data = new Array[Byte](32)
     resultRow.pointTo(data, 32)
@@ -51,30 +55,17 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
   }
 }
 
-case class ColumnDeltaInsertExec(insertPlan: SparkPlan,
-    updatePlan: SparkPlan) extends BinaryExecNode {
+case class ColumnPutIntoExec(insertPlan: SparkPlan, updatePlan: SparkPlan) extends
+    BaseColumnPutIntoExec(insertPlan, updatePlan)
 
-  override lazy val output: Seq[Attribute] = AttributeReference(
-    "count", LongType)() :: Nil
-
-  override def left: SparkPlan = insertPlan
-
-  override def right: SparkPlan = updatePlan
-
-  override protected def doExecute(): RDD[InternalRow] = {
-    val resultRow = executeCollect()
-    sqlContext.sparkContext.parallelize(resultRow, 1)
-  }
+case class ColumnTableInsertExec(insertPlan: SparkPlan, updatePlan: SparkPlan) extends
+    BaseColumnPutIntoExec(insertPlan, updatePlan) {
 
   override def executeCollect(): Array[InternalRow] = {
-    // Then insert the rows which are not there in the table
+    // First insert the rows which are not there in the table
     val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
-    // First update the rows which are present in the table
+    // then update the rows which are present in the table
     val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
-    val resultRow = new UnsafeRow(1)
-    val data = new Array[Byte](32)
-    resultRow.pointTo(data, 32)
-    resultRow.setLong(0, i + u)
-    Array(resultRow)
+    returnExecuteCollect(i, u)
   }
 }

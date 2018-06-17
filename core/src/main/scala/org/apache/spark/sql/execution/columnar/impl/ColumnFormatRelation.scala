@@ -528,7 +528,7 @@ class ColumnFormatRelation(
     _externalStore,
     _partitioningColumns,
     _context)
-  with ParentRelation with DependentRelation with BulkPutRelation with DeltaInsertRelation {
+  with ParentRelation with DependentRelation with BulkPutRelation with ColumnTableInsertRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
@@ -676,8 +676,8 @@ class ColumnFormatRelation(
   /** Name of this relation in the catalog. */
   override def name: String = table
 
-  override def getDeltaInsertPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
-    ColumnDeltaInsertExec(insertPlan, updatePlan)
+  override def getColumnTableInsertPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
+    ColumnTableInsertExec(insertPlan, updatePlan)
   }
 
   /**

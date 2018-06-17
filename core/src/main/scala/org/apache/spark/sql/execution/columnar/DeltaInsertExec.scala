@@ -20,15 +20,15 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnknownPartitioning, UnspecifiedDistribution}
+import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.joins.SortMergeJoinExec
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan, UnaryExecNode}
 
 /**
- * Performs a sort merge join of two child relations.
+ * On top of sort merge join of two child relations.
  */
-case class DeltaInsertExec(child: SparkPlan) extends UnaryExecNode with CodegenSupport {
+abstract class BaseDeltaInsertExec(child: SparkPlan) extends UnaryExecNode with CodegenSupport {
 
   override def output: Seq[Attribute] = child.output
 
@@ -48,17 +48,6 @@ case class DeltaInsertExec(child: SparkPlan) extends UnaryExecNode with CodegenS
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
-  protected override def doExecute(): RDD[InternalRow] = {
-    // child.execute()
-    val numOutputRows = longMetric("numOutputRows")
-    child.execute().mapPartitionsWithIndexInternal { (index, iter) =>
-      iter.filter { row =>
-        numOutputRows += 1
-        true
-      }
-    }
-  }
-
   override def supportCodegen: Boolean = false
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = if (child.isInstanceOf[SortMergeJoinExec]) {
@@ -68,4 +57,56 @@ case class DeltaInsertExec(child: SparkPlan) extends UnaryExecNode with CodegenS
   override def doProduce(ctx: CodegenContext): String = if (child.isInstanceOf[SortMergeJoinExec]) {
     child.asInstanceOf[SortMergeJoinExec].doProduce(ctx)
   } else ""
+}
+
+case class DeltaInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child) {
+
+  protected override def doExecute(): RDD[InternalRow] = {
+    val numOutputRows = longMetric("numOutputRows")
+    val out = output
+    // TODO VB: remove this
+    // scalastyle:off println
+    println(s" DeltaInsertExec $out")
+    // scalastyle:on println
+    child.execute().mapPartitionsWithIndexInternal { (index, iter) =>
+      iter.filter { row =>
+        out.indices.foreach(i => {
+          val attr = out(i)
+          print(s" [$i, ${row.get(i, attr.dataType)}]")
+        })
+        // TODO VB: remove this
+        // scalastyle:off println
+        println()
+        // scalastyle:on println
+        numOutputRows += 1
+        true
+      }
+    }
+  }
+}
+
+case class DirectInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child) {
+
+  protected override def doExecute(): RDD[InternalRow] = {
+    val numOutputRows = longMetric("numOutputRows")
+    val out = output
+    // TODO VB: remove this
+    // scalastyle:off println
+    println(s" DirectInsertExec $out")
+    // scalastyle:on println
+    child.execute().mapPartitionsWithIndexInternal { (index, iter) =>
+      iter.filter { row =>
+        out.indices.foreach(i => {
+          val attr = out(i)
+          print(s" [$i, ${row.get(i, attr.dataType)}]")
+        })
+        // TODO VB: remove this
+        // scalastyle:off println
+        println()
+        // scalastyle:on println
+        numOutputRows += 1
+        true
+      }
+    }
+  }
 }

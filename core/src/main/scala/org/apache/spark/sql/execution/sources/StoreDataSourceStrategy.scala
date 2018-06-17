@@ -39,11 +39,12 @@ import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, DeltaInsertFullOuterJoin, Join, LogicalPlan, Project, Filter => LFilter}
+import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, Join, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
+import org.apache.spark.sql.internal.DeltaInsertNode
 import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
 
@@ -56,7 +57,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = {
     val caseOfDeltaInsert: Boolean = (plan find {
-      case d: DeltaInsertFullOuterJoin => true
+      case d: DeltaInsertNode => true
       case _ => false
     }).isDefined
     plan match {

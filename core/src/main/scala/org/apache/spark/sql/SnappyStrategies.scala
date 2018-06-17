@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
 import io.snappydata.Property
@@ -25,7 +24,7 @@ import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
-import org.apache.spark.sql.catalyst.planning.{ExtractDeltaInsertFullOuterJoinKeys, ExtractEquiJoinKeys, PhysicalAggregation}
+import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans._
@@ -33,13 +32,12 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
-import org.apache.spark.sql.execution.columnar.{DeltaInsertExec, ColumnTableScan, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{DeltaInsertExec, DirectInsertExec, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, SQLConf}
-import org.apache.spark.sql.sources.{MutableRelation, Update}
+import org.apache.spark.sql.internal.{DefaultPlanner, DeltaInsertNode, JoinQueryPlanning, SQLConf}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -76,19 +74,14 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  object SortMergeJoinForDeltaInsertStrategies extends Strategy with JoinQueryPlanning {
+  object DeltaInsertOnSortMergeJoinStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
       plan match {
-        case ExtractDeltaInsertFullOuterJoinKeys(leftKeys, rightKeys, condition, left,
-        right) if RowOrdering.isOrderable(leftKeys) =>
-          val leftPlan = planLater(left)
-          val rightPlan = planLater(right)
-          val child = joins.SortMergeJoinExec(leftKeys, rightKeys, FullOuter, condition, leftPlan,
-            rightPlan)
-          val sortedInsert = DeltaInsertExec(child)
-          sortedInsert :: Nil
+        case DeltaInsertNode(child, isDirectInsert) =>
+          if (isDirectInsert) DirectInsertExec(planLater(child)) :: Nil
+          else DeltaInsertExec(planLater(child)) :: Nil
         case _ => Nil
       }
     }
