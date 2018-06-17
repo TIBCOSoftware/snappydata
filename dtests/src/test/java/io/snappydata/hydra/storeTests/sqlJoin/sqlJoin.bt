@@ -14,11 +14,6 @@ io/snappydata/hydra/storeTests/sqlJoin/concJoinCustSecPortfolioUniqHashPartition
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
 
-io/snappydata/hydra/storeTests/sqlJoin/concJoinCustSecPortfolioUniqRangePartitionOneRepl.conf
-    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
-    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
-    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-
 io/snappydata/hydra/storeTests/sqlJoin/concJoinCustSecPortfSoUniqHashPartitionOneRepl.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
@@ -30,18 +25,13 @@ io/snappydata/hydra/storeTests/sqlJoin/serialJoinCustSecPortfolioNonUniqHashPart
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
 
-io/snappydata/hydra/storeTests/sqlJoin/concJoinIndexCustSecPortfolioNonUniqRangePartitionOneRepl.conf
-    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
-    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
-    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-    dropIndex = true, false
-
 //accessor store config for join tests
 io/snappydata/hydra/storeTests/sqlJoin/concJoinTablesUniqWithAccessors.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
 
+/*
 io/snappydata/hydra/storeTests/sqlJoin/testJoinServerGroupsUniqWithAccessors.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
@@ -73,7 +63,7 @@ io/snappydata/hydra/storeTests/sqlJoin/testJoinServerGroupsUniqWithAccessors.con
     buyorders=trade.buyorders:random:random
     txhistory=trade.txhistory:random:random
     schemaSG=random
-
+*/
 //no uniq indexed join tests
 io/snappydata/hydra/storeTests/sqlJoin/concJoinIndexReplicateTables.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
@@ -91,11 +81,6 @@ io/snappydata/hydra/storeTests/sqlJoin/multiTablesJoinUniqWithAccessors.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-
-io/snappydata/hydra/storeTests/sqlJoin/multiTablesJoinUniqWithAccessors.conf
-     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
-     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
-     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
 
 /*
 io/snappydata/hydra/storeTests/sqlJoin/multiTablesJoinUniqHAWithAccessors.conf
