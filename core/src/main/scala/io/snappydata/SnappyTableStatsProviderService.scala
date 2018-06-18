@@ -142,9 +142,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val id = memMap.get("id").toString
 
         var memberStats: MemberStatistics = {
-          if(dssUUID != null && membersInfo.contains(dssUUID.toString)) {
+          if (dssUUID != null && membersInfo.contains(dssUUID.toString)) {
             membersInfo(dssUUID.toString)
-          } else if(membersInfo.contains(id)) {
+          } else if (membersInfo.contains(id)) {
             membersInfo(id)
           } else {
             null
@@ -257,18 +257,21 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             // TODO: this should use a transactional iterator to get a consistent
             // snapshot (also pass the same transaction to getNumColumnsInTable
             //   for reading value and delete count)
-            val itr = new pr.PRLocalScanIterator(true /* primaryOnly */ , null /* no TX */ ,
+            val itr = new pr.PRLocalScanIterator(false /* primaryOnly */ , null /* no TX */ ,
               null /* not required since includeValues is false */ ,
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[AbstractRegionEntry]
               val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-              if (numColumnsInTable < 0) {
-                numColumnsInTable = key.getNumColumnsInTable(table)
+              val bucketRegion = itr.getHostedBucketRegion
+              if (bucketRegion.getBucketAdvisor.isPrimary) {
+                if (numColumnsInTable < 0) {
+                  numColumnsInTable = key.getNumColumnsInTable(table)
+                }
+                rowsInColumnBatch += key.getColumnBatchRowCount(bucketRegion, re,
+                  numColumnsInTable)
               }
-              rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
-                numColumnsInTable)
               re._getValue() match {
                 case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
                 case _ =>
