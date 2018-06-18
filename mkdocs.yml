@@ -162,10 +162,10 @@ pages:
 - License: LICENSE.md
 
 theme: readthedocs
-theme.custom_dir: 'docs/custom_theme'
+theme_dir: 'docs/custom_theme'
 
 markdown_extensions:
-  - admonition
+    - admonition
       
 extra_javascript:
     - 'custom_theme/js/menu.js'
@@ -179,4 +179,4 @@ extra_css:
     - 'custom_theme/css/highlight.css'
     - 'extra.css'
 
-config.copyright: Copyright &copy; 2018 SnappyData Inc.
+copyright: Copyright &copy; 2018 SnappyData Inc.
