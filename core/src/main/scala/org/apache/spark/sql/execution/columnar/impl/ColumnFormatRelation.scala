@@ -268,10 +268,11 @@ abstract class BaseColumnFormatRelation(
    */
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan = {
+      keyColumns: Seq[Attribute], isDeltaInsert: Boolean): SparkPlan = {
     ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
       partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
-      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false,
+      caseOfDeltaInsert = isDeltaInsert)
   }
 
   /**
@@ -516,7 +517,8 @@ class ColumnFormatRelation(
     _partitioningColumns: Seq[String],
     _context: SQLContext,
     val columnSortedOrder: String = "",
-    val isDeltaInsert: Boolean = false)
+    val allowInsertWhileScan: Boolean = false,
+    var isDeltaInsert: Boolean = false)
   extends BaseColumnFormatRelation(
     _table,
     _provider,
@@ -703,8 +705,8 @@ class ColumnFormatRelation(
     if (se && (StoreUtils.isColumnBatchSortedAscending(columnSortedOrder) ||
         StoreUtils.isColumnBatchSortedDescending(columnSortedOrder))) {
       that match {
-        case cfr: ColumnFormatRelation if cfr.isDeltaInsert =>
-          isDeltaInsert
+        case cfr: ColumnFormatRelation if cfr.allowInsertWhileScan =>
+          allowInsertWhileScan
         case _ => se
       }
     } else se
