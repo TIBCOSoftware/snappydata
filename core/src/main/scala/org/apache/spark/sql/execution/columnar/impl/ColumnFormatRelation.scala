@@ -816,8 +816,6 @@ final class DefaultSource extends SchemaRelationProvider
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
     val (partitioningColumns, columnSorting) = StoreUtils.getPartitioningColumns(parameters)
-    // TODO: VB: parse partitioningColumns to see ASC/DESC and set into a separate
-    // property in parameters
     parameters.put(StoreUtils.COLUMN_BATCH_SORTED, columnSorting)
     val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
