@@ -74,7 +74,9 @@ case class DeltaInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child) 
       var lastBatchId: Long = Long.MinValue
       var lastBucketOrdinal: Integer = Int.MinValue
       var lastBatchNumrows: Integer = Int.MinValue
-      iter.filter { row =>
+      iter.dropWhile { row =>
+        keyAttributeIndices.forall(i => row.isNullAt(i))
+      }.filter { row =>
         val allNulls = keyAttributeIndices.forall(i => row.isNullAt(i))
         if (!allNulls) {
           lastRowOrdinal = row.getLong(keyAttributeIndices.head)
@@ -82,8 +84,7 @@ case class DeltaInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child) 
           lastBucketOrdinal = row.getInt(keyAttributeIndices(2))
           lastBatchNumrows = row.getInt(keyAttributeIndices(3))
         }
-        allNulls && (lastRowOrdinal > Long.MinValue) && (lastBatchId > Long.MinValue) &&
-            (lastBucketOrdinal > Int.MinValue) && (lastBatchNumrows > Int.MinValue)
+        allNulls
       }.map { row =>
         numOutputRows += 1
         row.setLong(keyAttributeIndices.head, lastRowOrdinal)
@@ -101,18 +102,12 @@ case class DirectInsertExec(child: SparkPlan) extends BaseDeltaInsertExec(child)
   protected override def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
     child.execute().mapPartitionsWithIndexInternal { (index, iter) =>
-      var stopScan = false
-      iter.filter { row =>
-        if (!stopScan) {
-          val allNulls = output.indices.forall(i => row.isNullAt(i))
-          if (!allNulls) {
-            numOutputRows += 1
-            true
-          } else {
-            stopScan = true
-            false
-          }
-        } else false
+      iter.takeWhile { row =>
+        val allNulls = output.indices.forall(i => row.isNullAt(i))
+        if (!allNulls) {
+          numOutputRows += 1
+        }
+        !allNulls
       }
     }
   }
