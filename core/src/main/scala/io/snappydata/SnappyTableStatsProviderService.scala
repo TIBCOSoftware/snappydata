@@ -216,7 +216,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
 
-    if(result.flatMap(_.getRegionStats.asScala).size == 0) {
+    if (result.flatMap(_.getRegionStats.asScala).size == 0) {
       // Return last successfully updated tableSizeInfo
       // Check for if any table is present in catalog
       val allStoreTables = Misc.getMemStore.getExternalCatalog.getAllStoreTablesInCatalog(true)
@@ -227,19 +227,19 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         })
       })
 
-      if(allTablesList.size == 0 && tableSizeInfo.size > 0){
+      if (allTablesList.size == 0 && tableSizeInfo.size > 0) {
         // No table is present in any db schema, reset tableSizeInfo
         tableSizeInfo = Map.empty[String, SnappyRegionStats]
       }
 
       (tableSizeInfo.values.toSeq,
-       result.flatMap(_.getIndexStats.asScala),
-       externalTables)
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
     } else {
       // Return updated tableSizeInfo
       (result.flatMap(_.getRegionStats.asScala),
-       result.flatMap(_.getIndexStats.asScala),
-       externalTables)
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
     }
   }
 
