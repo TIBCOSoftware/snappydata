@@ -206,7 +206,7 @@ case class JDBCMutableRelation(
    */
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan = {
+      keyColumns: Seq[Attribute], isDeltaInsert: Boolean): SparkPlan = {
     RowUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
       numBuckets, isPartitioned, schema, Some(this), updateColumns, updateExpressions,
       keyColumns, connProperties, onExecutor = false)

@@ -46,7 +46,7 @@ object ColumnTableBulkOps {
         Some(LogicalRelation(new ColumnFormatRelation(cr.table, cr.provider,
           cr.mode, originalPlan.table.schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
           cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
-          cr.columnSortedOrder, isDeltaInsert = true), b, a))
+          cr.columnSortedOrder, allowInsertWhileScan = true), b, a))
       case _ => None
     }
     var transFormedPlan: LogicalPlan = originalPlan
@@ -70,13 +70,19 @@ object ColumnTableBulkOps {
               StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
             val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
               changeCondition = true)
+            table match {
+              case LogicalRelation(cr: ColumnFormatRelation, b, a) =>
+                cr.isDeltaInsert = true
+              case _ => None
+            }
             var joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
             val joinDS = new Dataset(sparkSession, joinSubQuery, RowEncoder(joinSubQuery.schema))
             joinDS.cache()
             val analyzedJoin = joinDS.queryExecution.analyzed.asInstanceOf[Join]
 
             val updateSubQuery: LogicalPlan = DeltaInsertNode(analyzedJoin, false)
-            val updatePlan = Update(table, updateSubQuery, Seq.empty, table.output, subQuery.output)
+            val updatePlan = Update(table, updateSubQuery, Seq.empty, table.output, subQuery.output,
+              isDeltaInsert = true)
 
             val insertSubQuery: LogicalPlan = DeltaInsertNode(analyzedJoin, true)
             val insertPlan = new Insert(newTable, Map.empty[String,

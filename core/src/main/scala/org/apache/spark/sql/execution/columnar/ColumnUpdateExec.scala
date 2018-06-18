@@ -42,7 +42,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
     appendableRelation: JDBCAppendableRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
+    connProps: ConnectionProperties, onExecutor: Boolean, caseOfDeltaInsert: Boolean)
+    extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
@@ -239,16 +240,10 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
            |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
            |  final int updatedOrdinalIdVar;
-           |  if ($ordinalIdVar < 0) {
+           |  if ($caseOfDeltaInsert) {
            |    // +ordinal is to adjust all inserts in delta so far
-           |    if ($ordinalIdVar == Integer.MIN_VALUE) {
-           |      // These are new inserts going in first slot of column batch
-           |      updatedOrdinalIdVar = ~$ordinal;
-           |    } else {
-           |      // These inserts are falling in a range
-           |      // +1 since ordinalIdVar is of the last position
-           |      updatedOrdinalIdVar = ~(~$ordinalIdVar + $ordinal + 1);
-           |    }
+           |    // +1 since ordinalIdVar is of the last position
+           |    updatedOrdinalIdVar = ~($ordinalIdVar + $ordinal + 1);
            |  } else {
            |    updatedOrdinalIdVar = $ordinalIdVar;
            |  }
@@ -260,7 +255,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |     " ,updated-ordinal-id=" + updatedOrdinalIdVar +
            |     " [" + ~updatedOrdinalIdVar + "]" +
            |     " ,insertCount=" + $insertCount +
-           |     " ,field=" + $field);
+           |     " ,field=" + $field +
+           |     " ,caseOfDeltaInsert=" + $caseOfDeltaInsert);
            |  }
            |  $encoderTerm.setUpdatePosition(updatedOrdinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
@@ -356,7 +352,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
        |  // write to the encoders
        |  $callEncoders
        |  $batchOrdinal++;
-       |  if ($ordinalIdVar < 0) {
+       |  if ($caseOfDeltaInsert) {
        |    $deltaInsertOrdinal++;
        |  }
        |} else {

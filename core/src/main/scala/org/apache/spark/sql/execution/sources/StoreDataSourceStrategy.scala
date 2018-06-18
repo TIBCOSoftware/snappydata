@@ -42,6 +42,7 @@ import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeRef
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, Join, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.internal.DeltaInsertNode
@@ -56,13 +57,13 @@ import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Str
 private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = {
-    val caseOfDeltaInsert: Boolean = (plan find {
-      case d: DeltaInsertNode => true
-      case _ => false
-    }).isDefined
     plan match {
       case PhysicalScan(projects, filters, scan) => scan match {
         case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
+          val isDeltaInsert: Boolean = t match {
+            case cfr: ColumnFormatRelation => cfr.isDeltaInsert
+            case _ => false
+          }
           pruneFilterProject(
             l,
             projects,
@@ -70,8 +71,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             t.numBuckets,
             t.partitionColumns,
             (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray),
-            caseOfDeltaInsert) :: Nil
+            caseOfDeltaInsert = isDeltaInsert) :: Nil
         case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
+          val isDeltaInsert: Boolean = t match {
+            case cfr: ColumnFormatRelation => cfr.isDeltaInsert
+            case _ => false
+          }
           pruneFilterProject(
             l,
             projects,
@@ -79,7 +84,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             0,
             Nil,
             (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray),
-            caseOfDeltaInsert) :: Nil
+            caseOfDeltaInsert = isDeltaInsert) :: Nil
         case LogicalRelation(_, _, _) => {
           var foundParamLiteral = false
           val tp = plan.transformAllExpressions {
@@ -207,7 +212,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             filterPredicates, // filter predicates for column batch screening
             relation.output,
             (requestedColumns, candidatePredicates),
-            caseOfDeltaInsert
+            isDeltaInsert = caseOfDeltaInsert
           )
         case baseRelation =>
           RowDataSourceScanExec(
@@ -236,7 +241,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             filterPredicates, // filter predicates for column batch screening
             relation.output,
             (requestedColumns, candidatePredicates),
-            caseOfDeltaInsert
+            isDeltaInsert = caseOfDeltaInsert
           )
         case baseRelation =>
           RowDataSourceScanExec(

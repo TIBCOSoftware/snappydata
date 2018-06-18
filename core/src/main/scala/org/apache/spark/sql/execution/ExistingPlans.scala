@@ -134,7 +134,7 @@ private[sql] object PartitionedPhysicalScan {
       allFilters: Seq[Expression],
       schemaAttributes: Seq[AttributeReference],
       scanBuilderArgs: => (Seq[AttributeReference], Seq[Expression]),
-      caseOfDeltaInsert: Boolean = false): SparkPlan =
+      isDeltaInsert: Boolean = false): SparkPlan =
   // scalastyle:on
     relation match {
       case i: IndexColumnFormatRelation =>
@@ -165,7 +165,8 @@ private[sql] object PartitionedPhysicalScan {
       case c: BaseColumnFormatRelation =>
         ColumnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, partitionColumnAliases, relation, relation.schema,
-          allFilters, schemaAttributes, c.sqlContext.conf.caseSensitiveAnalysis, caseOfDeltaInsert)
+          allFilters, schemaAttributes, c.sqlContext.conf.caseSensitiveAnalysis,
+          caseOfDeltaInsert = isDeltaInsert)
       case r: SamplingRelation =>
         if (r.isReservoirAsRegion) {
           ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
