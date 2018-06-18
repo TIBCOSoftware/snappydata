@@ -59,4 +59,37 @@ object DataGenerator {
         throw new UnsupportedOperationException(s"Unexpected data type $other")
     }
   }
+
+  def generateDataFrameWithUnique(sc: SparkSession,
+      schema: StructType,
+      uniqueRange : (Long, Long),
+      uniqueFields : Seq[String]): DataFrame = {
+    val rows = schema.fields.zipWithIndex.map { case (f, i) =>
+      randomValueWithUnique(f.dataType, i , uniqueFields.contains(f.name), uniqueRange)
+    }
+    val range = uniqueRange._2 - uniqueRange._1
+    sc.range(range).selectExpr(rows: _*)
+  }
+
+  def randomValueWithUnique(fieldType: DataType, index: Int,
+      isUnique: Boolean, uniqueRange : (Long, Long)): String = {
+    val lowerRangeVal = uniqueRange._1
+    fieldType match {
+      case IntegerType =>
+        if (isUnique) s"(id + ${lowerRangeVal}) as intval$index"
+        else s"id as intval$index"
+      case ByteType => if (isUnique) s"cast((id + $lowerRangeVal) as byte) as byteval$index"
+      else s"cast(id as byte) as byteval$index"
+      case LongType =>
+        if (isUnique) s"cast((id + $lowerRangeVal) as long) as longval$index"
+        else s"cast(id as long) as longval$index"
+      case _: DecimalType => s"cast ((rand() * 100.0) as decimal(28, 10) as decval$index"
+      case DoubleType => s"cast(id as double) as doubleval$index"
+      case TimestampType => s"((id % 2) + 2014) as timeval$index"
+      case BooleanType => s"((id % 2) == 0) as boolval$index"
+      case StringType => s"cast(id as string) as strval$index"
+      case other: DataType =>
+        throw new UnsupportedOperationException(s"Unexpected data type $other")
+    }
+  }
 }
