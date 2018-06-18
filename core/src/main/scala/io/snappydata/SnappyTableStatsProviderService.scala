@@ -264,11 +264,12 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[AbstractRegionEntry]
               val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-              if (itr.getHostedBucketRegion.getBucketAdvisor.isPrimary) {
+              val bucketRegion = itr.getHostedBucketRegion
+              if (bucketRegion.getBucketAdvisor.isPrimary) {
                 if (numColumnsInTable < 0) {
                   numColumnsInTable = key.getNumColumnsInTable(table)
                 }
-                rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
+                rowsInColumnBatch += key.getColumnBatchRowCount(bucketRegion, re,
                   numColumnsInTable)
               }
               re._getValue() match {
