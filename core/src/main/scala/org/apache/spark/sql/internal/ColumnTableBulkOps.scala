@@ -77,7 +77,8 @@ object ColumnTableBulkOps {
             }
             var joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
             val joinDS = new Dataset(sparkSession, joinSubQuery, RowEncoder(joinSubQuery.schema))
-            joinDS.cache()
+            // Only enable in case of proven benefit using performance testing
+            // joinDS.cache()
             val analyzedJoin = joinDS.queryExecution.analyzed.asInstanceOf[Join]
 
             val updateSubQuery: LogicalPlan = DeltaInsertNode(analyzedJoin, false)
