@@ -133,30 +133,46 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       val itr = memStats.iterator()
 
       val members = ObjectObjectHashMap.withExpectedSize[String,
-          scala.collection.mutable.Map[String, Any]](8)
+          MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
-        val map = new ConcurrentHashMap[String, Any](8, 0.7f, 1).asScala
-        val keyItr = memMap.keySet().iterator()
-
-        while (keyItr.hasNext) {
-          val key = keyItr.next()
-          map.put(key, memMap.get(key))
-        }
-        map.put("status", "Running")
 
         val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
-        if (dssUUID != null) {
-          members.put(dssUUID.toString, map)
-        } else {
-          members.put(memMap.get("id").asInstanceOf[String], map)
+        val id = memMap.get("id").toString
+
+        var memberStats: MemberStatistics = {
+          if (dssUUID != null && membersInfo.contains(dssUUID.toString)) {
+            membersInfo(dssUUID.toString)
+          } else if (membersInfo.contains(id)) {
+            membersInfo(id)
+          } else {
+            null
+          }
         }
+
+        if (memberStats == null) {
+          memberStats = new MemberStatistics(memMap)
+          if (dssUUID != null) {
+            members.put(dssUUID.toString, memberStats)
+          } else {
+            members.put(id, memberStats)
+          }
+        } else {
+          memberStats.updateMemberStatistics(memMap)
+          members.put(dssUUID.toString, memberStats)
+        }
+
+        memberStats.setStatus("Running")
       }
       membersInfo ++= members.asScala
       // mark members no longer running as stopped
       existingMembers.filterNot(members.containsKey).foreach(m =>
-        membersInfo(m).put("status", "Stopped"))
+        membersInfo(m).setStatus("Stopped"))
+
+      // update cluster level stats
+      ClusterStatistics.getInstance().updateClusterStatistics(membersInfo.asJava)
+
     } catch {
       case NonFatal(e) => logWarning(e.getMessage, e)
     }
@@ -241,18 +257,21 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             // TODO: this should use a transactional iterator to get a consistent
             // snapshot (also pass the same transaction to getNumColumnsInTable
             //   for reading value and delete count)
-            val itr = new pr.PRLocalScanIterator(true /* primaryOnly */ , null /* no TX */ ,
+            val itr = new pr.PRLocalScanIterator(false /* primaryOnly */ , null /* no TX */ ,
               null /* not required since includeValues is false */ ,
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[AbstractRegionEntry]
               val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-              if (numColumnsInTable < 0) {
-                numColumnsInTable = key.getNumColumnsInTable(table)
+              val bucketRegion = itr.getHostedBucketRegion
+              if (bucketRegion.getBucketAdvisor.isPrimary) {
+                if (numColumnsInTable < 0) {
+                  numColumnsInTable = key.getNumColumnsInTable(table)
+                }
+                rowsInColumnBatch += key.getColumnBatchRowCount(bucketRegion, re,
+                  numColumnsInTable)
               }
-              rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
-                numColumnsInTable)
               re._getValue() match {
                 case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
                 case _ =>

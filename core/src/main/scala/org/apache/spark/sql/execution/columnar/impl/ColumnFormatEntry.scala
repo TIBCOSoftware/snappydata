@@ -93,6 +93,10 @@ object ColumnFormatEntry {
 
 /**
  * Key object in the column store.
+ *
+ * @param uuid        an ID for the key which should be unique in the cluster for a region
+ * @param partitionId the bucket ID of the key; must be same as ID of bucket where key is put
+ * @param columnIndex 1-based column index for the key (negative for meta-data and delta columns)
  */
 final class ColumnFormatKey(private[columnar] var uuid: Long,
     private[columnar] var partitionId: Int,
@@ -107,9 +111,9 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
     GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
   }
 
-  override def getColumnBatchRowCount(itr: PREntriesIterator[_],
+  override def getColumnBatchRowCount(bucketRegion: BucketRegion,
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
-    val currentBucketRegion = itr.getHostedBucketRegion
+    val currentBucketRegion = bucketRegion.getHostedBucketRegion
     if ((columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) &&
