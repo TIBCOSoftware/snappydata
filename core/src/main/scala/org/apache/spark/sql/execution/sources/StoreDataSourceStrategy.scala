@@ -60,18 +60,13 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
     plan match {
       case PhysicalScan(projects, filters, scan) => scan match {
         case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
-          val isDeltaInsert: Boolean = t match {
-            case cfr: ColumnFormatRelation => cfr.isDeltaInsert
-            case _ => false
-          }
           pruneFilterProject(
             l,
             projects,
             filters,
             t.numBuckets,
             t.partitionColumns,
-            (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray),
-            caseOfDeltaInsert = isDeltaInsert) :: Nil
+            (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
         case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
           val isDeltaInsert: Boolean = t match {
             case cfr: ColumnFormatRelation => cfr.isDeltaInsert
@@ -83,8 +78,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             filters,
             0,
             Nil,
-            (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray),
-            caseOfDeltaInsert = isDeltaInsert) :: Nil
+            (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
         case LogicalRelation(_, _, _) => {
           var foundParamLiteral = false
           val tp = plan.transformAllExpressions {
@@ -112,8 +106,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       filterPredicates: Seq[Expression],
       numBuckets: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Expression]) => (RDD[Any], Seq[RDD[InternalRow]]),
-      caseOfDeltaInsert: Boolean = false) = {
+      scanBuilder: (Seq[Attribute], Seq[Expression]) => (RDD[Any], Seq[RDD[InternalRow]])) = {
 
     var allDeterministic = true
     val projectSet = AttributeSet(projects.flatMap { p =>
@@ -211,8 +204,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             partitionedRelation,
             filterPredicates, // filter predicates for column batch screening
             relation.output,
-            (requestedColumns, candidatePredicates),
-            isDeltaInsert = caseOfDeltaInsert
+            (requestedColumns, candidatePredicates)
           )
         case baseRelation =>
           RowDataSourceScanExec(
@@ -240,8 +232,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             partitionedRelation,
             filterPredicates, // filter predicates for column batch screening
             relation.output,
-            (requestedColumns, candidatePredicates),
-            isDeltaInsert = caseOfDeltaInsert
+            (requestedColumns, candidatePredicates)
           )
         case baseRelation =>
           RowDataSourceScanExec(

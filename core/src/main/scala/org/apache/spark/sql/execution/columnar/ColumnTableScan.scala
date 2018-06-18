@@ -75,8 +75,7 @@ private[sql] final case class ColumnTableScan(
     allFilters: Seq[Expression],
     schemaAttributes: Seq[AttributeReference],
     caseSensitive: Boolean,
-    isForSampleReservoirAsRegion: Boolean = false,
-    caseOfDeltaInsert: Boolean = false)
+    isForSampleReservoirAsRegion: Boolean = false)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
@@ -658,9 +657,6 @@ private[sql] final case class ColumnTableScan(
        |        $batchIndex = $batchOrdinal + 1;
        |        return;
        |      }
-       |      if ($caseOfDeltaInsert) {
-       |        $batchOrdinal = $numRows; // exit the loop
-       |      }
        |    }
        |    $buffers = null;
        |  }
@@ -792,7 +788,6 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |      " ,numRows=" + $numRows +
-           |      " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
            |      "");
            |    }
@@ -810,7 +805,6 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |      " ,numRows=" + $numRows +
-           |      " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
            |      "");
            |    }
@@ -829,7 +823,6 @@ private[sql] final case class ColumnTableScan(
            |    " ,batchIndex=" + $batchIndex +
            |    " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |    " ,numRows=" + $numRows +
-           |    " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |    "");
            |    }
            |} else {
@@ -858,7 +851,6 @@ private[sql] final case class ColumnTableScan(
            |      " ,batchIndex=" + $batchIndex +
            |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
            |      " ,numRows=" + $numRows +
-           |      " ,isCaseOfSortedInsert=" + $caseOfDeltaInsert +
            |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
            |      "");
            |    }
