@@ -62,6 +62,7 @@ object ColumnTableBulkOps {
             throw new AnalysisException(
               s"Insert in a table requires partitioning column(s) but got empty string")
           }
+
           val columnSorting = mutable match {
             case c: ColumnFormatRelation => c.columnSortedOrder
             case _ => ""
@@ -75,23 +76,36 @@ object ColumnTableBulkOps {
                 cr.isDeltaInsert = true
               case _ => None
             }
-            var joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
-            val joinDS = new Dataset(sparkSession, joinSubQuery, RowEncoder(joinSubQuery.schema))
+            val joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
+
             // Only enable in case of proven benefit using performance testing
+            // val joinDS = new Dataset(sparkSession, joinSubQuery, RowEncoder(joinSubQuery.schema))
             // joinDS.cache()
-            val analyzedJoin = joinDS.queryExecution.analyzed.asInstanceOf[Join]
+            // val analyzedJoin = joinDS.queryExecution.analyzed.asInstanceOf[Join]
+            // Below use analyzedJoin in place of joinSubQuery
 
-            val updateSubQuery: LogicalPlan = DeltaInsertNode(analyzedJoin, false)
-            val updatePlan = Update(table, updateSubQuery, Seq.empty, table.output, subQuery.output,
-              isDeltaInsert = true)
-
-            val insertSubQuery: LogicalPlan = DeltaInsertNode(analyzedJoin, true)
+            val insertSubQuery: LogicalPlan = DeltaInsertNode(joinSubQuery, isDirectInsert = true)
             val insertPlan = new Insert(newTable, Map.empty[String,
                 Option[String]], Project(subQuery.output, insertSubQuery),
               OverwriteOptions(enabled = false), ifNotExists = false)
 
-            transFormedPlan = ColumnTableInsert(table, insertPlan, updatePlan)
-          } else originalPlan
+            // TODO VB: Any cheaper way to find table is empty or not?
+            val tabEmpty = new Dataset(sparkSession, table, RowEncoder(table.schema)).count() == 0
+            transFormedPlan = if (!tabEmpty) {
+              val updateSubQuery: LogicalPlan = DeltaInsertNode(joinSubQuery,
+                isDirectInsert = false)
+              val updatePlan = Update(table, updateSubQuery, Seq.empty, table.output,
+                subQuery.output, isDeltaInsert = true)
+              val columnTableInsertPlan = ColumnTableInsert(table, insertPlan, updatePlan)
+              val columnTableInsertDS = new Dataset(sparkSession, columnTableInsertPlan,
+                RowEncoder(columnTableInsertPlan.schema))
+              columnTableInsertDS.queryExecution.analyzed.asInstanceOf[ColumnTableInsert]
+            } else {
+              val modifiedInsertDS = new Dataset(sparkSession, insertPlan,
+                RowEncoder(insertPlan.schema))
+              modifiedInsertDS.queryExecution.analyzed.asInstanceOf[Insert]
+            }
+          }
         case _ => // Do nothing, original insert plan is enough
       }
     }
