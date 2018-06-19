@@ -22,7 +22,6 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
-import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
 
@@ -77,8 +76,7 @@ object snappy extends Serializable {
      */
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD[U, T](rdd,
-        (context, part, iter) => iter.map(cleanF))
+      new MapPartitionsPreserveRDD[U, T](rdd, (_, _, iter) => iter.map(cleanF))
     }
 
     /**
@@ -94,7 +92,7 @@ object snappy extends Serializable {
         f: Iterator[T] => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+      new MapPartitionsPreserveRDD(rdd, (_, _,
           itr: Iterator[T]) => cleanedF(itr), preservesPartitioning)
     }
 
@@ -112,7 +110,7 @@ object snappy extends Serializable {
         f: (Int, Iterator[T]) => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+      new MapPartitionsPreserveRDD(rdd, (_, part: Partition,
           itr: Iterator[T]) => cleanedF(part.index, itr), preservesPartitioning)
     }
 
@@ -193,11 +191,6 @@ object snappy extends Serializable {
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
         session.sessionState.catalog.newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
-
-      session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
-          foreach { cachedPlan =>
-            session.sharedState.cacheManager.uncacheQuery(session, cachedPlan, blocking = true)
-          }
     }
 
     def deleteFrom(tableName: String): Unit = {
@@ -223,8 +216,8 @@ object snappy extends Serializable {
         session.sessionState.catalog.newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
     }
-
   }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(session: SnappySession,
