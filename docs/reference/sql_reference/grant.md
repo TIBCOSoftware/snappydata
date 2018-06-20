@@ -6,13 +6,13 @@ The syntax for the GRANT statement differs if you are granting privileges to a t
 
 ## Syntax for Tables
 
-```no-highlight
+```pre
 GRANT privilege-type ON [ TABLE ] { table-name | view-name } TO grantees
 ```
 
 ## Syntax for Routines
 
-```no-highlight
+```pre
 GRANT EXECUTE ON { FUNCTION | PROCEDURE } routine-designator TO grantees
 ```
 
@@ -32,7 +32,7 @@ The following types of permissions can be granted:
 <a id="privilege-type"></a>
 ## privilege-type
 
-```no-highlight
+```pre
 ALL PRIVILEGES |  privilege-list
 ```
 
@@ -42,7 +42,7 @@ Use the ALL PRIVILEGES privilege type to grant all of the permissions to the use
 
 ## privilege-list
 
-```no-highlight
+```pre
 table-privilege {, table-privilege }*
 ```
 
@@ -50,7 +50,7 @@ table-privilege {, table-privilege }*
 
 ## table-privilege
 
-```no-highlight
+```pre
 ALTER | DELETE | INSERT | REFERENCES [column-list] | SELECT [column-list] |
 TRIGGER | UPDATE [ column-list ]
 ```
@@ -73,7 +73,7 @@ Use the [UPDATE](update.md) privilege type to grant permission to use the UPDATE
 
 ## column-list
 
-```no-highlight
+```pre
 ( column-identifier {, column-identifier }* )
 ```
 
@@ -81,7 +81,7 @@ Use the [UPDATE](update.md) privilege type to grant permission to use the UPDATE
 
 ## grantees
 
-```no-highlight
+```pre
 { authorization ID | PUBLIC } [,{ authorization ID | PUBLIC } ] *
 ```
 
@@ -91,7 +91,7 @@ You can grant privileges for specific users or for all users. Use the keyword PU
 
 ## routine-designator
 
-```no-highlight
+```pre
 { function-name | procedure-name }
 ```
 
@@ -99,31 +99,31 @@ You can grant privileges for specific users or for all users. Use the keyword PU
 
 To grant the SELECT privilege on table "t" to the authorization IDs "sam" and "bob:"
 
-```no-highlight
+```pre
 GRANT SELECT ON TABLE t TO sam,bob;
 ```
 
 To grant the UPDATE and TRIGGER privileges on table "t" to the authorization IDs "john" and "smith:"
 
-```no-highlight
+```pre
 GRANT UPDATE, TRIGGER ON TABLE t TO john,smith;
 ```
 
 To grant ALTER TABLE privileges on table "t" to the authorization ID "adam:"
 
-```no-highlight
+```pre
 GRANT ALTER ON TABLE t TO adam;
 ```
 
 To grant the SELECT privilege on table "test.sample" to all users:
 
-```no-highlight
+```pre
 GRANT SELECT ON TABLE test.sample to PUBLIC;
 ```
 
 <!--To grant the EXECUTE privilege on procedure"p" to the authorization ID "richard:"
 
-```no-highlight
+```pre
 GRANT EXECUTE ON PROCEDURE p TO richard;
 ``` 
 -->

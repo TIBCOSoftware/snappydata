@@ -9,24 +9,24 @@ In the *conf/locators* and *conf/servers* files, you need to add `-thrift-ssl` a
 
 From the Snappy SQL shell:
 
-```no-highlight
+```pre
 snappy> connect client 'host:port;ssl=true;ssl-properties=...';
 ```
 For JDBC use the same properties (without the "thrift-" prefix) like:
 
-```no-highlight
+```pre
 jdbc:snappydata://host:port/;ssl=true;ssl-properties=...
 ```
 For example:
 
 For a self-signed RSA certificate in keystore.jks, you can have the following configuration in the *conf/locators* and *conf/servers* files:
 
-```no-highlight
+```pre
 localhost -thrift-ssl=true -thrift-ssl-properties=keystore=keystore.jks,keystore-password=password,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 ```
 
 Use the protocol/ciphers as per requirement. The corresponding setup on client-side can look like:
 
-```no-highlight
+```pre
 snappy> connect client 'localhost:1527;ssl=true;ssl-properties=truststore=keystore.jks,truststore-password=password,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256';
 ```

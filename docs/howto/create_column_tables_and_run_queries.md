@@ -13,7 +13,7 @@ The code snippet below shows how to create a column table using DataFrame API.
 
 **Get a SnappySession**:
 
-```no-highlight
+```pre
 val spark: SparkSession = SparkSession
     .builder
     .appName("CreateColumnTable")
@@ -25,7 +25,7 @@ val snSession = new SnappySession(spark.sparkContext)
 
 **Define the table schema**
 
-```no-highlight
+```pre
 val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
     StructField("C_NAME", StringType, false),
     StructField("C_ADDRESS", StringType, false),
@@ -39,7 +39,7 @@ val tableSchema = StructType(Array(StructField("C_CUSTKEY", IntegerType, false),
 
 **Create the table and load data from CSV**
 
-```no-highlight
+```pre
 // props1 map specifies the properties for the table to be created
 // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
 val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
@@ -56,7 +56,7 @@ customerDF.write.insertInto("CUSTOMER")
 
 The same table can be created using SQL as shown below:
 
-```no-highlight
+```pre
 snSession.sql("CREATE TABLE CUSTOMER ( " +
     "C_CUSTKEY     INTEGER NOT NULL," +
     "C_NAME        VARCHAR(25) NOT NULL," +

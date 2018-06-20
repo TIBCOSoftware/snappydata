@@ -5,7 +5,7 @@ Configuration files for locator, lead, and server should be created in the **con
 To do so, you can copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
-!!! Tip:
+!!! Tip
 	- For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
 
     - Instead of starting the SnappyData cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
@@ -47,7 +47,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 <a id="locator-example"></a>
 **Example**: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:
 
-```no-highlight
+```pre
 $ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
@@ -60,7 +60,7 @@ Lead Nodes primarily runs the SnappyData managed Spark driver. There is one prim
 
 Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>/conf** directory.
 
-!!!Note:
+!!! Note
 	In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.
 
 ### List of Lead Properties
@@ -88,7 +88,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
 
-```no-highlight
+```pre
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
@@ -124,7 +124,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 **Example**: To start a two servers (node-c and node-c), update the configuration file as follows:
 
-```no-highlight
+```pre
 $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
@@ -141,7 +141,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 
 **Example**:
 
-```no-highlight
+```pre
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
 	--packages "SnappyDataInc:snappydata:1.0.1-s_2.11" 
@@ -158,7 +158,7 @@ If you want to run SnappyData with an already existing custom Hadoop cluster lik
 
 To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 
-```no-highlight
+```pre
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 ```
 
@@ -168,10 +168,10 @@ export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
 The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory. 
 
-```no-highlight
+```pre
 $ cat conf/log4j.properties 
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 ```
-!!! Note:
+!!! Note
 	For a set of applicable class names and default values see the file **conf/log4j.properties.template**, which can be used as a starting point. Consult the [log4j 1.2.x documentation](http://logging.apache.org/log4j/) for more details on the configuration file.
