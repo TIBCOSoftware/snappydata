@@ -49,10 +49,11 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta, ColumnFormatRelation}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext, TaskKilledException}
 
@@ -83,12 +84,18 @@ private[sql] final case class ColumnTableScan(
   override val nodeName: String = "ColumnTableScan"
 
   @transient private val MAX_SCHEMA_LENGTH = 40
+  private val isColumnBatchSorted: Boolean = baseRelation match {
+    case cfr: ColumnFormatRelation =>
+      StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder) ||
+          StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder)
+    case _ => false
+  }
 
-  override lazy val outputOrdering: Seq[SortOrder] = {
+  override lazy val outputOrdering: Seq[SortOrder] = if (isColumnBatchSorted) {
       val buffer = new ArrayBuffer[SortOrder](partitionColumns.size)
       partitionColumns.map(buffer += SortOrder(_, Ascending))
       buffer
-    } /* {
+    } else {
     val buffer = new ArrayBuffer[SortOrder](2)
     // sorted on [batchId, ordinal (position within batch)] for update/delete
     output.foreach {
@@ -100,7 +107,7 @@ private[sql] final case class ColumnTableScan(
       case _ =>
     }
     buffer
-  } */
+  }
 
   override def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
