@@ -20,6 +20,7 @@ import scala.util.control.NonFatal
 
 import io.snappydata.Property
 
+import org.apache.spark.rdd.ZippedPartitionsRDD2
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
@@ -32,10 +33,11 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec, SnappyHashAggregateExec}
-import org.apache.spark.sql.execution.columnar.{DeltaInsertExec, DirectInsertExec, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.impl.ColumnarStorePartitionedRDD
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, DeltaInsertExec, DirectInsertExec, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
-import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
+import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, SortMergeJoinExec}
 import org.apache.spark.sql.execution.sources.PhysicalScan
 import org.apache.spark.sql.internal.{DefaultPlanner, DeltaInsertNode, JoinQueryPlanning, SQLConf}
 import org.apache.spark.sql.streaming._
@@ -703,6 +705,31 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
   }
 
   override def apply(plan: SparkPlan): SparkPlan = addFallback(plan)
+}
+
+/**
+ * Rule to modify ColumnFormatIterator usage
+ */
+case class ColumnFormatIteratorIsSorted(session: SnappySession)
+    extends Rule[SparkPlan] {
+  override def apply(plan: SparkPlan): SparkPlan = plan transform {
+    case smj@SortMergeJoinExec(_, _, _, _, left, right) =>
+      smj.copy(left = modifyColumnTableScan(left), right = modifyColumnTableScan(right))
+  }
+
+  private def modifyColumnTableScan(in: SparkPlan) : SparkPlan = in transform {
+    case cts: ColumnTableScan =>
+      val modifiedRDD = cts.dataRDD match {
+        case zrdd: ZippedPartitionsRDD2[_, _, _] => zrdd.rdd2 match {
+          case csprdd: ColumnarStorePartitionedRDD =>
+            csprdd.sortedOutputRequired = true
+            cts.dataRDD
+          case _ => cts.dataRDD
+        }
+        case _ => cts.dataRDD
+      }
+      cts.copy(dataRDD = modifiedRDD)
+  }
 }
 
 /**
