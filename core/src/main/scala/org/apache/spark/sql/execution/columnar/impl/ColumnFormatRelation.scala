@@ -517,8 +517,7 @@ class ColumnFormatRelation(
     _partitioningColumns: Seq[String],
     _context: SQLContext,
     val columnSortedOrder: String = "",
-    val allowInsertWhileScan: Boolean = false,
-    var isDeltaInsert: Boolean = false)
+    val allowInsertWhileScan: Boolean = false)
   extends BaseColumnFormatRelation(
     _table,
     _provider,

@@ -71,11 +71,6 @@ object ColumnTableBulkOps {
               StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
             val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
               changeCondition = true)
-            table match {
-              case LogicalRelation(cr: ColumnFormatRelation, b, a) =>
-                cr.isDeltaInsert = true
-              case _ => None
-            }
             val joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
 
             // Only enable in case of proven benefit using performance testing
