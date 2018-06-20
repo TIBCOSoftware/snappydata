@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Exp
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
@@ -89,9 +90,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   override protected def opType: String = "Inserted"
 
   override protected def isInsert: Boolean = true
+  private val isColumnBatchSorted: Boolean = relation.isDefined && (relation.get match {
+    case cfr: ColumnFormatRelation =>
+      StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder) ||
+          StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder)
+    case _ => false
+  })
 
   // Require per-partition sort on partitioning column
-  override def requiredChildOrdering: Seq[Seq[SortOrder]] = if (partitionExpressions.nonEmpty) {
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] = if (isColumnBatchSorted
+      && partitionExpressions.nonEmpty) {
     // Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(partitionExpressions.head.toAttribute)))
     // For partitionColumns find the matching child columns
     val schema = tableSchema
