@@ -320,6 +320,6 @@ extra_css:
     - 'extra.css'
     
 markdown_extensions:
-    - markdown.extensions.admonition 
+    - admonition 
     
 copyright: Copyright &copy; 2018 SnappyData Inc.
