@@ -288,25 +288,26 @@ object Utils {
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
-      f: () => Iterator[T], maxTries: Int = 30): Array[T] = {
+      f: () => Iterator[T], maxTries: Int = 30,
+      blockManagerIds: Seq[BlockManagerId] = Seq.empty): Array[T] = {
     val cleanedF = sc.clean(f)
     mapExecutorsWithRetries(sc, (_: TaskContext, _: ExecutorLocalPartition) => cleanedF(),
-      maxTries)
+      blockManagerIds, maxTries)
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
       f: (TaskContext, ExecutorLocalPartition) => Iterator[T], maxTries: Int): Array[T] = {
     val cleanedF = sc.clean(f)
-    mapExecutorsWithRetries(sc, cleanedF, maxTries)
+    mapExecutorsWithRetries(sc, cleanedF, Seq.empty[BlockManagerId], maxTries)
   }
 
   private def mapExecutorsWithRetries[T: ClassTag](sc: SparkContext,
       cleanedF: (TaskContext, ExecutorLocalPartition) => Iterator[T],
-      maxTries: Int): Array[T] = {
+      blockManagerIds: Seq[BlockManagerId], maxTries: Int): Array[T] = {
     var tries = 1
     while (true) {
       try {
-        return new ExecutorLocalRDD[T](sc, cleanedF).collect()
+        return new ExecutorLocalRDD[T](sc, blockManagerIds, cleanedF).collect()
       } catch {
         case NonFatal(e) =>
           var incorrectRouting = false
@@ -790,14 +791,17 @@ object Utils {
   }
 }
 
-class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext,
+class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
     f: (TaskContext, ExecutorLocalPartition) => Iterator[T])
     extends RDD[T](_sc, Nil) {
 
   override def getPartitions: Array[Partition] = {
-    val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
+    var numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
         keySet.toList.zipWithIndex
 
+    if (blockManagerIds.nonEmpty) {
+      numberedPeers = numberedPeers.filter(x => blockManagerIds.contains(x._1))
+    }
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
         case (bid, idx) => createPartition(idx, bid)

@@ -25,4 +25,24 @@ A SnappyData virtual table that contains information about each distributed syst
 |BOOTPROPS   |CLOB  |2147483647   | No |All of the SnappyData boot properties names and values that a member uses.|	
 
 
+**Example** </br>
 
+```
+snappy> select * from SYS.MEMBERS;
+ID                           |KIND             |STATUS |HOSTDATA|ISELDER|IPADDRESS |HOST     |PID        |PORT       |ROLES|NETSERVERS               |THRIFTSERVERS            |LOCATOR         |SERVERGROUPS               |MANAGERINFO              |SYSTEMPROPS    |GEMFIREPROPS   |BOOTPROPS      
+---------------------------------------------------------------------------------------------------------------- 
+127.0.0.1(5687)<v1>:47719    |datastore(normal)|RUNNING|true    |false  |/127.0.0.1|localhost|5687       |47719      |     |localhost/127.0.0.1[1528]|localhost/127.0.0.1[1528]|NULL            |                           |Managed Node             |
+--- System Pr&|
+--- GemFire P&|
+--- GemFireXD&
+127.0.0.1(5877)<v2>:10769    |accessor(normal) |RUNNING|false   |false  |/127.0.0.1|localhost|5877       |10769      |     |                         |                         |NULL            |IMPLICIT_LEADER_SERVERGROUP|Managed Node             |
+--- System Pr&|
+--- GemFire P&|
+--- GemFireXD&
+127.0.0.1(5548)<ec><v0>:21415|locator(normal)  |RUNNING|false   |true   |/127.0.0.1|localhost|5548       |21415      |     |localhost/127.0.0.1[1527]|localhost/127.0.0.1[1527]|127.0.0.1[10334]|                           |Manager Node: Not Running|
+--- System Pr&|
+--- GemFire P&|
+--- GemFireXD&
+
+3 rows selected
+```

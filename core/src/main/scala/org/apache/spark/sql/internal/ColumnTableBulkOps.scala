@@ -73,15 +73,18 @@ object ColumnTableBulkOps {
         val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
-        val doInsertJoin = if (subQuery.statistics.sizeInBytes <= cacheSize) {
+        val (doInsertJoin, isCached) = if (subQuery.statistics.sizeInBytes <= cacheSize) {
           val joinDS = new Dataset(sparkSession,
             updateSubQuery, RowEncoder(updateSubQuery.schema))
+          joinDS.cache()
+          (joinDS.count() > 0, true)
+        } else (true, false)
 
+        // Adding to context after the count operation, as count will clear the context object.
+        if (isCached) {
           sparkSession.asInstanceOf[SnappySession].
               addContextObject(SnappySession.CACHED_PUTINTO_UPDATE_PLAN, updateSubQuery)
-          joinDS.cache()
-          joinDS.count() > 0
-        } else true
+        }
 
         val insertChild = if (doInsertJoin) {
           Join(subQuery, updateSubQuery, LeftAnti, condition)
