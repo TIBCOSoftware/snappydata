@@ -538,6 +538,7 @@ class SnappySessionState(snappySession: SnappySession)
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
     InsertCachedPlanFallback(snappySession, topLevel),
+    ColumnFormatIteratorIsSorted(snappySession),
     ReuseExchange(snappySession.sessionState.conf))
 
   protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {

@@ -90,6 +90,7 @@ object ColumnTableBulkOps {
               OverwriteOptions(enabled = false), ifNotExists = false)
 
             // TODO VB: Any cheaper way to find table is empty or not?
+            // What if somebody else has inserted?
             val tabEmpty = new Dataset(sparkSession, table, RowEncoder(table.schema)).count() == 0
             transFormedPlan = if (!tabEmpty) {
               val updateSubQuery: LogicalPlan = DeltaInsertNode(joinSubQuery,
