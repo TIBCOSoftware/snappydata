@@ -593,7 +593,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
-         |      ${compressionCodec.id}, $conn);
+         |      ${compressionCodec.id}, $isColumnBatchSorted, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -730,7 +730,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
-         |      ${compressionCodec.id}, $conn);
+         |      ${compressionCodec.id}, $isColumnBatchSorted, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)

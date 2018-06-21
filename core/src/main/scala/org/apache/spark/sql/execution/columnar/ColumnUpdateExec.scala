@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Exp
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnStatsSchema}
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatRelation}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -48,6 +48,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   assert(updateColumns.length == updateExpressions.length)
 
   override def relation: Option[DestroyRelation] = Some(appendableRelation)
+  private val isColumnBatchSorted: Boolean = relation.isDefined && (relation.get match {
+    case cfr: ColumnFormatRelation =>
+      StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder) ||
+          StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder)
+    case _ => false
+  })
 
   val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
     appendableRelation.getCompressionCodec)
@@ -315,7 +321,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |        $batchOrdinal, buffers, ${statsEv.value}.getBytes(), $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
-         |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));
+         |        $lastColumnBatchId, -1, ${compressionCodec.id}, $isColumnBatchSorted,
+         |        new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();

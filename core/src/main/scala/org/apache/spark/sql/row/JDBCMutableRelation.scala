@@ -92,6 +92,8 @@ case class JDBCMutableRelation(
 
   def partitionColumns: Seq[String] = Nil
 
+  override def getSortingOrder: String = ""
+
   def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Nil
 
   def numBuckets: Int = -1

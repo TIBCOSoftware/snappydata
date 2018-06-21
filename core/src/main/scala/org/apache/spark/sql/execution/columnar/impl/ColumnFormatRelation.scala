@@ -124,6 +124,8 @@ abstract class BaseColumnFormatRelation(
     partitioningColumns
   }
 
+  override def getSortingOrder: String = ""
+
   override private[sql] lazy val externalColumnTableName: String =
     ColumnFormatRelation.columnBatchTableName(table,
       Some(() => sqlContext.sparkSession.asInstanceOf[SnappySession]))
@@ -548,6 +550,8 @@ class ColumnFormatRelation(
     relation.copy(relation = newRelation,
       expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
   }
+
+  override def getSortingOrder: String = columnSortedOrder
 
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
