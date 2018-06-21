@@ -112,7 +112,23 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     next
   }
 
-  private def skipUntil(ordinal: Int): Byte = {
+  private def skipUntil(ordinal: Int): Boolean = {
+    while (true) {
+      // update the cursor and keep on till ordinal is not reached
+      nextUpdatedPosition = moveToNextUpdatedPosition()
+      if (nextUpdatedPosition > ordinal) return true
+      if (nextUpdatedPosition == ordinal) return false
+    }
+    false // never reached
+  }
+
+  final def unchanged(ordinal: Int): Boolean = {
+    if (nextUpdatedPosition > ordinal) true
+    else if (nextUpdatedPosition == ordinal) false
+    else skipUntil(ordinal)
+  }
+
+  private def skipUntilByte(ordinal: Int): Byte = {
     while (true) {
       // update the cursor and keep on till ordinal is not reached
       nextUpdatedPosition = moveToNextUpdatedPosition()
@@ -130,10 +146,10 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     ColumnTableScan.INSERT_IN_DELTA
   } else ColumnTableScan.UPDATE_IN_DELTA
 
-  final def unchanged(ordinal: Int): Byte = {
+  final def unchangedByte(ordinal: Int): Byte = {
     if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) ColumnTableScan.NOT_IN_DELTA
     else if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) isInsertOrUpdate(ordinal)
-    else skipUntil(ordinal)
+    else skipUntilByte(ordinal)
   }
 
   def readNotNull: Boolean

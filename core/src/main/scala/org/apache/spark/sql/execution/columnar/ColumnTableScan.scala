@@ -774,7 +774,7 @@ private[sql] final case class ColumnTableScan(
     updatedAssign = s"$col = $updateDecoder.getCurrentDeltaBuffer().$updatedAssign;"
     val unchangedCode = if (isColumnBatchSorted) {
       s"""$unchangedByte =  $updateDecoder == null ? ${ColumnTableScan.NOT_IN_DELTA} :
-         |  $updateDecoder.unchanged($batchOrdinal);""".stripMargin
+         |  $updateDecoder.unchangedByte($batchOrdinal);""".stripMargin
     } else s"$updateDecoder == null || $updateDecoder.unchanged($batchOrdinal)"
     if (attr.nullable) {
       val isNullVar = ctx.freshName("isNull")
@@ -883,7 +883,6 @@ private[sql] final case class ColumnTableScan(
 object ColumnTableScan extends Logging {
   // Handle inverted bytes that denote incremental insert
   def getPositive(p: Int): Int = if (p < 0) ~p else p
-
   val NOT_IN_DELTA: Byte = 1
   val INSERT_IN_DELTA: Byte = 0
   val UPDATE_IN_DELTA: Byte = -1
