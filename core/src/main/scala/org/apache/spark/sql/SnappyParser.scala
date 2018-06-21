@@ -55,7 +55,7 @@ class SnappyParser(session: SnappySession)
   final def questionMarkCounter: Int = _questionMarkCounter
 
   private[sql] final def input_=(in: ParserInput): Unit = {
-    reset()
+    clearQueryHints()
     _input = in
     clearConstants()
     _questionMarkCounter = 0
@@ -768,7 +768,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    ((relationFactor | inlineTable) ~ tableValuedFunctionExpressions.?) ~>
+    ((inlineTable | relationFactor) ~ tableValuedFunctionExpressions.?) ~>
         ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
@@ -979,7 +979,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def select1: Rule1[LogicalPlan] = rule {
-    select2 | inlineTable
+    select2 | inlineTable | ctes
   }
 
   protected final def query: Rule1[LogicalPlan] = rule {
@@ -1113,7 +1113,7 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | cache | uncache | desc | deployPackages))
+        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | reset | cache | uncache | desc | deployPackages))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],

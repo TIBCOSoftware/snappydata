@@ -109,6 +109,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def WHEN: Rule0 = rule { keyword(Consts.WHEN) }
   final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
+  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
 
   // non-reserved keywords
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
@@ -571,6 +572,10 @@ abstract class SnappyDDLParser(session: SparkSession)
           }
         }
     )
+  }
+
+  protected def reset: Rule1[LogicalPlan] = rule {
+    RESET ~> { () => ResetCommand }
   }
 
   // It can be the following patterns:
