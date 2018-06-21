@@ -1112,9 +1112,10 @@ class SnappyParser(session: SnappySession)
         (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | cache | uncache | desc | deployPackages))
   }
 
-  final def parse[T](sqlText: String, parseRule: => Try[T]): T = session.synchronized {
+  final def parse[T](sqlText: String, parseRule: => Try[T],
+      clearExecutionData: Boolean = false): T = session.synchronized {
     session.clearQueryData()
-    session.sessionState.clearExecutionData()
+    if (clearExecutionData) session.sessionState.clearExecutionData()
     caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
     parseSQL(sqlText, parseRule)
   }
