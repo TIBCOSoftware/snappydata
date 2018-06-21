@@ -135,6 +135,8 @@ trait MutableRelation extends DestroyRelation {
    */
   def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan
+
+  def getSortingOrder: String
 }
 
 /**

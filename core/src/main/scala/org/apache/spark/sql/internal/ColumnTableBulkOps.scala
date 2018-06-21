@@ -41,34 +41,29 @@ object ColumnTableBulkOps {
   def transformInsertPlan(sparkSession: SparkSession,
       originalPlan: InsertIntoTable): LogicalPlan = {
     val table = originalPlan.table
-    val newTableOption = table match {
-      case LogicalRelation(cr: ColumnFormatRelation, b, a) =>
-        Some(LogicalRelation(new ColumnFormatRelation(cr.table, cr.provider,
-          cr.mode, originalPlan.table.schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
-          cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
-          cr.columnSortedOrder, allowInsertWhileScan = true), b, a))
-      case _ => None
-    }
     var transFormedPlan: LogicalPlan = originalPlan
-
-    if (newTableOption.isDefined) {
-      val newTable = newTableOption.get
-      val subQuery = originalPlan.child
-
-      table.collectFirst {
-        case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
-          val columnSorting = mutable match {
-            case c: ColumnFormatRelation => c.columnSortedOrder
-            case _ => ""
+    table.collectFirst {
+      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+        if (StoreUtils.isColumnBatchSortedAscending(mutable.getSortingOrder) ||
+            StoreUtils.isColumnBatchSortedDescending(mutable.getSortingOrder)) {
+          val partitionColumns = mutable.partitionColumns
+          if (partitionColumns.isEmpty) {
+            throw new AnalysisException(
+              s"Insert in sorted column table requires partitioning column(s)" +
+                  s" but got empty string")
           }
-          if (StoreUtils.isColumnBatchSortedAscending(columnSorting) ||
-              StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
-            val partitionColumns = mutable.partitionColumns
-            if (partitionColumns.isEmpty) {
-              throw new AnalysisException(
-                s"Insert in sorted column table requires partitioning column(s)" +
-                    s" but got empty string")
-            }
+          val newTableOption = table match {
+            case LogicalRelation(cr: ColumnFormatRelation, b, a) =>
+              Some(LogicalRelation(new ColumnFormatRelation(cr.table, cr.provider,
+                cr.mode, originalPlan.table.schema, cr.schemaExtensions,
+                cr.ddlExtensionForShadowTable, cr.origOptions, cr.externalStore,
+                cr.partitioningColumns, cr.sqlContext, cr.columnSortedOrder,
+                allowInsertWhileScan = true), b, a))
+            case _ => None
+          }
+          if (newTableOption.isDefined) {
+            val newTable = newTableOption.get
+            val subQuery = originalPlan.child
             val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
               changeCondition = true)
             val joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
@@ -85,7 +80,7 @@ object ColumnTableBulkOps {
               OverwriteOptions(enabled = false), ifNotExists = false)
 
             // TODO VB: Any cheaper way to find table is empty or not?
-            // What if somebody else has inserted?
+            // TODO VB: What if somebody else would insert in parallel?
             val tabEmpty = new Dataset(sparkSession, table, RowEncoder(table.schema)).count() == 0
             transFormedPlan = if (!tabEmpty) {
               val updateSubQuery: LogicalPlan = DeltaInsertNode(joinSubQuery,
@@ -102,8 +97,8 @@ object ColumnTableBulkOps {
               modifiedInsertDS.queryExecution.analyzed.asInstanceOf[Insert]
             }
           }
-        case _ => // Do nothing, original insert plan is enough
-      }
+        }
+      case _ => // Do nothing, original insert plan is enough
     }
     transFormedPlan
   }

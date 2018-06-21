@@ -39,7 +39,7 @@ trait ExternalStore extends Serializable with Logging {
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
-      compressionCodecId: Int, conn: Option[Connection]): Unit
+      compressionCodecId: Int, isSorted: Boolean, conn: Option[Connection]): Unit
 
   def storeDelete(tableName: String, buffer: ByteBuffer, partitionId: Int,
       batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit
