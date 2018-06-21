@@ -545,7 +545,8 @@ class ColumnFormatRelation(
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new ColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
-      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext)
+      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
+      cr.columnSortedOrder)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
       expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
