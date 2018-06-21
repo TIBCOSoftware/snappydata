@@ -225,7 +225,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val callEncoders = updateColumns.zipWithIndex.map { case (col, i) =>
       val function = ctx.freshName("encoderFunction")
       val ordinal = ctx.freshName("ordinal")
-      val insertCount = ctx.freshName("insertCount")
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
       val dataType = col.dataType
@@ -235,7 +234,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
-           |private void $function(int $ordinal, int $ordinalIdVar, int $insertCount,
+           |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
            |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
            |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
@@ -247,26 +246,13 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |  } else {
            |    updatedOrdinalIdVar = $ordinalIdVar;
            |  }
-           |  // VB TODO: Remove this
-           |  if (${ColumnTableScan.isDebugMode}) {
-           |    System.out.println("vivek ordinal=" + $ordinal +
-           |     " ,ordinal-id=" + $ordinalIdVar +
-           |     " [" + ~$ordinalIdVar + "]" +
-           |     " ,updated-ordinal-id=" + updatedOrdinalIdVar +
-           |     " [" + ~updatedOrdinalIdVar + "]" +
-           |     " ,insertCount=" + $insertCount +
-           |     " ,field=" + $field +
-           |     " ,caseOfDeltaInsert=" + $caseOfDeltaInsert);
-           |  }
            |  $encoderTerm.setUpdatePosition(updatedOrdinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
                 encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
-      // TODO VB: Remove passing deltaInsertOrdinal
-      s"$function($batchOrdinal, (int)$ordinalIdVar, $deltaInsertOrdinal, ${ev.isNull}," +
-          s"${ev.value});"
+      s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
     // Old code(Keeping the comment for better understanding)
     // Write the delta stats row for all table columns at the end of a batch.
