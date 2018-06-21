@@ -22,7 +22,7 @@ In this mode, one can write Spark programs using jobs. For more details, refer t
 
 Also, you can use [SnappySQL](../howto/use_snappy_shell.md) to create and query tables.
 
-You can either [start SnappyData members](../howto/start_snappy_cluster/) using the `snappy-start-all.sh` script or you can start them individually.
+You can either [start SnappyData members](../howto/start_snappy_cluster.md) using the `snappy-start-all.sh` script or you can start them individually.
 
 Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:
 

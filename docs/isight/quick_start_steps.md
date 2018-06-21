@@ -70,17 +70,17 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 3. [Pick total Memory & Disk](../best_practices/memory_management.md) (GB): </br>
  
-	* **Memory**: Click and drag the bar to select the required memory.
+	1. **Memory**: Click and drag the bar to select the required memory.
 
-	* **Disk (3x Memory Recommended)**: Click and drag the bar to select the required disk size.
+	2. **Disk (3x Memory Recommended)**: Click and drag the bar to select the required disk size.
 
 	![STEP](../Images/cloudbuilder_enterprise_memory.png)
 
 4. **Recommended Cluster**: Select an instance based on the required capacity.
 
-	* **Add servers to support high availability?**: Select this option to add servers to support high availability.
+	1. **Add servers to support high availability?**: Select this option to add servers to support high availability.
 
-	* **Do your workloads have high query volumes?**: Select this option if your workloads have high query volumes.
+	2. **Do your workloads have high query volumes?**: Select this option if your workloads have high query volumes.
 
 	Click the **Edit Nodes** option to modify the number of nodes.
 
