@@ -57,18 +57,18 @@ object ColumnTableBulkOps {
 
       table.collectFirst {
         case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
-          val partitionColumns = mutable.partitionColumns
-          if (partitionColumns.isEmpty) {
-            throw new AnalysisException(
-              s"Insert in a table requires partitioning column(s) but got empty string")
-          }
-
           val columnSorting = mutable match {
             case c: ColumnFormatRelation => c.columnSortedOrder
             case _ => ""
           }
           if (StoreUtils.isColumnBatchSortedAscending(columnSorting) ||
               StoreUtils.isColumnBatchSortedDescending(columnSorting)) {
+            val partitionColumns = mutable.partitionColumns
+            if (partitionColumns.isEmpty) {
+              throw new AnalysisException(
+                s"Insert in sorted column table requires partitioning column(s)" +
+                    s" but got empty string")
+            }
             val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
               changeCondition = true)
             val joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
