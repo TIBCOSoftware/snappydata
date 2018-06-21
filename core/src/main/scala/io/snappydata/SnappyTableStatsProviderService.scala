@@ -183,6 +183,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
+    var resultObtained: Boolean = false
     try {
       if (dataServers != null && dataServers.size() > 0) {
         result = FunctionService.onMembers(dataServers)
@@ -190,6 +191,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             .execute(SnappyRegionStatsCollectorFunction.ID).getResult(5, TimeUnit.SECONDS).
             asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
             .asScala
+        resultObtained = true
       }
     }
     catch {
@@ -216,28 +218,14 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
 
-    if (result.flatMap(_.getRegionStats.asScala).size == 0) {
-      // Return last successfully updated tableSizeInfo
-      // Check for if any table is present in catalog
-      val allStoreTables = Misc.getMemStore.getExternalCatalog.getAllStoreTablesInCatalog(true)
-      val allTablesList = scala.collection.mutable.Buffer.empty[String]
-      allStoreTables.asScala.keys.foreach(schema => {
-        allTablesList ++= allStoreTables.get(schema).asScala.map(tbl => {
-          schema.concat(".").concat(tbl)
-        })
-      })
-
-      if (allTablesList.size == 0 && tableSizeInfo.size > 0) {
-        // No table is present in any db schema, reset tableSizeInfo
-        tableSizeInfo = Map.empty[String, SnappyRegionStats]
-      }
-
-      (tableSizeInfo.values.toSeq,
+    if (resultObtained) {
+      // Return updated details
+      (result.flatMap(_.getRegionStats.asScala),
           result.flatMap(_.getIndexStats.asScala),
           externalTables)
     } else {
-      // Return updated tableSizeInfo
-      (result.flatMap(_.getRegionStats.asScala),
+      // Return last successfully updated tableSizeInfo
+      (tableSizeInfo.values.toSeq,
           result.flatMap(_.getIndexStats.asScala),
           externalTables)
     }
