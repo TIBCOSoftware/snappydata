@@ -65,19 +65,19 @@ object SparkAppUsingJob  extends SnappySQLJob {
 
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulateLineItemTable(snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
 
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath,
