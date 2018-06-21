@@ -32,6 +32,7 @@ import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 /**
@@ -85,13 +86,16 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val existingBuffer = oldColValue.getBuffer
       val newValue = getValueRetain(FetchRequest.DECOMPRESS)
       val newBuffer = newValue.getBuffer
+      var isColumnBatchSorted = false
       try {
-        val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
+        val (schema, columnTableSorting) = region.getUserAttribute.asInstanceOf[GemFireContainer]
             .fetchHiveMetaData(false) match {
           case null => throw new IllegalStateException(
             s"Table for region ${region.getFullPath} not found in hive metadata")
-          case m => m.schema.asInstanceOf[StructType]
+          case m => (m.schema.asInstanceOf[StructType], m.columnTableSortOrder)
         }
+        isColumnBatchSorted = StoreUtils.isColumnBatchSortedAscending(columnTableSorting) ||
+            StoreUtils.isColumnBatchSortedDescending(columnTableSorting)
         val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
         // TODO: SW: if old value itself is returned, then avoid any put at GemFire layer
         // (perhaps throw some exception that can be caught and ignored in virtualPut)
@@ -110,14 +114,15 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
           val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
           new ColumnFormatValue(encoder.merge(newBuffer, existingBuffer,
-            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex)),
-            oldColValue.compressionCodecId, isCompressed = false)
+            columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX, schema(tableColumnIndex),
+            isColumnBatchSorted), oldColValue.compressionCodecId, isCompressed = false)
         }
       } finally {
         oldColValue.release()
         // TODO VB: Do not release delta buffer if case of delta insert
-        // newValue.release()
-
+        if (!isColumnBatchSorted) {
+          newValue.release()
+        }
         // release own buffer too and delta should be unusable now
         release()
       }
