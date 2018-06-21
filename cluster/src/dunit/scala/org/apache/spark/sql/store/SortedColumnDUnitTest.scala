@@ -27,6 +27,8 @@ import org.apache.spark.sql.SnappyContext
  */
 class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  def testDummy(): Unit = {}
+
   def disabled_testBasicInsert(): Unit = {
     val snc = SnappyContext(sc).snappySession
     val colTableName = "colDeltaTable"
@@ -50,7 +52,7 @@ class SortedColumnDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // while (true) {}
   }
 
-  def testPointQueryPerformanceMultithreaded() {
+  def disabled_testPointQueryPerformanceMultithreaded() {
     val snc = SnappyContext(sc).snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551

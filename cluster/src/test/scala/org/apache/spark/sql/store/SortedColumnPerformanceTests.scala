@@ -52,7 +52,9 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     conf
   }
 
-  test("insert performance") {
+  test("dummy") {}
+
+  ignore("insert performance") {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 100000000
@@ -110,7 +112,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // Thread.sleep(50000000)
   }
 
-  test("PointQuery performance") {
+  ignore("PointQuery performance") {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
@@ -154,7 +156,7 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // Thread.sleep(50000000)
   }
 
-  test("JoinQuery performance") {
+  ignore("JoinQuery performance") {
     val session = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val joinTableName = "joinDeltaTable"
@@ -212,41 +214,41 @@ class SortedColumnPerformanceTests extends ColumnTablesTestBase {
     // Thread.sleep(50000000)
   }
 
-  test("PointQuery performance multithreaded 1") {
+  ignore("PointQuery performance multithreaded 1") {
     val snc = this.snc.snappySession
     SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, numThreads = 1)
     // Thread.sleep(5000000)
   }
 
-  test("PointQuery performance multithreaded 4") {
+  ignore("PointQuery performance multithreaded 4") {
     val snc = this.snc.snappySession
     val totalNumThreads = SortedColumnPerformanceTests.cores
     SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
     // Thread.sleep(5000000)
   }
 
-  test("PointQuery performance multithreaded 8") {
+  ignore("PointQuery performance multithreaded 8") {
     val snc = this.snc.snappySession
     val totalNumThreads = 2 * SortedColumnPerformanceTests.cores
     SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
     // Thread.sleep(5000000)
   }
 
-  test("PointQuery performance multithreaded 16") {
+  ignore("PointQuery performance multithreaded 16") {
     val snc = this.snc.snappySession
     val totalNumThreads = 4 * SortedColumnPerformanceTests.cores
     SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
     // Thread.sleep(5000000)
   }
 
-  test("PointQuery performance multithreaded 32") {
+  ignore("PointQuery performance multithreaded 32") {
     val snc = this.snc.snappySession
     val totalNumThreads = 4 * SortedColumnPerformanceTests.cores
     SortedColumnPerformanceTests.mutiThreadedPointQuery(snc, totalNumThreads)
     // Thread.sleep(5000000)
   }
 
-  test("RangeQuery performance") {
+  ignore("RangeQuery performance") {
     val snc = this.snc.snappySession
     val colTableName = "colDeltaTable"
     val numElements = 999551
