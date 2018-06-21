@@ -718,7 +718,7 @@ case class ColumnFormatIteratorIsSorted(session: SnappySession)
   }
 
   private def modifyColumnTableScan(in: SparkPlan) : SparkPlan = in transform {
-    case cts: ColumnTableScan =>
+    case cts: ColumnTableScan if cts.isColumnBatchSorted =>
       val modifiedRDD = cts.dataRDD match {
         case zrdd: ZippedPartitionsRDD2[_, _, _] => zrdd.rdd2 match {
           case csprdd: ColumnarStorePartitionedRDD =>

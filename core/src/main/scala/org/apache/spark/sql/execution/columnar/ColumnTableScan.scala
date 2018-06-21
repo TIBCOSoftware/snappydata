@@ -84,7 +84,7 @@ private[sql] final case class ColumnTableScan(
   override val nodeName: String = "ColumnTableScan"
 
   @transient private val MAX_SCHEMA_LENGTH = 40
-  private val isColumnBatchSorted: Boolean = baseRelation match {
+  val isColumnBatchSorted: Boolean = baseRelation match {
     case cfr: ColumnFormatRelation =>
       StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder) ||
           StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder)
