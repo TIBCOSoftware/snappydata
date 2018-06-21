@@ -20,11 +20,11 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection, SinglePartition}
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.joins.SortMergeJoinExec
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.{CodegenSupport, SparkPlan, UnaryExecNode}
+import org.apache.spark.sql.execution.{CodegenSupport, ProjectExec, SparkPlan, UnaryExecNode}
 
 /**
  * On top of sort merge join of two child relations.
@@ -34,8 +34,17 @@ abstract class BaseDeltaInsertExec(child: SparkPlan) extends UnaryExecNode with 
   override def output: Seq[Attribute] = child.output
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
-  override def outputPartitioning: Partitioning = child.outputPartitioning
-
+  override def outputPartitioning: Partitioning = child match {
+    case smj: SortMergeJoinExec => PartitioningCollection(Seq(smj.left.outputPartitioning,
+      smj.right.outputPartitioning))
+    case prj: ProjectExec => prj.child match {
+      case smj: SortMergeJoinExec => PartitioningCollection(Seq(smj.left.outputPartitioning,
+        smj.right.outputPartitioning))
+      case _ => child.outputPartitioning
+    }
+    case _ => child.outputPartitioning
+  }
+  
   /** Specifies any partition requirements on the input data for this operator. */
   // override def requiredChildDistribution: Seq[Distribution] =
   //  Seq.fill(children.size)(UnspecifiedDistribution)
