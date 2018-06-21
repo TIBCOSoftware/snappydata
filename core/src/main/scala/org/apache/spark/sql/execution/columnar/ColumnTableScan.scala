@@ -520,11 +520,9 @@ private[sql] final case class ColumnTableScan(
         int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
           $countIndexInSchema) : 0;
         $numBatchRows = $numFullRows + $numDeltaRows;
-        // TODO VB: Remove this
-        if (${ColumnTableScan.isDebugMode}) {
-          System.out.println("VB: ColumnTableScan numBatchRows=" + $numBatchRows +
-            " ,numFullRows=" + $numFullRows + " ,numDeltaRows=" + $numDeltaRows);
-        }
+        // TODO VB: Remove this. For debugging
+        // System.out.println("VB: ColumnTableScan numBatchRows=" + $numBatchRows +
+        //   " ,numFullRows=" + $numFullRows + " ,numDeltaRows=" + $numDeltaRows);
         // TODO: don't have the update count here (only insert count)
         $numDeltaRows = $numBatchRows;
         $incrementBatchCount
@@ -786,52 +784,17 @@ private[sql] final case class ColumnTableScan(
            |}
            |// If entry is deleted, return from here
            |if ($isDeletedEntry) {
-           |    // TODO VB: Remove this
-           |    if (${ColumnTableScan.isDebugMode}) {
-           |      System.out.println("VB: Scan [deleted] " + $unchanged +
-           |      " ,batchOrdinal=" + $batchOrdinal +
-           |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
-           |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
-           |      " ,batchIndex=" + $batchIndex +
-           |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
-           |      " ,numRows=" + $numRows +
-           |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
-           |      "");
-           |    }
            |  continue;
            |}
            |if ($unchanged == ${ColumnTableScan.NOT_IN_DELTA}) {
            |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
            |    $colAssign
-           |    // TODO VB: Remove this
-           |    if (${ColumnTableScan.isDebugMode}) {
-           |      System.out.println("VB: Scan [inserted] " + $col +
-           |      " ,batchOrdinal=" + $batchOrdinal +
-           |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
-           |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
-           |      " ,batchIndex=" + $batchIndex +
-           |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
-           |      " ,numRows=" + $numRows +
-           |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
-           |      "");
-           |    }
            |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
            |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
-           |  // TODO VB: Remove this
-           |  if (${ColumnTableScan.isDebugMode}) {
-           |    System.out.println("VB: Scan [updated] " + $col +
-           |     " ,batchOrdinal=" + $batchOrdinal +
-           |    " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
-           |    " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
-           |    " ,batchIndex=" + $batchIndex +
-           |    " ,batchDictionaryIndex=" + $batchDictionaryIndex +
-           |    " ,numRows=" + $numRows +
-           |    "");
-           |    }
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;
@@ -849,18 +812,6 @@ private[sql] final case class ColumnTableScan(
            |}
            |// If entry is deleted, return from here
            |if ($isDeletedEntry) {
-           |    // TODO VB: Remove this
-           |    if (${ColumnTableScan.isDebugMode}) {
-           |      System.out.println("VB: Scan [deleted][2] " + $unchanged +
-           |      " ,batchOrdinal=" + $batchOrdinal +
-           |      " ,bucketId=" + ($inputIsRow ? -1 : $colInput.getCurrentBucketId()) +
-           |      " ,batchId=" + ($inputIsRow ? -1 : $colInput.getCurrentBatchId()) +
-           |      " ,batchIndex=" + $batchIndex +
-           |      " ,batchDictionaryIndex=" + $batchDictionaryIndex +
-           |      " ,numRows=" + $numRows +
-           |      " ,lastRowFromDictionary=" + $lastRowFromDictionary +
-           |      "");
-           |    }
            |  continue;
            |}
            |if ($unchanged == ${ColumnTableScan.NOT_IN_DELTA}) $colAssign
@@ -900,7 +851,6 @@ private[sql] final case class ColumnTableScan(
 object ColumnTableScan extends Logging {
   // TODO VB: Temporary, remove this
   var isDebugMode = false
-  def setDebugMode(debug: Boolean): Unit = isDebugMode = debug
 
   // Handle inverted bytes that denote incremental insert
   def getPositive(p: Int): Int = if (p < 0) ~p else p

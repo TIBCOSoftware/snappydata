@@ -229,12 +229,7 @@ object SortedColumnTests extends Logging {
     try {
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = false,
         numTimesInsert = 1, numTimesUpdate = 1)
-      try {
-        ColumnTableScan.setDebugMode(false)
-        updateDF.write.insertInto(colTableName)
-      } finally {
-        ColumnTableScan.setDebugMode(false)
-      }
+      updateDF.write.insertInto(colTableName)
       verifyTotalRows(session: SnappySession, colTableName, numElements, finalCall = true,
         numTimesInsert = 1, numTimesUpdate = 1)
     } catch {
@@ -556,33 +551,27 @@ object SortedColumnTests extends Logging {
       println(s"$testName loaded $dataFile_1")
       // scalastyle:on
 
-      try {
-        ColumnTableScan.setDebugMode(false)
-        dataFrameReader.load(fixedFilePath(dataFile_2)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_2")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_3)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_3")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_4)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_4")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_5)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_5")
-        // scalastyle:on
-        dataFrameReader.load(fixedFilePath(dataFile_6)).write.insertInto(colTableName)
-        // scalastyle:off
-        println(s"$testName loaded $dataFile_6")
-        // scalastyle:on
-      } finally {
-        ColumnTableScan.setDebugMode(false)
-      }
+      dataFrameReader.load(fixedFilePath(dataFile_2)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_2")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(dataFile_3)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_3")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(dataFile_4)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_4")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(dataFile_5)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_5")
+      // scalastyle:on
+      dataFrameReader.load(fixedFilePath(dataFile_6)).write.insertInto(colTableName)
+      // scalastyle:off
+      println(s"$testName loaded $dataFile_6")
+      // scalastyle:on
 
-      ColumnTableScan.setDebugMode(true)
       val colDf = session.sql(s"select * from $colTableName")
       val res = colDf.collect()
       val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
@@ -715,29 +704,24 @@ object SortedColumnTests extends Logging {
       doIncrementalInsert(dataFile_6, dataFrameReader)
       verifyUpdate(doUpdate("updated6"), 14)
 
-      try {
-        val select_query = s"select * from $colTableName"
-        // scalastyle:off
-        println(s"$testName started SELECT $select_query")
-        // scalastyle:on
-        ColumnTableScan.setDebugMode(true)
-        val colDf = session.sql(select_query)
-        val res = colDf.collect()
-        val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
-        assert(res.length == expected.length, s"output: ${res.length}, expected=${expected.length}")
-        // scalastyle:off
-        println(s"$testName SELECT = ${res.length} / ${expected.length}")
-        // scalastyle:on
-        if (numBuckets == 1) {
-          var i = 0
-          res.foreach(r => {
-            val col1 = r.getInt(0)
-            assert(col1 == expected(i), s"$i: output: $col1, expected=${expected(i)}")
-            i += 1
-          })
-        }
-      } finally {
-        ColumnTableScan.setDebugMode(false)
+      val select_query = s"select * from $colTableName"
+      // scalastyle:off
+      println(s"$testName started SELECT $select_query")
+      // scalastyle:on
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
+      assert(res.length == expected.length, s"output: ${res.length}, expected=${expected.length}")
+      // scalastyle:off
+      println(s"$testName SELECT = ${res.length} / ${expected.length}")
+      // scalastyle:on
+      if (numBuckets == 1) {
+        var i = 0
+        res.foreach(r => {
+          val col1 = r.getInt(0)
+          assert(col1 == expected(i), s"$i: output: $col1, expected=${expected(i)}")
+          i += 1
+        })
       }
     } catch {
       case t: Throwable =>
@@ -855,7 +839,7 @@ object SortedColumnTests extends Logging {
       // scalastyle:off
       println(s"$testName loaded $dataFile_1")
       // scalastyle:on
-      ColumnTableScan.setDebugMode(true)
+
       verifySelect(4)
       verifyUpdate(doUpdate(10001), 4)
 
@@ -879,29 +863,25 @@ object SortedColumnTests extends Logging {
       verifySelect(14)
       verifyUpdate(doUpdate(10006), 14)
 
-      try {
-        val select_query = s"select * from $colTableName"
-        // scalastyle:off
-        println(s"$testName started SELECT $select_query")
-        // scalastyle:on
-        ColumnTableScan.setDebugMode(true)
-        val colDf = session.sql(select_query)
-        val res = colDf.collect()
-        val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
-        assert(res.length == expected.length, s"output: ${res.length}, expected=${expected.length}")
-        // scalastyle:off
-        println(s"$testName SELECT = ${res.length} / ${expected.length}")
-        // scalastyle:on
-        if (numBuckets == 1) {
-          var i = 0
-          res.foreach(r => {
-            val col1 = r.getInt(0)
-            assert(col1 == expected(i), s"$i: output: $col1, expected=${expected(i)}")
-            i += 1
-          })
-        }
-      } finally {
-        ColumnTableScan.setDebugMode(false)
+      val select_query = s"select * from $colTableName"
+      // scalastyle:off
+      println(s"$testName started SELECT $select_query")
+      // scalastyle:on
+
+      val colDf = session.sql(select_query)
+      val res = colDf.collect()
+      val expected = Array(0, 25, 50, 99, 100, 125, 150, 175, 199, 200, 225, 250, 275, 299)
+      assert(res.length == expected.length, s"output: ${res.length}, expected=${expected.length}")
+      // scalastyle:off
+      println(s"$testName SELECT = ${res.length} / ${expected.length}")
+      // scalastyle:on
+      if (numBuckets == 1) {
+        var i = 0
+        res.foreach(r => {
+          val col1 = r.getInt(0)
+          assert(col1 == expected(i), s"$i: output: $col1, expected=${expected(i)}")
+          i += 1
+        })
       }
     } catch {
       case t: Throwable =>
