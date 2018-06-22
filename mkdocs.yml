@@ -297,6 +297,10 @@ pages:
 - 'Test':
     - '201': 'test_2/test202.md'
     - '203': 'test_2/test203.md'
+- 'Topic': 'test/test.md'
+- 'Topic':
+    - 'Chapter 1': 'test/chapter1.md'
+    - 'Chapter 2': 'test/procedures.md'
 #- About:
 #   - Contributing: about/contributing.md
 - Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
