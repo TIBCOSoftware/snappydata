@@ -34,20 +34,21 @@ Support for Microsoft Azure will be provided in future releases.
 
 * Unordered list
 	- unordered list 1
+	- unordered list 2
 
-1 Ordered list
+list
 
-2 ordered list
+1. Ordered list
+2. ordered list
 
-			a second level
-            
-            b second level
+	1. second level 
+	2. second level
            
 ![test_image](../Images/vsd/vsd_applications.png)
+
 [Link to another md file](procedures.md)
 
-[lgeogy@snappydata.io](mailto:lgeogy@sn
-appydata.io)
+[lgeogy@snappydata.io](mailto:lgeogy@snappydata.io)
 
 [Bookmark](#getstart)
 
@@ -59,10 +60,10 @@ This is how you insert `Inline Code`
 
 This is how you insert block code:
 
-````
-Block codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock code
-Block codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock code
-````
+
+    Block codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock code
+    Block codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock code
+
 ```pre
 Block codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock code
 Block codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock code
@@ -70,7 +71,7 @@ Block codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock codeBlock code
 <ent>This feature is available only in the Enterprise version of SnappyData. </ent>
 
 !!! note
-This is used for note, info, tip, warning etc.
+	This is used for note, info, tip, warning etc.
 
 # Troubleshooting
 <error> **Error Message:** 
@@ -84,7 +85,7 @@ Here you specify the diagnosis.
 Here the solution
 </action>
 
-##Basic Table
+## Basic Table
 
 | Company | Feature |
 |--------|--------|
@@ -97,5 +98,5 @@ Here the solution
 |      Baidu  |       The Future of Voice Search |
 |    HubSpot    |       Smarter Sales |
 |     IBM   |    Better Healthcare    |
-|   Salesforce     |   Intelligent CRMs     |
+|   Salesforce     |   Intelligent CRMs </br>   * test </br> * test 2 </br>  |
 
