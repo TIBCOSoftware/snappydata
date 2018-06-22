@@ -104,10 +104,12 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
              |} else if ($prevJavaDate != null &&
              |    $prevJavaDate.getTime() == $javaDate.getTime()) {
              |  ${ev.value} = $prevDate;
+             |  ${ev.isNull} = false;
              |} else {
              |  $prevJavaDate = $javaDate;
              |  $prevDate = $dateTimeClass.fromJavaDate($javaDate);
              |  ${ev.value} = $prevDate;
+             |  ${ev.isNull} = false;
              |}
           """.stripMargin
         }
@@ -125,12 +127,13 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
         case _ => expr.genCode(ctx)
       }
       ev
-
-      // Commenting the code below, as it causes result mismatch.
-      // IMO the nullability of a field is already determined while
-      // creating the encoder. See ScalaReflection.schemaFor.
-
-      // @TODO Check with Sumwale, if it will cause any perf issues.
+      // The following code makes some of the Spark tests to fail
+      // check org.apache.spark.sql.SnappyDataFrameSuite.except - nullability.
+      // Reason was if primitives were not null checked it used to give default -1 for
+      // null ints
+      // Hence the below code was erronous and after fixing null handing in above date field
+      // it works for all cases.
+      
       /* if (ctx.isPrimitiveType(dataType)) {
         ev.copy(isNull = "false")
       } else {
