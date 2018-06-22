@@ -84,18 +84,22 @@ private[sql] final case class ColumnTableScan(
   override val nodeName: String = "ColumnTableScan"
 
   @transient private val MAX_SCHEMA_LENGTH = 40
-  val isColumnBatchSorted: Boolean = baseRelation match {
+  val (isColumnBatchSorted, ascendingOrder): (Boolean, Boolean) = baseRelation match {
     case cfr: ColumnFormatRelation =>
-      StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder) ||
-          StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder)
-    case _ => false
+      val isAscending = StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder)
+      (isAscending || StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder), isAscending)
+    case _ => (false, false)
   }
 
   override lazy val outputOrdering: Seq[SortOrder] = if (isColumnBatchSorted) {
-      val buffer = new ArrayBuffer[SortOrder](partitionColumns.size)
+    val buffer = new ArrayBuffer[SortOrder](partitionColumns.size)
+    if (ascendingOrder) {
       partitionColumns.map(buffer += SortOrder(_, Ascending))
-      buffer
     } else {
+      partitionColumns.map(buffer += SortOrder(_, Descending))
+    }
+    buffer
+  } else {
     val buffer = new ArrayBuffer[SortOrder](2)
     // sorted on [batchId, ordinal (position within batch)] for update/delete
     output.foreach {
