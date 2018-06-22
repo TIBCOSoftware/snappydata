@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries
-mkdir $directory
+directory=$outputLocation/GeneratedResults/$(date "+%Y.%m.%d-%H.%M.%S")
+mkdir -p $directory
 
 cp $leadDir/* $directory/
 
