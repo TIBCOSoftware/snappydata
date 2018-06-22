@@ -24,5 +24,5 @@ This section contains instructions and examples using which, you can try out Sna
 
 * [Using SQL](quickstart/using_sql.md)
 
-!!! Note: 
+!!! Note
 	Support for Microsoft Azure will be provided in future releases.

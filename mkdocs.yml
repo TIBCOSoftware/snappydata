@@ -299,6 +299,12 @@ pages:
     - '203': 'test_2/test203.md'
 #- About:
 #   - Contributing: about/contributing.md
+- 'Test': 'test/test.md'
+- 'Test':
+    - 'Procedures': 'test/procedures.md'
+    - 'Tables': 'test/tables.md'
+    - 'Chapter':
+        - 'Chapter': 'test/chapter1.md'
 - Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
 - 'License Model': 'additional_files/license_model.md'
 - 'Release Notes': 'release_notes/release_notes.md'
