@@ -18,6 +18,6 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyDataFrameStatPerfSuite extends DataFrameStatPerfSuite with SharedSnappySessionContext{
+class SnappyDataFrameStatPerfSuite extends DataFrameStatPerfSuite with SharedSnappySessionContext {
 
 }

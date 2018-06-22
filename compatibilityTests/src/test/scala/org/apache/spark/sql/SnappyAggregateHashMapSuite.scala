@@ -20,6 +20,6 @@ import org.apache.spark.sql.test.SharedSnappySessionContext
 
 class SnappyAggregateHashMapSuite
     extends SingleLevelAggregateHashMapSuite
-        with SharedSnappySessionContext{
+        with SharedSnappySessionContext {
 
 }

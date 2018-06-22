@@ -19,6 +19,6 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.SharedSnappySessionContext
 import org.apache.spark.sql.util.DataFrameCallbackSuite
 
-class SnappyDataFrameCallbackSuite extends DataFrameCallbackSuite with SharedSnappySessionContext{
+class SnappyDataFrameCallbackSuite extends DataFrameCallbackSuite with SharedSnappySessionContext {
 
 }

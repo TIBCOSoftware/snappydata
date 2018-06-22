@@ -19,6 +19,6 @@ package org.apache.spark.sql
 import org.apache.spark.sql.sources.DDLSourceLoadSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyDDLSourceLoadSuite extends DDLSourceLoadSuite with SharedSnappySessionContext{
+class SnappyDDLSourceLoadSuite extends DDLSourceLoadSuite with SharedSnappySessionContext {
 
 }

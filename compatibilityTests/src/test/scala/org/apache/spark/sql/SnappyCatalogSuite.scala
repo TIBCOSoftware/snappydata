@@ -18,6 +18,6 @@ package org.apache.spark.sql
 import org.apache.spark.sql.internal.CatalogSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyCatalogSuite extends CatalogSuite with SharedSnappySessionContext{
+class SnappyCatalogSuite extends CatalogSuite with SharedSnappySessionContext {
 
 }

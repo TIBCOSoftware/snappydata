@@ -37,6 +37,6 @@ import org.apache.spark.sql.test.SharedSnappySessionContext
 
 class SnappyCreateTableAsSelectSuite
     extends CreateTableAsSelectSuite
-        with SharedSnappySessionContext{
+        with SharedSnappySessionContext {
 
 }

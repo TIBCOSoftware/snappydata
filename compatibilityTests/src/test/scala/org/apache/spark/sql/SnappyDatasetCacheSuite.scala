@@ -18,6 +18,6 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyDatasetCacheSuite extends DatasetCacheSuite with SharedSnappySessionContext{
+class SnappyDatasetCacheSuite extends DatasetCacheSuite with SharedSnappySessionContext {
 
 }

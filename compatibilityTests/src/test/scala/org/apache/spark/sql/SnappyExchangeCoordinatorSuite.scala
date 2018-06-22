@@ -21,6 +21,6 @@ import org.apache.spark.sql.test.SharedSnappySessionContext
 
 class SnappyExchangeCoordinatorSuite
     extends ExchangeCoordinatorSuite
-        with SharedSnappySessionContext{
+        with SharedSnappySessionContext {
 
 }

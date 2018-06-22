@@ -19,6 +19,6 @@ package org.apache.spark.sql
 import org.apache.spark.sql.execution.ExchangeSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyExchangeSuite extends ExchangeSuite with SharedSnappySessionContext{
+class SnappyExchangeSuite extends ExchangeSuite with SharedSnappySessionContext {
 
 }

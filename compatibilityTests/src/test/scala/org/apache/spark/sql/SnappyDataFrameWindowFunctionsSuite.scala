@@ -21,6 +21,6 @@ import org.apache.spark.sql.test.SharedSnappySessionContext
 
 class SnappyDataFrameWindowFunctionsSuite
     extends DataFrameWindowFunctionsSuite
-        with SharedSnappySessionContext{
+        with SharedSnappySessionContext {
 
 }

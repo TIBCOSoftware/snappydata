@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import org.apache.spark.sql.streaming.EventTimeWatermarkSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyEventTimeWatermarkSuite extends EventTimeWatermarkSuite with SharedSnappySessionContext{
+class SnappyEventTimeWatermarkSuite extends
+    EventTimeWatermarkSuite with SharedSnappySessionContext {
 
 }

@@ -19,6 +19,6 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyDatasetPrimitiveSuite extends DatasetPrimitiveSuite with SharedSnappySessionContext{
+class SnappyDatasetPrimitiveSuite extends DatasetPrimitiveSuite with SharedSnappySessionContext {
 
 }

@@ -19,6 +19,6 @@ package org.apache.spark.sql
 import org.apache.spark.sql.streaming.FileStreamSourceSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyFileStreamSourceSuite extends FileStreamSourceSuite with SharedSnappySessionContext{
+class SnappyFileStreamSourceSuite extends FileStreamSourceSuite with SharedSnappySessionContext {
 
 }

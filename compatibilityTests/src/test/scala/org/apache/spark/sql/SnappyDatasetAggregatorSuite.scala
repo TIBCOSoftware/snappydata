@@ -19,6 +19,6 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyDatasetAggregatorSuite extends DatasetAggregatorSuite with SharedSnappySessionContext{
+class SnappyDatasetAggregatorSuite extends DatasetAggregatorSuite with SharedSnappySessionContext {
 
 }

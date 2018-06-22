@@ -19,6 +19,6 @@ package org.apache.spark.sql
 import org.apache.spark.sql.streaming.FileStreamSinkSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyFileStreamSinkSuite extends FileStreamSinkSuite with SharedSnappySessionContext{
+class SnappyFileStreamSinkSuite extends FileStreamSinkSuite with SharedSnappySessionContext {
 
 }

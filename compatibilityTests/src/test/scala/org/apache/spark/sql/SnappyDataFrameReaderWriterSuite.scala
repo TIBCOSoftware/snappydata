@@ -20,6 +20,6 @@ import org.apache.spark.sql.test.{DataFrameReaderWriterSuite, SharedSnappySessio
 
 class SnappyDataFrameReaderWriterSuite
     extends DataFrameReaderWriterSuite
-        with SharedSnappySessionContext{
+        with SharedSnappySessionContext {
 
 }

@@ -18,6 +18,6 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyDateFunctionsSuite extends DateFunctionsSuite with SharedSnappySessionContext{
+class SnappyDateFunctionsSuite extends DateFunctionsSuite with SharedSnappySessionContext {
 
 }
