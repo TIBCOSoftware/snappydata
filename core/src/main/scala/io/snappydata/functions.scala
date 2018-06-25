@@ -34,7 +34,7 @@ object SnappyDataFunctions {
   val usageStr = "_FUNC_() - Returns the dsid of the server containing the row."
 
   def registerSnappyFunctions(functionRegistry: FunctionRegistry): Unit = {
-    val info = new ExpressionInfo(DSID.getClass.getCanonicalName, "", "DSID", usageStr, "")
+    val info = new ExpressionInfo(DSID.getClass.getCanonicalName, null, "DSID", usageStr, "")
     functionRegistry.registerFunction("DSID", info, _ => DSID())
   }
 }
