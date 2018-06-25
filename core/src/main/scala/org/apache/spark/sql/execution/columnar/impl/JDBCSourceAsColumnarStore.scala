@@ -516,8 +516,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession, tableName, projection,
-          (filters eq null) || filters.length == 0, sortedOutputRequired = false, prunePartitions,
-          this)
+          (filters eq null) || filters.length == 0, prunePartitions, this)
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -674,7 +673,6 @@ final class ColumnarStorePartitionedRDD(
     private var tableName: String,
     private var projection: Array[Int],
     private var fullScan: Boolean,
-    var sortedOutputRequired: Boolean,
     @(transient @param) partitionPruner: => Int,
     @transient private val store: JDBCSourceAsColumnarStore)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -737,7 +735,7 @@ final class ColumnarStorePartitionedRDD(
     // val container = GemFireXDUtils.getGemFireContainer(tableName, true)
     // ColumnBatchIterator(container, bucketIds)
     val r = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
-    ColumnBatchIterator(r, bucketIds, projection, fullScan, sortedOutputRequired, context)
+    ColumnBatchIterator(r, bucketIds, projection, fullScan, context)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -756,7 +754,6 @@ final class ColumnarStorePartitionedRDD(
     output.writeInt(projection.length)
     output.writeInts(projection)
     output.writeBoolean(fullScan)
-    output.writeBoolean(sortedOutputRequired)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -765,7 +762,6 @@ final class ColumnarStorePartitionedRDD(
     val numProjections = input.readInt
     projection = input.readInts(numProjections)
     fullScan = input.readBoolean()
-    sortedOutputRequired = input.readBoolean()
   }
 }
 

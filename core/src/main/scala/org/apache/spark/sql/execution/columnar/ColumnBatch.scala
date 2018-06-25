@@ -118,21 +118,19 @@ object ColumnBatchIterator {
 
   def apply(region: LocalRegion,
       bucketIds: java.util.Set[Integer], projection: Array[Int],
-      fullScan: Boolean, sortedOutputRequired: Boolean,
-      context: TaskContext): ColumnBatchIterator = {
-    new ColumnBatchIterator(region, batch = null, bucketIds, projection, fullScan,
-      sortedOutputRequired, context)
+      fullScan: Boolean, context: TaskContext): ColumnBatchIterator = {
+    new ColumnBatchIterator(region, batch = null, bucketIds, projection, fullScan, context)
   }
 
   def apply(batch: ColumnBatch): ColumnBatchIterator = {
     new ColumnBatchIterator(region = null, batch, bucketIds = null,
-      projection = null, fullScan = false, sortedOutputRequired = false, context = null)
+      projection = null, fullScan = false, context = null)
   }
 }
 
 final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     bucketIds: java.util.Set[Integer], projection: Array[Int],
-    fullScan: Boolean, sortedOutputRequired: Boolean, context: TaskContext)
+    fullScan: Boolean, context: TaskContext)
     extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
 
   if (region ne null) {
@@ -158,7 +156,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
         java.util.Iterator[RegionEntry]] {
       override def apply(br: BucketRegion,
           numEntries: java.lang.Long): java.util.Iterator[RegionEntry] = {
-        new ColumnFormatIterator(br, projection, fullScan, sortedOutputRequired, txState)
+        new ColumnFormatIterator(br, projection, fullScan, txState)
       }
     }
     val createRemoteIterator = new BiFunction[java.lang.Integer, PRIterator,

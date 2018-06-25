@@ -58,7 +58,7 @@ import org.apache.spark.unsafe.Platform
  * @param projection array of projected columns (1-based, excluding delta or meta-columns)
  */
 final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int],
-    fullScan: Boolean, val sortedOutputRequired: Boolean, txState: TXState)
+    fullScan: Boolean, txState: TXState)
     extends ClusteredColumnIterator with DiskRegionIterator {
 
   type MapValueIterator =
@@ -84,10 +84,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   private val container = distributedRegion.getUserAttribute
       .asInstanceOf[GemFireContainer]
   private val columnTableSorting = container.fetchHiveMetaData(false).columnTableSortOrder
-  // sortedOutputRequired when true, reflects Case of Delta Insert and Case of Colocated join
-  private val isColumnBatchSorted = sortedOutputRequired &&
-      (StoreUtils.isColumnBatchSortedAscending(columnTableSorting) ||
-          StoreUtils.isColumnBatchSortedDescending(columnTableSorting))
+  // TODO VB: Only enable case of sorted scan for join, insert and group by queries
+  private val isColumnBatchSorted = (StoreUtils.isColumnBatchSortedAscending(columnTableSorting) ||
+      StoreUtils.isColumnBatchSortedDescending(columnTableSorting))
 
   private val canOverflow = !isColumnBatchSorted &&
     distributedRegion.isOverflowEnabled && distributedRegion.getDataPolicy.withPersistence()

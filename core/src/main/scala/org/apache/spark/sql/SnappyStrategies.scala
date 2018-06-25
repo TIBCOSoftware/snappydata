@@ -708,31 +708,6 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
 }
 
 /**
- * Rule to modify ColumnFormatIterator usage
- */
-case class ColumnFormatIteratorIsSorted(session: SnappySession)
-    extends Rule[SparkPlan] {
-  override def apply(plan: SparkPlan): SparkPlan = plan transform {
-    case smj@SortMergeJoinExec(_, _, _, _, left, right) =>
-      smj.copy(left = modifyColumnTableScan(left), right = modifyColumnTableScan(right))
-  }
-
-  private def modifyColumnTableScan(in: SparkPlan) : SparkPlan = in transform {
-    case cts: ColumnTableScan if cts.isColumnBatchSorted =>
-      val modifiedRDD = cts.dataRDD match {
-        case zrdd: ZippedPartitionsRDD2[_, _, _] => zrdd.rdd2 match {
-          case csprdd: ColumnarStorePartitionedRDD =>
-            csprdd.sortedOutputRequired = true
-            cts.dataRDD
-          case _ => cts.dataRDD
-        }
-        case _ => cts.dataRDD
-      }
-      cts.copy(dataRDD = modifiedRDD)
-  }
-}
-
-/**
  * Plans scalar subqueries like the Spark's PlanSubqueries but uses customized
  * ScalarSubquery to insert a tokenized literal instead of literal value embedded
  * in code to allow generated code re-use and improve performance substantially.
