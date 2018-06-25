@@ -346,15 +346,15 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       tableOptions,
       sqlContext)
     try {
-      logInfo(s"Trying to create table $tableName")
+      logDebug(s"Trying to create table $tableName")
       resolvedName = relation.createTable(mode)
-      logInfo(s"Succesfully created the table $tableName")
+      logDebug(s"Succesfully created the table $tableName")
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[execution.row.DefaultSource].getCanonicalName,
         tableOptions, Some(relation))
-      logInfo(s"Registered the table $tableName in catalog")
+      logDebug(s"Registered the table $tableName in catalog")
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
@@ -366,7 +366,7 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
     } finally {
       if (!success && !relation.tableExists && !resolvedName.isEmpty) {
         // destroy the relation
-        logInfo(s"Failed in creating the table $tableName hence destroying")
+        logDebug(s"Failed in creating the table $tableName hence destroying")
         relation.destroy(ifExists = true)
       }
     }
