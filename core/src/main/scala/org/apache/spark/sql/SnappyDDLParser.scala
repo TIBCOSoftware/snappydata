@@ -502,10 +502,10 @@ abstract class SnappyDDLParser(session: SparkSession)
         (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
         ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
           packages, alias.identifier, repos.asInstanceOf[Option[String]],
-          path.asInstanceOf[Option[String]]))) |
+          path.asInstanceOf[Option[String]], false))) |
       JAR ~ tableIdentifier ~ stringLiteral ~>
           ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
-        alias.identifier, commaSepPaths))) |
+        alias.identifier, commaSepPaths, false))) |
     UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
     LIST ~ (
       PACKAGES ~> (() => ListPackageJarsCommand(true)) |
@@ -761,34 +761,55 @@ case class DeployCommand(
     coordinates: String,
     alias: String,
     repos: Option[String],
-    jarCache: Option[String]) extends RunnableCommand {
+    jarCache: Option[String],
+    restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
-    if (jarsstr.nonEmpty) {
-      val jars = jarsstr.split(",")
-      val sc = sparkSession.sparkContext
-      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
-      SnappySession.addJarURIs(uris)
-      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-        Iterator.empty
-      })
-      val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
-      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+    try {
+      val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+      if (jarsstr.nonEmpty) {
+        val jars = jarsstr.split(",")
+        val sc = sparkSession.sparkContext
+        val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+        SnappySession.addJarURIs(uris)
+        Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
+          ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+          Iterator.empty
+        })
+        val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+        ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+      }
+      Seq.empty[Row]
+    } catch {
+      case ex: Throwable => {
+        restart match {
+          case true => {
+            logWarning(s"Following mvn coordinate" +
+                s" could not be resolved during restart: ${coordinates}")
+            Seq.empty[Row]
+          }
+          case false => throw ex
+        }
+      }
     }
-    Seq.empty[Row]
   }
 }
 
 case class DeployJarCommand(
     alias: String,
-    paths: String) extends RunnableCommand {
+    paths: String,
+    restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (paths.nonEmpty) {
       val jars = paths.split(",")
       val sc = sparkSession.sparkContext
+      val availableUris = jars.filter(j => new File(j).exists())
+      val unavailableUris = jars.filterNot(j => new File(j).exists())
+      if (unavailableUris.nonEmpty && restart) {
+        logWarning(s"Following jars are unavailable" +
+            s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+      }
       val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {

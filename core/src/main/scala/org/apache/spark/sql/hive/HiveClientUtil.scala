@@ -315,11 +315,11 @@ object HiveClientUtil {
               val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
               val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
               val session = SparkSession.builder().getOrCreate()
-              DeployCommand(coordinate, null, repos, cache).run(session)
+              DeployCommand(coordinate, null, repos, cache, true).run(session)
             }
             else {
               // Jars we have
-              DeployJarCommand(null, cmdFields(0))
+              DeployJarCommand(null, cmdFields(0), true)
             }
           })
         }
