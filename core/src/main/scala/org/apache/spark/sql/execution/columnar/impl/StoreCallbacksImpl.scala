@@ -261,11 +261,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       val clazz = CodeGenerator.compile(cleanedSource)
       clazz.generate(ctx.references.toArray).asInstanceOf[StatsPredicate]
     }
-    // TODO VB: For Smart Connector testing sortedOutputRequired should be true for
-    // incremental insert and colocated join
     val batchIterator = ColumnBatchIterator(region, bucketIds, projection,
-      fullScan = (batchFilters eq null) || batchFilters.isEmpty, sortedOutputRequired = false,
-      context = null)
+      fullScan = (batchFilters eq null) || batchFilters.isEmpty, context = null)
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(schemaAttrs.length)
 
     val entriesIter = new Iterator[ArrayBuffer[ColumnTableEntry]] {
