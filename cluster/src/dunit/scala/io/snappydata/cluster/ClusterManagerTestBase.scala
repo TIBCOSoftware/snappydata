@@ -79,6 +79,8 @@ abstract class ClusterManagerTestBase(s: String)
   // reduce minimum compression size so that it happens for all the values for testing
   sysProps.setProperty(Constant.COMPRESSION_MIN_SIZE, "128")
 
+  sysProps.setProperty("gemfire.DISALLOW_CLUSTER_RESTART_CHECK", "true")
+
   var host: Host = _
   var vm0: VM = _
   var vm1: VM = _
