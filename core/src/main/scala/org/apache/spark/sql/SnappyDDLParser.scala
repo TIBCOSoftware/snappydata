@@ -22,19 +22,21 @@ import java.io.File
 import java.util.Map.Entry
 import java.util.function.Consumer
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
+
 import io.snappydata.Constant
-import org.apache.spark.TaskContext
-import org.apache.spark.deploy.SparkSubmitUtils
 import org.parboiled2._
 import shapeless.{::, HNil}
+
+import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, ExecutorLocalRDD, ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
@@ -43,8 +45,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-
-import scala.collection.mutable.ArrayBuffer
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -754,9 +754,9 @@ case class SetSchema(schemaName: String) extends Command
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
 
 /**
-  * Returns a list of jar files that are added to resources.
-  * If jar files are provided, return the ones that are added to resources.
-  */
+ * Returns a list of jar files that are added to resources.
+ * If jar files are provided, return the ones that are added to resources.
+ */
 case class DeployCommand(
     coordinates: String,
     alias: String,
@@ -795,7 +795,7 @@ case class DeployJarCommand(
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
         Iterator.empty
       })
-      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, false)
+      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
     }
     Seq.empty[Row]
   }
@@ -812,14 +812,14 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet()
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
-      override def accept(t: Entry[String, String]) = {
+      override def accept(t: Entry[String, String]): Unit = {
         val alias = t.getKey
         val value = t.getValue
         val indexOf = value.indexOf('|')
         if (indexOf > 0) {
           // It is a package
           val pkg = value.substring(0, indexOf)
-          rows+= Row(alias, pkg, true)
+          rows += Row(alias, pkg, true)
         }
         else {
           // It is a jar
@@ -832,7 +832,7 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
               f
             }
           })
-          rows+= Row(alias, jarfiles.mkString(","), false)
+          rows += Row(alias, jarfiles.mkString(","), false)
         }
       }
     })
