@@ -810,7 +810,7 @@ case class DeployJarCommand(
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
       }
-      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
