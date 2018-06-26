@@ -1018,11 +1018,6 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("SNAPPY_COL_TABLE4", Row(4, 4))
     snc.insert("SNAPPY_COL_TABLE4", Row(5, 5))
 
-
-    SnappyContext.globalSparkContext.stop()
-
-    snc = new SnappySession(sc)
-
     val dfLeftJoin = snc.sql("SELECT * FROM " +
         "SNAPPY_COL_TABLE4 t LEFT OUTER JOIN SNAPPY_COL_TABLE3 tt " +
         "ON tt.R1 = t.R2").collect()
