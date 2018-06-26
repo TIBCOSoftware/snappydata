@@ -1000,7 +1000,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
 
   }
 
-  private def bug2369Test(): Unit = {
+  test("Bug-2369 : Incorrect Filtering on join predicate") {
     var snc = new SnappySession(sc)
     snc.sql("CREATE TABLE SNAPPY_COL_TABLE3(r1 Integer, r2 Integer) " +
         "USING COLUMN OPTIONS(PARTITION_BY 'R1');")
@@ -1017,11 +1017,6 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("SNAPPY_COL_TABLE4", Row(3, 3))
     snc.insert("SNAPPY_COL_TABLE4", Row(4, 4))
     snc.insert("SNAPPY_COL_TABLE4", Row(5, 5))
-
-
-    SnappyContext.globalSparkContext.stop()
-
-    snc = new SnappySession(sc)
 
     val dfLeftJoin = snc.sql("SELECT * FROM " +
         "SNAPPY_COL_TABLE4 t LEFT OUTER JOIN SNAPPY_COL_TABLE3 tt " +
@@ -1046,20 +1041,6 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
         "tt.R1 >= 3 AND tt.R1 < 5;").collect()
     assert(df2.length == 1)
     assert(df2.contains(Row(3, 3, 3, 3)))
-
-  }
-
-  test("Bug-2369 : Incorrect Filtering on join predicate") {
-    try {
-      bug2369Test()
-    } catch {
-      case t: Throwable => throw t
-    } finally {
-      val snc = new SnappySession(sc)
-      snc.dropTable("SNAPPY_COL_TABLE3", ifExists = true)
-      snc.dropTable("SNAPPY_COL_TABLE4", ifExists = true)
-    }
-
   }
 
 
