@@ -302,6 +302,7 @@ pages:
     - 'Chapter 1': 'test/chapter1.md'
     - 'Chapter 2': 'test/procedures.md'
     - 'Chapter 3': 'test/tables.md'
+    - 'Chapter 4': 'test/gettingstarted.md'
 #- About:
 #   - Contributing: about/contributing.md
 - Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
