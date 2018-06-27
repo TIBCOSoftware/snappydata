@@ -98,6 +98,9 @@ private[sql] final case class ColumnTableScan(
     } else {
       partitionColumns.map(buffer += SortOrder(_, Descending))
     }
+    // TODO VB: To meet requirement of ColumnFormatIterator to be used in sorted mode only in case
+    // of SMJ, Order By or delta insert, need a flag in this calss that can be set true from here.
+    // (This will only be called if sorted output is required)
     buffer
   } else {
     val buffer = new ArrayBuffer[SortOrder](2)
