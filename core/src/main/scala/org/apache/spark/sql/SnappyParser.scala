@@ -304,7 +304,8 @@ class SnappyParser(session: SnappySession)
           if (!Seq(year, month, week, day, hour, minute, second, millis,
             micros).exists(_.isDefined)) {
             throw new ParseException(
-              "No interval can be constructed, at least one time unit should be given for interval literal")
+              "No interval can be constructed, at least one" +
+                  " time unit should be given for interval literal")
           }
           val months = year.map(_ * 12).getOrElse(0) + month.getOrElse(0)
           val microseconds =
@@ -768,7 +769,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    ((inlineTable | relationFactor) ~ tableValuedFunctionExpressions.?) ~>
+    ((relationFactor | inlineTable) ~ tableValuedFunctionExpressions.?) ~>
         ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
@@ -1010,9 +1011,7 @@ class SnappyParser(session: SnappySession)
         ) |
         INTERSECT ~ select2.named("select") ~>
           ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
-        EXCEPT ~ select2.named("select") ~>
-          ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))    |
-        MINUS ~ select2.named("select") ~>
+        (EXCEPT | MINUS) ~ select2.named("select") ~>
           ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
       ).*
   }

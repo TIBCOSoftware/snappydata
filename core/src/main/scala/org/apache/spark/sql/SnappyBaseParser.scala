@@ -98,9 +98,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
-    (("\"" ~ capture((noneOf("\"") | "\"\"").*) ~ "\"") |
-        ("\'" ~ capture((noneOf("'") | "''").*) ~ "\'")) ~
-        ws ~> ((s: String) =>
+    '\'' ~ capture((noneOf("'") | "''").*) ~ '\'' ~ ws ~> ((s: String) =>
       if (s.indexOf("''") >= 0) s.replace("''", "'") else s)
   }
 

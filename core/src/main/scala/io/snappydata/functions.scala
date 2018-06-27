@@ -31,7 +31,8 @@ import org.apache.spark.unsafe.types.UTF8String
  */
 object SnappyDataFunctions {
 
-  val usageStr = "_FUNC_() - Returns the dsid of the server containing the row."
+  val usageStr = "_FUNC_() - Returns the unique distributed member" +
+      " ID of the server containing the row."
 
   def registerSnappyFunctions(functionRegistry: FunctionRegistry): Unit = {
     val info = new ExpressionInfo(DSID.getClass.getCanonicalName, null, "DSID", usageStr, "")
