@@ -36,10 +36,9 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.util.ReuseFactory
 import io.snappydata.collection.LongObjectHashMap
 
-import org.apache.spark.sql.catalyst
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateOrdering
-import org.apache.spark.sql.catalyst.expressions.{Ascending, BindReferences, BoundReference, Descending, Expression, SortOrder, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, AttributeReference, AttributeSeq, BindReferences, BoundReference, Descending, Expression, InterpretedOrdering, SortOrder, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
@@ -85,6 +84,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       .asInstanceOf[GemFireContainer]
   private val columnTableSorting = container.fetchHiveMetaData(false).columnTableSortOrder
   // TODO VB: Only enable case of sorted scan for join, insert and group by queries
+  // See comments in ColumnTableScan
   private val isColumnBatchSorted = (StoreUtils.isColumnBatchSortedAscending(columnTableSorting) ||
       StoreUtils.isColumnBatchSortedDescending(columnTableSorting))
 
@@ -100,14 +100,22 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     val statsSchema = tableSchema.map(f =>
       ColumnStatsSchema(f.name, f.dataType, nullCountNullable = true))
     val fullStatsSchema = ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatMap(_.schema)
-    val partitioningExprs = paritioningPositions.map(pos => statsSchema(pos - 1).lowerBound).
-        map(ae => {
-          BindReferences.bindReference(ae.asInstanceOf[Expression], fullStatsSchema).
-            asInstanceOf[BoundReference]
-        })
+    val partUnboundExprs = paritioningPositions.map(pos => pos -1).
+        map(pos => statsSchema(pos).lowerBound)
+    val partitioningExprs = partUnboundExprs.map(ae => {
+      BindReferences.bindReference(ae.asInstanceOf[Expression], fullStatsSchema).
+          asInstanceOf[BoundReference]
+    })
+    val partExprsSchema: AttributeSeq = partUnboundExprs.toSeq
     val ordering = if (StoreUtils.isColumnBatchSortedAscending(columnTableSorting)) {
-      GenerateOrdering.generate(partitioningExprs.map(SortOrder(_, Ascending)))
-    } else GenerateOrdering.generate(partitioningExprs.map(SortOrder(_, Descending)))
+      val sortOrdering = partUnboundExprs.map(ae => SortOrder(BindReferences.bindReference(
+        ae, partExprsSchema), Ascending))
+      GenerateOrdering.generate(sortOrdering)
+    } else {
+      val sortOrdering = partUnboundExprs.map(ae => SortOrder(BindReferences.bindReference(
+        ae, partExprsSchema), Descending))
+      GenerateOrdering.generate(sortOrdering)
+    }
     (UnsafeProjection.create(partitioningExprs), fullStatsSchema.length, ordering)
   } else (null, 0, null)
 
@@ -424,21 +432,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
         })
       }
     }
-    val unsorted = inMemorySortedBatchBuffer.toArray
-    // TODO VB: Discuss with Sumedh for using partitioningOrdering
-    // val sorted = unsorted.sortBy(_._1)(partitioningOrdering)
-    val sorted = unsorted.sortBy(_._1)(new TemporaryRowComparator)
-    sorted
-  }
-}
-
-private final class TemporaryRowComparator extends Ordering[InternalRow] {
-
-  @Override
-  def compare(r1: catalyst.InternalRow, r2: catalyst.InternalRow): Int = {
-    val a = r1.getInt(0)
-    val b = r2.getInt(0)
-    r1.getInt(0).compareTo(r2.getInt(0))
+    inMemorySortedBatchBuffer.toArray.sortBy(_._1)(partitioningOrdering)
   }
 }
 
