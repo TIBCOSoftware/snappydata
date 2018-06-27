@@ -4,13 +4,13 @@
 
 The syntax used for the REVOKE statement differs depending on whether you revoke privileges for a table or for a routine.
 
-```no-highlight
+```pre
 REVOKE privilege-type ON [ TABLE ] { table-name | view-name } FROM grantees
 ```
 
 If you do not specify a column list, the statement revokes the privilege for all of the columns in the table.
 
-```no-highlight
+```pre
 REVOKE EXECUTE ON { FUNCTION | PROCEDURE } routine-designator FROM grantees RESTRICT
 ```
 
@@ -57,13 +57,13 @@ You can revoke the privileges from specific users or from all users. Use the key
 
 The privileges revoked from PUBLIC and from individual users are independent privileges. For example, consider the case where the SELECT privilege on table "t" is granted to both PUBLIC and to the authorization ID "harry." If the SELECT privilege is later revoked from the authorization ID "harry," harry can still access table "t" using the PUBLIC privilege.
 
-!!! Note: 
+!!! Note
 	The privileges of the owner (distributed member) of an object cannot be revoked.
 
 <a id="routine-designator"></a>
 ## routine-designator
 
-```no-highlight
+```pre
 { qualified-name [ signature ] }
 ```
 
@@ -95,31 +95,31 @@ When a REVOKE statement for a column-level privilege is issued for a grantee, ta
 
 To revoke the SELECT privilege on table t from the authorization IDs maria and harry:
 
-```no-highlight
+```pre
 REVOKE SELECT ON TABLE t FROM sam,bob;
 ```
 
 To revoke the UPDATE and TRIGGER privileges on table t from the authorization IDs john and smith:
 
-```no-highlight
+```pre
 REVOKE UPDATE, TRIGGER ON TABLE t FROM adam,richard;
 ```
 
 To revoke the SELECT privilege on table s.v from all users:
 
-```no-highlight
+```pre
 REVOKE SELECT ON TABLE test.sample FROM PUBLIC;
 ```
 
 To revoke the UPDATE privilege on columns c1 and c2 of table s.v from all users:
 
-```no-highlight
+```pre
 REVOKE UPDATE (c1,c2) ON TABLE test.sample FROM PUBLIC;
 ```
 
 To revoke the EXECUTE privilege on procedure p from the authorization ID george:
 
-```no-highlight
+```pre
 REVOKE EXECUTE ON PROCEDURE p FROM richard RESTRICT;
 ```
 

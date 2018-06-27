@@ -6,7 +6,7 @@ SnappyData also supports built-in function, which lets you perform various kinds
 
 It also provides the dsid() function built into it that are always available. 
 <!--
-!!!Note
+!!! Note
 	If you enable SQL authorization, you must use the [GRANT](/reference/sql_reference/grant.md) command to grant normal users permission to use these procedures. 
 	
 The following built-in procedures are available:

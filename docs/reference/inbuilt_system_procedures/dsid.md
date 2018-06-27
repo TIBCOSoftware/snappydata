@@ -2,7 +2,7 @@
 
 The DSID function returns the string form of the distributed member process identity uniquely represented in the distributed system.
 
-!!! Note:
+!!! Note
 
 	* This function is not supported in the Smart Connector mode. It is only supported for embedded mode, JDBC and ODBC.
 
@@ -10,7 +10,7 @@ The DSID function returns the string form of the distributed member process iden
 
 ## Example
 
-``` no-highlight
+``` pre
 snappy>select count(*), dsid() from AIRLINE group by dsid();
 
 count(1)            |DSID()                      

@@ -3,7 +3,7 @@ Indicates a member waiting for other diskStoreID to go ahead with the initializa
 
 ## Syntax
 
-```no-highlight
+```pre
 ./bin/snappy unblock-disk-store <disk-store-id>
    <-locators=<addresses>> 
         [-bind-address=<address>] 
@@ -22,7 +22,7 @@ The table describes options and arguments for snappy unblock-disk-store. If no m
 
 ## Example
 
-```no-highlight
+```pre
 ./bin/snappy unblock-disk-store a395f237-c5e5-4e76-8024-353272e86f28 -locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334
 Unblock was successful and no disk stores are now waiting
