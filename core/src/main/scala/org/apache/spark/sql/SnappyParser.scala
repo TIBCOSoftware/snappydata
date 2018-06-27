@@ -833,8 +833,9 @@ class SnappyParser(session: SnappySession)
               // all even args
               (args(0) == -2 && (index & 0x1) == 0) =>
             l match {
-              case pl: ParamLiteral  if pl.tokenized => throw new ParseException(
-                s"function $fnName cannot have parameterized arguments")
+              case pl: ParamLiteral  if pl.tokenized && _isPreparePhase =>
+                throw new ParseException(s"function $fnName cannot have " +
+                    s"parameterized argument ${index + 1}")
               case _ =>
             }
             removeIfParamLiteralFromContext(l)
