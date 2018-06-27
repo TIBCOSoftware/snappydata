@@ -832,6 +832,11 @@ class SnappyParser(session: SnappySession)
               (args(0) == -10) || (args(0) == -1 && (index & 0x1) == 1) ||
               // all even args
               (args(0) == -2 && (index & 0x1) == 0) =>
+            l match {
+              case pl: ParamLiteral  if pl.tokenized => throw new ParseException(
+                s"function $fnName cannot have parameterized arguments")
+              case _ =>
+            }
             removeIfParamLiteralFromContext(l)
             newLiteral(l.value, l.dataType)
           case e => e
