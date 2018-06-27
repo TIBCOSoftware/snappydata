@@ -196,28 +196,44 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       case NonFatal(e) => log.warn(e.getMessage, e)
     }
 
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
+
     try {
       // External Tables
-      val hiveTables: java.util.List[ExternalTableMetaData] =
-        Misc.getMemStore.getExternalCatalog.getHiveTables(true)
-      externalTables = hiveTables.asScala.collect {
-        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
+      externalTables = hiveTables.collect {
+        case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
           new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
             table.externalStore, table.dataSourcePath, table.driverClass)
+        }
       }
     }
     catch {
       case NonFatal(e) => log.warn(e.getMessage, e)
     }
 
-    if(result.flatMap(_.getRegionStats.asScala).size == 0) {
+    if (result.flatMap(_.getRegionStats.asScala).size == 0) {
       // Return last updated tableSizeInfo
       (tableSizeInfo.values.toSeq,
        result.flatMap(_.getIndexStats.asScala),
        externalTables)
     } else {
       // Return updated tableSizeInfo
-      (result.flatMap(_.getRegionStats.asScala),
+      val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
+        hiveTables.map(ht => {
+          val tableName = rs.getTableName
+          val tname = tableName.substring(tableName.indexOf(".") + 1);
+          // Set whether table is column table or not
+          if (ht.entityName.equalsIgnoreCase(tname)) {
+            if (ht.tableType.equalsIgnoreCase("COLUMN"))
+              rs.setColumnTable(true)
+            else
+              rs.setColumnTable(false)
+          }
+        })
+        rs
+      })
+
+      (regionStats,
        result.flatMap(_.getIndexStats.asScala),
        externalTables)
     }
