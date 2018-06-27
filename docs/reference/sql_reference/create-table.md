@@ -5,7 +5,7 @@
 ```pre
 CREATE TABLE [IF NOT EXISTS] table_name 
     ( column-definition	[ , column-definition  ] * )	
-    USING [row | column]
+    USING [row | column] // If not specified, a row table is created.
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
     PARTITION_BY 'column-name', // If not specified, replicated table for row tables, and partitioned internally for column tables.
