@@ -8,7 +8,7 @@ If you are having problems with your system, first lower the log-level (recordin
 
 To specify the logging level, use the `log-level` property when you start a SnappyData server or locator. For example, to record all messages at log level "warning," "error," or "severe:"
 
-``` pre
+```pre
 snappy-shell snappydata server start -log-file=/home/user1/log/mygfxdlog.log -log-level=warning
 ```
 
