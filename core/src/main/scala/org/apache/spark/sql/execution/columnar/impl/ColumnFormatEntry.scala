@@ -110,11 +110,10 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   override def getColumnBatchRowCount(bucketRegion: BucketRegion,
       re: RegionEntry, numColumnsInTable: Int): Int = {
-    val currentBucketRegion = bucketRegion.getHostedBucketRegion
     if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
-      val statsOrDeleteVal = re.getValue(currentBucketRegion)
+      val statsOrDeleteVal = re.getValue(bucketRegion)
       if (statsOrDeleteVal ne null) {
         val statsOrDelete = statsOrDeleteVal.asInstanceOf[ColumnFormatValue]
             .getValueRetain(FetchRequest.DECOMPRESS)
