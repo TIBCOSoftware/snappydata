@@ -33,15 +33,15 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
+import org.apache.spark.{Logging, TaskContext}
 import org.apache.spark.memory.MemoryManagerCallback
-import org.apache.spark.sql.execution.SnappyMetrics
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.PRValuesIterator
+import org.apache.spark.sql.execution.{IteratorWithMetrics, SnappyMetrics}
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.{Logging, TaskContext}
 
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte], deltaIndexes: Array[Int])
@@ -49,7 +49,7 @@ case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
 abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext,
     closeConnectionOnResultsClose: Boolean = true)
-    extends Iterator[A] with Logging {
+    extends IteratorWithMetrics[A] with Logging {
 
   protected[this] final var doMove = true
 
@@ -84,6 +84,8 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 
   protected def getCurrentValue: A
+
+  override def setMetric(name: String, metric: SQLMetric): Boolean = false
 
   def close() {
     // if (!hasNextValue) return
@@ -266,21 +268,10 @@ final class ColumnBatchIterator(region: LocalRegion, batch: ColumnBatch,
     if ((previousColumns ne null) && previousColumns.nonEmpty) {
       currentColumns = null
       val len = previousColumns.length
-      val checkDiskColumns = (diskBatchesFullMetric ne null) || (diskBatchesPartialMetric ne null)
-      var numDiskColumns = 0
       var i = 0
       while (i < len) {
-        val v = previousColumns(i)
-        if (checkDiskColumns && (v.getRegionContext eq null)) numDiskColumns += 1
-        v.release()
+        previousColumns(i).release()
         i += 1
-      }
-      if (numDiskColumns > 0) {
-        if (numDiskColumns == len) {
-          if (diskBatchesFullMetric ne null) diskBatchesFullMetric.add(1)
-        } else if (diskBatchesPartialMetric ne null) {
-          diskBatchesPartialMetric.add(1)
-        }
       }
       len
     } else 0

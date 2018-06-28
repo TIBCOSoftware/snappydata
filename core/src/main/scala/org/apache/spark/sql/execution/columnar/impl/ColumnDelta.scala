@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
@@ -85,12 +86,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val newValue = getValueRetain(FetchRequest.DECOMPRESS)
       val newBuffer = newValue.getBuffer
       try {
-        val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
-            .fetchHiveMetaData(false) match {
-          case null => throw new IllegalStateException(
-            s"Table for region ${region.getFullPath} not found in hive metadata")
-          case m => m.schema.asInstanceOf[StructType]
-        }
+        val schema = ExternalStoreUtils.getExternalTableMetaData(region.getFullPath,
+          region.getUserAttribute.asInstanceOf[GemFireContainer]).schema.asInstanceOf[StructType]
         val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
         // TODO: SW: if old value itself is returned, then avoid any put at GemFire layer
         // (perhaps throw some exception that can be caught and ignored in virtualPut)

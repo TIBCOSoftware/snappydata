@@ -114,15 +114,6 @@ case class SnappyHashAggregateExec(
             .map(_.toAttribute)) ++
         AttributeSet(aggregateBufferAttributes)
 
-  private def getAliases(expressions: Seq[Expression],
-      existing: Seq[Seq[Attribute]]): Seq[Seq[Attribute]] = {
-    expressions.zipWithIndex.map { case (e, i) =>
-      resultExpressions.collect {
-        case a@Alias(c, _) if c.semanticEquals(e) => a.toAttribute
-      } ++ (if (existing.isEmpty) Nil else existing(i))
-    }
-  }
-
   override def outputPartitioning: Partitioning = {
     child.outputPartitioning
   }
@@ -456,11 +447,11 @@ case class SnappyHashAggregateExec(
         BindReferences.bindReference(e, inputAttrs).genCode(ctx)
       }
       s"""
-       $evaluateKeyVars
-       $evaluateBufferVars
-       $evaluateAggResults
-       ${consume(ctx, resultVars)}
-       """
+        $evaluateKeyVars
+        $evaluateBufferVars
+        $evaluateAggResults
+        ${consume(ctx, resultVars)}
+      """
 
     } else if (modes.contains(Partial) || modes.contains(PartialMerge)) {
       // Combined grouping keys and aggregate values in buffer

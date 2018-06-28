@@ -427,7 +427,8 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
  * should use the normal <code>ColumnFormatIterator</code>.
  */
 final class ColumnFormatStatsIterator(bucketRegion: BucketRegion,
-    statsEntries: Iterator[RegionEntry], tx: TXStateInterface) extends ClusteredDiskIterator {
+    statsEntries: Iterator[RegionEntry], tx: TXStateInterface)
+    extends ClusteredDiskIterator with DiskRegionIterator {
 
   try {
     bucketRegion.checkReadiness()
@@ -453,6 +454,10 @@ final class ColumnFormatStatsIterator(bucketRegion: BucketRegion,
     val key = currentKey.withColumnIndex(columnIndex)
     bucketRegion.get(key, null, false, true, false, null, tx, null, null, false, false)
   }
+
+  override def initDiskIterator(): Boolean = false
+
+  override def setRegion(region: LocalRegion): Unit = {}
 
   override def close(): Unit = currentKey = null
 }

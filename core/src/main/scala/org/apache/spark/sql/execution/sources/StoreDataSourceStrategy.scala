@@ -72,7 +72,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           0,
           Nil,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case LogicalRelation(_, _, _) => {
+      case LogicalRelation(_, _, _) =>
         var foundParamLiteral = false
         val tp = plan.transformAllExpressions {
           case pl: ParamLiteral =>
@@ -86,7 +86,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         } else {
           Nil
         }
-      }
       case _ => Nil
     }
     case _ => Nil

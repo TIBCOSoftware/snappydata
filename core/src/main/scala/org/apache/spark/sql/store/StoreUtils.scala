@@ -418,8 +418,7 @@ object StoreUtils {
     parameters.remove(PARTITIONER).foreach(v =>
       sb.append(GEM_PARTITIONER).append('\'').append(v).append("' "))
 
-    // no overflow for row buffer tables
-    val overflow = (isRowTable || isShadowTable) && parameters.get(OVERFLOW).forall(_.toBoolean)
+    val overflow = parameters.get(OVERFLOW).forall(_.toBoolean)
     val defaultEviction = if (overflow) s"$GEM_HEAPPERCENT $GEM_OVERFLOW" else EMPTY_STRING
     sb.append(parameters.remove(EVICTION_BY).map(v => {
       if (v.contains(LRUCOUNT) && isShadowTable) {

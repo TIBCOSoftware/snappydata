@@ -176,7 +176,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 /**
  * An iterator that will update provided metrics (those supported by an implementation).
  */
-trait IteratorWithMetrics[A] extends Iterator[A] {
+abstract class IteratorWithMetrics[A] extends Iterator[A] {
 
   /**
    * Set a metric to be updated during iteration.

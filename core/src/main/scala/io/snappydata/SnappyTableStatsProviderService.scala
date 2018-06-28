@@ -29,19 +29,20 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.cache.IsolationLevel
+import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
+import com.gemstone.gemfire.cache.{IsolationLevel, LockTimeoutException}
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache._
-import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
+import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
-import io.snappydata.collection.ObjectObjectHashMap
+import io.snappydata.collection.{ObjectObjectHashMap, OpenHashSet}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.InternalRow
@@ -269,23 +270,6 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
   }
 
-  private def handleException(t: Throwable): Unit = t match {
-    case e: Error if SystemFailure.isJVMFailureError(e) =>
-      SystemFailure.initiateFailure(e)
-      // If this ever returns, rethrow the error. We're poisoned
-      // now, so don't let this thread continue.
-      throw e
-    case _ =>
-      // Whenever you catch Error or Throwable, you must also
-      // check for fatal JVM error (see above).  However, there is
-      // _still_ a possibility that you are dealing with a cascading
-      // error condition, so you also need to check to see if the JVM
-      // is still usable:
-      SystemFailure.checkFailure()
-      logWarning(t.getMessage, t)
-      throw t
-  }
-
   private def handleTransaction(cache: GemFireCacheImpl, tx: TXStateProxy,
       context: TXManagerImpl.TXContext, success: Boolean): Unit = {
     if (tx ne null) {
@@ -302,29 +286,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
   }
 
-  private def withExceptionHandling(f: => Unit, doFinally: () => Unit = null): Unit = {
-    try {
-      f
-    } catch {
-      case t: Throwable => handleException(t)
-    } finally {
-      if (doFinally ne null) doFinally()
-    }
-  }
-
   def publishColumnTableRowCountStats(): Unit = {
-    def asSerializable[C](c: C) = c.asInstanceOf[C with Serializable]
-
     val cache = Misc.getGemFireCache
-    val regions = asSerializable(cache.getApplicationRegions.asScala)
-    for (region: LocalRegion <- regions) {
-      if (region.getDataPolicy.withPartitioning()) {
+    val regions = cache.getApplicationRegions.iterator()
+    while (regions.hasNext) {
+      val region = regions.next()
+      val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
+      if ((container ne null) && region.getDataPolicy.withPartitioning()) {
         val pr = region.asInstanceOf[PartitionedRegion]
-        val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
-        val isColumnTable = container.isColumnStore
-        if (isColumnTable && pr.getLocalMaxMemory > 0) {
-          val metaData = container.fetchHiveMetaData(false)
-          val schema = metaData.schema.asInstanceOf[StructType]
+        val columnMeta = if (container.isColumnStore) container.fetchHiveMetaData(false) else null
+        if ((columnMeta ne null) && pr.getLocalMaxMemory > 0) {
+          val schema = columnMeta.schema.asInstanceOf[StructType]
           val numColumnsInTable = schema.length
           // Resetting PR numRows in cached batch as this will be calculated every time.
           var rowsInColumnBatch = 0L
@@ -339,7 +311,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             val maxDeltaRows = pr.getColumnMaxDeltaRows
             var smallBucketRegion: BucketRegion = null
-            val smallBatchBuckets = new mutable.ArrayBuffer[BucketRegion](2)
+            val smallBatchBuckets = new OpenHashSet[BucketRegion](2)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[RegionEntry]
@@ -347,15 +319,14 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
                 val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
                 val bucketRegion = itr.getHostedBucketRegion
                 if (bucketRegion.getBucketAdvisor.isPrimary) {
-                  val batchRowCount = key.getColumnBatchRowCount(bucketRegion,
-                      re, numColumnsInTable)
+                  val batchRowCount = key.getColumnBatchRowCount(bucketRegion, re,
+                      numColumnsInTable)
                   rowsInColumnBatch += batchRowCount
                   // check if bucket has multiple small batches
                   if (key.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX &&
                       batchRowCount < maxDeltaRows) {
-                    val br = itr.getHostedBucketRegion
-                    if (br eq smallBucketRegion) smallBatchBuckets += br
-                    else smallBucketRegion = br
+                    if (bucketRegion eq smallBucketRegion) smallBatchBuckets.add(bucketRegion)
+                    else smallBucketRegion = bucketRegion
                   }
                 }
                 re._getValue() match {
@@ -366,14 +337,14 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             }
             itr.close()
             // submit a task to merge small batches if required
-            if (smallBatchBuckets.nonEmpty) {
-              mergeSmallColumnBatches(pr, container, metaData, smallBatchBuckets)
+            if (smallBatchBuckets.size() > 0) {
+              mergeSmallColumnBatches(pr, container, columnMeta, smallBatchBuckets.asScala)
             }
           }
           val stats = pr.getPrStats
           stats.setPRNumRowsInColumnBatches(rowsInColumnBatch)
           stats.setOffHeapSizeInBytes(offHeapSize)
-        } else if (!isColumnTable && pr.getLocalMaxMemory > 0 && container.isRowBuffer) {
+        } else if (container.isRowBuffer && pr.getLocalMaxMemory > 0) {
           rolloverTasks.computeIfAbsent(pr, rolloverRowBuffersTask)
         }
       }
@@ -392,28 +363,51 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
    * then roll it over into the column table
    */
   private val rolloverRowBuffersTask = new JFunction[PartitionedRegion, Future[Unit]] {
+
+    private def testBucket(br: BucketRegion, maxDeltaRows: Int, minModTime: Long): Boolean = {
+      val bucketSize = br.getRegionSize
+      bucketSize >= maxDeltaRows || (br.getLastModifiedTime <= minModTime &&
+          bucketSize >= minSizeForRollover(br.getPartitionedRegion))
+    }
+
     override def apply(pr: PartitionedRegion): Future[Unit] = {
       val localPrimaries = pr.getDataStore.getAllLocalPrimaryBucketRegions
       if ((localPrimaries ne null) && localPrimaries.size() > 0) {
-        val doRollover = new Predicate[BucketRegion] {
-          private val minModTime = pr.getCache.cacheTimeMillis() - delayMillis
-
-          override def test(br: BucketRegion): Boolean = {
-            br.getLastModifiedTime <= minModTime && br.getRegionSize >= minSizeForRollover(pr)
+        val maxDeltaRows = try {
+          pr.getColumnMaxDeltaRows
+        } catch {
+          case NonFatal(_) => return null
+        }
+        val minModTime = pr.getCache.cacheTimeMillis() - delayMillis
+        // minimize object creation in usual case with explicit iteration (rather than asScala)
+        var rolloverBuckets: OpenHashSet[BucketRegion] = null
+        val iter = localPrimaries.iterator()
+        while (iter.hasNext) {
+          val br = iter.next()
+          if (testBucket(br, maxDeltaRows, minModTime) && !br.columnBatchFlushLock.isWriteLocked) {
+            if (rolloverBuckets eq null) rolloverBuckets = new OpenHashSet[BucketRegion]()
+            rolloverBuckets.add(br)
           }
         }
-        val rolloverBuckets = localPrimaries.asScala.filter(
-          br => doRollover.test(br) && !br.columnBatchFlushLock.isWriteLocked)
         // enqueue a job to roll over required row buffers into column table
         // (each bucket will perform a last minute check before rollover inside lock)
-        if (rolloverBuckets.nonEmpty) {
+        if ((rolloverBuckets ne null) && rolloverBuckets.size() > 0) {
           implicit val executionContext = Utils.executionContext(pr.getGemFireCache)
           Future {
+            var locked = false
             try {
-              rolloverBuckets.foreach(bucket => withExceptionHandling(
-                bucket.createAndInsertColumnBatch(null, true, doRollover)))
+              locked = pr.lockForMaintenance(true, GfxdLockSet.MAX_LOCKWAIT_VAL)
+              if (locked) {
+                val doRollover = new Predicate[BucketRegion] {
+                  override def test(br: BucketRegion): Boolean =
+                    testBucket(br, maxDeltaRows, minModTime)
+                }
+                rolloverBuckets.asScala.foreach(bucket => Utils.withExceptionHandling(
+                  bucket.createAndInsertColumnBatch(null, true, doRollover)))
+              }
             } finally {
               rolloverTasks.remove(pr)
+              if (locked) pr.unlockForMaintenance(true)
             }
           }
         } else null
@@ -429,13 +423,24 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
    * [[rolloverRowBuffersTask]] or a forced flush of even smaller size for sample tables.
    */
   private def mergeSmallColumnBatches(pr: PartitionedRegion, container: GemFireContainer,
-      metaData: ExternalTableMetaData, smallBatches: mutable.ArrayBuffer[BucketRegion]): Unit = {
+      metaData: ExternalTableMetaData, smallBatchBuckets: mutable.Set[BucketRegion]): Unit = {
     mergeTasks.computeIfAbsent(pr, new JFunction[PartitionedRegion, Future[Unit]] {
       override def apply(pr: PartitionedRegion): Future[Unit] = {
-        logInfo(s"Found small batches in ${pr.getName}: ${smallBatches.map(_.getId)}")
         val cache = pr.getGemFireCache
+        val rowBuffer = GemFireContainer.getRowBufferTableName(container.getQualifiedTableName)
+        val rowBufferRegion = Misc.getRegionForTable(rowBuffer, true)
+            .asInstanceOf[PartitionedRegion]
+        var locked = false
+
+        def releaseMaintenanceLock(): Unit = {
+          if (locked) {
+            rowBufferRegion.unlockForMaintenance(true)
+            locked = false
+          }
+        }
+
         implicit val executionContext = Utils.executionContext(cache)
-        Future(withExceptionHandling({
+        Future(Utils.withExceptionHandling({
           val tableName = container.getQualifiedTableName
           val schema = metaData.schema.asInstanceOf[StructType]
           val maxDeltaRows = pr.getColumnMaxDeltaRows
@@ -446,10 +451,10 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               otherRDDs = Nil, numBuckets = -1, partitionColumns = Nil,
               partitionColumnAliases = Nil, baseRelation = null, schema, allFilters = Nil,
               schemaAttrs, caseSensitive = true)
-            // reduce min delta row size to avoid going through rolloverRowBuffers again
+            // zero delta row size to avoid going through rolloverRowBuffers again
             val insertPlan = ColumnInsertExec(tableScan, Nil, Nil,
               numBuckets = -1, isPartitioned = false, None,
-              (pr.getColumnBatchSize, minSizeForRollover(pr), metaData.compressionCodec),
+              (pr.getColumnBatchSize, 0, metaData.compressionCodec),
               tableName, onExecutor = true, schema,
               metaData.externalStore.asInstanceOf[ExternalStore], useMemberVariables = false)
             // now generate the code with the help of WholeStageCodegenExec
@@ -470,15 +475,25 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           var success = false
           var tx: TXStateProxy = null
           var context: TXManagerImpl.TXContext = null
+          logInfo(s"Found small batches in ${pr.getName}: " +
+              smallBatchBuckets.map(_.getId).mkString(", "))
           // for each bucket, create an iterator to scan and insert the result batches;
           // a separate iterator is required because one ColumnInsertExec assumes a single batchId
-          for (br <- smallBatches) try {
+          for (br <- smallBatchBuckets) try {
             success = false
-            // start a new transaction for each bucket
             tx = null
+            // lock the row buffer region for maintenance operations
+            Thread.`yield`() // prefer any other foreground operations
+            locked = rowBufferRegion.lockForMaintenance(true, GfxdLockSet.MAX_LOCKWAIT_VAL)
+            if (!locked) {
+              throw new LockTimeoutException(
+                s"Failed to lock ${rowBufferRegion.getFullPath} for maintenance merge operation")
+            }
+            // start a new transaction for each bucket
             tx = if (cache.snapshotEnabled) {
               context = TXManagerImpl.getOrCreateTXContext()
-              cache.getCacheTransactionManager.beginTX(context, IsolationLevel.SNAPSHOT, null, null)
+              cache.getCacheTransactionManager.beginTX(context,
+                IsolationLevel.SNAPSHOT, null, null)
             } else null
             // find the committed entries with small batches under the transaction
             val bucketId = br.getId
@@ -490,7 +505,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               val re = itr.next().asInstanceOf[RegionEntry]
               if (!re.isDestroyedOrRemoved) {
                 val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-                val batchRowCount = key.getColumnBatchRowCount(itr, re, schema.length)
+                val batchRowCount = key.getColumnBatchRowCount(itr.getHostedBucketRegion,
+                  re, schema.length)
                 // check if bucket has multiple small batches
                 if (key.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX &&
                     batchRowCount < maxDeltaRows) {
@@ -521,11 +537,16 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             }
             success = true
           } catch {
-            case t: Throwable => handleException(t)
+            case le: LockTimeoutException => logWarning(le.getMessage)
+            case t: Throwable => Utils.logAndThrowException(t)
           } finally {
             handleTransaction(cache, tx, context, success)
+            releaseMaintenanceLock()
           }
-        }, () => mergeTasks.remove(pr)))
+        }, () => {
+          mergeTasks.remove(pr)
+          releaseMaintenanceLock()
+        }))
       }
     })
   }

@@ -232,9 +232,9 @@ final case class ColumnTableScan(
     } else ("", "")
 
     val iteratorClass = "scala.collection.Iterator"
+    val iteratorWithMetricsClass = classOf[IteratorWithMetrics[_]].getName
     val colIteratorClass = if (embedded) classOf[ColumnBatchIterator].getName
     else classOf[ColumnBatchIteratorOnRS].getName
-    val iteratorWithMetricsClass = classOf[IteratorWithMetrics[_]].getName
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
         ctx.addMutableState(iteratorClass, rowInputSRR,
@@ -353,12 +353,9 @@ final case class ColumnTableScan(
     val setColumnDiskMetricsSnippet = if (numBatchesDiskPartial eq null) ""
     else {
       s"""
-        if ($colInput instanceof $iteratorWithMetricsClass) {
-          $iteratorWithMetricsClass mIter = ($iteratorWithMetricsClass)$colInput;
-          mIter.setMetric("$NUM_BATCHES_DISK_PARTIAL", $numBatchesDiskPartial);
-          mIter.setMetric("$NUM_BATCHES_DISK_FULL", $numBatchesDiskFull);
-          mIter.setMetric("$NUM_BATCHES_REMOTE", $numBatchesRemote);
-        }
+        $colInput.setMetric("$NUM_BATCHES_DISK_PARTIAL", $numBatchesDiskPartial);
+        $colInput.setMetric("$NUM_BATCHES_DISK_FULL", $numBatchesDiskFull);
+        $colInput.setMetric("$NUM_BATCHES_REMOTE", $numBatchesRemote);
       """
     }
 

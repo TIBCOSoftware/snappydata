@@ -31,6 +31,7 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
@@ -65,7 +66,7 @@ import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 
-object Utils {
+object Utils extends Logging {
 
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
@@ -87,6 +88,33 @@ object Utils {
   def analysisException(msg: String,
       cause: Option[Throwable] = None): AnalysisException =
     new AnalysisException(msg, None, None, None, cause)
+
+  def withExceptionHandling(f: => Unit, doFinally: () => Unit = null): Unit = {
+    try {
+      f
+    } catch {
+      case t: Throwable => logAndThrowException(t)
+    } finally {
+      if (doFinally ne null) doFinally()
+    }
+  }
+
+  def logAndThrowException(t: Throwable): Unit = t match {
+    case e: Error if SystemFailure.isJVMFailureError(e) =>
+      SystemFailure.initiateFailure(e)
+      // If this ever returns, rethrow the error. We're poisoned
+      // now, so don't let this thread continue.
+      throw e
+    case _ =>
+      // Whenever you catch Error or Throwable, you must also
+      // check for fatal JVM error (see above).  However, there is
+      // _still_ a possibility that you are dealing with a cascading
+      // error condition, so you also need to check to see if the JVM
+      // is still usable:
+      SystemFailure.checkFailure()
+      logWarning(t.getMessage, t)
+      throw t
+  }
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
     val colT = toUpperCase(col.trim)

@@ -112,7 +112,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     var rows = 0
     try {
       breakable {
-        for (i <- 1 to 20) {
+        for (i <- 1 to 50) {
           val row = Row(i, i, i)
           snSession.insert("t1", row)
           rows += 1
