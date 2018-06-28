@@ -222,11 +222,13 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     if (resultObtained) {
       // Return updated tableSizeInfo
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
-        hiveTables.map(ht => {
+        hiveTables.foreach(ht => {
           val tableName = rs.getTableName
+          val schema = tableName.substring(0, tableName.indexOf("."));
           val tname = tableName.substring(tableName.indexOf(".") + 1);
           // Set whether table is column table or not
-          if (ht.entityName.equalsIgnoreCase(tname)) {
+          if (ht.schema.toString.equalsIgnoreCase(schema)
+              && ht.entityName.equalsIgnoreCase(tname)) {
             if (ht.tableType.equalsIgnoreCase("COLUMN"))
               rs.setColumnTable(true)
             else
