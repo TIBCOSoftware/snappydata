@@ -66,6 +66,7 @@ abstract case class JDBCAppendableRelation(
   override val needConversion: Boolean = false
 
   var tableExists: Boolean = _
+  var tableCreated : Boolean = _
 
   protected final val connProperties: ConnectionProperties =
     externalStore.connProperties
