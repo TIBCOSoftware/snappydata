@@ -347,7 +347,7 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
     try {
       logDebug(s"Trying to create table $tableName")
       relation.createTable(mode)
-      logDebug(s"Succesfully created the table $tableName")
+      logDebug(s"Successfully created the table $tableName")
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
