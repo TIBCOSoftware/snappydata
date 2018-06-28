@@ -1,13 +1,13 @@
 # How Transactions Work for Row Tables
 
-!!! Note:
+!!! Note
 	Distributed transaction is supported only for row tables.
 
 There is no centralized transaction coordinator in SnappyData. Instead, the member on which a transaction was started acts as the coordinator for the duration of the transaction. If the application updates one or more rows, the transaction coordinator determines which owning members are involved, and acquires local "write" locks on all of the copies of the rows. At commit time, all changes are applied to the local store and any redundant copies. If another concurrent transaction attempts to change one of the rows, the local "write" acquisition fails for the row, and that transaction is automatically rolled back.
 
 Unlike traditional distributed databases, SnappyData does not use write-ahead logging for transaction recovery in case the commit fails during replication or redundant updates to one or more members. The most likely failure scenario is one where the member is unhealthy and gets forced out of the distributed system, guaranteeing the consistency of the data. When the failed member comes back online, it automatically recovers the replicated/redundant data set and establishes coherency with the other members. If all copies of some data go down before the commit is issued, then this condition is detected using the group membership system, and the transaction is rolled back automatically on all members.
 
-!!! Note:
+!!! Note
 	SnappyData does not support transactions is new data store members are added while in progress. If you add a new member to the cluster in the middle of a transaction and the new member is involved in the transaction (e.g. owns a partition of the data or is a replica), SnappyData implicitly rolls back the transaction and throws an SQLException (SQLState: "X0Z05").
 
 
@@ -22,11 +22,11 @@ The following images represent the functioning of read and write operations in t
 
 Transactions specify an [isolation level](../reference/sql_reference/set-isolation.md) that defines the degree to which one transaction must be isolated from resource or data modifications made by other transactions. The transaction isolation levels define the type of locks acquired on read operations. Only one of the isolation level options can be set at a time, and it remains set for that connection until it is explicitly changed.
 
-!!! Note:
+!!! Note
 
 	* If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to off (false). </br>Queries on column tables are supported when isolation level is set to `READ_COMMITTED` or `REPEATABLE_READ` and autocommit is set to **true**.
 
-    * DDL execution (for example [CREATE TABLE](../reference/sql_reference/create-table.md) /[DROP TABLE](../reference/sql_reference/drop-table.md)) is not allowed when `autocommit` is set to `false`  and transaction isolation level is `READ_COMMITTED` or `REPEATABLE_READ`.  DDL commands reports syntax error in such cases. DDL execution is allowed if `autocommit` is `true` for `READ_COMMITTED` or `REPEATABLE_READ` isolation levels.
+	* DDL execution (for example [CREATE TABLE](../reference/sql_reference/create-table.md) /[DROP TABLE](../reference/sql_reference/drop-table.md)) is not allowed when `autocommit` is set to `false`  and transaction isolation level is `READ_COMMITTED` or `REPEATABLE_READ`.  DDL commands reports syntax error in such cases. DDL execution is allowed if `autocommit` is `true` for `READ_COMMITTED` or `REPEATABLE_READ` isolation levels.
 
 
 The following isolation levels are supported for row tables:
@@ -69,12 +69,12 @@ The following steps describe specific events that can occur depending on which m
 
     Clients that were performing a DML statement in the context of a transaction would fail with one of the SQLState errors: X0Z05, X0Z16, 40XD2, or 40XD0.
 
-    !!! Note:
+    !!! Note
     	Outside the scope of a transaction, a DML statement would not see an exception due to a member failure. Instead, the statement would be automatically retried on another SnappyData member. However, SELECT statements would receive the X0Z01 statement even outside of a transaction.</p>
 
 If this type of failure occurs, the remaining members of the SnappyData distributed system clean-up the open transactions for the failed node, and no additional steps are needed to recover from the failure.
 
-!!! Note:
+!!! Note
 	In this release of SnappyData, a transaction fails if any of the cohorts depart abnormally. 
 
 <a id="transactions-rollback"></a>
@@ -84,7 +84,7 @@ SnappyData may cancel an executing statement due to low memory, a timeout, or a 
 
 If a statement that is being executed within the context of a transaction is canceled due to low memory or a manual cancellation request, then SnappyData rolls back the associated transaction. 
 
-!!! Note:
+!!! Note
 	SnappyData does not roll back a transaction if a statement is canceled due to a timeout.
 
 <a id="transactions-limitations"></a>

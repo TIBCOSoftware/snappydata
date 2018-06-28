@@ -4,7 +4,7 @@
 
 When you start SnappyData members, startup delays can occur if specific disk store files on other members are unavailable. This is part of the normal startup behavior and is designed to help ensure data consistency. For example, consider the following startup message for a locator ("locator2):
 
-```no-highlight
+```pre
 SnappyData Locator pid: 23537 status: waiting
 Waiting for DataDictionary (DiskId: 531fc5bb-1720-4836-a468-3d738a21af63, Location: /snappydata/locator2/./datadictionary) on: 
  [DiskId: aa77785a-0f03-4441-84f7-6eb6547d7833, Location: /snappydata/server1/./datadictionary]
@@ -15,7 +15,7 @@ Here, the startup messages indicate that locator2 is waiting for the persistent 
 
 Continuing the startup by booting the server1 data store yields:
 
-```no-highlight
+```pre
 Starting SnappyData Server using locators for peer discovery: localhost[10337],localhost[10338]
 Starting network server for SnappyData Server at address localhost/127.0.0.1[1529]
 Logs generated in /snappydata/server1/gfxdserver.log
@@ -48,5 +48,5 @@ To avoid this type of delayed startup and recovery:
 
 3.  If a member cannot be restarted and it is preventing other data stores from starting, then [revoke-missing-disk-store](../reference/command_line_utilities/store-revoke-missing-disk-stores.md) command can be used to revoke the disk stores that are preventing startup. 
 
-	!!!Note
+	!!! Note
     	This can cause some loss of data if the revoked disk store actually contains recent changes to the data dictionary or to table data. The revoked disk stores cannot be added back to the system later. If you revoke a disk store on a member you need to delete the associated disk files from that member in order to start it again. Only use the `revoke-missing-disk-store` command as a last resort.  Contact [support@snappydata.io](mailto:support@snappydata.io) if you need to use the `revoke-missing-disk-store` command.

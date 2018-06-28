@@ -43,7 +43,7 @@ Requirements for each host:
 
 * Time synchronization service such as Network Time Protocol (NTP).
 
-!!! Note: 
+!!! Note
 	* For troubleshooting, you must run a time synchronization service on all hosts. Synchronized time stamps allow you to merge log messages from different hosts, for an accurate chronological history of a distributed run.
 
 	* If you deploy SnappyData on a virtualized host, consult the documentation provided with the platform, for system requirements and recommended best practices, for running Java and latency-sensitive workloads.

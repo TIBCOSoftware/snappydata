@@ -1,20 +1,20 @@
 <a id="building-from-source"></a>
 # Building from Source
 
-!!! Note:
+!!! Note
 	Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
 ## Build all Components of SnappyData
  
 **Latest release branch**
-```no-highlight
+```pre
 > git clone https://github.com/SnappyDataInc/snappydata.git -b branch-<release-version> --recursive
 > cd snappydata
 > ./gradlew product
 ```
 
 **Master**
-```no-highlight
+```pre
 > git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 > cd snappydata
 > ./gradlew product
@@ -27,14 +27,14 @@ The product is in **build-artifacts/scala-2.11/snappy**
 Use this option if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):
 
 **Latest release branch**
-```no-highlight
+```pre
 > git clone https://github.com/SnappyDataInc/snappydata.git -b branch-<release-version>
 > cd snappydata
 > ./gradlew product
 ```
 
 **Master**
-```no-highlight
+```pre
 > git clone https://github.com/SnappyDataInc/snappydata.git
 > cd snappydata
 > ./gradlew product
@@ -56,7 +56,7 @@ This component depends on _core_ and _store_. The code in the _cluster_ depends 
 
   The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push like:
 
-```no-highlight
+```pre
 [alias]
   spull = !git pull && git submodule sync --recursive && git submodule update --init --recursive
   spush = push --recurse-submodules=on-demand
@@ -75,7 +75,7 @@ If working on all the separate projects integrated inside the top-level SnappyDa
 
 Useful build and test targets:
 
-```no-highlight
+```pre
 ./gradlew assemble      -  build all the sources
 ./gradlew testClasses   -  build all the tests
 ./gradlew product       -  build and place the product distribution
@@ -99,7 +99,7 @@ The default build directory is _build-artifacts/scala-2.11_ for projects. An exc
 
 The usual Gradle test run targets (_test_, _check_) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (_scalaTest_) while the _check_ target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with _singleSuite_ option while running a single test within some suite works with the `--tests` option:
 
-```no-highlight
+```pre
 > ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
 > ./gradlew core:scalaTest \
 >    --tests "Test the creation/dropping of table using SQL"  # run a single test (use full name)
@@ -120,7 +120,7 @@ To import into IntelliJ IDEA:
 
 * Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Clear the **Create separate module per source set** option, while other options can continue with the default . Click **Next** in the following screens.<br/>
     
-	!!! Note:
+	!!! Note
 		
         * Ignore the **"Gradle location is unknown warning"**.
 

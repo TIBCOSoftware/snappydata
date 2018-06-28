@@ -9,7 +9,7 @@ VSD is a free analysis tool and is provided as-is. VSD is distributed with Snapp
 
 After you install SnappyData, you can find VSD in the following location of your installation:
 
-``` pre
+```pre
 <snappydata-installdir>/vsd
 ```
 
@@ -33,7 +33,7 @@ The VSD tool installation has the following subdirectories:
 
 -   **Linux/Unix, MacOS or Other OS:**
 
-    ``` 
+    ```pre 
     $ ./vsd
     ```
 
@@ -45,7 +45,7 @@ You have several options for loading a statistics file into VSD:
 
 -   Include the name of one or more statistics files on the VSD command line. Example:
 
-    ``` 
+    ```pre
     vsd <filename.gfs> ...
     ```
 
