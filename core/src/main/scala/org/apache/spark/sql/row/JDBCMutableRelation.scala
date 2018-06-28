@@ -19,7 +19,9 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+
+import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow

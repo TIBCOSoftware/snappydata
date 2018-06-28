@@ -97,6 +97,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    if (batch.deltaIndexes ne null) {
+      logInfo(s"SW:1: applying updates on $tableName")
+    }
     // check for task cancellation before further processing
     checkTaskCancellation()
     if (partitionId >= 0) {
@@ -112,6 +115,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case None =>
         case Some(bucket) => bucket.updateInProgressSize(-batchSize)
       }
+    }
+    if (batch.deltaIndexes ne null) {
+      logInfo(s"SW:1: DONE applying updates on $tableName")
     }
   }
 
@@ -230,6 +236,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def storeDelete(columnTableName: String, buffer: ByteBuffer, partitionId: Int,
       batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    logInfo(s"SW:1: applying deletes on $tableName")
     // check for task cancellation before further processing
     checkTaskCancellation()
     val value = new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed = false)
@@ -319,6 +326,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           }
         }(conn)
     }
+    logInfo(s"SW:1: DONE applying deletes on $tableName")
   }
 
   def closeConnection(c: Option[Connection]): Unit = {
@@ -366,7 +374,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       }
       // add the stats row
       val key = new ColumnFormatKey(batchId, partitionId, statRowIndex)
-      if (maxDeltaRows > 0 && maxDeltaRows < region.getColumnMaxDeltaRows) {
+      if (maxDeltaRows >= 0 && maxDeltaRows < region.getColumnMaxDeltaRows) {
         // log at info level for the case of column batch merges
         logInfo(s"Putting batch of size = ${batch.numRows} into ${region.getName}: $key")
       } else {
@@ -1020,21 +1028,21 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
     delayRollover: Boolean) extends TaskCompletionListener {
-  val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
-  var isSuccess = false
+  private val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
+  private var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
     val txId = connAndTxId(1).asInstanceOf[String]
-    val conn = connAndTxId(0).asInstanceOf[Connection]
-    if (connAndTxId(1) != null) {
+    val conn = Option(connAndTxId(0).asInstanceOf[Connection])
+    if (connAndTxId(1) ne null) {
       if (success()) {
-        store.commitTx(txId, delayRollover, Some(conn))
+        store.commitTx(txId, delayRollover, conn)
       }
       else {
-        store.rollbackTx(txId, Some(conn))
+        store.rollbackTx(txId, conn)
       }
     }
-    store.closeConnection(Some(conn))
+    store.closeConnection(conn)
   }
 
   def success(): Boolean = {

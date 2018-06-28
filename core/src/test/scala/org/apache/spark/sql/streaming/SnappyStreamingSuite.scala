@@ -175,8 +175,8 @@ class SnappyStreamingSuite
     filtered.glom().foreachRDD(rdd => rdd.foreach(_.foreach(println)))
     val mapped = filtered.map(row => row.getString(0).toInt)
     mapped.foreachRDD(rdd => rdd.foreach(println))
-    mapped.reduce(_ + _).foreachRDD(rdd => println(rdd.first()))
-    mapped.count().foreachRDD(rdd => println(rdd.first()))
+    mapped.reduce(_ + _).foreachRDD(_.foreach(println))
+    mapped.count().foreachRDD(_.foreach(println))
     // mapped.mapPartitions { _ => Seq.empty.toIterator }
     mapped.mapPartitions { x => Iterator(x.sum)}
     mapped.transform(rdd => rdd.map(_.toString))

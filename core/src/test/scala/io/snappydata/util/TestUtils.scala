@@ -62,7 +62,8 @@ object TestUtils {
           (table, path)
         }
         allTablesWithRegions.filter { case (table, path) =>
-          if (streams.exists(_.toString() == table)) {
+          if (path.startsWith("/SYS")) false
+          else if (streams.exists(_.toString() == table)) {
             false
           } else if (hasColocatedChildren(path, allRegions)) {
             parents += table

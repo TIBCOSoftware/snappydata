@@ -93,8 +93,16 @@ class QueryTest extends SnappyFunSuite {
 
     val query = "select k, v from t1 inner join t2 where t1.id = t2.k order by k, v"
     val df = session.sql(query)
-    val result1 = df.collect().mkString(" ")
+    var result1 = df.collect().mkString(" ")
     val result2 = spark.sql(query).collect().mkString(" ")
+    if (result1 != result2) {
+      fail(s"Expected result: $result2\nGot: $result1")
+    }
+
+    // force run stats so that small batches have been merged repeatedly
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
+    Thread.sleep(10000)
+    result1 = df.collect().mkString(" ")
     if (result1 != result2) {
       fail(s"Expected result: $result2\nGot: $result1")
     }
@@ -317,7 +325,7 @@ class QueryTest extends SnappyFunSuite {
     snc.sql(s"create index APP.X_TEST_COL3 on APP.TEST (col3)")
     snc.sql(s"insert into TEST values ('one', 'vone', 'cone'), ('two', 'vtwo', 'ctwo')")
     val r = snc.sql(s"select count(*) from TEST").collect()
-    assert (1 === r.size)
+    assert (1 === r.length)
     assert (2 === r.head.get(0))
     snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
   }

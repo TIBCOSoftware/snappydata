@@ -288,7 +288,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
       // or direct code generation as appropriate
-      val itr = if (isPartitioned && filterWhereClause.isEmpty) {
+      val itr: IteratorWithMetrics[_] = if (isPartitioned && filterWhereClause.isEmpty) {
         val container = GemFireXDUtils.getGemFireContainer(tableName, true)
         val bucketIds = thePart match {
           case p: MultiBucketExecutorPartition => p.buckets
@@ -421,7 +421,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 final class ResultSetTraversal(conn: Connection,
     stmt: Statement, val rs: ResultSet, context: TaskContext,
     source: Option[IteratorWithMetrics[_]] = None)
-    extends ResultSetIterator[Void](conn, stmt, rs, context) with IteratorWithMetrics[Void] {
+    extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
   lazy val defaultCal: GregorianCalendar =
     ClientSharedData.getDefaultCleanCalendar
