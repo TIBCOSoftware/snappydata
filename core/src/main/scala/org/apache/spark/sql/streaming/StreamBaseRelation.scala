@@ -44,6 +44,8 @@ abstract class StreamBaseRelation(opts: Map[String, String])
 
   var tableExists: Boolean = _
 
+  var tableCreated: Boolean = _
+
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
     DependencyCatalog.addDependent(tableName, dependent.name)
