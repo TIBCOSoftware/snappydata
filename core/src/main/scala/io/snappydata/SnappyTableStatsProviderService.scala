@@ -23,6 +23,7 @@ import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -181,7 +182,6 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
     var resultObtained: Boolean = false
     try {
@@ -203,38 +203,42 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
     val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
 
-    try {
-      // External Tables
-      externalTables = hiveTables.collect {
-        case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
-          new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-            table.externalStore, table.dataSourcePath, table.driverClass)
+    val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
+      try {
+        // External Tables
+        hiveTables.collect {
+          case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
+              table.externalStore, table.dataSourcePath, table.driverClass)
+          }
         }
       }
-    }
-    catch {
-      case NonFatal(e) => {
-        log.warn("Exception occurred while collecting External Table Statistics: "
-            + e.getMessage, e)
+      catch {
+        case NonFatal(e) => {
+          log.warn("Exception occurred while collecting External Table Statistics: "
+              + e.getMessage, e)
+          mutable.Buffer.empty[SnappyExternalTableStats]
+        }
       }
     }
 
     if (resultObtained) {
       // Return updated tableSizeInfo
+      // Map to hold hive table type against table names as keys
+      val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
+      hiveTables.foreach(ht => {
+        val key = ht.schema.toString.concat("." + ht.entityName)
+        tableTypesMap.put(key.toUpperCase, ht.tableType)
+      })
+
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
-        hiveTables.foreach(ht => {
-          val tableName = rs.getTableName
-          val schema = tableName.substring(0, tableName.indexOf("."));
-          val tname = tableName.substring(tableName.indexOf(".") + 1);
-          // Set whether table is column table or not
-          if (ht.schema.toString.equalsIgnoreCase(schema)
-              && ht.entityName.equalsIgnoreCase(tname)) {
-            if (ht.tableType.equalsIgnoreCase("COLUMN"))
-              rs.setColumnTable(true)
-            else
-              rs.setColumnTable(false)
-          }
-        })
+        val tableName = rs.getTableName
+        if (tableTypesMap.contains(tableName.toUpperCase)
+            && tableTypesMap.get(tableName.toUpperCase).get.equalsIgnoreCase("COLUMN")) {
+          rs.setColumnTable(true)
+        } else {
+          rs.setColumnTable(false)
+        }
         rs
       })
 
