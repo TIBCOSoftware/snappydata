@@ -55,7 +55,7 @@ The following installation options are available:
     </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. 
     </br>A typical configuration used for SnappyData servers and leads can look like:
 
-```no-highlight
+```pre
 snappydata          hard    nofile      81920
 snappydata          soft    nofile      8192
 snappydata          hard    nproc       unlimited

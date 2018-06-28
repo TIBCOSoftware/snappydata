@@ -52,7 +52,7 @@
 3. From the **Interpreter group** drop-down select **snappydata**.
 	 ![Configure Interpreter](../Images/snappydata_interpreter_properties.png)
 
-	!!! Note: 
+	!!! Note
     	If **snappydata** is not displayed in the **Interpreter group** drop-down list, try the following options, and then restart Zeppelin daemon: 
 
     	* Delete the **interpreter.json** file located in the **conf** directory (in the Zeppelin home directory).
@@ -82,7 +82,7 @@
 7. If required, edit other properties, and then click **Save** to apply your changes.</br>
 
 
-!!! Note: 
+!!! Note
 	You can modify the default port number of the Zeppelin interpreter by setting the property:</br>
 	`-zeppelin.interpreter.port=<port_number>` in [lead node configuration](../configuring_cluster/configuring_cluster.md#configuring-leads). 
 

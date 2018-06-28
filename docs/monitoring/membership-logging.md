@@ -5,7 +5,7 @@ Each SnappyData locator creates a log file that record the different membership 
 
 The locator membership view log file is stored in the locator member directory using the file format <span class="ph filepath">locator*XXXX*views.log</span>, where *XXXX* is the port number that the locator uses for peer connections. A locator records a membership view log entry when the it starts, and adds a new entry each time a member joins the system. Each time a new data store joins the system, a log entry records the total number of servers and clients in the system at that time. For example:
 
-``` pre
+```pre
 [info 2014/01/29 16:43:34.493 PST <CacheServerLauncher#serverConnector> tid=0xe] Log opened with new distributed system connection.  View(creator=ward(14487)<v0>:4720, viewId=0, [ward(14487)<v0>:4720])
 
 [info 2014/01/29 16:44:35.421 PST <DM-MemberEventInvoker> tid=0x1c] A new member joined: ward(14501)<v1>:21541.  View(creator=ward(14487)<v0>:4720, viewId=1, [ward(14487)<v0>:4720, ward(14501)<v1>:21541])

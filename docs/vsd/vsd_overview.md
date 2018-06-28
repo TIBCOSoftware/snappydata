@@ -4,7 +4,7 @@ The Visual Statistics Display (VSD) reads the sampled statistics from one or mor
 
 VSD’s extensive online help offers complete reference information about the tool. 
 
-!!! Note:
+!!! Note
 	Ensure the following for running VSD:
 
 	- Install 32-bit libraries on 64-bit Linux:</br>
