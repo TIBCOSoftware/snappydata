@@ -5,7 +5,7 @@ By default SnappyData creates a log file named <span class="ph filepath">gfxdser
 
 You can specify the name and location of the log file by using the JDBC boot property `log-file` when you start a server or locator. For example:
 
-``` pre
+```pre
 snappy-shell snappydata server start -log-file=/home/user1/log/mysnappystorelog.log
 ```
 

@@ -9,8 +9,9 @@ To access the SnappyData Pulse, start your cluster and open http:`<leadhost>`:50
 
 The top-right side of the page displays the date and time when the Dashboard was last updated. Click on the product version number to view details like the build number, source revision, underlying spark version, etc.
 
-!!! Note:
-	- When using Smart Connector with upstream Spark, the **Dashboard** and **Member Details** sections are not displayed. Only the **SQL**, **Jobs** and **Stages** related information is displayed.
+!!! Note
+	
+	When using Smart Connector with upstream Spark, the **Dashboard** and **Member Details** sections are not displayed. Only the **SQL**, **Jobs** and **Stages** related information is displayed.
 
 The following topics are covered in this section:
 
@@ -220,7 +221,7 @@ The top-right side of the page displays the last updated date and time for the m
 
 * **Stages**: Click on the stage to view its details. The table displays the time taken for completion of each stage. 
 
-!!! Tip:
+!!! Tip
 	You can cancel a long running job, using the **Kill** option. </br>![kill](../Images/kill_job.png)
 
 <a id="stages"></a>

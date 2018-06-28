@@ -24,6 +24,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
+import util.TestException;
 
 public class HikariConnectionPool {
 
@@ -61,7 +62,8 @@ public class HikariConnectionPool {
     catch(Exception e) {
       Log.getLogWriter().info("Got exception while getting connection using hikari connection " +
           "pool");
-    }
+      throw new TestException("Got exception while getting pool connection",e);
+   }
     return conn;
   }
 }

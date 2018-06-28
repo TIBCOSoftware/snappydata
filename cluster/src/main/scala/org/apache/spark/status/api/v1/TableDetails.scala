@@ -30,7 +30,7 @@ object TableDetails {
     tableBuff.mapValues(table =>{
       val storageModel = {
         if (table.isColumnTable) {
-          "COLOUMN"
+          "COLUMN"
         } else {
           "ROW"
         }

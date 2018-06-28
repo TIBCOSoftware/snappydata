@@ -18,7 +18,7 @@ SnappyData configuration properties are divided into the following property type
 
 -   **Connection properties**. Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. You can define connection properties directly in the JDBC connection URL (or in the "connect" command in an interactive SnappyData session). You can also define connection properties in the `gemfirexd.properties` file or as Java system properties. For example, use -J-D*property_name*=*property_value* when you execute a `snappy` utility. Or, use the JAVA_ARGS environment variable to define a Java system property for an interactive `snappy` session (JAVA_ARGS="-D*property_name*=*property_value*"). 
    
-	!!! Note:
+	!!! Note
 		You must add a prefix to certain connection property names in order to specify those properties as Java system properties. See [Property Prefixes](#property-prefixes).
 
     Connection properties can be further categorized as either *boot properties* or *client properties*:
@@ -46,14 +46,14 @@ If no prefix is specified, use only the indicated property name in all circumsta
 
 You can specify Unicode (non-ASCII) characters in SnappyData property files by using a `\uXXXX` escape sequence. For a supplementary character, you need two escape sequences, one for each of the two UTF-16 code units. The XXXX denotes the 4 hexadecimal digits for the value of the UTF-16 code unit. For example, a properties file might have the following entries:
 
-```no-highlight
+```pre
 s1=hello there
 s2=\u3053\u3093\u306b\u3061\u306f
-```
+pre
 
 For example, in `gemfirexd.properties`, you might write:
 
-```no-highlight
+```pre
 log-file=my\u00df.log
 ```
 
