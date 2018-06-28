@@ -109,9 +109,9 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   override def getNumColumnsInTable(columnTable: GemFireContainer): Int =
     columnTable.fetchHiveMetaData(false).schema.asInstanceOf[StructType].length
 
-  override def getColumnBatchRowCount(itr: PREntriesIterator[_],
+  override def getColumnBatchRowCount(bucketRegion: BucketRegion,
       re: RegionEntry, numColumnsInTable: Int): Int = {
-    val currentBucketRegion = itr.getHostedBucketRegion
+    val currentBucketRegion = bucketRegion.getHostedBucketRegion
     if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
