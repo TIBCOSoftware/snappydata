@@ -3,7 +3,7 @@ Connects to a SnappyData distributed system and executes the contents of a SQL c
 
 ## Syntax
 
-```no-highlight
+```pre
 ./bin/snappy run -file=<path or URL>
      [-auth-provider=<name>]
      [-client-bind-address=<address>]
@@ -47,12 +47,12 @@ The `-file` argument specifies the location of the SQL script file to execute. I
 
 This command connects to a SnappyData network server running on localhost:1527 and executes commands in the create_and_load_column_table.sql file:
 
-```no-highlight
+```pre
 ./bin/snappy run -file=/home/user1/snappydata/examples/quickstart/scripts/create_and_load_column_table.sql -client-bind-address=localhost -client-port=1527 
 ```
 
 If the script calls for dependent scripts (for example load_countries.sql, load_cities.sql) and if the command is executed outside the directory in which the dependent scripts are located, specify the working directory using the `-path` option.
 
-```no-highlight
+```pre
 ./bin/snappy run -file=/home/user1/snappydata/examples/quickstart/scripts/create_and_load_column_table.sql -path=/home/user1/snappydata/examples/quickstart -client-bind-address=localhost -client-port=1527
 ```

@@ -179,13 +179,13 @@ These configuration files contain hostname of the node where a locator/server is
 ### Starting the SnappyData RowStore cluster 
 After creating the configuration files, start SnappyData RowStore using the following command:
 
-``` pre
+```pre
 snappy-start-all rowstore
 ```
 
 The above command starts the SnappyData servers and locators with properties as mentioned in the **conf/servers** and **conf/locators** files. The `rowstore` option instructs SnappyData not to start the lead node, which is used when SnappyData is used for SnappyData specific extensions (like column store, running spark jobs etc.)
 
-!!! Note:
+!!! Note
 		Ensure that the distributed system is running by executing the command snappy-status-all
 
 For example:
@@ -263,7 +263,7 @@ In this step, you use the modified DDL SQL scripts to recreate stored procedures
 The system is started and you can fire queries on the snappy-shell to check the status of the upgrade. The `sql` shell is replaced by the `snappy-sql` command in SnappyData.
 For example:
 
-``` pre
+```pre
 snappy-sql
 >SnappyData version 1.0.0
 snappy> connect client '127.0.0.1:1527';
@@ -300,7 +300,7 @@ SYSIBM                |SYSDUMMY1                      |SYSTEM TABLE|
 
 You can execute the `show members` query to see the running members:
 
-```
+```pre
 snappy> show members;
 ```
 

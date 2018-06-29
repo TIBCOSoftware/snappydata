@@ -8,7 +8,7 @@ Related jobs may require some common libraries. These libraries can be made avai
 
 **Syntax:**
 
-```no-highlight
+```pre
 SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672), IN DEPLOY INTEGER)
 ```
 
@@ -20,7 +20,7 @@ SQLJ.INSTALL_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(
 
 **Example:**
 
-```no-highlight
+```pre
 snappy> call sqlj.install_jar('/path_to_jar/procs.jar', 'APP.custom_procs', 0);
 ```
 
@@ -30,7 +30,7 @@ Use  SQLJ.REPLACE_JAR procedure to replace an installed JAR file
 
 **Syntax:**
 
-```no-highlight
+```pre
 SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(32672))
 ```
 * JAR_FILE_PATH  is the full path to the JAR file. This path must be accessible to the server on which the INSTALL_JAR procedure is being executed. If the JDBC client connection on which this procedure is being executed is using the locator to connect to the cluster, then actual client connection could be with any available servers. In this case, the JAR file path should be available to all servers.
@@ -39,7 +39,7 @@ SQLJ.REPLACE_JAR(IN JAR_FILE_PATH VARCHAR(32672), IN QUALIFIED_JAR_NAME VARCHAR(
 
 **Example:**
 
-```no-highlight
+```pre
 CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 ```
 
@@ -48,7 +48,7 @@ CALL sqlj.replace_jar('/path_to_jar/newprocs.jar', 'APP.custom_procs')
 Use SQLJ.REMOVE_JAR  procedure to remove a JAR file
 
 **Syntax:**
-```no-highlight
+```pre
 SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 ```
 * QUALIFIED_JAR_NAME: The SnappyData name of the JAR file, qualified by a valid schema name.
@@ -57,6 +57,6 @@ SQLJ.REMOVE_JAR(IN QUALIFIED_JAR_NAME VARCHAR(32672), IN UNDEPLOY INTEGER)
 
 **Example:**
 
-```no-highlight
+```pre
 CALL SQLJ.REMOVE_JAR('APP.custom_procs', 0)
 ```
