@@ -835,7 +835,7 @@ class SnappyParser(session: SnappySession)
             l match {
               case pl: ParamLiteral  if pl.tokenized && _isPreparePhase =>
                 throw new ParseException(s"function $fnName cannot have " +
-                    s"parameterized argument ${index + 1}")
+                    s"parameterized argument at position ${index + 1}")
               case _ =>
             }
             removeIfParamLiteralFromContext(l)

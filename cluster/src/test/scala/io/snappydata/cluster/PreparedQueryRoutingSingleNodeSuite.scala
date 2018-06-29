@@ -705,7 +705,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         fail("PreparedStatement creation should have failed")
       } catch {
         case sqle: SQLException
-          if sqle.getMessage.indexOf("cannot have parameterized arguments") != -1 =>
+          if sqle.getMessage.indexOf("cannot have parameterized argument") != -1 =>
         case x: Throwable => throw x
       }
     } finally {
