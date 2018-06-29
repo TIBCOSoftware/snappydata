@@ -16,13 +16,13 @@ The default template uses a custom layout (io.snappydata.log4j.PatternLayout) th
 
 For example, the default pattern:
 
-```
+```pre
 log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t %p %c{1}: %m%n
 ``` 
 
 produces
 
-```
+```pre
 17/11/07 16:42:05.115 IST serverConnector<tid=0xe> INFO snappystore: GemFire P2P Listener started on  tcp:///192.168.1.6:53116
 ```
 
@@ -34,7 +34,7 @@ When using a custom **log4j.properties**, and the mentioned layout cannot be use
 
 **When using the default PatternLayout in the log4j.properties file:**
 
-```
+```pre
 log4j.rootCategory=INFO, file
 
 log4j.appender.file=org.apache.log4j.RollingFileAppender
@@ -43,7 +43,7 @@ log4j.appender.file.layout=io.snappydata.log4j.PatternLayout
 
 **When adding the custom appender**
 
-```
+```pre
 log4j.rootCategory=INFO, threadId, file
 
 log4j.appender.threadId=io.snappydata.log4j.ThreadIdAppender
@@ -101,15 +101,15 @@ SnappyData Store provides the following trace flags that you can use with the `s
 
 To enable logging of specific features of SnappyData, set the required trace flag in the `snappydata.debug.true` system property. For example, you can add the following setting inside the configuration file of the SnappyData member to enable logging for query distribution and indexing:
 
-``` pre
+```pre
 localhost -J-Dsnappydata.debug.true=QueryDistribution,TraceIndex
 ```
 
 If you need to set a trace flag in a running system, use the [SYS.SET_TRACE_FLAG](../reference/inbuilt_system_procedures/set-trace-flag.md) system procedure. The procedure sets the trace flag in all members of the distributed system, including locators. You must execute the procedure as a system user. For example:
 
-``` pre
+```pre
 snappy> call sys.set_trace_flag('traceindex', 'true');
 Statement executed.
 ```
-!!! Note:
+!!! Note
 	Trace flags work only for `snappy` and `jdbc` and not for `snappy-sql`.

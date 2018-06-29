@@ -8,13 +8,13 @@ For example, if you had redundancy set to 1, so you have one primary and one sec
 
 You set one redundancy zone in the *conf/servers* file for all members that run on one rack:
 
-```no-highlight
+```pre
 -gemfire.redundancy-zone=rack1
 ```
 
 You can also set another redundancy zone in the *conf/servers* file for all members that run on another rack:
 
-```no-highlight
+```pre
 -gemfire.redundancy-zone=rack2
 ```
 
@@ -32,7 +32,7 @@ gemfire.
 
 ## Example
 
-```no-highlight
+```pre
 localhost1 -gemfire.redundancy-zone=rack1
 localhost1 -gemfire.redundancy-zone=rack1
 localhost2 -gemfire.redundancy-zone=rack2
