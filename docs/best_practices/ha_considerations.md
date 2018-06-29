@@ -1,6 +1,5 @@
-<a id="cores"></a>
 # High Availability (HA) Considerations
-<a id="ha-consideration"></a>
+<a id="ha-consideration"></a> <a id="cores"></a>
 
 High availability options are available for all the SnappyData components.
 
