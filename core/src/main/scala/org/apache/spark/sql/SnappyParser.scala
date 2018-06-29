@@ -819,8 +819,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
-      fnName: String): Seq[Expression] = if (!_isPreparePhase) {
-    Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
+      fnName: String): Seq[Expression] = Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
       case null => exprs
       case args if args.length == 0 =>
         // disable plan caching for these functions
@@ -833,12 +832,18 @@ class SnappyParser(session: SnappySession)
               (args(0) == -10) || (args(0) == -1 && (index & 0x1) == 1) ||
               // all even args
               (args(0) == -2 && (index & 0x1) == 0) =>
+            l match {
+              case pl: ParamLiteral  if pl.tokenized && _isPreparePhase =>
+                throw new ParseException(s"function $fnName cannot have " +
+                    s"parameterized argument at position ${index + 1}")
+              case _ =>
+            }
             removeIfParamLiteralFromContext(l)
             newLiteral(l.value, l.dataType)
           case e => e
         })
     }
-  } else exprs
+
 
   protected final def primary: Rule1[Expression] = rule {
     intervalLiteral |
