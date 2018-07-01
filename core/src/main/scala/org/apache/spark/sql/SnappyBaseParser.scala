@@ -361,7 +361,7 @@ object SnappyParserConsts {
   final val DROP: Keyword = reservedKeyword("drop")
   final val ELSE: Keyword = reservedKeyword("else")
   final val EXCEPT: Keyword = reservedKeyword("except")
-  final val MINUS: Keyword = reservedKeyword("minus")
+  final val MINUS: Keyword = nonReservedKeyword("minus")
   final val EXISTS: Keyword = reservedKeyword("exists")
   final val FALSE: Keyword = reservedKeyword("false")
   final val FROM: Keyword = reservedKeyword("from")
@@ -396,9 +396,9 @@ object SnappyParserConsts {
   final val WHEN: Keyword = reservedKeyword("when")
   final val WHERE: Keyword = reservedKeyword("where")
   final val WITH: Keyword = reservedKeyword("with")
-  final val FUNCTIONS: Keyword = reservedKeyword("functions")
+  final val FUNCTIONS: Keyword = nonReservedKeyword("functions")
   final val FUNCTION: Keyword = reservedKeyword("function")
-  final val RESET: Keyword = reservedKeyword("RESET")
+  final val RESET: Keyword = nonReservedKeyword("RESET")
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
