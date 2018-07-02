@@ -42,9 +42,9 @@ sh $SnappyData/sbin/snappy-start-all.sh
 #$SnappyData/sbin/snappy-locators.sh start
 
 #echo "******************start servers******************"
-$SnappyData/sbin/snappy-servers.sh -bg start
+#$SnappyData/sbin/snappy-servers.sh -bg start
 #sh $SnappyData/sbin/snappy-servers.sh start -classpath=$TPCHJar
 
 #echo "******************start leads******************"
-$SnappyData/sbin/snappy-leads.sh start
+#$SnappyData/sbin/snappy-leads.sh start
 #sh $SnappyData/sbin/snappy-leads.sh start -classpath=$TPCHJar
