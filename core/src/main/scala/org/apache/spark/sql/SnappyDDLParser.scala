@@ -23,11 +23,14 @@ import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.util.Try
+
 import io.snappydata.Constant
+
 import org.apache.spark.TaskContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.parboiled2._
 import shapeless.{::, HNil}
+
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
@@ -43,8 +46,9 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-
 import scala.collection.mutable.ArrayBuffer
+
+import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -263,11 +267,13 @@ abstract class SnappyDDLParser(session: SparkSession)
             case Some(true) =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = false)
             case _ =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = true)
           }
         case None =>
           external match {

@@ -25,28 +25,26 @@ import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
-import io.snappydata.Property
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
-import org.apache.spark.sql._
+import org.apache.spark.sql.{catalyst, _}
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, Join, LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FileSourceStrategy, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
@@ -57,7 +55,7 @@ import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.types.{DecimalType, NumericType, StringType}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Partition, SparkConf}
+import org.apache.spark.{Partition, SparkConf, sql}
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -108,6 +106,7 @@ class SnappySessionState(snappySession: SnappySession)
         ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
+        ExternalRelationLimitFetch::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
@@ -158,6 +157,8 @@ class SnappySessionState(snappySession: SnappySession)
           Batch("Order join conditions ", Once, OrderJoinConditions)
     }
   }
+
+
 
   // copy of ConstantFolding that will turn a constant up/down cast into
   // a static value.
@@ -373,6 +374,66 @@ class SnappySessionState(snappySession: SnappySession)
       Join(left, right, joinType, allConditions)
     }
   }
+
+  object ExternalRelationLimitFetch extends Rule[LogicalPlan] {
+    val indexes = (0, 1, 2, 3, 4, 5)
+    val (create_tv_bool, filter_bool, agg_func_bool, extRelation_bool, allProjectionBool,
+    alreadyProcessed_bool) = indexes
+
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      val limit = limitExternalDataFetch(plan)
+      if (limit > 0) {
+        Limit(Literal(limit), plan)
+      } else {
+        plan
+      }
+    }
+
+    def limitExternalDataFetch(plan: LogicalPlan): Int = {
+      // if plan is pure select with or without limit , has GemFireRelation,
+      // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
+      // or a CreateView
+      // TODO: Deal with View
+
+      val boolsArray = Array.ofDim[Boolean](indexes.productArity)
+      // by default assume all projections are fetched
+      boolsArray(allProjectionBool) = true
+      var externalRelation: ApplyLimitOnExternalRelation = null
+      plan.foreachUp(pln => {
+        pln match {
+          case LogicalRelation(baseRelation: ApplyLimitOnExternalRelation, _, _) =>
+            boolsArray(extRelation_bool) = true
+            externalRelation = baseRelation
+
+          case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
+          case _: Aggregate => boolsArray(agg_func_bool) = true
+          case Project(projs, _) => if (!(boolsArray(extRelation_bool) &&
+              ((projs.length == externalRelation.asInstanceOf[BaseRelation].schema.length &&
+                  projs.zip(externalRelation.asInstanceOf[BaseRelation].schema).forall {
+                    case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
+                  })
+                  || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
+            boolsArray(allProjectionBool) = false
+          }
+          case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+          case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+            boolsArray(filter_bool) = true
+          case _ =>
+        }
+      })
+
+      if (boolsArray(extRelation_bool) && boolsArray(allProjectionBool) &&
+          !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
+              boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
+        externalRelation.getLimit
+      } else {
+        -1
+      }
+
+    }
+
+  }
+
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
@@ -937,6 +998,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
         with SnappyStrategies {
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
     case _ => Nil
   }
 
@@ -1310,4 +1372,10 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
       }
       Aggregate(groupingExpressions, newResultExpressions, child)
   }
+}
+
+
+
+case class MarkerForCreateTableAsSelect(val child: LogicalPlan) extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
 }
