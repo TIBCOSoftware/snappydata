@@ -68,7 +68,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
   final def EXCEPT: Rule0 = rule { keyword(Consts.EXCEPT) }
-  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
   final def EXISTS: Rule0 = rule { keyword(Consts.EXISTS) }
   final def FALSE: Rule0 = rule { keyword(Consts.FALSE) }
   final def FROM: Rule0 = rule { keyword(Consts.FROM) }
@@ -109,9 +108,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def WHEN: Rule0 = rule { keyword(Consts.WHEN) }
   final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
-  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
+
 
   // non-reserved keywords
+  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
+  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
@@ -586,7 +587,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def show: Rule1[LogicalPlan] = rule {
    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
       ShowTablesCommand(ident.asInstanceOf[Option[String]], None)) |
-       SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
+       SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ LIKE.? ~
         (functionIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
       val (user, system) = id.asInstanceOf[Option[String]]
           .map(_.toLowerCase) match {
