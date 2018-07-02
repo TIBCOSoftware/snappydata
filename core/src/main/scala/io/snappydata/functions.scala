@@ -44,7 +44,7 @@ object SnappyDataFunctions {
  * Expression that returns the dsid of the server containing the row.
  */
 @ExpressionDescription(
-  usage = "_FUNC_() - Returns the dsid of the server containing the row." )
+  usage = "_FUNC_() - Returns the dsid of the server containing the row.")
 case class DSID() extends LeafExpression {
 
   override def nullable: Boolean = false
