@@ -62,6 +62,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CASE: Rule0 = rule { keyword(Consts.CASE) }
   final def CAST: Rule0 = rule { keyword(Consts.CAST) }
   final def CREATE: Rule0 = rule { keyword(Consts.CREATE) }
+  final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
   final def CURRENT: Rule0 = rule { keyword(Consts.CURRENT) }
   final def CURRENT_DATE: Rule0 = rule { keyword(Consts.CURRENT_DATE) }
   final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
@@ -172,6 +173,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
   final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
+  final def FOR: Rule0 = rule { keyword(Consts.FOR) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -287,6 +289,28 @@ abstract class SnappyDDLParser(session: SparkSession)
       }
     }
   }
+
+  protected final def policyFor: Rule1[String] = rule {
+    (FOR ~ capture(ALL | SELECT | UPDATE | INSERT | DELETE)).? ~> ((forOpt: Any) =>
+      forOpt match {
+        case Some(v) => v.asInstanceOf[String]
+        case None => "select"
+      })
+  }
+
+
+  protected def createPolicy: Rule1[LogicalPlan] = rule {
+    (CREATE ~ POLICY) ~ tableIdentifier ~ ON ~ tableIdentifier ~ policyFor ~
+        TO ~
+        ((capture(CURRENT) | quotedIdentifier | unquotedIdentifier) + commaSep) ~
+        USING ~ expression ~> { (policyName: TableIdentifier, tableName: TableIdentifier,
+        policyFor: String, applyTo: Seq[String], filter: Expression) => {
+      null
+    }
+    }
+  }
+
+
 
   protected final def beforeDDLEnd: Rule0 = rule {
     noneOf("uUoOaA-;/")
@@ -694,11 +718,13 @@ abstract class SnappyDDLParser(session: SparkSession)
     createTable | describeTable | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView |
     alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show
+    createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show |
+    createPolicy
+
   }
 
   protected def query: Rule1[LogicalPlan]
-
+  protected def expression: Rule1[Expression]
   protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T
 
   protected def newInstance(): SnappyDDLParser

@@ -397,6 +397,8 @@ object SnappyParserConsts {
   final val WITH: Keyword = reservedKeyword("with")
   final val FUNCTIONS: Keyword = reservedKeyword("functions")
   final val FUNCTION: Keyword = reservedKeyword("function")
+  final val POLICY: Keyword = reservedKeyword("policy")
+
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
@@ -467,6 +469,7 @@ object SnappyParserConsts {
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
   final val VIEW: Keyword = nonReservedKeyword("view")
+  final val FOR: Keyword = nonReservedKeyword("for")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")
