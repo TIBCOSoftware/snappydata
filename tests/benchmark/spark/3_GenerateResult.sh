@@ -10,7 +10,7 @@ latestProp=$directory/latestProp.props
 
 cd $SnappyData/snappy-spark
 echo snappy-spark = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
-cd ../build-artifacts/scala-2.10/snappy/benchmark/snappy/
+#cd ../build-artifacts/scala-2.10/snappy/benchmark/snappy/
 
 echo SPARK_PROPERTIES = $sparkProperties >> $latestProp
 echo DATASIZE = $dataSize >> $latestProp
