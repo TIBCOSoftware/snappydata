@@ -5,7 +5,7 @@ Millions of rows are loaded into a cached Spark DataFrame, some analytic queries
 
 A simple analytic query that scans a 100 million-row column table shows SnappyData outperforming Apache Spark by 16-20X when both products have all the data in memory.
 
-!!! Note: 
+!!! Note
 	It is recommended that you should have at least 4GB of RAM reserved for this test. 
  
 ## Start the Spark Shell
@@ -94,5 +94,5 @@ Ensure that you are in a Spark shell, and then follow the instructions below to 
 
 	    scala> :q // Quit the Spark Shell
 
-!!! Note:
+!!! Note
 	This benchmark code is tested on a system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. Also, in an AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance SnappyData is approximately 16 to 18 times faster than Spark 2.1.1.

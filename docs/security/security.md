@@ -6,7 +6,7 @@ In the current release, SnappyData only supports LDAP authentication which allow
 
 SnappyData uses mutual authentication between the SnappyData locator and subsequent SnappyData members that boot and join the distributed system. 
 
-!!! Note:
+!!! Note
 	
 	* Currently, only LDAP based authentication and authorization is supported
 

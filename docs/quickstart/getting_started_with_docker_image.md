@@ -8,18 +8,18 @@ This section assumes you have already installed and configured Docker properly. 
 ## Verify that Docker is Installed</br> 
 In the command prompt run the command:
 
-```no-highlight
+```pre
 $ docker run hello-world
 
 ```
 
-!!! Note: 
+!!! Note
 	Ensure that the Docker containers have access to at least 4GB of RAM on your machine.
 
 ## Get the Docker Image</br>
 In the command prompt, type the following command to get the Docker image. This starts the container and takes you to the Spark shell.
 
-```no-highlight
+```pre
 $  docker run -it -p 5050:5050 snappydatainc/snappydata bin/spark-shell
 ```
 

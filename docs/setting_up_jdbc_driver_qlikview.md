@@ -1,6 +1,6 @@
 # Setting Up SnappyData JDBC Client and QlikView
 
-!!! Note:
+!!! Note
 	Before using SnappyData JDBC Client, make sure [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is installed.
 
 The following topics are covered in this section:
@@ -40,7 +40,7 @@ To connect to SnappyData using JDBC Client from QlikView application, install th
 
 After installing the JDBCConnector application, add the SnappyData profile in the JDBCConnector. 
 
-!!! Tip:
+!!! Tip
 	You can also create a profile from the QlikView application.
 
 1. Open JDBCConnector Application.

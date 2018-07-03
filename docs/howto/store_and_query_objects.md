@@ -9,7 +9,7 @@ The code snippet below inserts Person objects into a column table. The source co
 
 **Get a SnappySession**:
 
-```no-highlight
+```pre
 val spark: SparkSession = SparkSession
     .builder
     .appName("CreateReplicatedRowTable")
@@ -20,7 +20,7 @@ val snSession = new SnappySession(spark.sparkContext)
 ```
 
 **Create DataFrame objects**:
-```no-highlight
+```pre
 //Import the implicits for automatic conversion between Objects to DataSets.
 import snSession.implicits._
 
@@ -31,7 +31,7 @@ val people = Seq(Person("Tom", Address("Columbus", "Ohio"), Map("frnd1"-> "89987
 
 **Create a SnappyData table and insert data into it**:
 
-```no-highlight
+```pre
 //Drop the table if it exists.
 snSession.dropTable("Persons", ifExists = true)
 
@@ -56,7 +56,7 @@ morePeople.write.insertInto("Persons")
 
 **Execute query on the table and return results**:
 
-```no-highlight
+```pre
 // Query it like any other table
 val nameAndAddress = snSession.sql("SELECT name, address, emergencyContacts FROM Persons")
 

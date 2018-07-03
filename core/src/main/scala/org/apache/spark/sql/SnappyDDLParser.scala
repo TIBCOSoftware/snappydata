@@ -23,11 +23,14 @@ import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.util.Try
+
 import io.snappydata.Constant
+
 import org.apache.spark.TaskContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.parboiled2._
 import shapeless.{::, HNil}
+
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
@@ -43,8 +46,9 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-
 import scala.collection.mutable.ArrayBuffer
+
+import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -263,11 +267,13 @@ abstract class SnappyDDLParser(session: SparkSession)
             case Some(true) =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = false)
             case _ =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = true)
           }
         case None =>
           external match {
@@ -502,10 +508,10 @@ abstract class SnappyDDLParser(session: SparkSession)
         (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
         ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
           packages, alias.identifier, repos.asInstanceOf[Option[String]],
-          path.asInstanceOf[Option[String]]))) |
+          path.asInstanceOf[Option[String]], false))) |
       JAR ~ tableIdentifier ~ stringLiteral ~>
           ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
-        alias.identifier, commaSepPaths))) |
+        alias.identifier, commaSepPaths, false))) |
     UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
     LIST ~ (
       PACKAGES ~> (() => ListPackageJarsCommand(true)) |
@@ -761,35 +767,56 @@ case class DeployCommand(
     coordinates: String,
     alias: String,
     repos: Option[String],
-    jarCache: Option[String]) extends RunnableCommand {
+    jarCache: Option[String],
+    restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
-    if (jarsstr.nonEmpty) {
-      val jars = jarsstr.split(",")
-      val sc = sparkSession.sparkContext
-      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
-      SnappySession.addJarURIs(uris)
-      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-        Iterator.empty
-      })
-      val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
-      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+    try {
+      val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+      if (jarsstr.nonEmpty) {
+        val jars = jarsstr.split(",")
+        val sc = sparkSession.sparkContext
+        val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+        SnappySession.addJarURIs(uris)
+        Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
+          ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+          Iterator.empty
+        })
+        val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+        ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+      }
+      Seq.empty[Row]
+    } catch {
+      case ex: Throwable => {
+        restart match {
+          case true => {
+            logWarning(s"Following mvn coordinate" +
+                s" could not be resolved during restart: ${coordinates}")
+            Seq.empty[Row]
+          }
+          case false => throw ex
+        }
+      }
     }
-    Seq.empty[Row]
   }
 }
 
 case class DeployJarCommand(
     alias: String,
-    paths: String) extends RunnableCommand {
+    paths: String,
+    restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (paths.nonEmpty) {
       val jars = paths.split(",")
       val sc = sparkSession.sparkContext
-      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      val availableUris = jars.filter(j => new File(j).exists())
+      val unavailableUris = jars.filterNot(j => new File(j).exists())
+      if (unavailableUris.nonEmpty && restart) {
+        logWarning(s"Following jars are unavailable" +
+            s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+      }
+      val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)

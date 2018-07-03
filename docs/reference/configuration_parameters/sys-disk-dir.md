@@ -8,7 +8,7 @@ Other SnappyData features also use this directory for storing files. For example
 
 ## Usage 
 
-```no-highlight
+```pre
 -spark.snappydata.store.sys-disk-dir=
 ```
 

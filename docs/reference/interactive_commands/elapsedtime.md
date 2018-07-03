@@ -4,7 +4,7 @@ Displays the total time elapsed during statement execution.
 
 ## Syntax
 
-```no-highlight
+```pre
 ELAPSEDTIME { ON | OFF }
 ```
 
@@ -14,7 +14,7 @@ When `elapsedtime` is turned on, `snappy` displays the total time elapsed during
 
 ## Example
 
-```no-highlight
+```pre
 snappy> elapsedtime on;
 snappy> select * from airlines;
 A&|AIRLINE_FULL            |BASIC_RATE            |DISTANCE_DISCOUNT     |BUSINESS_LEVEL_FACTOR |FIRSTCLASS_LEVEL_FACT&|ECONOMY_SE&|BUSINESS_S&|FIRSTCLASS&

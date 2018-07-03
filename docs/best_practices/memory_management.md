@@ -129,7 +129,7 @@ Off-Heap Execution_Pool_Size => 16g * (0.5) = 8g
 Max_Off_Heap_Storage_pool_Size => 16g * 0.9 = 14.4 ( 0.9 System default)
 ```
 
-!!! Note:
+!!! Note
 
 	* For row tables: According to the requirements of your row table size, configure the heap size. Row tables in SnappyData do not use off-heap memory.
 

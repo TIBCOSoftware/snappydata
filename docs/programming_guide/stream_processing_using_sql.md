@@ -35,7 +35,7 @@ The following enhancements over Spark Streaming are provided:
 ## Working with Stream Tables
 SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
 
-```no-highlight
+```pre
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
 (COLUMN_DEFINITION)
@@ -69,7 +69,7 @@ STREAMING STOP
 ```
 
 For example to create a stream table using kafka source : 
-```no-highlight
+```pre
  val spark: SparkSession = SparkSession
      .builder
      .appName("SparkApp")
@@ -96,7 +96,7 @@ The streamTable created in the above example can be accessed from snappy-sql and
 ## Stream SQL through snappy-sql
 Start a SnappyData cluster and connect through snappy-sql :
 
-```no-highlight
+```pre
 //create a connection
 snappy> connect client 'localhost:1527';
 
@@ -126,7 +126,7 @@ SchemaDStream is SQL based DStream with support for schema/Product. It offers th
 Some of these ideas (especially naming our abstractions) were borrowed from [Intel's Streaming SQL project](https://github.com/Intel-bigdata/spark-streamingsql).
 
 ## Registering Continuous Queries
-```no-highlight
+```pre
 //You can join two stream tables and produce a result stream.
 val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (duration
     '2' seconds, slide '2' seconds) s1 JOIN stream2 s2 ON s1.id = s2.id")

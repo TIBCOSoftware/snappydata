@@ -1,6 +1,6 @@
 # DROP SCHEMA
 
-```no-highlight
+```pre
 DROP TABLE [schema-name] restrict;
 ```
 
@@ -10,6 +10,6 @@ Permanently removes a schema from the database. Ensure that you delete all the o
 
 ## Example
 
-```no-highlight
+```pre
 drop schema trade restrict;
 ```
