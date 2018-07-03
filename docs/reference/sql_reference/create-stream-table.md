@@ -2,7 +2,7 @@
 
 **To Create Stream Table:**
 
-```no-highlight
+```pre
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
     ( column-definition	[ , column-definition  ] * )
@@ -72,7 +72,7 @@ Access token secret for your Twitter account.
 
 ## Example
 
-```no-highlight
+```pre
 //create a connection
 snappy> connect client 'localhost:1527';
 

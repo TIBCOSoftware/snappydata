@@ -108,11 +108,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             val coordinate = cmdFields(0)
             val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
             val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-            DeployCommand(coordinate, null, repos, cache).run(self)
+            DeployCommand(coordinate, null, repos, cache, true).run(self)
           }
           else {
             // Jars we have
-            DeployJarCommand(null, cmdFields(0)).run(self)
+            DeployJarCommand(null, cmdFields(0), true).run(self)
           }
         })
        }
