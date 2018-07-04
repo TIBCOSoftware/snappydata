@@ -31,14 +31,14 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project, Sort}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project, Sort, _}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
@@ -105,6 +105,7 @@ class SnappySessionState(snappySession: SnappySession)
         ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
+        ExternalRelationLimitFetch ::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
@@ -156,6 +157,7 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
+
   // copy of ConstantFolding that will turn a constant up/down cast into
   // a static value.
   object TokenizedLiteralFolding extends Rule[LogicalPlan] {
@@ -187,6 +189,7 @@ class SnappySessionState(snappySession: SnappySession)
           snappySession.planCaching = false
           s
       }
+
       def unmarkAll(e: Expression): Expression = {
         // faster to iterate through collected literals rather than using transform again
         if (foldedLiterals.nonEmpty) {
@@ -199,11 +202,13 @@ class SnappySessionState(snappySession: SnappySession)
         }
         e
       }
+
       def foldExpression(e: Expression): DynamicFoldableExpression = {
         // lets mark child params foldable false so that nested expression doesn't
         // attempt to wrap
         DynamicFoldableExpression(mark(e, foldable = false))
       }
+
       plan transform {
         // transformDown for expression so that top-most node which is foldable gets
         // selected for wrapping by DynamicFoldableExpression and further sub-expressions
@@ -389,6 +394,64 @@ class SnappySessionState(snappySession: SnappySession)
       val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
       val allConditions = (newJoin ++ otherCondition).reduceOption(And)
       Join(left, right, joinType, allConditions)
+    }
+  }
+
+  object ExternalRelationLimitFetch extends Rule[LogicalPlan] {
+    private val indexes = (0, 1, 2, 3, 4, 5)
+    private val (create_tv_bool, filter_bool, agg_func_bool, extRelation_bool, allProjectionBool,
+    alreadyProcessed_bool) = indexes
+
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      val limit = limitExternalDataFetch(plan)
+      if (limit > 0) {
+        Limit(Literal(limit), plan)
+      } else {
+        plan
+      }
+    }
+
+    def limitExternalDataFetch(plan: LogicalPlan): Int = {
+      // if plan is pure select with or without limit , has GemFireRelation,
+      // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
+      // or a CreateView
+      // TODO: Deal with View
+
+      val boolsArray = Array.ofDim[Boolean](indexes.productArity)
+      // by default assume all projections are fetched
+      boolsArray(allProjectionBool) = true
+      var externalRelation: ApplyLimitOnExternalRelation = null
+      plan.foreachUp {
+        {
+          case LogicalRelation(baseRelation: ApplyLimitOnExternalRelation, _, _) =>
+            boolsArray(extRelation_bool) = true
+            externalRelation = baseRelation
+
+          case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
+          case _: Aggregate => boolsArray(agg_func_bool) = true
+          case Project(projs, _) => if (!(boolsArray(extRelation_bool) &&
+              ((projs.length == externalRelation.asInstanceOf[BaseRelation].schema.length &&
+                  projs.zip(externalRelation.asInstanceOf[BaseRelation].schema).forall {
+                    case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
+                  })
+                  || (projs.length == 1 && projs.head.isInstanceOf[Star])))) {
+            boolsArray(allProjectionBool) = false
+          }
+          case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+          case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
+            boolsArray(filter_bool) = true
+          case _ =>
+        }
+      }
+
+      if (boolsArray(extRelation_bool) && boolsArray(allProjectionBool) &&
+          !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
+              boolsArray(agg_func_bool) || boolsArray(alreadyProcessed_bool))) {
+        externalRelation.getLimit
+      } else {
+        -1
+      }
+
     }
   }
 
@@ -955,6 +1018,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
         with SnappyStrategies {
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
     case _ => Nil
   }
 
@@ -1373,4 +1437,8 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
       val newOrder = copyParamLiterals(groupingExpressions, order, sortOrderGet, toSortOrder)
       Sort(newOrder, global, a)
   }
+}
+
+case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
 }

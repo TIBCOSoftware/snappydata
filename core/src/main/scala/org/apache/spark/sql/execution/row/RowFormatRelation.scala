@@ -24,7 +24,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 
-import org.apache.spark.Partition
+import org.apache.spark.{Logging, Partition}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
@@ -310,7 +310,7 @@ class RowFormatRelation(
   }
 }
 
-final class DefaultSource extends MutableRelationProvider with DataSourceRegister {
+final class DefaultSource extends MutableRelationProvider with DataSourceRegister with Logging {
 
   override def shortName(): String = SnappyParserConsts.ROW_SOURCE
 
@@ -345,14 +345,15 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       tableOptions,
       sqlContext)
     try {
+      logDebug(s"Trying to create table $tableName")
       relation.createTable(mode)
-
+      logDebug(s"Successfully created the table $tableName")
       val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[execution.row.DefaultSource].getCanonicalName,
         tableOptions, Some(relation))
-      
+      logDebug(s"Registered the table $tableName in catalog")
       data match {
         case Some(plan) =>
           relation.insert(Dataset.ofRows(sqlContext.sparkSession, plan),
@@ -362,8 +363,9 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       success = true
       relation
     } finally {
-      if (!success && !relation.tableExists) {
+      if (!success && relation.tableCreated) {
         // destroy the relation
+        logDebug(s"Failed in creating the table $tableName hence destroying")
         relation.destroy(ifExists = true)
       }
     }

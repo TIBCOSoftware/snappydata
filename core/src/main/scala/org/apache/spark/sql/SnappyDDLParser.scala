@@ -32,7 +32,6 @@ import shapeless.{::, HNil}
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
@@ -40,6 +39,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
@@ -109,7 +109,10 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
 
+
   // non-reserved keywords
+  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
+  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
@@ -263,11 +266,13 @@ abstract class SnappyDDLParser(session: SparkSession)
             case Some(true) =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = false)
             case _ =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = true)
           }
         case None =>
           external match {
@@ -572,6 +577,10 @@ abstract class SnappyDDLParser(session: SparkSession)
     )
   }
 
+  protected def reset: Rule1[LogicalPlan] = rule {
+    RESET ~> { () => ResetCommand }
+  }
+
   // It can be the following patterns:
   // SHOW FUNCTIONS;
   // SHOW FUNCTIONS mydb.func1;
@@ -580,7 +589,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def show: Rule1[LogicalPlan] = rule {
    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
       ShowTablesCommand(ident.asInstanceOf[Option[String]], None)) |
-       SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
+       SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ LIKE.? ~
         (functionIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
       val (user, system) = id.asInstanceOf[Option[String]]
           .map(_.toLowerCase) match {
@@ -594,7 +603,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
           name.database, Some(name.funcName), user, system)
         case Some(pat: String) => ShowFunctionsCommand(
-          None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
+          None, Some(pat), user, system)
         case None => ShowFunctionsCommand(None, None, user, system)
         case _ => throw new ParseException(
           s"SHOW FUNCTIONS $nameOrPat unexpected")

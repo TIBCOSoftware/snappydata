@@ -55,7 +55,7 @@ class SnappyParser(session: SnappySession)
   final def questionMarkCounter: Int = _questionMarkCounter
 
   private[sql] final def input_=(in: ParserInput): Unit = {
-    reset()
+    clearQueryHints()
     _input = in
     clearConstants()
     _questionMarkCounter = 0
@@ -294,7 +294,7 @@ class SnappyParser(session: SnappySession)
             w: Any, d: Any, h: Any, m2: Any, s: Any, m3: Any, m4: Any) =>
           val year = y.asInstanceOf[Option[Int]]
           val month = m.asInstanceOf[Option[Int]]
-          val week = w.asInstanceOf[Option[Int]]
+          val week = w.asInstanceOf[Option[Long]]
           val day = d.asInstanceOf[Option[Long]]
           val hour = h.asInstanceOf[Option[Long]]
           val minute = m2.asInstanceOf[Option[Long]]
@@ -304,7 +304,8 @@ class SnappyParser(session: SnappySession)
           if (!Seq(year, month, week, day, hour, minute, second, millis,
             micros).exists(_.isDefined)) {
             throw new ParseException(
-              "at least one time unit should be given for interval literal")
+              "No interval can be constructed, at least one" +
+                  " time unit should be given for interval literal")
           }
           val months = year.map(_ * 12).getOrElse(0) + month.getOrElse(0)
           val microseconds =
@@ -819,8 +820,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
-      fnName: String): Seq[Expression] = if (!_isPreparePhase) {
-    Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
+      fnName: String): Seq[Expression] = Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
       case null => exprs
       case args if args.length == 0 =>
         // disable plan caching for these functions
@@ -833,12 +833,18 @@ class SnappyParser(session: SnappySession)
               (args(0) == -10) || (args(0) == -1 && (index & 0x1) == 1) ||
               // all even args
               (args(0) == -2 && (index & 0x1) == 0) =>
+            l match {
+              case pl: ParamLiteral  if pl.tokenized && _isPreparePhase =>
+                throw new ParseException(s"function $fnName cannot have " +
+                    s"parameterized argument at position ${index + 1}")
+              case _ =>
+            }
             removeIfParamLiteralFromContext(l)
             newLiteral(l.value, l.dataType)
           case e => e
         })
     }
-  } else exprs
+
 
   protected final def primary: Rule1[Expression] = rule {
     intervalLiteral |
@@ -979,7 +985,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def select1: Rule1[LogicalPlan] = rule {
-    select2 | inlineTable
+    select2 | inlineTable | ctes
   }
 
   protected final def query: Rule1[LogicalPlan] = rule {
@@ -992,8 +998,9 @@ class SnappyParser(session: SnappySession)
         ) |
         INTERSECT ~ select1.named("select") ~>
             ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
-        EXCEPT ~ select1.named("select") ~>
+        (EXCEPT | MINUS) ~ select1.named("select") ~>
             ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
+
     ).*
   }
 
@@ -1009,7 +1016,7 @@ class SnappyParser(session: SnappySession)
         ) |
         INTERSECT ~ select2.named("select") ~>
           ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
-        EXCEPT ~ select2.named("select") ~>
+        (EXCEPT | MINUS) ~ select2.named("select") ~>
           ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
       ).*
   }
@@ -1110,7 +1117,7 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | cache | uncache | desc | deployPackages))
+        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | reset | cache | uncache | desc | deployPackages))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],
