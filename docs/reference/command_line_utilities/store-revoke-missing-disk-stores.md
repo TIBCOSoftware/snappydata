@@ -3,7 +3,7 @@ Instruct SnappyData members to stop waiting for a disk store to become available
 
 ## Syntax
 
-```no-highlight
+```pre
 ./bin/snappy revoke-missing-disk-store <disk-store-id>
    <-locators=<addresses>> 
         [-bind-address=<address>] 
@@ -29,7 +29,7 @@ The table describes options and arguments for snappy revoke-missing-disk-store. 
 
 This command first lists the missing disk store:
 
-```no-highlight
+```pre
 ./bin/snappy list-missing-disk-stores -locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334
 1f811502-f126-4ce4-9839-9549335b734d [curwen.local:/Users/user1/snappydata/rowstore/SnappyData_RowStore_13_bNNNNN_platform/server2/./datadictionary]
@@ -37,7 +37,7 @@ Connecting to distributed system: -locators=localhost:10334
 
 Next, `snappy` revokes the missing disk store if more recent data is available:
 
-```no-highlight
+```pre
 ./bin/snappy revoke-missing-disk-store 1f811502-f126-4ce4-9839-9549335b734d -locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334
 revocation was successful and no disk stores are now missing
@@ -45,7 +45,7 @@ revocation was successful and no disk stores are now missing
 
 Finally, `snappy` verifies that no disk stores are missing:
 
-```no-highlight
+```pre
 ./bin/snappy list-missing-disk-stores -locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334
 The distributed system did not have any missing disk stores
