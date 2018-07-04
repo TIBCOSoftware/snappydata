@@ -90,6 +90,26 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <div id="AutoUpdateErrorMsg">
       </div>
     </div>
+    <div id="CPUCoresContainer" style="position: absolute; width: 100%;">
+      <div id="CPUCoresDetails">
+        <div style="width: 120px; float: right; font-weight: bold;">
+          <span style="padding-left: 5px;"> Total Cores: </span><span id="totalCores"> </span>
+        </div>
+        <div style="width: 280px; background-color: #B3F2FF;">
+          <span>
+            Locators:
+          </span>
+          <span id="locatorCores"> </span>
+          <span style="padding-left: 5px;border-left: 1px solid #9EBFE4;">
+            Leads:
+          </span><span id="leadsCores"> </span>
+          <span style="padding-left: 5px;border-left: 1px solid #9EBFE4;">
+            Data Servers:
+          </span>
+          <span id="dataServerCores"> </span>
+        </div>
+      </div>
+    </div>
     <div class="row-fluid">
       <div class="span12">
         <h3 class="page-title-node-h3">
