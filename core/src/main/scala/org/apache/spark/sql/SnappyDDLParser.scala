@@ -25,6 +25,7 @@ import java.util.function.Consumer
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
+import com.gemstone.gemfire.SystemFailure
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
@@ -507,10 +508,10 @@ abstract class SnappyDDLParser(session: SparkSession)
         (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
         ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
           packages, alias.identifier, repos.asInstanceOf[Option[String]],
-          path.asInstanceOf[Option[String]], false))) |
+          path.asInstanceOf[Option[String]], restart = false))) |
       JAR ~ tableIdentifier ~ stringLiteral ~>
           ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
-        alias.identifier, commaSepPaths, false))) |
+        alias.identifier, commaSepPaths, restart = false))) |
     UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
     LIST ~ (
       PACKAGES ~> (() => ListPackageJarsCommand(true)) |
@@ -790,16 +791,22 @@ case class DeployCommand(
       }
       Seq.empty[Row]
     } catch {
-      case ex: Throwable => {
-        restart match {
-          case true => {
-            logWarning(s"Following mvn coordinate" +
-                s" could not be resolved during restart: ${coordinates}")
-            Seq.empty[Row]
-          }
-          case false => throw ex
+      case ex: Throwable =>
+        ex match {
+          case err: Error =>
+            if (SystemFailure.isJVMFailureError(err)) {
+              SystemFailure.initiateFailure(err)
+              // If this ever returns, rethrow the error. We're poisoned
+              // now, so don't let this thread continue.
+              throw err
+            }
+          case _ =>
         }
-      }
+        if (restart) {
+          logWarning("Following mvn coordinate" +
+              s" could not be resolved during restart: $coordinates")
+          Seq.empty[Row]
+        } else throw ex
     }
   }
 }
