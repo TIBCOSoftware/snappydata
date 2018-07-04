@@ -19,8 +19,12 @@ package org.apache.spark.sql
 
 
 import java.io.File
+import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
+
+import com.gemstone.gemfire.SystemFailure
+import com.pivotal.gemfirexd.internal.engine.Misc
 
 import scala.util.Try
 
@@ -788,13 +792,19 @@ case class DeployCommand(
       Seq.empty[Row]
     } catch {
       case ex: Throwable => {
-        restart match {
-          case true => {
-            logWarning(s"Following mvn coordinate" +
-                s" could not be resolved during restart: ${coordinates}")
-            Seq.empty[Row]
-          }
-          case false => throw ex
+        if (ex.isInstanceOf[Error] && SystemFailure.isJVMFailureError(ex.asInstanceOf[Error])) {
+          SystemFailure.initiateFailure(ex.asInstanceOf[Error])
+          // If this ever returns, rethrow the error. We're poisoned
+          // now, so don't let this thread continue.
+          throw ex
+        }
+        Misc.checkIfCacheClosing(ex)
+        if (restart) {
+          logWarning(s"Following mvn coordinate" +
+              s" could not be resolved during restart: ${coordinates}")
+          Seq.empty[Row]
+        } else {
+          throw ex
         }
       }
     }
@@ -809,13 +819,12 @@ case class DeployJarCommand(
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (paths.nonEmpty) {
       val jars = paths.split(",")
-      val sc = sparkSession.sparkContext
-      val availableUris = jars.filter(j => new File(j).exists())
-      val unavailableUris = jars.filterNot(j => new File(j).exists())
+      val (availableUris, unavailableUris) = jars.partition(f => Files.isReadable(Paths.get(f)))
       if (unavailableUris.nonEmpty && restart) {
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
       }
+      val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
