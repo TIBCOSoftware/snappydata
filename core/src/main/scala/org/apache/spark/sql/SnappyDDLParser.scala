@@ -19,6 +19,7 @@ package org.apache.spark.sql
 
 
 import java.io.File
+import java.lang
 import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
@@ -27,14 +28,11 @@ import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import scala.util.Try
-
 import io.snappydata.Constant
-
 import org.apache.spark.TaskContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.parser.ParserUtils
@@ -50,8 +48,8 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import scala.collection.mutable.ArrayBuffer
 
+import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
 
 abstract class SnappyDDLParser(session: SparkSession)
@@ -802,6 +800,9 @@ case class DeployCommand(
         if (restart) {
           logWarning(s"Following mvn coordinate" +
               s" could not be resolved during restart: ${coordinates}")
+          if (lang.Boolean.parseBoolean("FAIL_ON_JARS_UNAVAILABILITY")) {
+            throw ex
+          }
           Seq.empty[Row]
         } else {
           throw ex
@@ -823,6 +824,10 @@ case class DeployJarCommand(
       if (unavailableUris.nonEmpty && restart) {
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+        if (lang.Boolean.parseBoolean("FAIL_ON_JARS_UNAVAILABILITY")) {
+          throw new IllegalStateException(
+            s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
+        }
       }
       val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))

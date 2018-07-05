@@ -17,7 +17,7 @@
 package org.apache.spark.sql
 
 import java.io._
-import java.net.URI
+import java.net.{URI, URL}
 import java.nio.file.{Files, Paths}
 import java.sql.{CallableStatement, Connection, SQLException}
 
@@ -31,7 +31,10 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.util.MutableURLClassLoader
 import org.apache.spark.{Logging, Partition, SparkContext}
+
+import scala.collection.mutable
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
@@ -178,9 +181,11 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     getJarsStmt.registerOutParameter(1, java.sql.Types.VARCHAR)
     getJarsStmt.execute()
     val jarsString = getJarsStmt.getString(1)
+    var mutableList = new mutable.MutableList[URL]
     if (jarsString != null && jarsString.nonEmpty) {
       // comma separated list of file urls will be obtained
       jarsString.split(",").foreach(f => {
+        mutableList.+=(new URL(f))
         val jarpath = f.substring(5)
         if (Files.isReadable(Paths.get(jarpath))) {
           try {
@@ -195,6 +200,9 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
           logWarning(s"could not add path $jarpath to SparkContext as the file is not readable")
         }
       })
+      val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+      val newClassLoader = new MutableURLClassLoader(mutableList.toArray, parentLoader)
+      Thread.currentThread().setContextClassLoader(newClassLoader)
     }
   }
 
