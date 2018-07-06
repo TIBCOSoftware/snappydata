@@ -24,41 +24,14 @@ import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
 
-<<<<<<< HEAD
-import com.gemstone.gemfire.SystemFailure
-import com.pivotal.gemfirexd.internal.engine.Misc
-||||||| merged common ancestors
-import scala.util.Try
-=======
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
->>>>>>> master
-
-<<<<<<< HEAD
-import scala.util.Try
-||||||| merged common ancestors
-=======
 import com.gemstone.gemfire.SystemFailure
->>>>>>> master
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
-<<<<<<< HEAD
-import org.apache.spark.TaskContext
-import org.apache.spark.deploy.SparkSubmitUtils
-||||||| merged common ancestors
-
-import org.apache.spark.TaskContext
-import org.apache.spark.deploy.SparkSubmitUtils
-=======
->>>>>>> master
 import org.parboiled2._
 import shapeless.{::, HNil}
-<<<<<<< HEAD
-||||||| merged common ancestors
-
-=======
-
 import org.apache.spark.deploy.SparkSubmitUtils
->>>>>>> master
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -74,16 +47,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-<<<<<<< HEAD
-
-import scala.collection.mutable.ArrayBuffer
-import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
-||||||| merged common ancestors
-import scala.collection.mutable.ArrayBuffer
-
-import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
-=======
->>>>>>> master
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -801,16 +764,12 @@ case class SetSchema(schemaName: String) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
 
-/**
- * Returns a list of jar files that are added to resources.
- * If jar files are provided, return the ones that are added to resources.
- */
 case class DeployCommand(
-    coordinates: String,
-    alias: String,
-    repos: Option[String],
-    jarCache: Option[String],
-    restart: Boolean) extends RunnableCommand {
+  coordinates: String,
+  alias: String,
+  repos: Option[String],
+  jarCache: Option[String],
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     try {
@@ -853,11 +812,12 @@ case class DeployCommand(
         }
     }
   }
+}
 
 case class DeployJarCommand(
-    alias: String,
-    paths: String,
-    restart: Boolean) extends RunnableCommand {
+  alias: String,
+  paths: String,
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (paths.nonEmpty) {
