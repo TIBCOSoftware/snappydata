@@ -39,7 +39,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
-  protected def reset(): Unit = queryHints.clear()
+  protected def clearQueryHints(): Unit = queryHints.clear()
 
   protected final def commentBody: Rule0 = rule {
     "*/" | ANY ~ commentBody
@@ -395,8 +395,8 @@ object SnappyParserConsts {
   final val WHEN: Keyword = reservedKeyword("when")
   final val WHERE: Keyword = reservedKeyword("where")
   final val WITH: Keyword = reservedKeyword("with")
-  final val FUNCTIONS: Keyword = reservedKeyword("functions")
   final val FUNCTION: Keyword = reservedKeyword("function")
+
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
@@ -405,6 +405,9 @@ object SnappyParserConsts {
     Utils.WEIGHTAGE_COLUMN_NAME)
 
   // non-reserved keywords
+  final val MINUS: Keyword = nonReservedKeyword("minus")
+  final val FUNCTIONS: Keyword = nonReservedKeyword("functions")
+  final val RESET: Keyword = nonReservedKeyword("RESET")
   final val ADD: Keyword = nonReservedKeyword("add")
   final val ALTER: Keyword = nonReservedKeyword("alter")
   final val ANTI: Keyword = nonReservedKeyword("anti")
@@ -413,7 +416,7 @@ object SnappyParserConsts {
   final val CLUSTER: Keyword = nonReservedKeyword("cluster")
   final val COLUMN: Keyword = nonReservedKeyword("column")
   final val COMMENT: Keyword = nonReservedKeyword("comment")
-  final val DEPLOY: Keyword = reservedKeyword("deploy")
+  final val DEPLOY: Keyword = nonReservedKeyword("deploy")
   final val DESCRIBE: Keyword = nonReservedKeyword("describe")
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
   final val END: Keyword = nonReservedKeyword("end")
@@ -462,7 +465,7 @@ object SnappyParserConsts {
   final val TABLES: Keyword = nonReservedKeyword("tables")
   final val TEMPORARY: Keyword = nonReservedKeyword("temporary")
   final val TRUNCATE: Keyword = nonReservedKeyword("truncate")
-  final val UNDEPLOY: Keyword = reservedKeyword("undeploy")
+  final val UNDEPLOY: Keyword = nonReservedKeyword("undeploy")
   final val UNCACHE: Keyword = nonReservedKeyword("uncache")
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")

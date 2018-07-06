@@ -40,6 +40,7 @@ import org.scalatest.Matchers._
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.execution.aggregate.{HashAggregateExec, SnappyHashAggregateExec}
+import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.functions.rand
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
@@ -256,6 +257,76 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     df.collect()
     checkAnswer(df, Seq(Row(1, "1", "1", 100),
       Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
+  }
+
+  test("SNAP-2387") {
+    val numRows = 400000
+    val snappy = this.snc.snappySession
+    val spark = new SparkSession(snappy.sparkContext)
+    var ds = snappy.range(numRows).selectExpr(
+      "id as fare_amount", "(rand() * 1000.0) as tip_amount")
+    ds.createOrReplaceTempView("taxi_trip_fare")
+    ds.cache()
+    assert(ds.count() === numRows)
+    ds = spark.internalCreateDataFrame(ds.queryExecution.toRdd, ds.schema)
+    ds.createOrReplaceTempView("taxi_trip_fare")
+    ds.cache()
+    assert(ds.count() === numRows)
+
+    val q1 = "SELECT (ROUND( (tip_amount / fare_amount) * 100)) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 50 " +
+        "GROUP BY (ROUND( tip_amount / fare_amount * 100 ))"
+    val q2 = "SELECT (ROUND( (tip_amount / fare_amount) * (90 + 10))) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 50 " +
+        "GROUP BY (ROUND( tip_amount / fare_amount * (90 + 10)))"
+    val q3 = "SELECT (ROUND((tip_amount / fare_amount) * 100)) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 50 " +
+        "GROUP BY (ROUND(tip_amount / fare_amount * 100)) " +
+        "ORDER BY (ROUND(tip_amount / fare_amount * 100)) limit 30"
+    val q4 = "SELECT (ROUND((tip_amount / fare_amount) * (90 + 10))) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 50 " +
+        "GROUP BY (ROUND(tip_amount / fare_amount * (90 + 10))) " +
+        "ORDER BY (ROUND(tip_amount / fare_amount * (90 + 10))) limit 10"
+    ColumnCacheBenchmark.collect(snappy.sql(q1), spark.sql(q1).collect())
+    ColumnCacheBenchmark.collect(snappy.sql(q2), spark.sql(q2).collect())
+    ColumnCacheBenchmark.collect(snappy.sql(q3), spark.sql(q3).collect())
+    ColumnCacheBenchmark.collect(snappy.sql(q4), spark.sql(q4).collect())
+
+    // check with different values of constants
+    val q5 = "SELECT (ROUND( (tip_amount / fare_amount) * 99)) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 40 " +
+        "GROUP BY (ROUND( tip_amount / fare_amount * 99 ))"
+    val q6 = "SELECT (ROUND( (tip_amount / fare_amount) * (40 + 68))) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 55 " +
+        "GROUP BY (ROUND( tip_amount / fare_amount * (40 + 68)))"
+    val q7 = "SELECT (ROUND((tip_amount / fare_amount) * 98)) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 60 " +
+        "GROUP BY (ROUND(tip_amount / fare_amount * 98)) " +
+        "ORDER BY (ROUND(tip_amount / fare_amount * 98)) limit 30"
+    val q8 = "SELECT (ROUND((tip_amount / fare_amount) * (32 + 60))) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 45 " +
+        "GROUP BY (ROUND(tip_amount / fare_amount * (32 + 60))) " +
+        "ORDER BY (ROUND(tip_amount / fare_amount * (32 + 60))) limit 10"
+    ColumnCacheBenchmark.collect(snappy.sql(q5), spark.sql(q5).collect())
+    ColumnCacheBenchmark.collect(snappy.sql(q6), spark.sql(q6).collect())
+    ColumnCacheBenchmark.collect(snappy.sql(q7), spark.sql(q7).collect())
+    ColumnCacheBenchmark.collect(snappy.sql(q8), spark.sql(q8).collect())
+
+    // check error cases
+    val q9 = "SELECT (ROUND( (tip_amount / fare_amount) * 108)) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 55 " +
+        "GROUP BY (ROUND( tip_amount / fare_amount * (40 + 68)))"
+    val q10 = "SELECT (ROUND((tip_amount / fare_amount) * 98)) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 60 " +
+        "GROUP BY (ROUND(tip_amount / fare_amount * 100)) " +
+        "ORDER BY (ROUND(tip_amount / fare_amount * 100)) limit 30"
+    val q11 = "SELECT (ROUND((tip_amount / fare_amount) * (40 + 68))) tip_pct " +
+        "FROM taxi_trip_fare WHERE fare_amount > 0.00 and tip_amount < 60 " +
+        "GROUP BY (ROUND(tip_amount / fare_amount * (40 + 68)) " +
+        "ORDER BY (ROUND(tip_amount / fare_amount * 108)) limit 30"
+    intercept[AnalysisException](snappy.sql(q9))
+    intercept[AnalysisException](snappy.sql(q10))
+    intercept[AnalysisException](snappy.sql(q11))
   }
 }
 
