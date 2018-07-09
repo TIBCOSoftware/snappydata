@@ -41,12 +41,5 @@ for element in "${servers[@]}";
   done
 
 
-for i in $directory/*.out
-do
-   cat $latestProp >> $i
-done
-
-
-
 echo "******************Performance Result Generated*****************"
 

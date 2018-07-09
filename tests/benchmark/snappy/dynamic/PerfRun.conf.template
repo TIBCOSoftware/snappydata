@@ -44,6 +44,11 @@ Persistence_Type=SYNCHRONOUS
 #Loading from parquet or csv file
 Parquet=true
 
+# Create Parquet files from CSV (tbl) files for future tests
+# When Parquet=true, the table creation job will expect parqurt files to already exist to load data into Snappy tables.
+# When Parquet=false, one can create parquet files in table creation job for use in query execution if createParquet=true
+createParquet=true
+
 #From how many files data should be loaded in table
 #NumberOfLoadStages=10
 NumberOfLoadStages=1
