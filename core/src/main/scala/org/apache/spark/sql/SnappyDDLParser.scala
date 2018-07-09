@@ -803,7 +803,7 @@ case class DeployCommand(
         if (restart) {
           logWarning(s"Following mvn coordinate" +
               s" could not be resolved during restart: ${coordinates}", ex)
-          if (lang.Boolean.parseBoolean("FAIL_ON_JAR_UNAVAILABILITY")) {
+          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
             throw ex
           }
           Seq.empty[Row]
@@ -823,12 +823,16 @@ case class DeployJarCommand(
     if (paths.nonEmpty) {
       val jars = paths.split(",")
       val (availableUris, unavailableUris) = jars.partition(f => Files.isReadable(Paths.get(f)))
-      if (unavailableUris.nonEmpty && restart) {
+      if (unavailableUris.nonEmpty) {
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
-        if (lang.Boolean.parseBoolean("FAIL_ON_JAR_UNAVAILABILITY")) {
+        if (restart && lang.Boolean.parseBoolean(
+          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
           throw new IllegalStateException(
             s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
+        }
+        if (!restart) {
+          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
         }
       }
       val sc = sparkSession.sparkContext
