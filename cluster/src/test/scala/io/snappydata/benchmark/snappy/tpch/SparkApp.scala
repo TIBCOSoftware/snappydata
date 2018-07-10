@@ -66,23 +66,23 @@ object SparkApp {
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(sc.sqlContext, tpchDataPath, false,
       if (rePartition) buckets_Order_Lineitem else "0",
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulateLineItemTable(sc.sqlContext, tpchDataPath, false,
       if (rePartition) buckets_Order_Lineitem else "0",
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(sc.sqlContext, tpchDataPath, false,
       if (rePartition) buckets_Cust_Part_PartSupp else "0",
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulatePartTable(sc.sqlContext, tpchDataPath, false,
       if (rePartition) buckets_Cust_Part_PartSupp else "0",
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(sc.sqlContext, tpchDataPath, false,
       if (rePartition) buckets_Cust_Part_PartSupp else "0",
-      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+      loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
 
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, sc.sqlContext, tpchDataPath,
@@ -92,7 +92,7 @@ object SparkApp {
     if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(sc.sqlContext, tpchDataPath, false,
         if (rePartition) buckets_Supplier else "0",
-        loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStage = numberOfLoadStages,
+        loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
         isParquet = isParquet)
     } else {
       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, sc.sqlContext,

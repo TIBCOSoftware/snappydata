@@ -32,31 +32,32 @@ For best performance, it is recommended that you re-create any large column tabl
 
 * Separate disk-store for column delta store. This improves the compactor performance significantly for cases of frequent JDBC/ODBC inserts or small inserts where the delta store gets used frequently.
 
-!!! Note:
+!!! Note
 
 	Ensure that no operations are currently running on the system.
 
 The following example demonstrates how you can re-create your column tables using a Parquet-based external table:
 
-```
+```pre
 snappy> create external table table1Parquet using parquet options (path '...') as select * from table1;
 ```
-```
+
+```pre
 snappy> drop table table1;
 ```
 
-```
+```pre
 snappy> create table table1 ...;
 ```
 
-```
+```pre
 snappy> insert into table1 as select * from table1Parquet;
 ```
 
-```
+```pre
 snappy> drop table table1Parquet;
 ```
 
-!!! Note:
+!!! Note
 
 ​	 Use a path for the Parquet file that has enough space to hold the table data. Once the re-import has completed successfully, make sure that the Parquet files are deleted explicitly.

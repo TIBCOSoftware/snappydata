@@ -10,7 +10,7 @@ You can view and analyze runtime or archived historical data using these tools:
 
 -   SnappyData [Visual Statistics Display (VSD)](vsd_overview.md) is a graphical tool that is installed in the **vsd** subdirectory of the SnappyData installation.
 
-!!! Note: 
+!!! Note
 	- SnappyData statistics use the Java System.nanoTimer for nanosecond timing. This method provides nanosecond precision, but not necessarily nanosecond accuracy. For more information, see the online Java documentation for System.nanoTimer for the JRE you are using with SnappyData. 
 	- Runtime viewing of statistics archives files is not necessarily real-time, because of file system buffering. </p>
 

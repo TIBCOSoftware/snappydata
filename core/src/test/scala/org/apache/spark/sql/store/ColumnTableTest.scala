@@ -150,22 +150,22 @@ class ColumnTableTest
     dataDF.write.insertInto(tableName)
 
     var query = s"SELECT sum(Col1) as summ FROM $tableName where col1 > .0001 having summ > .001"
-    snc.sql(query).collect
+    snc.sql(query).collect()
 
     snc.sql(s"create or replace view $viewName as ($query)")
 
     query = s"SELECT sum(Col1) as summ FROM $tableName where col1 > .0001BD having summ > .001bD"
-    snc.sql(query).collect
+    snc.sql(query).collect()
 
     snc.sql(s"create or replace view $viewName as ($query)")
 
     query = s"SELECT sum(Col1) as summ FROM $tableName having summ > .001f"
-    snc.sql(query).collect
+    snc.sql(query).collect()
 
     snc.sql(s"create or replace view $viewName as ($query)")
 
     query = s"SELECT sum(Col1) as summ FROM $tableName having summ > .001d"
-    snc.sql(query).collect
+    snc.sql(query).collect()
 
     snc.sql(s"create or replace view $viewName as ($query)")
 

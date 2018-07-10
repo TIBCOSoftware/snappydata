@@ -1,7 +1,7 @@
 <a id="ssh"></a>
 ## Configuring SSH Login without Password
 
-!!! Note:
+!!! Note
 	Before you begin ensure that you have configured SSH login without password.
 
 By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.

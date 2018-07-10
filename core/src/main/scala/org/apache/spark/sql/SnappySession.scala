@@ -27,6 +27,7 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
@@ -37,6 +38,7 @@ import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -98,24 +100,23 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val sharedState = SnappyContext.sharedState(sparkContext)
     // replay global sql commands
     SnappyContext.getClusterMode(sparkContext) match {
-      case _: SnappyEmbeddedMode => {
+      case _: SnappyEmbeddedMode =>
         val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
-        logInfo(s"deploycmnds size = ${deployCmds.size}")
-        deployCmds.foreach(s => logDebug(s"s"))
+        logInfo(s"deployCmnds size = ${deployCmds.length}")
+        logDebug(s"deployCmds = ${deployCmds.mkString(", ")}")
         deployCmds.foreach(d => {
           val cmdFields = d.split('|')
           if (cmdFields.length > 1) {
             val coordinate = cmdFields(0)
             val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
             val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-            DeployCommand(coordinate, null, repos, cache).run(self)
+            DeployCommand(coordinate, null, repos, cache, true).run(self)
           }
           else {
             // Jars we have
-            DeployJarCommand(null, cmdFields(0)).run(self)
+            DeployJarCommand(null, cmdFields(0), true).run(self)
           }
         })
-       }
       case _ => // Nothing
     }
     sharedState
@@ -213,7 +214,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   final def prepareSQL(sqlText: String): LogicalPlan = {
-    val logical = sessionState.sqlParser.parsePlan(sqlText)
+    val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     sessionState.analyzerPrepare.execute(logical)
   }
@@ -2067,7 +2068,7 @@ object SnappySession extends Logging {
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
-    val parsed = parser.parsePlan(sqlText)
+    val parsed = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
     val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
