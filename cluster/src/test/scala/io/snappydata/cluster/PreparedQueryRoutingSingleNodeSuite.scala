@@ -229,8 +229,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val tableName = "order_line_col"
     try {
-      val tableName = "order_line_col"
       snc.sql(s"create table $tableName (ol_int_id  integer," +
           s" ol_int2_id  integer, ol_str_id STRING) using column " +
           "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
@@ -241,6 +241,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       PreparedQueryRoutingSingleNodeSuite.insertRows(tableName, 1000, serverHostPort)
       query0(tableName, serverHostPort)
     } finally {
+      snc.sql(s"drop table $tableName")
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
   }
@@ -249,8 +250,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val tableName = "order_line_col"
     try {
-      val tableName = "order_line_col"
       snc.sql(s"create table $tableName (ol_int_id  integer," +
           s" ol_int2_id  integer, ol_str_id STRING) using column " +
           "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
@@ -266,6 +267,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query11(tableName, serverHostPort)
       query12(tableName, serverHostPort)
     } finally {
+      snc.sql(s"drop table $tableName")
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
   }
