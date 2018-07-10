@@ -44,7 +44,7 @@ To avoid this type of delayed startup and recovery:
 
 1.  It is recommended to use the built-in `snappy-start-all.sh` and `snappy-stop-all.sh` scripts to start and stop the cluster. If for some reason those scripts are not used, then when possible, first shut down the data store members after disk stores have been synchronized in the system.</br> Shut down remaining locator members after the data stores have stopped.
 
-2.  Make that that sure all persistent members are restarted properly. See [Recovering from a ConflictingPersistentDataException](recovering_from_a_conflictingpersistentdataexception.md) for more information.
+2.  Ensure that all persistent members are restarted properly. See [Recovering from a ConflictingPersistentDataException](recovering_from_a_conflictingpersistentdataexception.md) for more information.
 
 3.  If a member cannot be restarted and it is preventing other data stores from starting, then [revoke-missing-disk-store](../reference/command_line_utilities/store-revoke-missing-disk-stores.md) command can be used to revoke the disk stores that are preventing startup. 
 
