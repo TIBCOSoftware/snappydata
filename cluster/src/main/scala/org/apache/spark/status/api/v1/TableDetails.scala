@@ -24,8 +24,7 @@ object TableDetails {
 
   def getAllTablesInfo: Seq[TableSummary] = {
 
-    val (tableBuff, indexBuff, externalTableBuff) =
-      SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
+    val tableBuff = SnappyTableStatsProviderService.getService.getAllTableStatsFromService
 
     tableBuff.mapValues(table =>{
       val storageModel = {
@@ -53,8 +52,8 @@ object TableDetails {
 
   def getAllExternalTablesInfo: Seq[ExternalTableSummary] = {
 
-    val (tableBuff, indexBuff, externalTableBuff) =
-      SnappyTableStatsProviderService.getService.getAggregatedStatsOnDemand
+    val externalTableBuff =
+      SnappyTableStatsProviderService.getService.getAllExternalTableStatsFromService
 
     externalTableBuff.mapValues(table => {
       new ExternalTableSummary(table.getTableName, table.getProvider,

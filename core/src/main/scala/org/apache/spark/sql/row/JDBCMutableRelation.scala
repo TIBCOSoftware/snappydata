@@ -89,6 +89,8 @@ case class JDBCMutableRelation(
 
   var tableExists: Boolean = _
 
+  var tableCreated : Boolean = false
+
   final lazy val schemaFields: Map[String, StructField] =
     Utils.schemaFields(schema)
 
@@ -154,6 +156,7 @@ case class JDBCMutableRelation(
             pass.asInstanceOf[String])
         }
         JdbcExtendedUtils.executeUpdate(sql, conn)
+        tableCreated = true
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,
             sqlContext.conf.caseSensitiveAnalysis, conn)
