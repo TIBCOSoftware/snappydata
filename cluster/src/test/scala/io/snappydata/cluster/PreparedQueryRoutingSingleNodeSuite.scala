@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -24,7 +24,7 @@ import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.sql.{ParseException, SnappyContext, SnappySession}
 
 class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -656,11 +656,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       close(prepStatement3)
 
       val prepStatement4 = conn.prepareStatement(s"select * from double_tab" +
-          s" where round(d, ?) < round(?, ?)")
+          s" where round(d, 2) < round(3.33, 2)")
       assert(cacheMap.size() == 0)
-      prepStatement4.setInt(1, 2)
-      prepStatement4.setDouble(2, 3.33)
-      prepStatement4.setInt(3, 2)
+
       update = prepStatement4.executeQuery()
       index = 0
       while (update.next()) {
@@ -701,10 +699,21 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(index == 1)
       assert(cacheMap.size() == 2)
       close(prepStatement5)
+      try {
+        val faultyPrepStatement = conn.prepareStatement(s"select * from double_tab" +
+            s" where round(d, ?) < round(?, ?)")
+        fail("PreparedStatement creation should have failed")
+      } catch {
+        case sqle: SQLException
+          if sqle.getMessage.indexOf("cannot have parameterized argument") != -1 =>
+        case x: Throwable => throw x
+      }
     } finally {
       conn.close()
     }
   }
+
+
 
   test("Test broadcast hash joins and scalar sub-queries") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true

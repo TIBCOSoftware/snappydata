@@ -22,7 +22,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, LeafExpression}
+import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, ExpressionInfo, LeafExpression}
 import org.apache.spark.sql.types.{DataType, StringType}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -31,8 +31,12 @@ import org.apache.spark.unsafe.types.UTF8String
  */
 object SnappyDataFunctions {
 
+  val usageStr = "_FUNC_() - Returns the unique distributed member" +
+      " ID of the server containing the row."
+
   def registerSnappyFunctions(functionRegistry: FunctionRegistry): Unit = {
-    functionRegistry.registerFunction("DSID", _ => DSID())
+    val info = new ExpressionInfo(DSID.getClass.getCanonicalName, null, "DSID", usageStr, "")
+    functionRegistry.registerFunction("DSID", info, _ => DSID())
   }
 }
 
@@ -56,8 +60,6 @@ case class DSID() extends LeafExpression {
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     ctx.addMutableState("UTF8String", ev.value, s"${ev.value} = UTF8String" +
         ".fromString(com.pivotal.gemfirexd.internal.engine.Misc.getMyId().getId());")
-    ev.code = ""
-    ev.isNull = "false"
-    ev
+    ev.copy(code = "", isNull = "false")
   }
 }
