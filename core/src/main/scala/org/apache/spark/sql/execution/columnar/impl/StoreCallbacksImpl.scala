@@ -16,11 +16,13 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.net.URLClassLoader
 import java.sql.SQLException
 import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
@@ -41,6 +43,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
@@ -59,8 +62,6 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, SparkContext}
-
-import java.net.URLClassLoader
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -559,9 +560,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
-    // off-heap will be cleared via ManagedDirectBufferAllocator
+  // off-heap will be cleared via ManagedDirectBufferAllocator
     MemoryManagerCallback.memoryManager.
-      dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
+        dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
 
   override def waitForRuntimeManager(maxWaitMillis: Long): Unit = {
     val memoryManager = MemoryManagerCallback.memoryManager
@@ -631,7 +632,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     cache.invalidateAll()
   }
 
-  override def getLeadClassLoader() : URLClassLoader =
+  override def getLeadClassLoader: URLClassLoader =
     ToolsCallbackInit.toolsCallback.getLeadClassLoader()
 }
 
