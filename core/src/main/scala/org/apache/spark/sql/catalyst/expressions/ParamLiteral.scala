@@ -155,11 +155,11 @@ trait TokenizedLiteral extends LeafExpression with DynamicReplacableConstant {
   // avoid constant folding and let it be done by TokenizedLiteralFolding
   // so that generated code does not embed constants when there are constant
   // expressions (common case being a CAST when literal type does not match exactly)
-  override def foldable: Boolean = _foldable
+  override final def foldable: Boolean = _foldable
 
   def valueString: String
 
-  def markFoldable(b: Boolean): TokenizedLiteral = {
+  final def markFoldable(b: Boolean): TokenizedLiteral = {
     _foldable = b
     this
   }
@@ -211,7 +211,9 @@ final class TokenLiteral(_value: Any, _dataType: DataType)
  */
 final case class ParamLiteral(var value: Any, var dataType: DataType,
     var pos: Int, @transient private[sql] val execId: Int,
-    private[sql] var tokenized: Boolean = false)
+    private[sql] var tokenized: Boolean = false,
+    private[sql] var positionIndependent: Boolean = false,
+    @transient private[sql] var valueEquals: Boolean = false)
     extends TokenizedLiteral with KryoSerializable {
 
   override def nullable: Boolean = dataType eq NullType
@@ -230,7 +232,8 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def hashCode(): Int = {
     if (tokenized) {
-      ClientResolverUtils.addIntToHashOpt(pos, dataType.hashCode())
+      if (positionIndependent) dataType.hashCode()
+      else ClientResolverUtils.addIntToHashOpt(pos, dataType.hashCode())
     } else {
       val valueHashCode = value match {
         case null => 0
@@ -245,10 +248,12 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
     case a: AnyRef if this eq a => true
     case l: ParamLiteral =>
       // match by position only if "tokenized" else value comparison (no-caching case)
-      if (tokenized) pos == l.pos && dataType == l.dataType
+      if (tokenized && !valueEquals) pos == l.pos && dataType == l.dataType
       else dataType == l.dataType && valueEquals(l)
     case _ => false
   }
+
+  override def semanticEquals(other: Expression): Boolean = equals(other)
 
   private def valueEquals(p: ParamLiteral): Boolean = value match {
     case null => p.value == null
@@ -264,6 +269,7 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
     StructTypeSerializer.writeType(kryo, output, dataType)
     output.writeVarInt(pos, true)
     output.writeBoolean(tokenized)
+    output.writeBoolean(positionIndependent)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -271,6 +277,7 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
     dataType = StructTypeSerializer.readType(kryo, input)
     pos = input.readVarInt(true)
     tokenized = input.readBoolean()
+    positionIndependent = input.readBoolean()
   }
 
   override def valueString: String = value match {

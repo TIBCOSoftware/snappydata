@@ -21,14 +21,13 @@ import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
-import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
-import io.snappydata.{Constant, Property}
+import io.snappydata.Property
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
-import org.apache.spark.sql.{catalyst, _}
+import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
@@ -37,14 +36,14 @@ import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
-import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project, Sort, _}
+import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources._
+import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
@@ -55,7 +54,7 @@ import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
 import org.apache.spark.sql.types.{DecimalType, NumericType, StringType}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Partition, SparkConf, sql}
+import org.apache.spark.{Partition, SparkConf}
 
 
 class SnappySessionState(snappySession: SnappySession)
@@ -106,7 +105,7 @@ class SnappySessionState(snappySession: SnappySession)
         ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
-        ExternalRelationLimitFetch::
+        ExternalRelationLimitFetch ::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
 
@@ -159,37 +158,62 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
 
-
   // copy of ConstantFolding that will turn a constant up/down cast into
   // a static value.
   object TokenizedLiteralFolding extends Rule[LogicalPlan] {
 
-    private def foldExpression(e: Expression): DynamicFoldableExpression = {
-      // lets mark child params foldable false so that nested expression doesn't
-      // attempt to wrap.
-      e.foreach {
-        case p: TokenizedLiteral => p.markFoldable(false)
-        case _ =>
-      }
-      DynamicFoldableExpression(e)
-    }
-
     def apply(plan: LogicalPlan): LogicalPlan = {
       val foldedLiterals = new ArrayBuffer[TokenizedLiteral](4)
-      val newPlan = plan transformAllExpressions {
+      // TokenizedLiterals already marked as folded and must be reverted to that state
+      val preFoldedLiterals = new ArrayBuffer[TokenizedLiteral](2)
+
+      /**
+       * Temporarily mark tokens as foldable to enable constant folding.
+       * Uses transform instead of foreach for more comprehensive iteration through
+       * entire expression tree using product iterator rather than only children.
+       */
+      def mark(e: Expression, foldable: Boolean = true): Expression = e transform {
         case p: TokenizedLiteral =>
-          if (!p.foldable) {
+          if (!foldable) {
+            if (p.foldable) p.markFoldable(false)
+          } else if (p.foldable) {
+            if (!foldedLiterals.contains(p)) preFoldedLiterals += p
+          } else {
             p.markFoldable(true)
             foldedLiterals += p
           }
           p
         // also mark linking for scalar/predicate subqueries and disable plan caching
-        case s@(_: ScalarSubquery | _: PredicateSubquery) =>
+        case s@(_: ScalarSubquery | _: PredicateSubquery) if foldable =>
           snappySession.linkPartitionsToBuckets(flag = true)
           snappySession.planCaching = false
           s
-      } transform {
-        case q: LogicalPlan => q transformExpressionsDown {
+      }
+
+      def unmarkAll(e: Expression): Expression = {
+        // faster to iterate through collected literals rather than using transform again
+        if (foldedLiterals.nonEmpty) {
+          foldedLiterals.foreach(_.markFoldable(false))
+          foldedLiterals.clear()
+        }
+        if (preFoldedLiterals.nonEmpty) {
+          preFoldedLiterals.foreach(_.markFoldable(true))
+          preFoldedLiterals.clear()
+        }
+        e
+      }
+
+      def foldExpression(e: Expression): DynamicFoldableExpression = {
+        // lets mark child params foldable false so that nested expression doesn't
+        // attempt to wrap
+        DynamicFoldableExpression(mark(e, foldable = false))
+      }
+
+      plan transform {
+        // transformDown for expression so that top-most node which is foldable gets
+        // selected for wrapping by DynamicFoldableExpression and further sub-expressions
+        // do not since foldExpression will reset inner ParamLiterals as non-foldable
+        case q: LogicalPlan => q.mapExpressions(expr => unmarkAll(mark(expr).transformDown {
           // ignore leaf literals
           case l@(_: Literal | _: DynamicReplacableConstant) => l
           // Wrap expressions that are foldable.
@@ -220,10 +244,8 @@ class SnappySessionState(snappySession: SnappySession)
                 expr
               }
             } else expr
-        }
+        }))
       }
-      for (l <- foldedLiterals) l.markFoldable(false)
-      newPlan
     }
   }
 
@@ -307,8 +329,8 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   /**
-    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
-    */
+   * Orders the join keys as per the  underlying partitioning keys ordering of the table.
+   */
   object OrderJoinConditions extends Rule[LogicalPlan] with JoinQueryPlanning {
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, otherCondition, left, right) =>
@@ -376,8 +398,8 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   object ExternalRelationLimitFetch extends Rule[LogicalPlan] {
-    val indexes = (0, 1, 2, 3, 4, 5)
-    val (create_tv_bool, filter_bool, agg_func_bool, extRelation_bool, allProjectionBool,
+    private val indexes = (0, 1, 2, 3, 4, 5)
+    private val (create_tv_bool, filter_bool, agg_func_bool, extRelation_bool, allProjectionBool,
     alreadyProcessed_bool) = indexes
 
     def apply(plan: LogicalPlan): LogicalPlan = {
@@ -399,8 +421,8 @@ class SnappySessionState(snappySession: SnappySession)
       // by default assume all projections are fetched
       boolsArray(allProjectionBool) = true
       var externalRelation: ApplyLimitOnExternalRelation = null
-      plan.foreachUp(pln => {
-        pln match {
+      plan.foreachUp {
+        {
           case LogicalRelation(baseRelation: ApplyLimitOnExternalRelation, _, _) =>
             boolsArray(extRelation_bool) = true
             externalRelation = baseRelation
@@ -412,7 +434,7 @@ class SnappySessionState(snappySession: SnappySession)
                   projs.zip(externalRelation.asInstanceOf[BaseRelation].schema).forall {
                     case (ne, sf) => ne.name.equalsIgnoreCase(sf.name)
                   })
-                  || (projs.length == 1 && projs(0).isInstanceOf[Star])))) {
+                  || (projs.length == 1 && projs.head.isInstanceOf[Star])))) {
             boolsArray(allProjectionBool) = false
           }
           case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
@@ -420,7 +442,7 @@ class SnappySessionState(snappySession: SnappySession)
             boolsArray(filter_bool) = true
           case _ =>
         }
-      })
+      }
 
       if (boolsArray(extRelation_bool) && boolsArray(allProjectionBool) &&
           !(boolsArray(create_tv_bool) || boolsArray(filter_bool) ||
@@ -431,9 +453,7 @@ class SnappySessionState(snappySession: SnappySession)
       }
 
     }
-
   }
-
 
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
@@ -1333,18 +1353,46 @@ object LikeEscapeSimplification {
  * See Spark's PhysicalAggregation rule for more details.
  */
 object ResolveAggregationExpressions extends Rule[LogicalPlan] {
-  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-    case Aggregate(groupingExpressions, resultExpressions, child) =>
-      // Replace any ParamLiterals in the original resultExpressions with any matching ones
-      // in groupingExpressions matching on the value like a Literal rather than position.
-      val newResultExpressions = resultExpressions.map { expr =>
-        expr.transformDown {
+
+  private val identityGet: Expression => Expression = identity
+  private val toNamedExpression: (NamedExpression, Expression) => NamedExpression =
+    (_, e) => e.asInstanceOf[NamedExpression]
+
+  private val sortOrderGet: SortOrder => Expression = order => order.child
+  private val toSortOrder: (SortOrder, Expression) => SortOrder =
+    (order, e) => if (order.child eq e) order else order.copy(child = e)
+
+  private def useValueEquality[T](exprs: Seq[T], valueEquals: Boolean,
+      getExpr: T => Expression): Unit = {
+    exprs.foreach(getExpr(_).transform {
+      case p: ParamLiteral =>
+        if (valueEquals) {
+          // mark tokenized for consistent hashCode in canonicalized for semanticEquals
+          p.tokenized = true
+          p.positionIndependent = true
+          p.valueEquals = true
+        } else p.valueEquals = false
+        p
+    })
+  }
+
+  private def copyParamLiterals[T](groupingExpressions: Seq[Expression],
+      resultExpressions: Seq[T], getExpr: T => Expression,
+      getResult: (T, Expression) => T): Seq[T] = {
+    useValueEquality(groupingExpressions, valueEquals = true, identityGet)
+    useValueEquality(resultExpressions, valueEquals = true, getExpr)
+    // Replace any ParamLiterals in the original resultExpressions with any matching ones
+    // in groupingExpressions matching on the value like a Literal rather than position.
+    val newResultExpressions = resultExpressions.map { expr =>
+      getResult(expr, {
+        getExpr(expr).transformDown {
           case e: AggregateExpression => e
           case expression =>
             groupingExpressions.collectFirst {
-              case p: ParamLiteral if p.equals(expression) =>
-                expression.asInstanceOf[ParamLiteral].tokenized = true
-                p.tokenized = true
+              case p: ParamLiteral if (p ne expression) && p.equals(expression) =>
+                // ensure newLiteral != p so that it is replaced in tree
+                expression.asInstanceOf[ParamLiteral].valueEquals = false
+                p.valueEquals = false
                 p
               case e if e.semanticEquals(expression) =>
                 // collect ParamLiterals from grouping expressions and apply
@@ -1359,8 +1407,11 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
                     case p: ParamLiteral =>
                       val newLiteral = iter.next()
                       assert(newLiteral.equals(p))
-                      p.tokenized = true
-                      newLiteral.tokenized = true
+                      assert(p.tokenized)
+                      assert(newLiteral.tokenized)
+                      // ensure newLiteral != p so that it is replaced in tree
+                      p.valueEquals = false
+                      newLiteral.valueEquals = false
                       newLiteral
                   }
                 } else expression
@@ -1368,14 +1419,26 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
               case Some(e) => e
               case _ => expression
             }
-        }.asInstanceOf[NamedExpression]
-      }
+        }
+      })
+    }
+    useValueEquality(groupingExpressions, valueEquals = false, identityGet)
+    useValueEquality(newResultExpressions, valueEquals = false, getExpr)
+    newResultExpressions
+  }
+
+  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+    case Aggregate(groupingExpressions, resultExpressions, child) =>
+      val newResultExpressions = copyParamLiterals(groupingExpressions, resultExpressions,
+        identityGet, toNamedExpression)
       Aggregate(groupingExpressions, newResultExpressions, child)
+
+    case Sort(order, global, a@Aggregate(groupingExpressions, _, _)) =>
+      val newOrder = copyParamLiterals(groupingExpressions, order, sortOrderGet, toSortOrder)
+      Sort(newOrder, global, a)
   }
 }
 
-
-
-case class MarkerForCreateTableAsSelect(val child: LogicalPlan) extends UnaryNode {
+case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
 }
