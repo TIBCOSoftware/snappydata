@@ -27,6 +27,7 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
@@ -37,6 +38,7 @@ import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
@@ -98,10 +100,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val sharedState = SnappyContext.sharedState(sparkContext)
     // replay global sql commands
     SnappyContext.getClusterMode(sparkContext) match {
-      case _: SnappyEmbeddedMode => {
+      case _: SnappyEmbeddedMode =>
         val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
-        logInfo(s"deploycmnds size = ${deployCmds.size}")
-        deployCmds.foreach(s => logDebug(s"s"))
+        logInfo(s"deployCmnds size = ${deployCmds.length}")
+        logDebug(s"deployCmds = ${deployCmds.mkString(", ")}")
         deployCmds.foreach(d => {
           val cmdFields = d.split('|')
           if (cmdFields.length > 1) {
@@ -115,7 +117,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             DeployJarCommand(null, cmdFields(0), true).run(self)
           }
         })
-       }
       case _ => // Nothing
     }
     sharedState
