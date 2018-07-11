@@ -269,8 +269,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   private <T> T handleFutureResult(Future<T> f) {
     try {
-      // Time out if it takes more than 30 seconds
-      return f.get(30, TimeUnit.SECONDS);
+      return f.get();
     } catch (ExecutionException e) {
       throw new RuntimeException(e.getCause());
     } catch (Exception e) {
