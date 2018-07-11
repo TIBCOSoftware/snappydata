@@ -27,7 +27,7 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
   protected def astBuilder = throw new UnsupportedOperationException(
     "SnappyData parser does not use AST")
 
-  @transient val sqlParser: SnappyParser =
+  @transient protected[sql] val sqlParser: SnappyParser =
     new SnappyParser(session)
 
   /** Creates/Resolves DataType for a given SQL string. */
