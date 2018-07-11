@@ -294,19 +294,25 @@ abstract class SnappyDDLParser(session: SparkSession)
     (FOR ~ capture(ALL | SELECT | UPDATE | INSERT | DELETE)).? ~> ((forOpt: Any) =>
       forOpt match {
         case Some(v) => v.asInstanceOf[String]
-        case None => "select"
+        case None => SnappyParserConsts.SELECT.upper
+      })
+  }
+  protected final def policyTo: Rule1[Seq[String]] = rule {
+    (TO ~
+        (capture(CURRENT) | quotedIdentifier | unquotedIdentifier) * commaSep) ~> ((toOpt: Any) =>
+      toOpt match {
+        case Some(v) => v.asInstanceOf[Seq[String]]
+        case None => Seq(SnappyParserConsts.CURRENT.upper)
       })
   }
 
-
   protected def createPolicy: Rule1[LogicalPlan] = rule {
     (CREATE ~ POLICY) ~ tableIdentifier ~ ON ~ tableIdentifier ~ policyFor ~
-        TO ~
-        ((capture(CURRENT) | quotedIdentifier | unquotedIdentifier) + commaSep) ~
-        USING ~ expression ~> { (policyName: TableIdentifier, tableName: TableIdentifier,
-        policyFor: String, applyTo: Seq[String], filter: Expression) => {
-      null
-    }
+        policyTo ~ USING ~ capture(expression) ~> { (policyName: TableIdentifier,
+        tableName: TableIdentifier, policyFor: String,
+        applyTo: Seq[String], filter: Expression, filterStr: String) =>
+      CreatePolicy(policyName, tableName, policyFor, applyTo, filter,
+        filterStr)
     }
   }
 
@@ -739,6 +745,9 @@ case class CreateTableUsing(
     allowExisting: Boolean,
     options: Map[String, String],
     isBuiltIn: Boolean) extends Command
+
+case class CreatePolicy(policyName: TableIdentifier, tableName: TableIdentifier,
+    policyFor: String, applyTo: Seq[String], filter: Expression, filterStr: String) extends Command
 
 case class CreateTableUsingSelect(
     tableIdent: TableIdentifier,

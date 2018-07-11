@@ -60,6 +60,7 @@ import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf, UDFFunction}
+import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
@@ -712,6 +713,75 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  def registerPolicy(
+      policyName: QualifiedTableName,
+      targetTable: QualifiedTableName,
+      policyFor: String,
+      policyApplyTo: Seq[String],
+      filterString: String,
+      filterPlan: Filter
+      ): Unit = {
+    val client = this.client
+    withHiveExceptionHandling(
+      client.getTableOption(policyName.schemaName, policyName.table)) match {
+      case None =>
+
+        // invalidate any cached plan for the table
+        targetTable.invalidate()
+        cachedDataSourceTables.invalidate(targetTable)
+        policyName.invalidate()
+        cachedDataSourceTables.invalidate(policyName)
+        val policyProperties = new mutable.HashMap[String, String]
+        policyProperties.put(PolicyProperties.targetTable, targetTable.toString)
+        policyProperties.put(PolicyProperties.filterString, filterString)
+        policyProperties.put(PolicyProperties.policyFor, policyFor)
+        policyProperties.put(PolicyProperties.policyApplyTo, policyApplyTo.mkString(","))
+        policyProperties.put(PolicyProperties.expandedPolicyApplyTo,
+          ExternalStoreUtils.getExpandedGranteesIterator(policyApplyTo).mkString(","))
+
+        policyProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY,
+          ExternalTableType.Policy.name)
+        val hiveTable = CatalogTable(
+          identifier = policyName,
+          // Can not inherit from this class. Ideally we should
+          // be extending from this case class
+          tableType = CatalogTableType.EXTERNAL,
+          schema = StructType.apply(Seq.empty),
+          storage = CatalogStorageFormat(
+            locationUri = None,
+            inputFormat = None,
+            outputFormat = None,
+            serde = None,
+            compressed = false,
+            properties = Map.empty
+          ),
+          properties = policyProperties.toMap)
+
+        withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
+        SnappySession.clearAllCache()
+      case Some(catalogTable) => {
+        val policyProperties = new mutable.HashMap[String, String]
+        policyProperties.put(PolicyProperties.targetTable, targetTable.toString)
+        policyProperties.put(PolicyProperties.filterString, filterString)
+        policyProperties.put(PolicyProperties.policyFor, policyFor)
+        policyProperties.put(PolicyProperties.policyApplyTo, policyApplyTo.mkString(","))
+        policyProperties.put(PolicyProperties.expandedPolicyApplyTo,
+          ExternalStoreUtils.getExpandedGranteesIterator(policyApplyTo).mkString(","))
+        if (!(catalogTable.properties.size == policyProperties.size &&
+            catalogTable.properties.forall {
+              case (key, value) => value == policyProperties.getOrElse(key, "")
+            })) {
+          throw new AnalysisException(s"A policy with same name " +
+              s"but different attributes {${catalogTable.properties.toSeq.mkString(",")}}" +
+              s" already exists")
+        }
+
+      }
+
+      }
+    }
+
+
   def withHiveExceptionHandling[T](function: => T): T = {
     val oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get
     if (oldFlag ne java.lang.Boolean.TRUE) {
@@ -1271,6 +1341,7 @@ object ExternalTableType {
   val Sample = ExternalTableType("SAMPLE")
   val TopK = ExternalTableType("TOPK")
   val External = ExternalTableType("EXTERNAL")
+  val Policy = ExternalTableType("POLICY")
 
   def getTableType(t: Table): String = {
     if (t ne null) {

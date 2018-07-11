@@ -19,8 +19,9 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -149,6 +150,26 @@ private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
     val tableIdent = catalog.newQualifiedTableName(baseTable)
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.createIndex(indexIdent, tableIdent, indexColumns, options)
+    Nil
+  }
+}
+
+private[sql] case class CreatePolicyCommand(policyName: TableIdentifier, tableName: TableIdentifier,
+    policyFor: String, applyTo: Seq[String], filter: Expression,
+    filterStr: String) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    val policyIdent = catalog.newQualifiedTableName(policyName)
+    val tableIdent = catalog.newQualifiedTableName(tableName)
+    val plan = Filter(filter, UnresolvedRelation(tableName))
+    val analyzed = snc.sessionState.analyzer.execute(plan)
+    snc.sessionState.analyzer.checkAnalysis(analyzed)
+    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, filter)
+    SparkSession.setActiveSession(snc)
+
+
     Nil
   }
 }

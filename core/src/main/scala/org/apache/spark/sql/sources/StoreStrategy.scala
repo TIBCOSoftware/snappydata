@@ -85,6 +85,10 @@ object StoreStrategy extends Strategy {
     case CreateIndex(indexName, baseTable, indexColumns, options) =>
       ExecutedCommandExec(CreateIndexCommand(indexName, baseTable, indexColumns, options)) :: Nil
 
+    case CreatePolicy(policyName, tableName, policyFor, applyTo, filter, filterStr) =>
+      ExecutedCommandExec(CreatePolicyCommand(policyName, tableName, policyFor, applyTo,
+        filter, filterStr)) :: Nil
+
     case DropIndex(ifExists, indexName) =>
       ExecutedCommandExec(DropIndexCommand(indexName, ifExists)) :: Nil
 

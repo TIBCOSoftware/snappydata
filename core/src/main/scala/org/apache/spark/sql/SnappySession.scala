@@ -1500,6 +1500,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createIndex(indexIdent, tableIdent, columnsWithDirection, options)
   }
 
+  private[sql] def createPolicy(policyName: TableIdentifier, tableName: TableIdentifier,
+      policyFor: String, applyTo: Seq[String], filter: Expression): Unit = {
+    if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
+      throw new AnalysisException("Currently Policy only For Select is supported")
+    }
+    // check if the user or user group exists.
+    applyTo.filterNot(_.equalsIgnoreCase(SnappyParserConsts.CURRENT.upper))
+    // check if the filter is valid
+
+  }
   /**
    * Create an index on a table.
    */
