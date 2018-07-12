@@ -19,17 +19,18 @@ package org.apache.spark.sql
 
 
 import java.io.File
+import java.lang
+import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-
 import com.gemstone.gemfire.SystemFailure
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -763,16 +764,12 @@ case class SetSchema(schemaName: String) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
 
-/**
- * Returns a list of jar files that are added to resources.
- * If jar files are provided, return the ones that are added to resources.
- */
 case class DeployCommand(
-    coordinates: String,
-    alias: String,
-    repos: Option[String],
-    jarCache: Option[String],
-    restart: Boolean) extends RunnableCommand {
+  coordinates: String,
+  alias: String,
+  repos: Option[String],
+  jarCache: Option[String],
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     try {
@@ -802,30 +799,43 @@ case class DeployCommand(
             }
           case _ =>
         }
+        Misc.checkIfCacheClosing(ex)
         if (restart) {
-          logWarning("Following mvn coordinate" +
-              s" could not be resolved during restart: $coordinates")
+          logWarning(s"Following mvn coordinate" +
+              s" could not be resolved during restart: ${coordinates}", ex)
+          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+            throw ex
+          }
           Seq.empty[Row]
-        } else throw ex
+        } else {
+          throw ex
+        }
     }
   }
 }
 
 case class DeployJarCommand(
-    alias: String,
-    paths: String,
-    restart: Boolean) extends RunnableCommand {
+  alias: String,
+  paths: String,
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (paths.nonEmpty) {
       val jars = paths.split(",")
-      val sc = sparkSession.sparkContext
-      val availableUris = jars.filter(j => new File(j).exists())
-      val unavailableUris = jars.filterNot(j => new File(j).exists())
-      if (unavailableUris.nonEmpty && restart) {
+      val (availableUris, unavailableUris) = jars.partition(f => Files.isReadable(Paths.get(f)))
+      if (unavailableUris.nonEmpty) {
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+        if (restart && lang.Boolean.parseBoolean(
+          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+          throw new IllegalStateException(
+            s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
+        }
+        if (!restart) {
+          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
+        }
       }
+      val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
