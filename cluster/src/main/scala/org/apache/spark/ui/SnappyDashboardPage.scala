@@ -127,6 +127,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def clusterStats(): Seq[Node] = {
     <div class="container-fluid" style="text-align: center;">
+      <div id="googleChartsErrorMsg" style="text-align: center; color: #ff0f3f; display:none;">
+        Error while loading charts. Please check your internet connection.
+      </div>
+    </div>
+    <div class="container-fluid" style="text-align: center;">
       <div id="cpuUsageContainer" class="graph-container">
       </div>
       <div id="heapUsageContainer" class="graph-container">
