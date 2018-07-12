@@ -2,7 +2,7 @@
 
 <ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
-!!! Note: 
+!!! Note
 	* This is currently tested and supported only on Windows 10 (32-bit and 64-bit systems).
 
     * [Download and Install Visual C++ Redistributable for Visual Studio 2013](https://www.microsoft.com/en-in/download/details.aspx?id=40784) 
@@ -43,7 +43,7 @@ To create SnappyData DSN from ODBC Data Sources:
 
 	* **Password**: The password required to connect to the server. For example, *app*
 
-!!! Note: 
+!!! Note
 	Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. 
 
 ## Step 3. Install Tableau Desktop (10.1 or Higher)

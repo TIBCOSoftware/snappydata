@@ -31,7 +31,7 @@ To download and install the ODBC driver:
 
 4. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
-	!!! Note: 
+	!!! Note
 		Ensure that [SnappyData is installed](../install.md) and the [SnappyData cluster is running](start_snappy_cluster.md).
 
 ## Connect to the SnappyData Cluster 

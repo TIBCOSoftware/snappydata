@@ -25,11 +25,12 @@ import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.joda.time.DateTime
 import spark.jobserver.util.ContextURLClassLoader
-
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.ui.SparkUI
 import org.apache.spark.{SparkContext, SparkEnv}
+
+import scala.util.Try
 
 object SnappyUtils {
 
@@ -77,9 +78,10 @@ object SnappyUtils {
     assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
     val dependentJars = classLoader.asInstanceOf[URLClassLoader].getURLs
     val sparkJars = dependentJars.map(url => {
-      sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))
+      Try(sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))).getOrElse("")
     })
-    val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.toSeq).mkString(",")
+    val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.filterNot(
+      _.isEmpty).toSeq).mkString(",")
     sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
   }
 

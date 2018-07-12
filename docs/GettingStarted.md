@@ -1,7 +1,7 @@
 ## Introduction
 SnappyData fuses Apache Spark with an in-memory database to deliver a compute+data engine capable of stream processing, transactions, interactive analytics and prediction in a single cluster.
 
-!!! Attention:
+!!! Attention
 	This document assumes that you have familiarity with Apache Spark and its concepts. If you are new to Spark, refer to the [Spark documentation](https://spark.apache.org/docs/2.1.1/) to learn more about using Spark.</br>
 The current release of SnappyData is fully compatible with Spark 2.1.1
 
