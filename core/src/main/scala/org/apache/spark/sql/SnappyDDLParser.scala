@@ -26,12 +26,15 @@ import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
+
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
+
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -41,6 +44,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
 import org.apache.spark.sql.streaming.StreamPlanProvider
@@ -294,26 +298,36 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected final def policyFor: Rule1[String] = rule {
     (FOR ~ capture(ALL | SELECT | UPDATE | INSERT | DELETE)).? ~> ((forOpt: Any) =>
       forOpt match {
-        case Some(v) => v.asInstanceOf[String]
+        case Some(v) => v.asInstanceOf[String].trim
         case None => SnappyParserConsts.SELECT.upper
       })
   }
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
-        (capture(CURRENT) | quotedIdentifier | unquotedIdentifier) * commaSep) ~> ((toOpt: Any) =>
-      toOpt match {
-        case Some(v) => v.asInstanceOf[Seq[String]]
-        case None => Seq(SnappyParserConsts.CURRENT.upper)
-      })
+        (capture(CURRENT) | quotedIdentifier | unquotedIdentifier) * commaSep) ~>
+        ((policyTo: Any) =>
+      if (policyTo.asInstanceOf[Seq[String]].isEmpty) {
+        Seq(SnappyParserConsts.CURRENT.upper)
+      } else {
+        policyTo.asInstanceOf[Seq[String]].map(_.trim)
+      }
+      )
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {
     (CREATE ~ POLICY) ~ tableIdentifier ~ ON ~ tableIdentifier ~ policyFor ~
         policyTo ~ USING ~ capture(expression) ~> { (policyName: TableIdentifier,
         tableName: TableIdentifier, policyFor: String,
-        applyTo: Seq[String], filter: Expression, filterStr: String) =>
-      CreatePolicy(policyName, tableName, policyFor, applyTo, filter,
+        applyTo: Seq[String], filter: Expression, filterStr: String) => {
+
+      val tableIdent = session.asInstanceOf[SnappySession].sessionState.catalog.
+          newQualifiedTableName(tableName)
+      val plan = Filter(filter, UnresolvedRelation(tableIdent))
+      val policyIdent = session.asInstanceOf[SnappySession].sessionState.catalog
+          .newQualifiedTableName(policyName)
+      CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, plan,
         filterStr)
+    }
     }
   }
 
@@ -751,8 +765,8 @@ case class CreateTableUsing(
     options: Map[String, String],
     isBuiltIn: Boolean) extends Command
 
-case class CreatePolicy(policyName: TableIdentifier, tableName: TableIdentifier,
-    policyFor: String, applyTo: Seq[String], filter: Expression, filterStr: String) extends Command
+case class CreatePolicy(policyName: QualifiedTableName, tableName: QualifiedTableName,
+    policyFor: String, applyTo: Seq[String], filter: Filter, filterStr: String) extends Command
 
 case class CreateTableUsingSelect(
     tableIdent: TableIdentifier,

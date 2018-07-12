@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
@@ -154,20 +155,20 @@ private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
   }
 }
 
-private[sql] case class CreatePolicyCommand(policyName: TableIdentifier, tableName: TableIdentifier,
-    policyFor: String, applyTo: Seq[String], filter: Expression,
+private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
+    tableIdent: QualifiedTableName,
+    policyFor: String, applyTo: Seq[String], filter: Filter,
     filterStr: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    val policyIdent = catalog.newQualifiedTableName(policyName)
-    val tableIdent = catalog.newQualifiedTableName(tableName)
-    val plan = Filter(filter, UnresolvedRelation(tableName))
-    val analyzed = snc.sessionState.analyzer.execute(plan)
-    snc.sessionState.analyzer.checkAnalysis(analyzed)
-    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, filter)
+    // val childSession = snc.newSession()
+    // val qe = childSession.sessionState.executePlan(filter)
+    // qe.assertAnalyzed()
     SparkSession.setActiveSession(snc)
+    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, filter
+      /*qe.analyzed.asInstanceOf[Filter]*/, filterStr)
 
 
     Nil

@@ -714,14 +714,16 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   def registerPolicy(
-      policyName: QualifiedTableName,
-      targetTable: QualifiedTableName,
+      policyNameX: TableIdentifier,
+      targetTableX: TableIdentifier,
       policyFor: String,
       policyApplyTo: Seq[String],
       filterString: String,
-      filterPlan: Filter
+      filterPlan: org.apache.spark.sql.catalyst.plans.logical.Filter
       ): Unit = {
     val client = this.client
+    val policyName = newQualifiedTableName(policyNameX)
+    val targetTable = newQualifiedTableName(targetTableX)
     withHiveExceptionHandling(
       client.getTableOption(policyName.schemaName, policyName.table)) match {
       case None =>
@@ -901,7 +903,16 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     if (!hasCurrentDb) {
       allTables ++= withHiveExceptionHandling(client.listTables(currentSchemaName))
     }
-    allTables
+    // filter out policy rows
+    allTables.filterNot(name => {
+      val qt = newQualifiedTableName(name)
+      qt.getTableOption(this) match {
+        case Some(ct) => ct.tableType == CatalogTableType.EXTERNAL &&
+            ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
+                equals(ExternalTableType.Policy.name)
+        case _ => false
+      }
+    })
   }
 
   def getDataSourceRelations[T](tableTypes: Seq[ExternalTableType],
