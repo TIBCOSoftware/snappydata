@@ -19,10 +19,11 @@
 
 package io.snappydata
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -133,30 +134,50 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       val itr = memStats.iterator()
 
       val members = ObjectObjectHashMap.withExpectedSize[String,
-          scala.collection.mutable.Map[String, Any]](8)
+          MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
-        val map = new ConcurrentHashMap[String, Any](8, 0.7f, 1).asScala
-        val keyItr = memMap.keySet().iterator()
-
-        while (keyItr.hasNext) {
-          val key = keyItr.next()
-          map.put(key, memMap.get(key))
-        }
-        map.put("status", "Running")
 
         val dssUUID = memMap.get("diskStoreUUID").asInstanceOf[java.util.UUID]
-        if (dssUUID != null) {
-          members.put(dssUUID.toString, map)
-        } else {
-          members.put(memMap.get("id").asInstanceOf[String], map)
+        val id = memMap.get("id").toString
+
+        var memberStats: MemberStatistics = {
+          if (dssUUID != null && membersInfo.contains(dssUUID.toString)) {
+            membersInfo(dssUUID.toString)
+          } else if (membersInfo.contains(id)) {
+            membersInfo(id)
+          } else {
+            null
+          }
         }
+
+        if (memberStats == null) {
+          memberStats = new MemberStatistics(memMap)
+          if (dssUUID != null) {
+            members.put(dssUUID.toString, memberStats)
+          } else if (id != null) {
+            members.put(id, memberStats)
+          }
+        } else {
+          memberStats.updateMemberStatistics(memMap)
+          if (dssUUID != null) {
+            members.put(dssUUID.toString, memberStats)
+          } else if (id != null) {
+            members.put(id, memberStats)
+          }
+        }
+
+        memberStats.setStatus("Running")
       }
       membersInfo ++= members.asScala
       // mark members no longer running as stopped
       existingMembers.filterNot(members.containsKey).foreach(m =>
-        membersInfo(m).put("status", "Stopped"))
+        membersInfo(m).setStatus("Stopped"))
+
+      // update cluster level stats
+      ClusterStatistics.getInstance().updateClusterStatistics(membersInfo.asJava)
+
     } catch {
       case NonFatal(e) => logWarning(e.getMessage, e)
     }
@@ -165,33 +186,76 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
+    var resultObtained: Boolean = false
     try {
       if (dataServers != null && dataServers.size() > 0) {
         result = FunctionService.onMembers(dataServers)
-            .withCollector(new GfxdListResultCollector())
-            .execute(SnappyRegionStatsCollectorFunction.ID).getResult().
+            // .withCollector(new GfxdListResultCollector())
+            .execute(SnappyRegionStatsCollectorFunction.ID).getResult(5, TimeUnit.SECONDS).
             asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
             .asScala
-      }
-
-      // External Tables
-      val hiveTables: java.util.List[ExternalTableMetaData] =
-        Misc.getMemStore.getExternalCatalog.getHiveTables(true)
-      externalTables = hiveTables.asScala.collect {
-        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
-          new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-            table.externalStore, table.dataSourcePath, table.driverClass)
+        resultObtained = true
       }
     }
     catch {
-      case NonFatal(e) => log.warn(e.getMessage, e)
+      case NonFatal(e) => {
+        log.warn("Exception occurred while collecting Table Statistics: "
+            + e.getMessage, e)
+      }
     }
 
-    (result.flatMap(_.getRegionStats.asScala),
-     result.flatMap(_.getIndexStats.asScala),
-     externalTables)
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
+
+    val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
+      try {
+        // External Tables
+        hiveTables.collect {
+          case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
+              table.externalStore, table.dataSourcePath, table.driverClass)
+          }
+        }
+      }
+      catch {
+        case NonFatal(e) => {
+          log.warn("Exception occurred while collecting External Table Statistics: "
+              + e.getMessage, e)
+          mutable.Buffer.empty[SnappyExternalTableStats]
+        }
+      }
+    }
+
+    if (resultObtained) {
+      // Return updated tableSizeInfo
+      // Map to hold hive table type against table names as keys
+      val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
+      hiveTables.foreach(ht => {
+        val key = ht.schema.toString.concat("." + ht.entityName)
+        tableTypesMap.put(key.toUpperCase, ht.tableType)
+      })
+
+      val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
+        val tableName = rs.getTableName
+        if (tableTypesMap.contains(tableName.toUpperCase)
+            && tableTypesMap.get(tableName.toUpperCase).get.equalsIgnoreCase("COLUMN")) {
+          rs.setColumnTable(true)
+        } else {
+          rs.setColumnTable(false)
+        }
+        rs
+      })
+
+      // Return updated details
+      (regionStats,
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
+    } else {
+      // Return last successfully updated tableSizeInfo
+      (tableSizeInfo.values.toSeq,
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
+    }
   }
 
   type PRIterator = PartitionedRegion#PRLocalScanIterator
@@ -228,18 +292,21 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             // TODO: this should use a transactional iterator to get a consistent
             // snapshot (also pass the same transaction to getNumColumnsInTable
             //   for reading value and delete count)
-            val itr = new pr.PRLocalScanIterator(true /* primaryOnly */ , null /* no TX */ ,
+            val itr = new pr.PRLocalScanIterator(false /* primaryOnly */ , null /* no TX */ ,
               null /* not required since includeValues is false */ ,
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[AbstractRegionEntry]
               val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-              if (numColumnsInTable < 0) {
-                numColumnsInTable = key.getNumColumnsInTable(table)
+              val bucketRegion = itr.getHostedBucketRegion
+              if (bucketRegion.getBucketAdvisor.isPrimary) {
+                if (numColumnsInTable < 0) {
+                  numColumnsInTable = key.getNumColumnsInTable(table)
+                }
+                rowsInColumnBatch += key.getColumnBatchRowCount(bucketRegion, re,
+                  numColumnsInTable)
               }
-              rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
-                numColumnsInTable)
               re._getValue() match {
                 case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
                 case _ =>

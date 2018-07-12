@@ -3,7 +3,7 @@
 
 Multiple users can concurrently access a secure SnappyData cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a SnappyData cluster.
 
-!!! Note:
+!!! Note
 
 	* Currently, only the `%jdbc` interpreter is supported with a secure SnappyData cluster.
 
@@ -26,20 +26,18 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
         	snappy> GRANT INSERT ON Table airline TO user3;
         	snappy> GRANT UPDATE ON Table airline TO user4;
 
-	!!! Note:
+	!!! Note
     	User requiring INSERT, UPDATE or DELETE permissions also require explicit SELECT permission on a table.
 
 5. Extract the contents of the Zeppelin binary package. </br> 
 
-6. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
+6. Start the Zeppelin daemon using the command: </br> `./bin/zeppelin-daemon.sh start`
 
 ## Configure the JDBC Interpreter
 Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](https://zeppelin.apache.org/docs/0.7.0/interpreter/jdbc.html).
 
-```no-highlight
-Zeppelin web server is started on port 8080
-http://<IP address>:8080/#/
-```
+		Zeppelin web server is started on port 8080
+		http://<IP address>:8080/#/
 
 ## Configure the Interpreter
 
@@ -58,9 +56,9 @@ http://<IP address>:8080/#/
 3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for	 SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-client-1.6.1.jar) is available on [the release page](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.1). </br>
 	The SnappyData Client (JDBC) JAR file can also be placed under <ZEPPELIN_HOME>/interpreter/jdbc before starting Zeppelin instead of providing it in the dependency setting.
 
-4. If required, edit other properties, and then click **Save**to apply your changes. </br>For more information on using Zeppelin, see [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin).
+4. If required, edit other properties, and then click **Save** to apply your changes. </br>For more information on using Zeppelin, see [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin).
 
-**Additional Information**
+**Related Topics**
 
 *  [Using Apache Zeppelin](../isight/quick_start_steps.md#using-apache-zeppelin)
 

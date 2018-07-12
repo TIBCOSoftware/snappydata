@@ -158,6 +158,19 @@ class SnappyExecutor(
       case _ => false
     }
   }
+
+  def updateMainLoader(jars: Array[String]): Unit = {
+    synchronized {
+      lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
+      jars.foreach(name => {
+        val localName = name.split("/").last
+        Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
+          env.securityManager, hadoopConf, -1L, true)
+        val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
+        urlClassLoader.addURL(url)
+      })
+    }
+  }
 }
 
 class SnappyMutableURLClassLoader(urls: Array[URL],

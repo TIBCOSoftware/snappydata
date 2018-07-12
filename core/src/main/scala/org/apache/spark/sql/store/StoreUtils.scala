@@ -458,7 +458,7 @@ object StoreUtils {
     if (!isRowTable && !isShadowTable) {
       parameters.remove(DISKSTORE) match {
         case Some(v) =>
-          if (!isPersistent) {
+          if (!isPersistent && !overflow) {
             throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
           }
           if (v == GfxdConstants.GFXD_DEFAULT_DISKSTORE_NAME) {
@@ -472,7 +472,7 @@ object StoreUtils {
     } else {
       parameters.remove(DISKSTORE).foreach { v =>
         if (isPersistent) sb.append(s"'$v' ")
-        else throw Utils.analysisException(
+        else if (!isPersistent && !overflow) throw Utils.analysisException(
           s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
       }
     }
