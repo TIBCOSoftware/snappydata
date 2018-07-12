@@ -1715,7 +1715,8 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
+  //protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
+   public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
       File log = new File(".");

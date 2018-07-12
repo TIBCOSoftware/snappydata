@@ -2,7 +2,28 @@ io/snappydata/hydra/clusterRecovery/newNodeStartingFirstTest.conf
     A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
     dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    snappyFileLoc="$GEMFIRE/../snappy"
+
+
+/*io/snappydata/hydra/clusterRecovery/allLocatorsDownRebalanceTest.conf
+    A=snappy snappyHosts=3 snappyVMsPerHost=1 snappyThreadsPerVM=10
+    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
     snappyPath="$GEMFIRE/../snappy"
+
+
+io/snappydata/hydra/clusterRecovery/clusterRestartWithMinMem.conf
+    A=snappy snappyHosts=3 snappyVMsPerHost=1 snappyThreadsPerVM=10
+    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    snappyPath="$GEMFIRE/../snappy"
+
+
+io/snappydata/hydra/clusterRecovery/newNodeStartingFirstTest.conf
+    A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
+    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    snappyFileLoc="$GEMFIRE/../snappy"
 
 io/snappydata/hydra/clusterRecovery/newNodeRebalanceMeanKill.conf
     A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
@@ -24,4 +45,4 @@ io/snappydata/hydra/clusterRecovery/missingDiskStoreRecoveryTest.conf
     snappyPath="$GEMFIRE/../snappy"
     dataLocation="$GEMFIRE/../../../work/server1"
 
- //All the above test cases with colocation will be added.
+ //All the above test cases with colocation will be added. */
