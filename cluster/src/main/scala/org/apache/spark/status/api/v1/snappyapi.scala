@@ -47,6 +47,7 @@ class MemberSummary private[spark](
     val isDataServer: Boolean,
     val isLead: Boolean,
     val isActiveLead: Boolean,
+    val cores: Int,
     val cpuActive: Int,
     val clients: Long,
     val maxMemory: Long,

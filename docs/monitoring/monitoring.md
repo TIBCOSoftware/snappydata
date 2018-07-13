@@ -10,7 +10,11 @@ To access SnappyData Pulse, start your cluster and open [http:`<leadhost>`:5050/
 !!!Note
 	`<leadhost>` is the hostname or IP of the lead node in your cluster.
 
-On the SnappyData Pulse, you can view the following pages:
+!!! Note
+	
+	When using Smart Connector with upstream Spark, the **Dashboard** and **Member Details** sections are not displayed. Only the **SQL**, **Jobs** and **Stages** related information is displayed.
+
+The following topics are covered in this section:
 
 * [Dashboard](#dashboard)
 
