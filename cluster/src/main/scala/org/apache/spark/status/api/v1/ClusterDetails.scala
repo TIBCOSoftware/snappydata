@@ -32,9 +32,6 @@ object ClusterDetails {
 
     val coresInfo = mutable.HashMap.empty[String, Int]
     coresInfo += ("totalCores" -> csInstance.getTotalCores)
-    coresInfo += ("locatorCores" -> csInstance.getLocatorCores)
-    coresInfo += ("leadCores" -> csInstance.getLeadCores)
-    coresInfo += ("dataServerCores" -> csInstance.getDataServerCores)
 
     val clusterInfo = mutable.HashMap.empty[String, Any]
     clusterInfo += ("coresInfo" -> coresInfo);
