@@ -502,7 +502,7 @@ abstract class SnappyDDLParser(session: SparkSession)
    * }}}
    */
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
-    (GRANT | REVOKE | ((CREATE | DROP) ~ DISK_STORE) | ("{".? ~ CALL)) ~ ANY.* ~>
+    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
         (() => DMLExternalTable(TableIdentifier("SYSDUMMY1", Some("SYSIBM")),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
