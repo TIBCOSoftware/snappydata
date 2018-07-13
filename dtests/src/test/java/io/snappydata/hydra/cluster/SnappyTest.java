@@ -177,7 +177,6 @@ public class SnappyTest implements Serializable {
   }
 
 
-
   public static void initSnappyArtifacts() {
     snappyTest = new SnappyTest();
     HostDescription hd = TestConfig.getInstance().getMasterDescription()
@@ -361,8 +360,7 @@ public class SnappyTest implements Serializable {
         break;
       case SERVER:
         boolean excludeDirCreation = false;
-        if(SnappyPrms.getServerLauncherProps().contains("-dir"))
-        {
+        if (SnappyPrms.getServerLauncherProps().contains("-dir")) {
           excludeDirCreation = true;
         }
         locatorsList = getLocatorsList("locators");
@@ -927,6 +925,37 @@ public class SnappyTest implements Serializable {
     }
     doneRestore = true;
   }
+
+  protected void copyUserConfs(String fileName) {
+    //if (doneCopying) return;
+    String filePath = productConfDirPath + fileName;
+    File srcDir = new File(SnappyPrms.getUserConfLocation());
+    File srcFile = null, destDir = null;
+    try {
+      String srcFilePath = srcDir.getCanonicalPath() + File.separator + fileName;
+      srcFile = new File(srcFilePath);
+      destDir = new File(filePath);
+      if (destDir.exists()) destDir.delete();
+      destDir = new File(productConfDirPath);
+      FileUtils.copyFileToDirectory(srcFile, destDir);
+      Log.getLogWriter().info("Done copying " + fileName + " file from " + srcFile.getAbsolutePath() + " to " + destDir);
+    } catch (IOException e) {
+      throw new TestException("Error occurred while copying conf from file: " + srcFile + "\n " + e.getMessage());
+    }
+    //doneCopying = true;
+  }
+
+  /**
+   * Mandatory to use this method in case of stating the cluster with user specified confs for SnappyData members.
+   * These confs includes servers, leads and locators files for starting data store nodes, snappydata leader and
+   * locator nodes.
+   **/
+  public static synchronized void HydraTask_copyUserConfs() {
+    snappyTest.copyUserConfs("servers");
+    snappyTest.copyUserConfs("leads");
+    snappyTest.copyUserConfs("locators");
+  }
+
 
   public static synchronized void HydraTask_copyDiskFiles() {
     if (diskDirExists) return;
@@ -2100,16 +2129,15 @@ public class SnappyTest implements Serializable {
             userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
             SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
             SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
-          }
-          else if(appName.equals("BulkDeleteApp")){
+          } else if (appName.equals("BulkDeleteApp")) {
             commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-                " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " ;
+                " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
           }
           command = snappyJobScript + " --class " + userJob +
               " --name " + appName +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +commonArgs +" " +snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
               userAppArgs;
           if (SnappyCDCPrms.getIsCDCStream())
             command = "nohup " + command + " > " + logFile + " & ";
@@ -2117,7 +2145,7 @@ public class SnappyTest implements Serializable {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +commonArgs +" " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
               userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         }
         Log.getLogWriter().info("spark-submit command is : " + command);
@@ -2802,7 +2830,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
-                                            boolean restart, boolean rebalance) {
+      boolean restart, boolean rebalance) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
       return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart, rebalance);
@@ -2878,7 +2906,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
-                           boolean isDmlOp, boolean restart, boolean rebalance) {
+      boolean isDmlOp, boolean restart, boolean rebalance) {
     if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {

@@ -510,6 +510,12 @@ public class SnappyPrms extends BasePrms {
   public static Long connPropsList;
 
   /**
+   * Parameter used to get the location for the user specified confs for starting SnappyData members.
+   * Framework will treat its corresponding parameter as product conf dir path string in case not provided.
+   */
+  public static Long userConfLocation;
+
+  /**
    * Parameter used to get the number of Rows in each table provided in table List. This is
    * required for validating recovery after cluster restart.
    * (VectorsetValues of Strings) A list of values for number of rows in each table in table list
@@ -798,6 +804,11 @@ public class SnappyPrms extends BasePrms {
   public static Vector getDataLocationList() {
     Long key = dataLocation;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static String getUserConfLocation() {
+    Long key = userConfLocation;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, SnappyTest.productConfDirPath));
   }
 
   public static Vector getPersistenceModeList() {
