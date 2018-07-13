@@ -100,8 +100,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def SELECT: Rule0 = rule { keyword(Consts.SELECT) }
   final def SET: Rule0 = rule { keyword(Consts.SET) }
   final def TABLE: Rule0 = rule { keyword(Consts.TABLE) }
-  final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
-  final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def THEN: Rule0 = rule { keyword(Consts.THEN) }
   final def TO: Rule0 = rule { keyword(Consts.TO) }
   final def TRUE: Rule0 = rule { keyword(Consts.TRUE) }
@@ -121,12 +119,14 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
+  final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
+  final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
