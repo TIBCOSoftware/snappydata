@@ -29,12 +29,12 @@ import scala.util.Try
 
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.deploy.SparkSubmitUtils
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -45,7 +45,8 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
 import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
+import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
@@ -302,16 +303,17 @@ abstract class SnappyDDLParser(session: SparkSession)
         case None => SnappyParserConsts.SELECT.upper
       })
   }
+
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
         (capture(CURRENT) | quotedIdentifier | unquotedIdentifier) * commaSep) ~>
         ((policyTo: Any) =>
-      if (policyTo.asInstanceOf[Seq[String]].isEmpty) {
-        Seq(SnappyParserConsts.CURRENT.upper)
-      } else {
-        policyTo.asInstanceOf[Seq[String]].map(_.trim)
-      }
-      )
+          if (policyTo.asInstanceOf[Seq[String]].isEmpty) {
+            Seq(SnappyParserConsts.CURRENT.upper)
+          } else {
+            policyTo.asInstanceOf[Seq[String]].map(_.trim)
+          }
+            )
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {
@@ -319,13 +321,26 @@ abstract class SnappyDDLParser(session: SparkSession)
         policyTo ~ USING ~ capture(expression) ~> { (policyName: TableIdentifier,
         tableName: TableIdentifier, policyFor: String,
         applyTo: Seq[String], filter: Expression, filterStr: String) => {
-
-      val tableIdent = session.asInstanceOf[SnappySession].sessionState.catalog.
+      val snappySession = session.asInstanceOf[SnappySession]
+      val tableIdent = snappySession.sessionState.catalog.
           newQualifiedTableName(tableName)
-      val plan = Filter(filter, UnresolvedRelation(tableIdent))
-      val policyIdent = session.asInstanceOf[SnappySession].sessionState.catalog
+      val applyToAll = applyTo.exists(_.equalsIgnoreCase(SnappyParserConsts.CURRENT.upper))
+      val expandedApplyTo = if (applyToAll) {
+        Seq.empty[String]
+      } else {
+        import scala.collection.JavaConverters._
+        ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
+      }
+      var owner = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+
+      owner = IdUtil.getUserAuthorizationId(
+        if (owner.isEmpty) Constant.DEFAULT_SCHEMA
+        else snappySession.sessionState.catalog.formatDatabaseName(owner))
+
+      val plan = PolicyProperties.createFilterPlan(filter, tableIdent, owner, expandedApplyTo)
+      val policyIdent = snappySession.sessionState.catalog
           .newQualifiedTableName(policyName)
-      CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, plan,
+      CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, expandedApplyTo, owner, plan,
         filterStr)
     }
     }
@@ -766,7 +781,8 @@ case class CreateTableUsing(
     isBuiltIn: Boolean) extends Command
 
 case class CreatePolicy(policyName: QualifiedTableName, tableName: QualifiedTableName,
-    policyFor: String, applyTo: Seq[String], filter: Filter, filterStr: String) extends Command
+    policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
+    owner: String, filter: BypassRowLevelSecurity, filterStr: String) extends Command
 
 case class CreateTableUsingSelect(
     tableIdent: TableIdentifier,

@@ -41,14 +41,15 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
 
+import org.apache.spark.sql.internal
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionAlreadyExistsException, FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPermanentFunctionException, NoSuchTableException}
+import org.apache.spark.sql.catalyst.analysis.{FunctionAlreadyExistsException, FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPermanentFunctionException, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -59,7 +60,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendab
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf, UDFFunction}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils, SQLConf, UDFFunction}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
@@ -486,6 +487,34 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  final def getAllPoliciesForTable(tableName: String): Option[Filter] = {
+    // filter out policy rows
+    val policyFilters = getAllTablesIncludingPolicies.flatMap(name => {
+      val qt = newQualifiedTableName(name)
+      qt.getTableOption(this) match {
+        case Some(ct)if ct.tableType == CatalogTableType.EXTERNAL &&
+            ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
+                equals(ExternalTableType.Policy.name) &&
+            ct.properties.getOrElse(PolicyProperties.targetTable, "").equals(tableName) =>
+           Seq(this.lookupRelation(ct.identifier).asInstanceOf[SubqueryAlias].
+               child.asInstanceOf[BypassRowLevelSecurity].child)
+        case _ => Seq.empty
+      }
+    })
+    if (policyFilters.isEmpty) None
+    else {
+      Some(policyFilters.foldLeft[Filter](null) {
+        case (result, filter) =>
+          if (result == null) {
+            filter
+          } else {
+            result.copy(condition = org.apache.spark.sql.catalyst.expressions.And(
+              result.condition, filter.condition))
+          }
+      })
+    }
+  }
+
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {
     tableIdent.getTableOption(this) match {
       case Some(table) =>
@@ -495,7 +524,27 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           val viewText = table.viewText
               .getOrElse(sys.error("Invalid view without text."))
           snappySession.sessionState.sqlParser.parsePlan(viewText)
-        } else {
+        } else if (table.tableType == CatalogTableType.EXTERNAL &&
+            (table.properties.get(JdbcExtendedUtils.TABLETYPE_PROPERTY) match {
+              case Some(tt) => tt.equals(ExternalTableType.Policy.name)
+              case None => false
+            })
+            ) {
+          val filterExpression = snappySession.sessionState.sqlParser.parseExpression(
+            table.properties.getOrElse(PolicyProperties.filterString,
+              throw new IllegalStateException("Filter for the policy not found")))
+          val tableIdent = newQualifiedTableName(table.properties.getOrElse(
+            PolicyProperties.targetTable,
+            throw new IllegalStateException("Target Table for the policy not found")))
+          val plan = PolicyProperties.createFilterPlan(filterExpression, tableIdent,
+            table.properties.getOrElse(PolicyProperties.policyOwner, ""),
+            table.properties.getOrElse(PolicyProperties.expandedPolicyApplyTo, "").split(",").
+                toSeq.filterNot(_.isEmpty))
+          val resolvedPlan = snappySession.sessionState.analyzer.execute(plan)
+          snappySession.sessionState.analyzer.checkAnalysis(resolvedPlan)
+          resolvedPlan
+        }
+        else {
           throw new IllegalStateException(
             s"Unsupported table type ${table.tableType} with properties: ${table.properties}")
         }
@@ -718,9 +767,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       targetTableX: TableIdentifier,
       policyFor: String,
       policyApplyTo: Seq[String],
+      expandedPolicyApplyTo: Seq[String],
+      owner: String,
       filterString: String,
-      filterPlan: org.apache.spark.sql.catalyst.plans.logical.Filter
-      ): Unit = {
+      filterPlan: BypassRowLevelSecurity
+  ): Unit = {
     val client = this.client
     val policyName = newQualifiedTableName(policyNameX)
     val targetTable = newQualifiedTableName(targetTableX)
@@ -739,14 +790,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         policyProperties.put(PolicyProperties.policyFor, policyFor)
         policyProperties.put(PolicyProperties.policyApplyTo, policyApplyTo.mkString(","))
         policyProperties.put(PolicyProperties.expandedPolicyApplyTo,
-          ExternalStoreUtils.getExpandedGranteesIterator(policyApplyTo).mkString(","))
-
+          expandedPolicyApplyTo.mkString(","))
+        policyProperties.put(PolicyProperties.policyOwner, owner)
         policyProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY,
           ExternalTableType.Policy.name)
         val hiveTable = CatalogTable(
           identifier = policyName,
-          // Can not inherit from this class. Ideally we should
-          // be extending from this case class
           tableType = CatalogTableType.EXTERNAL,
           schema = StructType.apply(Seq.empty),
           storage = CatalogStorageFormat(
@@ -767,10 +816,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         policyProperties.put(PolicyProperties.filterString, filterString)
         policyProperties.put(PolicyProperties.policyFor, policyFor)
         policyProperties.put(PolicyProperties.policyApplyTo, policyApplyTo.mkString(","))
-        policyProperties.put(PolicyProperties.expandedPolicyApplyTo,
-          ExternalStoreUtils.getExpandedGranteesIterator(policyApplyTo).mkString(","))
-        if (!(catalogTable.properties.size == policyProperties.size &&
-            catalogTable.properties.forall {
+        policyProperties.put(PolicyProperties.policyOwner, owner)
+        val cloneCatalogProps = catalogTable.properties.filterNot(keyVal =>
+          keyVal._1.equalsIgnoreCase(PolicyProperties.expandedPolicyApplyTo))
+        if (!(cloneCatalogProps.size == policyProperties.size &&
+            cloneCatalogProps.forall {
               case (key, value) => value == policyProperties.getOrElse(key, "")
             })) {
           throw new AnalysisException(s"A policy with same name " +
@@ -780,8 +830,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
       }
 
-      }
     }
+  }
 
 
   def withHiveExceptionHandling[T](function: => T): T = {
@@ -886,11 +936,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     tables
   }
 
-  private def allTables(): Seq[String] = {
+
+
+  private def getAllTablesIncludingPolicies(): Seq[String] = {
     val allTables = new mutable.ArrayBuffer[String]()
     val currentSchemaName = this.currentSchema
     var hasCurrentDb = false
-    val databases = withHiveExceptionHandling(client.listDatabases("*")).iterator
+    // Why am I seeing lowercase as well as uppercase database?
+    val databases = withHiveExceptionHandling(client.listDatabases("*")).iterator.
+        map(_.toUpperCase).toSet.iterator
     while (databases.hasNext) {
       val db = databases.next()
       if (!hasCurrentDb && db == currentSchemaName) {
@@ -903,8 +957,13 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     if (!hasCurrentDb) {
       allTables ++= withHiveExceptionHandling(client.listTables(currentSchemaName))
     }
+    allTables
+  }
+
+  // without policy tables
+  private def allTables(): Seq[String] = {
     // filter out policy rows
-    allTables.filterNot(name => {
+    getAllTablesIncludingPolicies.filterNot(name => {
       val qt = newQualifiedTableName(name)
       qt.getTableOption(this) match {
         case Some(ct) => ct.tableType == CatalogTableType.EXTERNAL &&
@@ -1003,7 +1062,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     * Create a metastore function in the database specified in `funcDefinition`.
     * If no such database is specified, create it in the current database.
     * If the specified database is not present in catalog, create that database.
-    * @TODO Ideally create schema from gfxd should get routed to create the database in
+    * @ TODO Ideally create schema from gfxd should get routed to create the database in
     * the Hive catalog.
     */
   override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit = {

@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
@@ -157,20 +158,17 @@ private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
 
 private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
     tableIdent: QualifiedTableName,
-    policyFor: String, applyTo: Seq[String], filter: Filter,
+    policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
+    owner: String, filter: BypassRowLevelSecurity,
     filterStr: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
+    // TODO: Only allow the owner of the target table to create a policy on it
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    // val childSession = snc.newSession()
-    // val qe = childSession.sessionState.executePlan(filter)
-    // qe.assertAnalyzed()
     SparkSession.setActiveSession(snc)
-    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, filter
-      /*qe.analyzed.asInstanceOf[Filter]*/, filterStr)
-
-
+    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
+      owner, filter, filterStr)
     Nil
   }
 }

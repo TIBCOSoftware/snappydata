@@ -61,7 +61,7 @@ import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, ExternalTableType, HiveClientUtil, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableInsertOrPut, SnappySessionState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -149,7 +149,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
   SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
-  snappyContextFunctions.registerAQPErrorFunctions(this)
+  snappyContextFunctions.registerSnappyFunctions(this)
 
   /**
    * A wrapped version of this session in the form of a [[SQLContext]],
@@ -1502,12 +1502,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def createPolicy(policyName: TableIdentifier, tableName: TableIdentifier,
-      policyFor: String, applyTo: Seq[String], filter: Filter, filterStr: String): Unit = {
+      policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
+      owner: String, filter: BypassRowLevelSecurity, filterStr: String): Unit = {
     if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
       throw new AnalysisException("Currently Policy only For Select is supported")
     }
-    sessionCatalog.registerPolicy(policyName, tableName, policyFor, applyTo, filterStr, filter)
-
+    sessionCatalog.registerPolicy(policyName, tableName, policyFor, applyTo, expandedPolicyApplyTo,
+      owner, filterStr, filter)
   }
   /**
    * Create an index on a table.

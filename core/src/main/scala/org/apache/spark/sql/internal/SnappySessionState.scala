@@ -38,16 +38,20 @@ import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubque
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project, Sort, _}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
+import org.apache.spark.sql.policy.PolicyProperties
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
@@ -105,6 +109,7 @@ class SnappySessionState(snappySession: SnappySession)
         ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
+        RowLevelSecurity ::
         ExternalRelationLimitFetch ::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
@@ -394,6 +399,53 @@ class SnappySessionState(snappySession: SnappySession)
       val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
       val allConditions = (newJoin ++ otherCondition).reduceOption(And)
       Join(left, right, joinType, allConditions)
+    }
+  }
+
+
+  object RowLevelSecurity extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      plan match {
+        case _: BypassRowLevelSecurity => plan
+        case _ => plan.transformUp {
+          case lr@LogicalRelation(br, _, _) => {
+            val policyFilter = br match {
+              case x: JDBCAppendableRelation =>
+                snappySession.sessionState.catalog.getAllPoliciesForTable(x.resolvedName)
+              case y: JDBCMutableRelation =>
+                snappySession.sessionState.catalog.getAllPoliciesForTable(y.resolvedName)
+              case _ => None
+            }
+            policyFilter match {
+              case Some(filter) => filter.copy(child = lr)
+              case None => lr
+            }
+          }
+          case SubqueryAlias(name, Filter(condition, child), ti) => Filter(condition,
+            SubqueryAlias(name, child, ti))
+
+          case Filter(condition1, Filter(condition2, child)) =>
+            condition1 match {
+              case And(left, right) if left.eq(PolicyProperties.rlsAppliedCondition) ||
+                  (left match {
+                    case EqualTo(l: Literal, r: Literal) if l.value == r.value &&
+                        l.value == PolicyProperties.rlsConditionString => true
+                    case _ => false
+                  }) =>
+                // rls condition already applied
+                condition2 match {
+                  case And(l1, r1) if l1.eq(PolicyProperties.rlsAppliedCondition) || (l1 match {
+                    case EqualTo(l2: Literal, r2: Literal) if l2.value == r2.value &&
+                        l2.value == PolicyProperties.rlsConditionString => true
+                    case _ => false
+                  }) => Filter(condition1, child)
+                  case _ => Filter(And(condition1, condition2), child)
+
+                }
+              case _ => Filter(And(condition2, condition1), child)
+            }
+        }
+      }
     }
   }
 
@@ -1019,6 +1071,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
     case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
+    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
     case _ => Nil
   }
 
@@ -1440,5 +1493,9 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
 }
 
 case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
+}
+
+case class BypassRowLevelSecurity(child: LogicalFilter) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
 }

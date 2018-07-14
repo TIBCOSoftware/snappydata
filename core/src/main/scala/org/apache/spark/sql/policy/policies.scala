@@ -16,11 +16,36 @@
  */
 package org.apache.spark.sql.policy
 
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression, In, Literal, Not, Or}
+import org.apache.spark.sql.catalyst.plans.logical.Filter
+import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.internal.BypassRowLevelSecurity
+
 object PolicyProperties {
   val targetTable = "targetTable"
   val filterString = "filter"
   val policyFor = "policyFor"
   val policyApplyTo = "policyApplyTo"
   val expandedPolicyApplyTo = "expandedPolicyApplyTo"
+  val policyOwner = "policyOwner"  // should be same as table owner
+  val rlsConditionString = "row-level-security"
+  val rlsAppliedCondition = EqualTo(Literal(rlsConditionString), Literal(rlsConditionString))
+
+  def createFilterPlan(filterExpression: Expression, targetTable: QualifiedTableName,
+      policyOwner: String, applyTo: Seq[String]): BypassRowLevelSecurity = {
+   val userCheckCond = if (applyTo.isEmpty) {
+      // apply to all except owner
+      EqualTo(CurrentUser(), Literal(policyOwner))
+    } else {
+      val cond1 = EqualTo(CurrentUser(), Literal(policyOwner))
+      val cond2 = Not(In(CurrentUser(), applyTo.map(Literal(_))))
+      Or(cond1, cond2)
+    }
+
+    BypassRowLevelSecurity(Filter(And(rlsAppliedCondition,
+      Or(userCheckCond, filterExpression)),
+      UnresolvedRelation(targetTable)))
+  }
 
 }

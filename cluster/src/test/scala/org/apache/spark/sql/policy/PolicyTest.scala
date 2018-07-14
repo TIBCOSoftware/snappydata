@@ -16,14 +16,15 @@
  */
 package org.apache.spark.sql.policy
 
+import com.pivotal.gemfirexd.Attribute
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
+import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
 
-class PolicyCreationTest extends SnappyFunSuite
+class PolicyTest extends SnappyFunSuite
     with Logging
     with BeforeAndAfter
     with BeforeAndAfterAll {
@@ -42,6 +43,29 @@ class PolicyCreationTest extends SnappyFunSuite
   test("Policy creation on a column table using snappy context") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
       Seq(5, 6, 7))
+    val snc1 = snc.newSession()
+    snc1.snappySession.conf.set(Attribute.USERNAME_ATTR, "ashahid")
+
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
+    val dataDF = snc1.createDataFrame(rdd)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props)
+        .saveAsTable(colTableName)
+    snc1.sql(s"create policy testPolicy1 on  $colTableName for select to current using col1 < 0")
+    var rs = snc1.sql(s"select * from $colTableName").collect()
+    assertEquals(5, rs.length)
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+
+   rs = snc2.sql(s"select * from ashahid.$colTableName").collect()
+    assertEquals(0, rs.length)
+
+  }
+
+  ignore("ignore for now") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+      Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
@@ -49,4 +73,5 @@ class PolicyCreationTest extends SnappyFunSuite
         .saveAsTable(colTableName)
     snc.sql(s"create policy testPolicy1 on  $colTableName for select to current using col1 > 0")
   }
+
 }
