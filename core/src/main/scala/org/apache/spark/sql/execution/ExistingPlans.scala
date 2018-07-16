@@ -97,15 +97,13 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1 && numBuckets == 1) {
+    // when buckets are linked to partitions then actual buckets needs to be considered.
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
+    if ((numPartitions == 1 && numBuckets == 1) || (numPartitions == 1 && !linkPart)) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
-      // when buckets are linked to partitions then numBuckets have
-      // to be sent as zero to skip considering buckets in partitioning
-      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
       HashPartitioning(partitionColumns, if (linkPart) numBuckets else numPartitions)
-
     } else super.outputPartitioning
   }
 
