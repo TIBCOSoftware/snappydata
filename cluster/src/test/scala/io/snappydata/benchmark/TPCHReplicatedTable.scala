@@ -82,7 +82,7 @@ object TPCHReplicatedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"REGION,${endTime - startTime}")
     }
   }
 
@@ -114,7 +114,7 @@ object TPCHReplicatedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"NATION,${endTime - startTime}")
     }
   }
 
