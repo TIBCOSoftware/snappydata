@@ -81,7 +81,7 @@ class SparkSQLPrepareImpl(val sql: String,
   // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
 
-  private def getColumnTypes: Array[(Int, Int, Int)] =
+  private def getColumnTypes: Seq[(Int, Int, Int)] =
     columnDataTypes.map(d => SparkSQLExecuteImpl.getSQLType(d, complexTypeAsJson))
 
   override def packRows(msg: LeadNodeExecutorMsg,
@@ -244,17 +244,7 @@ class SparkSQLPrepareImpl(val sql: String,
 object SparkSQLPrepareImpl{
 
   def getTableNamesAndDatatype(output: Seq[expressions.Attribute]):
-  (Array[String], Array[DataType]) = {
-    var i = 0
-    val columns = new Array[String](output.length)
-    val dataTypes = new Array[DataType](output.length)
-    output.foreach { a =>
-      columns(i) = a.name
-      dataTypes(i) = a.dataType
-      i += 1
-    }
-    (columns, dataTypes)
-  }
+  (Seq[String], Seq[DataType]) = output.map(o => (o.name, o.dataType)).unzip
 }
 
 object QuestionMark {

@@ -275,32 +275,26 @@ object SparkSQLExecuteImpl {
   }
 
   def getTableNamesAndNullability(output: Seq[expressions.Attribute]):
-  (Array[String], Array[Boolean]) = {
-    var i = 0
-    val tables = new Array[String](output.length)
-    val nullables = new Array[Boolean](output.length)
-    output.foreach { a =>
+  (Seq[String], Seq[Boolean]) = {
+    output.map { a =>
       val fn = a.qualifiedName
       val dotIdx = fn.lastIndexOf('.')
       if (dotIdx > 0) {
-        tables(i) = fn.substring(0, dotIdx)
+        (fn.substring(0, dotIdx), a.nullable)
       } else {
-        tables(i) = ""
+        ("", a.nullable)
       }
-      nullables(i) = a.nullable
-      i += 1
-    }
-    (tables, nullables)
+    }.unzip
   }
 
   def writeMetaData(srh: SnappyResultHolder, hdos: GfxdHeapDataOutputStream,
-      tableNames: Array[String], nullability: Array[Boolean], columnNames: Array[String],
-      colTypes: Array[(Int, Int, Int)], dataTypes: Array[DataType]): Unit = {
+      tableNames: Seq[String], nullability: Seq[Boolean], columnNames: Seq[String],
+      colTypes: Seq[(Int, Int, Int)], dataTypes: Seq[DataType]): Unit = {
     // indicates that the metadata is being packed too
     srh.setHasMetadata()
-    DataSerializer.writeStringArray(tableNames, hdos)
-    DataSerializer.writeStringArray(columnNames, hdos)
-    DataSerializer.writeBooleanArray(nullability, hdos)
+    DataSerializer.writeStringArray(tableNames.toArray, hdos)
+    DataSerializer.writeStringArray(columnNames.toArray, hdos)
+    DataSerializer.writeBooleanArray(nullability.toArray, hdos)
     for (i <- colTypes.indices) {
       val (tp, precision, scale) = colTypes(i)
       InternalDataSerializer.writeSignedVL(tp, hdos)
