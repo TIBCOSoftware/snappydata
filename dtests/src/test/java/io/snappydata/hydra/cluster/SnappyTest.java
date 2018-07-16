@@ -2557,12 +2557,22 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static synchronized void HydraTask_dumpStacks(){
+  /*Dump stacks for threads in members of snappy cluster*/
+  public static synchronized void HydraTask_dumpStacks() {
     initSnappyArtifacts();
-    snappyTest.dumpStacks();
+    int dumpItr = SnappyPrms.getNumOfStackDumpItrs();
+    for (int i = 0; i < dumpItr; i++) {
+      snappyTest.dumpStacks();
+      if (i < (dumpItr-1)) {
+        try {
+          Thread.sleep(SnappyPrms.getSleepBtwnStackDumps() * 1000);
+        } catch (InterruptedException ie) {
+        }
+      }
+    }
   }
 
-  public void dumpStacks(){
+  public void dumpStacks() {
     Set pids = getPidList();
     Iterator itr = pids.iterator();
     while(itr.hasNext()) {
@@ -2573,8 +2583,6 @@ public class SnappyTest implements Serializable {
       ProcessMgr.printProcessStacks(host,pid);
     }
   }
-
-
 
   /**
    * Create and start snappy server.
@@ -3313,6 +3321,12 @@ public class SnappyTest implements Serializable {
     return masterHost;
   }
 
+  private String printStackTrace(Exception e){
+    StringWriter error = new StringWriter();
+    e.printStackTrace(new PrintWriter(error));
+    return error.toString();
+  }
+
   public List<String> getHostNameFromConf(String confFile){
     List<String>  hostNames = new ArrayList<>();
     try {
@@ -3329,7 +3343,7 @@ public class SnappyTest implements Serializable {
       }
       fileReader.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      Log.getLogWriter().info(printStackTrace(e));
     }
     return hostNames;
   }
