@@ -156,12 +156,16 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           memberStats = new MemberStatistics(memMap)
           if (dssUUID != null) {
             members.put(dssUUID.toString, memberStats)
-          } else {
+          } else if (id != null) {
             members.put(id, memberStats)
           }
         } else {
           memberStats.updateMemberStatistics(memMap)
-          members.put(dssUUID.toString, memberStats)
+          if (dssUUID != null) {
+            members.put(dssUUID.toString, memberStats)
+          } else if (id != null) {
+            members.put(id, memberStats)
+          }
         }
 
         memberStats.setStatus("Running")
