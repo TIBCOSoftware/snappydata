@@ -880,12 +880,14 @@ class SnappyParser(session: SnappySession)
             }
           }
         ) |
-        '.' ~ ws ~ (
-            (identifier ~ '.' ~ ws).* ~ '*' ~ ws ~> ((i1: String, rest: Any) =>
-              UnresolvedStar(Option(i1 +: rest.asInstanceOf[Seq[String]]))) |
-            identifier. +('.' ~ ws) ~> ((i1: String, rest: Any) =>
-              UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]]))
-        ) |
+        ('.' ~ ws ~ identifier. +('.' ~ ws) ~ ('.' ~ '*' ~ push(true) ~ ws).? ~> {
+          (i1: String, rest: Any, s: Any) =>
+            if (s.asInstanceOf[Option[Boolean]].isDefined) {
+              UnresolvedStar(Option(i1 +: rest.asInstanceOf[Seq[String]]))
+            } else {
+              UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]])
+            }
+        })|
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     literal | paramLiteralQuestionMark |
