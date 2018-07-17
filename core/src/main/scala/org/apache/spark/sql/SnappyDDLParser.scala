@@ -346,7 +346,9 @@ abstract class SnappyDDLParser(session: SparkSession)
     }
   }
 
-
+  protected def dropPolicy: Rule1[LogicalPlan] = rule {
+    DROP ~ POLICY  ~ ifExists ~ tableIdentifier ~> DropPolicy
+  }
 
   protected final def beforeDDLEnd: Rule0 = rule {
     noneOf("uUoOaA-;/")
@@ -759,7 +761,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     createView | createTempViewUsing | dropView |
     alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show |
-    createPolicy
+    createPolicy | dropPolicy
 
   }
 
@@ -798,6 +800,9 @@ case class CreateTableUsingSelect(
 
 case class DropTableOrView(isView: Boolean, ifExists: Boolean,
     tableIdent: TableIdentifier) extends Command
+
+case class DropPolicy(ifExists: Boolean,
+    policyIdentifier: TableIdentifier) extends Command
 
 case class TruncateManagedTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
 

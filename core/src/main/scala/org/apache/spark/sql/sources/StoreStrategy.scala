@@ -90,6 +90,9 @@ object StoreStrategy extends Strategy {
       ExecutedCommandExec(CreatePolicyCommand(policyName, tableName, policyFor, applyTo,
         expandedApplyTo, owner, filter, filterStr)) :: Nil
 
+    case DropPolicy(ifExists, policyIdent) =>
+      ExecutedCommandExec(DropPolicyCommand(ifExists, policyIdent)) :: Nil
+
     case DropIndex(ifExists, indexName) =>
       ExecutedCommandExec(DropIndexCommand(indexName, ifExists)) :: Nil
 

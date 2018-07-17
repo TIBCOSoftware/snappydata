@@ -34,6 +34,7 @@ import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
@@ -62,6 +63,7 @@ import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNes
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, ExternalTableType, HiveClientUtil, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableInsertOrPut, SnappySessionState}
+import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -1388,6 +1390,35 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.unregisterDataSourceTable(tableIdent, None)
         }
     }
+  }
+
+  /**
+   * Drop a SnappyData Policy created by a call to SnappySession.createPolicy
+   *
+   *
+   * @param policyIdent      Policy to be dropped
+   * @param ifExists        attempt drop only if the Policy exists
+   *
+   */
+  private[sql] def dropPolicy(policyIdent: QualifiedTableName,
+      ifExists: Boolean): Unit = {
+
+      sessionCatalog.getTableOption(policyIdent) match {
+        case Some(ct) => {
+          var owner = this.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+          owner = IdUtil.getUserAuthorizationId(
+            if (owner.isEmpty) Constant.DEFAULT_SCHEMA
+            else this.sessionState.catalog.formatDatabaseName(owner))
+
+          if (!owner.equalsIgnoreCase(ct.properties.getOrElse(PolicyProperties.policyOwner,
+            ""))) {
+            throw new SQLException("Only Policy Owner can drop the policy", "01548", null)
+          }
+          sessionCatalog.unregisterPolicy(policyIdent, ct)
+        }
+        case None => throw new PolicyNotFoundException(policyIdent.toString, None)
+      }
+
   }
 
   private[sql] def alterTable(tableName: String, isAddColumn: Boolean,

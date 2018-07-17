@@ -94,6 +94,20 @@ private[sql] case class DropTableOrViewCommand(isView: Boolean, ifExists: Boolea
   }
 }
 
+private[sql] case class DropPolicyCommand(ifExists: Boolean,
+    policyIdentifer: TableIdentifier) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    // check for table/view
+    val qualifiedName = catalog.newQualifiedTableName(policyIdentifer)
+
+    snc.dropPolicy(qualifiedName, ifExists)
+    Nil
+  }
+}
+
 private[sql] case class TruncateManagedTableCommand(ifExists: Boolean,
     tableIdent: TableIdentifier) extends RunnableCommand {
 

@@ -455,6 +455,16 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  def unregisterPolicy(policyIdent: QualifiedTableName, ct: CatalogTable): Unit = {
+    val client = this.client
+    policyIdent.invalidate()
+    cachedDataSourceTables.invalidate(policyIdent)
+    registerRelationDestroy()
+    val schemaName = policyIdent.schemaName
+    withHiveExceptionHandling(externalCatalog.dropTable(schemaName,
+      policyIdent.table, ignoreIfNotExists = false, purge = false))
+  }
+
   def unregisterGlobalView(tableIdent: QualifiedTableName): Boolean = synchronized {
     val schema = tableIdent.schemaName
     if ((schema eq null) || schema == currentSchema || schema == globalTempViewManager.database) {
