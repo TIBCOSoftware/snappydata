@@ -117,12 +117,10 @@ object TPCHColumnPartitionedTable {
     println("Created Table LINEITEM")
   }
 
-  var CREATE_PARQUET: Boolean = java.lang.Boolean.getBoolean("snappydata.test.create_parquet")
-
   def createPopulateOrderTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var orderDF: DataFrame = null
@@ -144,7 +142,7 @@ object TPCHColumnPartitionedTable {
         val newSchema = TPCHTableSchema.newOrderSchema(orderDF1.schema)
 
         orderDF = ColumnCacheBenchmark.applySchema(orderDF1, newSchema)
-        if (CREATE_PARQUET) {
+        if (createParquet) {
           orderDF.write.format("parquet").save(s"$path/parquet_orders_$i")
         }
       }
@@ -181,7 +179,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create ORDERS Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"ORDERS, ${endTime - startTime}")
     }
   }
 
@@ -202,7 +200,7 @@ object TPCHColumnPartitionedTable {
       orderDF.write.insertInto("ORDERS_CUST")
       val endTime = System.currentTimeMillis()
       if (loadPerfPrintStream != null) {
-        loadPerfPrintStream.println("Time taken to create ORDERS_CUST Table : " +
+        loadPerfPrintStream.println("ORDERS_CUST, " +
             (endTime - startTime))
       }
     }
@@ -212,7 +210,7 @@ object TPCHColumnPartitionedTable {
   def createPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var lineItemDF: DataFrame = null
@@ -233,7 +231,7 @@ object TPCHColumnPartitionedTable {
         val newSchema = TPCHTableSchema.newLineItemSchema(lineItemDF1.schema)
 
         lineItemDF = ColumnCacheBenchmark.applySchema(lineItemDF1, newSchema)
-        if (CREATE_PARQUET) {
+        if (createParquet) {
           lineItemDF.write.format("parquet").save(s"$path/parquet_lineitem_$i")
         }
       }
@@ -270,7 +268,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"LINEITEM, ${endTime - startTime}")
     }
   }
 
@@ -293,7 +291,7 @@ object TPCHColumnPartitionedTable {
       lineItemPartDF.write.insertInto("LINEITEM_PART")
       val endTime = System.currentTimeMillis()
       if (loadPerfPrintStream != null) {
-        loadPerfPrintStream.println("Time taken to create LINEITEM_PART Table : " +
+        loadPerfPrintStream.println("LINEITEM_PART, " +
             (endTime - startTime))
       }
     }
@@ -302,7 +300,7 @@ object TPCHColumnPartitionedTable {
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var customerDF: DataFrame = null
@@ -323,7 +321,7 @@ object TPCHColumnPartitionedTable {
         val newSchema = TPCHTableSchema.newCustomerSchema(customerDF1.schema)
 
         customerDF = ColumnCacheBenchmark.applySchema(customerDF1, newSchema)
-        if (CREATE_PARQUET) {
+        if (createParquet) {
           customerDF.write.format("parquet").save(s"$path/parquet_customer_$i")
         }
       }
@@ -361,7 +359,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create CUSTOMER Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"CUSTOMER, ${endTime - startTime}")
     }
   }
 
@@ -369,7 +367,7 @@ object TPCHColumnPartitionedTable {
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partDF: DataFrame = null
@@ -389,7 +387,7 @@ object TPCHColumnPartitionedTable {
         val newSchema = TPCHTableSchema.newPartSchema(partDF1.schema)
 
         partDF = ColumnCacheBenchmark.applySchema(partDF1, newSchema)
-        if (CREATE_PARQUET) {
+        if (createParquet) {
           partDF.write.format("parquet").save(s"$path/parquet_part_$i")
         }
       }
@@ -426,14 +424,14 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create PART Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"PART, ${endTime - startTime}")
     }
   }
 
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partSuppDF: DataFrame = null
@@ -454,7 +452,7 @@ object TPCHColumnPartitionedTable {
         val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF1.schema)
 
         partSuppDF = ColumnCacheBenchmark.applySchema(partSuppDF1, newSchema)
-        if (CREATE_PARQUET) {
+        if (createParquet) {
           partSuppDF.write.format("parquet").save(s"$path/parquet_partsupp_$i")
         }
       }
@@ -491,7 +489,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create PARTSUPP Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"PARTSUPP, ${endTime - startTime}")
     }
   }
 
@@ -528,9 +526,9 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val nationData = sc.textFile(s"$path/nation.tbl")
-    val nationreadings = nationData.map(s => s.split('|')).map(s => TPCHTableSchema
+    val nationReadings = nationData.map(s => s.split('|')).map(s => TPCHTableSchema
         .parseNationRow(s))
-    val nationdf = sqlContext.createDataFrame(nationreadings)
+    val nationdf = sqlContext.createDataFrame(nationReadings)
     val newSchema = TPCHTableSchema.newNationSchema(nationdf.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY" -> "N_NATIONKEY"), ("BUCKETS" -> buckets))
@@ -544,7 +542,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"NATION, ${endTime - startTime}")
     }
   }
 
@@ -553,30 +551,30 @@ object TPCHColumnPartitionedTable {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val regionData = sc.textFile(s"$path/region.tbl")
-    val regionreadings = regionData.map(s => s.split('|')).map(s => TPCHTableSchema
+    val regionReadings = regionData.map(s => s.split('|')).map(s => TPCHTableSchema
         .parseRegionRow(s))
-    val regiondf = sqlContext.createDataFrame(regionreadings)
-    val newSchema = TPCHTableSchema.newRegionSchema(regiondf.schema)
+    val regionDF = sqlContext.createDataFrame(regionReadings)
+    val newSchema = TPCHTableSchema.newRegionSchema(regionDF.schema)
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY" -> "R_REGIONKEY"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.createTable("REGION", "column", newSchema, p1)
-      regiondf.write.insertInto("REGION")
+      regionDF.write.insertInto("REGION")
     } else {
-      regiondf.createOrReplaceTempView("REGION")
+      regionDF.createOrReplaceTempView("REGION")
       sqlContext.cacheTable("REGION")
       sqlContext.table("REGION").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"REGION, ${endTime - startTime}")
     }
   }
 
   def createAndPopulateSupplierTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false): Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var suppDF: DataFrame = null
@@ -599,7 +597,7 @@ object TPCHColumnPartitionedTable {
         val newSchema = TPCHTableSchema.newSupplierSchema(suppDF1.schema)
 
         suppDF = ColumnCacheBenchmark.applySchema(suppDF1, newSchema)
-        if (CREATE_PARQUET) {
+        if (createParquet) {
           suppDF.write.format("parquet").save(s"$path/parquet_supplier_$i")
         }
       }
@@ -636,7 +634,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create SUPPLIER Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"SUPPLIER, ${endTime - startTime}")
     }
   }
 
@@ -668,7 +666,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create ORDERS Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"ORDERS, ${endTime - startTime}")
     }
   }
 
@@ -703,7 +701,7 @@ object TPCHColumnPartitionedTable {
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create LINEITEM Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"LINEITEM, ${endTime - startTime}")
     }
   }
 }

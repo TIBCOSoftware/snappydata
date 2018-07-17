@@ -621,6 +621,12 @@ class SnappyUnifiedMemoryManager private[memory](
       } else {
         storagePool.acquireMemory(blockId, numBytes)
       }
+
+      // Case where boot time memory is insufficient to recover database
+      if ( !enoughMemory && bootManager) {
+        return false
+      }
+
       if (!enoughMemory) {
 
         // return immediately for OFF_HEAP with shouldEvict=false

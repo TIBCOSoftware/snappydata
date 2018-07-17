@@ -15,7 +15,7 @@ rm -rf $SnappyData/conf/servers
 #   ssh $element killall -9 vmstat
 #done
 echo "removing directory lead locator and servers"
-ssh $leads rm -rf $leadDir
+ssh $leads  rm -rf $leadDir
 ssh $locator rm -rf $locatorDir
 COUNTER=1
 for element in "${servers[@]}";
