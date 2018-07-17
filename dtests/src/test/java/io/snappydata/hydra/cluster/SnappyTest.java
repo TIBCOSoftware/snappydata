@@ -1722,36 +1722,33 @@ public class SnappyTest implements Serializable {
       String dest = new File(".").getCanonicalPath() + File.separator + "PIDs_" + pName + "_" +
           hostName + ".log";
       File logFile = new File(dest);
-      if (!logFile.exists()) {
-        cmd += " jps | grep " + pName + " | awk '{print $1}'";
-        hd = TestConfig.getInstance().getMasterDescription()
-            .getVmDescription().getHostDescription();
-        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
-        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
-        pr = pb.start();
-        pr.waitFor();
-        FileInputStream fis = new FileInputStream(logFile);
-        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-        String str = null;
-        while ((str = br.readLine()) != null) {
-          int pid = Integer.parseInt(str);
-          try {
-            if (pids.contains(pid)) {
-              Log.getLogWriter().info("Pid is already recorded with Master" + pid);
-            } else {
-              pids.add(pid);
-              RemoteTestModule.Master.recordPID(hd, pid);
-              SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
-              SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hostName, hostName);
-            }
-          } catch (RemoteException e) {
-            String s = "Unable to access master to record PID: " + pid;
-            throw new HydraRuntimeException(s, e);
+      cmd += " jps | grep " + pName + " | awk '{print $1}'";
+      hd = TestConfig.getInstance().getMasterDescription()
+          .getVmDescription().getHostDescription();
+      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+      pr = pb.start();
+      pr.waitFor();
+      FileInputStream fis = new FileInputStream(logFile);
+      BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+      String str = null;
+      while ((str = br.readLine()) != null) {
+        int pid = Integer.parseInt(str);
+        try {
+          if (SnappyBB.getBB().getSharedMap().containsKey("pid_"+ pName + "_" + pid)) {
+            Log.getLogWriter().info("Pid " + pid + " is already recorded with Master");
+          } else {
+            Log.getLogWriter().info("Recording PID " + pid + " with Master.");
+            RemoteTestModule.Master.recordPID(hd, pid);
+            SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
+            SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hostName, hostName);
           }
-          Log.getLogWriter().info("pid value successfully recorded with Master");
+        } catch (RemoteException e) {
+          String s = "Unable to access master to record PID: " + pid;
+          throw new HydraRuntimeException(s, e);
         }
-        br.close();
       }
+      br.close();
     } catch (IOException e) {
       String s = "Problem while starting the process : " + pr;
       throw new TestException(s, e);
@@ -2564,10 +2561,7 @@ public class SnappyTest implements Serializable {
     for (int i = 0; i < dumpItr; i++) {
       snappyTest.dumpStacks();
       if (i < (dumpItr-1)) {
-        try {
-          Thread.sleep(SnappyPrms.getSleepBtwnStackDumps() * 1000);
-        } catch (InterruptedException ie) {
-        }
+        sleepForMs(SnappyPrms.getSleepBtwnStackDumps());
       }
     }
   }
@@ -2579,7 +2573,6 @@ public class SnappyTest implements Serializable {
       String val = (String)itr.next();
       int pid = Integer.parseInt(val);
       String host = getPidHost(val);
-      Log.getLogWriter().info("[Sonal] PID is:" + pid + ";host is:" + host);
       ProcessMgr.printProcessStacks(host,pid);
     }
   }
@@ -3327,8 +3320,9 @@ public class SnappyTest implements Serializable {
     return error.toString();
   }
 
-  public List<String> getHostNameFromConf(String confFile){
+  public List<String> getHostNameFromConf(String nodeName){
     List<String>  hostNames = new ArrayList<>();
+    String confFile = snappyTest.getScriptLocation(productConfDirPath + File.separator + nodeName);
     try {
       File file = new File(confFile);
       FileReader fileReader = new FileReader(file);
@@ -3339,7 +3333,6 @@ public class SnappyTest implements Serializable {
         String[] data = line.trim().split(" ");
         if(!hostNames.contains(data[0]))
           hostNames.add(data[0]);
-        Log.getLogWriter().info("hostname:" + data[0]);
       }
       fileReader.close();
     } catch (IOException e) {
@@ -3350,6 +3343,7 @@ public class SnappyTest implements Serializable {
 
   protected void startSnappyLocator() {
     File log = null;
+    List<String> hostNames = getHostNameFromConf("locators");
     ProcessBuilder pb = null;
     try {
       if (useRowStore) {
@@ -3362,8 +3356,7 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-      String confFile = snappyTest.getScriptLocation("locators");
-      List<String> hostNames = getHostNameFromConf(confFile);
+      sleepForMs(30);
       for(int i = 0; i< hostNames.size(); i++)
         recordSnappyProcessIDinNukeRun(hostNames.get(i), "LocatorLauncher");
     } catch (IOException e) {
@@ -3374,6 +3367,7 @@ public class SnappyTest implements Serializable {
 
   protected void startSnappyServer() {
     File log = null;
+    List<String> hostNames = getHostNameFromConf("servers");
     ProcessBuilder pb = null;
     try {
       if (useRowStore) {
@@ -3392,8 +3386,7 @@ public class SnappyTest implements Serializable {
         /*Thread.sleep(60000);
         startSnappyServer();*/
       }
-      String confFile = snappyTest.getScriptLocation("servers");
-      List<String> hostNames = getHostNameFromConf(confFile);
+      sleepForMs(30);
       for(int i = 0; i< hostNames.size(); i++)
         recordSnappyProcessIDinNukeRun(hostNames.get(i), "ServerLauncher");
     } catch (IOException e) {
@@ -3402,8 +3395,17 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  public static void sleepForMs(int sleepTimeInSec){
+    try {
+      Thread.sleep(sleepTimeInSec * 1000);
+    } catch (InterruptedException ie) {
+      throw new TestException("Got exception while thread was sleeping..", ie);
+    }
+  }
+
   protected void startSnappyLead() {
     File log = null;
+    List<String> hostNames = getHostNameFromConf("leads");
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
           "start");
@@ -3411,11 +3413,9 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-      String confFile = snappyTest.getScriptLocation("leads");
-      List<String> hostNames = getHostNameFromConf(confFile);
+      sleepForMs(30);
       for(int i = 0; i< hostNames.size(); i++)
         recordSnappyProcessIDinNukeRun(hostNames.get(i), "LeaderLauncher");
-
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
