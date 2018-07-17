@@ -15,6 +15,7 @@ pages:
 - 'Getting Started in 5 minutes or Less': 
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'Getting Started by Installing SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
+    - 'Getting Started with SnappyData on Kubernetes': 'kubernetes.md'
     - 'Getting Started with Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
