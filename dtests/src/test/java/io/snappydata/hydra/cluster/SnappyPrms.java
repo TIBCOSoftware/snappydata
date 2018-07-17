@@ -16,6 +16,7 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.util.List;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -224,6 +225,10 @@ public class SnappyPrms extends BasePrms {
   public static Long isLongRunningTest;
 
   /**
+   * (boolean) - whether test is started using user specified confs for serevrs, leads and locators.
+   */
+  public static Long isUserConfTest;
+  /**
    * (boolean) - whether to enable time statistics. snappy hydra already sets the
    * enable-time-statistics to true.
    */
@@ -339,6 +344,31 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long analyticalQueryList;
 
+  /**
+   * Parameter used to get the user list of locators host:port to be started in the test.
+   * (VectorsetValues of Strings) A comma-seperated list of values for locators host:port.
+   */
+  public static Long locatorList;
+
+  /**
+   * Parameter used to get the host name for the primary locator to be started in the test.
+   */
+  public static Long primaryLocatorHost;
+
+  /**
+   * Parameter used to get the port number for the primary locator to be started in the test.
+   */
+  public static Long primaryLocatorPort;
+
+  /**
+   * Parameter used to get the host name for the primary leader to be started in the test.
+   */
+  public static Long leadHost;
+
+  /**
+   * Parameter used to get the port number for the primary leader to be started in the test.
+   */
+  public static Long leadPort;
 
   /**
    * Parameter used to get the leaderLauncher properties specified by user while launching
@@ -673,6 +703,31 @@ public class SnappyPrms extends BasePrms {
   public static Vector getAnalyticalQueryList() {
     Long key = analyticalQueryList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static List<String> getLocatorList() {
+    Long key = locatorList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector("localhost:1527")));
+  }
+
+  public static String getPrimaryLocatorHost() {
+    Long key = primaryLocatorHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost"));
+  }
+
+  public static String getPrimaryLocatorPort() {
+    Long key = primaryLocatorPort;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "1527"));
+  }
+
+  public static String getLeadHost() {
+    Long key = leadHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost"));
+  }
+
+  public static String getLeadPort() {
+    Long key = leadPort;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "8090"));
   }
 
   public static String getLeaderLauncherProps() {

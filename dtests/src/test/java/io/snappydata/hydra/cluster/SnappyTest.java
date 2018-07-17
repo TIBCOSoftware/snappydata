@@ -82,6 +82,7 @@ public class SnappyTest implements Serializable {
   private static String simulateStreamScriptName = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptName, "simulateFileStream");
   private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtests);
   public static boolean isLongRunningTest = TestConfig.tab().booleanAt(SnappyPrms.isLongRunningTest, false);  //default to false
+  public static boolean isUserConfTest = TestConfig.tab().booleanAt(SnappyPrms.isUserConfTest, false);  //default to false
   public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
@@ -509,6 +510,10 @@ public class SnappyTest implements Serializable {
     if (isLongRunningTest) {
       locatorsList = getDataFromFile("locatorList");
       if (locatorsList == null) locatorsList = getLocatorList(userKey);
+      if (locatorsList == null && isUserConfTest) {
+        locatorsList = SnappyPrms.getLocatorList().get(0);
+        snappyTest.writeNodeConfigData("locatorList", locatorsList, false);
+      }
     } else locatorsList = getLocatorList(userKey);
     return locatorsList;
   }
@@ -1188,6 +1193,10 @@ public class SnappyTest implements Serializable {
     if (endpoints.size() == 0) {
       if (isLongRunningTest) {
         endpoints = getLocatorEndpointFromFile();
+        if (isUserConfTest) {
+          endpoints = SnappyPrms.getLocatorList();
+          snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0), true);
+        }
       }
     }
     if (endpoints.size() == 0) {
@@ -1698,6 +1707,11 @@ public class SnappyTest implements Serializable {
       if (primaryLocatorHost == null)
         primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get
             ("primaryLocatorHost");
+      if (primaryLocatorHost == null && isUserConfTest) {
+        primaryLocatorHost = SnappyPrms.getPrimaryLocatorHost();
+        snappyTest.writeNodeConfigData("primaryLocatorHost", primaryLocatorHost, false);
+      }
+
     } else
       primaryLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorHost");
     return primaryLocatorHost;
@@ -1710,6 +1724,10 @@ public class SnappyTest implements Serializable {
       if (primaryLocatorPort == null)
         primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get
             ("primaryLocatorPort");
+      if (primaryLocatorPort == null && isUserConfTest) {
+        primaryLocatorPort = SnappyPrms.getPrimaryLocatorPort();
+        snappyTest.writeNodeConfigData("primaryLocatorPort", primaryLocatorPort, false);
+      }
     } else
       primaryLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLocatorPort");
     return primaryLocatorPort;
@@ -1992,6 +2010,10 @@ public class SnappyTest implements Serializable {
   public String getLeadHost() {
     if (isLongRunningTest) {
       leadHost = getDataFromFile("leadHost");
+      if (leadHost == null && isUserConfTest) {
+        leadHost = SnappyPrms.getLeadHost();
+        snappyTest.writeNodeConfigData("leadHost", leadHost, false);
+      }
       if (leadHost == null)
         leadHost = getPrimaryLeadHost();
     } else {
@@ -2006,6 +2028,10 @@ public class SnappyTest implements Serializable {
       leadPort = getDataFromFile("leadPort");
       if (leadPort == null)
         leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+      if (leadHost == null && isUserConfTest) {
+        leadPort = SnappyPrms.getLeadPort();
+        snappyTest.writeNodeConfigData("leadPort", leadPort, false);
+      }
     } else {
       leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
     }
