@@ -19,11 +19,9 @@ package org.apache.spark.memory
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.core.FileCleaner
-import io.snappydata.util.TestUtils
-
-import org.apache.spark.SparkFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
+import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAfterAll {
