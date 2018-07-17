@@ -19,17 +19,18 @@ package org.apache.spark.sql
 
 
 import java.io.File
+import java.lang
+import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-
 import com.gemstone.gemfire.SystemFailure
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -118,12 +119,14 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
+  final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
+  final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
@@ -487,20 +490,24 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   /**
-   * GRANT/REVOKE on a table (only for column and row tables).
+   * GRANT/REVOKE/CREATE DISKSTORE/CALL on a table (only for column and row tables).
    *
    * Example:
    * {{{
    *   GRANT SELECT ON table TO user1, user2;
    *   GRANT INSERT ON table TO ldapGroup: group1;
+   *   CREATE DISKSTORE diskstore_name ('dir1' 10240)
+   *   DROP DISKSTORE diskstore_name
+   *   CALL SYSCS_UTIL.SYSCS_SET_RUNTIMESTATISTICS(1)
    * }}}
    */
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
-    (GRANT | REVOKE) ~ ANY.* ~> (() => DMLExternalTable(
-      TableIdentifier("SYSDUMMY1", Some("SYSIBM")) /* dummy table */ ,
-      LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-        SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
-        "", None)), input.sliceString(0, input.length)))
+    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
+        /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
+        (() => DMLExternalTable(TableIdentifier("SYSDUMMY1", Some("SYSIBM")),
+          LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
+            SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
+            "", None)), input.sliceString(0, input.length)))
   }
 
   protected def deployPackages: Rule1[LogicalPlan] = rule {
@@ -763,16 +770,12 @@ case class SetSchema(schemaName: String) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
 
-/**
- * Returns a list of jar files that are added to resources.
- * If jar files are provided, return the ones that are added to resources.
- */
 case class DeployCommand(
-    coordinates: String,
-    alias: String,
-    repos: Option[String],
-    jarCache: Option[String],
-    restart: Boolean) extends RunnableCommand {
+  coordinates: String,
+  alias: String,
+  repos: Option[String],
+  jarCache: Option[String],
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     try {
@@ -802,30 +805,43 @@ case class DeployCommand(
             }
           case _ =>
         }
+        Misc.checkIfCacheClosing(ex)
         if (restart) {
-          logWarning("Following mvn coordinate" +
-              s" could not be resolved during restart: $coordinates")
+          logWarning(s"Following mvn coordinate" +
+              s" could not be resolved during restart: ${coordinates}", ex)
+          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+            throw ex
+          }
           Seq.empty[Row]
-        } else throw ex
+        } else {
+          throw ex
+        }
     }
   }
 }
 
 case class DeployJarCommand(
-    alias: String,
-    paths: String,
-    restart: Boolean) extends RunnableCommand {
+  alias: String,
+  paths: String,
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (paths.nonEmpty) {
       val jars = paths.split(",")
-      val sc = sparkSession.sparkContext
-      val availableUris = jars.filter(j => new File(j).exists())
-      val unavailableUris = jars.filterNot(j => new File(j).exists())
-      if (unavailableUris.nonEmpty && restart) {
+      val (availableUris, unavailableUris) = jars.partition(f => Files.isReadable(Paths.get(f)))
+      if (unavailableUris.nonEmpty) {
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+        if (restart && lang.Boolean.parseBoolean(
+          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+          throw new IllegalStateException(
+            s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
+        }
+        if (!restart) {
+          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
+        }
       }
+      val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
       Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {

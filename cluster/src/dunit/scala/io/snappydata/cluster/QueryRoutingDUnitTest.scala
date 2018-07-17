@@ -18,12 +18,13 @@
 package io.snappydata.cluster
 
 import java.io.File
+import java.math.BigDecimal
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
 import com.gemstone.gemfire.distributed.DistributedMember
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -34,7 +35,6 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
@@ -856,6 +856,44 @@ class QueryRoutingDUnitTest(val s: String)
     assertPrimaries(s"select * from $table")
 
     session.dropTable(table)
+  }
+
+  def testSNAP2247(): Unit = {
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+    val st = conn.createStatement()
+    try {
+      val conn = DriverManager.getConnection(
+        "jdbc:snappydata://localhost:" + serverHostPort)
+
+      val st = conn.createStatement()
+      st.execute(s"create table trade.securities " +
+          s"(sec_id int not null, symbol varchar(10) not null, " +
+          s"price decimal (30, 20), exchange varchar(10) not null, " +
+          s"tid int, constraint sec_pk primary key (sec_id), " +
+          s"constraint sec_uq unique (symbol, exchange), constraint exc_ch check " +
+          s"(exchange in ('nasdaq', 'nye', 'amex', 'lse', 'fse', 'hkse', 'tse'))) " +
+          s"ENABLE CONCURRENCY CHECKS")
+
+      val ps = conn.prepareStatement(s"select price, symbol, exchange from trade.securities" +
+          s" where (price<? or price >=?) and tid =? order by CASE when exchange ='nasdaq'" +
+          s" then symbol END desc, CASE when exchange in('nye', 'amex') then sec_id END desc," +
+          s" CASE when exchange ='lse' then symbol END asc,  CASE when exchange ='fse' then" +
+          s" sec_id END desc,  CASE when exchange ='hkse' then symbol END asc," +
+          s"  CASE when exchange ='tse' then symbol END desc")
+
+      ps.setBigDecimal(1, new BigDecimal("0.02"))
+      ps.setBigDecimal(2, new BigDecimal("20.02"))
+      ps.setInt(3, 3)
+
+      ps.execute()
+      assert(!ps.getResultSet.next())
+    } finally {
+      st.execute(s"drop table trade.securities")
+      conn.close()
+    }
   }
 
   def limitInsertRows(numRows: Int, serverHostPort: Int, tableName: String): Unit = {
