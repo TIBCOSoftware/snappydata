@@ -58,17 +58,20 @@ class MiscTest extends SnappyFunSuite with Logging {
   }
 
   test("SNAP-2434") {
-    val sqlstr = s"select app.test.* from app.test"
-    try {
-      snc
-      snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
-    } catch {
-      case tnfe: TableNotFoundException =>
-      case ae: AnalysisException => if (!ae.getMessage().contains("Table or view not found")) {
-        throw ae
+    snc
+    val sqlstrs = Seq(s"select app.test.* from app.test",
+      s"select test.* from test", s"select * from test")
+    sqlstrs.foreach(sqlstr =>
+      try {
+        snc.sql(sqlstr)
+        fail(s"this should have given TableNotFoundException")
+      } catch {
+        case tnfe: TableNotFoundException =>
+        case ae: AnalysisException => if (!ae.getMessage().contains("Table or view not found")) {
+          throw ae
+        }
+        case t: Throwable => fail(s"unexpected exception $t")
       }
-      case t: Throwable => fail(s"unexpected exception $t")
-    }
+    )
   }
 }

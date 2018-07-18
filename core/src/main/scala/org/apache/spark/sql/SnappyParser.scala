@@ -880,14 +880,16 @@ class SnappyParser(session: SnappySession)
             }
           }
         ) |
-        ('.' ~ ws ~ identifier. +('.' ~ ws) ~ ('.' ~ '*' ~ push(true) ~ ws).? ~> {
+        '.' ~ (identifier. +('.' ~ ws) ~ ('.' ~ '*' ~ push(true) ~ ws).? ~> {
           (i1: String, rest: Any, s: Any) =>
             if (s.asInstanceOf[Option[Boolean]].isDefined) {
               UnresolvedStar(Option(i1 +: rest.asInstanceOf[Seq[String]]))
             } else {
               UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]])
             }
-        })|
+        } | '*' ~ ws ~> { (i1: String) =>
+             UnresolvedStar(Some(i1 +: Nil))
+        }) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     literal | paramLiteralQuestionMark |
