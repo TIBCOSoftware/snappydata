@@ -888,7 +888,7 @@ class SnappyParser(session: SnappySession)
               UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]])
             }
         } | '*' ~ ws ~> { (i1: String) =>
-             UnresolvedStar(Some(i1 +: Nil))
+             UnresolvedStar(Some(Seq(i1)))
         }) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
