@@ -173,8 +173,8 @@ private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
 private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
     tableIdent: QualifiedTableName,
     policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
-    owner: String, filter: BypassRowLevelSecurity,
-    filterStr: String) extends RunnableCommand {
+    currentUser: String, filterStr: String,
+    filter: BypassRowLevelSecurity) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     // TODO: Only allow the owner of the target table to create a policy on it
@@ -182,7 +182,7 @@ private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
     val catalog = snc.sessionState.catalog
     SparkSession.setActiveSession(snc)
     snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
-      owner, filter, filterStr)
+      currentUser, filterStr, filter)
     Nil
   }
 }

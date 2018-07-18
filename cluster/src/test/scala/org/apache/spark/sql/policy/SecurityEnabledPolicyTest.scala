@@ -14,27 +14,65 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.store
+package org.apache.spark.sql.policy
 
-import java.sql.DriverManager
-import java.util.Properties
+import java.sql.SQLException
 
-import com.pivotal.gemfirexd.{Attribute, TestUtil}
+import com.pivotal.gemfirexd.Attribute
+import java.sql.SQLException
+
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.util.TestUtils
-import io.snappydata.{Constant, PlanTest, Property, SnappyFunSuite}
-import org.scalatest.BeforeAndAfterAll
+import io.snappydata.{Constant, Property, SnappyFunSuite}
+import io.snappydata.core.Data
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 
-import org.apache.spark.SparkConf
+import org.apache.spark.{Logging, SparkConf}
+import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
+import org.apache.spark.sql.catalyst.plans.logical.Filter
+import org.apache.spark.sql.types.StringType
+import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession}
+import org.apache.spark.unsafe.types.UTF8String
 
-class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
+class SecurityEnabledPolicyTest extends SnappyFunSuite
+    with Logging
+    with BeforeAndAfter
+    with BeforeAndAfterAll {
+
+  val user1 = "gemfire1"
+  val user2 = "gemfire2"
+
+  val props = Map.empty[String, String]
+  val tableOwner = user1
+  val numElements = 100
+  val colTableName: String = s"$tableOwner.ColumnTable"
+  val rowTableName: String = s"${tableOwner}.RowTable"
+  var ownerContext: SnappyContext = _
+
   private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
     this.stopAll()
+    super.beforeAll()
+    val seq = for (i <- 0 until numElements) yield {
+      (s"name_$i", i)
+    }
+    val rdd = sc.parallelize(seq)
+    ownerContext = snc.newSession()
+    ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableOwner)
+    ownerContext.snappySession.conf.set(Attribute.PASSWORD_ATTR, tableOwner)
+    val dataDF = ownerContext.createDataFrame(rdd)
+
+    ownerContext.sql(s"CREATE TABLE $colTableName (name String, id Int) " +
+        s" USING column ")
+
+    ownerContext.sql(s"CREATE TABLE $rowTableName (name String, id Int) " +
+        s" USING row ")
+    dataDF.write.insertInto(colTableName)
+    dataDF.write.insertInto(rowTableName)
   }
-  
+
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
       getClass.getResource("/auth.ldif").getPath)
@@ -59,7 +97,10 @@ class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
+    ownerContext.dropTable(colTableName, true)
+    ownerContext.dropTable(rowTableName, true)
     this.stopAll()
+    super.afterAll()
     val ldapServer = LdapTestServer.getInstance()
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
@@ -75,31 +116,33 @@ class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
     System.setProperty("gemfirexd.authentication.required", "false")
   }
 
-  ignore("Bug SNAP-2255 connection pool exhaustion") {
-    val user1 = "gemfire1"
-    val user2 = "gemfire2"
 
-    val snc1 = snc.newSession()
-    snc1.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
-    snc1.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
-
-    snc1.sql(s"create table test (id  integer," +
-        s" name STRING) using column")
-    snc1.sql("insert into test values (1, 'name1')")
-    snc1.sql(s"GRANT select ON TABLE  test TO  $user2")
-
-    // TODO : Use the actual connection pool limit
-    val limit = 500
-
-    for (i <- 1 to limit) {
-      val snc2 = snc.newSession()
-      snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
-      snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
-
-
-      val rs = snc2.sql(s"select * from $user1.test").collect()
-      assertEquals(1, rs.length)
+  test("Check only owner of the table can create policy and drop it") {
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
+    snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
+    try {
+      snc2.sql(s"create policy testPolicy2 on  " +
+          s"$colTableName for select to current using id > 10")
+      fail("Only owner of the table should be allowed to create policy on it")
+    } catch {
+      case sqle: SQLException =>
+      case x => throw x
     }
+
+    ownerContext.sql(s"create policy testPolicy2 on  " +
+        s"$colTableName for select to current using id > 10")
+
+    try {
+      snc2.sql(s"drop policy ${tableOwner}.testPolicy2")
+      fail("Only owner of the Policy can drop the policy")
+    } catch {
+      case sqle: SQLException =>
+      case x => throw x
+    }
+
+    ownerContext.sql("drop policy testPolicy2")
   }
 
 }
+

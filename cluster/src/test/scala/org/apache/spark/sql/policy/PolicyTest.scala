@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.policy
 
+import java.sql.SQLException
+
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.{Property, SnappyFunSuite}
 import io.snappydata.core.Data
@@ -64,7 +66,6 @@ class PolicyTest extends SnappyFunSuite
   }
 
   override def afterAll(): Unit = {
-    ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableOwner)
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
     super.afterAll()
@@ -106,6 +107,18 @@ class PolicyTest extends SnappyFunSuite
 
     ownerContext.sql("drop policy testPolicy2")
   }
+
+
+  test("Policy creation & dropping allowed by all users if security is disabled") {
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+    snc2.sql(s"create policy testPolicy2 on  " +
+          s"$colTableName for select to current using id > 10")
+    snc2.sql("drop policy testPolicy2")
+
+  }
+
+
 
   ignore("ignore for now") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),

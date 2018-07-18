@@ -320,7 +320,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     (CREATE ~ POLICY) ~ tableIdentifier ~ ON ~ tableIdentifier ~ policyFor ~
         policyTo ~ USING ~ capture(expression) ~> { (policyName: TableIdentifier,
         tableName: TableIdentifier, policyFor: String,
-        applyTo: Seq[String], filter: Expression, filterStr: String) => {
+        applyTo: Seq[String], filterExp: Expression, filterStr: String) => {
       val snappySession = session.asInstanceOf[SnappySession]
       val tableIdent = snappySession.sessionState.catalog.
           newQualifiedTableName(tableName)
@@ -331,17 +331,18 @@ abstract class SnappyDDLParser(session: SparkSession)
         import scala.collection.JavaConverters._
         ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       }
-      var owner = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+      var currentUser = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
 
-      owner = IdUtil.getUserAuthorizationId(
-        if (owner.isEmpty) Constant.DEFAULT_SCHEMA
-        else snappySession.sessionState.catalog.formatDatabaseName(owner))
+      currentUser = IdUtil.getUserAuthorizationId(
+        if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
+        else snappySession.sessionState.catalog.formatDatabaseName(currentUser))
 
-      val plan = PolicyProperties.createFilterPlan(filter, tableIdent, owner, expandedApplyTo)
       val policyIdent = snappySession.sessionState.catalog
           .newQualifiedTableName(policyName)
-      CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, expandedApplyTo, owner, plan,
-        filterStr)
+      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent, currentUser,
+        expandedApplyTo)
+      CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, expandedApplyTo, currentUser,
+        filterStr, filter)
     }
     }
   }
@@ -784,7 +785,7 @@ case class CreateTableUsing(
 
 case class CreatePolicy(policyName: QualifiedTableName, tableName: QualifiedTableName,
     policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
-    owner: String, filter: BypassRowLevelSecurity, filterStr: String) extends Command
+    currentUser: String, filterStr: String, filter: BypassRowLevelSecurity) extends Command
 
 case class CreateTableUsingSelect(
     tableIdent: TableIdentifier,

@@ -1405,13 +1405,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
       sessionCatalog.getTableOption(policyIdent) match {
         case Some(ct) => {
-          var owner = this.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
-          owner = IdUtil.getUserAuthorizationId(
-            if (owner.isEmpty) Constant.DEFAULT_SCHEMA
-            else this.sessionState.catalog.formatDatabaseName(owner))
+          var currentUser = this.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+          currentUser = IdUtil.getUserAuthorizationId(
+            if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
+            else this.sessionState.catalog.formatDatabaseName(currentUser))
 
-          if (!owner.equalsIgnoreCase(ct.properties.getOrElse(PolicyProperties.policyOwner,
-            ""))) {
+          if (!SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
+              newQualifiedTableName(ct.properties.getOrElse(
+                PolicyProperties.targetTable, "")), this)) {
             throw new SQLException("Only Policy Owner can drop the policy", "01548", null)
           }
           sessionCatalog.unregisterPolicy(policyIdent, ct)
@@ -1532,14 +1533,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createIndex(indexIdent, tableIdent, columnsWithDirection, options)
   }
 
-  private[sql] def createPolicy(policyName: TableIdentifier, tableName: TableIdentifier,
+  private[sql] def createPolicy(policyName: TableIdentifier, tableName: QualifiedTableName,
       policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
-      owner: String, filter: BypassRowLevelSecurity, filterStr: String): Unit = {
+      currentUser: String, filterStr: String, filter: BypassRowLevelSecurity): Unit = {
+
+    if (!SecurityUtils.allowPolicyOp(currentUser, tableName, this)) {
+      throw new SQLException("Only Table Owner can create the policy", "01548", null)
+    }
+
     if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
       throw new AnalysisException("Currently Policy only For Select is supported")
     }
+
     sessionCatalog.registerPolicy(policyName, tableName, policyFor, applyTo, expandedPolicyApplyTo,
-      owner, filterStr, filter)
+      currentUser, filterStr, filter)
   }
   /**
    * Create an index on a table.

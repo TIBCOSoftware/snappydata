@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
-import org.apache.spark.sql.internal.PutIntoColumnTable
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PutIntoColumnTable}
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 import org.apache.spark.sql.{Strategy, _}
 
@@ -86,9 +86,9 @@ object StoreStrategy extends Strategy {
       ExecutedCommandExec(CreateIndexCommand(indexName, baseTable, indexColumns, options)) :: Nil
 
     case CreatePolicy(policyName, tableName, policyFor, applyTo, expandedApplyTo,
-    owner, filter, filterStr) =>
+    currentUser, filterStr, filter: BypassRowLevelSecurity) =>
       ExecutedCommandExec(CreatePolicyCommand(policyName, tableName, policyFor, applyTo,
-        expandedApplyTo, owner, filter, filterStr)) :: Nil
+        expandedApplyTo, currentUser, filterStr, filter)) :: Nil
 
     case DropPolicy(ifExists, policyIdent) =>
       ExecutedCommandExec(DropPolicyCommand(ifExists, policyIdent)) :: Nil
