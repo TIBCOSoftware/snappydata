@@ -37,6 +37,7 @@ class MiscTest extends SnappyFunSuite with Logging {
       " SELECT ol_1_int2_id FROM temp_table ," +
       " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").show
   }
+
   test("Pool test") {
     // create a dummy pool
     val rootPool = new Pool("lowlatency", SchedulingMode.FAIR, 0, 0)
@@ -54,5 +55,23 @@ class MiscTest extends SnappyFunSuite with Logging {
     snc.sql("set snappydata.scheduler.pool=lowlatency")
     snc.sql("select 1").count
     assert(sc.getLocalProperty("spark.scheduler.pool") === "lowlatency")
+  }
+
+  test("SNAP-2434") {
+    snc
+    val sqlstrs = Seq(s"select app.test.* from app.test",
+      s"select test.* from test", s"select * from test")
+    sqlstrs.foreach(sqlstr =>
+      try {
+        snc.sql(sqlstr)
+        fail(s"this should have given TableNotFoundException")
+      } catch {
+        case tnfe: TableNotFoundException =>
+        case ae: AnalysisException => if (!ae.getMessage().contains("Table or view not found")) {
+          throw ae
+        }
+        case t: Throwable => fail(s"unexpected exception $t")
+      }
+    )
   }
 }
