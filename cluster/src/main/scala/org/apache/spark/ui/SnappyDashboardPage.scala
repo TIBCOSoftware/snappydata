@@ -93,16 +93,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     <div id="CPUCoresContainer" style="position: absolute; width: 100%;">
       <div id="CPUCoresDetails">
         <div id="TotalCoresHolder">
-          <span style="padding-left: 5px;"> CPU Cores: </span>
+          <span style="padding-left: 5px;"> Total CPU Cores: </span>
           <span id="totalCores"> </span>
-        </div>
-        <div id="DistribCoresHolder">
-          <span style="padding-left: 5px;"> Locators: </span>
-          <span id="locatorCores"> </span>
-          <span style="padding-left: 5px; border-left: 1px solid #9EBFE4;"> Leads: </span>
-          <span id="leadsCores"> </span>
-          <span style="padding-left: 5px; border-left: 1px solid #9EBFE4;"> Data Servers: </span>
-          <span id="dataServerCores"> </span>
         </div>
       </div>
     </div>
@@ -126,6 +118,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
   }
 
   private def clusterStats(): Seq[Node] = {
+    <div class="container-fluid" style="text-align: center;">
+      <div id="googleChartsErrorMsg" style="text-align: center; color: #ff0f3f; display:none;">
+        Error while loading charts. Please check your internet connection.
+      </div>
+    </div>
     <div class="container-fluid" style="text-align: center;">
       <div id="cpuUsageContainer" class="graph-container">
       </div>
