@@ -100,7 +100,14 @@ private[sql] abstract class PartitionedPhysicalScan(
     // when buckets are linked to partitions then actual buckets needs to be considered.
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
-    if ((numPartitions == 1 && numBuckets == 1) || (numPartitions == 1 && !linkPart)) {
+    // The SinglePartition here is an optimization that can avoid an Exchange for the case
+    // of simple queries. This partitioning is compatible with all other required
+    // distributions though the table is still HashPartitioned. This helps for the
+    // case of aggregation with limit, for example, (SNAP-) which cannot be converted
+    // to use CollectAggregateExec. For cases where HashPartitioning of the table does
+    // require to be repartitioned due to a sub-query/join, "linkPart" will be true
+    // so it will fall into HashPartitioning.
+    if (numPartitions == 1 && (numBuckets == 1 || !linkPart)) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
       HashPartitioning(partitionColumns, if (linkPart) numBuckets else numPartitions)
