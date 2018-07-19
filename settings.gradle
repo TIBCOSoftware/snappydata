@@ -18,6 +18,7 @@
 def scalaBinaryVersion = '2.11'
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 
+include ':v2-connector_' + scalaBinaryVersion
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
 include ':snappy-launcher'
@@ -26,6 +27,7 @@ include 'dunit'
 include ':snappy-dtests_' + scalaBinaryVersion
 include ':snappy-compatibility-tests_' + scalaBinaryVersion
 
+project(':v2-connector_' + scalaBinaryVersion).projectDir = "$rootDir/v2-connector" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
 project(':snappy-launcher').projectDir = "$rootDir/launcher" as File
