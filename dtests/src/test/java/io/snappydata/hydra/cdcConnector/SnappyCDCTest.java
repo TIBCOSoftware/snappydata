@@ -585,6 +585,7 @@ String nodeConfig = nodeInfo+"\n";
      snappyTest.executeProcess(pbClustStop, logFile);
      Long totalTime = (System.currentTimeMillis() - startTime);
      Log.getLogWriter().info("The cluster took " + totalTime + " ms to shut down");
+     getClusterStatus(snappyPath,logFile);
    }
 
   public static void startCluster(String snappyPath,File logFile){
@@ -593,7 +594,17 @@ String nodeConfig = nodeInfo+"\n";
     snappyTest.executeProcess(pbClustStart, logFile);
     Long totalTime1 = (System.currentTimeMillis() - startTime1);
     Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to start up");
+    getClusterStatus(snappyPath,logFile);
   }
+
+   public static void getClusterStatus(String snappyPath,File logFile){
+    Log.getLogWriter().info("Now getting cluster status");
+    ProcessBuilder pbClustStats = new ProcessBuilder(snappyPath + "/sbin/snappy-status-all.sh");
+    Long startTime1 = System.currentTimeMillis();
+    snappyTest.executeProcess(pbClustStats, logFile);
+    Long totalTime1 = (System.currentTimeMillis() - startTime1);
+    Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to report status");
+   }
 
   public static void stopIndividualNode(String snappyPath,String script,File logFile){
     try {
