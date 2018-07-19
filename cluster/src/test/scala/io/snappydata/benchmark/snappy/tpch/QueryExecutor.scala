@@ -120,9 +120,11 @@ object QueryExecutor {
     val planFileName = if (isSnappy) s"${threadNumber}_QueryPlans_Snappy.out"
             else s"${threadNumber}_QueryPlans_Spark.out"
     val queryResultsFileName = if (isSnappy) s"${threadNumber}_Snappy_Q${queryNumber}_Results.out"
-            else s"${threadNumber}_Spark_Q$queryNumber.csv"
+            //else s"${threadNumber}_Spark_Q$queryNumber.csv"
+            else s"${threadNumber}_Spark_Q${queryNumber}_Results.out"
     val queryStatisticsFileName = if (isSnappy) s"${threadNumber}_Snappy_Q${queryNumber}_Timings.csv"
-    else s"${threadNumber}_Spark_Q$queryNumber.csv"
+            //else s"${threadNumber}_Spark_Q$queryNumber.csv"
+            else s"${threadNumber}_Spark_Q${queryNumber}_Timings.csv"
 
     if (planFileStream == null && planPrintStream == null) {
       planFileStream = new FileOutputStream(new File(planFileName))
@@ -139,9 +141,9 @@ object QueryExecutor {
       println(s"Started executing $queryNumber")
 
       if (isResultCollection) {
-        var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, true)
+        var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
         // queryPrintStream.println(queryToBeExecuted)
-        val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, true)
+        val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)
         println(s"$queryNumber : ${resultSet.length}")
 
         for (row <- resultSet) {
@@ -154,17 +156,20 @@ object QueryExecutor {
       } else {
         var totalTime: Long = 0
         for (i <- 1 to (warmup + runsForAverage)) {
-          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, true)
+          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
           // queryPrintStream.println(queryToBeExecuted)
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
           if (i == 1) {
-            cnts = queryExecution(queryNumber, queryToBeExecuted, sqlContext, true)._1
+            // collect plan only once
+            cnts = queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)._1
           } else {
             cnts = queryExecution(queryNumber, queryToBeExecuted, sqlContext)._1
           }
           for (s <- cnts) {
             // just iterating over result
+            // TODO: not required in job here as df.count() is being used.
+            // // or else check to see if iterating on each result row was intended
           }
           val endTime = System.currentTimeMillis()
           val iterationTime = endTime - startTime
