@@ -2,6 +2,15 @@
 
 # Member Startup Problems
 
+This section provides information and resolutions for the issues faced during the startup of cluster members. </br>
+The following issues are included here:
+
+*	[Delayed Startup](#delayedstartup)
+*	[Server Stoppages Due to Missing Disk Stores](missingdiskstore)	
+
+<a id= delayedstartup> </a>
+## Delayed Startup
+
 When you start SnappyData members, startup delays can occur if specific disk store files on other members are unavailable. This is part of the normal startup behavior and is designed to help ensure data consistency. For example, consider the following startup message for a locator ("locator2):
 
 ```pre
@@ -26,7 +35,7 @@ My persistent id:
   DiskStore ID: aa77785a-0f03-4441-84f7-6eb6547d7833
   Name: 
   Location: /10.0.1.31:/snappydata/server1/./datadictionary
-
+up
 Members with potentially new data:
 [
   DiskStore ID: f417704b-fff4-4b99-81a2-75576d673547
@@ -50,3 +59,52 @@ To avoid this type of delayed startup and recovery:
 
 	!!! Note
     	This can cause some loss of data if the revoked disk store actually contains recent changes to the data dictionary or to table data. The revoked disk stores cannot be added back to the system later. If you revoke a disk store on a member you need to delete the associated disk files from that member in order to start it again. Only use the `revoke-missing-disk-store` command as a last resort.  Contact [support@snappydata.io](mailto:support@snappydata.io) if you need to use the `revoke-missing-disk-store` command.
+
+<a id= missingdiskstore> </a>
+# Server Stoppages Due to Missing Disk Stores
+
+Sometimes a cluster does not get started when the disk store files are missing from one of servers in the cluster. 
+For example, you start a cluster that consists of **server1** and **server2**. Suppose the disk store files in **server1** are unavailable due to corruption or deletion. </br>**server1**, where the files were missing, attempts to start up as a new member, but it cannot due to InternalGemFireError and **server2** cannot start because it is waiting for the missing disk stores on **server1**. </br>In such a case, you must restart the cluster after changing the order of the servers in the *conf* file. 
+
+In the following sample log message that is displayed, you are notified that the **server1** which has process ID number (PID) 21474 cannot come up because it joined the cluster as a new member and **server2** with PID 21582 is waiting for the missing disk stores on **server1**.</br>
+```Pre
+SnappyData Server pid: 21474 status: stopped
+Error starting server process: 
+InternalGemFireError: None of the previous persistent node is up. - See log file for details.
+SnappyData Server pid: 21582 status: waiting
+Member disk state is not the most current. Table __PR._B__APP_ADJUSTMENT_4 at location /home/xyz/snappy/snappydata/server1/snappy-internal-delta is waiting for disk recovery from following members: 
+[/127.0.0.1] [DiskId: 6190c93b-158f-40f1-8251-1e9c58e320c2, Location: /home/xyz/snappy/snappydata/server0/snappy-internal-delta]
+```
+Execute the  `list-missing-disk-stores` command to view all the disk stores that are awaited upon by other servers in the cluster. Check the messages in the *start_snappyserver.log* file of the server which is waiting for the missing disk stores. 
+
+The following sample message is displayed in the log file for the servers:</br>
+```Pre
+[info 2018/07/10 12:00:16.302 IST <Recovery thread for bucket _B__APP_ADJUSTMENT_4> tid=0x4c] Region /APP/SNAPPYSYS_INTERNAL____ADJUSTMENT_COLUMN_STORE_, bucket 4 has potentially stale data.  It is waiting for another member to recover the latest data.
+  My persistent id:
+    DiskStore ID: 93e7e9cf-a513-4c67-89c3-da7e94a08efb
+    Location: /127.0.0.1:/home/xyz/snappy/snappydata/server2
+  Members with potentially new data:
+  [
+    DiskStore ID: 9791b9ff-7df3-44e8-99c8-7d62a3387002
+    Location: /127.0.0.1:/home/xyz/snappy/snappydata/server1
+  ]
+``` 
+In this sample log message, the diskID of **server2** is waiting upon the diskID of **server1** ,which is missing. To start **server2**, the waiting disk store in that server must be unblocked.
+Here it is shown that the diskID *93e7e9cf-a513-4c67-89c3-da7e94a08efb* of **server2** is waiting upon the diskID *9791b9ff-7df3-44e8-99c8-7d62a3387002* of **server1**, which is missing.
+
+Run the `unblock-disk-store` utility, in the following format, to unblock the waiting disk store:</br>
+`./bin/snappy unblock-disk-store <diskID of the waiting server>locators=localhost:10334`</br>
+For example, `./bin/snappy unblock-disk-store 93e7e9cf-a513-4c67-89c3-da7e94a08efb -locators=localhost:10334`
+
+Restart the cluster and keep unblocking such disk stores that are displayed in the logs until all the servers reach the running status.
+
+!!!Note
+There is no loss of data when you unblock the disk stores.
+
+### Rebalancing Data on Servers
+
+If you find that one of the server in the cluster has more data as compared to the other servers, you can distribute the data among the servers. This ensures that each server carries almost equal data. To balance the data equally on the servers, do the following:
+
+1.	Connect to snappy shell and obtain the jdbc client connection.
+2.	Run the rebalance command.</br>
+`snappy> call sys.rebalance_all_buckets();`
