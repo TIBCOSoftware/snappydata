@@ -1719,7 +1719,7 @@ public class SnappyTest implements Serializable {
     String cmd = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostName;
     Process pr = null;
     try {
-      String dest = new File(".").getCanonicalPath() + File.separator + "PIDs_" + pName + "_" +
+      String dest = getCurrentDirPath() + File.separator + "PIDs_" + pName + "_" +
           hostName + ".log";
       File logFile = new File(dest);
       cmd += " jps | grep " + pName + " | awk '{print $1}'";
@@ -1756,6 +1756,17 @@ public class SnappyTest implements Serializable {
       String s = "Exception occurred while waiting for the process execution : " + pr;
       throw new TestException(s, e);
     }
+  }
+
+  public static String getCurrentDirPath(){
+    String currentDir;
+    try {
+      currentDir = new File(".").getCanonicalPath();
+    } catch (IOException e) {
+      String s = "Problem while accessing the current dir.";
+      throw new TestException(s, e);
+    }
+    return currentDir;
   }
 
   protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
