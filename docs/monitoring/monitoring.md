@@ -1,18 +1,19 @@
 # SnappyData Pulse
 
-SnappyData Pulse is a monitoring system that gives a high-level overview of the status and performance of the cluster.  Pulse provides a simple widget based view, which allows you to easily navigate, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as of each member in the cluster. 
+SnappyData Pulse is a monitoring system that gives a high-level overview of the status and performance of the cluster.  Pulse provides a simple widget based view, which allows you to easily navigate, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster. 
 All the usage details are automatically refreshed after every 5 seconds, thus you can supervise the live status of your cluster.
 
-![Dashboard](../Images/Dashboard.png)
 
 To access SnappyData Pulse, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in your web browser.
 
 !!!Note
 	`<leadhost>` is the hostname or IP of the lead node in your cluster.
 
+![Dashboard](../Images/Dashboard.png)
+
 !!! Note
-	
-	When using Smart Connector with upstream Spark, the **Dashboard** and **Member Details** sections are not displayed. Only the **SQL**, **Jobs** and **Stages** related information is displayed.
+
+	When using Smart Connector with upstream Spark, the **Dashboard** and **Member Details** sections are not displayed. Only the information related to **SQL**, **Jobs**, and **Stages** is displayed.
 
 The following topics are covered in this section:
 
@@ -36,14 +37,14 @@ The following topics are covered in this section:
 On the top-right side of the SnappyData Pulse page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 ![](../Images/snapshot.png)
 
-You can also view the total number of CPU cores allocated to your cluster on the top-right side of the page.
-![](../Images/CPU_cores.png)
-Click this and the number of cores allocated to each member is displayed.
-![](../Images/CPU_cores1.png)
 
 <a id="dashboard"></a>
 ## Dashboard
 The Dashboard page graphically presents various cluster level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page are automatically updated after every 5 seconds.
+
+You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
+![](../Images/CPU_cores.png)
+
 
 The **Dashboard** page displays the following sections:
 
@@ -66,8 +67,8 @@ In the **Cluster** section, you can view the following graphs which are automati
 |Graphs|Description|
 |--------|--------|
 |**CPU Usage**|Graphically presents the trend of CPU utilization by all the nodes in the cluster for the last 15	 minutes. The utilization is represented in percentage value.|
-|**Heap Usage**|Graphically presents the collective utilization of Heap Memory by all the nodes in the cluster. This  graph displays three trend lines which corresponds to the utilization of Heap Memory for the following:</br> * Storage </br> * Execution</br> * JVM </br>  |
-|**Off-Heap Usage**|Graphically presents the collective utilization of Off-Heap Memory by all the nodes in the cluster. This  graph displays two trend lines which corresponds to the utilization of Off-Heap Memory for the following: </br> * Storage </br> * Execution|
+|**Heap Usage**|Graphically presents the collective utilization of Heap Memory by all the nodes in the cluster. This  graph displays three trend lines which corresponds to the utilization of Heap Memory for the following:</br> <ul><li>Storage</li><li>Execution</li><li>JVM</li></ul> |
+|**Off-Heap Usage**|Graphically presents the collective utilization of Off-Heap Memory by all the nodes in the cluster. This  graph displays two trend lines which corresponds to the utilization of Off-Heap Memory for the following: </br> <ul><li>Storage</li><li>Execution</li></ul> |
 |**Disk Space**|Graphically presents the collective utilization of disk space memory by all the nodes in the cluster.|
 
 <a id="member"></a>
@@ -81,14 +82,12 @@ This table provides member details in the following columns:
 | Column | Description |
 |--------|--------
 |  **Status**     |  Displays the status of the members, which can be either [Running or Stopped](#statusofmembers).    |
-|   **Member**       |   Displays a brief description of the member. Click the link in the column to view detailed description of the members along with the [Member Logs](#memberlogs). In this description, you can find information such as the IP address of the host, the current working directory, and the Process ID number.  |
-|     **Type**   |     Displays the type of the member. The type can be lead, locator, or data server. The name of the active lead member is displayed in bold letters. |
+|   **Member**       |   Displays a brief description of the member. Click the link in the column to view the Member Details page where the usage trends and statistics of the members are shown along with the [Member Logs](#memberlogs). Click the drop-down arrow to find information such as the IP address of the host, the current working directory, and the Process ID number.  |
+|     **Type**   |     Displays the type of the member. The type can be LEAD, LOCATOR, or DATA SERVER. The name of the active lead member is displayed in bold letters. |
 |     **CPU Usage**        |      Displays the CPU utilized by the member's host.  |
 |     **Memory Usage**       |      Displays the collective Heap and Off-Heap memory utilization of a cluster member. |
 |  **Heap Memory**       | Displays the member's utilized Heap memory versus total Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Heap Memory for storage, execution, and JVM. |
 |    **Off-Heap Memory**     |     Displays the member's used Off-Heap memory and total Off-Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Off-Heap memory for storage and execution.  |
-|    **Disk Space**     |     Displays the collective usage of Disk Memory used by all nodes in the cluster.  |
-
 
 <a id="statusofmembers"></a>
 
@@ -97,18 +96,43 @@ This table provides member details in the following columns:
 |![Running](../Images/running-status.png)|Member is running.|
 |![Stopped](../Images/stopped-status.png)|Member has stopped or is unavailable.|
 
+#### Member Details View
+
+The Member Details view shows the usage trend and statistics of a specific cluster member. Here you can also view the [Logs](#memberlogs) generated for a cluster member.
+
+![Member Detail View](../Images/memberdetailview.png)
+
+The following member specific statistics are displayed:
+
+|Item|Description|
+|--------|--------|
+|**Member Name/ID**|Displays the name or ID of the member.|
+|**Type**|Displays the type of member, which can be LEAD, LOCATOR or DATA SERVER.|
+|**Process ID**|Displays the process ID of the member.|
+|**Status**|Displays the status of the member. This can be either **Running** or **Unavailable**|
+|**Heap Memory**|Displays the total available heap memory, used heap memory, their distribution into heap storage, heap execution memory and their utilization.|
+|**Off-Heap Memory Usage**|Displays the members total off-heap memory, used off-heap memory, their distribution into off-heap storage and off-heap execution memory, and their utilization.|
+
+The usage trends of the member is represented in the following graphs:
+
+|Graphs|Description|
+|--------|--------|
+|**CPU Usage**|Graphically presents the trend of CPU utilization by the member host for the last 15 minutes. The utilization is represented in percentage value.|
+|**Heap Usage**|Graphically presents the utilization of Heap Memory by the member host. This  graph displays three trend lines which corresponds to the utilization of Heap Memory for the following:</br> <ul><li>Storage</li><li>Execution</li><li>JVM</li></ul> |
+|**Off-Heap Usage**|Graphically presents the utilization of Off-Heap Memory by the member host. This  graph displays two trend lines which corresponds to the utilization of Off-Heap Memory for the following: </br> <ul><li>Storage</li><li>Execution</li></ul>|
+|**Disk Space**|Graphically presents the utilization of disk space memory by the member host.|
 
 <a id="memberlogs"></a>
-#### Member Logs
-![MemberLogs](../Images/monitoring_memberdetails_logs.png)
+##### Member Logs
 
-The **Member Logs ** display the logs generated by a member node. The following details are included:
+![MemberLogs](../Images/monitoring_memberdetails_logs.png)
+In the Member Details page, you can view the logs generated for a single member in the cluster. The following details are included:
 
 | Item | Description |
 |--------|--------|
 |   **Log File Location**     |    Displays the absolute path of the member's primary log file, which is on the host where the current member's processes are running.    |
 |     **Log Details **  |     Displays details of the loaded logs such as  Loaded Bytes, Start and End Indexes of Loaded Bytes, and Total Bytes of logs content.   |
-|  **Logs**      | Displays the actual log entries from the log files. </br> It also displays the following buttons: </br> * **Load New** -  Loads the latest log entries from the log file (if generated) after logs were last loaded/updated.      </br> * **Load More** - Loads older log entries from log files, if available.  |
+|  **Logs**      | Displays the actual log entries from the log files. </br> It also displays the following buttons: </br> <ul><li>**Load New** - Loads the latest log entries from the log file, if generated, after logs were last loaded or updated.</li><li>**Load More** - Loads older log entries from log files, if available.</li></ul>  |
 
 <a id="table"></a>
 ### Tables
@@ -122,7 +146,7 @@ The following columns are displayed in this section:
 |--------|--------|
 |  **Name**      |     Displays the name of the data table.   |
 |   **Storage Model**     |    Displays the data storage model of the data table. Possible models are **ROW** and **COLUMN**.    |
-|   **Distribution Type**     |      Displays the data distribution type for the table. Possible values are:</br> * PARTITION </br> * PARTITION_PERSISTENT</br> * PARTITION_REDUNDANT</br> * PARTITION_OVERFLOW</br> * REPLICATE</br> * REPLICATE_PERSISTENT</br> * REPLICATE_OVERFLOW  |</br>
+|   **Distribution Type**     |      Displays the data distribution type for the table. Possible values are: <ul><li>PARTITION</li><li>PARTITION_PERSISTENT</li><li>PARTITION_REDUNDANT</li><li>PARTITION_OVERFLOW</li><li>REPLICATE</li><li>REPLICATE_PERSISTENT<li>REPLICATE_OVERFLOW </ul> |
 |   **Row Count**     |   Displays the row count, which is the number of records present in the data table.|
 |**Memory Size**    |    Displays the heap memory used by data table to store its data.    |
 |     **Total Size**   |     Displays the collective physical memory and disk overflow space used by the data table to store its data.   |
@@ -143,7 +167,8 @@ The following columns are displayed in this section:
 
 <a id="sql"></a>
 ## SQL
-The SQL page provides information about the submitted queries.
+The SQL section shows all the queries and their corresponding details alongwith their execution plans and stagewise breakups.
+
 
 ![](../Images/query_analysis_sql.png)
 
