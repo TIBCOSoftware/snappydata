@@ -27,7 +27,6 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
@@ -38,11 +37,10 @@ import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException, UnresolvedAttribute, UnresolvedStar}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -219,13 +217,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     sessionState.analyzerPrepare.execute(logical)
   }
 
-  private[sql] final def executePlan(plan: LogicalPlan): QueryExecution = {
+  private[sql] final def executePlan(plan: LogicalPlan, retry: Boolean = true): QueryExecution = {
     try {
       val execution = sessionState.executePlan(plan)
       execution.assertAnalyzed()
       execution
     } catch {
       case e: AnalysisException =>
+        // SNAP-2434
+        if (retry) {
+          reAnalyzeForUnresolvedAttribute(plan, e) match {
+            case Some(p) => return executePlan(p, retry = false)
+            case None => // ignore
+          }
+        }
         // in case of connector mode, exception can be thrown if
         // table form is changed (altered) and we have old table
         // object in SnappyStoreHiveCatalog.cachedDataSourceTables
@@ -237,6 +242,39 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             throw e
         }
     }
+  }
+
+  // Hack to fix SNAP-2340 ( TODO: Will return to see if a better fix is warranted )
+  private def reAnalyzeForUnresolvedAttribute(
+    originalPlan: LogicalPlan, e: AnalysisException): Option[LogicalPlan] = {
+    val unresolvedStarRegex = """(cannot resolve ')(\w+.\w+).*(' give input columns.*)""".r
+    // val unresolvedColRegex = """(cannot resolve '`)(\w+.\w+.\w+)(.*given input columns.*)""".r
+    val unresolvedColRegex = """(cannot resolve '`)(\w+.\w+.\w+)(.*given input columns.*)""".r
+    // val unresolvedColRegex  = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+    var matched = false
+    val oneLineMsg = e.getMessage().split('\n').map(_.trim.filter(_ >= ' ')).mkString
+    val newPlan = originalPlan transformExpressions {
+      case us@UnresolvedStar(option) =>
+        val targetString = option.get.mkString(".")
+        oneLineMsg match {
+          case unresolvedStarRegex(first, cols, last) =>
+            if (cols.equals(targetString)) matched = true
+          case _ => matched = false
+        }
+        if (matched) UnresolvedStar(None) else us
+
+      case ua@UnresolvedAttribute(nameparts) =>
+        val targetString = nameparts.mkString(".")
+        var uqc = ""
+        oneLineMsg match {
+          case unresolvedColRegex(first, cols, last) =>
+            if (cols.equals(targetString)) matched = true
+            uqc = cols.substring(cols.lastIndexOf('.') + 1)
+          case _ => matched = false
+        }
+        if (matched) UnresolvedAttribute(uqc) else ua
+    }
+    if (matched) Some(newPlan) else None
   }
 
   @transient
