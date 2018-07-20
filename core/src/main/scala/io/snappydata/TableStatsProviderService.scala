@@ -157,8 +157,7 @@ trait TableStatsProviderService extends Logging {
 
   def getTableStatsFromService(
       fullyQualifiedTableName: String): Option[SnappyRegionStats] = {
-    if (this.tableSizeInfo.isEmpty
-        || !this.tableSizeInfo.contains(fullyQualifiedTableName)) {
+    if (!this.tableSizeInfo.contains(fullyQualifiedTableName)) {
       // force run
       aggregateStats()
     }
@@ -166,17 +165,12 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getAllTableStatsFromService: Map[String, SnappyRegionStats] = {
-    if (this.tableSizeInfo.isEmpty) {
-      // force run
-      aggregateStats()
-    }
     this.tableSizeInfo
   }
 
   def getExternalTableStatsFromService(
       fullyQualifiedTableName: String): Option[SnappyExternalTableStats] = {
-    if (this.externalTableSizeInfo.isEmpty
-        || !this.externalTableSizeInfo.contains(fullyQualifiedTableName)) {
+    if (!this.externalTableSizeInfo.contains(fullyQualifiedTableName)) {
       // force run
       aggregateStats()
     }
@@ -184,10 +178,6 @@ trait TableStatsProviderService extends Logging {
   }
 
   def getAllExternalTableStatsFromService: Map[String, SnappyExternalTableStats] = {
-    if (this.externalTableSizeInfo.isEmpty) {
-      // force run
-      aggregateStats()
-    }
     this.externalTableSizeInfo
   }
 
