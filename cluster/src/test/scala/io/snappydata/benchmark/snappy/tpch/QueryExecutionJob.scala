@@ -42,8 +42,9 @@ object QueryExecutionJob extends SnappySQLJob {
     val snc = snSession.sqlContext
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
-            new File(s"${threadNumber}_Snappy_Average.out"))
+            new File(s"${threadNumber}_Snappy_AverageResponseTimes.csv"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+    avgPrintStream.println(s"Query,AverageResponseTime")
 
     for (prop <- sqlSparkProperties) {
       snc.sql(s"set $prop")
@@ -71,15 +72,12 @@ object QueryExecutionJob extends SnappySQLJob {
 
     val conf = new SparkConf()
         .setAppName("TPCH")
-        // .setMaster("local[6]")
         .setMaster("snappydata://localhost:10334")
         .set("jobserver.enabled", "false")
     val sc = new SparkContext(conf)
     val snc =
       SnappyContext(sc)
 
-
-    snc.sql("set spark.sql.shuffle.partitions=6")
     queries = Array("16")
     runJob(snc, null)
   }
@@ -93,15 +91,15 @@ object QueryExecutionJob extends SnappySQLJob {
 
     sqlSparkProperties = sqlSparkProps.split(",")
 
-    val tempqueries = if (config.hasPath("queries")) {
+    val tempQueries = if (config.hasPath("queries")) {
       config.getString("queries")
     } else {
       return SnappyJobInvalid("Specify Query number to be executed")
     }
 
     // scalastyle:off println
-    println(s"tempqueries : $tempqueries")
-    queries = tempqueries.split("-")
+    println(s"tempqueries : $tempQueries")
+    queries = tempQueries.split("-")
 
     isDynamic = if (config.hasPath("isDynamic")) {
       config.getBoolean("isDynamic")
