@@ -2292,7 +2292,7 @@ object SnappySession extends Logging {
 
 final class CachedKey(val session: SnappySession,
    val currSchema: String, private val lp: LogicalPlan,
-    val sqlText: String, val hintHashcode: Int) {
+   val sqlText: String, val hintHashcode: Int) {
 
   private[sql] var currentLiterals: Array[ParamLiteral] = _
   private[sql] var currentParamsId: Int = -1

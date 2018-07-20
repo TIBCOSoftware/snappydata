@@ -74,7 +74,7 @@ class MiscTest extends SnappyFunSuite with Logging {
     )
   }
 
-  test("SNAP-To_be_filed") {
+  test("SNAP-2438") {
     try {
       snc.sql(s"create table good(dept string, sal int) using column options()")
       snc.sql(s"create table test.good(dept string, sal int) using column options()")
