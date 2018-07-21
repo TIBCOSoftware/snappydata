@@ -94,22 +94,24 @@ class MiscTest extends SnappyFunSuite with Logging {
     snc.sql(s"insert into test values (1, 2), (4, 5), (6, 7)")
     val sqlstrs = Seq(s"select app.test.* from app.test",
       s"select app.test.col1, app.test.col2 from app.test",
-      s"select app.test.col1 from test",
       s"select col1, col2 from app.test",
       s"select * from app.test",
       s"select test.* from test")
-    sqlstrs.foreach(sqlstr => snc.sql(sqlstr).collect().size === 3)
+    sqlstrs.foreach(sqlstr => {
+      val res = snc.sql(sqlstr).collect()
+      assert(res.size === 3)
+      assert(res(0).get(0) != res(0).get(1))
+    })
 
-    //    val badsqls = Seq(s"select apppp.test.* from app.test",
-    //      s"select app.test.col99, app.test.col2 from app.test",
-    //      s"select testt.* from app.test",
-    //      s"select test.*.* from test")
-    //    badsqls.foreach(sqlstr =>
-    //      try {
-    //        snc.sql(sqlstr)
-    //        fail(s"expected analysis exception for $sqlstr")
-    //      } catch {
-    //        case ae: AnalysisException => // expected ... ignore
-    //      })
+    val badsqls = Seq(s"select apppp.test.* from app.test",
+      s"select app.test.col99, app.test.col2 from app.test",
+      s"select testt.* from app.test")
+    badsqls.foreach(sqlstr =>
+      try {
+        snc.sql(sqlstr)
+        fail(s"expected analysis exception for $sqlstr")
+      } catch {
+        case ae: AnalysisException => // expected ... ignore
+      })
   }
 }

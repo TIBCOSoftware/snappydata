@@ -217,7 +217,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     sessionState.analyzerPrepare.execute(logical)
   }
 
-  private[sql] final def executePlan(plan: LogicalPlan, retry: Boolean = true): QueryExecution = {
+  private[sql] final def executePlan(plan: LogicalPlan, retryCnt: Int = 0): QueryExecution = {
     try {
       val execution = sessionState.executePlan(plan)
       execution.assertAnalyzed()
@@ -225,11 +225,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     } catch {
       case e: AnalysisException =>
         // SNAP-2434
-        if (retry) {
-          reAnalyzeForUnresolvedAttribute(plan, e) match {
-            case Some(p) => return executePlan(p, retry = false)
-            case None => // ignore
-          }
+        reAnalyzeForUnresolvedAttribute(plan, e, retryCnt) match {
+          case Some(p) => return executePlan(p, retryCnt + 1)
+          case None => // ignore
         }
         // in case of connector mode, exception can be thrown if
         // table form is changed (altered) and we have old table
@@ -244,21 +242,31 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  // Hack to fix SNAP-2340 ( TODO: Will return to see if a better fix is warranted )
+  val unresolvedStarRegex = """(cannot resolve ')(\w+).(\w+).*(' give input columns.*)""".r
+  val unresolvedColRegex = """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
+  
+  // Hack to fix SNAP-2340 ( TODO: Will return after 102 to see if a better fix is warranted )
   private def reAnalyzeForUnresolvedAttribute(
-    originalPlan: LogicalPlan, e: AnalysisException): Option[LogicalPlan] = {
-    val unresolvedStarRegex = """(cannot resolve ')(\w+.\w+).*(' give input columns.*)""".r
-    // val unresolvedColRegex = """(cannot resolve '`)(\w+.\w+.\w+)(.*given input columns.*)""".r
-    val unresolvedColRegex = """(cannot resolve '`)(\w+.\w+.\w+)(.*given input columns.*)""".r
-    // val unresolvedColRegex  = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
-    var matched = false
+    originalPlan: LogicalPlan, e: AnalysisException,
+    retryCount: Int): Option[LogicalPlan] = {
+    if (!e.getMessage().contains("cannot resolve")) return None
+    val unresolvedNodes = originalPlan.expressions.filter(
+      x => x.isInstanceOf[UnresolvedStar] | x.isInstanceOf[UnresolvedAttribute])
+    if (retryCount > unresolvedNodes.size) return None
+
     val oneLineMsg = e.getMessage().split('\n').map(_.trim.filter(_ >= ' ')).mkString
     val newPlan = originalPlan transformExpressions {
-      case us@UnresolvedStar(option) =>
+      case us@UnresolvedStar(option) if (option.isDefined) =>
         val targetString = option.get.mkString(".")
+        var matched = false
         oneLineMsg match {
-          case unresolvedStarRegex(first, cols, last) =>
-            if (cols.equals(targetString)) matched = true
+          case unresolvedStarRegex(first, schema, table, last) =>
+            if (sessionCatalog.tableExists(new QualifiedTableName(schema, table))) {
+              val qname = s"$schema.$table"
+              if (qname.equalsIgnoreCase(targetString)) {
+                matched = true
+              }
+            }
           case _ => matched = false
         }
         if (matched) UnresolvedStar(None) else us
@@ -266,15 +274,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case ua@UnresolvedAttribute(nameparts) =>
         val targetString = nameparts.mkString(".")
         var uqc = ""
+        var matched = false
         oneLineMsg match {
-          case unresolvedColRegex(first, cols, last) =>
-            if (cols.equals(targetString)) matched = true
-            uqc = cols.substring(cols.lastIndexOf('.') + 1)
+          case unresolvedColRegex(first, schema, table, col, last) =>
+            if (sessionCatalog.tableExists(new QualifiedTableName(schema, table))) {
+              val qname = s"$schema.$table.$col"
+              if (qname.equalsIgnoreCase(targetString)) matched = true
+              uqc = col
+            }
           case _ => matched = false
         }
         if (matched) UnresolvedAttribute(uqc) else ua
     }
-    if (matched) Some(newPlan) else None
+    if (!newPlan.equals(originalPlan)) Some(newPlan) else None
   }
 
   @transient
