@@ -180,6 +180,10 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
   final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
   final def FOR: Rule0 = rule { keyword(Consts.FOR) }
+  final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
+  final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
+  final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
+  final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -458,6 +462,14 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ COLUMN.? ~ column  ~> AlterTableAddColumn
+  }
+
+  protected def alterTableToggleRowLevelSecurity: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ ( (ENABLE ~ push(true)) | (DISABLE ~ push(false))) ~
+        ROW ~ LEVEL ~ SECURITY ~> {
+      (tableName: TableIdentifier, enbableRLS: Boolean) =>
+        AlterTableToggleRowLevelSecurity(tableName, enbableRLS)
+    }
   }
 
   protected def alterTableDropColumn: Rule1[LogicalPlan] = rule {
@@ -760,10 +772,10 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView |
-    alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
+    alterTableToggleRowLevelSecurity | alterTableAddColumn | alterTableDropColumn |
+    createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show |
     createPolicy | dropPolicy
-
   }
 
   protected def query: Rule1[LogicalPlan]
@@ -808,6 +820,9 @@ case class DropPolicy(ifExists: Boolean,
 case class TruncateManagedTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
 
 case class AlterTableAddColumn(tableIdent: TableIdentifier, addColumn: StructField)
+    extends Command
+
+case class AlterTableToggleRowLevelSecurity(tableIdent: TableIdentifier, enable: Boolean)
     extends Command
 
 case class AlterTableDropColumn(tableIdent: TableIdentifier, column: String) extends Command

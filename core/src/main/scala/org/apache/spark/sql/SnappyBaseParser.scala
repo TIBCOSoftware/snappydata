@@ -473,6 +473,10 @@ object SnappyParserConsts {
   final val VALUES: Keyword = nonReservedKeyword("values")
   final val VIEW: Keyword = nonReservedKeyword("view")
   final val FOR: Keyword = nonReservedKeyword("for")
+  final val ENABLE: Keyword = nonReservedKeyword("enable")
+  final val DISABLE: Keyword = nonReservedKeyword("disable")
+  final val LEVEL: Keyword = nonReservedKeyword("level")
+  final val SECURITY: Keyword = nonReservedKeyword("security")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")

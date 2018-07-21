@@ -131,6 +131,17 @@ private[sql] case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
   }
 }
 
+private[sql] case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
+    enableRls: Boolean) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    snc.alterTableToggleRLS(catalog.newQualifiedTableName(tableIdent), enableRls)
+    Nil
+  }
+}
+
 private[sql] case class AlterTableDropColumnCommand(
     tableIdent: TableIdentifier, column: String) extends RunnableCommand {
 

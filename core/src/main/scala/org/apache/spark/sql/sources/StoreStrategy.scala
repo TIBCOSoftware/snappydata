@@ -79,6 +79,9 @@ object StoreStrategy extends Strategy {
     case AlterTableAddColumn(tableIdent, addColumn) =>
       ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn)) :: Nil
 
+    case AlterTableToggleRowLevelSecurity(tableIdent, enableRls) =>
+      ExecutedCommandExec(AlterTableToggleRowLevelSecurityCommand(tableIdent, enableRls)) :: Nil
+
     case AlterTableDropColumn(tableIdent, column) =>
       ExecutedCommandExec(AlterTableDropColumnCommand(tableIdent, column)) :: Nil
 

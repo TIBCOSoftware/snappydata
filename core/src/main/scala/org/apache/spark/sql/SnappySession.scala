@@ -1410,7 +1410,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
             else this.sessionState.catalog.formatDatabaseName(currentUser))
 
-          if (!SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
+          if (SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
               newQualifiedTableName(ct.properties.getOrElse(
                 PolicyProperties.targetTable, "")), this)) {
             throw new SQLException("Only Policy Owner can drop the policy", "01548", null)
@@ -1431,6 +1431,36 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       val colName = Utils.fieldName(column)
       alterTable(qualifiedTable, isAddColumn,
         if (Utils.hasLowerCase(colName)) sessionCatalog.normalizeField(column, colName) else column)
+    }
+  }
+
+  private[sql] def alterTableToggleRLS(tableIdent: QualifiedTableName, enableRls: Boolean): Unit = {
+    val plan = try {
+      sessionCatalog.lookupRelation(tableIdent)
+    } catch {
+      case tnfe: TableNotFoundException => throw tnfe
+    }
+
+    if(sessionCatalog.isTemporaryTable(tableIdent)) {
+      throw new AnalysisException("alter table not supported for temp tables")
+    }
+
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        throw new AnalysisException("alter table enable/disable Row Level Security not supported " +
+            "for smart connector mode")
+      case _ =>
+    }
+
+    plan match {
+      case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
+        sessionCatalog.invalidateTable(tableIdent)
+        rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
+        // TODO : Asif : Is it needed what does this do?
+        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappySession.clearAllCache()
+      case _ =>
+        throw new AnalysisException("alter table not supported for external tables")
     }
   }
 
