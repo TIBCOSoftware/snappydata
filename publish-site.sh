@@ -44,7 +44,7 @@ fi
 MKDOCS_EXISTS=`which mkdocs`
 
 if [ -z ${MKDOCS_EXISTS} ]; then
-  echo "Install mkdocs...exiting"
+  echo "Please install MkDocs (www.mkdocs.org/#installation) before publishing the docs. Exiting."
   exit 1
 fi
 
@@ -60,4 +60,4 @@ cp -R build-artifacts/scala-2.11/docs/* site/apidocs/
 
 # remove extra files added to docs
 #rm ./docs/index.md
-mkdocs serve
+mkdocs serve $@
