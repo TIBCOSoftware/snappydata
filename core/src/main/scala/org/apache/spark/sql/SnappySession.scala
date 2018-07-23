@@ -244,8 +244,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   val unresolvedStarRegex = """(cannot resolve ')(\w+).(\w+).*(' give input columns.*)""".r
   val unresolvedColRegex = """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
-  
-  // Hack to fix SNAP-2340 ( TODO: Will return after 102 to see if a better fix is warranted )
+
+  // Hack to fix SNAP-2440 ( TODO: Will return after 102 to see if a better fix is warranted )
   private def reAnalyzeForUnresolvedAttribute(
     originalPlan: LogicalPlan, e: AnalysisException,
     retryCount: Int): Option[LogicalPlan] = {
