@@ -335,6 +335,7 @@ trait RowLevelSecurityRelation {
 
   protected val connFactory: () => Connection
   protected def dialect: JdbcDialect
+  private[sql] val resolvedName: String
   val sqlContext: SQLContext
   val table: String
   def enableOrDisableRowLevelSecurity(tableIdent: QualifiedTableName,
@@ -367,6 +368,27 @@ trait RowLevelSecurityRelation {
         conn.close()
       }
     }
+
+  def isRowLevelSecurityEnabled: Boolean = {
+    val conn = connFactory()
+    try {
+      JdbcExtendedUtils.isRowLevelSecurityEnabled(resolvedName,
+        conn, dialect, sqlContext)
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw se
+        }
+    } finally {
+      conn.commit()
+      conn.close()
+    }
+  }
+
 
 }
 

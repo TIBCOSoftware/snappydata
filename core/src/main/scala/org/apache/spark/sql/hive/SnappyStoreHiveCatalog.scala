@@ -497,31 +497,37 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  final def getAllPoliciesForTable(tableName: String): Option[Filter] = {
+  final def getCombinedPolicyFilterForTable(rlsRelation: RowLevelSecurityRelation):
+  Option[Filter] = {
     // filter out policy rows
-    val policyFilters = getAllTablesIncludingPolicies.flatMap(name => {
-      val qt = newQualifiedTableName(name)
-      qt.getTableOption(this) match {
-        case Some(ct)if ct.tableType == CatalogTableType.EXTERNAL &&
-            ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
-                equals(ExternalTableType.Policy.name) &&
-            ct.properties.getOrElse(PolicyProperties.targetTable, "").equals(tableName) =>
-           Seq(this.lookupRelation(ct.identifier).asInstanceOf[SubqueryAlias].
-               child.asInstanceOf[BypassRowLevelSecurity].child)
-        case _ => Seq.empty
-      }
-    })
-    if (policyFilters.isEmpty) None
-    else {
-      Some(policyFilters.foldLeft[Filter](null) {
-        case (result, filter) =>
-          if (result == null) {
-            filter
-          } else {
-            result.copy(condition = org.apache.spark.sql.catalyst.expressions.And(
-              result.condition, filter.condition))
-          }
+    if (!rlsRelation.isRowLevelSecurityEnabled) {
+      None
+    } else {
+      val policyFilters = getAllTablesIncludingPolicies.flatMap(name => {
+        val qt = newQualifiedTableName(name)
+        qt.getTableOption(this) match {
+          case Some(ct) if ct.tableType == CatalogTableType.EXTERNAL &&
+              ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
+                  equals(ExternalTableType.Policy.name) &&
+              ct.properties.getOrElse(PolicyProperties.targetTable, "").
+                  equals(rlsRelation.resolvedName) =>
+            Seq(this.lookupRelation(ct.identifier).asInstanceOf[SubqueryAlias].
+                child.asInstanceOf[BypassRowLevelSecurity].child)
+          case _ => Seq.empty
+        }
       })
+      if (policyFilters.isEmpty) None
+      else {
+        Some(policyFilters.foldLeft[Filter](null) {
+          case (result, filter) =>
+            if (result == null) {
+              filter
+            } else {
+              result.copy(condition = org.apache.spark.sql.catalyst.expressions.And(
+                result.condition, filter.condition))
+            }
+        })
+      }
     }
   }
 

@@ -408,14 +408,9 @@ class SnappySessionState(snappySession: SnappySession)
       plan match {
         case _: BypassRowLevelSecurity => plan
         case _ => plan.transformUp {
-          case lr@LogicalRelation(br, _, _) => {
-            val policyFilter = br match {
-              case x: JDBCAppendableRelation =>
-                snappySession.sessionState.catalog.getAllPoliciesForTable(x.resolvedName)
-              case y: JDBCMutableRelation =>
-                snappySession.sessionState.catalog.getAllPoliciesForTable(y.resolvedName)
-              case _ => None
-            }
+          case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) => {
+            val policyFilter = snappySession.sessionState.catalog.
+                getCombinedPolicyFilterForTable(rlsRelation)
             policyFilter match {
               case Some(filter) => filter.copy(child = lr)
               case None => lr
