@@ -1,4 +1,4 @@
-# Getting Started with SnappyData on Kubernetes
+# Setting up Cluster on Kubernetes
 Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes. This feature is currently available on an experimental basis.
 
 This following sections are included in this topic:
@@ -51,6 +51,7 @@ You can monitor the Kubernetes UI dashboard to check the status of the component
 
 SnappyData chart dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
 
+<a id= chartparameters> </a>
 ## List of Configuration Parameters for SnappyData Chart
 
 You can modify the *values.yaml*  file to configure the SnappyData chart. The following table lists the configuration parameters available for this chart:
