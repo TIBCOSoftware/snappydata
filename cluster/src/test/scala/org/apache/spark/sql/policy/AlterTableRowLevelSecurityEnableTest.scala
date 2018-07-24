@@ -82,113 +82,121 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
 
   test("check rls enable/disable for jdbc client") {
     val conn = getConnection
-    val stmt = conn.createStatement()
+    try {
+      val stmt = conn.createStatement()
 
-    var rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${colTable.toUpperCase}'")
+      var rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${colTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${rowTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${rowTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
 
-    stmt.execute(s"alter table $rowTableName enable row level security")
+      stmt.execute(s"alter table $rowTableName enable row level security")
 
-    stmt.execute(s"alter table $colTableName enable row level security")
+      stmt.execute(s"alter table $colTableName enable row level security")
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${colTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${colTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertTrue(rs.getBoolean(1))
+      assert(rs.next())
+      assertTrue(rs.getBoolean(1))
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${rowTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${rowTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertTrue(rs.getBoolean(1))
+      assert(rs.next())
+      assertTrue(rs.getBoolean(1))
 
-    stmt.execute(s"alter table $rowTableName disable row level security")
+      stmt.execute(s"alter table $rowTableName disable row level security")
 
-    stmt.execute(s"alter table $colTableName disable row level security")
+      stmt.execute(s"alter table $colTableName disable row level security")
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${colTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${colTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${rowTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${rowTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
+    } finally {
+      conn.close()
+    }
 
   }
 
   test("check rls enable/disable for snappy context") {
     val conn = getConnection
-    val stmt = conn.createStatement()
+    try {
+      val stmt = conn.createStatement()
 
-    var rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${colTable.toUpperCase}'")
+      var rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${colTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${rowTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${rowTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
 
-    ownerContext.sql(s"alter table $rowTableName enable row level security")
+      ownerContext.sql(s"alter table $rowTableName enable row level security")
 
-    ownerContext.sql(s"alter table $colTableName enable row level security")
+      ownerContext.sql(s"alter table $colTableName enable row level security")
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${colTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${colTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertTrue(rs.getBoolean(1))
+      assert(rs.next())
+      assertTrue(rs.getBoolean(1))
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${rowTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${rowTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertTrue(rs.getBoolean(1))
+      assert(rs.next())
+      assertTrue(rs.getBoolean(1))
 
-    ownerContext.sql(s"alter table $rowTableName disable row level security")
+      ownerContext.sql(s"alter table $rowTableName disable row level security")
 
-    ownerContext.sql(s"alter table $colTableName disable row level security")
+      ownerContext.sql(s"alter table $colTableName disable row level security")
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${colTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${colTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
 
-    rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
-        s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
-        s"tablename = '${rowTable.toUpperCase}'")
+      rs = stmt.executeQuery(s"select ROWLEVELSECURITYENABLED from sys.systables " +
+          s"where tableschemaname = '${tableOwner.toUpperCase}' and " +
+          s"tablename = '${rowTable.toUpperCase}'")
 
-    assert(rs.next())
-    assertFalse(rs.getBoolean(1))
+      assert(rs.next())
+      assertFalse(rs.getBoolean(1))
+    } finally {
+      conn.close()
+    }
 
 
   }

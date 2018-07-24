@@ -243,9 +243,10 @@ object JdbcExtendedUtils extends Logging {
 
   def isRowLevelSecurityEnabled(table: String, conn: Connection, dialect: JdbcDialect,
       context: SQLContext): Boolean = {
-      val rs = getTableMetadataResultSet(table, conn)
-      rs.next()
-      rs.getBoolean("ROWLEVELSECURITYENABLED")
+    val (schemaName, tableName) = getTableWithSchema(table, conn)
+      val q = s"select 1 from sys.systables s where s.tablename = '$tableName' and " +
+          s" s.tableschemaname = '$schemaName' and s.rowlevelsecurityenabled = true "
+      conn.createStatement().executeQuery(q).next()
   }
 
   def dropTable(conn: Connection, tableName: String, dialect: JdbcDialect,

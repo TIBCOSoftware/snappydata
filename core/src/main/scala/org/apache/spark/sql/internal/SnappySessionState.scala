@@ -45,6 +45,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
+import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
@@ -407,6 +408,10 @@ class SnappySessionState(snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
         case _: BypassRowLevelSecurity => plan
+        // TODO: Asif: Bypass row level security filter apply if the command
+          // is of type RunnableCommad. Later if it turns out any data operation
+          // is happening via this command we need to handle it
+        case _: RunnableCommand => plan
         case _ => plan.transformUp {
           case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) => {
             val policyFilter = snappySession.sessionState.catalog.

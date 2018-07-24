@@ -63,13 +63,14 @@ class PolicyTest extends SnappyFunSuite
         s" USING row ")
     dataDF.write.insertInto(colTableName)
     dataDF.write.insertInto(rowTableName)
+    ownerContext.sql(s"alter table $colTableName enable row level security")
+    ownerContext.sql(s"alter table $rowTableName enable row level security")
   }
 
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
     super.afterAll()
-
   }
 
   test("Policy creation on a column table using snappy context") {

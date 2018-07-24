@@ -53,6 +53,7 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     }
     val rdd = sc.parallelize(seq)
     ownerContext = snc.newSession()
+    serverHostPort = TestUtil.startNetServer()
     ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableOwner)
 
     val dataDF = ownerContext.createDataFrame(rdd)
@@ -64,7 +65,15 @@ class PolicyJdbcClientTest extends SnappyFunSuite
         s" USING row ")
     dataDF.write.insertInto(colTableName)
     dataDF.write.insertInto(rowTableName)
-    serverHostPort = TestUtil.startNetServer()
+    val conn = getConnection
+    try {
+      val stmt = conn.createStatement()
+      stmt.execute(s"alter table $colTableName enable row level security")
+      stmt.execute(s"alter table $rowTableName enable row level security")
+    } finally {
+      conn.close
+    }
+
   }
 
   override def afterAll(): Unit = {
@@ -74,49 +83,28 @@ class PolicyJdbcClientTest extends SnappyFunSuite
 
   }
 
-  test("Policy creation on a column table using snappy context") {
-    ownerContext.sql(s"create policy testPolicy1 on  " +
-        s"$colTableName for select to current using id < 0")
-    var rs = ownerContext.sql(s"select * from $colTableName").collect()
-    assertEquals(numElements, rs.length)
+  test("Policy creation on a column table using jdbc client") {
+    val conn = getConnection
+    val stmt = conn.createStatement()
+    try {
+      stmt.execute(s"create policy testPolicy1 on  " +
+          s"$colTableName for select to current using id < 0")
+      var rs = stmt.executeQuery(s"select * from $colTableName")
+      var rsSize = 0
+      while(rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
 
-    val snc2 = snc.newSession()
-    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+      rsSize = 0
+      val snc2 = snc.newSession()
+      snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
 
-    rs = snc2.sql(s"select * from $colTableName").collect()
-    assertEquals(0, rs.length)
-    ownerContext.sql("drop policy testPolicy1")
-  }
-
-  test("Check Policy Filter applied to the plan only once") {
-    ownerContext.sql(s"create policy testPolicy2 on  " +
-        s"$colTableName for select to current using id > 0")
-
-    val snc2 = snc.newSession()
-    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
-
-    val df = snc2.sql(s"select * from $colTableName")
-    val allFilters = df.queryExecution.analyzed.collect {
-      case f: Filter => f
+      rs = stmt.executeQuery(s"select * from $colTableName")
+      while(rs.next()) rsSize += 1
+      assertEquals(0, rsSize)
+      stmt.execute("drop policy testPolicy1")
+    } finally {
+      conn.close()
     }
-    assertEquals(1, allFilters.map(_.condition).flatMap(ex => {
-      ex.collect {
-        case x@EqualTo(Literal(l1, StringType), Literal(l2, StringType))
-          if l1.equals(UTF8String.fromString(PolicyProperties.rlsConditionString)) &&
-              l2.equals(UTF8String.fromString(PolicyProperties.rlsConditionString)) => x
-      }
-    }).length)
-
-    ownerContext.sql("drop policy testPolicy2")
-  }
-
-
-  test("Policy creation & dropping allowed by all users if security is disabled") {
-    val snc2 = snc.newSession()
-    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
-    snc2.sql(s"create policy testPolicy2 on  " +
-        s"$colTableName for select to current using id > 10")
-    snc2.sql("drop policy testPolicy2")
 
   }
 
