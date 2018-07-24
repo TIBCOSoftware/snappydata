@@ -1033,7 +1033,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     }
   }
 
-  test("Test bug SNAP-2436") {
+  test("Test bug SNAP-2446") {
     var conn: Connection = null
     val ddlStr = s"create table MAP(MAP_CONNECTION_ID BIGINT NOT NULL," +
         s" SOURCE_DATA_CONNECTION_CODE INT NOT NULL," +
