@@ -80,8 +80,12 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
     alterTableStmt = conn.prepareCall(alterTableStmtString)
-    getJarsStmt = conn.prepareCall(getJarsStmtString)
-    if (sc != null) {
+    // See: SNAP-2432 - if jars stmnt is already executed once,
+    // avoid next time. We already have all the jars and if this
+    // gets executed when Lead is failing over then it will
+    // unnecessarily cause initialization delay.
+    if (sc != null && getJarsStmt == null) {
+      getJarsStmt = conn.prepareCall(getJarsStmtString)
       executeGetJarsStmt(sc)
     }
   }
