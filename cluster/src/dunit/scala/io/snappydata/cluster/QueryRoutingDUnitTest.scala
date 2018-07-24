@@ -1023,4 +1023,34 @@ class QueryRoutingDUnitTest(val s: String)
       conn.close()
     }
   }
+
+  def testAlterTableRowTable(): Unit = {
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    val conn = DriverManager.getConnection("jdbc:snappydata://localhost:" + serverHostPort)
+    println(s"Connected to $serverHostPort")
+
+    val stmt = conn.createStatement();
+    try {
+      val createParentTable: String =
+        "create table parentT (cid int not null, sid int not null, qty int not null, " +
+            " constraint parent_pk primary key (cid, sid)) " +
+            "USING ROW OPTIONS (  PERSISTENT 'SYNCHRONOUS');"
+      val createChildTable: String =
+        "create table childT (oid int not null constraint child_pk primary key, cid int, " +
+            "sid int, qty int, constraint parent_fk foreign key (cid, sid)" +
+            "references parentT (cid, sid) on delete restrict) " +
+            "USING ROW OPTIONS ( PERSISTENT 'SYNCHRONOUS');"
+      val alterTableStmt: String = "alter table childT drop FOREIGN KEY parent_fk"
+      stmt.execute(createParentTable)
+      stmt.execute(createChildTable)
+      stmt.execute(alterTableStmt)
+    } finally {
+      stmt.execute("drop table childT")
+      stmt.execute("drop table parentT")
+      stmt.close()
+      conn.close()
+    }
+  }
+
 }
