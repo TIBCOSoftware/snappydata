@@ -177,7 +177,6 @@ public class SnappyTest implements Serializable {
   }
 
 
-
   public static void initSnappyArtifacts() {
     snappyTest = new SnappyTest();
     HostDescription hd = TestConfig.getInstance().getMasterDescription()
@@ -361,8 +360,7 @@ public class SnappyTest implements Serializable {
         break;
       case SERVER:
         boolean excludeDirCreation = false;
-        if(SnappyPrms.getServerLauncherProps().contains("-dir"))
-        {
+        if (SnappyPrms.getServerLauncherProps().contains("-dir")) {
           excludeDirCreation = true;
         }
         locatorsList = getLocatorsList("locators");
@@ -389,7 +387,7 @@ public class SnappyTest implements Serializable {
         locatorsList = getLocatorsList("locators");
         String leadHost;
         int leadPort = PortHelper.getRandomPort();
-                /*do leadPort = PortHelper.getRandomPort();
+        /*do leadPort = PortHelper.getRandomPort();
                 while (leadPort < 8091 || leadPort > 8099);*/
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList +
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
@@ -2100,16 +2098,15 @@ public class SnappyTest implements Serializable {
             userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
             SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
             SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
-          }
-          else if(appName.equals("BulkDeleteApp")){
+          } else if (appName.equals("BulkDeleteApp")) {
             commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-                " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " ;
+                " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
           }
           command = snappyJobScript + " --class " + userJob +
               " --name " + appName +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +commonArgs +" " +snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
               userAppArgs;
           if (SnappyCDCPrms.getIsCDCStream())
             command = "nohup " + command + " > " + logFile + " & ";
@@ -2117,7 +2114,7 @@ public class SnappyTest implements Serializable {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +commonArgs +" " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
               userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         }
         Log.getLogWriter().info("spark-submit command is : " + command);

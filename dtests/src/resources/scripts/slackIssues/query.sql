@@ -1,5 +1,6 @@
 elapsedtime on;
 
+select count(*) from mbl_test_scd;
 select count(1) from mbl_test_scd;
 
 SELECT CAST(ts AS TIMESTAMP) data_version,

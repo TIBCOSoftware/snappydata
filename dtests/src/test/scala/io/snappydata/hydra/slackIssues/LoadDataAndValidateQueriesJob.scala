@@ -21,15 +21,14 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import java.sql.Timestamp
 import java.time.{ZoneId, ZonedDateTime}
 
+import scala.util.{Failure, Random, Success, Try}
+
 import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
 import org.apache.commons.lang.RandomStringUtils
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
-import scala.util.{Failure, Random, Success, Try}
-
-import org.apache.commons.io.FileUtils
 
 case class mbl_test_scd(ID: BigInt, DATEKEY: Integer, CHECKIN_DATE: Integer, CHECKOUT_DATE: Integer,
     CRAWL_TIME: Integer, BATCH: Integer, SOURCE: Integer, IS_HIGH_STAR: Integer,
@@ -76,7 +75,7 @@ class LoadDataAndValidateQueriesJob extends SnappySQLJob {
     val sqlContext = SQLContext.getOrCreate(sc)
     Try {
       val numRows = jobConfig.getString("numRows").toLong
-      val performDMLOPs = jobConfig.getString("performDMLOps").toBoolean
+      val ingestData = jobConfig.getString("ingestData").toBoolean
 
       import snappySession.implicits._
 
@@ -187,9 +186,9 @@ class LoadDataAndValidateQueriesJob extends SnappySQLJob {
       cacheDF3.write.insertInto("oe_stream_comp_data_for_mbl")
 
       // val tempDir: File = new File("/export/shared/QA_DATA/slackIssues")
-      /*val tempDir: File = new File("/data/snappyHydraLogs/slackIssues_table2")
+      /* val tempDir: File = new File("/data/snappyHydraLogs/slackIssues_table2")
       if (tempDir.exists()) FileUtils.deleteDirectory(tempDir)
-      cacheDF3.repartition(1).write.csv("/export/shared/QA_DATA/slackIssues_table2")*/
+      cacheDF3.repartition(1).write.csv("/export/shared/QA_DATA/slackIssues_table2") */
 
       // cacheDF.write.parquet("/data/snappyHydraLogs/slackIssues")
       // cacheDF.repartition(1).write.csv("/data/snappyHydraLogs/slackIssues/slackIssues")
@@ -199,14 +198,14 @@ class LoadDataAndValidateQueriesJob extends SnappySQLJob {
        sqlContext.cacheTable("mbl_test_scd")
        validateQueries(snc, sqlContext, pw) */
 
-      if (performDMLOPs) {
+      if (ingestData) {
         for (_ <- 1 to 70) {
           val qDF1 = snappySession.createDataset(dataRDD)
           val cacheDF1 = qDF1.cache()
           cacheDF1.write.insertInto("mbl_test_scd")
-        } /
+        }
         for (_ <- 1 to 10) {
-          val qDF2 = snappySession.createDataset(dataRDD)
+          val qDF2 = snappySession.createDataset(dataRDD1)
           val cacheDF2 = qDF2.cache()
           cacheDF2.write.insertInto("comp_5_min")
         }
