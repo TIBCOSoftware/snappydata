@@ -507,12 +507,22 @@ public class SnappyTest implements Serializable {
 
   protected static String getLocatorsList(String userKey) {
     String locatorsList = null;
+    Set<String> locatorHostPortList = new LinkedHashSet<>();
     if (isLongRunningTest) {
       locatorsList = getDataFromFile("locatorList");
       if (locatorsList == null) locatorsList = getLocatorList(userKey);
       if (locatorsList == null && isUserConfTest) {
-        locatorsList = SnappyPrms.getLocatorList().get(0);
+        for (int i = 0; i < SnappyPrms.getLocatorList().size(); i++) {
+          String value = SnappyPrms.getLocatorList().get(i);
+          locatorHostPortList.add(value);
+        }
+        if (locatorHostPortList.size() == 0) {
+          return "";
+        }
+        locatorsList = StringUtils.join(locatorHostPortList, ",");
+        Log.getLogWriter().info("SS - locatorsList is :" + locatorsList);
         snappyTest.writeNodeConfigData("locatorList", locatorsList, false);
+        if (isLongRunningTest) writeLocatorConnectionInfo();
       }
     } else locatorsList = getLocatorList(userKey);
     return locatorsList;
@@ -659,6 +669,7 @@ public class SnappyTest implements Serializable {
 
   protected void writeNodeConfigData(String fileName, String nodeLogDir, boolean append) {
     String filePath = productConfDirPath + fileName;
+    Log.getLogWriter().info("SS - filePath is : " + filePath + ":" + fileName);
     File file = new File(filePath);
     snappyTest.writeToFile(nodeLogDir, file, append);
   }
@@ -1109,8 +1120,10 @@ public class SnappyTest implements Serializable {
    */
   protected static void writeLeadHostPortInfo() {
     leadHost = snappyTest.getLeadHost();
+    Log.getLogWriter().info("SS - leadHost is : " + leadHost );
     snappyTest.writeNodeConfigData("leadHost", leadHost, false);
     String leadPort = snappyTest.getLeadPort();
+    Log.getLogWriter().info("SS - leadPort is : " + leadPort );
     snappyTest.writeNodeConfigData("leadPort", leadPort, false);
   }
 
@@ -2012,6 +2025,7 @@ public class SnappyTest implements Serializable {
       leadHost = getDataFromFile("leadHost");
       if (leadHost == null && isUserConfTest) {
         leadHost = SnappyPrms.getLeadHost();
+        Log.getLogWriter().info("SS - lead host is :  " + leadHost);
         snappyTest.writeNodeConfigData("leadHost", leadHost, false);
       }
       if (leadHost == null)
@@ -2028,7 +2042,7 @@ public class SnappyTest implements Serializable {
       leadPort = getDataFromFile("leadPort");
       if (leadPort == null)
         leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
-      if (leadHost == null && isUserConfTest) {
+      if (leadPort == null && isUserConfTest) {
         leadPort = SnappyPrms.getLeadPort();
         snappyTest.writeNodeConfigData("leadPort", leadPort, false);
       }
