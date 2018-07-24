@@ -19,18 +19,16 @@ package io.snappydata
 import java.io.File
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.internal.shared.NativeCalls
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
 import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
-
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.util.{sideBySide, stackTraceToString}
-import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row}
+import org.apache.spark.sql._
 // scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome, Retries}
 // scalastyle:on
@@ -142,6 +140,7 @@ abstract class SnappyFunSuite
       TestUtils.dropAllTables(this.snc)
     } finally {
       dirCleanup()
+      SmartConnectorHelper.clearFetchedJars()
     }
   }
 
