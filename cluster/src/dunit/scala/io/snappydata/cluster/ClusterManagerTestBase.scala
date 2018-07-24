@@ -21,7 +21,6 @@ import java.util.Properties
 
 import scala.language.postfixOps
 import scala.sys.process._
-
 import com.gemstone.gemfire.internal.shared.NativeCalls
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -31,8 +30,7 @@ import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
-
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SmartConnectorHelper, SnappyContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.{Logging, SparkContext}
@@ -193,7 +191,7 @@ abstract class ClusterManagerTestBase(s: String)
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
     }
-    
+    SmartConnectorHelper.clearFetchedJars()
     bootProps.clear()
   }
 
