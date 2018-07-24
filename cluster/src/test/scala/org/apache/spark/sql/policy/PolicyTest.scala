@@ -75,7 +75,7 @@ class PolicyTest extends SnappyFunSuite
 
   test("Policy creation on a column table using snappy context") {
     ownerContext.sql(s"create policy testPolicy1 on  " +
-        s"$colTableName for select to current using id < 0")
+        s"$colTableName for select to current_user using id < 0")
     var rs = ownerContext.sql(s"select * from $colTableName").collect()
     assertEquals(numElements, rs.length)
 
@@ -89,7 +89,7 @@ class PolicyTest extends SnappyFunSuite
 
   test("Check Policy Filter applied to the plan only once") {
     ownerContext.sql(s"create policy testPolicy2 on  " +
-        s"$colTableName for select to current using id > 0")
+        s"$colTableName for select to current_user using id > 0")
 
     val snc2 = snc.newSession()
     snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
@@ -114,7 +114,7 @@ class PolicyTest extends SnappyFunSuite
     val snc2 = snc.newSession()
     snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
     snc2.sql(s"create policy testPolicy2 on  " +
-          s"$colTableName for select to current using id > 10")
+          s"$colTableName for select to current_user using id > 10")
     snc2.sql("drop policy testPolicy2")
 
   }

@@ -123,7 +123,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
     try {
       snc2.sql(s"create policy testPolicy2 on  " +
-          s"$colTableName for select to current using id > 10")
+          s"$colTableName for select to current_user using id > 10")
       fail("Only owner of the table should be allowed to create policy on it")
     } catch {
       case sqle: SQLException =>

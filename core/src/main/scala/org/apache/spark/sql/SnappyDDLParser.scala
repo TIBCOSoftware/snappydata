@@ -116,7 +116,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def WHEN: Rule0 = rule { keyword(Consts.WHEN) }
   final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
-
+  final def USER: Rule0 = rule { keyword(Consts.USER) }
 
   // non-reserved keywords
   final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
@@ -219,6 +219,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def SETS: Rule0 = rule { keyword(Consts.SETS) }
   final def LATERAL: Rule0 = rule { keyword(Consts.LATERAL) }
 
+  private val CURRENT_USER = "CURRENT_USER"
+
   // DDLs, SET, SHOW etc
 
   final type TableEnd = (Option[String], Option[Map[String, String]],
@@ -310,10 +312,11 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
-        (capture(CURRENT) | quotedIdentifier | unquotedIdentifier) * commaSep) ~>
+        ( CURRENT ~ '_' ~ USER ~ push(CURRENT_USER) | quotedIdentifier
+            | unquotedIdentifier) * commaSep) ~>
         ((policyTo: Any) =>
           if (policyTo.asInstanceOf[Seq[String]].isEmpty) {
-            Seq(SnappyParserConsts.CURRENT.upper)
+            Seq(CURRENT_USER)
           } else {
             policyTo.asInstanceOf[Seq[String]].map(_.trim)
           }
@@ -328,7 +331,7 @@ abstract class SnappyDDLParser(session: SparkSession)
       val snappySession = session.asInstanceOf[SnappySession]
       val tableIdent = snappySession.sessionState.catalog.
           newQualifiedTableName(tableName)
-      val applyToAll = applyTo.exists(_.equalsIgnoreCase(SnappyParserConsts.CURRENT.upper))
+      val applyToAll = applyTo.exists(_.equalsIgnoreCase(CURRENT_USER))
       val expandedApplyTo = if (applyToAll) {
         Seq.empty[String]
       } else {

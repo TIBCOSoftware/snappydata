@@ -1410,7 +1410,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
             else this.sessionState.catalog.formatDatabaseName(currentUser))
 
-          if (SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
+          if (!SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
               newQualifiedTableName(ct.properties.getOrElse(
                 PolicyProperties.targetTable, "")), this)) {
             throw new SQLException("Only Policy Owner can drop the policy", "01548", null)

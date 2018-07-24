@@ -17,6 +17,7 @@
 package org.apache.spark.sql.policy
 
 import java.sql.{Connection, DriverManager}
+import java.util.Properties
 
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import io.snappydata.SnappyFunSuite
@@ -65,7 +66,7 @@ class PolicyJdbcClientTest extends SnappyFunSuite
         s" USING row ")
     dataDF.write.insertInto(colTableName)
     dataDF.write.insertInto(rowTableName)
-    val conn = getConnection
+    val conn = getConnection()
     try {
       val stmt = conn.createStatement()
       stmt.execute(s"alter table $colTableName enable row level security")
@@ -84,21 +85,23 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   }
 
   test("Policy creation on a column table using jdbc client") {
-    val conn = getConnection
+    val conn = getConnection(Some(tableOwner))
     val stmt = conn.createStatement()
+    val conn1 = getConnection(Some("UserX"))
     try {
       stmt.execute(s"create policy testPolicy1 on  " +
-          s"$colTableName for select to current using id < 0")
+          s"$colTableName for select to current_user using id < 0")
       var rs = stmt.executeQuery(s"select * from $colTableName")
       var rsSize = 0
       while(rs.next()) rsSize += 1
       assertEquals(numElements, rsSize)
 
       rsSize = 0
-      val snc2 = snc.newSession()
-      snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
 
-      rs = stmt.executeQuery(s"select * from $colTableName")
+      val stmt1 = conn1.createStatement()
+
+
+      rs = stmt1.executeQuery(s"select * from $colTableName")
       while(rs.next()) rsSize += 1
       assertEquals(0, rsSize)
       stmt.execute("drop policy testPolicy1")
@@ -118,11 +121,16 @@ class PolicyJdbcClientTest extends SnappyFunSuite
 
     dataDF.write.format("column").mode(SaveMode.Append).options(props)
         .saveAsTable(colTableName)
-    snc.sql(s"create policy testPolicy1 on  $colTableName for select to current using col1 > 0")
+    snc.sql(s"create policy testPolicy1 on  $colTableName for select to current_user" +
+        s" using col1 > 0")
   }
 
-  private def getConnection: Connection = {
-    DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort")
+  private def getConnection(user: Option[String] = None): Connection = {
+    val props = new Properties()
+    if (user.isDefined) {
+      props.put(Attribute.USERNAME_ATTR, user.get)
+    }
+    DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort", props)
   }
 
 }
