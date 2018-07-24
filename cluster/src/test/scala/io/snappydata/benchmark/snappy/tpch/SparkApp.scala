@@ -28,9 +28,6 @@ import org.apache.spark.sql.SparkSession
 object SparkApp {
 
   def main(args: Array[String]) {
-    // val conf = new SparkConf().setAppName("TPCH_Spark")
-
-    /* .set("snappydata.store.locators","localhost:10334") */
 
     val usingOptionString = null
     val sc: SparkSession = SparkSession
@@ -56,11 +53,11 @@ object SparkApp {
 
 
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"${threadNumber}_Spark_LoadPerf.out"))
+      new File(s"${threadNumber}_Spark_LoadPerf.csv"))
     var loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
 
     var avgFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"${threadNumber}_Spark_Average.out"))
+      new File(s"${threadNumber}_Spark_Average.csv"))
     var avgPrintStream: PrintStream = new PrintStream(avgFileStream)
 
 
