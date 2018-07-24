@@ -607,9 +607,12 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
-    VALUES ~ push(tokenize) ~ TOKENIZE_BEGIN ~ (expression + commaSep) ~ AS.? ~ identifier.? ~
-        ('(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~>
-        ((tokenized: Boolean, valuesExpr: Seq[Expression], alias: Any, identifiers: Any) => {
+    VALUES ~ push(tokenize) ~ push(canTokenize) ~ DISABLE_TOKENIZE ~
+    (expression + commaSep) ~ AS.? ~ identifier.? ~
+    ('(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~>
+        ((tokenized: Boolean, canTokenized: Boolean,
+        valuesExpr: Seq[Expression], alias: Any, identifiers: Any) => {
+          canTokenize = canTokenized
           tokenize = tokenized
           val rows = valuesExpr.map {
             // e.g. values (1), (2), (3)
@@ -769,7 +772,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    ((relationFactor | inlineTable) ~ tableValuedFunctionExpressions.?) ~>
+    ((inlineTable | relationFactor) ~ tableValuedFunctionExpressions.?) ~>
         ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
@@ -912,8 +915,8 @@ class SnappyParser(session: SnappySession)
         keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
     ) |
     EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
-    CURRENT_DATE ~> CurrentDate |
-    CURRENT_TIMESTAMP ~> CurrentTimestamp |
+    CURRENT_DATE ~ "()".? ~ ws.? ~> CurrentDate |
+    CURRENT_TIMESTAMP ~ "()".? ~ ws.? ~> CurrentTimestamp |
     '(' ~ ws ~ (
         (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
           if (exprs.length == 1) exprs.head else CreateStruct(exprs)
