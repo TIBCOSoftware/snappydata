@@ -78,7 +78,7 @@ vm.dirty_writeback_centisecs=300
 ```
 Then apply to current session using the command `sudo sysctl -p`
 
-These settings lower the OS cache buffer sizes which reduces the GC pause duration for disk write throughput. Especially for slower magnetic disks, the bulk insert throughput is significantly dropped (such as 20%) and so also the GC pause durations. You can skip this setting, if potentially long GC pauses, for example in the range of 10s of seconds, during bulk inserts or frequent updates and deletes is not a problem.
+These settings lower the OS cache buffer sizes which reduces long GC pauses during disk flush but can decrease overall disk write throughput. This is especially true for slower magnetic disks where the bulk insert throughput can see a noticeable drop (such as 20%), while the duration of GC pauses should reduce significantly (such as 50% or more). If long GC pauses, for example in the range of 10s of seconds, during bulk inserts, updates, or deletes is not a problem then these settings can be skipped.
 
 **Swap File** </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
