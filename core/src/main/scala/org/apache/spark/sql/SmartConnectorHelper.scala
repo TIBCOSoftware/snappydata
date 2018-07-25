@@ -80,14 +80,14 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
     alterTableStmt = conn.prepareCall(alterTableStmtString)
-    // See: SNAP-2432 - if jars stmnt is already executed once,
-    // avoid next time. We already have all the jars and if this
-    // gets executed when Lead is failing over then it will
-    // unnecessarily cause initialization delay.
-    if (sc != null && !SmartConnectorHelper.fetchedJars) {
-      getJarsStmt = conn.prepareCall(getJarsStmtString)
-      executeGetJarsStmt(sc)
-      SmartConnectorHelper.fetchedJars = true
+    getJarsStmt = conn.prepareCall(getJarsStmtString)
+    if (sc != null && System.getProperty("pull-deployed-jars", "true").toBoolean) {
+      try {
+        executeGetJarsStmt(sc)
+      } catch {
+        case sqle: SQLException => logWarning(s"could not get jar and" +
+            s" package information from snappy cluster", sqle)
+      }
     }
   }
 
@@ -339,10 +339,6 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 }
 
 object SmartConnectorHelper {
-
-  private var fetchedJars = false
-
-  def clearFetchedJars(): Unit = fetchedJars = false
 
   def getBlob(value: Any, conn: Connection): java.sql.Blob = {
     val serializedValue: Array[Byte] = serialize(value)
