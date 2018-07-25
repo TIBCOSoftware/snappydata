@@ -140,7 +140,6 @@ abstract class SnappyFunSuite
       TestUtils.dropAllTables(this.snc)
     } finally {
       dirCleanup()
-      SmartConnectorHelper.clearFetchedJars()
     }
   }
 
