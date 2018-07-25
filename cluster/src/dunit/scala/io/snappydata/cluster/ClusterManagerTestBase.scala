@@ -30,7 +30,6 @@ import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
-import org.apache.spark.sql.{SmartConnectorHelper, SnappyContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.{Logging, SparkContext}
