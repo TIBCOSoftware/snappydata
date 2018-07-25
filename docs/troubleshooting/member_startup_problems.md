@@ -2,7 +2,7 @@
 
 # Member Startup Problems
 
-This section provides information and resolutions for the issues faced duri[[ng the startup of cluster members. </br>
+This section provides information and resolutions for the issues faced during the startup of cluster members. </br>
 
 
 The following issues are included here:
@@ -10,7 +10,7 @@ The following issues are included here:
 *	[Delayed startup due to unavailable disk stores](#delayedstartup)
 *	[Delayed startup due to missing disk stores](#missingdiskstore)	
 
-To avoid delayed startup and recovery, the following actions are also recommended:
+To avoid delayed startup and recovery, the following actions are recommended:
 
 1.  Use the built-in `snappy-start-all.sh` and `snappy-stop-all.sh` scripts to start and stop the cluster. If for some reason those scripts are not used, then when possible, first shut down the data store members after disk stores have been synchronized in the system.</br> Shut down remaining locator members after the data stores have stopped.
 
@@ -19,7 +19,7 @@ To avoid delayed startup and recovery, the following actions are also recommende
 <a id= delayedstartup> </a>
 ## Delayed Startup Due to Unavailable Disk Stores
 
-When you start SnappyData members, startup delays can occur if specific disk store files on other members are unavailable. This is part of the normal startup behavior and is designed to help ensure data consistency. For example, consider the following startup message for a locator ("locator2):
+When you start SnappyData members, startup delays can occur if specific disk store files on other members are unavailable. This is part of the normal startup behavior and is designed to help ensure data consistency. For example, consider the following startup message for a locator (**locator2**):
 
 ```pre
 SnappyData Locator pid: 23537 status: waiting
@@ -28,9 +28,9 @@ Waiting for DataDictionary (DiskId: 531fc5bb-1720-4836-a468-3d738a21af63, Locati
  [DiskId: f417704b-fff4-4b99-81a2-75576d673547, Location: /snappydata/locator1/./datadictionary]
 ```
 
-Here, the startup messages indicate that locator2 is waiting for the persistent datadictionary files on locator1 and server1 to become available. SnappyData always persists the data dictionary for indexes and tables that you create, even if you do not configure those tables to persist their stored data. The startup messages above indicate that locator1 or locator2 might potentially store a newer copy of the data dictionary for the distributed system.
+Here, the startup messages indicate that **locator2** is waiting for the persistent datadictionary files on **locator1** and **server1** to become available. SnappyData always persists the data dictionary for indexes and tables that you create, even if you do not configure those tables to persist their stored data. The startup messages above indicate that **locator1** or **locator2** might potentially store a newer copy of the data dictionary for the distributed system.
 
-Continuing the startup by booting the server1 data store yields:
+Continuing the startup by booting the **server1** data store yields:
 
 ```pre
 Starting SnappyData Server using locators for peer discovery: localhost[10337],localhost[10338]
@@ -53,14 +53,14 @@ Members with potentially new data:
 Use the "snappy-shell list-missing-disk-stores" command to see all disk stores that are being waited on by other members.
 ```
 
-The data store startup messages indicate that locator1 has "potentially new data" for the data dictionary. In this case, both locator2 and server1 were shut down before locator1 in the system, so those members are waiting on locator1 to ensure that they have the latest version of the data dictionary.
+The data store startup messages indicate that **locator1** has "potentially new data" for the data dictionary. In this case, both **locator2** and **server1** were shut down before **locator1** in the system, so those members are waiting on **locator1** to ensure that they have the latest version of the data dictionary.
 
-The above messages for data stores and locators may indicate that some members were not started. If the indicated disk store persistence files are available on the missing member, simply start that member and allow the running members to recover. For example, in the above system you would simply start locator1 and allow locator2 and server1 to synchronize their data.
+The above messages for data stores and locators may indicate that some members were not started. If the indicated disk store persistence files are available on the missing member, simply start that member and allow the running members to recover. For example, in the above system you would simply start locator1 and allow **locator2** and **server1** to synchronize their data.
 
 <a id= missingdiskstore> </a>
 ## Delayed Startup Due to Missing Disk Stores
 
-Sometimes a cluster does not get started if the disk store files are missing from one of servers in the cluster. 
+Sometimes a cluster does not get started, if the disk store files are missing from one of servers in the cluster. 
 For example, you start a cluster that consists of **server1** and **server2**. Suppose the disk store files in **server1** are unavailable due to corruption or deletion. </br>**server1**, where the files were missing, attempts to start up as a new member, but it cannot due to InternalGemFireError and **server2** cannot start because it is waiting for the missing disk stores on **server1**. </br>In such a case, you can unblock the waiting server.
 In case of more than two servers, despite of unblocking the waiting diskstores, one server can be still waiting upon the dependent server to come up. In such a case, change the order of the servers in the **conf** file and then restart the cluster.
 
@@ -113,7 +113,7 @@ After unblocking the disk stores, if you notice that one of the server in the cl
 
 ## Revoking Disk Stores that Prevent Startup
 
-If a member cannot be restarted even after unblocking the disk store and restarting after re-ordering the servers in the **conf** file,  only then use the [revoke-missing-disk-store](../reference/command_line_utilities/store-revoke-missing-disk-stores.md) command. 
+If a member cannot be restarted even after unblocking the disk store and restarting after re-ordering the servers in the **conf** file,  only then use the [revoke-missing-disk-store](../reference/command_line_utilities/store-revoke-missing-disk-stores.md) command.
 
 !!!Caution
     	This can cause some loss of data if the revoked disk store actually contains recent changes to the data dictionary or to table data. The revoked disk stores cannot be added back to the system later. If you revoke a disk store on a member you need to delete the associated disk files from that member in order to start it again. Only use the `revoke-missing-disk-store` command as a last resort.  Contact [support@snappydata.io](mailto:support@snappydata.io) if you need to use the `revoke-missing-disk-store` command.
