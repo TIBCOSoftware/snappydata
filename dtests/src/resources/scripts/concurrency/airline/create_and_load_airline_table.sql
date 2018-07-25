@@ -9,7 +9,7 @@ CREATE EXTERNAL TABLE STAGING_AIRLINE
 --  USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData_2007-15');
 
 ----- CREATE COLUMN TABLE -----
-CREATE TABLE AIRLINE USING column OPTIONS(PERSISTENT 'SYNCHRONOUS', BUCKETS '128', EVICTION_BY 'LRUHEAPPERCENT'  overflow 'true')  AS (
+CREATE TABLE AIRLINE USING column OPTIONS(PERSISTENT 'SYNCHRONOUS', BUCKETS '128', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')  AS (
   SELECT Year_, Month_ , DayOfMonth, DepTime, CRSDepTime, ArrTime, UniqueCarrier, ArrDelay, DepDelay, Origin,
     Dest, Distance, TaxiIn, TaxiOut, Cancelled, CarrierDelay, WeatherDelay
     FROM STAGING_AIRLINE);
