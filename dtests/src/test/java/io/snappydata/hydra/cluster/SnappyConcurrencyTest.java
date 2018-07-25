@@ -62,7 +62,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
     Connection conn = getLocatorConnection();
     Vector<String> queryVect = SnappyPrms.getAnalyticalQueryList();
     long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
-    Log.getLogWriter().info("SS - totalTaskTime : " + totalTaskTime);
     String query = null;
     ResultSet rs;
     long startTime = System.currentTimeMillis();
