@@ -28,7 +28,8 @@ dependencies {
   compile "org.scala-lang:scala-reflect:2.11"
   compile "org.scala-lang:scala-compiler:2.11"
 
-  //compile files('libs/*.jar')
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
+  compile group: 'io.snappydata', name: 'snappydata-store-client', version: '1.6.1'
 
   compile 'org.apache.spark:spark-mllib_' + v2ScalaBinaryVersion + ':' + v2SparkVersion
   compile 'org.apache.spark:spark-sql_' + v2ScalaBinaryVersion + ':' + v2SparkVersion
@@ -48,4 +49,6 @@ dependencies {
   testCompile 'org.apache.spark:spark-catalyst_' + v2ScalaBinaryVersion + ':' + v2SparkVersion
   testCompile 'org.apache.spark:spark-streaming_' + v2ScalaBinaryVersion + ':' + v2SparkVersion
   testCompile 'org.apache.spark:spark-core_' + v2ScalaBinaryVersion + ':' + v2SparkVersion
+
+
 }
