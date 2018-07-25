@@ -14,10 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.v2.multipart;
-
-// We need Unique package, where Spark looks for "DefaultSource"
-
+package io.snappydata.v2.connector.dummy.array
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.sources.v2._
@@ -28,11 +25,11 @@ import org.apache.spark.sql.types._
 class DefaultSource extends DataSourceV2 with ReadSupport {
 
     def createReader(options: DataSourceOptions): DataSourceReader
-    = new SimpleDataSourceReader()
+    = new StaticArrayDataSourceReader()
 
 }
 
-class SimpleDataSourceReader extends DataSourceReader {
+class StaticArrayDataSourceReader extends DataSourceReader {
 
     // Schema : We have hardcoded the schema here with single column value.
     def readSchema() : StructType = StructType(Array(StructField("value", StringType)))
@@ -40,19 +37,19 @@ class SimpleDataSourceReader extends DataSourceReader {
     // Single Factory assuming single Partition
     def createDataReaderFactories : java.util.List[DataReaderFactory[Row]] = {
         val factoryList = new java.util.ArrayList[DataReaderFactory[Row]]
-        factoryList.add(new SimpleDataSourceReaderFactory(0, 5))
-        factoryList.add(new SimpleDataSourceReaderFactory(5, 9))
+        factoryList.add(new StaticArrayDataSourceReaderFactory(0, 5))
+        factoryList.add(new StaticArrayDataSourceReaderFactory(5, 9))
         factoryList
     }
 
 }
 
 
-class SimpleDataSourceReaderFactory(var start: Int, var end: Int)
+class StaticArrayDataSourceReaderFactory(var start: Int, var end: Int)
   extends DataReaderFactory[Row] with DataReader[Row] {
 
-  def createDataReader : SimpleDataSourceReaderFactory = new
-      SimpleDataSourceReaderFactory(start, end)
+  def createDataReader : StaticArrayDataSourceReaderFactory = new
+      StaticArrayDataSourceReaderFactory(start, end)
 
   val values = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
   var index = 0
@@ -66,4 +63,5 @@ class SimpleDataSourceReaderFactory(var start: Int, var end: Int)
   }
 
   def close() : Unit = Unit
+
 }
