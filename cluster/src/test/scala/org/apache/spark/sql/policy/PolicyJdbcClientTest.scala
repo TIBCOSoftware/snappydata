@@ -27,10 +27,6 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.{SaveMode, SnappyContext}
-import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
-import org.apache.spark.sql.catalyst.plans.logical.Filter
-import org.apache.spark.sql.types.StringType
-import org.apache.spark.unsafe.types.UTF8String
 
 class PolicyJdbcClientTest extends SnappyFunSuite
     with Logging
@@ -85,44 +81,70 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   }
 
   test("Policy creation on a column table using jdbc client") {
+    this.testPolicy(colTableName)
+  }
+
+  test("Policy creation on a row table using jdbc client") {
+    this.testPolicy(rowTableName)
+  }
+
+  private def testPolicy(tableName: String) {
     val conn = getConnection(Some(tableOwner))
     val stmt = conn.createStatement()
     val conn1 = getConnection(Some("UserX"))
     try {
       stmt.execute(s"create policy testPolicy1 on  " +
-          s"$colTableName for select to current_user using id < 0")
-      var rs = stmt.executeQuery(s"select * from $colTableName")
+          s"$tableName for select to current_user using id < 0")
+      var rs = stmt.executeQuery(s"select * from $tableName")
       var rsSize = 0
-      while(rs.next()) rsSize += 1
+      while (rs.next()) rsSize += 1
       assertEquals(numElements, rsSize)
-
       rsSize = 0
-
       val stmt1 = conn1.createStatement()
-
-
-      rs = stmt1.executeQuery(s"select * from $colTableName")
-      while(rs.next()) rsSize += 1
+      rs = stmt1.executeQuery(s"select * from $tableName")
+      while (rs.next()) rsSize += 1
       assertEquals(0, rsSize)
       stmt.execute("drop policy testPolicy1")
     } finally {
       conn.close()
+      conn1.close()
     }
-
   }
 
+  test("test multiple policies application using snappy context on column table") {
+    this.testMultiplePolicy(colTableName)
+  }
 
+  test("test multiple policies application using snappy context on row table") {
+    this.testMultiplePolicy(rowTableName)
+  }
 
-  ignore("ignore for now") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
-      Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
+  private def testMultiplePolicy(tableName: String) {
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some("UserX"))
+    try {
+      stmt.execute(s"create policy testPolicy1 on  " +
+          s"$tableName for select to current_user using id > 10")
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props)
-        .saveAsTable(colTableName)
-    snc.sql(s"create policy testPolicy1 on  $colTableName for select to current_user" +
-        s" using col1 > 0")
+      stmt.execute(s"create policy testPolicy2 on  " +
+          s"$tableName for select to current_user using id < 30")
+
+      var rs = stmt.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      var rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements - 1 - 25 + 10, rsSize)
+      rsSize = 0
+      val stmt1 = conn1.createStatement()
+      rs = stmt1.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      while (rs.next()) rsSize += 1
+      assertEquals(4, rsSize)
+      stmt.execute("drop policy testPolicy1")
+      stmt.execute("drop policy testPolicy2")
+    } finally {
+      conn.close()
+      conn1.close()
+    }
   }
 
   private def getConnection(user: Option[String] = None): Connection = {

@@ -109,7 +109,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.clearProperty(k)
       System.clearProperty("gemfirexd." + k)
-      System.clearProperty(Constant.STORE_PROPERTY_PREFIX  + k)
+      System.clearProperty(Constant.STORE_PROPERTY_PREFIX + k)
     }
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)

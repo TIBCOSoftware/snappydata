@@ -312,7 +312,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
-        ( CURRENT ~ '_' ~ USER ~ push(CURRENT_USER) | quotedIdentifier
+        (CURRENT ~ '_' ~ USER ~ push(CURRENT_USER) | quotedIdentifier
             | unquotedIdentifier) * commaSep) ~>
         ((policyTo: Any) =>
           if (policyTo.asInstanceOf[Seq[String]].isEmpty) {
@@ -355,7 +355,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def dropPolicy: Rule1[LogicalPlan] = rule {
-    DROP ~ POLICY  ~ ifExists ~ tableIdentifier ~> DropPolicy
+    DROP ~ POLICY ~ ifExists ~ tableIdentifier ~> DropPolicy
   }
 
   protected final def beforeDDLEnd: Rule0 = rule {
@@ -468,7 +468,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def alterTableToggleRowLevelSecurity: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ ( (ENABLE ~ push(true)) | (DISABLE ~ push(false))) ~
+    ALTER ~ TABLE ~ tableIdentifier ~ ((ENABLE ~ push(true)) | (DISABLE ~ push(false))) ~
         ROW ~ LEVEL ~ SECURITY ~> {
       (tableName: TableIdentifier, enbableRLS: Boolean) =>
         AlterTableToggleRowLevelSecurity(tableName, enbableRLS)

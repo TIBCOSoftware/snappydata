@@ -28,13 +28,13 @@ object PolicyProperties {
   val policyFor = "policyFor"
   val policyApplyTo = "policyApplyTo"
   val expandedPolicyApplyTo = "expandedPolicyApplyTo"
-  val policyOwner = "policyOwner"  // should be same as table owner
+  val policyOwner = "policyOwner" // should be same as table owner
   val rlsConditionString = "row-level-security"
   val rlsAppliedCondition = EqualTo(Literal(rlsConditionString), Literal(rlsConditionString))
 
   def createFilterPlan(filterExpression: Expression, targetTable: QualifiedTableName,
       policyOwner: String, applyTo: Seq[String]): BypassRowLevelSecurity = {
-   val userCheckCond = if (applyTo.isEmpty) {
+    val userCheckCond = if (applyTo.isEmpty) {
       // apply to all except owner
       EqualTo(CurrentUser(), Literal(policyOwner))
     } else {

@@ -37,7 +37,6 @@ class PolicyTest extends SnappyFunSuite
     with BeforeAndAfterAll {
 
 
-
   val props = Map.empty[String, String]
   val tableOwner = "ashahid"
   val numElements = 100
@@ -74,15 +73,23 @@ class PolicyTest extends SnappyFunSuite
   }
 
   test("Policy creation on a column table using snappy context") {
+    this.testPolicy(colTableName)
+  }
+
+  test("Policy creation on a row table using snappy context") {
+    this.testPolicy(rowTableName)
+  }
+
+  private def testPolicy(tableName: String) {
     ownerContext.sql(s"create policy testPolicy1 on  " +
-        s"$colTableName for select to current_user using id < 0")
-    var rs = ownerContext.sql(s"select * from $colTableName").collect()
+        s"$tableName for select to current_user using id < 0")
+    var rs = ownerContext.sql(s"select * from $tableName").collect()
     assertEquals(numElements, rs.length)
 
     val snc2 = snc.newSession()
     snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
 
-    rs = snc2.sql(s"select * from $colTableName").collect()
+    rs = snc2.sql(s"select * from $tableName").collect()
     assertEquals(0, rs.length)
     ownerContext.sql("drop policy testPolicy1")
   }
@@ -109,27 +116,128 @@ class PolicyTest extends SnappyFunSuite
     ownerContext.sql("drop policy testPolicy2")
   }
 
+  test("test multiple policies application using snappy context on column table") {
+    this.testMultiplePolicy(colTableName)
+  }
+
+  test("test multiple policies application using snappy context on row table") {
+    this.testMultiplePolicy(rowTableName)
+  }
+
+  test("old query plan invalidation on creation of policy on column table using snappy context") {
+    this.testQueryPlanInvalidation(colTableName)
+  }
+
+  test("old query plan invalidation on creation of policy on row table using snappy context") {
+    this.testQueryPlanInvalidation(rowTableName)
+  }
+
+  private def testQueryPlanInvalidation(tableName: String): Unit = {
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+    val q = s"select * from $tableName where id > 70"
+    var rs = snc2.sql(q)
+    assertEquals(29, rs.collect().length)
+    // fire again
+    rs = snc2.sql(q)
+    assertEquals(29, rs.collect().length)
+    // fire again
+    rs = ownerContext.sql(q)
+    assertEquals(29, rs.collect().length)
+
+    // fire again
+    rs = snc2.sql(q)
+    assertEquals(29, rs.collect().length)
+
+
+
+    // now create a policy
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$tableName for select to current_user using id < 30")
+
+    rs = ownerContext.sql(q)
+    assertEquals(29, rs.collect().length)
+
+    rs = snc2.sql(q)
+    assertEquals(0, rs.collect().length)
+    ownerContext.sql("drop policy testPolicy1")
+
+  }
+
+  test("old query plan invalidation on enabling rls on column table using snappy context") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
+  }
+
+  test("old query plan invalidation on enabling rls on row table using snappy context") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(rowTableName)
+  }
+
+  private def testQueryPlanInvalidationOnRLSEnbaling(tableName: String): Unit = {
+    // first disable RLS
+    ownerContext.sql(s"alter table $tableName disable row level security")
+    // now create a policy
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$tableName for select to current_user using id < 30")
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+    val q = s"select * from $tableName where id > 70"
+
+    var rs = snc2.sql(q)
+    assertEquals(29, rs.collect().length)
+    // fire again
+    rs = snc2.sql(q)
+    assertEquals(29, rs.collect().length)
+    // fire again
+    rs = ownerContext.sql(q)
+    assertEquals(29, rs.collect().length)
+
+    rs = ownerContext.sql(q)
+    assertEquals(29, rs.collect().length)
+
+    // fire again
+    rs = snc2.sql(q)
+    assertEquals(29, rs.collect().length)
+
+   // Now enable RLS
+
+    ownerContext.sql(s"alter table $tableName enable row level security")
+
+
+    rs = ownerContext.sql(q)
+    assertEquals(29, rs.collect().length)
+
+    rs = snc2.sql(q)
+    assertEquals(0, rs.collect().length)
+    ownerContext.sql("drop policy testPolicy1")
+
+  }
+
+  private def testMultiplePolicy(tableName: String) {
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$tableName for select to current_user using id > 10")
+    ownerContext.sql(s"create policy testPolicy2 on  " +
+        s"$tableName for select to current_user using id < 20")
+    var rs = ownerContext.sql(s"select * from $tableName").collect()
+    assertEquals(numElements, rs.length)
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+
+    rs = snc2.sql(s"select * from $tableName").collect()
+    assertEquals(9, rs.length)
+    ownerContext.sql("drop policy testPolicy1")
+    ownerContext.sql("drop policy testPolicy2")
+  }
 
   test("Policy creation & dropping allowed by all users if security is disabled") {
     val snc2 = snc.newSession()
     snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
     snc2.sql(s"create policy testPolicy2 on  " +
-          s"$colTableName for select to current_user using id > 10")
+        s"$colTableName for select to current_user using id > 10")
     snc2.sql("drop policy testPolicy2")
 
-  }
-
-
-
-  ignore("ignore for now") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
-      Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
-
-    dataDF.write.format("column").mode(SaveMode.Append).options(props)
-        .saveAsTable(colTableName)
-    snc.sql(s"create policy testPolicy1 on  $colTableName for select to current using col1 > 0")
   }
 
 }
