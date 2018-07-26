@@ -179,30 +179,21 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
 " SELECT ORIGIN AS Column_1_1, COUNT(*) AS Column_1_2, MAX(CAST(1 AS BOOLEAN)) AS Column_1_3 FROM AIRLINE AS AIRLINE GROUP BY ORIGIN"
 " SELECT COUNT(*) AS Column_1_1, MAX(CAST(1 AS BOOLEAN)) AS Column_1_2 FROM AIRLINE AS AIRLINE"
 " SELECT CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION,
-  SUM(airline.ActualElapsedTime) AS sum_ActualElapsedTime_ok,
-  SUM(airline.AirTime) AS sum_AirTime_ok,
-  SUM(airline.ArrDelaySlot) AS sum_ArrDelaySlot_ok,
-  SUM(airline.ArrDelay) AS sum_ArrDelay_ok,
-  SUM(airline.ArrTime) AS sum_ArrTime_ok,
-  SUM(airline.CRSArrTime) AS sum_CRSArrTime_ok,
-  SUM(airline.CRSDepTime) AS sum_CRSDepTime_ok,
-  SUM(airline.CRSElapsedTime) AS sum_CRSElapsedTime_ok,
-  SUM(airline.Cancelled) AS sum_Cancelled_ok,
-  SUM(airline.CarrierDelay) AS sum_CarrierDelay_ok,
-  SUM(airline.DepDelay) AS sum_DepDelay_ok,
-  SUM(airline.DepTime) AS sum_DepTime_ok,
-  SUM(airline.Distance) AS sum_Distance_ok,
-  SUM(airline.Diverted) AS sum_Diverted_ok,
-  SUM(airline.LateAircraftDelay) AS sum_LateAircraftDelay_ok,
-  SUM(airline.NASDelay) AS sum_NASDelay_ok,
-  SUM(1) AS sum_Number_of_Records_ok,
-  SUM(airline.SecurityDelay) AS sum_SecurityDelay_ok,
-  SUM(airline.TaxiIn) AS sum_TaxiIn_ok,
-  SUM(airline.TaxiOut) AS sum_TaxiOut_ok
-FROM airline airline
-  INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
-GROUP BY 1"
+    SUM(airline.ArrDelay) AS sum_ArrDelay_ok,
+    SUM(airline.ArrTime) AS sum_ArrTime_ok,
+    SUM(airline.CRSDepTime) AS sum_CRSDepTime_ok,
+    SUM(airline.Cancelled) AS sum_Cancelled_ok,
+    SUM(airline.CarrierDelay) AS sum_CarrierDelay_ok,
+    SUM(airline.DepDelay) AS sum_DepDelay_ok,
+    SUM(airline.DepTime) AS sum_DepTime_ok,
+    SUM(airline.Distance) AS sum_Distance_ok,
+    SUM(1) AS sum_Number_of_Records_ok,
+    SUM(airline.TaxiIn) AS sum_TaxiIn_ok,
+    SUM(airline.TaxiOut) AS sum_TaxiOut_ok
+  FROM airline airline
+    INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
+  WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+  GROUP BY 1"
 " SELECT CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION,
   SUM(1) AS sum_Number_of_Records_ok
 FROM airline airline
@@ -215,43 +206,30 @@ FROM airline airline
   INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
 WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
 GROUP BY 1"
-" SELECT airline.ActualElapsedTime AS ActualElapsedTime,
-  airline.AirTime AS AirTime,
-  airline.ArrDelay AS ArrDelay,
-  airline.ArrDelaySlot AS ArrDelaySlot,
-  airline.ArrTime AS ArrTime,
-  CAST(AIRLINEREF.CODE AS VARCHAR(100)) AS CODE,
-  airline.CRSArrTime AS CRSArrTime,
-  airline.CRSDepTime AS CRSDepTime,
-  airline.CRSElapsedTime AS CRSElapsedTime,
-  CAST(airline.CancellationCode AS VARCHAR(100)) AS CancellationCode,
-  airline.Cancelled AS Cancelled,
-  airline.CarrierDelay AS CarrierDelay,
-  CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION,
-  airline.DayOfMonth AS DayOfMonth,
-  airline.DAYOFMONTH AS DAYOFMONTH,
-  airline.DepDelay AS DepDelay,
-  airline.DepTime AS DepTime,
-  CAST(airline.Dest AS VARCHAR(100)) AS Dest,
-  airline.Distance AS Distance,
-  airline.Diverted AS Diverted,
-  airline.FlightNum AS FlightNum,
-  airline.LateAircraftDelay AS LateAircraftDelay,
-  airline.Month_ AS Month_,
-  airline.NASDelay AS NASDelay,
-  1 AS Number_of_Records,
-  CAST(airline.Origin AS VARCHAR(100)) AS Origin,
-  airline.SecurityDelay AS SecurityDelay,
-  CAST(airline.TailNum AS VARCHAR(100)) AS TailNum,
-  airline.TaxiIn AS TaxiIn,
-  airline.TaxiOut AS TaxiOut,
-  CAST(airline.UniqueCarrier AS VARCHAR(100)) AS UniqueCarrier,
-  airline.WeatherDelay AS WeatherDelay,
-  airline.Year_ AS Year_
-FROM airline airline
-  INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
-LIMIT 1000"
+" SELECT airline.ArrDelay AS ArrDelay,
+    airline.ArrTime AS ArrTime,
+    CAST(AIRLINEREF.CODE AS VARCHAR(100)) AS CODE,
+    airline.CRSDepTime AS CRSDepTime,
+    airline.Cancelled AS Cancelled,
+    airline.CarrierDelay AS CarrierDelay,
+    CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION,
+    airline.DAYOFMONTH AS DAYOFMONTH,
+    airline.DepDelay AS DepDelay,
+    airline.DepTime AS DepTime,
+    CAST(airline.Dest AS VARCHAR(100)) AS Dest,
+    airline.Distance AS Distance,
+    airline.Month_ AS Month_,
+    1 AS Number_of_Records,
+    CAST(airline.Origin AS VARCHAR(100)) AS Origin,
+    airline.TaxiIn AS TaxiIn,
+    airline.TaxiOut AS TaxiOut,
+    CAST(airline.UniqueCarrier AS VARCHAR(100)) AS UniqueCarrier,
+    airline.WeatherDelay AS WeatherDelay,
+    airline.Year_ AS Year_
+  FROM airline airline
+    INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
+  WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+  LIMIT 1000"
 " SELECT {fn FLOOR(airline.DepDelay / 66)} AS Dep_Delay__bin_,
   COUNT(airline.DepDelay) AS cnt_DepDelay_ok
 FROM airline airline
@@ -306,45 +284,26 @@ GROUP BY 1"
 FROM airline airline
 WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
 GROUP BY 1"
-" SELECT airline.ActualElapsedTime AS ActualElapsedTime,
-  airline.AirTime AS AirTime,
-  airline.ArrDelay AS ArrDelay,
-  airline.ArrDelaySlot AS ArrDelaySlot,
-  airline.ArrTime AS ArrTime,
-  airline.CRSArrTime AS CRSArrTime,
-  airline.CRSDepTime AS CRSDepTime,
-  airline.CRSElapsedTime AS CRSElapsedTime,
-  CAST(airline.CancellationCode AS VARCHAR(100)) AS CancellationCode,
-  airline.Cancelled AS Cancelled,
-  airline.CarrierDelay AS CarrierDelay,
-  airline.DayOfMonth AS DayOfMonth,
-  airline.DAYOFMONTH AS DAYOFMONTH,
-  airline.DepDelay AS DepDelay,
-  airline.DepTime AS DepTime,
-  CAST(airline.Dest AS VARCHAR(100)) AS Dest,
-  airline.Distance AS Distance,
-  airline.Diverted AS Diverted,
-  airline.FlightNum AS FlightNum,
-  airline.LateAircraftDelay AS LateAircraftDelay,
-  airline.Month_ AS Month_,
-  airline.NASDelay AS NASDelay,
-  1 AS Number_of_Records,
-  CAST(airline.Origin AS VARCHAR(100)) AS Origin,
-  airline.SecurityDelay AS SecurityDelay,
-  CAST(airline.TailNum AS VARCHAR(100)) AS TailNum,
-  airline.TaxiIn AS TaxiIn,
-  airline.TaxiOut AS TaxiOut,
-  CAST(airline.UniqueCarrier AS VARCHAR(100)) AS UniqueCarrier,
-  airline.WeatherDelay AS WeatherDelay,
-  airline.Year_ AS Year_
-FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
-LIMIT 1000"
-" SELECT MIN(airline.ActualElapsedTime) AS TEMP_ActualElapsedTime_lower__290714814__0_,
-  MAX(airline.ActualElapsedTime) AS TEMP_ActualElapsedTime_upper__290714814__0_,
-  1.1000000000000001 AS X__alias__0
-FROM airline airline
-GROUP BY 3"
+" SELECT airline.ArrDelay AS ArrDelay,
+    airline.ArrTime AS ArrTime,
+    airline.CRSDepTime AS CRSDepTime,
+    airline.Cancelled AS Cancelled,
+    airline.DAYOFMONTH AS DAYOFMONTH,
+    airline.DepDelay AS DepDelay,
+    airline.DepTime AS DepTime,
+    CAST(airline.Dest AS VARCHAR(100)) AS Dest,
+    airline.Distance AS Distance,
+    airline.Month_ AS Month_,
+    1 AS Number_of_Records,
+    CAST(airline.Origin AS VARCHAR(100)) AS Origin,
+    airline.TaxiIn AS TaxiIn,
+    airline.TaxiOut AS TaxiOut,
+    CAST(airline.UniqueCarrier AS VARCHAR(100)) AS UniqueCarrier,
+    airline.WeatherDelay AS WeatherDelay,
+    airline.Year_ AS Year_
+  FROM airline
+  WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+  LIMIT 1000"
 " SELECT MIN(airline.DepTime) AS TEMP_DepTime_lower__290714814__0_,
   MAX(airline.DepTime) AS TEMP_DepTime_upper__290714814__0_,
   1.1000000000000001 AS X__alias__0
@@ -443,20 +402,27 @@ GROUP BY 3"
 " SELECT MAX(CAST(1 AS BOOLEAN)) AS Column_1_1, SUM(AIRLINE.TAXIOUT) AS Column_1_2 FROM AIRLINE AS AIRLINE"
 " SELECT COUNT(*) AS Column_1_1, MAX(CAST(1 AS BOOLEAN)) AS Column_1_2 FROM AIRLINE AS AIRLINE"
 " SELECT count(*) from AIRLINE"
-" SELECT
-    AIRLINE.ACTUALELAPSEDTIME AS Column_1_1,
-    AIRLINE.DIVERTED AS Column_1_2,
-    AIRLINE.FLIGHTNUM AS Column_1_3,
-    AIRLINE.AIRTIME AS Column_1_4,
-    AIRLINE.LATEAIRCRAFTDELAY AS Column_1_5,
-    AIRLINE.MONTH_ AS Column_1_6,
-    AIRLINE.NASDELAY AS Column_1_7, AIRLINE.ORIGIN AS Column_1_8,
-    AIRLINE.SECURITYDELAY AS Column_1_9,
-    AIRLINE.SNAPPY_SAMPLER_WEIGHTAGE AS Column_1_10,
-    AIRLINE.TAILNUM AS Column_1_11, AIRLINE.CRSDEPTIME AS Column_1_12, AIRLINE.TAXIIN AS Column_1_13, AIRLINE.TAXIOUT AS Column_1_14, AIRLINE.UNIQUECARRIER AS Column_1_15, AIRLINE.ARRDELAY AS Column_1_16, AIRLINE.WEATHERDELAY AS Column_1_17, AIRLINE.YEAR_ AS Column_1_18, CAST(1 AS BOOLEAN) AS Column_1_19, AIRLINE.ARRDELAYSLOT AS Column_1_20, AIRLINE.ARRTIME AS Column_1_21, AIRLINE.CANCELLATIONCODE AS Column_1_22, AIRLINE.CRSELAPSEDTIME AS Column_1_23, AIRLINE.CANCELLED AS Column_1_24, AIRLINE.CARRIERDELAY AS Column_1_25, AIRLINE.CRSARRTIME AS Column_1_26, AIRLINE.DAYOFMONTH AS Column_1_27, AIRLINE.DAYOFMONTH AS Column_1_28, AIRLINE.DEPDELAY AS Column_1_29, AIRLINE.DEPTIME AS Column_1_30, AIRLINE.DEST AS Column_1_31, AIRLINE.DISTANCE AS Column_1_32
-FROM
-    AIRLINE AS AIRLINE
-LIMIT 100"
+" SELECT AIRLINE.MONTH_ AS Column_1_1,
+      AIRLINE.ORIGIN AS Column_1_2,
+      AIRLINE.CRSDEPTIME AS Column_1_3,
+      AIRLINE.TAXIIN AS Column_1_4,
+      AIRLINE.TAXIOUT AS Column_1_5,
+      AIRLINE.UNIQUECARRIER AS Column_1_6,
+      AIRLINE.ARRDELAY AS Column_1_7,
+      AIRLINE.WEATHERDELAY AS Column_1_8,
+      AIRLINE.YEAR_ AS Column_1_9,
+      CAST(1 AS BOOLEAN) AS Column_1_10,
+      AIRLINE.ARRTIME AS Column_1_11,
+      AIRLINE.CANCELLED AS Column_1_12,
+      AIRLINE.CARRIERDELAY AS Column_1_13,
+      AIRLINE.DAYOFMONTH AS Column_1_14,
+      AIRLINE.DEPDELAY AS Column_1_15,
+      AIRLINE.DEPTIME AS Column_1_16,
+      AIRLINE.DEST AS Column_1_17,
+      AIRLINE.DISTANCE AS Column_1_18
+  FROM
+      AIRLINE AS AIRLINE
+  LIMIT 100"
 " SELECT * from AIRLINE limit 100"
 " SELECT COUNT(*) AS Column_1_1, MAX(CAST(1 AS BOOLEAN)) AS Column_1_2 FROM AIRLINE AS AIRLINE"
 " SELECT AIRLINE.DAYOFMONTH AS Column_1_1, AIRLINE.Origin AS Column_1_2, AVG(AIRLINE.TaxiOut) AS Column_1_3, MAX(CAST(1 AS BOOLEAN)) AS Column_1_4 FROM AIRLINE AS AIRLINE GROUP BY AIRLINE.DAYOFMONTH, AIRLINE.Origin"
@@ -479,37 +445,23 @@ LIMIT 100"
 " SELECT count(*) as count1 from airline"
 " SELECT count(*) from airline"
 " SELECT count(*) from airline"
-" SELECT airline.ActualElapsedTime AS ActualElapsedTime,
-  airline.AirTime AS AirTime,
-  airline.ArrDelay AS ArrDelay,
-  airline.ArrDelaySlot AS ArrDelaySlot,
-  airline.ArrTime AS ArrTime,
-  airline.CRSArrTime AS CRSArrTime,
-  airline.CRSDepTime AS CRSDepTime,
-  airline.CRSElapsedTime AS CRSElapsedTime,
-  CAST(airline.CancellationCode AS VARCHAR(100)) AS CancellationCode,
-  airline.Cancelled AS Cancelled,
-  airline.CarrierDelay AS CarrierDelay,
-  airline.DayOfMonth AS DayOfMonth,
-  airline.DAYOFMONTH AS DAYOFMONTH,
-  airline.DepDelay AS DepDelay,
-  airline.DepTime AS DepTime,
-  CAST(airline.Dest AS VARCHAR(100)) AS Dest,
-  airline.Distance AS Distance,
-  airline.Diverted AS Diverted,
-  airline.FlightNum AS FlightNum,
-  airline.LateAircraftDelay AS LateAircraftDelay,
-  airline.Month_ AS Month_,
-  airline.NASDelay AS NASDelay,
-  1 AS Number_of_Records,
-  CAST(airline.Origin AS VARCHAR(100)) AS Origin,
-  airline.SecurityDelay AS SecurityDelay,
-  CAST(airline.TailNum AS VARCHAR(100)) AS TailNum,
-  airline.TaxiIn AS TaxiIn,
-  airline.TaxiOut AS TaxiOut,
-  CAST(airline.UniqueCarrier AS VARCHAR(100)) AS UniqueCarrier,
-  airline.WeatherDelay AS WeatherDelay,
-  airline.Year_ AS Year_
-FROM airline airline
-LIMIT 1000"
+" SELECT airline.ArrDelay AS ArrDelay,
+    airline.ArrTime AS ArrTime,
+    airline.CRSDepTime AS CRSDepTime,
+    airline.CarrierDelay AS CarrierDelay,
+    airline.DayOfMonth AS DayOfMonth,
+    airline.DepDelay AS DepDelay,
+    airline.DepTime AS DepTime,
+    CAST(airline.Dest AS VARCHAR(100)) AS Dest,
+    airline.Distance AS Distance,
+    airline.Month_ AS Month_,
+    1 AS Number_of_Records,
+    CAST(airline.Origin AS VARCHAR(100)) AS Origin,
+    airline.TaxiIn AS TaxiIn,
+    airline.TaxiOut AS TaxiOut,
+    CAST(airline.UniqueCarrier AS VARCHAR(100)) AS UniqueCarrier,
+    airline.WeatherDelay AS WeatherDelay,
+    airline.Year_ AS Year_
+  FROM airline airline
+  LIMIT 1000"
 ;
