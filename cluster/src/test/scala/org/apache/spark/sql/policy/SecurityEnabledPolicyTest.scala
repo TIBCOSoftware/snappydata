@@ -131,7 +131,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     }
 
     ownerContext.sql(s"create policy testPolicy2 on  " +
-        s"$colTableName for select to current using id > 10")
+        s"$colTableName for select to current_user using id > 10")
 
     try {
       snc2.sql(s"drop policy ${tableOwner}.testPolicy2")
@@ -142,6 +142,56 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     }
 
     ownerContext.sql("drop policy testPolicy2")
+  }
+
+  ignore("check policy applied to ldap group") {
+    // the ldap group gemGroup2 contains gemfire3, gemfire4, gemfire5
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$colTableName for select to ldapGroup:gemGroup2 , gemfire6 using id > 90")
+
+    ownerContext.sql(s"alter table $colTableName enable row level security")
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
+    snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
+    var rs = snc2.sql(s"select * from $colTableName")
+    assertEquals(numElements, rs.collect().length)
+
+    val snc3 = snc.newSession()
+    snc3.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire3")
+    snc3.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire3")
+    rs = snc3.sql(s"select * from $colTableName")
+    assertEquals(9, rs.collect().length)
+
+    val snc4 = snc.newSession()
+    snc4.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire4")
+    snc4.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire4")
+    rs = snc4.sql(s"select * from $colTableName")
+    assertEquals(9, rs.collect().length)
+
+    val snc5 = snc.newSession()
+    snc5.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire5")
+    snc5.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire5")
+    rs = snc5.sql(s"select * from $colTableName")
+    assertEquals(9, rs.collect().length)
+
+    val snc6 = snc.newSession()
+    snc6.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire6")
+    snc6.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire6")
+    rs = snc6.sql(s"select * from $colTableName")
+    assertEquals(9, rs.collect().length)
+
+    val snc7 = snc.newSession()
+    snc7.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire7")
+    snc7.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire7")
+    rs = snc7.sql(s"select * from $colTableName")
+    assertEquals(numElements, rs.collect().length)
+
+
+    rs = ownerContext.sql(s"select * from $colTableName")
+    assertEquals(numElements, rs.collect().length)
+
+
   }
 
 }

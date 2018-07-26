@@ -478,6 +478,7 @@ object SnappyParserConsts {
   final val LEVEL: Keyword = nonReservedKeyword("level")
   final val SECURITY: Keyword = nonReservedKeyword("security")
   final val USER: Keyword = nonReservedKeyword("user")
+  final val LDAPGROUP: Keyword = nonReservedKeyword("ldapgroup")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")

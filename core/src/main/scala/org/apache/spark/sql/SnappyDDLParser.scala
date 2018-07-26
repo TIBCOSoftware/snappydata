@@ -184,6 +184,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
   final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
+  final def LDAPGROUP: Rule0 = rule { keyword(Consts.LDAPGROUP) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -312,15 +313,20 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
-        (CURRENT ~ '_' ~ USER ~ push(CURRENT_USER) | quotedIdentifier
-            | unquotedIdentifier) * commaSep) ~>
-        ((policyTo: Any) =>
-          if (policyTo.asInstanceOf[Seq[String]].isEmpty) {
-            Seq(CURRENT_USER)
-          } else {
-            policyTo.asInstanceOf[Seq[String]].map(_.trim)
-          }
-            )
+        (CURRENT ~ '_' ~ USER ~ push(CURRENT_USER)  |
+            (LDAPGROUP ~ ws ~ ':' ~ ws ~
+                push(SnappyParserConsts.LDAPGROUP.lower + ':')).? ~
+                identifier ~ ws ~> {(ldapOpt: Any, x) =>
+              ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
+        ).+ (commaSep) ~> {
+        (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
+          }).? ~> { (toOpt: Any) =>
+      toOpt match {
+        case Some(x) => x.asInstanceOf[Seq[String]]
+        case _ => Seq(CURRENT_USER)
+      }
+    }
+
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {

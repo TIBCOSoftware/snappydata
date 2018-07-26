@@ -147,6 +147,74 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     }
   }
 
+  test("old query plan invalidation on enabling rls on column table using jdbc client") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
+  }
+
+  test("old query plan invalidation on enabling rls on row table using jdbc client") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(rowTableName)
+  }
+
+  private def testQueryPlanInvalidationOnRLSEnbaling(tableName: String): Unit = {
+    // first disable RLS
+    ownerContext.sql(s"alter table $tableName disable row level security")
+    // now create a policy
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$tableName for select to current_user using id < 30")
+    val conn = getConnection(Some(tableOwner))
+
+    val conn1 = getConnection(Some("UserX"))
+    try {
+
+      val q = s"select * from $tableName where id > 70"
+      val stmt1 = conn1.createStatement()
+      var rs = stmt1.executeQuery(q)
+      var numRows = 0
+      while (rs.next()) numRows += 1
+      assertEquals(29, numRows)
+      // fire again
+      rs = stmt1.executeQuery(q)
+      numRows = 0
+      while (rs.next()) numRows += 1
+      assertEquals(29, numRows)
+      // fire again
+      rs = stmt1.executeQuery(q)
+      numRows = 0
+      while (rs.next()) numRows += 1
+      assertEquals(29, numRows)
+
+      val stmt = conn.createStatement()
+      rs = stmt.executeQuery(q)
+      numRows = 0
+      while (rs.next()) numRows += 1
+      assertEquals(29, numRows)
+
+      // fire again
+      rs = stmt1.executeQuery(q)
+      numRows = 0
+      while (rs.next()) numRows += 1
+      assertEquals(29, numRows)
+
+      // Now enable RLS
+
+      stmt.execute(s"alter table $tableName enable row level security")
+      rs = stmt.executeQuery(q)
+      numRows = 0
+      while (rs.next()) numRows += 1
+      assertEquals(29, numRows)
+
+      rs = stmt1.executeQuery(q)
+      numRows = 0
+      while (rs.next()) numRows += 1
+      assertEquals(0, numRows)
+      ownerContext.sql("drop policy testPolicy1")
+    } finally {
+      conn1.close()
+      conn.close()
+    }
+
+  }
+
   private def getConnection(user: Option[String] = None): Connection = {
     val props = new Properties()
     if (user.isDefined) {
