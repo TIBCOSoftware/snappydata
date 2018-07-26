@@ -5,8 +5,6 @@ DROP TABLE IF EXISTS AIRLINE ;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
 CREATE EXTERNAL TABLE STAGING_AIRLINE
     USING parquet OPTIONS(path 's3a://AKIAILHSQ3FINHV473RQ:Tnn6GOHhjaayIRtVNApYQgNLU3FxXkw9albr9hVJ@zeppelindemo/airlinedata_cleaned');
--- Use below line to work with larger data set
---  USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData_2007-15');
 
 ----- CREATE COLUMN TABLE -----
 CREATE TABLE AIRLINE USING column OPTIONS(PERSISTENT 'SYNCHRONOUS', BUCKETS '128', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')  AS (
