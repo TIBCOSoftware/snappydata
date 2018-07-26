@@ -45,7 +45,7 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
 " SELECT COUNT(*) AS Column_1_1, MAX(CAST(1 AS BOOLEAN)) AS Column_1_2 FROM AIRLINE AS AIRLINE"
 " SELECT ARRDELAY AS Column_1_1, ARRTIME AS Column_1_2, CANCELLED AS Column_1_3, CARRIERDELAY AS Column_1_4, DAYOFMONTH AS Column_1_5, DEPDELAY AS Column_1_6, DEPTIME AS Column_1_7, DEST AS Column_1_8, DISTANCE AS Column_1_9, MONTH_ AS Column_1_10, ORIGIN AS Column_1_11, TAXIIN AS Column_1_12, TAXIOUT AS Column_1_13, UNIQUECARRIER AS Column_1_14, WEATHERDELAY AS Column_1_15, YEAR_ AS Column_1_16, CAST(1 AS BOOLEAN) AS Column_1_17 FROM AIRLINE AS AIRLINE LIMIT 10000"
 " SELECT UNIQUECARRIER AS Column_1_1, YEAR_ AS Column_1_2, AVG(ARRDELAY) AS Column_1_3, AVG(ARRDELAY) AS Column_1_4, MAX(CAST(1 AS BOOLEAN)) AS Column_1_5 FROM AIRLINE AS AIRLINE WHERE ((ARRDELAY IS NOT NULL AND (ARRDELAY = 62 AND ARRDELAY = 1242)) AND (DEPTIME = 1980 OR DEPTIME IS NULL)) GROUP BY UNIQUECARRIER, YEAR_"
-" SELECT CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION, SUM(1) AS sum_Number_of_Records_ok FROM airline airline INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100))) WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99)) GROUP BY 1"
+" SELECT CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION, SUM(1) AS sum_Number_of_Records_ok FROM airline airline INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100))) WHERE ((airline.DepTime IS NULL)) GROUP BY 1"
 " SELECT MAX(DEPTIME IS NULL) AS Column_1_1, MAX(DEPTIME) AS Column_1_2, MIN(DEPTIME) AS Column_1_3 FROM AIRLINE AS APP__AIRLINE"
 " SELECT MAX(DEPTIME IS NULL) AS Column_1_1 FROM AIRLINE AS APP__AIRLINE"
 " SELECT UniqueCarrier AS Column_1_1, Year_ AS Column_1_2, AVG(ArrDelay) AS Column_1_3, AVG(ArrDelay) AS Column_1_4, MAX(CAST(1 AS BOOLEAN)) AS Column_1_5 FROM AIRLINE AS AIRLINE WHERE (ArrDelay IS NOT NULL AND (ArrDelay = 62 AND ArrDelay = 555)) GROUP BY UniqueCarrier, Year_"
@@ -187,18 +187,18 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
     SUM(airline.TaxiOut) AS sum_TaxiOut_ok
   FROM airline airline
     INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-  WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
+  WHERE (airline.DepTime IS NULL)
   GROUP BY 1"
 " SELECT CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION,
   SUM(1) AS sum_Number_of_Records_ok
 FROM airline airline
   INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
+WHERE (airline.ARRDELAY = 80 OR airline.ARRDELAY IS NULL)
 GROUP BY 1"
 " SELECT SUM(1) AS sum_Number_of_Records_ok
 FROM airline airline
   INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
+WHERE ((airline.ARRDELAY = 62 OR airline.ARRDELAY IS NULL) AND (airline.ARRDELAY = 379 OR airline.ARRDELAY IS NULL))
 GROUP BY 1"
 " SELECT airline.ArrDelay AS ArrDelay,
     airline.ArrTime AS ArrTime,
@@ -222,7 +222,7 @@ GROUP BY 1"
     airline.Year_ AS Year_
   FROM airline airline
     INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-  WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+  WHERE (airline.DepTime IS NULL)
   LIMIT 1000"
 /*" SELECT {fn FLOOR(airline.DepDelay / 66)} AS Dep_Delay__bin_,
   COUNT(airline.DepDelay) AS cnt_DepDelay_ok
@@ -288,12 +288,12 @@ GROUP BY 1"*/
     airline.WeatherDelay AS WeatherDelay,
     airline.Year_ AS Year_
   FROM airline
-  WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+  WHERE (airline.ARRDELAY = 80 OR airline.ARRDELAY IS NULL)
   LIMIT 1000"
 " SELECT MIN(airline.DepTime) AS TEMP_DepTime_lower__290714814__0_,
   MAX(airline.DepTime) AS TEMP_DepTime_upper__290714814__0_
 FROM airline airline
-GROUP BY 3"
+GROUP BY 2"
 " SELECT year_ from airline group by year_"
 " SELECT uniquecarrier, count(*) from AIRLINE group by uniquecarrier"
 " SELECT year_, count(*) from AIRLINE group by year_"
