@@ -192,19 +192,19 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
     SUM(airline.TaxiOut) AS sum_TaxiOut_ok
   FROM airline airline
     INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-  WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+  WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
   GROUP BY 1"
 " SELECT CAST(AIRLINEREF.DESCRIPTION AS VARCHAR(100)) AS DESCRIPTION,
   SUM(1) AS sum_Number_of_Records_ok
 FROM airline airline
   INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT 1.1000000000000001 AS X__alias__0,
   SUM(1) AS sum_Number_of_Records_ok
 FROM airline airline
   INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT airline.ArrDelay AS ArrDelay,
     airline.ArrTime AS ArrTime,
@@ -233,56 +233,56 @@ GROUP BY 1"
 " SELECT {fn FLOOR(airline.DepDelay / 66)} AS Dep_Delay__bin_,
   COUNT(airline.DepDelay) AS cnt_DepDelay_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT airline.DepDelay AS DepDelay
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1
 ORDER BY airline.DepDelay ASC"
 " SELECT MIN(airline.DepDelay) AS TEMP_DepDelay_lower__290714814__0_,
   MAX(airline.DepDelay) AS TEMP_DepDelay_upper__290714814__0_,
   1.1000000000000001 AS X__alias__0
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 3"
 " SELECT 1.1000000000000001 AS X__alias__0,
   SUM(airline.DepDelay) AS sum_DepDelay_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT 1.1000000000000001 AS X__alias__0,
   AVG(CAST(airline.TaxiIn AS FLOAT)) AS avg_TaxiIn_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT 1.1000000000000001 AS X__alias__0,
   SUM(airline.TaxiIn) AS sum_TaxiIn_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT 1.1000000000000001 AS X__alias__0,
   AVG(CAST(airline.ArrDelay AS FLOAT)) AS avg_ArrDelay_ok,
   AVG(CAST(airline.DepTime AS FLOAT)) AS avg_DepTime_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT 1.1000000000000001 AS X__alias__0,
   AVG(CAST(airline.DepTime AS FLOAT)) AS avg_DepTime_ok,
   SUM(airline.ArrDelay) AS sum_ArrDelay_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT 1.1000000000000001 AS X__alias__0,
   SUM(airline.ArrDelay) AS sum_ArrDelay_ok,
   SUM(airline.DepTime) AS sum_DepTime_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT 1.1000000000000001 AS X__alias__0,
   SUM(airline.DepTime) AS sum_DepTime_ok
 FROM airline airline
-WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
+WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
 GROUP BY 1"
 " SELECT airline.ArrDelay AS ArrDelay,
     airline.ArrTime AS ArrTime,
