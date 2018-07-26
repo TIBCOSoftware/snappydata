@@ -224,7 +224,7 @@ GROUP BY 1"
     INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
   WHERE ((airline.DepTime = 0) AND (airline.DepTime = 99))
   LIMIT 1000"
-" SELECT {fn FLOOR(airline.DepDelay / 66)} AS Dep_Delay__bin_,
+/*" SELECT {fn FLOOR(airline.DepDelay / 66)} AS Dep_Delay__bin_,
   COUNT(airline.DepDelay) AS cnt_DepDelay_ok
 FROM airline airline
 WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
@@ -269,7 +269,7 @@ GROUP BY 1"
 " SELECT SUM(airline.DepTime) AS sum_DepTime_ok
 FROM airline airline
 WHERE ((airline.DepTime > 0) AND (airline.DepTime < 99))
-GROUP BY 1"
+GROUP BY 1"*/
 " SELECT airline.ArrDelay AS ArrDelay,
     airline.ArrTime AS ArrTime,
     airline.CRSDepTime AS CRSDepTime,
