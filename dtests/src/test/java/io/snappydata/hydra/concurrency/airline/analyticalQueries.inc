@@ -198,7 +198,7 @@ GROUP BY 1"
 " SELECT SUM(1) AS sum_Number_of_Records_ok
 FROM airline airline
   INNER JOIN AIRLINEREF AIRLINEREF ON (CAST(airline.UniqueCarrier AS VARCHAR(100)) = CAST(AIRLINEREF.CODE AS VARCHAR(100)))
-WHERE ((airline.ARRDELAY = 62 OR airline.ARRDELAY IS NULL) AND (airline.ARRDELAY = 379 OR airline.ARRDELAY IS NULL))
+WHERE (airline.DepTime IS NULL)
 GROUP BY 1"
 " SELECT airline.ArrDelay AS ArrDelay,
     airline.ArrTime AS ArrTime,
@@ -292,8 +292,7 @@ GROUP BY 1"*/
   LIMIT 1000"
 " SELECT MIN(airline.DepTime) AS TEMP_DepTime_lower__290714814__0_,
   MAX(airline.DepTime) AS TEMP_DepTime_upper__290714814__0_
-FROM airline airline
-GROUP BY 2"
+FROM airline airline"
 " SELECT year_ from airline group by year_"
 " SELECT uniquecarrier, count(*) from AIRLINE group by uniquecarrier"
 " SELECT year_, count(*) from AIRLINE group by year_"
