@@ -23,10 +23,14 @@ import hydra.TestConfig;
 import sql.sqlutil.ResultSetHelper;
 import util.TestException;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Random;
+import java.util.Set;
 import java.util.Vector;
 
 import static hydra.Prms.totalTaskTimeSec;
@@ -70,7 +74,12 @@ public class SnappyConcurrencyTest extends SnappyTest {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
         query = (String) queryVect.elementAt(queryNum);
+        startTime = System.currentTimeMillis();
         rs = conn.createStatement().executeQuery(query);
+        long queryExecutionEndTime = System.currentTimeMillis();
+        long queryExecutionTime = queryExecutionEndTime - startTime;
+        Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime);
+        SnappyBB.getBB().getSharedMap().put(queryNum + "_" + query + "_" + System.currentTimeMillis(), queryExecutionTime);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
       } catch (SQLException se) {
@@ -92,6 +101,50 @@ public class SnappyConcurrencyTest extends SnappyTest {
     Log.getLogWriter().info("Total number of pointLookUp queries executed : " +
         numpointLookUpQueriesExecuted);
     Log.getLogWriter().info("Total number of analytical queries executed : " + numAggregationQueriesExecuted);
+    Vector<String> queryVect = SnappyPrms.getAnalyticalQueryList();
+    for (int i = 0; i < queryVect.size(); i++) {
+      String queryNum = "Q" + i;
+      Log.getLogWriter().info("SS - queryNum: " + queryNum);
+      writeQueryExecutionTimingsData(queryNum, i + "_");
+    }
   }
 
+  protected static void writeQueryExecutionTimingsData(String fileName, String queryNum) {
+    Log.getLogWriter().info("SS - queryNum: " + queryNum);
+    File currentDir = new File(".");
+    String filePath = currentDir + fileName;
+    File file = new File(filePath);
+    if (!file.exists()) {
+      try {
+        file.createNewFile();
+      } catch (IOException e) {
+        throw new TestException("IOException occurred while creating file " +
+            file + "\nError Message:" + e.getMessage());
+      }
+    }
+    ArrayList<Long> timings = new ArrayList<>();
+    timings = getQueryExecutionTimingsData(queryNum, timings);
+    if (timings.size() == 0) {
+      String s = "No data found for writing to " + fileName + " file under test directory";
+      /*throw new TestException(s);*/
+      Log.getLogWriter().info("No data found for writing to " + fileName + " file under test directory");
+      return;
+    }
+    for (Long s : timings) {
+      snappyTest.writeToFile(s.toString(), file, true);
+    }
+  }
+
+  protected static ArrayList<Long> getQueryExecutionTimingsData(String userKey, ArrayList<Long>
+      timings) {
+    Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+    for (String key : keys) {
+      if (key.startsWith(userKey)) {
+        Long value = (Long) SnappyBB.getBB().getSharedMap().get(key);
+        timings.add(value);
+      }
+    }
+    Log.getLogWriter().info("ArrayList contains : " + timings.toString());
+    return timings;
+  }
 }
