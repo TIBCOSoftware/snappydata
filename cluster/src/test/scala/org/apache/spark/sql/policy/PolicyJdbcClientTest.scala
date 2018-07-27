@@ -119,6 +119,66 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     this.testMultiplePolicy(rowTableName)
   }
 
+  test("Test plan invalidation when queries & policy creation are mixed on column table") {
+    this.testMultiplePolicyCreationWithQuery(colTableName)
+  }
+
+  test("Test plan invalidation when queries & policy creation are mixed on row table") {
+    this.testMultiplePolicyCreationWithQuery(rowTableName)
+  }
+
+  def testMultiplePolicyCreationWithQuery(tableName: String): Unit = {
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some("UserX"))
+    val stmt1 = conn1.createStatement()
+    try {
+
+      var rs = stmt.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      var rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements - 1 - 25 + 10, rsSize)
+
+      rsSize = 0
+      rs = stmt1.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements - 1 - 25 + 10, rsSize)
+
+
+      stmt.execute(s"create policy testPolicy1 on  " +
+          s"$tableName for select to current_user using id > 10")
+
+      rs = stmt.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements - 1 - 25 + 10, rsSize)
+      rsSize = 0
+
+      rs = stmt1.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements - 1 - 25, rsSize)
+
+
+      stmt.execute(s"create policy testPolicy2 on  " +
+          s"$tableName for select to current_user using id < 30")
+
+      rs = stmt.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements - 1 - 25 + 10, rsSize)
+      rsSize = 0
+
+      rs = stmt1.executeQuery(s"select * from $tableName where id > 25 or id < 10 ")
+      while (rs.next()) rsSize += 1
+      assertEquals(4, rsSize)
+      stmt.execute("drop policy testPolicy1")
+      stmt.execute("drop policy testPolicy2")
+    } finally {
+      conn.close()
+      conn1.close()
+    }
+  }
+
   private def testMultiplePolicy(tableName: String) {
     val conn = getConnection(Some(tableOwner))
     val stmt = conn.createStatement()
