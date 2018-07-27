@@ -79,8 +79,11 @@ object SnappySessionFactory {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
+      // Calling this method from JobKill.
       override def stop(): Unit = {
-        // not stopping anything here because SQLContext doesn't have one.
+        // Stopping all StreamingQueries started by the session.
+        // If it's a normal job there won't be any streaming query and it will be a no -op.
+        this.sessionState.streamingQueryManager.active.foreach(q => q.stop())
       }
 
       // Callback added to provide our classloader to load job classes.

@@ -127,7 +127,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
       fail("Only owner of the table should be allowed to create policy on it")
     } catch {
       case sqle: SQLException =>
-      case x => throw x
+      case x: Throwable => throw x
     }
 
     ownerContext.sql(s"create policy testPolicy2 on  " +
@@ -138,18 +138,21 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
       fail("Only owner of the Policy can drop the policy")
     } catch {
       case sqle: SQLException =>
-      case x => throw x
+      case x: Throwable => throw x
     }
 
     ownerContext.sql("drop policy testPolicy2")
   }
 
-  ignore("check policy applied to ldap group") {
+  test("check policy applied to ldap group") {
     // the ldap group gemGroup2 contains gemfire3, gemfire4, gemfire5
     ownerContext.sql(s"create policy testPolicy1 on  " +
-        s"$colTableName for select to ldapGroup:gemGroup2 , gemfire6 using id > 90")
+        s"$colTableName for select to ldapGroup:gemGroup2, gemfire6 using id > 90")
 
     ownerContext.sql(s"alter table $colTableName enable row level security")
+
+    ownerContext.sql(s"GRANT select ON TABLE  $colTableName TO ldapGroup:gemGroup2," +
+        s" gemfire6, gemfire7, gemfire2")
 
     val snc2 = snc.newSession()
     snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)

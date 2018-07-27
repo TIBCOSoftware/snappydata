@@ -125,12 +125,14 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
+  final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
+  final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
@@ -315,7 +317,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     (TO ~
         (CURRENT ~ '_' ~ USER ~ push(CURRENT_USER)  |
             (LDAPGROUP ~ ws ~ ':' ~ ws ~
-                push(SnappyParserConsts.LDAPGROUP.lower + ':')).? ~
+                push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
                 identifier ~ ws ~> {(ldapOpt: Any, x) =>
               ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
         ).+ (commaSep) ~> {
@@ -344,6 +346,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         import scala.collection.JavaConverters._
         ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       }
+
       var currentUser = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
 
       currentUser = IdUtil.getUserAuthorizationId(
@@ -571,20 +574,24 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   /**
-   * GRANT/REVOKE on a table (only for column and row tables).
+   * GRANT/REVOKE/CREATE DISKSTORE/CALL on a table (only for column and row tables).
    *
    * Example:
    * {{{
    *   GRANT SELECT ON table TO user1, user2;
    *   GRANT INSERT ON table TO ldapGroup: group1;
+   *   CREATE DISKSTORE diskstore_name ('dir1' 10240)
+   *   DROP DISKSTORE diskstore_name
+   *   CALL SYSCS_UTIL.SYSCS_SET_RUNTIMESTATISTICS(1)
    * }}}
    */
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
-    (GRANT | REVOKE) ~ ANY.* ~> (() => DMLExternalTable(
-      TableIdentifier("SYSDUMMY1", Some("SYSIBM")) /* dummy table */ ,
-      LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-        SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
-        "", None)), input.sliceString(0, input.length)))
+    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
+        /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
+        (() => DMLExternalTable(TableIdentifier("SYSDUMMY1", Some("SYSIBM")),
+          LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
+            SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
+            "", None)), input.sliceString(0, input.length)))
   }
 
   protected def deployPackages: Rule1[LogicalPlan] = rule {
