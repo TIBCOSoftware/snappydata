@@ -28,10 +28,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 import static hydra.Prms.totalTaskTimeSec;
 
@@ -78,7 +75,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         rs = conn.createStatement().executeQuery(query);
         long queryExecutionEndTime = System.currentTimeMillis();
         long queryExecutionTime = queryExecutionEndTime - startTime;
-        Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime);
+        //Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime);
         SnappyBB.getBB().getSharedMap().put(queryNum + "_" + query + "_" + System.currentTimeMillis(), queryExecutionTime);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
@@ -110,7 +107,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
   }
 
   protected static void writeQueryExecutionTimingsData(String fileName, String queryNum) {
-    Log.getLogWriter().info("SS - queryNum: " + queryNum);
     File currentDir = new File(".");
     String filePath = currentDir + fileName;
     File file = new File(filePath);
@@ -130,9 +126,24 @@ public class SnappyConcurrencyTest extends SnappyTest {
       Log.getLogWriter().info("No data found for writing to " + fileName + " file under test directory");
       return;
     }
+    long max = Collections.max(timings);
+    long min = Collections.min(timings);
+    long avg;
+    long sum = 0;
+    for (int i = 0; i < timings.size(); i++) {
+      sum += timings.get(i);
+    }
+    avg = sum / timings.size();
+    queryNum = queryNum.substring(0, queryNum.lastIndexOf("_"));
+    Log.getLogWriter().info("SS - Min for query: " + queryNum + " = " + min);
+    Log.getLogWriter().info("SS - Max for query: " + queryNum + " = " + max);
+    Log.getLogWriter().info("SS - Average for query: " + queryNum + " = " + avg);
     for (Long s : timings) {
       snappyTest.writeToFile(s.toString(), file, true);
     }
+    snappyTest.writeToFile("Min: " + min, file, true);
+    snappyTest.writeToFile("Max: " + max, file, true);
+    snappyTest.writeToFile("Average: " + avg, file, true);
   }
 
   protected static ArrayList<Long> getQueryExecutionTimingsData(String userKey, ArrayList<Long>
