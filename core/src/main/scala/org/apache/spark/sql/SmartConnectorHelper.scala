@@ -81,8 +81,13 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     dropUDFStmt = conn.prepareCall(dropUDFString)
     alterTableStmt = conn.prepareCall(alterTableStmtString)
     getJarsStmt = conn.prepareCall(getJarsStmtString)
-    if (sc != null) {
-      executeGetJarsStmt(sc)
+    if (sc != null && System.getProperty("pull-deployed-jars", "true").toBoolean) {
+      try {
+        executeGetJarsStmt(sc)
+      } catch {
+        case sqle: SQLException => logWarning(s"could not get jar and" +
+            s" package information from snappy cluster", sqle)
+      }
     }
   }
 
