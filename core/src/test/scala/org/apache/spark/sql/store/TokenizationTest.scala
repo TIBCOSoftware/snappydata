@@ -293,6 +293,43 @@ class TokenizationTest
     assert(cacheMap.size() == 2)
   }
 
+  test("SNAP-2351") {
+    snc.sql(s"create table trade.customers" +
+        s" (cid int not null, cust_name varchar(100), " +
+        s"since date, addr varchar(100), tid int, " +
+        s"primary key (cid))  USING ROW OPTIONS (partition_by 'cid')")
+    snc.sql(s"create table trade.networth (cid int not null, " +
+        s"cash decimal (30, 20), securities decimal (30, 20), " +
+        s"loanlimit int, availloan decimal (30, 20),  tid int, " +
+        s"constraint netw_pk primary key (cid), " +
+        s"constraint cust_newt_fk foreign key (cid) " +
+        s"references trade.customers (cid) on delete restrict, " +
+        s"constraint cash_ch check (cash>=0), " +
+        s"constraint sec_ch check (securities >=0), " +
+        s"constraint availloan_ck check (loanlimit>=availloan and availloan >=0)) " +
+        s"USING ROW OPTIONS (partition_by 'cid', colocate_with 'trade.customers')")
+    snc.sql(s"insert into trade.customers values(1,'abc','2012-01-14','abc-xyz',1)")
+    snc.sql(s"insert into trade.customers values(2,'aaa','2012-01-14','aaa-xyz',1)")
+    snc.sql(s"insert into trade.customers values(3,'bbb','2012-02-14','abb-xyz',1)")
+    snc.sql(s"insert into trade.customers values(4,'ccc','2012-02-16','ccc-xyz',1)")
+    snc.sql(s"insert into trade.customers values(5,'ddd','2012-01-16','ddd-xyz',1)")
+    snc.sql(s"insert into trade.customers values(6,'eee','2012-03-17','eee-xyz',1)")
+    snc.sql(s"insert into trade.networth values(1,10.2,11.2,10000,5000,1)")
+    snc.sql(s"insert into trade.networth values(2,10.2,11.2,10000,5000,1)")
+    snc.sql(s"insert into trade.networth values(3,13.2,11.2,15000,8000,1)")
+    snc.sql(s"insert into trade.networth values(4,13.2,11.2,12000,3000,1)")
+    snc.sql(s"insert into trade.networth values(5,13.2,14.2,20000,10000,1)")
+    snc.sql(s"insert into trade.networth values(6,15.2,12.2,25000,15000,1)")
+    var df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, " +
+        s"c.cid from trade.customers c, trade.networth n where  n.cid = c.cid" +
+        s" and n.tid = 1 and c.cid > 3")
+    assert(df.collect().size === 3)
+    df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, c.cid" +
+        s" from trade.customers c, trade.networth n where n.cid = c.cid" +
+        s" and n.tid = 1 and c.cid > 5")
+    assert(df.collect().size === 1)
+  }
+
   test("Test external tables no plan caching") {
     val cacheMap = SnappySession.getPlanCache.asMap()
     val hfile: String = getClass.getResource("/2015.parquet").getPath
