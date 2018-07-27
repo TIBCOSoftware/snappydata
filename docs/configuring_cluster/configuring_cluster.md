@@ -93,6 +93,22 @@ $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
 
+<a id="confsecondarylead"></a>
+###Configuring Secondary Lead
+
+To configure secondary leads, you must add the required number of entries in the **conf/leads** file. 
+
+For example:
+
+```
+$ cat conf/leads
+node-l1 -heap-size=4096m -locators=node-b:8888,node-a:9999
+node-l2 -heap-size=4096m -locators=node-b:8888,node-a:9999
+
+```
+In this example two leads (one on node-l1 and another on node-l2) are configured. Using `sbin/snappy-start-all.sh`, when you launch the cluster, one of them becomes the primary lead and the other becomes the secondary lead.
+
+
 <a id="dataserver"></a>
 ## Configuring Data Servers
 Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples. 

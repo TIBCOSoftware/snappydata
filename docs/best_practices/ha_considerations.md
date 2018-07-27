@@ -5,7 +5,7 @@ High availability options are available for all the SnappyData components.
 
 **Lead** </br>
 SnappyData supports secondary lead nodes. If the primary lead becomes unavailable, one of  the secondary lead nodes takes over immediately. 
-Setting up the secondary lead node is highly recommended because the system cannot function if the lead node is unavailable. Currently, the queries and jobs that are executing when the primary lead becomes unavailable, are not re-tried and have to be resubmitted.
+[Setting up the secondary lead node](../configuring_cluster/configuring_cluster.md#confsecondarylead) is highly recommended because the system cannot function if the lead node is unavailable. Currently, the queries and jobs that are executing when the primary lead becomes unavailable, are not re-tried and have to be resubmitted.
 
 **Locator**</br>
 SnappyData supports multiple locators in the cluster for high availability. 
