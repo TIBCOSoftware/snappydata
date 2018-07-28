@@ -135,9 +135,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
     }
     avg = sum / timings.size();
     queryNum = queryNum.substring(0, queryNum.lastIndexOf("_"));
-    Log.getLogWriter().info("SS - Min for query: " + queryNum + " = " + min);
-    Log.getLogWriter().info("SS - Max for query: " + queryNum + " = " + max);
-    Log.getLogWriter().info("SS - Average for query: " + queryNum + " = " + avg);
+    Log.getLogWriter().info("Latency - Min for query: " + queryNum + " = " + min);
+    Log.getLogWriter().info("Latency - Max for query: " + queryNum + " = " + max);
+    Log.getLogWriter().info("Latency - Average for query: " + queryNum + " = " + avg);
+    Log.getLogWriter().info("Latency - Total number of Executions for query: " + queryNum + " = " + timings.size());
     for (Long s : timings) {
       snappyTest.writeToFile(s.toString(), file, true);
     }
