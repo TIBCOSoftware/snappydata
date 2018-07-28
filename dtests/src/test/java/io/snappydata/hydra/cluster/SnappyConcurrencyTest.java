@@ -23,8 +23,7 @@ import hydra.TestConfig;
 import sql.sqlutil.ResultSetHelper;
 import util.TestException;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -99,14 +98,28 @@ public class SnappyConcurrencyTest extends SnappyTest {
         numpointLookUpQueriesExecuted);
     Log.getLogWriter().info("Total number of analytical queries executed : " + numAggregationQueriesExecuted);
     Vector<String> queryVect = SnappyPrms.getAnalyticalQueryList();
-    for (int i = 0; i < queryVect.size(); i++) {
-      String queryNum = "Q" + i;
-      Log.getLogWriter().info("SS - queryNum: " + queryNum);
-      writeQueryExecutionTimingsData(queryNum, i + "_");
+    FileOutputStream latencyStream = null;
+    try {
+      latencyStream = new FileOutputStream(new File("LatencyStats.csv"));
+      PrintStream latencyPrintStream = new PrintStream(latencyStream);
+      latencyPrintStream.println("Query, Min, Max, Avg, numExecutions");
+
+      for (int i = 0; i < queryVect.size(); i++) {
+        String queryNum = "Q" + i;
+        Log.getLogWriter().info("SS - queryNum: " + queryNum);
+        writeQueryExecutionTimingsData(queryNum, i + "_", latencyPrintStream);
+      }
+      latencyPrintStream.close();
+      latencyStream.close();
+    } catch (FileNotFoundException fne) {
+      String s = "Unable to find file: LatencyStats.csv";
+      throw new TestException(s);
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while closing file stream... \nError Message:" + e.getMessage());
     }
   }
 
-  protected static void writeQueryExecutionTimingsData(String fileName, String queryNum) {
+  protected static void writeQueryExecutionTimingsData(String fileName, String queryNum, PrintStream latencyPrintStream) {
     File currentDir = new File(".");
     String filePath = currentDir + fileName;
     File file = new File(filePath);
@@ -118,6 +131,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
             file + "\nError Message:" + e.getMessage());
       }
     }
+
     ArrayList<Long> timings = new ArrayList<>();
     timings = getQueryExecutionTimingsData(queryNum, timings);
     if (timings.size() == 0) {
@@ -135,6 +149,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
     }
     avg = sum / timings.size();
     queryNum = queryNum.substring(0, queryNum.lastIndexOf("_"));
+    String string = String.format(queryNum + ", " + min + ", " + max + ", " + avg + ", " + timings.size());
+    latencyPrintStream.println(string);
     Log.getLogWriter().info("Latency - Min for query: " + queryNum + " = " + min);
     Log.getLogWriter().info("Latency - Max for query: " + queryNum + " = " + max);
     Log.getLogWriter().info("Latency - Average for query: " + queryNum + " = " + avg);
