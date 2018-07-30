@@ -719,7 +719,14 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def fetchExpression: Rule1[Expression] = rule {
-    FETCH ~ FIRST ~ expressionNoTokens ~ ((ROW|ROWS) ~ ONLY) ~> ((f: Expression) => f)
+    FETCH ~ FIRST ~ push(tokenize) ~ TOKENIZE_END ~ integral.? ~ ((ROW | ROWS) ~ ONLY) ~>
+      ((tokenized: Boolean, f: Any) => {
+        tokenize = tokenized
+        f.asInstanceOf[Option[String]] match {
+          case None => Literal(1)
+          case Some(s) => Literal(s.toInt)
+        }
+      })
   }
 
   protected final def distributeBy: Rule1[LogicalPlan => LogicalPlan] = rule {
