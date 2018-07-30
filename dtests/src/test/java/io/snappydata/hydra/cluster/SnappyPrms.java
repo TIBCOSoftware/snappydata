@@ -30,6 +30,12 @@ public class SnappyPrms extends BasePrms {
   public static Long sqlScriptNames;
 
   /**
+   * Parameter used to get the user specified script names.
+   * (VectosetValues of Strings) A list of values for script Names to execute.
+   */
+  public static Long scriptNames;
+
+  /**
    * Parameter used to get the user specified data location List for the sql scripts.
    * (VectorsetValues of Strings) A list of values for dataLocation to be replaced in the
    * sql scripts.
@@ -40,6 +46,18 @@ public class SnappyPrms extends BasePrms {
    * Framework will treat its corresponding parameter as " " string in this case.
    */
   public static Long dataLocation;
+
+
+  /**
+   * Parameter used to get the user specified script location List for the scripts.
+   * (VectorsetValues of Strings) A list of values for scriptLocation to be executed in test.
+   * If no path is required for script then expected value to be provided for param is :
+   * Empty String : " " in case if user don't want to maintain the sequence.
+   * Or else provide the script that does not require path at the end in list of
+   * scriptNames parameter.
+   * Framework will treat its corresponding parameter as " " string in this case.
+   */
+  public static Long scriptLocation;
 
   /**
    * Parameter used to get the user specified persistence mode List for the sql scripts.
@@ -794,6 +812,11 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
+  public static Vector getScriptNames() {
+    Long key = scriptNames;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+  }
+
   public static String getUserAppJar() {
     Long key = userAppJar;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
@@ -816,6 +839,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getDataLocationList() {
     Long key = dataLocation;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getScriptLocationList() {
+    Long key = scriptLocation;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
