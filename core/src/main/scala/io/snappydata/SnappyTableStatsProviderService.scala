@@ -205,7 +205,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
 
-    val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
+    val hiveTables = Misc.getMemStore.getExternalCatalog().getHiveTables(true).asScala
 
     val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
       try {

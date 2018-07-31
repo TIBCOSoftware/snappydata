@@ -138,7 +138,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
       // wait for store hive client to initialize first
       val store = Misc.getMemStoreBootingNoThrow
       if (store ne null) {
-        val storeCatalog = store.getExternalCatalog
+        val storeCatalog = store.getExternalCatalog()
         if (storeCatalog ne null) {
           // explicit wait though it should already be done by the getter above
           storeCatalog.waitForInitialization()
