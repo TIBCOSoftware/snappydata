@@ -8,8 +8,8 @@ CREATE EXTERNAL TABLE STAGING_AIRLINE
     -- USING parquet OPTIONS(path '/home/swati/snappy-commons/examples/quickstart/data/airlineParquetData');
 
 ----- CREATE COLUMN TABLE -----
-CREATE TABLE AIRLINE USING column OPTIONS(PERSISTENT 'SYNCHRONOUS', BUCKETS '128', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true')  AS (
-  SELECT monotonically_increasing_id() as id, '' as dummy,  Year AS Year_, Month AS Month_ , DayOfMonth, DepTime, CRSDepTime, ArrTime, UniqueCarrier, ArrDelay, DepDelay, Origin,
+CREATE TABLE AIRLINE USING column OPTIONS(partition_by 'UniqueCarrier,Year_', PERSISTENT 'SYNCHRONOUS', BUCKETS '128', EVICTION_BY 'LRUHEAPPERCENT', overflow 'true', key_columns 'id')  AS (
+  SELECT cast(monotonically_increasing_id() as string) as id, '' as dummy, Year_, Month_ , DayOfMonth, DepTime, CRSDepTime, ArrTime, UniqueCarrier, ArrDelay, DepDelay, Origin,
     Dest, Distance, TaxiIn, TaxiOut, Cancelled, CarrierDelay, WeatherDelay
     FROM STAGING_AIRLINE);
 
