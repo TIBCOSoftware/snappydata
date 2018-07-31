@@ -168,7 +168,7 @@ pages:
             - 'CREATE FUNCTION': 'reference/sql_reference/create-function.md'
             - 'CREATE INDEX': 'reference/sql_reference/create-index.md'
             - 'CREATE SCHEMA': 'reference/sql_reference/create-schema.md'
-            - 'CREATE SYNONYM': 'reference/sql_reference/create-synonym.md'
+#           - 'CREATE SYNONYM': 'reference/sql_reference/create-synonym.md'
             - 'CREATE STREAM TABLE': 'reference/sql_reference/create-stream-table.md'
             - 'CREATE SAMPLE TABLE': 'reference/sql_reference/create-sample-table.md'
             - 'CREATE TABLE': 'reference/sql_reference/create-table.md'
