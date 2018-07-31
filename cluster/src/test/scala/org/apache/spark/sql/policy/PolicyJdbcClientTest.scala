@@ -271,6 +271,25 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     }
   }
 
+  test("sys.syspolicies table") {
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    try {
+      stmt.execute(s"create policy testPolicy1 on  " +
+          s"$colTableName for select to current_user using id > 10")
+
+      stmt.execute(s"create policy testPolicy2 on  " +
+          s"$rowTableName for select to current_user using id < 30")
+
+      stmt.executeQuery("select * from sys.syspolicies")
+      stmt.execute("drop policy testPolicy1")
+      stmt.execute("drop policy testPolicy2")
+    } finally {
+      conn.close()
+
+    }
+  }
+
   test("old query plan invalidation on enabling rls on column table using jdbc client") {
     this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
   }
@@ -338,6 +357,8 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     }
 
   }
+
+
 
   private def getConnection(user: Option[String] = None): Connection = {
     val props = new Properties()
