@@ -26,11 +26,11 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.{SparkContext, SparkFiles}
+import org.apache.spark.{SparkCallbacks, SparkContext, SparkFiles}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
 import org.apache.spark.status.api.v1.SnappyApiRootResource
-import org.apache.spark.ui.{SnappyDashboardPage, SnappyMemberDetailsPage}
+import org.apache.spark.ui.{JettyUtils, SnappyDashboardPage, SnappyMemberDetailsPage}
 import org.apache.spark.ui.dashboard.DashboardTab
 import org.apache.spark.util.{SnappyUtils, Utils}
 
@@ -46,7 +46,14 @@ object ToolsCallbackImpl extends ToolsCallback {
           dashboardTab.snappyMemberDetailsPage =  new SnappyMemberDetailsPage(dashboardTab)
 
           val parentUI = dashboardTab.getParentUI
-          parentUI.attachHandler(SnappyApiRootResource.getServletHandler(parentUI))
+          val snappyApiRootResource = SnappyApiRootResource.getServletHandler(parentUI)
+          if(SparkCallbacks.getAuthenticatorForJettyServer().isDefined) {
+            val basicAuthenticationHandler = JettyUtils.basicAuthenticationHandler()
+            if(basicAuthenticationHandler != null) {
+              snappyApiRootResource.setSecurityHandler(basicAuthenticationHandler)
+            }
+          }
+          parentUI.attachHandler(snappyApiRootResource)
         }
       })
     })
