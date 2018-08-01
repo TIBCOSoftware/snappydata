@@ -537,8 +537,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         if (table.properties.contains(HIVE_PROVIDER)) {
           getCachedHiveTable(tableIdent)
         } else if (table.tableType == CatalogTableType.VIEW) {
-          val viewText = table.viewText
-              .getOrElse(sys.error("Invalid view without text."))
+          // val viewText = table.viewText
+          //     .getOrElse(sys.error("Invalid view without text."))
+          val viewText = JdbcExtendedUtils.readSplitProperty(
+            Constant.SPLIT_VIEW_TEXT_PROPERTY, table.properties).getOrElse(table.viewText
+              .getOrElse(sys.error("Invalid view without text.")))
           snappySession.sessionState.sqlParser.parsePlan(viewText)
         } else if (table.tableType == CatalogTableType.EXTERNAL &&
             (table.properties.get(JdbcExtendedUtils.TABLETYPE_PROPERTY) match {
