@@ -26,7 +26,8 @@ import scala.util.{Failure, Success, Try}
 
 object AirlineCleanedParquetDataJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-    val parquetTable = "STAGING_AIRLINE"
+    val airlineParquetTable = "STAGING_AIRLINE"
+    val airlineRefParquetTable = "STAGING_AIRLINEREF"
     val snc = snSession.sqlContext
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
@@ -34,11 +35,15 @@ object AirlineCleanedParquetDataJob extends SnappySQLJob {
     // scalastyle:off println
     val pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")),
       true))
+    val airlineParquetDir = jobConfig.getString("airlineParquetDir")
+    val airlineRefParquetDir = jobConfig.getString("airlineRefParquetDir")
     Try {
       // Get the already created tables
-      val airlineParquetDF: DataFrame = snc.table(parquetTable)
+      val airlineParquetDF: DataFrame = snc.table(airlineParquetTable)
+        val airlineRefParquetDF: DataFrame = snc.table(airlineRefParquetTable)
 
-      airlineParquetDF.write.parquet("/export/shared/QA_DATA/airlinedata_cleaned")
+      airlineParquetDF.write.parquet(airlineParquetDir)
+      airlineRefParquetDF.write.parquet(airlineRefParquetDir)
     } match {
       case Success(v) => pw.close()
         s"See ${getCurrentDirectory}/${jobConfig.getString("logFileName")}"
