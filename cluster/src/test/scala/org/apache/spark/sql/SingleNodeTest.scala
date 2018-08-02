@@ -21,6 +21,7 @@ import io.snappydata.{PlanTest, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
 import org.apache.spark.rdd.ZippedPartitionsPartition
+import org.apache.spark.sql.catalyst.plans.physical.SinglePartition
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 
@@ -85,12 +86,14 @@ object SingleNodeTest {
       isSnappy = true, buckets_Order_Lineitem, null)
 
     def validateSinglePartition(df: DataFrame, bucketId: Int): Unit = {
-      val scanRDD = df.queryExecution.executedPlan.collectFirst {
-        case c: ColumnTableScan => c.dataRDD
+      val plan = df.queryExecution.executedPlan.collectFirst {
+        case c: ColumnTableScan => c
       }
 
-      val partitions = scanRDD.map(_.partitions).getOrElse(
-        throw new AssertionError("Expecting ColumnTable Scan"))
+      val scanRDD = plan.map(_.dataRDD).
+          getOrElse(throw new AssertionError("Expecting ColumnTable Scan"))
+      val partitions = scanRDD.partitions
+      assert(plan.get.outputPartitioning == SinglePartition)
       assert(partitions.length == 1, {
         val sb = new StringBuilder("Pruning not in effect ? partitions found ")
         partitions.foreach(p => sb.append(p.index).append(","))
