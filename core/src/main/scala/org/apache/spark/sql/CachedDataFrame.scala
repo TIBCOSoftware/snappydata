@@ -63,7 +63,8 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int], encoder: Encoder[Row],
     shuffleCleanups: Array[Future[Unit]], val rddId: Int, noSideEffects: Boolean,
     val queryHints: java.util.Map[String, String], private[sql] var currentExecutionId: Long,
-    private[sql] var planStartTime: Long, private[sql] var planEndTime: Long)
+    private[sql] var planStartTime: Long, private[sql] var planEndTime: Long,
+    val linkPart : Boolean = false)
     extends Dataset[Row](snappySession, queryExecution, encoder) with Logging {
 
   private[sql] final def isCached: Boolean = cachedRDD ne null
@@ -148,7 +149,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private[sql] def duplicate(): CachedDataFrame = {
     val cdf = new CachedDataFrame(snappySession, queryExecution, queryExecutionString,
       queryPlanInfo, null, null, cachedRDD, shuffleDependencies, encoder, shuffleCleanups,
-      rddId, noSideEffects, queryHints, -1L, -1L, -1L)
+      rddId, noSideEffects, queryHints, -1L, -1L, -1L, linkPart)
     cdf.log_ = log_
     cdf.levelFlags = levelFlags
     cdf._boundEnc = boundEnc // force materialize boundEnc which is commonly used
@@ -176,9 +177,46 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       case r =>
         // f.set(r, null)
         UnsafeHolder.getUnsafe.putObject(r, CachedDataFrame.rdd_partitions_, null)
-        r.dependencies.map(_.rdd)
+        val allRDDs = r match {
+          case rdd: DelegateRDD[_] =>
+            val baseRDD = rdd.baseRdd
+            val otherRDDs = rdd.otherRDDs
+            otherRDDs.map(o =>
+              UnsafeHolder.getUnsafe.putObject(o, CachedDataFrame.rdd_partitions_, null))
+            UnsafeHolder.getUnsafe.putObject(baseRDD, CachedDataFrame.rdd_partitions_, null)
+            otherRDDs ++ Seq(baseRDD)
+          case _ => Seq.empty[RDD[_]]
+        }
+
+        r.dependencies.map(_.rdd) ++ allRDDs.flatMap(b => b.dependencies.map(_.rdd))
     }
-    if (children.nonEmpty) clearPartitions(children)
+    if (children.nonEmpty) {
+      clearPartitions(children)
+    }
+  }
+
+  @tailrec
+  private def reEvaluatePartitions(rdds : Seq[RDD[_]]): Unit = {
+    val children = rdds.flatMap {
+      case null => Nil
+      case r =>
+        // f.set(r, null)
+        r.getNumPartitions
+        val allRDDs = r match {
+          case rdd: DelegateRDD[_] =>
+            val baseRDD = rdd.baseRdd
+            val otherRDDs = rdd.otherRDDs
+            otherRDDs.map(o => o.getNumPartitions)
+            baseRDD.getNumPartitions
+            otherRDDs ++ Seq(baseRDD)
+          case _ => Seq.empty[RDD[_]]
+        }
+
+        r.dependencies.map(_.rdd) ++ allRDDs.flatMap(b => b.dependencies.map(_.rdd))
+    }
+    if (children.nonEmpty) {
+      reEvaluatePartitions(children)
+    }
   }
 
   private def setPoolForExecution(): Unit = {
@@ -192,12 +230,15 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
   }
 
+
   private def prepareForCollect(): Boolean = {
     if (prepared) return false
     if (isCached) {
       reset()
       applyCurrentLiterals()
     }
+    snappySession.linkPartitionsToBuckets(flag = linkPart)
+    reEvaluatePartitions(cachedRDD :: Nil)
     setPoolForExecution()
     // update the strings in query execution and planInfo
     if (currentQueryExecutionString eq null) {

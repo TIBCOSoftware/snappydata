@@ -2053,7 +2053,7 @@ object SnappySession extends Logging {
     new CachedDataFrame(session, execution, origExecutionString, origPlanInfo,
       executionString, planInfo, rdd, shuffleDependencies, RowEncoder(qe.analyzed.schema),
       shuffleCleanups, rddId, noSideEffects, queryHints,
-      executionId, planStartTime, planEndTime)
+      executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
   }
 
   private[this] lazy val planCache = {
