@@ -44,7 +44,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
-import org.apache.spark.sql.types.StructType
 
 /**
  * Utility methods for column format storage keys and values.
@@ -106,7 +105,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   def this() = this(-1L, -1, -1)
 
   override def getNumColumnsInTable(columnTable: GemFireContainer): Int =
-    columnTable.fetchHiveMetaData(false).schema.asInstanceOf[StructType].length
+    Utils.getTableSchema(columnTable.fetchHiveMetaData(false)).length
 
   override def getColumnBatchRowCount(bucketRegion: BucketRegion,
       re: RegionEntry, numColumnsInTable: Int): Int = {

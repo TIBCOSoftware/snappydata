@@ -30,9 +30,9 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import io.snappydata.thrift.common.BufferedBlob
 import io.snappydata.thrift.internal.ClientBlob
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.store.CompressionCodecId
-import org.apache.spark.sql.types.StructType
 
 /**
  * A [[RowEncoder]] implementation for [[ColumnFormatValue]] and child classes.
@@ -136,7 +136,7 @@ final class ColumnFormatEncoder extends RowEncoder {
         }
         if (deleteBatch) {
           val container = region.getUserAttribute.asInstanceOf[GemFireContainer]
-          val schema = container.fetchHiveMetaData(false).schema.asInstanceOf[StructType]
+          val schema = Utils.getTableSchema(container.fetchHiveMetaData(false))
           ColumnDelta.deleteBatch(deleteKey, region, schema.length)
         }
       case _ =>

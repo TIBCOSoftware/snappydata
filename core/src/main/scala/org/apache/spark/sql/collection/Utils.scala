@@ -32,7 +32,7 @@ import scala.util.control.NonFatal
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.SystemFailure
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -56,7 +56,7 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.metric.SQLMetric
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
@@ -554,6 +554,16 @@ object Utils extends Logging {
   }
 
   def schemaAttributes(schema: StructType): Seq[AttributeReference] = schema.toAttributes
+
+  def getTableSchema(metadata: ExternalTableMetaData): StructType = {
+    // add weightage column for sample tables
+    val schema = metadata.schema.asInstanceOf[StructType]
+    if (metadata.tableType == ExternalTableType.Sample.name &&
+        schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+      schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
+        LongType, nullable = false)
+    } else schema
+  }
 
   def getFields(o: Any): Map[String, Any] = {
     val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {

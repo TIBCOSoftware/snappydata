@@ -165,6 +165,7 @@ object SmartConnectorRDDHelper {
     if (bucketToServerMappingStr != null) {
       // check if Spark executors are using IP addresses or host names
       val preferHost = preferHostName(session)
+      val preferPrimaries = session.preferPrimaries
       val arr: Array[String] = bucketToServerMappingStr.split(":")
       var orphanBuckets: ArrayBuffer[Int] = null
       val noOfBuckets = arr(0).toInt
@@ -177,15 +178,24 @@ object SmartConnectorRDDHelper {
         val aBucketInfo: Array[String] = x.split(";")
         val bid: Int = aBucketInfo(0).toInt
         if (!(aBucketInfo(1) == "null")) {
-          // get (host,addr,port)
-          val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
-          val hostName = hostAddressPort._1
-          val host = if (preferHost) hostName else hostAddressPort._2
-          val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
-          val netUrls = new ArrayBuffer[(String, String)](1)
-          netUrls += host -> netUrl
-          allNetUrls(bid) = netUrls
-          availableNetUrls.putIfAbsent(host, netUrl)
+          val n = aBucketInfo.length
+          val netUrls = new ArrayBuffer[(String, String)](n - 1)
+          var i = 1
+          while (i < n) {
+            // get (host,addr,port)
+            val server = aBucketInfo(i)
+            if (server != "null") {
+              val hostAddressPort = returnHostPortFromServerString(server)
+              val hostName = hostAddressPort._1
+              val host = if (preferHost) hostName else hostAddressPort._2
+              val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
+              availableNetUrls.putIfAbsent(host, netUrl)
+              netUrls += host -> netUrl
+            }
+            i += 1
+          }
+          allNetUrls(bid) =
+              if (preferPrimaries || n == 1) netUrls else scala.util.Random.shuffle(netUrls)
         } else {
           // Save the bucket which does not have a neturl,
           // and later assign available ones to it.

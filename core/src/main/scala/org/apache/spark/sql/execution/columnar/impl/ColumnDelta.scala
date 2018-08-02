@@ -86,8 +86,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val newValue = getValueRetain(FetchRequest.DECOMPRESS)
       val newBuffer = newValue.getBuffer
       try {
-        val schema = ExternalStoreUtils.getExternalTableMetaData(region.getFullPath,
-          region.getUserAttribute.asInstanceOf[GemFireContainer]).schema.asInstanceOf[StructType]
+        val schema = Utils.getTableSchema(ExternalStoreUtils.getExternalTableMetaData(
+          region.getFullPath, region.getUserAttribute.asInstanceOf[GemFireContainer]))
         val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
         // TODO: SW: if old value itself is returned, then avoid any put at GemFire layer
         // (perhaps throw some exception that can be caught and ignored in virtualPut)

@@ -588,14 +588,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, false, $conn);
+         |  $externalStoreTerm.commitTx($txId, false, null, -1, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
     ctx.addNewFunction(rollbackSnapshotTx,
       s"""
          |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.rollbackTx($txId, $conn);
+         |  $externalStoreTerm.rollbackTx($txId, null, -1, $conn);
          |}
       """.stripMargin)
     closeConnection = ctx.freshName("closeConnection")
@@ -725,14 +725,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, false, $conn);
+         |  $externalStoreTerm.commitTx($txId, false, null, -1, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
     ctx.addNewFunction(rollbackSnapshotTx,
       s"""
          |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.rollbackTx($txId, $conn);
+         |  $externalStoreTerm.rollbackTx($txId, null, -1, $conn);
          |}
       """.stripMargin)
     closeConnection = ctx.freshName("closeConnection")

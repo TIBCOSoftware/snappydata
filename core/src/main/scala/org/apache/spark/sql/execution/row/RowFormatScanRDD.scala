@@ -67,6 +67,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var delayRollover: Boolean, protected var projection: Array[Int])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
+  protected var updateOwner: String = if (session ne null) session.getMutablePlanOwner else null
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
@@ -199,7 +200,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
     if (isPartitioned) {
       val ps = conn.prepareStatement(
-        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
+        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION_EX(?, ?, ?, ?)")
       try {
         ps.setString(1, tableName)
         val bucketString = thePart match {
@@ -208,6 +209,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         }
         ps.setString(2, bucketString)
         ps.setInt(3, -1)
+        ps.setString(4, updateOwner)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -272,6 +274,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       }
       itr
     } else {
+      val container = GemFireXDUtils.getGemFireContainer(tableName, true)
+      val bucketIds = thePart match {
+        case p: MultiBucketExecutorPartition => p.buckets
+        case _ => java.util.Collections.singleton(Int.box(thePart.index))
+      }
       // explicitly check authorization for the case of column table scan
       // !pushProjections && useResultSet means a column table
       if (useResultSet) {
@@ -281,20 +288,27 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
       var tx = txManagerImpl.getTXState
       val startTX = tx eq null
-      if (startTX) {
-        tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
-          IsolationLevel.SNAPSHOT, null, null)
+      // acquire bucket maintenance read lock if required before snapshot gets acquired
+      // and register to be released with transaction commit
+      val br = BucketRegion.lockPrimaryForMaintenance(false, updateOwner,
+        container.getRegion.asInstanceOf[PartitionedRegion], bucketIds)
+      var success = false
+      try {
+        if (startTX) {
+          tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
+            IsolationLevel.SNAPSHOT, null, null)
+        }
+        // register the locked region in TX for lock release in case of rollback
+        success = tx.getProxy.registerLockedBucketRegion(br)
+      } finally {
+        if ((br ne null) && !success) {
+          br.unlockAfterMaintenance(false, updateOwner)
+        }
       }
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
       // or direct code generation as appropriate
       val itr: IteratorWithMetrics[_] = if (isPartitioned && filterWhereClause.isEmpty) {
-        val container = GemFireXDUtils.getGemFireContainer(tableName, true)
-        val bucketIds = thePart match {
-          case p: MultiBucketExecutorPartition => p.buckets
-          case _ => java.util.Collections.singleton(Int.box(thePart.index))
-        }
-
         val txId = if (tx ne null) tx.getTransactionId else null
         // always fault-in for row buffers
         val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId,
@@ -373,6 +387,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       output.writeVarInt(projection.length, true)
       output.writeInts(projection, true)
     }
+    output.writeString(updateOwner)
     // need connection properties only if computing ResultSet
     if (pushProjections || useResultSet || !isPartitioned || len > 0) {
       ConnectionPropertiesSerializer.write(kryo, output, connProperties)
@@ -406,6 +421,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val numProjections = input.readVarInt(true)
       projection = input.readInts(numProjections, true)
     }
+    updateOwner = input.readString()
     // read connection properties only if computing ResultSet
     if (pushProjections || useResultSet || !isPartitioned || numFilters > 0) {
       connProperties = ConnectionPropertiesSerializer.read(kryo, input)
@@ -445,7 +461,8 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer,
-    region: LocalRegion, bucketIds: java.util.Set[Integer]) extends IteratorWithMetrics[T] {
+    region: LocalRegion, bucketIds: java.util.Set[Integer])
+    extends IteratorWithMetrics[T] {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 

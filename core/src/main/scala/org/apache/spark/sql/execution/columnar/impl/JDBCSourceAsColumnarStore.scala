@@ -36,7 +36,7 @@ import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.thrift.StatementAttrs
-import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
+import io.snappydata.thrift.internal.{ClientBlob, ClientStatement}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializerPool, StructTypeSerializer}
@@ -97,9 +97,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       compressionCodecId: Int, conn: Option[Connection]): Unit = {
-    if (batch.deltaIndexes ne null) {
-      logInfo(s"SW:1: applying updates on $tableName")
-    }
     // check for task cancellation before further processing
     checkTaskCancellation()
     if (partitionId >= 0) {
@@ -115,9 +112,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case None =>
         case Some(bucket) => bucket.updateInProgressSize(-batchSize)
       }
-    }
-    if (batch.deltaIndexes ne null) {
-      logInfo(s"SW:1: DONE applying updates on $tableName")
     }
   }
 
@@ -169,22 +163,32 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }(Some(conn))
   }
 
-  def commitTx(txId: String, delayRollover: Boolean, conn: Option[Connection]): Unit = {
+  def commitTx(txId: String, delayRollover: Boolean, updateOwner: String,
+      partitionId: Int, conn: Option[Connection]): Unit = {
     tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true)(conn => {
       var success = false
       try {
         connectionType match {
-          case ConnectionType.Embedded =>
+          case ConnectionType.Embedded => try {
             // if rollover was marked as delayed, then do the rollover before commit
             if (delayRollover) {
               GfxdSystemProcedures.flushLocalBuckets(tableName, false)
             }
             Misc.getGemFireCache.getCacheTransactionManager.commit()
+          } finally {
+            if (updateOwner ne null) {
+              GfxdSystemProcedures.unlockBucketAfterMaintenance(
+                tableName, updateOwner, partitionId)
+            }
+          }
           case _ =>
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
-            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?,?,?,?)")
             ps.setString(1, if (txId ne null) txId else "")
-            ps.setString(2, if (delayRollover) tableName else "")
+            ps.setString(2, tableName)
+            ps.setBoolean(3, delayRollover)
+            ps.setString(4, if (updateOwner ne null) updateOwner else "")
+            ps.setInt(5, partitionId)
             try {
               ps.executeUpdate()
               logDebug(s"The txid being committed is $txId")
@@ -209,19 +213,30 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
 
-  def rollbackTx(txId: String, conn: Option[Connection]): Unit = {
+  def rollbackTx(txId: String, updateOwner: String, partitionId: Int,
+      conn: Option[Connection]): Unit = {
     // noinspection RedundantDefaultArgument
     tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
       (conn: Connection) => {
         connectionType match {
           case ConnectionType.Embedded =>
-            Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            try {
+              Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            } finally {
+              if (updateOwner ne null) {
+                GfxdSystemProcedures.unlockBucketAfterMaintenance(
+                  tableName, updateOwner, partitionId)
+              }
+            }
           case _ =>
             logDebug(s"Going to rollback transaction $txId on server using $conn")
             var ps: PreparedStatement = null
             handleRollback(() => {
-              ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
+              ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?,?,?,?)")
               ps.setString(1, if (txId ne null) txId else "")
+              ps.setString(2, tableName)
+              ps.setString(3, if (updateOwner ne null) updateOwner else "")
+              ps.setInt(4, partitionId)
               ps.executeUpdate()
               logDebug(s"The transaction ID being rolled back is $txId")
             }, () => {
@@ -236,7 +251,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def storeDelete(columnTableName: String, buffer: ByteBuffer, partitionId: Int,
       batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit = {
-    logInfo(s"SW:1: applying deletes on $tableName")
     // check for task cancellation before further processing
     checkTaskCancellation()
     val value = new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed = false)
@@ -326,7 +340,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           }
         }(conn)
     }
-    logInfo(s"SW:1: DONE applying deletes on $tableName")
   }
 
   def closeConnection(c: Option[Connection]): Unit = {
@@ -799,9 +812,12 @@ final class SmartConnectorColumnRDD(
         logDebug(s"The txid going to be committed is $txId " + tableName)
 
         // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?,?,?,?)")
         ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
+        ps.setString(2, tableName)
+        ps.setBoolean(3, delayRollover)
+        ps.setString(4, "")
+        ps.setInt(5, -1)
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
@@ -902,9 +918,12 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
       // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+        val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?,?,?,?)")
         ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
+        ps.setString(2, tableName)
+        ps.setBoolean(3, delayRollover)
+        ps.setString(3, "")
+        ps.setInt(4, -1)
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
@@ -933,31 +952,18 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val bucketPartition = thePart.asInstanceOf[SmartExecutorBucketPartition]
     logDebug(s"Scanning row buffer for $tableName,partId=${bucketPartition.index}," +
         s" bucketId = ${bucketPartition.bucketId}")
-    val statement = conn.createStatement()
-    val thriftConn = statement match {
-      case clientStmt: ClientStatement =>
-        val clientConn = clientStmt.getConnection
-        if (isPartitioned) {
-          clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
-            new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
-            tableName, true).setMetadataVersion(relDestroyVersion))
-        }
-        clientConn
-      case _ => null
-    }
-    if (isPartitioned && (thriftConn eq null)) {
-      val ps = conn.prepareStatement(
-        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, $relDestroyVersion)")
-      ps.setString(1, tableName)
-      val bucketString = bucketPartition.bucketId.toString
-      ps.setString(2, bucketString)
-      ps.executeUpdate()
-      ps.close()
+    val statement = conn.createStatement().asInstanceOf[ClientStatement]
+    // get the underlying thrift connection (conn is pool wrapper)
+    val thriftConn = statement.getConnection
+    if (isPartitioned) {
+      thriftConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
+        new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
+        tableName, true).setMetadataVersion(relDestroyVersion).setLockOwner(updateOwner))
     }
     val sqlText = s"SELECT $columnList FROM ${quotedName(tableName)}$filterWhereClause"
 
     val args = filterWhereArgs
-    val stmt = conn.prepareStatement(sqlText)
+    val stmt = thriftConn.prepareStatement(sqlText)
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args)
     }
@@ -967,15 +973,11 @@ class SmartConnectorRowRDD(_session: SnappySession,
     }
 
     val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
-    if (thriftConn ne null) {
-      stmt.asInstanceOf[ClientPreparedStatement].setSnapshotTransactionId(txId)
-    } else if (txId != null) {
-      if (!txId.isEmpty) {
-        statement.execute(
-          s"call sys.USE_SNAPSHOT_TXID('$txId')")
-      }
-    }
+    stmt.setSnapshotTransactionId(txId)
 
+    // TODO: SW: change to use prepareAndExecute but need to fix
+    // the types in ClientPreparedStatement.paramsList which will not
+    // be available before-hand and need to be changed as per parameter values
     val rs = stmt.executeQuery()
 
     // get the txid which was used to take the snapshot.
@@ -990,9 +992,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       SmartConnectorRDDHelper.snapshotTxIdForRead.set(txId)
       logDebug(s"The snapshot tx id is $txId and tablename is $tableName")
     }
-    if (thriftConn ne null) {
-      thriftConn.setCommonStatementAttributes(null)
-    }
+    thriftConn.setCommonStatementAttributes(null)
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)
   }
@@ -1027,20 +1027,17 @@ class SmartConnectorRowRDD(_session: SnappySession,
 }
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
-    delayRollover: Boolean) extends TaskCompletionListener {
+    delayRollover: Boolean, updateOwner: String) extends TaskCompletionListener {
   private val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
   private var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
-    val txId = connAndTxId(1).asInstanceOf[String]
     val conn = Option(connAndTxId(0).asInstanceOf[Connection])
-    if (connAndTxId(1) ne null) {
-      if (success()) {
-        store.commitTx(txId, delayRollover, conn)
-      }
-      else {
-        store.rollbackTx(txId, conn)
-      }
+    val txId = connAndTxId(1).asInstanceOf[String]
+    if (success()) {
+      store.commitTx(txId, delayRollover, updateOwner, context.partitionId(), conn)
+    } else {
+      store.rollbackTx(txId, updateOwner, context.partitionId(), conn)
     }
     store.closeConnection(conn)
   }

@@ -56,7 +56,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
-import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
@@ -118,13 +118,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           } else Nil
 
           val tableName = container.getQualifiedTableName
-          // add weightage column for sample tables if required
-          var schema = catalogEntry.schema.asInstanceOf[StructType]
-          if (catalogEntry.tableType == ExternalTableType.Sample.name &&
-              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
-            schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
-              LongType, nullable = false)
-          }
+          val schema = Utils.getTableSchema(catalogEntry)
           val batchCreator = new ColumnBatchCreator(pr,
             ColumnFormatRelation.columnBatchTableName(tableName, None), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
@@ -199,7 +193,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       val lr = Misc.getRegionForTable(columnTable, true).asInstanceOf[LocalRegion]
       val metadata = ExternalStoreUtils.getExternalTableMetaData(columnTable,
         lr.getUserAttribute.asInstanceOf[GemFireContainer], checkColumnStore = true)
-      val schema = metadata.schema.asInstanceOf[StructType].toAttributes
+      val schema = Utils.getTableSchema(metadata).toAttributes
       val filterExprs = if (batchFilters ne null) {
         batchFilters.map(f => translateFilter(f, schema))
       } else null

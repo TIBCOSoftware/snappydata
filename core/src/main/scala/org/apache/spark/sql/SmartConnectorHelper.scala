@@ -17,15 +17,18 @@
 package org.apache.spark.sql
 
 import java.io._
-import java.net.{URI, URL}
+import java.net.URL
 import java.nio.file.{Files, Paths}
 import java.sql.{CallableStatement, Connection, SQLException}
+
+import scala.collection.mutable
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 import io.snappydata.impl.SmartConnectorRDDHelper
 import org.apache.hadoop.hive.ql.metadata.Table
+
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -33,8 +36,6 @@ import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, Relatio
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.util.MutableURLClassLoader
 import org.apache.spark.{Logging, Partition, SparkContext}
-
-import scala.collection.mutable
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
