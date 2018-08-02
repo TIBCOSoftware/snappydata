@@ -133,7 +133,8 @@ object SnappyTestUtils {
     }
     if (actualLineSet.hasNext || expectedLineSet.hasNext) {
       pw.println(s"\nFor ${queryNum} result count mismatch observed")
-      assert(assertion = false, s"\nFor $queryNum result count mismatch observed")
+      pw.flush()
+      // assert(assertion = false, s"\nFor $queryNum result count mismatch observed")
     }
     // scalastyle:on println
     pw.flush()
