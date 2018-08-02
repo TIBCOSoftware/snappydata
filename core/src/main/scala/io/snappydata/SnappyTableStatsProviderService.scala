@@ -52,7 +52,6 @@ import org.apache.spark.sql.execution.columnar.{ColumnBatchIterator, ColumnInser
 import org.apache.spark.sql.execution.row.ResultSetTraversal
 import org.apache.spark.sql.execution.{BufferedRowIterator, WholeStageCodegenExec}
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
 /*
@@ -300,8 +299,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val pr = region.asInstanceOf[PartitionedRegion]
         val columnMeta = if (container.isColumnStore) container.fetchHiveMetaData(false) else null
         if ((columnMeta ne null) && pr.getLocalMaxMemory > 0) {
-          val schema = columnMeta.schema.asInstanceOf[StructType]
-          val numColumnsInTable = schema.length
+          val numColumnsInTable = Utils.getTableSchema(columnMeta).length
           // Resetting PR numRows in cached batch as this will be calculated every time.
           var rowsInColumnBatch = 0L
           var offHeapSize = 0L
@@ -388,7 +386,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val iter = localPrimaries.iterator()
         while (iter.hasNext) {
           val br = iter.next()
-          if (testBucket(br, maxDeltaRows, minModTime) && !br.columnBatchFlushLock.isWriteLocked) {
+          if (testBucket(br, maxDeltaRows, minModTime) && !br.isLockededForMaintenance) {
             if (rolloverBuckets eq null) rolloverBuckets = new OpenHashSet[BucketRegion]()
             rolloverBuckets.add(br)
           }
@@ -398,20 +396,16 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         if ((rolloverBuckets ne null) && rolloverBuckets.size() > 0) {
           implicit val executionContext = Utils.executionContext(pr.getGemFireCache)
           Future {
-            var locked = false
             try {
-              locked = pr.lockForMaintenance(true, GfxdLockSet.MAX_LOCKWAIT_VAL)
-              if (locked) {
-                val doRollover = new Predicate[BucketRegion] {
-                  override def test(br: BucketRegion): Boolean =
-                    testBucket(br, maxDeltaRows, minModTime)
-                }
-                rolloverBuckets.asScala.foreach(bucket => Utils.withExceptionHandling(
-                  bucket.createAndInsertColumnBatch(null, true, doRollover)))
+              val doRollover = new Predicate[BucketRegion] {
+                override def test(br: BucketRegion): Boolean =
+                  testBucket(br, maxDeltaRows, minModTime)
               }
+              rolloverBuckets.asScala.foreach(bucket => Utils.withExceptionHandling(
+                bucket.createAndInsertColumnBatch(null, true,
+                  GfxdLockSet.MAX_LOCKWAIT_VAL, doRollover)))
             } finally {
               rolloverTasks.remove(pr)
-              if (locked) pr.unlockForMaintenance(true)
             }
           }
         } else null
@@ -431,22 +425,10 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     mergeTasks.computeIfAbsent(pr, new JFunction[PartitionedRegion, Future[Unit]] {
       override def apply(pr: PartitionedRegion): Future[Unit] = {
         val cache = pr.getGemFireCache
-        val rowBuffer = GemFireContainer.getRowBufferTableName(container.getQualifiedTableName)
-        val rowBufferRegion = Misc.getRegionForTable(rowBuffer, true)
-            .asInstanceOf[PartitionedRegion]
-        var locked = false
-
-        def releaseMaintenanceLock(): Unit = {
-          if (locked) {
-            rowBufferRegion.unlockForMaintenance(true)
-            locked = false
-          }
-        }
-
         implicit val executionContext = Utils.executionContext(cache)
         Future(Utils.withExceptionHandling({
           val tableName = container.getQualifiedTableName
-          val schema = metaData.schema.asInstanceOf[StructType]
+          val schema = Utils.getTableSchema(metaData)
           val maxDeltaRows = pr.getColumnMaxDeltaRows
           val compileKey = tableName.concat(".MERGE_SMALL_BATCHES")
           val gen = CodeGeneration.compileCode(compileKey, schema.fields, () => {
@@ -476,7 +458,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           // full projection for the iterators
           val numColumns = schema.length
           val projection = (1 to numColumns).toArray
+          val lockOwner = Thread.currentThread()
           var success = false
+          var locked = false
           var tx: TXStateProxy = null
           var context: TXManagerImpl.TXContext = null
           logInfo(s"Found small batches in ${pr.getName}: " +
@@ -485,13 +469,14 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           // a separate iterator is required because one ColumnInsertExec assumes a single batchId
           for (br <- smallBatchBuckets) try {
             success = false
+            locked = false
             tx = null
-            // lock the row buffer region for maintenance operations
-            Thread.`yield`() // prefer any other foreground operations
-            locked = rowBufferRegion.lockForMaintenance(true, GfxdLockSet.MAX_LOCKWAIT_VAL)
+            // lock the row buffer bucket for maintenance operations
+            Thread.`yield`() // prefer foreground operations
+            locked = br.lockForMaintenance(true, GfxdLockSet.MAX_LOCKWAIT_VAL, lockOwner)
             if (!locked) {
               throw new LockTimeoutException(
-                s"Failed to lock ${rowBufferRegion.getFullPath} for maintenance merge operation")
+                s"Failed to lock ${br.getFullPath} for maintenance merge operation")
             }
             // start a new transaction for each bucket
             tx = if (cache.snapshotEnabled) {
@@ -545,11 +530,12 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             case t: Throwable => Utils.logAndThrowException(t)
           } finally {
             handleTransaction(cache, tx, context, success)
-            releaseMaintenanceLock()
+            if (locked) {
+              br.unlockAfterMaintenance(true, lockOwner)
+            }
           }
         }, () => {
           mergeTasks.remove(pr)
-          releaseMaintenanceLock()
         }))
       }
     })

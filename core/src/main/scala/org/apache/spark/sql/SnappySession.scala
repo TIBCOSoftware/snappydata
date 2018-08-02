@@ -246,7 +246,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     java.util.Collections.unmodifiableMap(queryHints)
 
   @transient
-  private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
+  private[sql] val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
 
   @transient
   private[sql] var currentKey: CachedKey = _
@@ -315,8 +315,22 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  private[sql] def preferPrimaries: Boolean =
-    Property.PreferPrimariesInQuery.get(sessionState.conf)
+  private[sql] def setMutablePlan(mutable: Boolean): Unit = {
+    if (mutable) {
+      // use a unique lock owner
+      val lockOwner = s"MUTABLE_OP_OWNER_$id.${System.nanoTime()}"
+      addContextObject[String](SnappySession.MUTABLE_PLAN_OWNER, lockOwner)
+    } else removeContextObject(SnappySession.MUTABLE_PLAN_OWNER)
+  }
+
+  private[sql] def isMutablePlan: Boolean =
+    contextObjects.containsKey(SnappySession.MUTABLE_PLAN_OWNER)
+
+  private[sql] def getMutablePlanOwner: String =
+    contextObjects.get(SnappySession.MUTABLE_PLAN_OWNER).asInstanceOf[String]
+
+  def preferPrimaries: Boolean =
+    Property.PreferPrimariesInQuery.get(sessionState.conf) || isMutablePlan
 
   private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
     val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
@@ -1874,6 +1888,9 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
+  // internal property to indicate update/delete/putInto execution and lock owner for the same
+  private[sql] val MUTABLE_PLAN_OWNER = "snappydata.internal.mutablePlanOwner"
+
   private[sql] var tokenize: Boolean = _
 
   lazy val isEnterpriseEdition: Boolean = {
@@ -1967,6 +1984,7 @@ object SnappySession extends Logging {
         // TODO add caching for point updates/deletes; a bit of complication
         // because getPlan will have to do execution with all waits/cleanups
         // normally done in CachedDataFrame.collectWithHandler/withCallback
+        // also reference objects like "updateOwner" need to be refreshed in every execution
         /*
         val cachedRDD = plan match {
           case p: ExecutePlan => p.child.execute()

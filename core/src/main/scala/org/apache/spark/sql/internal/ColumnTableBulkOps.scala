@@ -169,7 +169,7 @@ object ColumnTableBulkOps {
         val deletePlan = Delete(table, exists, Nil)
         val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
         transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
-      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+      case LogicalRelation(mutable: MutableRelation, _, _) =>
         val ks = mutable.getKeyColumns
         if (ks.isEmpty) {
           throw new AnalysisException(

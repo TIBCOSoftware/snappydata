@@ -18,9 +18,7 @@ package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
+import com.gemstone.gemfire.internal.cache.LocalRegion
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -32,7 +30,7 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
-import org.apache.spark.sql.execution.columnar.{ColumnDeleteExec, ColumnExec, ColumnTableScan, ColumnUpdateExec, ConnectionType}
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
@@ -233,21 +231,6 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
   }
 
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
-    SnappySession.getExecutedPlan(child)._1 match {
-      case c@(_: ColumnUpdateExec | _: ColumnDeleteExec) =>
-        val pr = Misc.getRegionForTable(c.asInstanceOf[ColumnExec].resolvedName, true)
-            .asInstanceOf[PartitionedRegion]
-        val locked = pr.lockForMaintenance(false, GfxdLockSet.MAX_LOCKWAIT_VAL)
-        try {
-          getSideEffectResult
-        } finally {
-          if (locked) pr.unlockForMaintenance(false)
-        }
-      case _ => getSideEffectResult
-    }
-  }
-
-  private def getSideEffectResult: Array[InternalRow] = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val sc = session.sparkContext
     val key = session.currentKey
