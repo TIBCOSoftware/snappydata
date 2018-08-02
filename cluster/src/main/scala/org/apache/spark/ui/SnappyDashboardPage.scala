@@ -19,20 +19,15 @@
 
 package org.apache.spark.ui
 
-import java.text.SimpleDateFormat
-import java.util.Date
 import javax.servlet.http.HttpServletRequest
 
-import scala.collection.mutable
 import scala.xml.Node
 
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyRegionStats}
-import io.snappydata.SnappyTableStatsProviderService
-
 import org.apache.spark.internal.Logging
+import org.apache.spark.ui.dashboard.{DashboardPage, DashboardTab}
 
-private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
-    extends WebUIPage("") with Logging {
+class SnappyDashboardPage (parent: DashboardTab)
+    extends DashboardPage(parent: DashboardTab) with Logging {
 
   override def render(request: HttpServletRequest): Seq[Node] = {
 

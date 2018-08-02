@@ -32,11 +32,12 @@ import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.ui.dashboard.{DashboardTab, MemberDetailsPage}
 import org.apache.spark.util.Utils
 
 
-private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
-    extends WebUIPage("memberDetails") with Logging {
+class SnappyMemberDetailsPage(parent: DashboardTab)
+    extends MemberDetailsPage(parent: DashboardTab) with Logging {
 
   private var workDir: File = null
   private var logFileName: String = null

@@ -26,16 +26,38 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.{SparkContext, SparkFiles}
+import org.apache.spark.{SparkCallbacks, SparkContext, SparkFiles}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
-import org.apache.spark.ui.SnappyDashboardTab
+import org.apache.spark.status.api.v1.SnappyApiRootResource
+import org.apache.spark.ui.{JettyUtils, SnappyDashboardPage, SnappyMemberDetailsPage}
+import org.apache.spark.ui.dashboard.DashboardTab
 import org.apache.spark.util.{SnappyUtils, Utils}
 
 object ToolsCallbackImpl extends ToolsCallback {
 
   override def updateUI(sc: SparkContext): Unit = {
-    SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
+
+    SnappyUtils.getSparkUI(sc).foreach(ui => {
+      ui.getTabs.foreach(tab => {
+        if(tab.prefix.equalsIgnoreCase("dashboard")) {
+          val dashboardTab = tab.asInstanceOf[DashboardTab]
+          dashboardTab.snappyDashboardPage =  new SnappyDashboardPage(dashboardTab)
+          dashboardTab.snappyMemberDetailsPage =  new SnappyMemberDetailsPage(dashboardTab)
+
+          val parentUI = dashboardTab.getParentUI
+          val snappyApiRootResource = SnappyApiRootResource.getServletHandler(parentUI)
+          if(SparkCallbacks.getAuthenticatorForJettyServer().isDefined) {
+            val basicAuthenticationHandler = JettyUtils.basicAuthenticationHandler()
+            if(basicAuthenticationHandler != null) {
+              snappyApiRootResource.setSecurityHandler(basicAuthenticationHandler)
+            }
+          }
+          parentUI.attachHandler(snappyApiRootResource)
+        }
+      })
+    })
+
   }
 
   override def removeAddedJar(sc: SparkContext, jarName: String): Unit =

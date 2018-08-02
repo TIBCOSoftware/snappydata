@@ -40,7 +40,7 @@ import org.glassfish.jersey.servlet.ServletContainer
 // todo : need to add tests to test below apis
 
 @Path("/services")
-private[v1] class SnappyApiRootResource extends ApiRequestContext {
+class SnappyApiRootResource extends ApiRequestContext {
 
   @Path("clusterinfo")
   def getClusterInfo(): ClusterInfoResource = {
@@ -69,7 +69,7 @@ private[v1] class SnappyApiRootResource extends ApiRequestContext {
 
 }
 
-private[spark] object SnappyApiRootResource {
+object SnappyApiRootResource {
 
   def getServletHandler(uiRoot: UIRoot): ServletContextHandler = {
     val jerseyContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS)
