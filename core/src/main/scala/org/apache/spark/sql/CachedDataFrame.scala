@@ -195,12 +195,14 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
+  // Its a bit costly operation,
+  // but we are safe as anyway the partitions will be evaluated during RDD execution time.
+  // Once partitions are determined on an RDD it will not do an evaluation again.
   @tailrec
-  private def reEvaluatePartitions(rdds : Seq[RDD[_]]): Unit = {
+  private def reEvaluatePartitions(rdds: Seq[RDD[_]]): Unit = {
     val children = rdds.flatMap {
       case null => Nil
       case r =>
-        // f.set(r, null)
         r.getNumPartitions
         val allRDDs = r match {
           case rdd: DelegateRDD[_] =>
@@ -211,7 +213,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
             otherRDDs ++ Seq(baseRDD)
           case _ => Seq.empty[RDD[_]]
         }
-
         r.dependencies.map(_.rdd) ++ allRDDs.flatMap(b => b.dependencies.map(_.rdd))
     }
     if (children.nonEmpty) {
@@ -237,7 +238,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       reset()
       applyCurrentLiterals()
     }
+    // Reset the linkPartitionToBuckets flag before determining RDD partitions.
     snappySession.linkPartitionsToBuckets(flag = linkPart)
+    // Forcibly re-evaluate the partitions.
     reEvaluatePartitions(cachedRDD :: Nil)
     setPoolForExecution()
     // update the strings in query execution and planInfo
