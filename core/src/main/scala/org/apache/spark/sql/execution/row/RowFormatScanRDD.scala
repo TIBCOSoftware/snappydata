@@ -290,16 +290,21 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val startTX = tx eq null
       // acquire bucket maintenance read lock if required before snapshot gets acquired
       // and register to be released with transaction commit
-      val br = BucketRegion.lockPrimaryForMaintenance(false, updateOwner,
-        container.getRegion.asInstanceOf[PartitionedRegion], bucketIds)
+      val br = container.getRegion match {
+        case pr: PartitionedRegion if updateOwner ne null =>
+          BucketRegion.lockPrimaryForMaintenance(false, updateOwner, pr, bucketIds)
+        case _ => null
+      }
       var success = false
       try {
         if (startTX) {
           tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
             IsolationLevel.SNAPSHOT, null, null)
         }
-        // register the locked region in TX for lock release in case of rollback
-        success = tx.getProxy.registerLockedBucketRegion(br)
+        if (br ne null) {
+          // register the locked region in TX for lock release in case of rollback
+          success = tx.getProxy.registerLockedBucketRegion(br)
+        }
       } finally {
         if ((br ne null) && !success) {
           br.unlockAfterMaintenance(false, updateOwner)
