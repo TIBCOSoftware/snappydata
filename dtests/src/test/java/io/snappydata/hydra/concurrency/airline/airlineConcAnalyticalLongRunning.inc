@@ -33,6 +33,11 @@ INITTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = Hy
            io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = create_and_load_airline_table.sql
            threadGroups = snappySingleThread;
 
+INITTASK   taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = HydraTask_executeDeployJarQuery
+           io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-jdbc-stream-connector_*.jar
+           threadGroups = snappySingleThread;
+
+
 CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = validateNumQueriesExecuted
            threadGroups = snappySingleThread;
 

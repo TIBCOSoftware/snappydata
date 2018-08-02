@@ -175,4 +175,19 @@ public class SnappyConcurrencyTest extends SnappyTest {
     Log.getLogWriter().info("ArrayList contains : " + timings.toString());
     return timings;
   }
+
+  public static synchronized void HydraTask_executeDeployJarQuery() throws SQLException {
+    Connection conn = getLocatorConnection();
+    String query = null;
+    String userJarPath = snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
+    try {
+      query = "deploy jar jdbcStream '" + userJarPath + "'";
+      Log.getLogWriter().info("Deploy jar query is: " + query);
+      conn.createStatement().executeUpdate(query);
+
+    } catch (SQLException se) {
+      throw new TestException("Got exception while executing deploy jar query:" + query, se);
+    }
+    closeConnection(conn);
+  }
 }
