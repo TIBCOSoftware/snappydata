@@ -999,4 +999,49 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     }
 
   }
+
+  test("Bug-2369 : Incorrect Filtering on join predicate") {
+    var snc = new SnappySession(sc)
+    snc.sql("CREATE TABLE SNAPPY_COL_TABLE3(r1 Integer, r2 Integer) " +
+        "USING COLUMN OPTIONS(PARTITION_BY 'R1');")
+    snc.sql("CREATE TABLE SNAPPY_COL_TABLE4(r1 Integer, r2 Integer) " +
+        "USING COLUMN OPTIONS(PARTITION_BY 'R1');")
+
+    snc.insert("SNAPPY_COL_TABLE3", Row(1, 1))
+    snc.insert("SNAPPY_COL_TABLE3", Row(2, 2))
+    snc.insert("SNAPPY_COL_TABLE3", Row(3, 3))
+    snc.insert("SNAPPY_COL_TABLE3", Row(5, 5))
+
+    snc.insert("SNAPPY_COL_TABLE4", Row(1, 1))
+    snc.insert("SNAPPY_COL_TABLE4", Row(2, 2))
+    snc.insert("SNAPPY_COL_TABLE4", Row(3, 3))
+    snc.insert("SNAPPY_COL_TABLE4", Row(4, 4))
+    snc.insert("SNAPPY_COL_TABLE4", Row(5, 5))
+
+    val dfLeftJoin = snc.sql("SELECT * FROM " +
+        "SNAPPY_COL_TABLE4 t LEFT OUTER JOIN SNAPPY_COL_TABLE3 tt " +
+        "ON tt.R1 = t.R2").collect()
+    assert(dfLeftJoin.length == 5)
+    assert(dfLeftJoin.contains(Row(4, 4, null, null)))
+
+    val df = snc.sql("SELECT * FROM SNAPPY_COL_TABLE4 t INNER JOIN SNAPPY_COL_TABLE3 tt " +
+        "ON tt.R1 = t.R2").collect()
+    assert(df.length == 4)
+
+    val df1 = snc.sql("SELECT * FROM SNAPPY_COL_TABLE4 t INNER JOIN SNAPPY_COL_TABLE3 tt " +
+        "ON tt.R1 = t.R2 " +
+        "WHERE t.R2 >= 3 AND t.R2 < 5").collect()
+    assert(df1.length == 1)
+    assert(df1.contains(Row(3, 3, 3, 3)))
+
+    val df2 = snc.sql("SELECT * FROM SNAPPY_COL_TABLE4 t INNER JOIN SNAPPY_COL_TABLE3 tt " +
+        "ON tt.R1 = t.R2 " +
+        "WHERE t.R2 >= 3 AND t.R2 < 5 " +
+        " AND " +
+        "tt.R1 >= 3 AND tt.R1 < 5;").collect()
+    assert(df2.length == 1)
+    assert(df2.contains(Row(3, 3, 3, 3)))
+  }
+
+
 }

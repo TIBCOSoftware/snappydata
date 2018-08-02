@@ -23,14 +23,14 @@ To enable LDAP authentication, set the following authentication properties in th
 **Example**: 
 
 In the below example, we are launching the locator in secure mode, which communicates with the LDAP server at localhost listening on port 389.
-```scala
+```pre
 localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
           -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com \
           -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com \
           -J-Dgemfirexd.auth-ldap-search-pw=user123
 ```
 
-!!! Note: 
+!!! Note
 	You must specify `gemfirexd.auth-ldap-*` properties as Java system properties by prefixing '-J-D'.
     
 	If you use SSL-encrypted LDAP and your LDAP server certificate is not recognized by a valid Certificate Authority (CA), you must create a local trust store for each SnappyData member and import the LDAP server certificate to the trust store. See the document on [Creating a Keystore]( http://docs.oracle.com/javase/6/docs/technotes/guides/security/jsse/JSSERefGuide.html#CreateKeystore) for more information.

@@ -1,0 +1,48 @@
+# Do not change the way of queries, sparkProperties, sparkSqlProperties. Just change the values inside strings
+
+#queries to be run
+queries="1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21"
+
+#sparkProperties="--driver-memory 50g --conf spark.executor.memory=140g --conf spark.network.timeout=300s --conf spark.driver.maxResultSize=6g --conf spark.shuffle.sort.bypassMergeThreshold=3 --conf spark.sql.shuffle.partitions=4 --conf spark.sql.inMemoryColumnarStorage.compressed=false"
+
+sparkProperties="--driver-memory 10g --conf spark.executor.memory=40g --conf spark.network.timeout=300s --conf spark.driver.maxResultSize=4g --conf spark.local.dir==/vol1/users/perfuser/tmp  --conf spark.memory.offHeap.enabled=true   --conf spark.memory.offHeap.size=100g"
+
+#sparkProperties="--conf spark.network.timeout=300s --conf spark.driver.maxResultSize=2g --conf spark.shuffle.sort.bypassMergeThreshold=3 --conf spark.sql.shuffle.partitions=4 --conf spark.sql.inMemoryColumnarStorage.compressed=false"
+#location of checkout
+#SnappyData=/data1/users/perfuser/snappydata/build-artifacts/scala-2.11/snappy
+SnappyData=/data1/users/perfuser/spark-2.1.1-bin-hadoop2.7
+#Machine Setup
+#master=10.1.0.4
+master=perf01.ht2jcc3cckze3mxajo1nvb5rbh.bx.internal.cloudapp.net
+slaves=(10.1.0.5 10.1.0.6 10.1.0.7)
+client=10.1.0.4
+
+#NumberOfLoadStages
+NumberOfLoadStages=1
+Parquet=true
+IsDynamic=true
+ResultCollection=false
+WarmupRuns=3
+AverageRuns=4
+sparkSqlProperties="\"\""
+rePartition=false
+IsSupplierColumnTable=true
+buckets_Supplier=128 
+buckets_Order_Lineitem=128
+buckets_Cust_Part_PartSupp=128
+
+# location of jar which has TPCH related class files
+TPCHJar=/data1/users/perfuser/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.2-SNAPSHOT-tests.jar
+
+#Size of the TPCH data. Do not chage format
+dataSize=100GB
+
+#Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
+dataDir=/data1/users/perfuser/TPCH_$dataSize
+
+#Location where final output will be collected
+outputLocation=/data1/users/perfuser/RESULTS/TPCH_100GB/STOCK_SPARK_RESULT
+
+#Whether to generate query plan
+queryPlan=false
+

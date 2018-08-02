@@ -2,7 +2,7 @@
 
 Use the ALTER TABLE statement to add and drop columns in row tables using SnappyData API or SQL.
 
-!!! Note: 
+!!! Note
 
 	* ALTER TABLE is not supported on column, temporary and external tables.
 
@@ -11,7 +11,7 @@ Use the ALTER TABLE statement to add and drop columns in row tables using Snappy
 ## Syntax
 
 **SQL**
-```no-highlight
+```pre
 ALTER TABLE table-name
 {
   ADD COLUMN column-definition |
@@ -20,7 +20,7 @@ ALTER TABLE table-name
 ```
 
 **API:**
-```no-highlight
+```pre
 snc.alterTable(tableName, isAddColumn, column)
 ```
 
@@ -28,7 +28,7 @@ snc.alterTable(tableName, isAddColumn, column)
 
 **SQL:**
 
-```no-highlight
+```pre
 -- create a table
 CREATE TABLE trade.customers (
     cid int not null,
@@ -45,7 +45,7 @@ ALTER TABLE trade.customers ADD COLUMN addr varchar(100);
 
 **API:**
 
-```no-highlight
+```pre
 //create a table in Snappy store
 	snc.createTable("orders", "row", ordersDF.schema, Map.empty[String, String])
 

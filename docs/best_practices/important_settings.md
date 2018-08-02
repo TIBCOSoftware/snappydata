@@ -27,8 +27,8 @@ If there are more buckets in a table than required, it means there is less data 
 
 For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when [creating a table](../reference/sql_reference/create-table.md).
 
-<a id="member-timeout"></a>
 ## member-timeout
+<a id="member-timeout"></a>
 
 The default [member-timeout](../configuring_cluster/property_description.md#member-timeout) in SnappyData cluster is 30 seconds. The default `spark.network.timeout` is 120 seconds and `spark.executor.heartbeatInterval` is 10 seconds as noted in the [Spark documents](https://spark.apache.org/docs/latest/configuration.html). </br> 
 If applications require node failure detection to be faster, then these properties should be reduced accordingly (`spark.executor.heartbeatInterval` but must always be much lower than `spark.network.timeout` as specified in the Spark Documents). </br>

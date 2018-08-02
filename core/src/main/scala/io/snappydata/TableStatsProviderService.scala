@@ -157,17 +157,28 @@ trait TableStatsProviderService extends Logging {
 
   def getTableStatsFromService(
       fullyQualifiedTableName: String): Option[SnappyRegionStats] = {
-    val tableSizes = this.tableSizeInfo
-    if (tableSizes.isEmpty || !tableSizes.contains(fullyQualifiedTableName)) {
+    if (!this.tableSizeInfo.contains(fullyQualifiedTableName)) {
       // force run
       aggregateStats()
     }
     tableSizeInfo.get(fullyQualifiedTableName)
   }
 
+  def getAllTableStatsFromService: Map[String, SnappyRegionStats] = {
+    this.tableSizeInfo
+  }
+
   def getExternalTableStatsFromService(
       fullyQualifiedTableName: String): Option[SnappyExternalTableStats] = {
+    if (!this.externalTableSizeInfo.contains(fullyQualifiedTableName)) {
+      // force run
+      aggregateStats()
+    }
     externalTableSizeInfo.get(fullyQualifiedTableName)
+  }
+
+  def getAllExternalTableStatsFromService: Map[String, SnappyExternalTableStats] = {
+    this.externalTableSizeInfo
   }
 
   def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
