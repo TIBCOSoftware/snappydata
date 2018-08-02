@@ -334,7 +334,12 @@ object ExternalStoreUtils {
       hikariCP: Boolean): ConnectionProperties = {
     val (user, password) = getCredentials(session)
 
-    if (!user.isEmpty && !password.isEmpty) {
+    val isSnappy = dialect match {
+      case GemFireXDDialect | GemFireXDClientDialect => true
+      case _ => false
+    }
+
+    if (!user.isEmpty && !password.isEmpty && isSnappy) {
       def secureProps(props: Properties): Properties = {
         props.setProperty(ClientAttribute.USERNAME, user)
         props.setProperty(ClientAttribute.PASSWORD, password)

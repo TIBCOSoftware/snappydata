@@ -43,9 +43,9 @@ final class SmartConnectorRDDHelper {
 
   private var useLocatorURL: Boolean = _
 
-  def prepareScan(conn: Connection, columnTable: String, projection: Array[Int],
+  def prepareScan(conn: Connection, txId: String, columnTable: String, projection: Array[Int],
       serializedFilters: Array[Byte], partition: SmartExecutorBucketPartition,
-      relDestroyVersion: Int): (PreparedStatement, ResultSet, String) = {
+      relDestroyVersion: Int): (PreparedStatement, ResultSet) = {
     val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?)")
     pstmt.setString(1, columnTable)
     pstmt.setString(2, projection.mkString(","))
@@ -54,10 +54,6 @@ final class SmartConnectorRDDHelper {
       pstmt.setBlob(3, new HarmonySerialBlob(serializedFilters))
     } else {
       pstmt.setNull(3, java.sql.Types.BLOB)
-    }
-    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
-      case "" => null
-      case id => id
     }
     pstmt match {
       case clientStmt: ClientPreparedStatement =>
@@ -74,7 +70,7 @@ final class SmartConnectorRDDHelper {
     }
 
     val rs = pstmt.executeQuery()
-    (pstmt, rs, txId)
+    (pstmt, rs)
   }
 
   def getConnection(connectionProperties: ConnectionProperties,

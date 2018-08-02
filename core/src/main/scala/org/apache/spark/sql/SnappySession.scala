@@ -2091,7 +2091,8 @@ object SnappySession extends Logging {
     val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
     val paramsId = parser.sqlParser.getCurrentParamsId
-    val key = CachedKey(session, plan, sqlText, paramLiterals, planCaching)
+    val key = CachedKey(session, session.getCurrentSchema,
+      plan, sqlText, paramLiterals, planCaching)
     var cachedDF: CachedDataFrame = if (planCaching) planCache.getIfPresent(key) else null
     if (cachedDF eq null) {
       // evaluate the plan and cache it if required
@@ -2307,14 +2308,16 @@ object SnappySession extends Logging {
   }
 }
 
-final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
-    val sqlText: String, val hintHashcode: Int) {
+final class CachedKey(val session: SnappySession,
+   val currSchema: String, private val lp: LogicalPlan,
+   val sqlText: String, val hintHashcode: Int) {
 
   private[sql] var currentLiterals: Array[ParamLiteral] = _
   private[sql] var currentParamsId: Int = -1
 
   override val hashCode: Int = {
     var h = ClientResolverUtils.addIntToHashOpt(session.hashCode(), 42)
+    h = ClientResolverUtils.addIntToHashOpt(currSchema.hashCode, h)
     h = ClientResolverUtils.addIntToHashOpt(lp.hashCode(), h)
     ClientResolverUtils.addIntToHashOpt(hintHashcode, h)
   }
@@ -2322,14 +2325,15 @@ final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
   override def equals(obj: Any): Boolean = {
     obj match {
       case x: CachedKey =>
-        x.hintHashcode == hintHashcode && (x.session eq session) && x.lp == lp
+        x.hintHashcode == hintHashcode && (x.session eq session) &&
+          (x.currSchema == currSchema) && x.lp == lp
       case _ => false
     }
   }
 }
 
 object CachedKey {
-  def apply(session: SnappySession, plan: LogicalPlan, sqlText: String,
+  def apply(session: SnappySession, currschema: String, plan: LogicalPlan, sqlText: String,
       paramLiterals: Array[ParamLiteral], forCaching: Boolean): CachedKey = {
 
     def normalizeExprIds: PartialFunction[Expression, Expression] = {
@@ -2366,6 +2370,6 @@ object CachedKey {
       for (l <- paramLiterals) l.tokenized = true
       plan.transform(transformExprID)
     } else plan
-    new CachedKey(session, normalizedPlan, sqlText, session.queryHints.hashCode())
+    new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
   }
 }
