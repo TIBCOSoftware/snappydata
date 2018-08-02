@@ -206,8 +206,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
     catch {
       case NonFatal(e) => {
-        log.warn("Exception occurred while collecting Table Statistics: "
-            + e.getMessage, e)
+        log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
+        log.debug(e.getMessage, e)
       }
     }
 
@@ -225,8 +225,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
       catch {
         case NonFatal(e) => {
-          log.warn("Exception occurred while collecting External Table Statistics: "
-              + e.getMessage, e)
+          log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
+          log.debug(e.getMessage, e)
           mutable.Buffer.empty[SnappyExternalTableStats]
         }
       }

@@ -38,6 +38,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 import io.snappydata.{Constant, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
@@ -88,17 +89,9 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] lazy val colTypes = getColumnTypes
 
   // check for query hint to serialize complex types as JSON strings
-  private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
-    QueryHint.ComplexTypeAsJson.toString) match {
-    case null => true
-    case v => Misc.parseBoolean(v)
-  }
+  private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
 
-  private val (allAsClob, columnsAsClob) = session.getPreviousQueryHints.get(
-    QueryHint.ColumnsAsClob.toString) match {
-    case null => (false, Set.empty[String])
-    case v => Utils.parseColumnsAsClob(v)
-  }
+  private val (allAsClob, columnsAsClob) = SparkSQLExecuteImpl.getClobProperties(session)
 
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
@@ -121,7 +114,8 @@ class SparkSQLExecuteImpl(val sql: String,
         CachedDataFrame.localBlockStoreResultHandler(rddId, bm),
         CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
       hdos.clearForReuse()
-      writeMetaData(srh)
+      SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, getColumnNames,
+        getColumnTypes, getColumnDataTypes)
 
       var id = 0
       for (block <- partitionBlocks) {
@@ -191,77 +185,53 @@ class SparkSQLExecuteImpl(val sql: String,
   override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =
     SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
 
-  private lazy val (tableNames, nullability) = getTableNamesAndNullability
-
-  def getTableNamesAndNullability: (Array[String], Array[Boolean]) = {
-    var i = 0
-    val output = df.queryExecution.analyzed.output
-    val tables = new Array[String](output.length)
-    val nullables = new Array[Boolean](output.length)
-    output.foreach { a =>
-      val fn = a.qualifiedName
-      val dotIdx = fn.lastIndexOf('.')
-      if (dotIdx > 0) {
-        tables(i) = fn.substring(0, dotIdx)
-      } else {
-        tables(i) = ""
-      }
-      nullables(i) = a.nullable
-      i += 1
-    }
-    (tables, nullables)
-  }
-
-  private def writeMetaData(srh: SnappyResultHolder): Unit = {
-    val hdos = this.hdos
-    // indicates that the metadata is being packed too
-    srh.setHasMetadata()
-    DataSerializer.writeStringArray(tableNames, hdos)
-    DataSerializer.writeStringArray(getColumnNames, hdos)
-    DataSerializer.writeBooleanArray(nullability, hdos)
-    for (i <- colTypes.indices) {
-      val (tp, precision, scale) = colTypes(i)
-      InternalDataSerializer.writeSignedVL(tp, hdos)
-      tp match {
-        case StoredFormatIds.SQL_DECIMAL_ID =>
-          InternalDataSerializer.writeSignedVL(precision, hdos) // precision
-          InternalDataSerializer.writeSignedVL(scale, hdos) // scale
-        case StoredFormatIds.SQL_VARCHAR_ID |
-             StoredFormatIds.SQL_CHAR_ID =>
-          // Write the size as precision
-          InternalDataSerializer.writeSignedVL(precision, hdos)
-        case StoredFormatIds.REF_TYPE_ID =>
-          // Write the DataType
-          hdos.write(KryoSerializerPool.serialize((kryo, out) =>
-            StructTypeSerializer.writeType(kryo, out, querySchema(i).dataType)))
-        case _ => // ignore for others
-      }
-    }
-  }
+  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
+      getTableNamesAndNullability(df.queryExecution.analyzed.output)
 
   def getColumnNames: Array[String] = {
     querySchema.fieldNames
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    querySchema.map(f => getSQLType(f)).toArray
+    querySchema.map(f => SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
+      Some(f.metadata), Some(f.name), Some(allAsClob), Some(columnsAsClob))).toArray
 
-  private def getSQLType(f: StructField): (Int, Int, Int) = {
-    val dataType = f.dataType
+  private def getColumnDataTypes: Array[DataType] =
+    querySchema.map(_.dataType).toArray
+}
+
+object SparkSQLExecuteImpl {
+
+  def getJsonProperties(session: SnappySession): Boolean = session.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsJson.toString) match {
+    case null => true
+    case v => Misc.parseBoolean(v)
+  }
+
+  def getClobProperties(session: SnappySession): (Boolean, Set[String]) =
+    session.getPreviousQueryHints.get(QueryHint.ColumnsAsClob.toString) match {
+    case null => (false, Set.empty[String])
+    case v => Utils.parseColumnsAsClob(v)
+  }
+
+  def getSQLType(dataType: DataType, complexTypeAsJson: Boolean,
+      metaData: Option[Metadata] = None, metaName: Option[String] = None,
+      allAsClob: Option[Boolean] = None, columnsAsClob: Option[Set[String]] = None): (Int,
+      Int, Int) = {
     dataType match {
       case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
-      case StringType =>
+      case StringType if metaData.isDefined =>
         TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP,
-          f.metadata) match {
+          metaData.get) match {
           case Some(base) if base != "CLOB" =>
             lazy val size = TypeUtilities.getMetadata[Long](
-              Constant.CHAR_TYPE_SIZE_PROP, f.metadata)
+              Constant.CHAR_TYPE_SIZE_PROP, metaData.get)
             lazy val varcharSize = size.getOrElse(
               Constant.MAX_VARCHAR_SIZE.toLong).toInt
             lazy val charSize = size.getOrElse(
               Constant.MAX_CHAR_SIZE.toLong).toInt
-            if (allAsClob ||
-                (columnsAsClob.nonEmpty && columnsAsClob.contains(f.name))) {
+            if (allAsClob.get ||
+                (columnsAsClob.get.nonEmpty && columnsAsClob.get.contains(metaName.get))) {
               if (base != "STRING") {
                 if (base == "VARCHAR") {
                   (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
@@ -282,6 +252,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
           case _ => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
         }
+      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
       case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
       case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
       case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)
@@ -302,9 +273,48 @@ class SparkSQLExecuteImpl(val sql: String,
       case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
     }
   }
-}
 
-object SparkSQLExecuteImpl {
+  def getTableNamesAndNullability(output: Seq[expressions.Attribute]):
+  (Seq[String], Seq[Boolean]) = {
+    output.map { a =>
+      val fn = a.qualifiedName
+      val dotIdx = fn.lastIndexOf('.')
+      if (dotIdx > 0) {
+        (fn.substring(0, dotIdx), a.nullable)
+      } else {
+        ("", a.nullable)
+      }
+    }.unzip
+  }
+
+  def writeMetaData(srh: SnappyResultHolder, hdos: GfxdHeapDataOutputStream,
+      tableNames: Seq[String], nullability: Seq[Boolean], columnNames: Seq[String],
+      colTypes: Seq[(Int, Int, Int)], dataTypes: Seq[DataType]): Unit = {
+    // indicates that the metadata is being packed too
+    srh.setHasMetadata()
+    DataSerializer.writeStringArray(tableNames.toArray, hdos)
+    DataSerializer.writeStringArray(columnNames.toArray, hdos)
+    DataSerializer.writeBooleanArray(nullability.toArray, hdos)
+    for (i <- colTypes.indices) {
+      val (tp, precision, scale) = colTypes(i)
+      InternalDataSerializer.writeSignedVL(tp, hdos)
+      tp match {
+        case StoredFormatIds.SQL_DECIMAL_ID =>
+          InternalDataSerializer.writeSignedVL(precision, hdos) // precision
+          InternalDataSerializer.writeSignedVL(scale, hdos) // scale
+        case StoredFormatIds.SQL_VARCHAR_ID |
+             StoredFormatIds.SQL_CHAR_ID =>
+          // Write the size as precision
+          InternalDataSerializer.writeSignedVL(precision, hdos)
+        case StoredFormatIds.REF_TYPE_ID =>
+          // Write the DataType
+          hdos.write(KryoSerializerPool.serialize((kryo, out) =>
+            StructTypeSerializer.writeType(kryo, out, dataTypes(i))))
+        case _ => // ignore for others
+      }
+    }
+  }
+
   def getContextOrCurrentClassLoader: ClassLoader =
     Option(Thread.currentThread().getContextClassLoader)
         .getOrElse(getClass.getClassLoader)
