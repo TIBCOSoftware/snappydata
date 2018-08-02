@@ -3,7 +3,7 @@
 You can check the status of a running cluster using the following command:
 
 
-```no-highlight
+```pre
 $ ./sbin/snappy-status-all.sh
 SnappyData Locator pid: 9748 status: running
 SnappyData Server pid: 9887 status: running

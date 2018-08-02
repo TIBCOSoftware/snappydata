@@ -90,9 +90,9 @@ object StoreStrategy extends Strategy {
 
     case SetSchema(schemaName) => ExecutedCommandExec(SetSchemaCommand(schemaName)) :: Nil
 
-    case d@DeployCommand(_, _, _, _) => ExecutedCommandExec(d) :: Nil
+    case d@DeployCommand(_, _, _, _, _) => ExecutedCommandExec(d) :: Nil
 
-    case d@DeployJarCommand(_, _) => ExecutedCommandExec(d) :: Nil
+    case d@DeployJarCommand(_, _, _) => ExecutedCommandExec(d) :: Nil
 
     case d@UnDeployCommand(_) => ExecutedCommandExec(d) :: Nil
 

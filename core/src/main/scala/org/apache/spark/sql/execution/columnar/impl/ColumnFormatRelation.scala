@@ -449,6 +449,9 @@ abstract class BaseColumnFormatRelation(
             pass.asInstanceOf[String])
         }
         JdbcExtendedUtils.executeUpdate(sql, conn)
+        // setting table created to true here as cleanup
+        // in case of failed creation does a exists check.
+        tableCreated = true
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
             sqlContext.conf.caseSensitiveAnalysis, conn)
@@ -909,7 +912,7 @@ final class DefaultSource extends SchemaRelationProvider
       success = true
       relation
     } finally {
-      if (!success && !relation.tableExists) {
+      if (!success && relation.tableCreated) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }

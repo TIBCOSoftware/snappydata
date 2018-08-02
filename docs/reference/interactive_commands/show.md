@@ -4,7 +4,7 @@ Displays information about active connections and database objects.
 
 ## Syntax
 
-```no-highlight
+```pre
 SHOW
 {
    CONNECTIONS |
@@ -52,7 +52,7 @@ Otherwise, the command displays a list of connection names and the URLs used to 
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show connections;
 CONNECTION0* - 	jdbc:snappydata:thrift://127.0.0.1[1527]
 * = current connection
@@ -67,7 +67,7 @@ Currently, UDF functions are not displayed in the list. This will be available i
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show functions;
 FUNCTION_SCHEM      |FUNCTION_NAME                 |REMARKS             
 ------------------------------------------------------------------------ 
@@ -107,7 +107,7 @@ Displays all foreign keys in the specified schema or table. If you omit the sche
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show importedkeys in app;
 PKTABLE_NAME   |PKCOLUMN_NAME   |PK_NAME              |FKTABLE_SCHEM   |FKTABLE_NAME   |FKCOLUMN_NAME   |FK_NAME        |KEY_SEQ
 -------------------------------------------------------------------------------------------------------------------------------- 
@@ -138,7 +138,7 @@ If `IN schemaName` is specified, only the indexes in the specified schema are di
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show indexes in app;
 TABLE_NAME          |COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
 ---------------------------------------------------------------------------- 
@@ -179,7 +179,7 @@ If `IN schemaName` is specified, only procedures in the specified schema are dis
 
 **Example**
 
-``` no-highlight
+``` pre
 snappy> show procedures in syscs_util;
 PROCEDURE_SCHEM     |PROCEDURE_NAME                |REMARKS             
 ------------------------------------------------------------------------ 
@@ -224,7 +224,7 @@ SHOW SCHEMAS displays all of the schemas in the current connection.
 
 **Example**
 
-```no-highlight
+```pre
 snappy> create schema sample;
 
 snappy> show schemas;
@@ -255,7 +255,7 @@ If `IN schemaName` is specified, only synonyms in the specified schema are displ
 
 **Example**
 
-``` no-highlight
+``` pre
 snappy> CREATE SYNONYM myairline FOR airlineREF_1;
 
 snappy> SHOW SYNONYMS;
@@ -275,7 +275,7 @@ If `IN schemaName` is specified, the tables in the given schema are displayed.
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE     |REMARKS
 ------------------------------------------------------------------------ 
@@ -299,7 +299,7 @@ If `IN schemaName` is specified, the views in the given schema are displayed.
 
 **Example**
 
-```no-highlight
+```pre
 snappy> create view v1 as select * from maps;
 
 snappy> show views;

@@ -270,6 +270,12 @@ trait DestroyRelation {
   def tableExists: Boolean
 
   /**
+    * Return true if table is created by the relation. This will be used to check
+    * while destroying the table incase of a failure while creating the table
+    */
+  def tableCreated: Boolean
+
+  /**
    * Truncate the table represented by this relation.
    */
   def truncate(): Unit

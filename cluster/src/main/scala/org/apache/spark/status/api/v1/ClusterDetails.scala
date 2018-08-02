@@ -29,7 +29,12 @@ object ClusterDetails {
     val clusterBuff: ListBuffer[ClusterSummary] = ListBuffer.empty[ClusterSummary]
 
     val csInstance = ClusterStatistics.getInstance()
+
+    val coresInfo = mutable.HashMap.empty[String, Int]
+    coresInfo += ("totalCores" -> csInstance.getTotalCPUCores)
+
     val clusterInfo = mutable.HashMap.empty[String, Any]
+    clusterInfo += ("coresInfo" -> coresInfo);
     clusterInfo += ("timeLine" ->
         csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE));
     clusterInfo += ("cpuUsageTrend" ->
