@@ -588,6 +588,24 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     assert(df.collect().size === 1)
   }
 
+  test("SNAP-2443") {
+    val testDF = snc.range(100000).selectExpr("id")
+    var splits = testDF.randomSplit(Array(0.7, 0.3))
+    var randomTraining = splits(0)
+    var randomTesting = splits(1)
+    randomTraining.createOrReplaceTempView("randomTraining")
+    var summary = snc.sql("select sum(1) from randomTraining")
+    val one = summary.collect()(0)(0).asInstanceOf[Long]
+    splits = testDF.randomSplit(Array(0.5, 0.5))
+    randomTraining = splits(0)
+    randomTesting = splits(1)
+    randomTraining.createOrReplaceTempView("randomTraining")
+    summary = snc.sql("select sum(1) from randomTraining")
+    val two = summary.collect()(0)(0).asInstanceOf[Long]
+    assert(two < one)
+
+  }
+
 
   def partitionToPartitionJoinAssertions(snc: SnappyContext,
       t1: String, t2: String): Unit = {
