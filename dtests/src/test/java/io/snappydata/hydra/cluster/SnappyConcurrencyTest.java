@@ -106,7 +106,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
 
       for (int i = 0; i < queryVect.size(); i++) {
         String queryNum = "Q" + i;
-        Log.getLogWriter().info("SS - queryNum: " + queryNum);
         writeQueryExecutionTimingsData(queryNum, i + "_", latencyPrintStream);
       }
       latencyPrintStream.close();
@@ -136,7 +135,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
     timings = getQueryExecutionTimingsData(queryNum, timings);
     if (timings.size() == 0) {
       String s = "No data found for writing to " + fileName + " file under test directory";
-      /*throw new TestException(s);*/
       Log.getLogWriter().info("No data found for writing to " + fileName + " file under test directory");
       return;
     }
@@ -151,10 +149,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
     queryNum = queryNum.substring(0, queryNum.lastIndexOf("_"));
     String string = String.format(queryNum + ", " + min + ", " + max + ", " + avg + ", " + timings.size());
     latencyPrintStream.println(string);
-    /*Log.getLogWriter().info("Latency - Min for query: " + queryNum + " = " + min);
-    Log.getLogWriter().info("Latency - Max for query: " + queryNum + " = " + max);
-    Log.getLogWriter().info("Latency - Average for query: " + queryNum + " = " + avg);
-    Log.getLogWriter().info("Latency - Total number of Executions for query: " + queryNum + " = " + timings.size());*/
     for (Long s : timings) {
       snappyTest.writeToFile(s.toString(), file, true);
     }
