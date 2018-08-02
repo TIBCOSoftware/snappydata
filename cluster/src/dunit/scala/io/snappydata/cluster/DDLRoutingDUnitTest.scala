@@ -383,7 +383,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
-        val catalog = Misc.getMemStore.getExternalCatalog()
+        val catalog = Misc.getMemStore.getExternalCatalog
         assert(catalog.isColumnTable(schemaName, tableName, false))
       }
     })
@@ -392,7 +392,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def tableMetadataAssertRowTable(schemaName: String, tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
-        val catalog = Misc.getMemStore.getExternalCatalog()
+        val catalog = Misc.getMemStore.getExternalCatalog
         assert(!catalog.isColumnTable(schemaName, tableName, false))
       }
     })

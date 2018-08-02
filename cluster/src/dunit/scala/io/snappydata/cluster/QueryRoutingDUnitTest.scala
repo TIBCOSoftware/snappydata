@@ -103,7 +103,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
-        val catalog = Misc.getMemStore.getExternalCatalog()
+        val catalog = Misc.getMemStore.getExternalCatalog
         assert(catalog.isColumnTable("TEST", "ColumnTableQR", false))
       }
     })
