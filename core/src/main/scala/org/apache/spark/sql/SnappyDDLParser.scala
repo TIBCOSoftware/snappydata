@@ -26,11 +26,13 @@ import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
+
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
+
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -47,8 +49,9 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-
 import scala.util.control.NonFatal
+
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -938,6 +941,7 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
       }
       sparkSession.sessionState.executePlan(Project(projectList, analyzedPlan)).analyzed
     }
+    val actualSchemaJson = aliasedPlan.schema.json
     val viewSQL: String = new SQLBuilder(aliasedPlan).toSQL
 
     // Validate the view SQL - make sure we can parse it and analyze it.
@@ -952,6 +956,8 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
       properties)
     opts = JdbcExtendedUtils.addSplitProperty(viewSQL,
       Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
+    opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
+      SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP, opts)
     val dummyText = "select 1"
     val dummyPlan = sparkSession.sessionState.sqlParser.parsePlan(dummyText)
     val cmd = CreateViewCommand(name, Nil, comment, opts.toMap, Some(dummyText),
