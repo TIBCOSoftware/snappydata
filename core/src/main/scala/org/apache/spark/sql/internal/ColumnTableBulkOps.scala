@@ -36,16 +36,16 @@ import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSes
   */
 object ColumnTableBulkOps {
 
-
-
   def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
     val table = originalPlan.table
     val subQuery = originalPlan.child
     var transFormedPlan: LogicalPlan = originalPlan
+    val session = sparkSession.asInstanceOf[SnappySession]
+    var success = false
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) =>
+      case LogicalRelation(mutable: BulkPutRelation, _, _) => try {
         val putKeys = mutable.getPutKeys
         if (putKeys.isEmpty) {
           throw new AnalysisException(
@@ -53,7 +53,7 @@ object ColumnTableBulkOps {
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
 
-        val keyColumns = getKeyColumns(table)
+        val (tableName, keyColumns) = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
         val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
@@ -66,6 +66,9 @@ object ColumnTableBulkOps {
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
+
+        // set a common lock owner for entire operation
+        session.setMutablePlanOwner(tableName, persist = true)
 
         val updatePlan = Update(table, updateSubQuery, Seq.empty,
           updateColumns, updateExpressions)
@@ -94,6 +97,14 @@ object ColumnTableBulkOps {
           OverwriteOptions(enabled = false), ifNotExists = false)
 
         transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
+
+        // mark operation context as non-persistent at this point so it gets cleared
+        // after actual execution of transFormedPlan
+        session.operationContext.get.persist = false
+        success = true
+      } finally {
+        if (!success) session.setMutablePlanOwner(qualifiedTableName = null, persist = false)
+      }
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
@@ -143,12 +154,12 @@ object ColumnTableBulkOps {
     newCondition
   }
 
-  def getKeyColumns(table: LogicalPlan): Seq[String] = {
+  def getKeyColumns(table: LogicalPlan): (String, Seq[String]) = {
     table.collectFirst {
-      case LogicalRelation(mutable: MutableRelation, _, _) => mutable.getKeyColumns
+      case LogicalRelation(mutable: MutableRelation, _, _) =>
+        mutable.table -> mutable.getKeyColumns
     }.getOrElse(throw new AnalysisException(
       s"Update/Delete requires a MutableRelation but got $table"))
-
   }
 
   def transformDeletePlan(sparkSession: SparkSession,

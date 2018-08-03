@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.row
 
 import java.lang.reflect.Field
-import java.sql.{Connection, ResultSet, Statement}
+import java.sql.{Connection, ResultSet, Statement, Types}
 import java.util.GregorianCalendar
 
 import scala.collection.JavaConverters._
@@ -67,7 +67,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var delayRollover: Boolean, protected var projection: Array[Int])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
-  protected var updateOwner: String = if (session ne null) session.getMutablePlanOwner else null
+  protected var updateOwner: String = _
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
@@ -75,6 +75,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   protected var filterWhereClause: String = _
 
   protected def evaluateWhereClause(): Unit = {
+    if ((session ne null) && tableName == session.getMutablePlanTable) {
+      updateOwner = session.getMutablePlanOwner
+    }
     val numFilters = filters.length
     filterWhereClause = if (numFilters > 0) {
       val sb = new StringBuilder().append(" WHERE ")
@@ -209,7 +212,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         }
         ps.setString(2, bucketString)
         ps.setInt(3, -1)
-        ps.setString(4, updateOwner)
+        if (updateOwner ne null) ps.setString(4, updateOwner) else ps.setNull(4, Types.VARCHAR)
         ps.executeUpdate()
       } finally {
         ps.close()
