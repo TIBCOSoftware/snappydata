@@ -77,16 +77,6 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     }
 
     val routeQueryDisabledConn = getClientConnection(netPort1, false)
-    // should throw an exception since the catalog is repaired and table entry
-    // should have been removed
-//    try {
-//      // table should not exist in the store DD
-//      routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
-//    } catch {
-//      case se: SQLException if (se.getSQLState.equals("42X05")) =>
-//      case unknown: Throwable => throw unknown
-//    }
-
     try {
       // make sure that the column buffer does not exist
       routeQueryDisabledConn.createStatement().executeQuery(
@@ -203,7 +193,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   }
 
   // Hive entry exists but DD entry missing
-  def testCatalogRepairedWhenLeadRestarted2(): Unit = {
+  def testCatalogRepairedWhenLeadStopped2(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
