@@ -32,6 +32,7 @@ import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -396,12 +397,13 @@ abstract class SnappyDDLParser(session: SparkSession)
     TRUNCATE ~ TABLE ~ ifExists ~ tableIdentifier ~> TruncateManagedTable
   }
 
-  protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ COLUMN.? ~ column  ~> AlterTableAddColumn
-  }
-
-  protected def alterTableDropColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ DROP  ~ COLUMN.? ~ qualifiedName ~> AlterTableDropColumn
+  protected def alterTable: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ (
+        ADD ~ COLUMN.? ~ column ~ EOI ~> AlterTableAddColumn |
+        DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumn |
+        ANY. + ~ EOI ~> ((r: TableIdentifier) =>
+          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
+    )
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
@@ -704,7 +706,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView |
-    alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
+    alterTable | createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show
   }
 
