@@ -19,12 +19,13 @@ package org.apache.spark.sql.policy
 import java.sql.SQLException
 
 import com.pivotal.gemfirexd.Attribute
-import io.snappydata.{Property, SnappyFunSuite}
+import com.pivotal.gemfirexd.security.SecurityTestUtils
+import io.snappydata.{Constant, Property, SnappyFunSuite}
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 
-import org.apache.spark.Logging
+import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.Filter
 import org.apache.spark.sql.types.StringType
@@ -43,6 +44,21 @@ class PolicyTest extends SnappyFunSuite
   val colTableName: String = s"$tableOwner.ColumnTable"
   val rowTableName: String = s"${tableOwner}.RowTable"
   var ownerContext: SnappyContext = _
+
+  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+
+
+    val conf = new org.apache.spark.SparkConf()
+        .setAppName("PolicyTest")
+        .setMaster("local[4]")
+        .set("spark.sql.crossJoin.enabled", "true")
+
+    if (addOn != null) {
+      addOn(conf)
+    } else {
+      conf
+    }
+  }
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -200,7 +216,7 @@ class PolicyTest extends SnappyFunSuite
     rs = snc2.sql(q)
     assertEquals(29, rs.collect().length)
 
-   // Now enable RLS
+    // Now enable RLS
 
     ownerContext.sql(s"alter table $tableName enable row level security")
 
@@ -213,13 +229,105 @@ class PolicyTest extends SnappyFunSuite
     ownerContext.sql("drop policy testPolicy1")
 
   }
-  test("test bug causing recursion with query having filter using col table") {
+
+  test("test bug causing recursion with query having filter using col table - ENT-40") {
     this.testRecursionBug(colTableName)
   }
 
-  test("test bug causing recursion with query having filter using row table") {
+  test("test bug causing recursion with query having filter using row table - ENT-40") {
     this.testRecursionBug(rowTableName)
   }
+
+  test("test policy filter with subquery for row table") {
+    this.whereClauseWithExistsCondition(rowTableName)
+  }
+
+  test("test policy filter with subquery for col table") {
+    this.whereClauseWithExistsCondition(colTableName)
+  }
+
+  private def whereClauseWithExistsCondition(tableName: String): Unit = {
+    val mappingTable = "mapping"
+    ownerContext.sql(s"CREATE TABLE $mappingTable (username String, hisid Int) " +
+        s" USING row ")
+    val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
+      "USERY" -> 8, "USERY" -> 9)
+    val rdd = sc.parallelize(seq)
+
+    val dataDF = ownerContext.createDataFrame(rdd)
+
+    dataDF.write.insertInto(mappingTable)
+
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$tableName for select to current_user using " +
+        s"exists( select 1 from $tableOwner.$mappingTable " +
+        s" where username = current_user() and id = hisid)")
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+    val q1 = s"select * from $tableName "
+    var rs = snc2.sql(q1).collect()
+    assertEquals(3, rs.length)
+    var idResults = rs.map(_.getInt(1))
+    assertTrue(idResults.exists(_ == 4))
+    assertTrue(idResults.exists(_ == 5))
+    assertTrue(idResults.exists(_ == 6))
+
+    // fire the query but use table alias and a filter
+    val q2 = s"select * from $tableName x where x.id  < 6 "
+    rs = snc2.sql(q2).collect()
+    assertEquals(2, rs.length)
+    idResults = rs.map(_.getInt(1))
+    assertTrue(idResults.exists(_ == 4))
+    assertTrue(idResults.exists(_ == 5))
+
+
+    ownerContext.sql("drop policy testPolicy1")
+    ownerContext.sql(s"drop table $mappingTable")
+
+  }
+
+  test("test policy filter with subquery for row table with row table joined to itself") {
+    this.tableWithPolicyJoinedToItself(rowTableName)
+  }
+
+  test("test policy filter with subquery for col table with col table joined to itself") {
+    this.tableWithPolicyJoinedToItself(colTableName)
+  }
+
+  private def tableWithPolicyJoinedToItself(tableName: String): Unit = {
+    val mappingTable = "mapping"
+    ownerContext.sql(s"CREATE TABLE $mappingTable (username String, hisid Int) " +
+        s" USING row ")
+    val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
+      "USERY" -> 8, "USERY" -> 9)
+    val rdd = sc.parallelize(seq)
+
+    val dataDF = ownerContext.createDataFrame(rdd)
+
+    dataDF.write.insertInto(mappingTable)
+
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$tableName for select to current_user using " +
+        s"exists( select 1 from $tableOwner.$mappingTable " +
+        s" where username = current_user() and id = hisid)")
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+    val q1 = s"select * from $tableName tab1 , $tableName tab2 " +
+        s"where tab1.id < 6 and tab2.id < 6 "
+    var rs = snc2.sql(q1).collect()
+    assertEquals(4, rs.length)
+    var idResults = rs.map(x => x.getInt(1) -> x.get(3))
+    assertTrue(idResults.exists(_ == (4, 4)))
+    assertTrue(idResults.exists(_ == (4, 5)))
+    assertTrue(idResults.exists(_ == (5, 4)))
+    assertTrue(idResults.exists(_ == (5, 5)))
+    ownerContext.sql("drop policy testPolicy1")
+    ownerContext.sql(s"drop table $mappingTable")
+
+  }
+
 
   private def testRecursionBug(tableName: String): Unit = {
     ownerContext.sql(s"create policy testPolicy1 on  " +

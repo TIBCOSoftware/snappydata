@@ -431,7 +431,7 @@ class SnappySessionState(snappySession: SnappySession)
         case _ if !alreadyPolicyApplied(plan) => plan.transformUp {
           case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) => {
             val policyFilter = snappySession.sessionState.catalog.
-                getCombinedPolicyFilterForTable(rlsRelation)
+                getCombinedPolicyFilterForTable(rlsRelation, lr)
             policyFilter match {
               case Some(filter) => filter.copy(child = lr)
               case None => lr

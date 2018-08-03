@@ -48,7 +48,7 @@ import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.analysis.{FunctionAlreadyExistsException, FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPermanentFunctionException, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
@@ -497,7 +497,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  final def getCombinedPolicyFilterForTable(rlsRelation: RowLevelSecurityRelation):
+  final def getCombinedPolicyFilterForTable(rlsRelation: RowLevelSecurityRelation,
+      wrappingLogicalRelation: LogicalRelation):
   Option[Filter] = {
     // filter out policy rows
     if (!rlsRelation.isRowLevelSecurityEnabled) {
@@ -518,7 +519,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       })
       if (policyFilters.isEmpty) None
       else {
-        Some(policyFilters.foldLeft[Filter](null) {
+        val combinedPolicyFilters = policyFilters.foldLeft[Filter](null) {
           case (result, filter) =>
             if (result == null) {
               filter
@@ -526,7 +527,32 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               result.copy(condition = org.apache.spark.sql.catalyst.expressions.And(
                 result.condition, filter.condition))
             }
-        })
+        }
+        val storedLogicalRelation = this.lookupRelation(newQualifiedTableName(
+          rlsRelation.resolvedName)).
+            find(_ match {
+              case _: LogicalRelation => true
+              case _ => false
+            }).get.asInstanceOf[LogicalRelation]
+
+        Some(remapFilterIfNeeded(combinedPolicyFilters, wrappingLogicalRelation,
+          storedLogicalRelation))
+      }
+    }
+  }
+
+  private def remapFilterIfNeeded(filter: Filter, queryLR: LogicalRelation,
+      storedLR: LogicalRelation): Filter = {
+    if (queryLR.output.corresponds(storedLR.output)((a1, a2) => a1.exprId == a2.exprId)) {
+      filter
+    } else {
+      // remap filter
+      val mappingInfo = storedLR.output.map(_.exprId).zip(
+        queryLR.output.map(_.exprId)).toMap
+      filter.transformAllExpressions {
+        case ar: AttributeReference if mappingInfo.contains(ar.exprId) =>
+          AttributeReference(ar.name, ar.dataType, ar.nullable,
+            ar.metadata)(mappingInfo.get(ar.exprId).get, ar.qualifier, ar.isGenerated)
       }
     }
   }

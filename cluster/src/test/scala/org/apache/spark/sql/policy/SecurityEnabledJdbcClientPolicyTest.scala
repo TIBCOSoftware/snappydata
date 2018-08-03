@@ -120,11 +120,11 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
   }
 
 
-  test("test bug causing recursion with query having filter using col table") {
+  test("test bug causing recursion with query having filter using col table - ENT-40") {
     this.testRecursionBug(colTableName)
   }
 
-  test("test bug causing recursion with query having filter using row table") {
+  test("test bug causing recursion with query having filter using row table - ENT-40") {
     this.testRecursionBug(rowTableName)
   }
 
