@@ -109,8 +109,8 @@ object ServiceUtils {
     }
   }
 
-  def invokeStopFabricServer(sc: SparkContext): Unit = {
-    ServerManager.getServerInstance.stop(null)
+  def invokeStopFabricServer(sc: SparkContext, shutDownCreds: Properties = null): Unit = {
+    ServerManager.getServerInstance.stop(shutDownCreds)
   }
 
   def getAllLocators(sc: SparkContext): scala.collection.Map[DistributedMember, String] = {

@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 case class TestDatak(key1: Int, value: String, ref: Int)
@@ -179,6 +180,36 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
       case _ =>
     }
     assert(countDf.count() === 1000) // Make sure aggregation is working with local join
+  }
+
+
+  test("Check shuffle in operations with partition pruning"){
+    val t1 = "t1"
+    val t2 = "t2"
+
+    snc.setConf[Long](SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, -1L)
+    snc.sql(s"create table $t1 (ol_1_int_id  integer," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+        "options( partition_by 'ol_1_int_id', buckets '16')")
+    snc.sql(s"create table $t2 (ol_1_int_id  integer," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+        "options( partition_by 'ol_1_int_id', buckets '16')")
+
+    var df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1")
+    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+
+    // with limit
+    df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1 limit 1")
+    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+
+    df = snc.sql(s"update $t1 set ol_1_str_id = '3' where ol_1_int_id in (" +
+        s"select ol_1_int_id from $t2 where $t2.ol_1_int_id=1)")
+
+    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+
+    snc.dropTable("t1");
+    snc.dropTable("t2");
+
   }
 
   /**

@@ -77,7 +77,7 @@ object Constant {
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 20000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 5000
 
   // Internal Column table store schema
   final val SHADOW_SCHEMA_NAME = SystemProperties.SHADOW_SCHEMA_NAME
@@ -162,7 +162,7 @@ object Constant {
     // rand() plans are not to be cached since each run should use different seed
     // and the Spark impls create the seed in constructor rather than in generated code
     "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
-    "LIKE" -> Array(1), "RLIKE" -> Array(1)))
+    "LIKE" -> Array(1), "RLIKE" -> Array(1), "APPROX_COUNT_DISTINCT" -> Array(1)))
 }
 
 /**

@@ -3,7 +3,7 @@
 
 Multiple users can concurrently access a secure SnappyData cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a SnappyData cluster.
 
-!!! Note:
+!!! Note
 
 	* Currently, only the `%jdbc` interpreter is supported with a secure SnappyData cluster.
 
@@ -26,12 +26,12 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
         	snappy> GRANT INSERT ON Table airline TO user3;
         	snappy> GRANT UPDATE ON Table airline TO user4;
 
-	!!! Note:
+	!!! Note
     	User requiring INSERT, UPDATE or DELETE permissions also require explicit SELECT permission on a table.
 
 5. Extract the contents of the Zeppelin binary package. </br> 
 
-6. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`.
+6. Start the Zeppelin daemon using the command: </br> `./bin/zeppelin-daemon.sh start`
 
 ## Configure the JDBC Interpreter
 Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](https://zeppelin.apache.org/docs/0.7.0/interpreter/jdbc.html).

@@ -29,8 +29,7 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
-import com.gemstone.gemfire.internal.shared.SystemProperties
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
@@ -56,7 +55,7 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.util.TaskCompletionListener
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, TaskContext, TaskKilledException}
 
 /**
  * Column Store implementation for GemFireXD.
@@ -88,9 +87,18 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     schema = StructTypeSerializer.read(kryo, input, c = null)
   }
 
+  private def checkTaskCancellation(): Unit = {
+    val context = TaskContext.get()
+    if ((context ne null) && context.isInterrupted()) {
+      throw new TaskKilledException
+    }
+  }
+
   override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    // check for task cancellation before further processing
+    checkTaskCancellation()
     if (partitionId >= 0) {
       doInsertOrPut(columnTableName, batch, batchId, partitionId, maxDeltaRows,
         compressionCodecId, conn)
@@ -222,6 +230,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def storeDelete(columnTableName: String, buffer: ByteBuffer, partitionId: Int,
       batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    // check for task cancellation before further processing
+    checkTaskCancellation()
     val value = new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed = false)
     connectionType match {
       case ConnectionType.Embedded =>
@@ -588,7 +598,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         iter.next()
       }
       // release the batch buffers
-      batch.buffers.foreach(UnsafeHolder.releaseIfDirectBuffer)
+      batch.buffers.foreach(b => if (b ne null) BufferAllocator.releaseBuffer(b))
     }
   }
 
@@ -764,32 +774,40 @@ final class SmartConnectorColumnRDD(
     val conn: Connection = helper.getConnection(connProperties, part)
     logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
-    // fetch all the column blobs pushing down the filters
-    val (statement, rs, txId) = helper.prepareScan(conn, tableName, projection,
-      serializedFilters, part, relDestroyVersion)
-    val itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
-      context, partitionId)
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
+      case "" => null
+      case id => id
+    }
+    var itr: Iterator[ByteBuffer] = null
+    try {
+      // fetch all the column blobs pushing down the filters
+      val (statement, rs) = helper.prepareScan(conn, txId,
+        tableName, projection,
+        serializedFilters, part, relDestroyVersion)
+      itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
+        context, partitionId)
+    } finally {
+      if (context ne null) {
+        context.addTaskCompletionListener { _ =>
+          logDebug(s"The txid going to be committed is $txId " + tableName)
 
-    if (context ne null) {
-      context.addTaskCompletionListener { _ =>
-        logDebug(s"The txid going to be committed is $txId " + tableName)
-
-        // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-        ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
-        ps.executeUpdate()
-        logDebug(s"The txid being committed is $txId")
-        ps.close()
-        SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
-        logDebug(s"closed connection for task from listener $partitionId")
-        try {
-          conn.close()
-          logDebug("closed connection for task " + context.partitionId())
-        } catch {
-          case NonFatal(e) => logWarning("Exception closing connection", e)
+          // if ((txId ne null) && !txId.equals("null")) {
+          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+          ps.setString(1, if (txId ne null) txId else "")
+          ps.setString(2, if (delayRollover) tableName else "")
+          ps.executeUpdate()
+          logDebug(s"The txid being committed is $txId")
+          ps.close()
+          SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
+          logDebug(s"closed connection for task from listener $partitionId")
+          try {
+            conn.close()
+            logDebug("closed connection for task " + context.partitionId())
+          } catch {
+            case NonFatal(e) => logWarning("Exception closing connection", e)
+          }
+          // }
         }
-        // }
       }
     }
     itr

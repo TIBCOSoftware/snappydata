@@ -5,7 +5,7 @@ Configuration files for locator, lead, and server should be created in the **con
 To do so, you can copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
-!!! Tip:
+!!! Tip
 	- For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
 
     - Instead of starting the SnappyData cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
@@ -47,7 +47,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 <a id="locator-example"></a>
 **Example**: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:
 
-```no-highlight
+```pre
 $ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
@@ -60,7 +60,7 @@ Lead Nodes primarily runs the SnappyData managed Spark driver. There is one prim
 
 Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>/conf** directory.
 
-!!!Note:
+!!! Note
 	In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.
 
 ### List of Lead Properties
@@ -88,7 +88,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
 
-```no-highlight
+```pre
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
@@ -103,7 +103,7 @@ Create the configuration file (**servers**) for data servers in the **<_SnappyDa
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
 |Property|Description</br>|
-|-|-|-|
+|-|-|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|
@@ -113,8 +113,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-eviction-off-heap-percentage|Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 81% of whatever is set for `-critical-off-heap-percentage`. </br>Use this switch to override the default.|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
-|-J-Dgemfirexd.hostname-for-clients|Hostname or IP address that is sent to clients so they can connect to the locator. The default is the `bind-address` of the locator.|
-|-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
+|-J-Dgemfirexd.hostname-for-clients|The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the `client-bind-address` to be given to clients. </br> This value can be different from `client-bind-address` for cases where the servers/locators are behind a NAT firewall (AWS for example) where `client-bind-address` needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by the hostname translation itself, that is, the hostname used in `client-bind-address` resolves to internal IP address from inside and to the public IP address from outside, but for other cases, this property is required|
 |-log-file|Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)|
 |-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)|
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
@@ -125,7 +124,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 **Example**: To start a two servers (node-c and node-c), update the configuration file as follows:
 
-```no-highlight
+```pre
 $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
@@ -142,7 +141,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 
 **Example**:
 
-```no-highlight
+```pre
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
 	--packages "SnappyDataInc:snappydata:1.0.1-s_2.11" 
@@ -159,7 +158,7 @@ If you want to run SnappyData with an already existing custom Hadoop cluster lik
 
 To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 
-```no-highlight
+```pre
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 ```
 
@@ -169,10 +168,10 @@ export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
 The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory. 
 
-```no-highlight
+```pre
 $ cat conf/log4j.properties 
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 ```
-!!! Note:
+!!! Note
 	For a set of applicable class names and default values see the file **conf/log4j.properties.template**, which can be used as a starting point. Consult the [log4j 1.2.x documentation](http://logging.apache.org/log4j/) for more details on the configuration file.

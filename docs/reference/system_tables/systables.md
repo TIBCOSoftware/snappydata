@@ -25,7 +25,7 @@ Describes the tables and views in the distributed system.
 |GATEWAYSENDERS|VARCHAR|256|Yes|Not available for this release|
 
 **Example** </br>
-```no-highlight
+```pre
 snappy> select * from SYS.SYSTABLES;
 TABLEID                             |TABLENAME                |TABLETYPE|SCHEMAID                            |TABLESCHEMANAME      |LOCKGRANULARITY|SERVERGROUPS|DATAPOLICY          |PARTITIONATTRS|RESOLVER|EXPIRATIONATTRS|EVICTIONATTRS|DISKATTRS                                                 |LOADER|WRITER|LISTENERS|ASYNCLISTENERS|GATEWAYENABLED|GATEWAYSENDERS|OFFHEAPENABLED
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 

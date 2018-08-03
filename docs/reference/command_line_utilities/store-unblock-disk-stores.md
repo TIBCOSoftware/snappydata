@@ -3,7 +3,7 @@ Indicates a member waiting for other diskStoreID to go ahead with the initializa
 
 ## Syntax
 
-```no-highlight
+```pre
 ./bin/snappy unblock-disk-store <disk-store-id>
    <-locators=<addresses>> 
         [-bind-address=<address>] 
@@ -14,15 +14,15 @@ The table describes options and arguments for snappy unblock-disk-store. If no m
 
 |Option|Description|
 |-|-|
-|disk-store-id|(Required.) Specifies the unique ID of the disk store to unblock.| 
-|locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
-|bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|prop-name|Any other SnappyData distributed system property.|
+|-disk-store-id|(Required.) Specifies the unique ID of the disk store to unblock.| 
+|-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
+|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
+|-prop-name|Any other SnappyData distributed system property.|
 
 
 ## Example
 
-```no-highlight
+```pre
 ./bin/snappy unblock-disk-store a395f237-c5e5-4e76-8024-353272e86f28 -locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334
 Unblock was successful and no disk stores are now waiting

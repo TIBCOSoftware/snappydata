@@ -19,23 +19,29 @@ package org.apache.spark.sql
 
 
 import java.io.File
+import java.lang
+import java.nio.file.{Files, Paths}
+import java.util.Map.Entry
+import java.util.function.Consumer
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-
+import com.gemstone.gemfire.SystemFailure
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import org.parboiled2._
 import shapeless.{::, HNil}
-
+import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.internal.MarkerForCreateTableAsSelect
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
@@ -59,6 +65,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
   final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
   final def DESC: Rule0 = rule { keyword(Consts.DESC) }
+  final def DEPLOY: Rule0 = rule { keyword(Consts.DEPLOY) }
   final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
@@ -84,6 +91,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def OR: Rule0 = rule { keyword(Consts.OR) }
   final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
   final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
+  final def PACKAGE: Rule0 = rule { keyword(Consts.PACKAGE) }
+  final def PATH: Rule0 = rule { keyword(Consts.PATH) }
+  final def REPOS: Rule0 = rule { keyword(Consts.REPOS) }
   final def REVOKE: Rule0 = rule { keyword(Consts.REVOKE) }
   final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
   final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
@@ -93,6 +103,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def THEN: Rule0 = rule { keyword(Consts.THEN) }
   final def TO: Rule0 = rule { keyword(Consts.TO) }
   final def TRUE: Rule0 = rule { keyword(Consts.TRUE) }
+  final def UNDEPLOY: Rule0 = rule { keyword(Consts.UNDEPLOY) }
   final def UNION: Rule0 = rule { keyword(Consts.UNION) }
   final def UNIQUE: Rule0 = rule { keyword(Consts.UNIQUE) }
   final def UPDATE: Rule0 = rule { keyword(Consts.UPDATE) }
@@ -100,17 +111,22 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
 
+
   // non-reserved keywords
+  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
+  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
+  final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
+  final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
@@ -126,14 +142,18 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
   final def INIT: Rule0 = rule { keyword(Consts.INIT) }
   final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
+  final def JAR: Rule0 = rule { keyword(Consts.JAR) }
+  final def JARS: Rule0 = rule { keyword(Consts.JARS) }
   final def LAST: Rule0 = rule { keyword(Consts.LAST) }
   final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
+  final def LIST: Rule0 = rule { keyword(Consts.LIST) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
   final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
   final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
+  final def PACKAGES: Rule0 = rule { keyword(Consts.PACKAGES) }
   final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -250,11 +270,13 @@ abstract class SnappyDDLParser(session: SparkSession)
             case Some(true) =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = false)
             case _ =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = true)
           }
         case None =>
           external match {
@@ -468,20 +490,40 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   /**
-   * GRANT/REVOKE on a table (only for column and row tables).
+   * GRANT/REVOKE/CREATE DISKSTORE/CALL on a table (only for column and row tables).
    *
    * Example:
    * {{{
    *   GRANT SELECT ON table TO user1, user2;
    *   GRANT INSERT ON table TO ldapGroup: group1;
+   *   CREATE DISKSTORE diskstore_name ('dir1' 10240)
+   *   DROP DISKSTORE diskstore_name
+   *   CALL SYSCS_UTIL.SYSCS_SET_RUNTIMESTATISTICS(1)
    * }}}
    */
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
-    (GRANT | REVOKE) ~ ANY.* ~> (() => DMLExternalTable(
-      TableIdentifier("SYSDUMMY1", Some("SYSIBM")) /* dummy table */ ,
-      LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-        SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
-        "", None)), input.sliceString(0, input.length)))
+    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
+        /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
+        (() => DMLExternalTable(TableIdentifier("SYSDUMMY1", Some("SYSIBM")),
+          LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
+            SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
+            "", None)), input.sliceString(0, input.length)))
+  }
+
+  protected def deployPackages: Rule1[LogicalPlan] = rule {
+    DEPLOY ~ ((PACKAGE ~ tableIdentifier ~ stringLiteral ~
+        (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
+        ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
+          packages, alias.identifier, repos.asInstanceOf[Option[String]],
+          path.asInstanceOf[Option[String]], restart = false))) |
+      JAR ~ tableIdentifier ~ stringLiteral ~>
+          ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
+        alias.identifier, commaSepPaths, restart = false))) |
+    UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
+    LIST ~ (
+      PACKAGES ~> (() => ListPackageJarsCommand(true)) |
+      JARS ~> (() => ListPackageJarsCommand(false))
+    )
   }
 
   protected def streamContext: Rule1[LogicalPlan] = rule {
@@ -543,6 +585,10 @@ abstract class SnappyDDLParser(session: SparkSession)
     )
   }
 
+  protected def reset: Rule1[LogicalPlan] = rule {
+    RESET ~> { () => ResetCommand }
+  }
+
   // It can be the following patterns:
   // SHOW FUNCTIONS;
   // SHOW FUNCTIONS mydb.func1;
@@ -551,7 +597,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def show: Rule1[LogicalPlan] = rule {
    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
       ShowTablesCommand(ident.asInstanceOf[Option[String]], None)) |
-       SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
+       SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ LIKE.? ~
         (functionIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
       val (user, system) = id.asInstanceOf[Option[String]]
           .map(_.toLowerCase) match {
@@ -565,7 +611,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
           name.database, Some(name.funcName), user, system)
         case Some(pat: String) => ShowFunctionsCommand(
-          None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
+          None, Some(pat), user, system)
         case None => ShowFunctionsCommand(None, None, user, system)
         case _ => throw new ParseException(
           s"SHOW FUNCTIONS $nameOrPat unexpected")
@@ -723,3 +769,134 @@ case class DMLExternalTable(
 case class SetSchema(schemaName: String) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
+
+case class DeployCommand(
+  coordinates: String,
+  alias: String,
+  repos: Option[String],
+  jarCache: Option[String],
+  restart: Boolean) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    try {
+      val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+      if (jarsstr.nonEmpty) {
+        val jars = jarsstr.split(",")
+        val sc = sparkSession.sparkContext
+        val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+        SnappySession.addJarURIs(uris)
+        Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
+          ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+          Iterator.empty
+        })
+        val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+        ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+      }
+      Seq.empty[Row]
+    } catch {
+      case ex: Throwable =>
+        ex match {
+          case err: Error =>
+            if (SystemFailure.isJVMFailureError(err)) {
+              SystemFailure.initiateFailure(err)
+              // If this ever returns, rethrow the error. We're poisoned
+              // now, so don't let this thread continue.
+              throw err
+            }
+          case _ =>
+        }
+        Misc.checkIfCacheClosing(ex)
+        if (restart) {
+          logWarning(s"Following mvn coordinate" +
+              s" could not be resolved during restart: ${coordinates}", ex)
+          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+            throw ex
+          }
+          Seq.empty[Row]
+        } else {
+          throw ex
+        }
+    }
+  }
+}
+
+case class DeployJarCommand(
+  alias: String,
+  paths: String,
+  restart: Boolean) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    if (paths.nonEmpty) {
+      val jars = paths.split(",")
+      val (availableUris, unavailableUris) = jars.partition(f => Files.isReadable(Paths.get(f)))
+      if (unavailableUris.nonEmpty) {
+        logWarning(s"Following jars are unavailable" +
+            s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+        if (restart && lang.Boolean.parseBoolean(
+          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+          throw new IllegalStateException(
+            s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
+        }
+        if (!restart) {
+          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
+        }
+      }
+      val sc = sparkSession.sparkContext
+      val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      SnappySession.addJarURIs(uris)
+      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
+        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+        Iterator.empty
+      })
+      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
+    }
+    Seq.empty[Row]
+  }
+}
+
+case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
+  override val output: Seq[Attribute] = {
+    AttributeReference("alias", StringType, nullable = false)() ::
+    AttributeReference("coordinate", StringType, nullable = false)() ::
+    AttributeReference("isPackage", BooleanType, nullable = false)() :: Nil
+  }
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet()
+    val rows = new ArrayBuffer[Row]
+    commands.forEach(new Consumer[Entry[String, String]] {
+      override def accept(t: Entry[String, String]): Unit = {
+        val alias = t.getKey
+        val value = t.getValue
+        val indexOf = value.indexOf('|')
+        if (indexOf > 0) {
+          // It is a package
+          val pkg = value.substring(0, indexOf)
+          rows += Row(alias, pkg, true)
+        }
+        else {
+          // It is a jar
+          val jars = value.split(',')
+          val jarfiles = jars.map(f => {
+            val lastIndexOf = f.lastIndexOf('/')
+            val length = f.length
+            if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
+            else {
+              f
+            }
+          })
+          rows += Row(alias, jarfiles.mkString(","), false)
+        }
+      }
+    })
+    rows
+  }
+}
+
+case class UnDeployCommand(alias: String) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    ToolsCallbackInit.toolsCallback.removePackage(alias)
+    Seq.empty[Row]
+  }
+}

@@ -49,7 +49,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
-import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -97,7 +97,29 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    */
   @transient
   override private[sql] lazy val sharedState: SnappySharedState = {
-    SnappyContext.sharedState(sparkContext)
+    val sharedState = SnappyContext.sharedState(sparkContext)
+    // replay global sql commands
+    SnappyContext.getClusterMode(sparkContext) match {
+      case _: SnappyEmbeddedMode =>
+        val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
+        logInfo(s"deployCmnds size = ${deployCmds.length}")
+        logDebug(s"deployCmds = ${deployCmds.mkString(", ")}")
+        deployCmds.foreach(d => {
+          val cmdFields = d.split('|')
+          if (cmdFields.length > 1) {
+            val coordinate = cmdFields(0)
+            val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+            val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+            DeployCommand(coordinate, null, repos, cache, true).run(self)
+          }
+          else {
+            // Jars we have
+            DeployJarCommand(null, cmdFields(0), true).run(self)
+          }
+        })
+      case _ => // Nothing
+    }
+    sharedState
   }
 
   /**
@@ -192,7 +214,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   final def prepareSQL(sqlText: String): LogicalPlan = {
-    val logical = sessionState.sqlParser.parsePlan(sqlText)
+    val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     sessionState.analyzerPrepare.execute(logical)
   }
@@ -2046,12 +2068,13 @@ object SnappySession extends Logging {
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
-    val parsed = parser.parsePlan(sqlText)
+    val parsed = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
     val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
     val paramsId = parser.sqlParser.getCurrentParamsId
-    val key = CachedKey(session, plan, sqlText, paramLiterals, planCaching)
+    val key = CachedKey(session, session.getCurrentSchema,
+      plan, sqlText, paramLiterals, planCaching)
     var cachedDF: CachedDataFrame = if (planCaching) planCache.getIfPresent(key) else null
     if (cachedDF eq null) {
       // evaluate the plan and cache it if required
@@ -2101,6 +2124,7 @@ object SnappySession extends Logging {
    */
   private[sql] def replaceParamLiterals(text: String,
       currentParamConstants: Array[ParamLiteral], paramsId: Int): String = {
+
     if ((currentParamConstants eq null) || currentParamConstants.length == 0) return text
     val paramStart = TokenLiteral.PARAMLITERAL_START
     var nextIndex = text.indexOf(paramStart)
@@ -2251,16 +2275,31 @@ object SnappySession extends Logging {
       d.getDate(c)
     case _ => dvd.getObject
   }
+
+  var jarServerFiles: Array[String] = Array.empty
+
+  def getJarURIs(): Array[String] = {
+    SnappySession.synchronized({
+      jarServerFiles
+    })
+  }
+  def addJarURIs(uris: Array[String]): Unit = {
+    SnappySession.synchronized({
+      jarServerFiles = jarServerFiles ++ uris
+    })
+  }
 }
 
-final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
-    val sqlText: String, val hintHashcode: Int) {
+final class CachedKey(val session: SnappySession,
+   val currSchema: String, private val lp: LogicalPlan,
+   val sqlText: String, val hintHashcode: Int) {
 
   private[sql] var currentLiterals: Array[ParamLiteral] = _
   private[sql] var currentParamsId: Int = -1
 
   override val hashCode: Int = {
     var h = ClientResolverUtils.addIntToHashOpt(session.hashCode(), 42)
+    h = ClientResolverUtils.addIntToHashOpt(currSchema.hashCode, h)
     h = ClientResolverUtils.addIntToHashOpt(lp.hashCode(), h)
     ClientResolverUtils.addIntToHashOpt(hintHashcode, h)
   }
@@ -2268,14 +2307,15 @@ final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
   override def equals(obj: Any): Boolean = {
     obj match {
       case x: CachedKey =>
-        x.hintHashcode == hintHashcode && (x.session eq session) && x.lp == lp
+        x.hintHashcode == hintHashcode && (x.session eq session) &&
+          (x.currSchema == currSchema) && x.lp == lp
       case _ => false
     }
   }
 }
 
 object CachedKey {
-  def apply(session: SnappySession, plan: LogicalPlan, sqlText: String,
+  def apply(session: SnappySession, currschema: String, plan: LogicalPlan, sqlText: String,
       paramLiterals: Array[ParamLiteral], forCaching: Boolean): CachedKey = {
 
     def normalizeExprIds: PartialFunction[Expression, Expression] = {
@@ -2312,6 +2352,6 @@ object CachedKey {
       for (l <- paramLiterals) l.tokenized = true
       plan.transform(transformExprID)
     } else plan
-    new CachedKey(session, normalizedPlan, sqlText, session.queryHints.hashCode())
+    new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
   }
 }
