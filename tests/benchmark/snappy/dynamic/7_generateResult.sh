@@ -4,6 +4,7 @@ source PerfRun.conf
 directory=$outputLocation/GeneratedResults/$(date "+%Y.%m.%d-%H.%M.%S")
 mkdir -p $directory
 
+cp PerfRun.conf $directory/
 cp $leadDir/* $directory/
 
 latestProp=$directory/latestProp.props
@@ -35,6 +36,7 @@ echo WarmUp = $WarmupRuns >> $latestProp
 echo AverageRuns = $AverageRuns >> $latestProp
 echo LOCATOR = $locator >> $latestProp
 echo LEAD = $leads >> $latestProp
+
 for element in "${servers[@]}";
   do
        echo SERVERS = $element >> $latestProp

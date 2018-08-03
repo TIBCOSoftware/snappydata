@@ -120,17 +120,15 @@ object QueryExecutor {
     val planFileName = if (isSnappy) s"${threadNumber}_QueryPlans_Snappy.out"
             else s"${threadNumber}_QueryPlans_Spark.out"
     val queryResultsFileName = if (isSnappy) s"${threadNumber}_Snappy_Q${queryNumber}_Results.out"
-            else s"${threadNumber}_Spark_Q$queryNumber.csv"
+            else s"${threadNumber}_Spark_Q${queryNumber}_Results.out"
     val queryStatisticsFileName = if (isSnappy) s"${threadNumber}_Snappy_Q${queryNumber}_Timings.csv"
-    else s"${threadNumber}_Spark_Q$queryNumber.csv"
+            else s"${threadNumber}_Spark_Q${queryNumber}_Timings.csv"
 
     if (planFileStream == null && planPrintStream == null) {
       planFileStream = new FileOutputStream(new File(planFileName))
       planPrintStream = new PrintStream(planFileStream)
     }
 
-    val queryResultsFileStream: FileOutputStream = new FileOutputStream(new File(queryResultsFileName))
-    val queryResultsPrintStream: PrintStream = new PrintStream(queryResultsFileStream)
     val queryStatisticsFileStream: FileOutputStream = new FileOutputStream(new File(queryStatisticsFileName))
     val queryStatisticsPrintStream: PrintStream = new PrintStream(queryStatisticsFileStream)
     queryStatisticsPrintStream.println(s"Iteration,ResponseTime")
@@ -139,32 +137,44 @@ object QueryExecutor {
       println(s"Started executing $queryNumber")
 
       if (isResultCollection) {
-        var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, true)
-        // queryPrintStream.println(queryToBeExecuted)
-        val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, true)
-        println(s"$queryNumber : ${resultSet.length}")
+        val queryResultsFileStream: FileOutputStream = new FileOutputStream(new File(queryResultsFileName))
+        val queryResultsPrintStream: PrintStream = new PrintStream(queryResultsFileStream)
 
-        for (row <- resultSet) {
-          queryResultsPrintStream.println(row.toSeq.map {
-            case d: Double => "%18.4f".format(d).trim()
-            case v => v
-          }.mkString(","))
+        try {
+          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
+          val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)
+          println(s"$queryNumber : ${resultSet.length}")
+
+          for (row <- resultSet) {
+            queryResultsPrintStream.println(row.toSeq.map {
+              case d: Double => "%18.4f".format(d).trim()
+              case v => v
+            }.mkString(","))
+          }
+          println(s"Q$queryNumber Result Collected in file $queryResultsFileName")
+        } catch {
+            case e: Exception => {
+              e.printStackTrace(queryResultsPrintStream)
+              println(s" Exception while executing $queryNumber in writing to file $queryResultsFileName")
+            }
+        } finally {
+            queryResultsFileStream.close()
         }
-        println(s"Q$queryNumber Result Collected in file $queryResultsFileName")
       } else {
         var totalTime: Long = 0
         for (i <- 1 to (warmup + runsForAverage)) {
-          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, true)
-          // queryPrintStream.println(queryToBeExecuted)
+          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
-          if (i == 1) {
-            cnts = queryExecution(queryNumber, queryToBeExecuted, sqlContext, true)._1
+          if (i == 1) { // collect plan only once during the first iteration
+            cnts = queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)._1
           } else {
             cnts = queryExecution(queryNumber, queryToBeExecuted, sqlContext)._1
           }
           for (s <- cnts) {
             // just iterating over result
+            // TODO: not required in job here as df.count() is being used.
+            // // or else check to see if iterating on each result row was intended
           }
           val endTime = System.currentTimeMillis()
           val iterationTime = endTime - startTime
@@ -179,15 +189,13 @@ object QueryExecutor {
       }
       println(s"Finished executing $queryNumber")
     } catch {
-      case e: Exception => {
-        e.printStackTrace(queryResultsPrintStream)
-        e.printStackTrace(queryStatisticsPrintStream)
-        e.printStackTrace(avgTimePrintStream)
-        println(s" Exception while executing $queryNumber in written to file $queryResultsFileName")
-      }
+        case e: Exception => {
+          e.printStackTrace(queryStatisticsPrintStream)
+          e.printStackTrace(avgTimePrintStream)
+          println(s" Exception while executing $queryNumber in writing to file $queryResultsFileName")
+        }
     } finally {
-      queryStatisticsPrintStream.close()
-      queryResultsFileStream.close()
+        queryStatisticsPrintStream.close()
     }
     // scalastyle:on println
   }
