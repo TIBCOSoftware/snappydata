@@ -104,7 +104,7 @@ class CatalogConsistencyTest
 
     // repair the catalog
     val connection = getConnection()
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
 
@@ -117,7 +117,7 @@ class CatalogConsistencyTest
       snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
 
     // repair the catalog
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     intercept[TableNotFoundException] {
       snc.snappySession.sessionCatalog.lookupRelation(
@@ -168,7 +168,7 @@ class CatalogConsistencyTest
 
     // repair the catalog
     val connection = getConnection()
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
 
@@ -201,7 +201,7 @@ class CatalogConsistencyTest
       snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
 
     val connection = getConnection()
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", true)
 
@@ -237,7 +237,7 @@ class CatalogConsistencyTest
       snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
 
     val connection = getConnection()
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
 
@@ -265,7 +265,7 @@ class CatalogConsistencyTest
 
     // repair the catalog
     val connection = getConnection()
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
     // make sure that the table does not exist
     val routeQueryDisabledConn = getConnection(routeQuery = false)
     assertTableDoesNotExist(routeQueryDisabledConn, "row_table1", isColumnTable = false)
@@ -280,7 +280,7 @@ class CatalogConsistencyTest
       snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1"), None)
 
     // repair the catalog
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
     // make sure that the table does not exist
     assertTableDoesNotExist(routeQueryDisabledConn, "row_table1", isColumnTable = false)
 
@@ -314,7 +314,7 @@ class CatalogConsistencyTest
 
     val connection = getConnection()
     // repair the catalog
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
     // make sure that the table does not exist
     assertTableDoesNotExist(routeQueryDisabledConn, "row_table1", isColumnTable = false)
 
