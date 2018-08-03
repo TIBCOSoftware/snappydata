@@ -75,26 +75,18 @@ class RowTableTest
     println("Successful")
   }
 
-  test("Test the fetch first n row test. with n parameter") {
+  test("Test the fetch first n row only test. with and without n parameter") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, "row", dataDF.schema, props)
-    val result = snc.sql("SELECT * FROM " + tableName + " fetch first 4 row only ")
-    val r = result.collect
+    var result = snc.sql("SELECT * FROM " + tableName + " fetch first 4 row only ")
+    var r = result.collect
     assert(r.length == 0)
-    println("Successful")
-  }
 
-  test("Test the fetch first row test. without n parameter, so it will pick 1 as default value") {
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
-
-    snc.createTable(tableName, "row", dataDF.schema, props)
-    val result = snc.sql("SELECT * FROM " + tableName + " fetch first row only")
-    val r = result.collect
+    result = snc.sql("SELECT * FROM " + tableName + " fetch first row only")
+    r = result.collect
     assert(r.length == 0)
     println("Successful")
   }
