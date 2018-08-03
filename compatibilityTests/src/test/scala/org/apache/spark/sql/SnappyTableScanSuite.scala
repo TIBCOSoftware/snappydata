@@ -20,5 +20,7 @@ import org.apache.spark.sql.sources.TableScanSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
 class SnappyTableScanSuite extends TableScanSuite with SharedSnappySessionContext{
-
+  // SimpleScanSource, an external source is not found while
+  // creating internal table. changing it to external
+  override val tableTypes = Seq("TEMPORARY VIEW", "EXTERNAL TABLE")
 }

@@ -1033,7 +1033,27 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     }
   }
 
+  test("Test bug SNAP-2446") {
+    var conn: Connection = null
+    val ddlStr = s"create table MAP(MAP_CONNECTION_ID BIGINT NOT NULL," +
+        s" SOURCE_DATA_CONNECTION_CODE INT NOT NULL," +
+        s" DESTINATION_DATA_CONNECTION_CODE INT NOT NULL," +
+        s" ACTIVE_FLAG BOOLEAN, PRIMARY KEY(MAP_CONNECTION_ID)) USING ROW OPTIONS()"
 
+    snc.sql(ddlStr)
+    snc.sql(s"insert into MAP values (-28416, 19375, 424345, true)")
+    val serverHostPort = TestUtil.startNetServer()
+    conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort + "/route-query=false/")
+
+    val sqlText = s"SELECT DESTINATION_DATA_CONNECTION_CODE," +
+        "SOURCE_DATA_CONNECTION_CODE,ACTIVE_FLAG FROM MAP"
+
+    val rs2 = conn.createStatement().executeQuery(sqlText)
+    assert(rs2.next())
+    assert(rs2.getBoolean(3))
+    conn.close()
+  }
 
   test("Test broadcast hash joins and scalar sub-queries") {
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
