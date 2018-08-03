@@ -102,9 +102,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     SnappyContext.getClusterMode(sparkContext) match {
       case _: SnappyEmbeddedMode =>
         val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
-        logInfo(s"deployCmnds size = ${deployCmds.length}")
-        logDebug(s"deployCmds = ${deployCmds.mkString(", ")}")
-        deployCmds.foreach(d => {
+        val nonEmpty = deployCmds.length > 0
+        if (nonEmpty) {
+          logInfo(s"deployCmnds size = ${deployCmds.length}")
+          logDebug(s"deployCmds = ${deployCmds.mkString(", ")}")
+        }
+        if (nonEmpty) deployCmds.foreach(d => {
           val cmdFields = d.split('|')
           if (cmdFields.length > 1) {
             val coordinate = cmdFields(0)
