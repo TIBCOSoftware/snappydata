@@ -407,14 +407,28 @@ class SnappySessionState(snappySession: SnappySession)
 
 
   object RowLevelSecurity extends Rule[LogicalPlan] {
+    val expressionChecker = (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
+        (exp match {
+          case EqualTo(l: Literal, r: Literal) =>
+            l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
+          case _ => false
+        })
+    
+    val rlsConditionChecker: LogicalFilter => Boolean =
+      (filter: LogicalFilter) => filter.condition match {
+        case And(And(left, right), _) => expressionChecker(left)
+        case And(left, right) => expressionChecker(left)
+        case _ => false
+      }
+
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
         case _: BypassRowLevelSecurity => plan
         // TODO: Asif: Bypass row level security filter apply if the command
-          // is of type RunnableCommad. Later if it turns out any data operation
-          // is happening via this command we need to handle it
+        // is of type RunnableCommad. Later if it turns out any data operation
+        // is happening via this command we need to handle it
         case _: RunnableCommand => plan
-        case _ => plan.transformUp {
+        case _ if !alreadyPolicyApplied(plan) => plan.transformUp {
           case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) => {
             val policyFilter = snappySession.sessionState.catalog.
                 getCombinedPolicyFilterForTable(rlsRelation)
@@ -426,28 +440,26 @@ class SnappySessionState(snappySession: SnappySession)
           case SubqueryAlias(name, Filter(condition, child), ti) => Filter(condition,
             SubqueryAlias(name, child, ti))
 
-          case Filter(condition1, Filter(condition2, child)) =>
-            condition1 match {
-              case And(left, right) if left.eq(PolicyProperties.rlsAppliedCondition) ||
-                  (left match {
-                    case EqualTo(l: Literal, r: Literal) if l.value == r.value &&
-                        l.value == PolicyProperties.rlsConditionString => true
-                    case _ => false
-                  }) =>
-                // rls condition already applied
-                condition2 match {
-                  case And(l1, r1) if l1.eq(PolicyProperties.rlsAppliedCondition) || (l1 match {
-                    case EqualTo(l2: Literal, r2: Literal) if l2.value == r2.value &&
-                        l2.value == PolicyProperties.rlsConditionString => true
-                    case _ => false
-                  }) => Filter(condition1, child)
-                  case _ => Filter(And(condition1, condition2), child)
-
-                }
-              case _ => Filter(And(condition2, condition1), child)
+          case filter1@Filter(condition1, filter2@Filter(condition2, child)) =>
+            if (rlsConditionChecker(filter1)) {
+              if (rlsConditionChecker(filter2)) {
+                Filter(condition1, child)
+              } else {
+                Filter(And(condition1, condition2), child)
+              }
+            } else {
+              Filter(And(condition2, condition1), child)
             }
+
         }
+        case _ => plan
       }
+    }
+
+    def alreadyPolicyApplied(plan: LogicalPlan): Boolean = {
+      plan.collectFirst {
+        case f: LogicalFilter => f
+      }.exists(rlsConditionChecker(_))
     }
   }
 

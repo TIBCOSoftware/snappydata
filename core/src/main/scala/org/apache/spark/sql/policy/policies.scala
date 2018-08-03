@@ -21,6 +21,7 @@ import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression, In, 
 import org.apache.spark.sql.catalyst.plans.logical.Filter
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
+import org.apache.spark.unsafe.types.UTF8String
 
 object PolicyProperties {
   val targetTable = "targetTable"
@@ -30,6 +31,7 @@ object PolicyProperties {
   val expandedPolicyApplyTo = "expandedPolicyApplyTo"
   val policyOwner = "policyOwner" // should be same as table owner
   val rlsConditionString = "row-level-security"
+  val rlsConditionStringUtf8 = UTF8String.fromString(rlsConditionString)
   val rlsAppliedCondition = EqualTo(Literal(rlsConditionString), Literal(rlsConditionString))
 
   def createFilterPlan(filterExpression: Expression, targetTable: QualifiedTableName,

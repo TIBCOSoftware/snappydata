@@ -213,6 +213,26 @@ class PolicyTest extends SnappyFunSuite
     ownerContext.sql("drop policy testPolicy1")
 
   }
+  test("test bug causing recursion with query having filter using col table") {
+    this.testRecursionBug(colTableName)
+  }
+
+  test("test bug causing recursion with query having filter using row table") {
+    this.testRecursionBug(rowTableName)
+  }
+
+  private def testRecursionBug(tableName: String): Unit = {
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s"$tableName for select to userX using id < 30 and name = 'name_1'")
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+    val q = s"select * from $tableName where id < 20 and name = 'name_1'"
+    val x = snc2.sql(q)
+    val rs = x.collect()
+    assertEquals(1, rs.length)
+    ownerContext.sql("drop policy testPolicy1")
+
+  }
 
   private def testMultiplePolicy(tableName: String) {
     ownerContext.sql(s"create policy testPolicy1 on  " +
