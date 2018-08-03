@@ -199,13 +199,13 @@ abstract case class JDBCAppendableRelation(
       conn.commit()
       conn.close()
     }
-    createExternalTableForColumnBatches(table, externalStore)
+    createTableForColumnBatches(table, externalStore)
   }
 
-  protected def createExternalTableForColumnBatches(tableName: String,
+  protected def createTableForColumnBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
-      "createExternalTableForColumnBatches: expected non-empty table name")
+      "createTableForColumnBatches: expected non-empty table name")
 
     val (primarykey, partitionStrategy) = dialect match {
       // The driver if not a loner should be an accesor only

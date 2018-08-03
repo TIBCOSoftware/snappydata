@@ -262,8 +262,10 @@ abstract class BaseColumnFormatRelation(
     partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
   }
 
-  protected def markMutablePlan(): Unit =
-    sqlContext.sparkSession.asInstanceOf[SnappySession].setMutablePlan(true)
+  protected def markMutablePlan(): Unit = {
+    sqlContext.sparkSession.asInstanceOf[SnappySession].setMutablePlanOwner(
+      resolvedName, persist = false)
+  }
 
   /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
@@ -392,7 +394,7 @@ abstract class BaseColumnFormatRelation(
       conn.commit()
       conn.close()
     }
-    createActualTables(table, externalStore)
+    createActualTables(resolvedName, externalStore)
   }
 
   /**
@@ -402,10 +404,10 @@ abstract class BaseColumnFormatRelation(
    * each for a column. The data column for the base entry will contain the stats.
    * id for the base entry would be the uuid while for column entries it would be uuid_colName.
    */
-  override def createExternalTableForColumnBatches(tableName: String,
+  override def createTableForColumnBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
-      "createExternalTableForColumnBatches: expected non-empty table name")
+      "createTableForColumnBatches: expected non-empty table name")
 
     val (primaryKey, partitionStrategy, concurrency) = dialect match {
       // The driver if not a loner should be an accessor only
@@ -458,8 +460,7 @@ abstract class BaseColumnFormatRelation(
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
             sqlContext.conf.caseSensitiveAnalysis, conn)
         }
-        createExternalTableForColumnBatches(externalColumnTableName,
-          externalStore)
+        createTableForColumnBatches(externalColumnTableName, externalStore)
       }
     } catch {
       case sqle: java.sql.SQLException =>
