@@ -181,6 +181,9 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
+    // does not actually repair, just adds warning to log file
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('false', 'false')")
+    // actually repair the catalog
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
@@ -218,6 +221,9 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
+    // does not actually repair, just adds warning to log file
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('false', 'false')")
+    // actually repair the catalog
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
