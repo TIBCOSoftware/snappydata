@@ -157,6 +157,14 @@ object NWQueries {
       " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
       "('Pavlova Ltd.', 'Karkki Oy'))"
 
+  val Q27_3: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+      " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+      "('Grandma Kellys Homestead'))"
+
+  val Q27_4: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+      " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+      "('Exotic Liquids', 'Karkki Oy'))"
+
   val Q28: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
       "CategoryID FROM Categories WHERE CategoryName = 'Seafood')"
 
@@ -207,6 +215,20 @@ object NWQueries {
       " where Orders.EmployeeID > 5" +
       " ORDER BY Orders.OrderDate"
 
+  val Q31_3: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
+      " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
+      " FROM Employees JOIN Orders ON" +
+      " (Employees.EmployeeID = Orders.EmployeeID)" +
+      " where Orders.EmployeeID < 3" +
+      " ORDER BY Orders.OrderDate"
+
+  val Q31_4: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
+      " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
+      " FROM Employees JOIN Orders ON" +
+      " (Employees.EmployeeID = Orders.EmployeeID)" +
+      " where Orders.EmployeeID > 3" +
+      " ORDER BY Orders.OrderDate"
+
   val Q32: String = "SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName" +
       " FROM Orders o" +
       " JOIN Employees e ON (e.EmployeeID = o.EmployeeID)" +
@@ -245,6 +267,12 @@ object NWQueries {
       " GROUP BY p.ProductName" +
       " HAVING SUM(Quantity) >10 and SUM(Quantity) <100"
 
+  val Q34_2: String = "SELECT p.ProductName, SUM(od.Quantity) AS TotalUnits" +
+      " FROM Order_Details od JOIN Products p ON" +
+      " (p.ProductID = od.ProductID)" +
+      " GROUP BY p.ProductName" +
+      " HAVING SUM(Quantity) >100 and SUM(Quantity) <200"
+
   val Q35: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
       " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
       " e.City as employeeCity, c.City as customerCity" +
@@ -267,7 +295,7 @@ object NWQueries {
       " e.City as employeeCity, c.City as customerCity" +
       " FROM Employees e JOIN Customers c ON" +
       " (e.City = c.City)" +
-      " where e.EmployeeID > 5 " +
+      " where e.EmployeeID > 3 " +
       " GROUP BY e.City, c.City " +
       " ORDER BY numEmployees DESC"
 
@@ -297,6 +325,23 @@ object NWQueries {
       " (" +
       " select distinct OrderID," +
       " sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal" +
+      " from order_details" +
+      " group by OrderID" +
+      " ) b on a.OrderID = b.OrderID" +
+      " where a.ShippedDate is not null" +
+      " and a.ShippedDate > Cast('1997-02-24' as TIMESTAMP) and " +
+      " a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
+      " order by ShippedDate"
+
+  val Q36_2: String = "select distinct (a.ShippedDate) as ShippedDate," +
+      " a.OrderID," +
+      " b.Subtotal," +
+      " year(a.ShippedDate) as Year" +
+      " from Orders a" +
+      " inner join" +
+      " (" +
+      " select distinct OrderID," +
+      " sum(UnitPrice * Quantity * (2 - Discount)) as Subtotal" +
       " from order_details" +
       " group by OrderID" +
       " ) b on a.OrderID = b.OrderID" +
@@ -455,6 +500,9 @@ object NWQueries {
 
   val Q40_1: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
       "ON c.CustomerID = o.CustomerID where c.CustomerID='LINOD'"
+
+  val Q40_2: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
+      "ON c.CustomerID = o.CustomerID where c.CustomerID='SEVES'"
 
   val Q41: String = "SELECT order_details.OrderID,ShipCountry,UnitPrice,Quantity,Discount" +
       " FROM orders INNER JOIN Order_Details ON Orders.OrderID = Order_Details.OrderID"
@@ -655,8 +703,8 @@ object NWQueries {
       " inner join Products as b on a.CategoryID = b.CategoryID" +
       " inner join Order_Details as c on b.ProductID = c.ProductID" +
       " inner join Orders as d on d.OrderID = c.OrderID" +
-      " where d.ShippedDate < Cast('1997-12-01' as TIMESTAMP) and " +
-      "d.ShippedDate > Cast('1996-07-10' as TIMESTAMP)" +
+      " where d.ShippedDate > Cast('1996-12-01' as TIMESTAMP) and " +
+      "d.ShippedDate < Cast('1997-07-10' as TIMESTAMP)" +
       " group by a.CategoryName," +
       " b.ProductName," +
       " concat('Qtr ', quarter(d.ShippedDate))" +
@@ -689,6 +737,30 @@ object NWQueries {
       " ) as x" +
       " group by CategoryName" +
       " order by CategoryName"
+
+  val Q56_3: String = "select CategoryName, format_number(sum(ProductSales), 2) as CategorySales" +
+      " from" +
+      " (" +
+      " select distinct a.CategoryName," +
+      " b.ProductName," +
+      " format_number(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
+      " concat('Qtr ', quarter(d.ShippedDate)) as ShippedQuarter" +
+      " from Categories as a" +
+      " inner join Products as b on a.CategoryID = b.CategoryID" +
+      " inner join Order_Details as c on b.ProductID = c.ProductID" +
+      " inner join Orders as d on d.OrderID = c.OrderID" +
+      " where d.ShippedDate < Cast('1998-12-01' as TIMESTAMP) and " +
+      "d.ShippedDate > Cast('1996-07-10' as TIMESTAMP)" +
+      " group by a.CategoryName," +
+      " b.ProductName," +
+      " concat('Qtr ', quarter(d.ShippedDate))" +
+      " order by a.CategoryName," +
+      " b.ProductName," +
+      " ShippedQuarter" +
+      " ) as x" +
+      " group by CategoryName" +
+      " order by CategoryName"
+
 
   // This query shows how to use UNION to merge Customers and Suppliers into one result set by
   // identifying them as having different relationships to Northwind Traders - Customers and
@@ -786,6 +858,8 @@ object NWQueries {
     "Q27" -> Q27,
     "Q27_1" -> Q27_1,
     "Q27_2" -> Q27_2,
+    "Q27_3" -> Q27_3,
+    "Q27_4" -> Q27_4,
     "Q28" -> Q28,
     "Q28_1" -> Q28_1,
     "Q28_2" -> Q28_2,
@@ -800,17 +874,21 @@ object NWQueries {
     "Q31" -> Q31,
     "Q31_1" -> Q31_1,
     "Q31_2" -> Q31_2,
+    "Q31_3" -> Q31_3,
+    "Q31_4" -> Q31_4,
     "Q32" -> Q32,
     "Q32_1" -> Q32_1,
     "Q33" -> Q33,
     "Q33_1" -> Q33_1,
     "Q34" -> Q34,
     "Q34_1" -> Q34_1,
+    "Q34_2" -> Q34_2,
     "Q35" -> Q35,
     "Q35_1" -> Q35_1,
     "Q35_2" -> Q35_2,
     "Q36" -> Q36,
     "Q36_1" -> Q36_1,
+    "Q36_2" -> Q36_2,
     "Q37" -> Q37,
     "Q38" -> Q38,
     "Q38_1" -> Q38_1,
@@ -818,6 +896,7 @@ object NWQueries {
     "Q39" -> Q39,
     "Q40" -> Q40,
     "Q40_1" -> Q40_1,
+    "Q40_2" -> Q40_2,
     "Q41" -> Q41,
     "Q42" -> Q42,
     "Q42_1" -> Q42_1,
@@ -846,6 +925,7 @@ object NWQueries {
     "Q56" -> Q56,
     "Q56_1" -> Q56_1,
     "Q56_2" -> Q56_2,
+    "Q56_3" -> Q56_3,
     "Q57" -> Q57,
     "Q58" -> Q58,
     "Q59" -> Q59,
