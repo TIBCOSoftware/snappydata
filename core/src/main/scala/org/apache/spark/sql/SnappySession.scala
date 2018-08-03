@@ -27,7 +27,6 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
@@ -38,11 +37,10 @@ import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException, UnresolvedAttribute, UnresolvedStar}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -219,13 +217,18 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     sessionState.analyzerPrepare.execute(logical)
   }
 
-  private[sql] final def executePlan(plan: LogicalPlan): QueryExecution = {
+  private[sql] final def executePlan(plan: LogicalPlan, retryCnt: Int = 0): QueryExecution = {
     try {
       val execution = sessionState.executePlan(plan)
       execution.assertAnalyzed()
       execution
     } catch {
       case e: AnalysisException =>
+        // SNAP-2434
+        reAnalyzeForUnresolvedAttribute(plan, e, retryCnt) match {
+          case Some(p) => return executePlan(p, retryCnt + 1)
+          case None => // ignore
+        }
         // in case of connector mode, exception can be thrown if
         // table form is changed (altered) and we have old table
         // object in SnappyStoreHiveCatalog.cachedDataSourceTables
@@ -237,6 +240,53 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             throw e
         }
     }
+  }
+
+  val unresolvedStarRegex = """(cannot resolve ')(\w+).(\w+).*(' give input columns.*)""".r
+  val unresolvedColRegex = """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
+
+  // Hack to fix SNAP-2440 ( TODO: Will return after 102 to see if a better fix is warranted )
+  private def reAnalyzeForUnresolvedAttribute(
+    originalPlan: LogicalPlan, e: AnalysisException,
+    retryCount: Int): Option[LogicalPlan] = {
+    if (!e.getMessage().contains("cannot resolve")) return None
+    val unresolvedNodes = originalPlan.expressions.filter(
+      x => x.isInstanceOf[UnresolvedStar] | x.isInstanceOf[UnresolvedAttribute])
+    if (retryCount > unresolvedNodes.size) return None
+
+    val oneLineMsg = e.getMessage().split('\n').map(_.trim.filter(_ >= ' ')).mkString
+    val newPlan = originalPlan transformExpressions {
+      case us@UnresolvedStar(option) if (option.isDefined) =>
+        val targetString = option.get.mkString(".")
+        var matched = false
+        oneLineMsg match {
+          case unresolvedStarRegex(first, schema, table, last) =>
+            if (sessionCatalog.tableExists(new QualifiedTableName(schema, table))) {
+              val qname = s"$schema.$table"
+              if (qname.equalsIgnoreCase(targetString)) {
+                matched = true
+              }
+            }
+          case _ => matched = false
+        }
+        if (matched) UnresolvedStar(None) else us
+
+      case ua@UnresolvedAttribute(nameparts) =>
+        val targetString = nameparts.mkString(".")
+        var uqc = ""
+        var matched = false
+        oneLineMsg match {
+          case unresolvedColRegex(first, schema, table, col, last) =>
+            if (sessionCatalog.tableExists(new QualifiedTableName(schema, table))) {
+              val qname = s"$schema.$table.$col"
+              if (qname.equalsIgnoreCase(targetString)) matched = true
+              uqc = col
+            }
+          case _ => matched = false
+        }
+        if (matched) UnresolvedAttribute(uqc) else ua
+    }
+    if (!newPlan.equals(originalPlan)) Some(newPlan) else None
   }
 
   @transient
