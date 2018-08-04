@@ -2104,7 +2104,7 @@ object SnappySession extends Logging {
     // literals in push down filters etc
     planCaching &&= (cachedRDD ne null) && executedPlan.find {
       case _: BroadcastHashJoinExec | _: BroadcastNestedLoopJoinExec |
-           _: BroadcastExchangeExec | _: InMemoryTableScanExec => true
+           _: BroadcastExchangeExec | _: InMemoryTableScanExec | _: RangeExec => true
       case p if HiveClientUtil.isHiveExecPlan(p) => true
       case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
       case _ => false
@@ -2130,7 +2130,7 @@ object SnappySession extends Logging {
     new CachedDataFrame(session, execution, origExecutionString, origPlanInfo,
       executionString, planInfo, rdd, shuffleDependencies, RowEncoder(qe.analyzed.schema),
       shuffleCleanups, rddId, noSideEffects, queryHints,
-      executionId, planStartTime, planEndTime)
+      executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
   }
 
   private[this] lazy val planCache = {

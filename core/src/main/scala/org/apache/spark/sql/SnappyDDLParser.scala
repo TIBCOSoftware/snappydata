@@ -35,6 +35,7 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -52,6 +53,9 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import scala.util.control.NonFatal
+
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 
 import scala.util.control.NonFatal
 
@@ -473,11 +477,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def truncateTable: Rule1[LogicalPlan] = rule {
     TRUNCATE ~ TABLE ~ ifExists ~ tableIdentifier ~> TruncateManagedTable
   }
-
-  protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ COLUMN.? ~ column  ~> AlterTableAddColumn
-  }
-
   protected def alterTableToggleRowLevelSecurity: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ ((ENABLE ~ push(true)) | (DISABLE ~ push(false))) ~
         ROW ~ LEVEL ~ SECURITY ~> {
@@ -486,8 +485,13 @@ abstract class SnappyDDLParser(session: SparkSession)
     }
   }
 
-  protected def alterTableDropColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ DROP  ~ COLUMN.? ~ qualifiedName ~> AlterTableDropColumn
+  protected def alterTable: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ (
+        ADD ~ COLUMN.? ~ column ~ EOI ~> AlterTableAddColumn |
+        DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumn |
+        ANY. + ~ EOI ~> ((r: TableIdentifier) =>
+          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
+    )
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
@@ -790,10 +794,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describeTable | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView |
-    alterTableToggleRowLevelSecurity | alterTableAddColumn | alterTableDropColumn |
-    createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show |
-    createPolicy | dropPolicy
+    alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
+    alterTable | createStream | streamContext |
+    createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show
   }
 
   protected def query: Rule1[LogicalPlan]
@@ -1034,6 +1037,9 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
       }
       sparkSession.sessionState.executePlan(Project(projectList, analyzedPlan)).analyzed
     }
+
+    val actualSchemaJson = aliasedPlan.schema.json
+
     val viewSQL: String = new SQLBuilder(aliasedPlan).toSQL
 
     // Validate the view SQL - make sure we can parse it and analyze it.
@@ -1048,6 +1054,10 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
       properties)
     opts = JdbcExtendedUtils.addSplitProperty(viewSQL,
       Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
+
+    opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
+      SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP, opts)
+
     val dummyText = "select 1"
     val dummyPlan = sparkSession.sessionState.sqlParser.parsePlan(dummyText)
     val cmd = CreateViewCommand(name, Nil, comment, opts.toMap, Some(dummyText),

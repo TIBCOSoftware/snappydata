@@ -54,27 +54,27 @@ while [ "$1" != "" ]; do
       CONF_FILE="$2"
       shift ;;
     --conf=*|--config=*)
-      CONF_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      CONF_FILE="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -x)
       TAR_FILE="$2"
       shift ;;
     --extract=*|--xtract=*)
-      TAR_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      TAR_FILE="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -o)
       OUTPUT_DIR="$2"
       shift ;;
     --out=*|--outdir=*)
-      OUTPUT_DIR="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      OUTPUT_DIR="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -s)
       START_TIME="$2"
       shift ;;
     --start=*)
-      START_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      START_TIME="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -e)
       END_TIME="$2"
       shift ;;
     --end=*)
-      END_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      END_TIME="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -h|--help)
     usage
     exit 0
