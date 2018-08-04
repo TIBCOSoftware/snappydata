@@ -2116,6 +2116,7 @@ object SnappySession extends Logging {
     // store the current tokenized constant values which will be replaced
     // before execution in CachedDataFrame
     cachedDF.currentLiterals = paramLiterals
+    cachedDF.refreshDF()
     cachedDF
   }
 

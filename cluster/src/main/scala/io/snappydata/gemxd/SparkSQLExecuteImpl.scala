@@ -470,6 +470,7 @@ object SnappySessionPerConnection {
     if (session != null) session
     else {
       val session = SnappyContext().snappySession
+      session.conf.set("snappydata.sql.planCaching", "true")
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
     }

@@ -81,6 +81,7 @@ object LocalSparkConf {
     val conf = new SparkConf()
         .setIfMissing("spark.master", "local[4]")
         .setIfMissing("spark.memory.debugFill", "true")
+        .setIfMissing("snappydata.sql.planCaching", "true")
         .setAppName(getClass.getName)
     if (addOn != null) {
       addOn(conf)

@@ -549,8 +549,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     checkForShuffle(groupBy2.logicalPlan, snc, shuffleExpected = true)
   }
 
-  test("SNAP-2351") {
-
+  test("SNAP-2451") {
     snc.sql(s"create table trade.customers" +
         s" (cid int not null, cust_name varchar(100), " +
         s"since date, addr varchar(100), tid int, " +

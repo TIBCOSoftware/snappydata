@@ -231,8 +231,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
   }
 
-
-  private def prepareForCollect(): Boolean = {
+  private[sql] def refreshDF(): Boolean = {
     if (prepared) return false
     if (isCached) {
       reset()
@@ -242,6 +241,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     snappySession.linkPartitionsToBuckets(flag = linkPart)
     // Forcibly re-evaluate the partitions.
     reEvaluatePartitions(cachedRDD :: Nil)
+    true
+  }
+
+  private def prepareForCollect(): Boolean = {
+    if (!refreshDF()) return false
     setPoolForExecution()
     // update the strings in query execution and planInfo
     if (currentQueryExecutionString eq null) {
