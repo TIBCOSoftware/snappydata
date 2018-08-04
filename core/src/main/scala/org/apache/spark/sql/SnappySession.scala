@@ -1456,7 +1456,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
         sessionCatalog.invalidateTable(tableIdent)
         rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
-        // TODO : Asif : Is it needed what does this do?
         SnappyStoreHiveCatalog.registerRelationDestroy()
         SnappySession.clearAllCache()
       case _ =>

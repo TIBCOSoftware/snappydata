@@ -397,7 +397,7 @@ object SnappyParserConsts {
   final val WHERE: Keyword = reservedKeyword("where")
   final val WITH: Keyword = reservedKeyword("with")
   final val FUNCTION: Keyword = reservedKeyword("function")
-  final val POLICY: Keyword = reservedKeyword("policy")
+
 
 
 
@@ -482,6 +482,8 @@ object SnappyParserConsts {
   final val SECURITY: Keyword = nonReservedKeyword("security")
   final val USER: Keyword = nonReservedKeyword("user")
   final val LDAPGROUP: Keyword = nonReservedKeyword("ldapgroup")
+  final val CURRENT_USER: Keyword = nonReservedKeyword("current_user")
+  final val POLICY: Keyword = nonReservedKeyword("policy")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")

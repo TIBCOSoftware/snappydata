@@ -16,9 +16,13 @@
  */
 package org.apache.spark.sql.aqp
 
+
+import io.snappydata.SnappyDataFunctions.usageStr
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.ExpressionInfo
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
 import org.apache.spark.sql.policy.CurrentUser
@@ -36,8 +40,11 @@ class SnappyContextFunctions {
 
   def registerSnappyFunctions(session: SnappySession): Unit = {
     val registry = session.sessionState.functionRegistry
-
-    registry.registerFunction("CURRENT_USER",
+    val usageStr = "_FUNC_() - Returns the User's UserName who is executing the " +
+        "current SQL statement."
+    val info = new ExpressionInfo(CurrentUser.getClass.getCanonicalName, null,
+      "CURRENT_USER", usageStr, "")
+    registry.registerFunction("CURRENT_USER", info,
       e => {
         if (! e.isEmpty) {
           throw new AnalysisException("Argument(s)  passed for zero arg function " +

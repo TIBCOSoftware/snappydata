@@ -193,6 +193,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
   final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def LDAPGROUP: Rule0 = rule { keyword(Consts.LDAPGROUP) }
+  final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -227,8 +228,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def GROUPING: Rule0 = rule { keyword(Consts.GROUPING) }
   final def SETS: Rule0 = rule { keyword(Consts.SETS) }
   final def LATERAL: Rule0 = rule { keyword(Consts.LATERAL) }
-
-  private val CURRENT_USER = "CURRENT_USER"
 
   // DDLs, SET, SHOW etc
 
@@ -321,7 +320,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
-        (CURRENT ~ '_' ~ USER ~ push(CURRENT_USER)  |
+        (capture(CURRENT_USER) |
             (LDAPGROUP ~ ws ~ ':' ~ ws ~
                 push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
                 identifier ~ ws ~> {(ldapOpt: Any, x) =>
@@ -331,7 +330,7 @@ abstract class SnappyDDLParser(session: SparkSession)
           }).? ~> { (toOpt: Any) =>
       toOpt match {
         case Some(x) => x.asInstanceOf[Seq[String]]
-        case _ => Seq(CURRENT_USER)
+        case _ => Seq(SnappyParserConsts.CURRENT_USER.upper)
       }
     }
 
@@ -345,7 +344,8 @@ abstract class SnappyDDLParser(session: SparkSession)
       val snappySession = session.asInstanceOf[SnappySession]
       val tableIdent = snappySession.sessionState.catalog.
           newQualifiedTableName(tableName)
-      val applyToAll = applyTo.exists(_.equalsIgnoreCase(CURRENT_USER))
+      val applyToAll = applyTo.exists(_.equalsIgnoreCase(
+        SnappyParserConsts.CURRENT_USER.upper))
       val expandedApplyTo = if (applyToAll) {
         Seq.empty[String]
       } else {

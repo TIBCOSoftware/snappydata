@@ -75,7 +75,7 @@ class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
     System.setProperty("gemfirexd.authentication.required", "false")
   }
 
-  ignore("Bug SNAP-2255 connection pool exhaustion") {
+  test("Bug SNAP-2255 connection pool exhaustion") {
     val user1 = "gemfire1"
     val user2 = "gemfire2"
 
