@@ -57,7 +57,8 @@ class NorthWindTest
     validatePartitionedColumnTableQueries(snc)
   }
 
-  test("SNAP-2451"){
+  // enable if transformations are supported in plan-caching.
+  ignore("SNAP-2451"){
     createAndLoadColumnTables(snc)
 
     val df1 = snc.sql("SELECT ShipCountry, Sum(Order_Details.UnitPrice * Quantity * Discount)" +
