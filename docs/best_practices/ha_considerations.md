@@ -9,8 +9,8 @@ SnappyData supports secondary lead nodes. If the primary lead becomes unavailabl
 
 **Locator**</br>
 SnappyData supports multiple locators in the cluster for high availability. 
-It is recommended to set up multiple locators (ideally two) as, if a locator becomes unavailable, the cluster continues to be available. New members can however not join the cluster.</br>
-With multiple locators, clients notice nothing and the fail over recovery is completely transparent.
+It is recommended to set up multiple locators (ideally two). If a locator becomes unavailable, the cluster continues to be available. However, new members cannot join the cluster.</br>
+With multiple locators, there are no impact on the clients and the fail over recovery is completely transparent.
 
 **DataServer**</br>
 SnappyData supports redundant copies of data for fault tolerance. A table can be configured to store redundant copies of the data.  So, if a server is unavailable, and if there is a redundant copy available on some other server, the tasks are automatically retried on those servers. This is totally transparent to the user. 
