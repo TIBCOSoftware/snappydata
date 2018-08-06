@@ -21,32 +21,32 @@ Start a basic cluster with one data node, one lead, and one locator:
 ./sbin/snappy-start-all.sh
 ```
 
-For custom configuration and to start more nodes,  see the section on [configuring the SnappyData cluster](../configuring_cluster/configuring_cluster.md).
+For custom configuration and to start more nodes, refer [configuring the SnappyData cluster](../configuring_cluster/configuring_cluster.md).
 
 <a id="multihost"></a>
 ## Multi-Host Installation
 
-For real-life use cases, you need multiple machines on which SnappyData can be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
+For real-life use cases, you require multiple machines on which SnappyData must be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
 
 Where there are multiple machines involved, you can deploy SnappyData on:
 
-*	[Machines with Shared Path](#sharedpath)
+*	[Machines With Shared Path](#sharedpath)
 
-*	[Machines without a Shared Path](#machine-shared-path)
+*	[Machines Without a Shared Path](#machine-shared-path)
 
-*	[Machines without passwordless SSH](#without_passwordless)
+*	[Machines Without Passwordless SSH](#without_passwordless)
 
 <a id="sharedpath"></a>
-### Machines with a Shared Path
-If all the machines in your cluster can share a path over an NFS or similar protocol, then follow the steps below:
+### Machines With a Shared Path
+If all the machines in your cluster can share a path over an NFS or similar protocol, then use the following instructions:
 
 **Prerequisites**
 
 * Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
 
-* Ensure that SSH is supported and you have configured all the machines to be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md). If SSH is not supported then follow the instructions in the [Machines without passwordless SSH](#without_passwordless) section.
+* Ensure that SSH is supported and you have configured all the machines to be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md). If SSH is not supported then follow the instructions in the [Machines Without Passwordless SSH](#without_passwordless) section.
 
-**To set up the cluster:**
+**To set up the cluster for machines with a shared path:**
 
 1. Copy the downloaded binaries to the shared folder.
 
@@ -67,9 +67,9 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 	For optimum performance, configure the **-dir** to a local directory and not to a network directory. When **-dir** property is configured for each member in the cluster, the artifacts of the respective members get created in the  **-dir** folder.
 
 <a id="machine-shared-path"></a>
-### Machines without a Shared Path
+### Machines Without a Shared Path
 
-In case all the machines in your cluster do not share a path over an NFS or similar protocol, then follow the steps below:
+In case all the machines in your cluster do not share a path over an NFS or similar protocol, then use the following instructions:
 
 **Prerequisites**
 
@@ -77,11 +77,11 @@ In case all the machines in your cluster do not share a path over an NFS or simi
 
 *	Ensure that SSH is supported and you have configured all the machines to be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md). If SSH is not supported then follow the instructions in the [Machines without passwordless SSH](#without_passwordless) section.
 
-**To set up the cluster:**
+**To set up the cluster for machines without a shared path:**
 
-1.	Copy and extract the downloaded binaries onto each machine.	Ensure to maintain the same directory structure on all the machines. For example, if you copy the binaries in /opt/snappydata/ on the first machine, then you must ensure to copy the binaries to /opt/snappydata/ on rest of the machines.
+1.	Copy and extract the downloaded binaries into each machine.	Ensure to maintain the same directory structure on all the machines. For example, if you copy the binaries in **/opt/snappydata/** on the first machine, then you must ensure to copy the binaries to **/opt/snappydata/** on rest of the machines.
 
-2.	Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md). Maintain one node as the controller node, where you can configure your cluster. Usually this is done in the lead node. On that machine, you can edit files such as servers, locators, and leads which are in the $SNAPPY_HOME/conf/ directory.
+2.	Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md). Maintain one node as the controller node, where you can configure your cluster. Usually this is done in the lead node. On that machine, you can edit files such as servers, locators, and leads which are in the **$SNAPPY_HOME/conf/ directory**.
 
 3.	Create a working directory on every machine, for each of the SnappyData member that you want to run. <br> The member's working directory provides a default location for the logs, persistence, and status files of that member. <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
 
@@ -90,18 +90,18 @@ In case all the machines in your cluster do not share a path over an NFS or simi
 		./sbin/snappy-start-all.sh
 
 <a id="without_passwordless"></a>
-### Machines without passwordless SSH
+### Machines Without Passwordless SSH
 
 
-In case the machines in your cluster do not share a common path as well as cannot be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md), then you can follow the below steps to deploy SnappyData.
+In case the machines in your cluster do not share a common path as well as cannot be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md), then you can use the following instructions to deploy SnappyData:
 
-**To set up the cluster:**
+**To set up the cluster for machines without passwordless SSH:**
 
-1.	Copy and extract the downloaded binaries onto each machine. The binaries can be placed in different directory structures. 
+1.	Copy and extract the downloaded binaries into each machine. The binaries can be placed in different directory structures. 
 
 3.	[Configure](../configuring_cluster/configuring_cluster.md) each member separately.
 
-5.	Start the members in the cluster one at a time. Start the locator first, then the servers and finally the leads. Use the following script to start the members:
+5.	Start the members in the cluster one at a time. Start the locator first, then the servers, and finally the leads. Use the following scripts to start the members:
 
 	*	`$SNAPPY_HOME/sbin/snappy-locator.sh`
 
