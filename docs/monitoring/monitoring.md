@@ -7,7 +7,7 @@ All the usage details are automatically refreshed after every 5 seconds, thus yo
 To access SnappyData Pulse, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
 !!!Note
-	`<leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the **conf/leads** file. 
+	`<leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the **conf/leads** file.
 
 ![Dashboard](../Images/Dashboard.png)
 
@@ -31,7 +31,7 @@ The following topics are covered in this section:
 
 
 !!! Note
-	When using Smart Connector with upstream Spark, the information related to **SQL**, **Jobs**, and **Stages** are only displayed. The **Dashboard** and **Member Detailed** sections are not displayed.
+	When using Smart Connector with upstream Spark, the information related to **SQL**, **Jobs**, and **Stages** are only displayed. The **Dashboard** and **Member Details** sections are not displayed.
 
 On the top-right side of the SnappyData Pulse page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 
@@ -72,7 +72,7 @@ In the **Cluster** section, you can view the following graphs which are automati
 
 <a id="member"></a>
 ### Members
-In the **Members** section,  you can view, in a tabular format, the details of each locator, server, and lead member within a cluster. The details are automatically refreshed after every 5 seconds.
+In the **Members** section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every 5 seconds.
 ![Members](../Images/Dashboard-MembersList.png)
 
 This table provides member details in the following columns:
@@ -108,7 +108,7 @@ The following columns are displayed in this section:
 |--------|--------|
 |  **Name**      |     Displays the name of the data table.   |
 |   **Storage Model**     |    Displays the data storage model of the data table. Possible models are **ROW** and **COLUMN**.    |
-|   **Distribution Type**     |      Displays the data distribution type for the table. Possible values are: <ul><li>PARTITION</li><li>PARTITION_PERSISTENT</li><li>PARTITION_REDUNDANT</li><li>PARTITION_OVERFLOW</li><li>REPLICATE</li><li>REPLICATE_PERSISTENT<li>REPLICATE_OVERFLOW </ul> |
+|   **Distribution Type**     |      Displays the data distribution type for the table. Possible values are: <ul><li>PARTITION</li><li>REPLICATE</li> </ul> |
 |   **Row Count**     |   Displays the row count, which is the number of records present in the data table.|
 |**Memory Size**    |    Displays the heap memory used by data table to store its data.    |
 |     **Total Size**   |     Displays the collective physical memory and disk overflow space used by the data table to store its data.   |
