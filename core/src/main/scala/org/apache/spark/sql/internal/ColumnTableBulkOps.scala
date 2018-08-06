@@ -16,18 +16,21 @@
  */
 package org.apache.spark.sql.internal
 
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import io.snappydata.Property
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType}
-import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSession}
+import org.apache.spark.sql.{AnalysisException, Dataset, SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 
 /**
   * Helper object for PutInto operations for column tables.
@@ -43,6 +46,7 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
     val session = sparkSession.asInstanceOf[SnappySession]
     var success = false
+    var tableName: String = null
 
     table.collectFirst {
       case LogicalRelation(mutable: BulkPutRelation, _, _) => try {
@@ -53,7 +57,8 @@ object ColumnTableBulkOps {
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
 
-        val (tableName, keyColumns) = getKeyColumns(table)
+        val (tName, keyColumns) = getKeyColumns(table)
+        tableName = tName
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
         val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
@@ -103,11 +108,46 @@ object ColumnTableBulkOps {
         session.operationContext.get.persist = false
         success = true
       } finally {
-        if (!success) session.setMutablePlanOwner(qualifiedTableName = null, persist = false)
+        if (!success) {
+          val lockOwner = session.getMutablePlanOwner
+          if ((tableName ne null) && (lockOwner ne null)) {
+            releaseBucketMaintenanceLocks(tableName, lockOwner, () => {
+              // lookup catalog and get the properties from column table relation
+              val catalog = session.sessionCatalog
+              val relation = catalog.lookupRelation(catalog.newQualifiedTableName(tableName))
+              relation.asInstanceOf[JDBCAppendableRelation].externalStore.connProperties
+            }, session.sparkContext)
+          }
+          session.setMutablePlanOwner(qualifiedTableName = null, persist = false)
+        }
       }
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
+  }
+
+  def releaseBucketMaintenanceLocks(tableName: String, lockOwner: String,
+      getConnProps: () => ConnectionProperties, sparkContext: SparkContext): Unit = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        // get the connection properties
+        val connProps = getConnProps()
+        val conn = ConnectionPool.getPoolConnection(tableName, connProps.dialect,
+          connProps.poolProps, connProps.connProps, connProps.hikariCP)
+        try {
+          val stmt = conn.prepareCall("call SYS.RELEASE_BUCKET_MAINTENANCE_LOCKS(?,?,?,?)")
+          stmt.setString(1, tableName)
+          stmt.setBoolean(2, false)
+          stmt.setString(3, lockOwner)
+          stmt.setNull(4, java.sql.Types.VARCHAR)
+          stmt.execute()
+          stmt.close()
+        } finally {
+          conn.close()
+        }
+      case _ => GfxdSystemProcedures.releaseBucketMaintenanceLocks(
+        tableName, false, lockOwner, null)
+    }
   }
 
   def validateOp(originalPlan: PutIntoTable) {

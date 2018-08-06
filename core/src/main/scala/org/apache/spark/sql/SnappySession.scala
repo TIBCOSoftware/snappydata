@@ -334,7 +334,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           case Some(context) => context.persist = persist; context.objects
         }
         // use a unique lock owner
-        val lockOwner = s"MUTABLE_OP_OWNER_$id.${System.nanoTime()}"
+        val lockOwner = s"READ_${SnappySession.MUTABLE_OWNER_PREFIX}_$id.${System.nanoTime()}"
         opContext.put(SnappySession.MUTABLE_PLAN_TABLE, qualifiedTableName)
         opContext.put(SnappySession.MUTABLE_PLAN_OWNER, lockOwner)
       }
@@ -1930,6 +1930,9 @@ object SnappySession extends Logging {
   private[sql] val MUTABLE_PLAN_TABLE = "snappydata.internal.mutablePlanTable"
   /** internal property to indicate update/delete/putInto execution and lock owner for the same */
   private[sql] val MUTABLE_PLAN_OWNER = "snappydata.internal.mutablePlanOwner"
+
+  /** a unique UUID of the node for mutability lock ownership */
+  private[sql] lazy val MUTABLE_OWNER_PREFIX = java.util.UUID.randomUUID().toString
 
   private[sql] var tokenize: Boolean = _
 

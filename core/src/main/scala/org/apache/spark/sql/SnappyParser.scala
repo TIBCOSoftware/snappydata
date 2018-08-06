@@ -373,7 +373,9 @@ class SnappyParser(session: SnappySession)
 
   protected final def comparisonExpression: Rule1[Expression] = rule {
     termExpression ~ (
-        '=' ~ ws ~ termExpression ~> EqualTo |
+        '=' ~ (
+            '=' ~ ws ~ termExpression ~> EqualTo |
+            ws ~ termExpression ~> EqualTo) |
         '>' ~ (
           '=' ~ ws ~ termExpression ~> GreaterThanOrEqual |
           '>' ~ (

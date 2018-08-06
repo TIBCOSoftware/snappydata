@@ -163,32 +163,22 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }(Some(conn))
   }
 
-  def commitTx(txId: String, delayRollover: Boolean, updateOwner: String,
-      partitionId: Int, conn: Option[Connection]): Unit = {
+  def commitTx(txId: String, delayRollover: Boolean, conn: Option[Connection]): Unit = {
     tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true)(conn => {
       var success = false
       try {
         connectionType match {
-          case ConnectionType.Embedded => try {
+          case ConnectionType.Embedded =>
             // if rollover was marked as delayed, then do the rollover before commit
             if (delayRollover) {
               GfxdSystemProcedures.flushLocalBuckets(tableName, false)
             }
             Misc.getGemFireCache.getCacheTransactionManager.commit()
-          } finally {
-            if (updateOwner ne null) {
-              GfxdSystemProcedures.unlockBucketAfterMaintenance(
-                tableName, updateOwner, partitionId)
-            }
-          }
           case _ =>
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
-            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?,?,?,?)")
+            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
             ps.setString(1, if (txId ne null) txId else "")
-            ps.setString(2, tableName)
-            ps.setBoolean(3, delayRollover)
-            ps.setString(4, if (updateOwner ne null) updateOwner else "")
-            ps.setInt(5, partitionId)
+            ps.setString(2, if (delayRollover) tableName else "")
             try {
               ps.executeUpdate()
               logDebug(s"The txid being committed is $txId")
@@ -213,30 +203,19 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
 
-  def rollbackTx(txId: String, updateOwner: String, partitionId: Int,
-      conn: Option[Connection]): Unit = {
+  def rollbackTx(txId: String, conn: Option[Connection]): Unit = {
     // noinspection RedundantDefaultArgument
     tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
       (conn: Connection) => {
         connectionType match {
           case ConnectionType.Embedded =>
-            try {
-              Misc.getGemFireCache.getCacheTransactionManager.rollback()
-            } finally {
-              if (updateOwner ne null) {
-                GfxdSystemProcedures.unlockBucketAfterMaintenance(
-                  tableName, updateOwner, partitionId)
-              }
-            }
+            Misc.getGemFireCache.getCacheTransactionManager.rollback()
           case _ =>
             logDebug(s"Going to rollback transaction $txId on server using $conn")
             var ps: PreparedStatement = null
             handleRollback(() => {
-              ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?,?,?,?)")
+              ps = conn.prepareStatement(s"call sys.ROLLBACK_SNAPSHOT_TXID(?)")
               ps.setString(1, if (txId ne null) txId else "")
-              ps.setString(2, tableName)
-              ps.setString(3, if (updateOwner ne null) updateOwner else "")
-              ps.setInt(4, partitionId)
               ps.executeUpdate()
               logDebug(s"The transaction ID being rolled back is $txId")
             }, () => {
@@ -819,12 +798,9 @@ final class SmartConnectorColumnRDD(
           logDebug(s"The txid going to be committed is $txId " + tableName)
 
           // if ((txId ne null) && !txId.equals("null")) {
-          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?,?,?,?)")
+          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
           ps.setString(1, if (txId ne null) txId else "")
-          ps.setString(2, tableName)
-          ps.setBoolean(3, delayRollover)
-          ps.setString(4, "")
-          ps.setInt(5, -1)
+          ps.setString(2, if (delayRollover) tableName else "")
           ps.executeUpdate()
           logDebug(s"The txid being committed is $txId")
           ps.close()
@@ -926,12 +902,9 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
       // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?,?,?,?)")
+        val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
         ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, tableName)
-        ps.setBoolean(3, delayRollover)
-        ps.setString(4, "")
-        ps.setInt(5, -1)
+        ps.setString(2, if (delayRollover) tableName else "")
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
@@ -948,10 +921,10 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (context ne null) {
       val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
-        logDebug(s"closed connection for task from listener $partitionId")
+        logDebug(s"closing connection for task from listener $partitionId")
         try {
           conn.close()
-          logDebug("closed connection for task " + context.partitionId())
+          logDebug(s"closed connection for task $partitionId partition = $thePart")
         } catch {
           case NonFatal(e) => logWarning("Exception closing connection", e)
         }
@@ -1035,19 +1008,22 @@ class SmartConnectorRowRDD(_session: SnappySession,
 }
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
-    delayRollover: Boolean, updateOwner: String) extends TaskCompletionListener {
-  private val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
-  private var isSuccess = false
+    delayRollover: Boolean) extends TaskCompletionListener {
+  val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
+  var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
-    val conn = Option(connAndTxId(0).asInstanceOf[Connection])
     val txId = connAndTxId(1).asInstanceOf[String]
-    if (success()) {
-      store.commitTx(txId, delayRollover, updateOwner, context.partitionId(), conn)
-    } else {
-      store.rollbackTx(txId, updateOwner, context.partitionId(), conn)
+    val conn = connAndTxId(0).asInstanceOf[Connection]
+    if (connAndTxId(1) != null) {
+      if (success()) {
+        store.commitTx(txId, delayRollover, Some(conn))
+      }
+      else {
+        store.rollbackTx(txId, Some(conn))
+      }
     }
-    store.closeConnection(conn)
+    store.closeConnection(Some(conn))
   }
 
   def success(): Boolean = {
