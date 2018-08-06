@@ -1022,21 +1022,21 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
     delayRollover: Boolean) extends TaskCompletionListener {
-  val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
-  var isSuccess = false
+  private val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
+  private var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
     val txId = connAndTxId(1).asInstanceOf[String]
-    val conn = connAndTxId(0).asInstanceOf[Connection]
-    if (connAndTxId(1) != null) {
+    val conn = Option(connAndTxId(0).asInstanceOf[Connection])
+    if (connAndTxId(1) ne null) {
       if (success()) {
-        store.commitTx(txId, delayRollover, Some(conn))
+        store.commitTx(txId, delayRollover, conn)
       }
       else {
-        store.rollbackTx(txId, Some(conn))
+        store.rollbackTx(txId, conn)
       }
     }
-    store.closeConnection(Some(conn))
+    store.closeConnection(conn)
   }
 
   def success(): Boolean = {
