@@ -295,7 +295,7 @@ object NWQueries {
       " e.City as employeeCity, c.City as customerCity" +
       " FROM Employees e JOIN Customers c ON" +
       " (e.City = c.City)" +
-      " where e.EmployeeID > 3 " +
+      " where e.EmployeeID > 1 " +
       " GROUP BY e.City, c.City " +
       " ORDER BY numEmployees DESC"
 
@@ -346,8 +346,8 @@ object NWQueries {
       " group by OrderID" +
       " ) b on a.OrderID = b.OrderID" +
       " where a.ShippedDate is not null" +
-      " and a.ShippedDate > Cast('1997-02-24' as TIMESTAMP) and " +
-      " a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
+      " and a.ShippedDate > Cast('1996-02-24' as TIMESTAMP) and " +
+      " a.ShippedDate < Cast('1996-09-30' as TIMESTAMP)" +
       " order by ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
@@ -575,6 +575,7 @@ object NWQueries {
       "ShipCountry FROM orders LEFT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID " +
       " where orders.ShippedDate > Cast('1996-07-10' as TIMESTAMP)"
+
   val Q51_2: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate," +
       "RequiredDate," +
       " ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode, " +

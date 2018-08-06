@@ -138,7 +138,7 @@ object NWQueries extends SnappyFunSuite {
       "(SELECT CustomerID FROM Orders WHERE OrderID = 10391)"
 
   val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-      "FROM Orders WHERE OrderDate BETWEEN '1997-01-01' AND '1997-12-31'"
+      "FROM Orders WHERE OrderDate BETWEEN '1997-01-01' AND '1997-12-31')"
 
   val Q26_1: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
       "FROM Orders WHERE OrderDate BETWEEN Cast('1997-09-30' as TIMESTAMP) AND " +
@@ -298,7 +298,7 @@ object NWQueries extends SnappyFunSuite {
       " e.City as employeeCity, c.City as customerCity" +
       " FROM Employees e JOIN Customers c ON" +
       " (e.City = c.City)" +
-      " where e.EmployeeID > 3 " +
+      " where e.EmployeeID > 1 " +
       " GROUP BY e.City, c.City " +
       " ORDER BY numEmployees DESC"
 
@@ -348,8 +348,8 @@ object NWQueries extends SnappyFunSuite {
       " group by OrderID" +
       " ) b on a.OrderID = b.OrderID" +
       " where a.ShippedDate is not null" +
-      " and a.ShippedDate > Cast('1997-02-24' as TIMESTAMP) and " +
-      " a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
+      " and a.ShippedDate > Cast('1996-02-24' as TIMESTAMP) and " +
+      " a.ShippedDate < Cast('1996-09-30' as TIMESTAMP)" +
       " order by ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
