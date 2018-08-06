@@ -30,6 +30,7 @@ import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GfxdTXStateProxy
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RawStoreResultSet, RegionEntryUtils}
@@ -190,11 +191,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (context ne null) {
       val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
-        logDebug(s"closed connection for task from listener $partitionId")
+        logDebug(s"closing connection for task from listener $partitionId")
         try {
           conn.commit()
           conn.close()
-          logDebug("closed connection for task " + context.partitionId())
+          logDebug(s"closed connection for task $partitionId partition = $thePart")
         } catch {
           case NonFatal(e) => logWarning("Exception closing connection", e)
         }
@@ -292,26 +293,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       var tx = txManagerImpl.getTXState
       val startTX = tx eq null
       // acquire bucket maintenance read lock if required before snapshot gets acquired
-      // and register to be released with transaction commit
-      val br = container.getRegion match {
+      container.getRegion match {
         case pr: PartitionedRegion if updateOwner ne null =>
-          BucketRegion.lockPrimaryForMaintenance(false, updateOwner, pr, bucketIds)
-        case _ => null
+          GfxdSystemProcedures.lockPrimaryForMaintenance(false, updateOwner, pr, bucketIds)
+        case _ =>
       }
-      var success = false
-      try {
-        if (startTX) {
-          tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
-            IsolationLevel.SNAPSHOT, null, null)
-        }
-        if (br ne null) {
-          // register the locked region in TX for lock release in case of rollback
-          success = tx.getProxy.registerLockedBucketRegion(br)
-        }
-      } finally {
-        if ((br ne null) && !success) {
-          br.unlockAfterMaintenance(false, updateOwner)
-        }
+      if (startTX) {
+        tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
+          IsolationLevel.SNAPSHOT, null, null)
       }
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion

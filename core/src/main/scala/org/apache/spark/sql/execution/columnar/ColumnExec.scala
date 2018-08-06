@@ -19,7 +19,6 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
 
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener}
@@ -40,10 +39,7 @@ trait ColumnExec extends RowExec {
 
   override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
-    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    val updateOwner = ctx.addReferenceObj("updateOwner",
-      session.getMutablePlanOwner, classOf[String].getName)
     val listenerClass = classOf[SnapshotConnectionListener].getName
     val storeClass = classOf[JDBCSourceAsColumnarStore].getName
     taskListener = ctx.freshName("taskListener")
@@ -55,8 +51,7 @@ trait ColumnExec extends RowExec {
 
     val initCode =
       s"""
-         |$taskListener = new $listenerClass(($storeClass)$externalStoreTerm,
-         |    $delayRollover, $updateOwner);
+         |$taskListener = new $listenerClass(($storeClass)$externalStoreTerm, $delayRollover);
          |$connTerm = $taskListener.getConn();
          |if ($getContext() != null) {
          |   $getContext().addTaskCompletionListener($taskListener);

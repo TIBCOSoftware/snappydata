@@ -24,7 +24,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
-import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.SnappyFunSuite.checkAnswer
@@ -39,7 +38,10 @@ import org.apache.spark.sql.{Row, SnappySession}
  */
 object ColumnUpdateDeleteTests extends Assertions with Logging {
 
-  def testBasicUpdate(session: SnappySession): Unit = {
+  private def ddlExt(redundancy: Int): String =
+    if (redundancy > 0) s", redundancy '$redundancy'" else ""
+
+  def testBasicUpdate(session: SnappySession, redundancy: Int = 0): Unit = {
     session.conf.set(Property.ColumnBatchSize.name, "10k")
     // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
 
@@ -50,14 +52,15 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table if exists checkTable2")
     session.sql("drop table if exists checkTable3")
 
+    val ext = ddlExt(redundancy)
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '4')")
+        s"using column options(buckets '4'$ext)")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '4')")
+        s"using column options(buckets '4'$ext)")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '2')")
+        s"using column options(buckets '2'$ext)")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
-        "using column options(buckets '1')")
+        s"using column options(buckets '1'$ext)")
 
     session.range(numElements).selectExpr("id",
       "concat('addr', cast(id as string))",
@@ -200,10 +203,11 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.conf.unset(Property.ColumnBatchSize.name)
   }
 
-  def testDeltaStats(session: SnappySession): Unit = {
+  def testDeltaStats(session: SnappySession, redundancy: Int = 0): Unit = {
     session.sql("drop table if exists test1")
+    val ext = ddlExt(redundancy)
     session.sql("create table test1 (col1 long, col2 long) using column " +
-        "options (buckets '1', column_batch_size '50')")
+        s"options (buckets '1', column_batch_size '50'$ext)")
     // size of batch ensured so that both rows fall in same batch
     session.range(2).selectExpr("(id  + 1) * 10", "(id + 1) * 100").write.insertInto("test1")
 
@@ -247,7 +251,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table test1")
   }
 
-  def testBasicDelete(session: SnappySession): Unit = {
+  def testBasicDelete(session: SnappySession, redundancy: Int = 0): Unit = {
     session.conf.set(Property.ColumnBatchSize.name, "10k")
     // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
 
@@ -256,14 +260,15 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table if exists checkTable2")
     session.sql("drop table if exists checkTable3")
 
+    val ext = ddlExt(redundancy)
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '4', partition_by 'addr')")
+        s"using column options(buckets '4', partition_by 'addr'$ext)")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '2')")
+        s"using column options(buckets '2'$ext)")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '8')")
+        s"using column options(buckets '8'$ext)")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
-        "using column options(buckets '2')")
+        s"using column options(buckets '2'$ext)")
 
     for (_ <- 1 to 3) {
       testBasicDeleteIter(session)
@@ -360,16 +365,17 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(session.sql("select * from updateTable").collect().length === 0)
   }
 
-  def testSNAP1925(session: SnappySession): Unit = {
+  def testSNAP1925(session: SnappySession, redundancy: Int = 0): Unit = {
     // reduced size to ensure both column table and row buffer have data
     session.conf.set(Property.ColumnBatchSize.name, "10k")
 
     val numElements = 50000
 
+    val ext = ddlExt(redundancy)
     session.sql("drop table if exists order_details")
     session.sql("create table order_details (OrderID int, ProductID int," +
         "UnitPrice double, Quantity smallint, Discount double, tid int) " +
-        "using column options(partition_by 'OrderID', buckets '8')")
+        s"using column options(partition_by 'OrderID', buckets '8'$ext)")
 
     session.range(numElements).selectExpr("id", "id + 2", "1.0", "2", "rand()", "id + 1")
         .write.insertInto("order_details")
@@ -413,18 +419,19 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.conf.unset(Property.ColumnBatchSize.name)
   }
 
-  def testSNAP1926(session: SnappySession): Unit = {
+  def testSNAP1926(session: SnappySession, redundancy: Int = 0): Unit = {
     // reduced size to ensure both column table and row buffer have data
     session.conf.set(Property.ColumnBatchSize.name, "10k")
 
     val numElements = 50000
 
     session.sql("drop table if exists customers")
+    val ext = ddlExt(redundancy)
     session.sql("CREATE TABLE CUSTOMERS (CUSTOMERID VARCHAR(100), COMPANYNAME VARCHAR(100), " +
         "CONTACTNAME VARCHAR(100), CONTACTTITLE VARCHAR(100), ADDRESS VARCHAR(100), " +
         "CITY VARCHAR(100), REGION VARCHAR(100), POSTALCODE VARCHAR(100), " +
         "COUNTRY VARCHAR(100), PHONE VARCHAR(100), FAX VARCHAR(100), TID INTEGER) " +
-        "using column options(partition_by 'City,Country', buckets '8')")
+        s"using column options(partition_by 'City,Country', buckets '8'$ext)")
 
     session.range(numElements).selectExpr("id", "id + 1", "id + 2", "id + 3", "id + 4",
       "id + 5", "id + 6", "id + 7", "id + 8", "id + 9", "id + 10", "id % 20")
@@ -442,13 +449,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.conf.unset(Property.ColumnBatchSize.name)
   }
 
-  def testConcurrentOps(session: SnappySession): Unit = {
-    // start network server
-    val serverHostPort = TestUtil.startNetServer()
-    // scalastyle:off println
-    println(s"Started network server on $serverHostPort")
-    // scalastyle:on println
-
+  def testConcurrentOps(session: SnappySession, redundancy: Int = 0): Unit = {
     // reduced size to ensure both column table and row buffer have data
     session.conf.set(Property.ColumnBatchSize.name, "10k")
     // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
@@ -458,12 +459,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table if exists checkTable2")
     session.sql("drop table if exists checkTable3")
 
+    val ext = ddlExt(redundancy)
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '4')")
+        s"using column options(buckets '4'$ext)")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '2')")
+        s"using column options(buckets '2'$ext)")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '8')")
+        s"using column options(buckets '8'$ext)")
 
     // avoid rollover in updateTable during concurrent updates
     val avoidRollover = new SerializableRunnable() {
@@ -599,14 +601,15 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     }
   }
 
-  def testSNAP2124(session: SnappySession, checkPruning: Boolean): Unit = {
+  def testSNAP2124(session: SnappySession, checkPruning: Boolean, redundancy: Int = 0): Unit = {
     val filePath = getClass.getResource("/sample_records.json").getPath
+    val ext = ddlExt(redundancy)
     session.sql("CREATE TABLE domaindata (cntno_l string,cntno_m string," +
         "day1 string,day2 string,day3 string,day4 string,day5 string," +
         "day6 string,day7 string,dr string,ds string,email string," +
         "id BIGINT NOT NULL,idinfo_1 string,idinfo_2 string,idinfo_3 string," +
         "idinfo_4 string,lang_1 string,lang_2 string,lang_3 string,name string) " +
-        "USING COLUMN OPTIONS (PARTITION_BY 'id',BUCKETS '40', COLUMN_BATCH_SIZE '10')")
+        s"USING COLUMN OPTIONS (PARTITION_BY 'id',BUCKETS '40', COLUMN_BATCH_SIZE '10'$ext)")
     session.read.json(filePath).write.insertInto("domaindata")
 
     var ds = session.sql("select ds, dr from domaindata where id = 40L")
