@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.sources
 
-import java.sql.Connection
+import java.sql.{Connection, ResultSet}
 import java.util.Properties
 
 import scala.collection.{mutable, Map => SMap}
@@ -179,12 +179,17 @@ object JdbcExtendedUtils extends Logging {
     (schemaName, tableName)
   }
 
+  private def getTableMetadataResultSet (table: String, conn: Connection): ResultSet = {
+    val (schemaName, tableName) = getTableWithSchema(table, conn)
+      // using the JDBC meta-data API
+    conn.getMetaData.getTables(null, schemaName, tableName, null)
+  }
+
   def tableExistsInMetaData(table: String, conn: Connection,
       dialect: JdbcDialect): Boolean = {
-    val (schemaName, tableName) = getTableWithSchema(table, conn)
     try {
       // using the JDBC meta-data API
-      val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
+      val rs = getTableMetadataResultSet(table, conn)
       rs.next()
     } catch {
       case _: java.sql.SQLException => false
@@ -234,6 +239,14 @@ object JdbcExtendedUtils extends Logging {
             false
         }
     }
+  }
+
+  def isRowLevelSecurityEnabled(table: String, conn: Connection, dialect: JdbcDialect,
+      context: SQLContext): Boolean = {
+    val (schemaName, tableName) = getTableWithSchema(table, conn)
+      val q = s"select 1 from sys.systables s where s.tablename = '$tableName' and " +
+          s" s.tableschemaname = '$schemaName' and s.rowlevelsecurityenabled = true "
+      conn.createStatement().executeQuery(q).next()
   }
 
   def dropTable(conn: Connection, tableName: String, dialect: JdbcDialect,

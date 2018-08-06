@@ -63,6 +63,7 @@ case class JDBCMutableRelation(
     with DestroyRelation
     with IndexableRelation
     with AlterableRelation
+    with RowLevelSecurityRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -103,7 +104,7 @@ case class JDBCMutableRelation(
   override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
-  protected final val connFactory: () => Connection =
+  override protected final val connFactory: () => Connection =
     JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
       connProperties.connProps.asScala.toMap))
 
@@ -488,6 +489,7 @@ case class JDBCMutableRelation(
       conn.close()
     }
   }
+
 }
 
 final class DefaultSource extends MutableRelationProvider with DataSourceRegister {
