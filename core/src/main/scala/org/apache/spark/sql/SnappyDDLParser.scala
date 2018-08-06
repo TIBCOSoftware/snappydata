@@ -1014,6 +1014,10 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
     extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
+    if (viewType != PersistedView) {
+      return CreateViewCommand(name, userSpecifiedColumns, comment, properties, originalText,
+        child, allowExisting, replace, viewType).run(sparkSession)
+    }
     // If the plan cannot be analyzed, throw an exception and don't proceed.
     val qe = sparkSession.sessionState.executePlan(child)
     qe.assertAnalyzed()
