@@ -47,12 +47,15 @@ object SparkAppUsingJob  extends SnappySQLJob {
     val isSnappy = false
     val usingOptionString = null
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"${threadNumber}_Spark_LoadPerf.out"))
+      new File(s"${threadNumber}_Spark_LoadPerf.csv"))
     var loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
+    loadPerfPrintStream.println(s"Table, CreationTime")
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"${threadNumber}_Spark_Average.out"))
+      new File(s"${threadNumber}_Spark_Average.csv"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+    avgPrintStream.println(s"Query,AverageResponseTime")
+
 
     snc.dropTable("NATION", ifExists = true)
     snc.dropTable("REGION", ifExists = true)
@@ -92,12 +95,10 @@ object SparkAppUsingJob  extends SnappySQLJob {
       snc.sql(s"set $prop")
     }
 
-    for (i <- 1 to 1) {
-      for (query <- queries) {
-        QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
-          threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
-      }
-    }
+   for (query <- queries) {
+      QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
+        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
+   }
     QueryExecutor.close
 
   }

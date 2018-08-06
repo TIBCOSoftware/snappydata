@@ -54,11 +54,9 @@ object QueryExecutionJob extends SnappySQLJob {
     println(s"****************queries : $queries")
     // scalastyle:on println
 
-    for (i <- 1 to 1) {
-      for (query <- queries) {
-        QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
-          threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
-      }
+    for (query <- queries) {
+      QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
+        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
     }
     avgPrintStream.close()
     avgFileStream.close()
