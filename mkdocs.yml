@@ -123,7 +123,7 @@ pages:
     - 'Sketching': 'sde/sketching.md'
 - 'Using Database Connectors': 'connectors/connector.md'
 - 'Using Database Connectors':
-#    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
+    - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Using SnappyData CloudBuilder': 'aqp_aws.md'
 - 'Using SnappyData CloudBuilder': 
@@ -182,7 +182,7 @@ pages:
             - 'DROP INDEX': 'reference/sql_reference/drop-index.md'
             - 'DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE': 'reference/sql_reference/drop-table.md'
             - 'DROP SCHEMA': 'reference/sql_reference/drop-schema.md'
-            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
+#            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
