@@ -132,7 +132,7 @@ object TPCHColumnPartitionedTable {
         val startReadParquetTime = System.currentTimeMillis()
         orderDF = sqlContext.read.format("parquet").load(s"$path/parquet_orders_$i")
         val endReadParquetTime = System.currentTimeMillis()
-        if (loadPerfPrintStream != null) {
+        if (trace && loadPerfPrintStream != null) {
           loadPerfPrintStream.println(s"TRACE_ORDERS_READ_PARQUET, " +
               s"${endReadParquetTime - startReadParquetTime}")
         }
@@ -153,7 +153,7 @@ object TPCHColumnPartitionedTable {
           //orderDF.write.format("parquet").save(s"$path/parquet_orders_$i")
           orderDF.write.partitionBy("o_orderkey").bucketBy(buckets.toInt, "o_orderkey").format("parquet").save(s"$path/parquet_orders_$i")
           val endWriteParquetTime = System.currentTimeMillis()
-          if (loadPerfPrintStream != null) {
+          if (trace && loadPerfPrintStream != null) {
             loadPerfPrintStream.println(s"TRACE_ORDERS_WRITE_PARQUET, " +
                 s"${endWriteParquetTime - startWriteParquetTime}")
           }
@@ -172,7 +172,7 @@ object TPCHColumnPartitionedTable {
           val startCreateTableTime = System.currentTimeMillis()
           snappyContext.createTable("ORDERS", "column", newSchema, p1)
           val endCreateTableTime = System.currentTimeMillis()
-          if (loadPerfPrintStream != null) {
+          if (trace && loadPerfPrintStream != null) {
             loadPerfPrintStream.println(s"TRACE_ORDERS_CREATE_TABLE, " +
                 s"${endCreateTableTime - startCreateTableTime}")
           }
@@ -180,7 +180,7 @@ object TPCHColumnPartitionedTable {
         val startInsertDataTime = System.currentTimeMillis()
         orderDF.write.insertInto("ORDERS")
         val endInsertDataTime = System.currentTimeMillis()
-        if (loadPerfPrintStream != null) {
+        if (trace && loadPerfPrintStream != null) {
           loadPerfPrintStream.println(s"TRACE_ORDERS_INSERT_DATA, " +
               s"${endInsertDataTime - startInsertDataTime}")
         }
@@ -239,10 +239,12 @@ object TPCHColumnPartitionedTable {
   def createPopulateLineItemTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false, createParquet : Boolean = false, cacheTables : Boolean = true) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false,
+      trace : Boolean = false, cacheTables : Boolean = true) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var lineItemDF: DataFrame = null
+
     var unionLineItemDF: DataFrame = null
     // use parquet data if available
     for (i <- 1 to numberOfLoadingStages) {
@@ -250,7 +252,7 @@ object TPCHColumnPartitionedTable {
         val startReadParquetTime = System.currentTimeMillis()
         lineItemDF = sqlContext.read.format("parquet").load(s"$path/parquet_lineitem_$i")
         val endReadParquetTime = System.currentTimeMillis()
-        if (loadPerfPrintStream != null) {
+        if (trace && loadPerfPrintStream != null) {
           loadPerfPrintStream.println(s"TRACE_LINEITEM_READ_PARQUET, " +
               s"${endReadParquetTime - startReadParquetTime}")
         }
@@ -269,9 +271,9 @@ object TPCHColumnPartitionedTable {
         if (createParquet) {
           val startWriteParquetTime = System.currentTimeMillis()
           //lineItemDF.write.format("parquet").save(s"$path/parquet_lineitem_$i")
-          lineItemDF.write.partitionBy("l_orderkey").bucketBy(buckets.toInt, "l_orderkey").format("parquet").save(s"$path/parquet_orders_$i")
+          lineItemDF.write.partitionBy("l_orderkey").bucketBy(buckets.toInt, "l_orderkey").format("parquet").save(s"$path/parquet_lineitem_$i")
           val endWriteParquetTime = System.currentTimeMillis()
-          if (loadPerfPrintStream != null) {
+          if (trace && loadPerfPrintStream != null) {
             loadPerfPrintStream.println(s"TRACE_LINEITEM_WRITE_PARQUET, " +
                 s"${endWriteParquetTime - startWriteParquetTime}")
           }
@@ -289,7 +291,7 @@ object TPCHColumnPartitionedTable {
           val startCreateTableTime = System.currentTimeMillis()
           snappyContext.createTable("LINEITEM", "column", newSchema, p1)
           val endCreateTableTime = System.currentTimeMillis()
-          if (loadPerfPrintStream != null) {
+          if (trace && loadPerfPrintStream != null) {
             loadPerfPrintStream.println(s"TRACE_LINEITEM_CREATE_TABLE, " +
                 s"${endCreateTableTime - startCreateTableTime}")
           }
@@ -297,7 +299,7 @@ object TPCHColumnPartitionedTable {
         val startInsertDataTime = System.currentTimeMillis()
         lineItemDF.write.insertInto("LINEITEM")
         val endInsertDataTime = System.currentTimeMillis()
-        if (loadPerfPrintStream != null) {
+        if (trace && loadPerfPrintStream != null) {
           loadPerfPrintStream.println(s"TRACE_LINEITEM_INSERT_DATA, " +
               s"${endInsertDataTime - startInsertDataTime}")
         }
@@ -378,8 +380,8 @@ object TPCHColumnPartitionedTable {
 
         customerDF = ColumnCacheBenchmark.applySchema(customerDF1, newSchema)
         if (createParquet) {
-          customerDF.write.format("parquet").save(s"$path/parquet_customer_$i")
-        }
+          //customerDF.write.format("parquet").save(s"$path/parquet_customer_$i")
+          customerDF.write.partitionBy("c_custkey").bucketBy(buckets.toInt, "c_custkey").format("parquet").save(s"$path/parquet_customer_$i")        }
       }
       val newSchema = TPCHTableSchema.newCustomerSchema(customerDF.schema)
       if (isSnappy) {
@@ -446,8 +448,10 @@ object TPCHColumnPartitionedTable {
 
         partDF = ColumnCacheBenchmark.applySchema(partDF1, newSchema)
         if (createParquet) {
-          partDF.write.format("parquet").save(s"$path/parquet_part_$i")
+          //partDF.write.format("parquet").save(s"$path/parquet_part_$i")
+          partDF.write.partitionBy("p_partkey").bucketBy(buckets.toInt, "p_partkey").format("parquet").save(s"$path/parquet_part_$i")
         }
+
       }
       val newSchema = TPCHTableSchema.newPartSchema(partDF.schema)
       if (isSnappy) {
@@ -513,7 +517,8 @@ object TPCHColumnPartitionedTable {
 
         partSuppDF = ColumnCacheBenchmark.applySchema(partSuppDF1, newSchema)
         if (createParquet) {
-          partSuppDF.write.format("parquet").save(s"$path/parquet_partsupp_$i")
+          //partSuppDF.write.format("parquet").save(s"$path/parquet_partsupp_$i")
+          partSuppDF.write.partitionBy("ps_partkey").bucketBy(buckets.toInt, "ps_partkey").format("parquet").save(s"$path/parquet_partsupp_$i")
         }
       }
       val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF.schema)
@@ -664,7 +669,8 @@ object TPCHColumnPartitionedTable {
 
         suppDF = ColumnCacheBenchmark.applySchema(suppDF1, newSchema)
         if (createParquet) {
-          suppDF.write.format("parquet").save(s"$path/parquet_supplier_$i")
+          //suppDF.write.format("parquet").save(s"$path/parquet_supplier_$i")
+          suppDF.write.partitionBy("S_SUPPKEY").bucketBy(buckets.toInt, "S_SUPPKEY").format("parquet").save(s"$path/parquet_supplier_$i")
         }
       }
       val newSchema = TPCHTableSchema.newSupplierSchema(suppDF.schema)
