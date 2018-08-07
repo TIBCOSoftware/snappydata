@@ -358,7 +358,8 @@ object TPCHColumnPartitionedTable {
   def createPopulateCustomerTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false, createParquet : Boolean = false, cacheTables : Boolean = true) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false,
+      trace : Boolean = false, cacheTables : Boolean = true) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var customerDF: DataFrame = null
@@ -427,7 +428,8 @@ object TPCHColumnPartitionedTable {
   def createPopulatePartTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false, createParquet : Boolean = false, cacheTables : Boolean = true) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false,
+      trace : Boolean = false, cacheTables : Boolean = true) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partDF: DataFrame = null
@@ -495,7 +497,8 @@ object TPCHColumnPartitionedTable {
   def createPopulatePartSuppTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false, createParquet : Boolean = false, cacheTables : Boolean = true) : Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false,
+      trace : Boolean = false, cacheTables : Boolean = true) : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var partSuppDF: DataFrame = null
@@ -645,7 +648,8 @@ object TPCHColumnPartitionedTable {
   def createAndPopulateSupplierTable(sqlContext: SQLContext, path: String, isSnappy: Boolean,
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
-      isParquet : Boolean = false, createParquet : Boolean = false, cacheTables : Boolean = true): Unit = {
+      isParquet : Boolean = false, createParquet : Boolean = false,
+      trace : Boolean = false, cacheTables : Boolean = true): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var suppDF: DataFrame = null

@@ -36,7 +36,7 @@ object QueryExecutionJob extends SnappySQLJob {
   var warmUp: Integer = _
   var runsForAverage: Integer = _
   var threadNumber: Integer = _
-
+  var traceEvents : Boolean = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
@@ -127,6 +127,12 @@ object QueryExecutionJob extends SnappySQLJob {
       config.getInt("threadNumber")
     } else {
       1
+    }
+
+    traceEvents = if (config.hasPath("traceEvents")) {
+      config.getBoolean("traceEvents")
+    } else {
+      false
     }
 
     SnappyJobValid()
