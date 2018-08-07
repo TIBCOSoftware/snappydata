@@ -1663,7 +1663,7 @@ public class SnappyTest implements Serializable {
    * Executes user scripts.
    */
   public static synchronized void HydraTask_executeScripts() {
-    Vector scriptNames, scriptLocationList = null;
+    Vector scriptNames, scriptLocationList = null, scriptArgsList = null;
     File log = null, logFile = null;
     scriptNames = SnappyPrms.getScriptNames();
     if (scriptNames == null) {
@@ -1678,20 +1678,29 @@ public class SnappyTest implements Serializable {
         while (scriptLocationList.size() != scriptNames.size())
           scriptLocationList.add(" ");
       }
+      scriptArgsList = SnappyPrms.getScriptArgs();
+      if (scriptArgsList.size() != scriptNames.size()) {
+        Log.getLogWriter().info("Adding \" \" parameter in the scriptArgs for the  " +
+            "scripts for which no script arguments are specified.");
+        while (scriptArgsList.size() != scriptNames.size())
+          scriptArgsList.add(" ");
+      }
 
       for (int i = 0; i < scriptNames.size(); i++) {
         String userScript = (String) scriptNames.elementAt(i);
         Log.getLogWriter().info("SS - userScript: " + userScript);
         String location = (String) scriptLocationList.elementAt(i);
-        String dataLocation = snappyTest.getDataLocation(location);
-        Log.getLogWriter().info("SS - dataLocation: " + dataLocation);
-        String filePath = snappyTest.getScriptLocation(dataLocation + File.separator + userScript);
+        //String dataLocation = snappyTest.getDataLocation(location);
+        String args = (String) scriptArgsList.elementAt(i);
+        Log.getLogWriter().info("SS - scriptLocation: " + location);
+        String filePath = snappyTest.getScriptLocation(location + File.separator + userScript);
         Log.getLogWriter().info("SS - filePath: " + filePath);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "scriptResult_" +
             RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
-        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", filePath);
+        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", filePath, args);
+        Log.getLogWriter().info("SS - command is: " + pb.command());
         snappyTest.executeProcess(pb, logFile);
       }
     } catch (IOException e) {

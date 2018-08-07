@@ -60,6 +60,17 @@ public class SnappyPrms extends BasePrms {
   public static Long scriptLocation;
 
   /**
+   * Parameter used to get the user specified script argument List for the scripts.
+   * (VectorsetValues of Strings) A list of values for scriptArgs for the scripts to be executed in test.
+   * If no arguments are required for script then expected value to be provided for param is :
+   * Empty String : " " in case if user don't want to maintain the sequence.
+   * Or else provide the script that does not require path at the end in list of
+   * scriptNames parameter.
+   * Framework will treat its corresponding parameter as " " string in this case.
+   */
+  public static Long scriptArgs;
+
+  /**
    * Parameter used to get the user specified persistence mode List for the sql scripts.
    * (VectorsetValues of Strings) A list of values for persistenceMode to be replaced in the
    * sql scripts.
@@ -844,6 +855,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getScriptLocationList() {
     Long key = scriptLocation;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getScriptArgs() {
+    Long key = scriptArgs;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
