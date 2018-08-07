@@ -18,6 +18,9 @@ You can secure the SnappyData Pulse UI with SSL authentication, so that the UI c
           		-spark.ssl.trustStorePassword=<trust-store-type> \
           		-spark.ssl.trustStoreType=<trust-store-type>
 
+	!!!Note
+		 - If using TLS SSL protocol, the enabledAlgorithms can be TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA
+     	- Store types could be JKS or PKCS12.
 
 3.	Launch the Snappy cluster.
 	`./sbin/snappy-start-all.sh` 

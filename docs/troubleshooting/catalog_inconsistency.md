@@ -2,8 +2,8 @@
 
 A SnappyData catalog internally maintains table metadata in two catalogs:
 
-*	**Store catalog** which is also known as data dictionary
-*	**Hive metastore** (required by Spark).
+*	**Data dictionary** required by SnappyData store
+*	**Hive metastore** required by Spark
 	
 In rare conditions, SnappyData catalog may become inconsistent, if an entry for the table exists only in one of the catalogs instead of exisiting in both.  One of the symptoms for such an inconsistency is that you get an error that indicates that the table you are creating already exists. However, when you drop the same table, the table is not found.
 
