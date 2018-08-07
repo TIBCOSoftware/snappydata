@@ -42,8 +42,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     SnappyUtils.getSparkUI(sc).foreach(ui => {
       // Create Snappy Dashboard and SQL tabs.
       // Set SnappyData authenticator SecurityHandler.
-      SparkCallbacks.getAuthenticatorForJettyServer match {
+      SparkCallbacks.getAuthenticatorForJettyServer() match {
         case Some(_) =>
+          logInfo("Setting auth handler")
           // Set JettyUtils.skipHandlerStart for adding dashboard and sql security handlers
           JettyUtils.skipHandlerStart.set(true)
           // Creating SQL and Dashboard UI tabs

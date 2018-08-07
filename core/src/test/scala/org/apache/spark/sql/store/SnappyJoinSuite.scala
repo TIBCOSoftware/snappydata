@@ -549,12 +549,13 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     checkForShuffle(groupBy2.logicalPlan, snc, shuffleExpected = true)
   }
 
-  test("SNAP-2451") {
+  private def loadTables(tableType: String, primaryKey: String,
+      partitioning: String, colocation: String): Unit = {
 
     snc.sql(s"create table trade.customers" +
-        s" (cid int not null, cust_name varchar(100), " +
-        s"since date, addr varchar(100), tid int, " +
-        s"primary key (cid))  USING ROW OPTIONS (partition_by 'cid', buckets '8')")
+        s" (cid int not null $primaryKey, cust_name varchar(100), " +
+        s"since date, addr varchar(100), tid int) " +
+        s"USING $tableType OPTIONS ($partitioning)")
 
     snc.sql("create table trade.securities (sec_id int not null," +
         " symbol varchar(10) not null, price decimal (30, 20)," +
@@ -564,35 +565,22 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         " constraint exc_ch check" +
         " (exchange in ('nasdaq', 'nye', 'amex', 'lse', 'fse', 'hkse', 'tse')))")
 
-    snc.sql(s"create table trade.networth (cid int not null, " +
+    snc.sql(s"create table trade.networth (cid int not null $primaryKey, " +
         s"cash decimal (30, 20), securities decimal (30, 20), " +
-        s"loanlimit int, availloan decimal (30, 20),  tid int, " +
-        s"constraint netw_pk primary key (cid), " +
-        s"constraint cust_newt_fk foreign key (cid) " +
-        s"references trade.customers (cid) on delete restrict, " +
-        s"constraint cash_ch check (cash>=0), " +
-        s"constraint sec_ch check (securities >=0), " +
-        s"constraint availloan_ck check (loanlimit>=availloan and availloan >=0)) " +
-        s"USING ROW OPTIONS (partition_by 'cid', colocate_with 'trade.customers', buckets '8')")
+        s"loanlimit int, availloan decimal (30, 20),  tid int) " +
+        s"USING $tableType OPTIONS ($partitioning$colocation)")
 
+    val contraint = if (primaryKey.isEmpty) "" else s", constraint portf_pk primary key (cid, sid)"
     snc.sql("create table trade.portfolio (cid int not null," +
         " sid int not null, qty int not null," +
         " availQty int not null, subTotal decimal(30,20)," +
-        " tid int, constraint portf_pk primary key (cid, sid)," +
-        " constraint cust_fk foreign key (cid)" +
-        " references trade.customers (cid) on delete restrict," +
-        " constraint sec_fk foreign key (sid) references trade.securities (sec_id)," +
-        " constraint qty_ck check (qty>=0)," +
-        " constraint avail_ch check (availQty>=0 and availQty<=qty))" +
-        "  USING ROW OPTIONS (partition_by 'cid', colocate_with 'trade.customers')")
+        s" tid int$contraint)" +
+        s" USING $tableType OPTIONS ($partitioning$colocation)")
 
-    snc.sql("create table trade.sellorders (oid int not null constraint orders_pk primary key," +
+    snc.sql(s"create table trade.sellorders (oid int not null $primaryKey," +
         " cid int, sid int, qty int, ask decimal (30, 20), order_time timestamp," +
-        " status varchar(10) default 'open', tid int," +
-        " constraint portf_fk foreign key (cid, sid) references" +
-        " trade.portfolio (cid, sid) on delete restrict," +
-        " constraint status_ch check (status in ('cancelled', 'open', 'filled')))" +
-        "  USING ROW OPTIONS (partition_by 'cid', colocate_with 'trade.customers')")
+        " status varchar(10), tid int)" +
+        s" USING $tableType OPTIONS ($partitioning$colocation)")
 
     snc.sql(s"insert into trade.customers values(1,'abc','2012-01-14','abc-xyz',1)")
     snc.sql(s"insert into trade.customers values(2,'aaa','2012-01-14','aaa-xyz',1)")
@@ -628,10 +616,9 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql(s"insert into trade.networth values(4,13.2,11.2,12000,3000,1)")
     snc.sql(s"insert into trade.networth values(5,13.2,14.2,20000,10000,1)")
     snc.sql(s"insert into trade.networth values(6,15.2,12.2,25000,15000,1)")
+  }
 
-
-    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold = -1")
-    // snc.sql(s"set snappydata.sql.hashJoinSize=-1")
+  private def checkQueries_2451(): Unit = {
 
     var df = snc.sql(s" select f.cid, cust_name, f.sid," +
         s" so.sid, so.qty, subTotal, oid, order_time, ask" +
@@ -642,7 +629,6 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s" and subTotal >13 and c.cid>3 and f.tid = 1")
 
     assert(df.collect().size === 2)
-
 
     df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
         s" so.qty, subTotal, oid, order_time, ask from" +
@@ -661,7 +647,69 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s" from trade.customers c, trade.networth n where n.cid = c.cid" +
         s" and n.tid = 1 and c.cid > 5")
     assert(df.collect().size === 1)
+  }
 
+  private def dropTables(): Unit = {
+    snc.sql("drop table trade.sellorders")
+    snc.sql("drop table trade.portfolio")
+    snc.sql("drop table trade.networth")
+    snc.sql("drop table trade.securities")
+    snc.sql("drop table trade.customers")
+  }
+
+  test("SNAP-2451") {
+
+    loadTables("ROW", "primary key", "partition_by 'cid'", ", colocate_with 'trade.customers'")
+
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold = -1")
+    // snc.sql(s"set snappydata.sql.hashJoinSize=-1")
+
+    checkQueries_2451()
+
+    dropTables()
+    loadTables("COLUMN", "", "", "")
+
+    checkQueries_2451()
+    var df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 1 and f.tid = 1")
+    assert(df.collect().size === 1)
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 2 and f.tid = 1")
+    assert(df.collect().size === 1)
+
+    dropTables()
+    loadTables("COLUMN", "", "partition_by 'cid'", ", colocate_with 'trade.customers'")
+
+    checkQueries_2451()
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 1 and f.tid = 1")
+    var result = df.collect()
+    assert(result.length === 1)
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 2 and f.tid = 1")
+    result = df.collect()
+    assert(result.length === 1)
+    dropTables()
   }
 
   test("SNAP-2443") {
