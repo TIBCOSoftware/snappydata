@@ -525,7 +525,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               filter
             } else {
               result.copy(condition = org.apache.spark.sql.catalyst.expressions.And(
-                result.condition, filter.condition))
+                filter.condition, result.condition))
             }
         }
         val storedLogicalRelation = this.lookupRelation(newQualifiedTableName(
