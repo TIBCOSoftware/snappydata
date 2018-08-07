@@ -20,3 +20,4 @@ echo "******************start Creating Table******************"
 --conf NumberOfLoadStages=$NumberOfLoadStages \
 --conf isParquet=$Parquet \
 --conf createParquet=$createParquet
+--conf traceEvents=$traceEvents
