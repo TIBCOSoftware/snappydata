@@ -74,6 +74,7 @@ pages:
 - 'Configuring the Cluster':
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
+    - 'Securing SnappyData Pulse UI Connection': 'configuring_cluster/securinguiconnection.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
