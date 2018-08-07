@@ -1056,7 +1056,7 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
     }
     var opts = JdbcExtendedUtils.addSplitProperty(viewSQL, Constant.SPLIT_VIEW_TEXT_PROPERTY,
       properties)
-    opts = JdbcExtendedUtils.addSplitProperty(viewSQL,
+    opts = JdbcExtendedUtils.addSplitProperty(originalText.getOrElse(viewSQL),
       Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
 
     opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
