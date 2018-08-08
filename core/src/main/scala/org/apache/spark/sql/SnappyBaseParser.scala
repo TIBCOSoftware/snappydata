@@ -266,6 +266,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
+
   final def functionIdentifier: Rule1[FunctionIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
     (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, name: String) =>
@@ -398,6 +399,8 @@ object SnappyParserConsts {
   final val FUNCTION: Keyword = reservedKeyword("function")
 
 
+
+
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
 
@@ -412,12 +415,14 @@ object SnappyParserConsts {
   final val ALTER: Keyword = nonReservedKeyword("alter")
   final val ANTI: Keyword = nonReservedKeyword("anti")
   final val CACHE: Keyword = nonReservedKeyword("cache")
+  final val CALL:Keyword = nonReservedKeyword("call")
   final val CLEAR: Keyword = nonReservedKeyword("clear")
   final val CLUSTER: Keyword = nonReservedKeyword("cluster")
   final val COLUMN: Keyword = nonReservedKeyword("column")
   final val COMMENT: Keyword = nonReservedKeyword("comment")
   final val DEPLOY: Keyword = nonReservedKeyword("deploy")
   final val DESCRIBE: Keyword = nonReservedKeyword("describe")
+  final val DISK_STORE: Keyword = nonReservedKeyword("diskstore")
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
   final val END: Keyword = nonReservedKeyword("end")
   final val EXTENDED: Keyword = nonReservedKeyword("extended")
@@ -470,6 +475,15 @@ object SnappyParserConsts {
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
   final val VIEW: Keyword = nonReservedKeyword("view")
+  final val FOR: Keyword = nonReservedKeyword("for")
+  final val ENABLE: Keyword = nonReservedKeyword("enable")
+  final val DISABLE: Keyword = nonReservedKeyword("disable")
+  final val LEVEL: Keyword = nonReservedKeyword("level")
+  final val SECURITY: Keyword = nonReservedKeyword("security")
+  final val USER: Keyword = nonReservedKeyword("user")
+  final val LDAPGROUP: Keyword = nonReservedKeyword("ldapgroup")
+  final val CURRENT_USER: Keyword = nonReservedKeyword("current_user")
+  final val POLICY: Keyword = nonReservedKeyword("policy")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")

@@ -97,15 +97,20 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1 && numBuckets == 1) {
+    // when buckets are linked to partitions then actual buckets needs to be considered.
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
+    // The SinglePartition here is an optimization that can avoid an Exchange for the case
+    // of simple queries. This partitioning is compatible with all other required
+    // distributions though the table is still HashPartitioned. This helps for the
+    // case of aggregation with limit, for example, (SNAP-) which cannot be converted
+    // to use CollectAggregateExec. For cases where HashPartitioning of the table does
+    // require to be repartitioned due to a sub-query/join, "linkPart" will be true
+    // so it will fall into HashPartitioning.
+    if (numPartitions == 1 && (numBuckets == 1 || !linkPart)) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
-      // when buckets are linked to partitions then numBuckets have
-      // to be sent as zero to skip considering buckets in partitioning
-      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
       HashPartitioning(partitionColumns, if (linkPart) numBuckets else numPartitions)
-
     } else super.outputPartitioning
   }
 
@@ -261,7 +266,6 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       (collectRDD(sc, rdd), shuffleIds)
     }
     if (shuffleIds.nonEmpty) {
-      logInfo(s"SW:0: got shuffleIds=$shuffleIds")
       sc.cleaner match {
         case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
         case None =>

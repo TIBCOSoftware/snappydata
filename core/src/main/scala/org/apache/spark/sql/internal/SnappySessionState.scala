@@ -22,10 +22,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ClassTag, classTag}
-
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
-
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
@@ -33,25 +31,30 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
+import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project, Sort, _}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.{DataSourceAnalysis, FindDataSourceTable, HadoopFsRelation, LogicalRelation, PartitioningUtils, ResolveDataSource}
+import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
+import org.apache.spark.sql.policy.PolicyProperties
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
-import org.apache.spark.sql.types.{DecimalType, NumericType, StringType}
+import org.apache.spark.sql.types._
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
@@ -86,7 +89,11 @@ class SnappySessionState(snappySession: SnappySession)
     override lazy val batches: Seq[Batch] = analyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
-          case PromoteStrings => false
+          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0 ) {
+            false
+          } else {
+            true
+          }
           case _ => true
         }): _*)
       case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
@@ -105,6 +112,7 @@ class SnappySessionState(snappySession: SnappySession)
         ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
+        RowLevelSecurity ::
         ExternalRelationLimitFetch ::
         (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
             Nil else Nil)
@@ -394,6 +402,65 @@ class SnappySessionState(snappySession: SnappySession)
       val newJoin = joinPairs.map(EqualTo.tupled).reduceOption(And)
       val allConditions = (newJoin ++ otherCondition).reduceOption(And)
       Join(left, right, joinType, allConditions)
+    }
+  }
+
+
+  object RowLevelSecurity extends Rule[LogicalPlan] {
+    // Y combinator
+    val conditionEvaluator: (Expression => Boolean) => (Expression => Boolean) =
+      (f: (Expression => Boolean)) =>
+        (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
+            (exp match {
+              case And(left, right) => f(left)
+              case EqualTo(l: Literal, r: Literal) =>
+                l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
+              case _ => false
+            })
+
+
+    def rlsConditionChecker(f: (Expression => Boolean) => (Expression => Boolean)):
+    Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
+
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      plan match {
+        case _: BypassRowLevelSecurity => plan
+        // TODO: Asif: Bypass row level security filter apply if the command
+        // is of type RunnableCommad. Later if it turns out any data operation
+        // is happening via this command we need to handle it
+        case _: RunnableCommand => plan
+        case _ if !alreadyPolicyApplied(plan) => plan.transformUp {
+          case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) => {
+            val policyFilter = snappySession.sessionState.catalog.
+                getCombinedPolicyFilterForTable(rlsRelation, lr)
+            policyFilter match {
+              case Some(filter) => filter.copy(child = lr)
+              case None => lr
+            }
+          }
+
+          case SubqueryAlias(name, Filter(condition, child), ti) => Filter(condition,
+            SubqueryAlias(name, child, ti))
+
+          case filter1@Filter(condition1, filter2@Filter(condition2, child)) =>
+            if (rlsConditionChecker(conditionEvaluator)(condition1)) {
+              if (rlsConditionChecker(conditionEvaluator)(condition2)) {
+                Filter(condition1, child)
+              } else {
+                Filter(And(condition1, condition2), child)
+              }
+            } else {
+              Filter(And(condition2, condition1), child)
+            }
+        }
+        case _ => plan
+      }
+    }
+
+    def alreadyPolicyApplied(plan: LogicalPlan): Boolean = {
+      plan.collectFirst {
+        case f: LogicalFilter => f
+      }.exists(f => rlsConditionChecker(conditionEvaluator)(f.condition))
     }
   }
 
@@ -1019,6 +1086,7 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
     case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
+    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
     case _ => Nil
   }
 
@@ -1440,5 +1508,9 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
 }
 
 case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
+}
+
+case class BypassRowLevelSecurity(child: LogicalFilter) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
 }

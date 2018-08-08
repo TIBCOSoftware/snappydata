@@ -100,7 +100,6 @@ object TableCreationSmartConnector {
         tpchDataPath, true, loadPerfPrintStream, numberOfLoadStages.toInt)
     }
 
-    QueryExecutor.close
     sc.stop()
 
   }

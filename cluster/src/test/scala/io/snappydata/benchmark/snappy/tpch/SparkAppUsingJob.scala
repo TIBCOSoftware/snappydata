@@ -42,7 +42,7 @@ object SparkAppUsingJob  extends SnappySQLJob {
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
-    snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000");
+    snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000")
 
     val isSnappy = false
     val usingOptionString = null
@@ -63,6 +63,12 @@ object SparkAppUsingJob  extends SnappySQLJob {
     snc.dropTable("LINEITEM", ifExists = true)
     snc.dropTable("ORDERS", ifExists = true)
 
+    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath,
+      isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath,
+      isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
+      isSnappy, loadPerfPrintStream, numberOfLoadStages)
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath, isSnappy,
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
@@ -79,13 +85,6 @@ object SparkAppUsingJob  extends SnappySQLJob {
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
-
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath,
-      isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath,
-      isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
-      isSnappy, loadPerfPrintStream, numberOfLoadStages)
 
     for(prop <- sqlSparkProperties) {
       // scalastyle:off println

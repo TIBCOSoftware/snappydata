@@ -27,6 +27,7 @@ import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
+import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
 import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
@@ -209,6 +210,10 @@ object ExternalStoreUtils {
     new CaseInsensitiveMap(optMap.toMap)
   }
 
+  def getExpandedGranteesIterator(grantees: Seq[String]): Iterator[String] = {
+    new GranteeIterator(grantees.asJava, null, true, -1, -1, -1, null, null).asScala
+  }
+
   def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
     sparkContext match {
       case None => Constant.DEFAULT_EMBEDDED_URL +
@@ -334,7 +339,12 @@ object ExternalStoreUtils {
       hikariCP: Boolean): ConnectionProperties = {
     val (user, password) = getCredentials(session)
 
-    if (!user.isEmpty && !password.isEmpty) {
+    val isSnappy = dialect match {
+      case GemFireXDDialect | GemFireXDClientDialect => true
+      case _ => false
+    }
+
+    if (!user.isEmpty && !password.isEmpty && isSnappy) {
       def secureProps(props: Properties): Properties = {
         props.setProperty(ClientAttribute.USERNAME, user)
         props.setProperty(ClientAttribute.PASSWORD, password)

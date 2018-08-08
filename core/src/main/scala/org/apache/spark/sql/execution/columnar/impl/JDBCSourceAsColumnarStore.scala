@@ -774,32 +774,40 @@ final class SmartConnectorColumnRDD(
     val conn: Connection = helper.getConnection(connProperties, part)
     logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
-    // fetch all the column blobs pushing down the filters
-    val (statement, rs, txId) = helper.prepareScan(conn, tableName, projection,
-      serializedFilters, part, relDestroyVersion)
-    val itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
-      context, partitionId)
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
+      case "" => null
+      case id => id
+    }
+    var itr: Iterator[ByteBuffer] = null
+    try {
+      // fetch all the column blobs pushing down the filters
+      val (statement, rs) = helper.prepareScan(conn, txId,
+        tableName, projection,
+        serializedFilters, part, relDestroyVersion)
+      itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
+        context, partitionId)
+    } finally {
+      if (context ne null) {
+        context.addTaskCompletionListener { _ =>
+          logDebug(s"The txid going to be committed is $txId " + tableName)
 
-    if (context ne null) {
-      context.addTaskCompletionListener { _ =>
-        logDebug(s"The txid going to be committed is $txId " + tableName)
-
-        // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-        ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
-        ps.executeUpdate()
-        logDebug(s"The txid being committed is $txId")
-        ps.close()
-        SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
-        logDebug(s"closed connection for task from listener $partitionId")
-        try {
-          conn.close()
-          logDebug("closed connection for task " + context.partitionId())
-        } catch {
-          case NonFatal(e) => logWarning("Exception closing connection", e)
+          // if ((txId ne null) && !txId.equals("null")) {
+          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+          ps.setString(1, if (txId ne null) txId else "")
+          ps.setString(2, if (delayRollover) tableName else "")
+          ps.executeUpdate()
+          logDebug(s"The txid being committed is $txId")
+          ps.close()
+          SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
+          logDebug(s"closed connection for task from listener $partitionId")
+          try {
+            conn.close()
+            logDebug("closed connection for task " + context.partitionId())
+          } catch {
+            case NonFatal(e) => logWarning("Exception closing connection", e)
+          }
+          // }
         }
-        // }
       }
     }
     itr
@@ -1014,21 +1022,21 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
     delayRollover: Boolean) extends TaskCompletionListener {
-  val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
-  var isSuccess = false
+  private val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
+  private var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
     val txId = connAndTxId(1).asInstanceOf[String]
-    val conn = connAndTxId(0).asInstanceOf[Connection]
-    if (connAndTxId(1) != null) {
+    val conn = Option(connAndTxId(0).asInstanceOf[Connection])
+    if (connAndTxId(1) ne null) {
       if (success()) {
-        store.commitTx(txId, delayRollover, Some(conn))
+        store.commitTx(txId, delayRollover, conn)
       }
       else {
-        store.rollbackTx(txId, Some(conn))
+        store.rollbackTx(txId, conn)
       }
     }
-    store.closeConnection(Some(conn))
+    store.closeConnection(conn)
   }
 
   def success(): Boolean = {
