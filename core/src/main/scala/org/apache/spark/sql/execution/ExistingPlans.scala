@@ -291,7 +291,6 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       (collectRDD(sc, rdd), shuffleIds)
     }
     if (shuffleIds.nonEmpty) {
-      logInfo(s"SW:0: got shuffleIds=$shuffleIds")
       sc.cleaner match {
         case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
         case None =>

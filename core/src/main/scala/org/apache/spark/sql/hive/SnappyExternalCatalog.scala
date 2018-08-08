@@ -21,13 +21,12 @@ import java.util
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
-
 import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI
+import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 import org.apache.thrift.TException
-
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -35,8 +34,10 @@ import org.apache.spark.sql.catalyst.catalog.ExternalCatalogUtils._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression, InterpretedPredicate}
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.PartitioningUtils
 import org.apache.spark.sql.hive.client.HiveClient
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
 
 private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
@@ -276,7 +277,17 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   override def getTable(db: String, table: String): CatalogTable = withClient {
-    withHiveExceptionHandling(client.getTable(db, table))
+    withHiveExceptionHandling {
+      val catalogTable = client.getTable(db, table)
+      // TODO: remove the type check and return for all types for consistency
+      if (catalogTable.tableType == CatalogTableType.VIEW) {
+        // update the meta-data from properties
+        ExternalStoreUtils.getTableSchema(catalogTable.properties) match {
+          case Some(schema) => catalogTable.copy(schema = schema)
+          case None => catalogTable
+        }
+      } else catalogTable
+    }
   }
 
   override def getTableOption(db: String, table: String): Option[CatalogTable] = withClient {
