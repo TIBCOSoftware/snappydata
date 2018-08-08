@@ -317,6 +317,8 @@ APP                 |V2                            |VIEW      |
 
 2 rows selected
 ```
+!!!Note
+	SHOW VIEWS do not display the temporary and global temporary views.
 
 **Related Topics**</br>
 
