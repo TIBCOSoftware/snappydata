@@ -47,7 +47,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           // Set JettyUtils.skipHandlerStart for adding dashboard and sql security handlers
           JettyUtils.skipHandlerStart.set(true)
           // Creating SQL and Dashboard UI tabs
-          new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          if (!sc.isLocal) {
+            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          }
           new SnappyDashboardTab(ui)
           // Set security handlers
           ui.getHandlers.foreach { h =>
@@ -60,7 +62,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           JettyUtils.skipHandlerStart.set(false)
         case None => logDebug("Not setting auth handler")
           // Creating SQL and Dashboard UI tabs
-          new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          if (!sc.isLocal) {
+            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          }
           new SnappyDashboardTab(ui)
       }
     })
