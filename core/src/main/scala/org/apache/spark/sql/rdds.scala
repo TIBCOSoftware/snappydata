@@ -55,7 +55,8 @@ private[sql] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
  */
 class DelegateRDD[T: ClassTag](
     sc: SparkContext,
-    baseRdd: RDD[T],
+    val baseRdd: RDD[T],
+    val otherRDDs : Seq[RDD[T]],
     preferredLocations: Array[Seq[String]] = null,
     allDependencies: Seq[Dependency[_]] = null)
     extends RDD[T](sc,
