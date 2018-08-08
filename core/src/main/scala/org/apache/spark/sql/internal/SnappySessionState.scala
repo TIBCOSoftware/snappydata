@@ -407,19 +407,20 @@ class SnappySessionState(snappySession: SnappySession)
 
 
   object RowLevelSecurity extends Rule[LogicalPlan] {
-    val expressionChecker = (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
-        (exp match {
-          case EqualTo(l: Literal, r: Literal) =>
-            l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
-          case _ => false
-        })
-    
-    val rlsConditionChecker: LogicalFilter => Boolean =
-      (filter: LogicalFilter) => filter.condition match {
-        case And(And(left, right), _) => expressionChecker(left)
-        case And(left, right) => expressionChecker(left)
-        case _ => false
-      }
+    // Y combinator
+    val conditionEvaluator: (Expression => Boolean) => (Expression => Boolean) =
+      (f: (Expression => Boolean)) =>
+        (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
+            (exp match {
+              case And(left, right) => f(left)
+              case EqualTo(l: Literal, r: Literal) =>
+                l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
+              case _ => false
+            })
+
+
+    def rlsConditionChecker(f: (Expression => Boolean) => (Expression => Boolean)):
+    Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
@@ -437,12 +438,13 @@ class SnappySessionState(snappySession: SnappySession)
               case None => lr
             }
           }
+
           case SubqueryAlias(name, Filter(condition, child), ti) => Filter(condition,
             SubqueryAlias(name, child, ti))
 
           case filter1@Filter(condition1, filter2@Filter(condition2, child)) =>
-            if (rlsConditionChecker(filter1)) {
-              if (rlsConditionChecker(filter2)) {
+            if (rlsConditionChecker(conditionEvaluator)(condition1)) {
+              if (rlsConditionChecker(conditionEvaluator)(condition2)) {
                 Filter(condition1, child)
               } else {
                 Filter(And(condition1, condition2), child)
@@ -450,7 +452,6 @@ class SnappySessionState(snappySession: SnappySession)
             } else {
               Filter(And(condition2, condition1), child)
             }
-
         }
         case _ => plan
       }
@@ -459,7 +460,7 @@ class SnappySessionState(snappySession: SnappySession)
     def alreadyPolicyApplied(plan: LogicalPlan): Boolean = {
       plan.collectFirst {
         case f: LogicalFilter => f
-      }.exists(rlsConditionChecker(_))
+      }.exists(f => rlsConditionChecker(conditionEvaluator)(f.condition))
     }
   }
 

@@ -1014,6 +1014,10 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
     extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
+    if (viewType != PersistedView) {
+      return CreateViewCommand(name, userSpecifiedColumns, comment, properties, originalText,
+        child, allowExisting, replace, viewType).run(sparkSession)
+    }
     // If the plan cannot be analyzed, throw an exception and don't proceed.
     val qe = sparkSession.sessionState.executePlan(child)
     qe.assertAnalyzed()
@@ -1052,7 +1056,7 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
     }
     var opts = JdbcExtendedUtils.addSplitProperty(viewSQL, Constant.SPLIT_VIEW_TEXT_PROPERTY,
       properties)
-    opts = JdbcExtendedUtils.addSplitProperty(viewSQL,
+    opts = JdbcExtendedUtils.addSplitProperty(originalText.getOrElse(viewSQL),
       Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
 
     opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
