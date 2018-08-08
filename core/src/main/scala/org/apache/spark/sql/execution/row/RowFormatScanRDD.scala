@@ -60,7 +60,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     var pushProjections: Boolean,
     protected var useResultSet: Boolean,
     protected var connProperties: ConnectionProperties,
-    @transient private val filters: Array[Expression] = Array.empty[Expression],
+    @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
       Array.empty[Partition], protected var commitTx: Boolean,
     protected var delayRollover: Boolean, protected var projection: Array[Int])
