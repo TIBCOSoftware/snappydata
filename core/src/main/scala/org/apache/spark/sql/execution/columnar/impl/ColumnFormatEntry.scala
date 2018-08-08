@@ -43,7 +43,7 @@ import io.snappydata.Constant
 
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteChange, ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
 
@@ -69,6 +69,10 @@ object ColumnFormatEntry {
     DSFIDFactory.registerGemFireXDClass(GfxdSerializable.COLUMN_DELETE_DELTA,
       new Supplier[GfxdDSFID] {
         override def get(): GfxdDSFID = new ColumnDeleteDelta()
+      })
+    DSFIDFactory.registerGemFireXDClass(GfxdSerializable.COLUMN_DELETE_CHANGE,
+      new Supplier[GfxdDSFID] {
+        override def get(): GfxdDSFID = new ColumnDeleteChange()
       })
   }
 

@@ -124,6 +124,8 @@ abstract class BaseColumnFormatRelation(
     partitioningColumns
   }
 
+  override def getSortingOrder: String = ""
+
   override private[sql] lazy val externalColumnTableName: String =
     ColumnFormatRelation.columnBatchTableName(table,
       Some(() => sqlContext.sparkSession.asInstanceOf[SnappySession]))
@@ -268,10 +270,11 @@ abstract class BaseColumnFormatRelation(
    */
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan = {
+      keyColumns: Seq[Attribute], isDeltaInsert: Boolean): SparkPlan = {
     ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
       partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
-      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false,
+      caseOfDeltaInsert = isDeltaInsert)
   }
 
   /**
@@ -517,7 +520,9 @@ class ColumnFormatRelation(
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
-    _context: SQLContext)
+    _context: SQLContext,
+    val columnSortedOrder: String = "",
+    val allowInsertWhileScan: Boolean = false)
   extends BaseColumnFormatRelation(
     _table,
     _provider,
@@ -529,7 +534,7 @@ class ColumnFormatRelation(
     _externalStore,
     _partitioningColumns,
     _context)
-  with ParentRelation with DependentRelation with BulkPutRelation {
+  with ParentRelation with DependentRelation with BulkPutRelation with ColumnTableInsertRelation {
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
@@ -543,11 +548,14 @@ class ColumnFormatRelation(
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new ColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
-      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext)
+      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
+      cr.columnSortedOrder)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
       expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
   }
+
+  override def getSortingOrder: String = columnSortedOrder
 
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
@@ -677,6 +685,10 @@ class ColumnFormatRelation(
   /** Name of this relation in the catalog. */
   override def name: String = table
 
+  override def getColumnTableInsertPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan = {
+    ColumnTableInsertExec(insertPlan, updatePlan)
+  }
+
   /**
     * Get a spark plan for puts. If the row is already present, it gets updated
     * otherwise it gets inserted into the table represented by this relation.
@@ -692,6 +704,19 @@ class ColumnFormatRelation(
       case Some(x) => Some(x.split(",").map(s => s.trim).toSeq)
       case None => None
     }
+  }
+
+  override def equals(that: Any): Boolean = {
+    val se = super.equals(that)
+    // Handle InsertIntoTable rule of PreWriteCheck
+    if (se && (StoreUtils.isColumnBatchSortedAscending(columnSortedOrder) ||
+        StoreUtils.isColumnBatchSortedDescending(columnSortedOrder))) {
+      that match {
+        case cfr: ColumnFormatRelation if cfr.allowInsertWhileScan =>
+          allowInsertWhileScan
+        case _ => se
+      }
+    } else se
   }
 }
 
@@ -797,10 +822,11 @@ final class DefaultSource extends SchemaRelationProvider
     val table = Utils.toUpperCase(ExternalStoreUtils.removeInternalProps(parameters))
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(
       Some(sqlContext.sparkContext), parameters, forManagedTable = true)
+    val (partitioningColumns, columnSorting) = StoreUtils.getPartitioningColumns(parameters)
+    parameters.put(StoreUtils.COLUMN_BATCH_SORTED, columnSorting)
     val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
-    val partitioningColumns = StoreUtils.getPartitioningColumns(parameters)
     // change the schema to use VARCHAR for StringType for partitioning columns
     // so that the row buffer table can use it as part of primary key
     val (primaryKeyClause, stringPKCols) = StoreUtils.getPrimaryKeyClause(
@@ -869,7 +895,8 @@ final class DefaultSource extends SchemaRelationProvider
         tableOptions,
         externalStore,
         partitioningColumns,
-        sqlContext)
+        sqlContext,
+        columnSorting)
     }
     val isRelationforSample = parameters.get(ExternalStoreUtils.RELATION_FOR_SAMPLE)
         .exists(_.toBoolean)

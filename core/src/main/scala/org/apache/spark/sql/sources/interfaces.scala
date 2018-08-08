@@ -88,6 +88,11 @@ trait BulkPutRelation extends DestroyRelation {
   def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan
 }
 
+trait ColumnTableInsertRelation extends DestroyRelation {
+
+  def getColumnTableInsertPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan
+}
+
 @DeveloperApi
 trait SingleRowInsertableRelation {
   /**
@@ -128,7 +133,7 @@ trait MutableRelation extends DestroyRelation {
    */
   def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
-      keyColumns: Seq[Attribute]): SparkPlan
+      keyColumns: Seq[Attribute], isDeltaInsert: Boolean): SparkPlan
 
   /**
    * Get a spark plan to delete rows the relation. The result of SparkPlan
@@ -136,6 +141,8 @@ trait MutableRelation extends DestroyRelation {
    */
   def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan
+
+  def getSortingOrder: String
 }
 
 /**

@@ -19,13 +19,15 @@ package org.apache.spark.sql.internal
 import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
-import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, InsertIntoTable, Join, LogicalPlan, OverwriteOptions, Project, UnaryNode}
+import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{DataType, LongType}
 import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSession}
 
@@ -36,7 +38,70 @@ import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSes
   */
 object ColumnTableBulkOps {
 
+  def transformInsertPlan(sparkSession: SparkSession,
+      originalPlan: InsertIntoTable): LogicalPlan = {
+    val table = originalPlan.table
+    var transFormedPlan: LogicalPlan = originalPlan
+    table.collectFirst {
+      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+        if (StoreUtils.isColumnBatchSortedAscending(mutable.getSortingOrder) ||
+            StoreUtils.isColumnBatchSortedDescending(mutable.getSortingOrder)) {
+          val partitionColumns = mutable.partitionColumns
+          if (partitionColumns.isEmpty) {
+            throw new AnalysisException(
+              s"Insert in sorted column table requires partitioning column(s)" +
+                  s" but got empty string")
+          }
+          val newTableOption = table match {
+            case LogicalRelation(cr: ColumnFormatRelation, b, a) =>
+              Some(LogicalRelation(new ColumnFormatRelation(cr.table, cr.provider,
+                cr.mode, originalPlan.table.schema, cr.schemaExtensions,
+                cr.ddlExtensionForShadowTable, cr.origOptions, cr.externalStore,
+                cr.partitioningColumns, cr.sqlContext, cr.columnSortedOrder,
+                allowInsertWhileScan = true), b, a))
+            case _ => None
+          }
+          if (newTableOption.isDefined) {
+            val newTable = newTableOption.get
+            val subQuery = originalPlan.child
+            val condition = prepareCondition(sparkSession, table, subQuery, partitionColumns,
+              changeCondition = true)
+            val joinSubQuery: LogicalPlan = Join(table, subQuery, FullOuter, condition)
 
+            // Only enable in case of proven benefit using performance testing
+            // val joinDS = new Dataset(sparkSession, joinSubQuery, RowEncoder(joinSubQuery.schema))
+            // joinDS.cache()
+            // val analyzedJoin = joinDS.queryExecution.analyzed.asInstanceOf[Join]
+            // Below use analyzedJoin in place of joinSubQuery
+
+            val insertSubQuery: LogicalPlan = DeltaInsertNode(joinSubQuery, isDirectInsert = true)
+            val insertPlan = new Insert(newTable, Map.empty[String,
+                Option[String]], Project(subQuery.output, insertSubQuery),
+              OverwriteOptions(enabled = false), ifNotExists = false)
+
+            // TODO VB: Any cheaper way to find table is empty or not?
+            // TODO VB: What if somebody else would insert in parallel?
+            val tabEmpty = new Dataset(sparkSession, table, RowEncoder(table.schema)).count() == 0
+            transFormedPlan = if (!tabEmpty) {
+              val updateSubQuery: LogicalPlan = DeltaInsertNode(joinSubQuery,
+                isDirectInsert = false)
+              val updatePlan = Update(table, updateSubQuery, Seq.empty, table.output,
+                subQuery.output, isDeltaInsert = true)
+              val columnTableInsertPlan = ColumnTableInsert(table, insertPlan, updatePlan)
+              val columnTableInsertDS = new Dataset(sparkSession, columnTableInsertPlan,
+                RowEncoder(columnTableInsertPlan.schema))
+              columnTableInsertDS.queryExecution.analyzed.asInstanceOf[ColumnTableInsert]
+            } else {
+              val modifiedInsertDS = new Dataset(sparkSession, insertPlan,
+                RowEncoder(insertPlan.schema))
+              modifiedInsertDS.queryExecution.analyzed.asInstanceOf[Insert]
+            }
+          }
+        }
+      case _ => // Do nothing, original insert plan is enough
+    }
+    transFormedPlan
+  }
 
   def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
@@ -118,7 +183,8 @@ object ColumnTableBulkOps {
   private def prepareCondition(sparkSession: SparkSession,
       table: LogicalPlan,
       child: LogicalPlan,
-      columnNames: Seq[String]): Option[Expression] = {
+      columnNames: Seq[String],
+      changeCondition: Boolean = false): Option[Expression] = {
     val analyzer = sparkSession.sessionState.analyzer
     val leftKeys = columnNames.map { keyName =>
       table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
@@ -139,7 +205,12 @@ object ColumnTableBulkOps {
       }
     }
     val joinPairs = leftKeys.zip(rightKeys)
-    val newCondition = joinPairs.map(EqualTo.tupled).reduceOption(And)
+    val newCondition = if (changeCondition) {
+      val newCondition1 = joinPairs.map(EqualTo.tupled)
+      val newCondition2 = joinPairs.map(a =>
+        org.apache.spark.sql.catalyst.expressions.Not(EqualTo(a._1, a._2)))
+      (newCondition1 ++ newCondition2).reduceOption(And)
+    } else joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
   }
 
@@ -185,7 +256,7 @@ object ColumnTableBulkOps {
   }
 }
 
-case class PutIntoColumnTable(table: LogicalPlan,
+abstract class BasePutIntoColumnTable(table: LogicalPlan,
     insert: Insert, update: Update) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
@@ -201,4 +272,15 @@ case class PutIntoColumnTable(table: LogicalPlan,
   override def left: LogicalPlan = update
 
   override def right: LogicalPlan = insert
+}
+
+case class PutIntoColumnTable(table: LogicalPlan, insert: Insert, update: Update) extends
+    BasePutIntoColumnTable(table, insert, update)
+
+case class ColumnTableInsert(table: LogicalPlan, insert: Insert, update: Update) extends
+    BasePutIntoColumnTable(table, insert, update)
+
+case class DeltaInsertNode(child: LogicalPlan, isDirectInsert: Boolean) extends UnaryNode with
+    PredicateHelper {
+  override def output: Seq[Attribute] = child.output
 }

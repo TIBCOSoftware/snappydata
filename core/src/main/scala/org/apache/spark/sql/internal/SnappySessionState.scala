@@ -576,7 +576,7 @@ class SnappySessionState(snappySession: SnappySession)
       case c: DMLExternalTable if !c.query.resolved =>
         c.copy(query = analyzeQuery(c.query))
 
-      case u@Update(table, child, keyColumns, updateCols, updateExprs)
+      case u@Update(table, child, keyColumns, updateCols, updateExprs, isDeltaInsert)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
         val (keyAttrs, newChild, relation) = getKeyAttributes(table, child, u)
@@ -595,7 +595,7 @@ class SnappySessionState(snappySession: SnappySession)
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
             val colName = Utils.toUpperCase(c.name)
-            if (nonUpdatableColumns.contains(colName)) {
+            if (!isDeltaInsert && nonUpdatableColumns.contains(colName)) {
               throw new AnalysisException("Cannot update partitioning/key column " +
                   s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
             }
@@ -635,6 +635,12 @@ class SnappySessionState(snappySession: SnappySession)
         ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
       case p@PutIntoTable(_, child) if child.resolved =>
         ColumnTableBulkOps.transformPutPlan(sparkSession, p)
+      case i@InsertIntoTable(table: LogicalPlan, _, child, _, _) if child.resolved
+        && (child find {
+          case d: DeltaInsertNode => true
+          case _ => false
+        }).isEmpty =>
+        ColumnTableBulkOps.transformInsertPlan(sparkSession, i)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -1091,7 +1097,8 @@ class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
   }
 
   private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
+    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies,
+      DeltaInsertOnSortMergeJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,

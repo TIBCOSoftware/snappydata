@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.types._
 
 /**
@@ -125,6 +126,30 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
     if (nextUpdatedPosition > ordinal) true
     else if (nextUpdatedPosition == ordinal) false
     else skipUntil(ordinal)
+  }
+
+  private def skipUntilByte(ordinal: Int): Byte = {
+    while (true) {
+      // update the cursor and keep on till ordinal is not reached
+      nextUpdatedPosition = moveToNextUpdatedPosition()
+      if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) {
+        return ColumnTableScan.NOT_IN_DELTA
+      }
+      if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) {
+        return isInsertOrUpdate(ordinal)
+      }
+    }
+    ColumnTableScan.NOT_IN_DELTA // never reached
+  }
+
+  private def isInsertOrUpdate(ordinal: Int): Byte = if (nextUpdatedPosition < 0) {
+    ColumnTableScan.INSERT_IN_DELTA
+  } else ColumnTableScan.UPDATE_IN_DELTA
+
+  final def unchangedByte(ordinal: Int): Byte = {
+    if (ColumnTableScan.getPositive(nextUpdatedPosition) > ordinal) ColumnTableScan.NOT_IN_DELTA
+    else if (ColumnTableScan.getPositive(nextUpdatedPosition) == ordinal) isInsertOrUpdate(ordinal)
+    else skipUntilByte(ordinal)
   }
 
   def readNotNull: Boolean

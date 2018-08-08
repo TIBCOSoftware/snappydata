@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PutIntoColumnTable}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PutIntoColumnTable, ColumnTableInsert}
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 import org.apache.spark.sql.{Strategy, _}
 
@@ -131,10 +131,13 @@ object StoreStrategy extends Strategy {
     case PutIntoColumnTable(LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
       ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
 
+    case ColumnTableInsert(LogicalRelation(p: ColumnTableInsertRelation, _, _), left, right) =>
+      ExecutePlan(p.getColumnTableInsertPlan(planLater(left), planLater(right))) :: Nil
+
     case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
-    keyColumns, updateColumns, updateExpressions) =>
+    keyColumns, updateColumns, updateExpressions, isDeltaInsert) =>
       ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
-        updateExpressions, keyColumns)) :: Nil
+        updateExpressions, keyColumns, isDeltaInsert = isDeltaInsert)) :: Nil
 
     case Delete(l@LogicalRelation(d: MutableRelation, _, _), child, keyColumns) =>
       ExecutePlan(d.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
@@ -208,7 +211,8 @@ final class Insert(
 
 case class Update(table: LogicalPlan, child: LogicalPlan,
     keyColumns: Seq[Attribute], updateColumns: Seq[Attribute],
-    updateExpressions: Seq[Expression]) extends LogicalPlan with TableMutationPlan {
+    updateExpressions: Seq[Expression], isDeltaInsert: Boolean = false) extends LogicalPlan
+    with TableMutationPlan {
 
   assert(updateColumns.length == updateExpressions.length,
     s"Internal error: updateColumns=${updateColumns.length} " +

@@ -24,13 +24,14 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Exp
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnStatsSchema}
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatRelation}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.unsafe.Platform
 
 /**
  * Generated code plan for updates into a column table.
@@ -41,11 +42,18 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
     appendableRelation: JDBCAppendableRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
+    connProps: ConnectionProperties, onExecutor: Boolean, caseOfDeltaInsert: Boolean)
+    extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
   override def relation: Option[DestroyRelation] = Some(appendableRelation)
+  private val isColumnBatchSorted: Boolean = relation.isDefined && (relation.get match {
+    case cfr: ColumnFormatRelation =>
+      StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder) ||
+          StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder)
+    case _ => false
+  })
 
   val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
     appendableRelation.getCompressionCodec)
@@ -105,6 +113,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       s"expressions=$updateExpressions compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
+  @transient private var deltaInsertOrdinal: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
@@ -142,6 +151,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val cursors = ctx.freshName("cursors")
     val index = ctx.freshName("index")
     batchOrdinal = ctx.freshName("batchOrdinal")
+    deltaInsertOrdinal = ctx.freshName("deltaInsertOrdinal")
     val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
     val lastBucketId = ctx.freshName("lastBucketId")
     val lastNumRows = ctx.freshName("lastNumRows")
@@ -169,6 +179,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |$initializeEncoders();
       """.stripMargin)
     ctx.addMutableState("int", batchOrdinal, "")
+    ctx.addMutableState("int", deltaInsertOrdinal, "")
     ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
     ctx.addMutableState("int", lastBucketId, "")
     ctx.addMutableState("int", lastNumRows, "")
@@ -233,7 +244,15 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
            |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
            |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
-           |  $encoderTerm.setUpdatePosition($ordinalIdVar);
+           |  final int updatedOrdinalIdVar;
+           |  if ($caseOfDeltaInsert) {
+           |    // +ordinal is to adjust all inserts in delta so far
+           |    // +1 since ordinalIdVar is of the last position
+           |    updatedOrdinalIdVar = ~($ordinalIdVar + $ordinal + 1);
+           |  } else {
+           |    updatedOrdinalIdVar = $ordinalIdVar;
+           |  }
+           |  $encoderTerm.setUpdatePosition(updatedOrdinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
                 encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
@@ -278,7 +297,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // GenerateUnsafeProjection will automatically split stats expressions into separate
     // methods if required so no need to add separate functions explicitly.
     // Count is hardcoded as zero which will change for "insert" index deltas.
-    val statsEv = ColumnWriter.genStatsRow(ctx, "0", stats, statsSchema)
+    val statsEv = ColumnWriter.genStatsRow(ctx, deltaInsertOrdinal, stats, statsSchema)
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
@@ -302,7 +321,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |        $batchOrdinal, buffers, ${statsEv.value}.getBytes(), $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
-         |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));
+         |        $lastColumnBatchId, -1, ${compressionCodec.id}, $isColumnBatchSorted,
+         |        new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();
@@ -310,6 +330,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    $lastBucketId = bucketId;
          |    $lastNumRows = numRows;
          |    $batchOrdinal = 0;
+         |    $deltaInsertOrdinal = 0;
          |  }
          |}
       """.stripMargin)
@@ -324,6 +345,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
        |  // write to the encoders
        |  $callEncoders
        |  $batchOrdinal++;
+       |  if ($caseOfDeltaInsert) {
+       |    $deltaInsertOrdinal++;
+       |  }
        |} else {
        |  $rowConsume
        |}

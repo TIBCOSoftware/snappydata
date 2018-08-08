@@ -23,7 +23,7 @@ import org.apache.spark.sql.execution.{BinaryExecNode, SparkPlan}
 import org.apache.spark.sql.types.LongType
 
 
-case class ColumnPutIntoExec(insertPlan: SparkPlan,
+abstract class BaseColumnPutIntoExec(insertPlan: SparkPlan,
     updatePlan: SparkPlan) extends BinaryExecNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
@@ -49,4 +49,11 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
     resultRow.setLong(0, i + u)
     Array(resultRow)
   }
+}
+
+case class ColumnPutIntoExec(insertPlan: SparkPlan, updatePlan: SparkPlan) extends
+    BaseColumnPutIntoExec(insertPlan, updatePlan)
+
+case class ColumnTableInsertExec(insertPlan: SparkPlan, updatePlan: SparkPlan) extends
+    BaseColumnPutIntoExec(insertPlan, updatePlan) {
 }

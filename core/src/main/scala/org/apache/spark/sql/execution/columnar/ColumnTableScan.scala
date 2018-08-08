@@ -46,10 +46,10 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta, ColumnFormatRelation}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal, UnsafeRowDecoder, UnsafeRowHolder}
 import org.apache.spark.sql.sources.BaseRelation
@@ -84,8 +84,25 @@ private[sql] final case class ColumnTableScan(
   override val nodeName: String = "ColumnTableScan"
 
   @transient private val MAX_SCHEMA_LENGTH = 40
+  val (isColumnBatchSorted, ascendingOrder): (Boolean, Boolean) = baseRelation match {
+    case cfr: ColumnFormatRelation =>
+      val isAscending = StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder)
+      (isAscending || StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder), isAscending)
+    case _ => (false, false)
+  }
 
-  override lazy val outputOrdering: Seq[SortOrder] = {
+  override lazy val outputOrdering: Seq[SortOrder] = if (isColumnBatchSorted) {
+    val buffer = new ArrayBuffer[SortOrder](partitionColumns.size)
+    if (ascendingOrder) {
+      partitionColumns.map(buffer += SortOrder(_, Ascending))
+    } else {
+      partitionColumns.map(buffer += SortOrder(_, Descending))
+    }
+    // TODO VB: To meet requirement of ColumnFormatIterator to be used in sorted mode only in case
+    // of SMJ, Order By or delta insert, need a flag in this calss that can be set true from here.
+    // (This will only be called if sorted output is required)
+    buffer
+  } else {
     val buffer = new ArrayBuffer[SortOrder](2)
     // sorted on [batchId, ordinal (position within batch)] for update/delete
     output.foreach {
@@ -261,9 +278,12 @@ private[sql] final case class ColumnTableScan(
     val numFullRows = s"${batch}NumFullRows"
     val numDeltaRows = s"${batch}NumDeltaRows"
     val batchIndex = s"${batch}Index"
+    val batchDictionaryIndex = s"${batch}DictionaryIndex"
     val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
+    val lastRowFromDictionary = ctx.freshName("lastRowFromDictionary")
+    val isDeletedEntry = ctx.freshName("isDeletedEntry")
     val deletedDecoder = s"${batch}Deleted"
     val deletedDecoderLocal = s"${deletedDecoder}Local"
     var deletedDeclaration = ""
@@ -274,8 +294,11 @@ private[sql] final case class ColumnTableScan(
     ctx.addMutableState("java.nio.ByteBuffer", buffers, "")
     ctx.addMutableState("int", numBatchRows, "")
     ctx.addMutableState("int", batchIndex, "")
+    ctx.addMutableState("int", batchDictionaryIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
     ctx.addMutableState("int", deletedCount, "")
+    ctx.addMutableState("boolean", lastRowFromDictionary, s"")
+    ctx.addMutableState("boolean", isDeletedEntry, s"")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -416,10 +439,12 @@ private[sql] final case class ColumnTableScan(
 
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDictionary,
+          batchDictionaryIndex, isDeletedEntry)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName, lastRowFromDictionary,
+          batchDictionaryIndex, isDeletedEntry)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -454,8 +479,13 @@ private[sql] final case class ColumnTableScan(
         s"$deletedDecoder = $colInput.getDeletedColumnDecoder();$incrementDeletedBatchCount\n")
       deletedDeclaration =
           s"final $deletedDecoderClass $deletedDecoderLocal = $deletedDecoder;\n"
-      deletedCheck = s"if ($deletedDecoderLocal != null && " +
-          s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
+      if (isColumnBatchSorted) {
+        deletedCheck = s"$isDeletedEntry = ($deletedDecoderLocal != null && " +
+            s"$deletedDecoderLocal.deleted($batchOrdinal));"
+      } else {
+        deletedCheck = s"if ($deletedDecoderLocal != null && " +
+            s"$deletedDecoderLocal.deleted($batchOrdinal)) continue;"
+      }
     }
 
     if (isWideSchema) {
@@ -502,6 +532,9 @@ private[sql] final case class ColumnTableScan(
         int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
           $countIndexInSchema) : 0;
         $numBatchRows = $numFullRows + $numDeltaRows;
+        // TODO VB: Remove this. For debugging
+        // System.out.println("VB: ColumnTableScan numBatchRows=" + $numBatchRows +
+        //   " ,numFullRows=" + $numFullRows + " ,numDeltaRows=" + $numDeltaRows);
         // TODO: don't have the update count here (only insert count)
         $numDeltaRows = $numBatchRows;
         $incrementBatchCount
@@ -577,6 +610,9 @@ private[sql] final case class ColumnTableScan(
          |    $columnBufferInit
          |  }
          |  $batchIndex = 0;
+         |  $batchDictionaryIndex = 0;
+         |  $lastRowFromDictionary = false;
+         |  $isDeletedEntry = false;
          |  return true;
          |}
       """.stripMargin)
@@ -624,6 +660,13 @@ private[sql] final case class ColumnTableScan(
        |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
+       |      if ($isColumnBatchSorted) {
+       |        if ($lastRowFromDictionary) {
+       |          $batchDictionaryIndex++;
+       |          $lastRowFromDictionary = false;
+       |        }
+       |        $isDeletedEntry = false;
+       |      }
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
@@ -658,11 +701,17 @@ private[sql] final case class ColumnTableScan(
     }
   }
 
+  // scalastyle:off
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
       decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
-      numNullsVar: String, attr: Attribute, weightVar: String): ExprCode = {
-    val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
+      numNullsVar: String, attr: Attribute, weightVar: String, lastRowFromDictionary: String,
+      batchDictionaryIndex: String, isDeletedEntry: String): ExprCode = {
+    // scalastyle:on
+    val nonNullPosition = if (isColumnBatchSorted) {
+      if (attr.nullable) s"$batchDictionaryIndex - $numNullsVar" else s"$batchDictionaryIndex"
+    } else if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
+    val unchangedByte = ctx.freshName("unchangedByte")
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
     var colAssign = ""
@@ -730,12 +779,41 @@ private[sql] final case class ColumnTableScan(
       updatedAssign = s"read$typeName()"
     }
     updatedAssign = s"$col = $updateDecoder.getCurrentDeltaBuffer().$updatedAssign;"
-
-    val unchangedCode = s"$updateDecoder == null || $updateDecoder.unchanged($batchOrdinal)"
+    val unchangedCode = if (isColumnBatchSorted) {
+      s"""$unchangedByte =  $updateDecoder == null ? ${ColumnTableScan.NOT_IN_DELTA} :
+         |  $updateDecoder.unchangedByte($batchOrdinal);""".stripMargin
+    } else s"$updateDecoder == null || $updateDecoder.unchanged($batchOrdinal)"
     if (attr.nullable) {
       val isNullVar = ctx.freshName("isNull")
       val defaultValue = ctx.defaultValue(jt)
-      val code =
+      val code = if (isColumnBatchSorted) {
+        s"""
+           |final $jt $col;
+           |final byte $unchangedByte;
+           |boolean $isNullVar = false;
+           |$unchangedCode
+           |if ($unchangedByte == ${ColumnTableScan.NOT_IN_DELTA}) {
+           |  $lastRowFromDictionary = true;
+           |}
+           |// If entry is deleted, return from here
+           |if ($isDeletedEntry) {
+           |  continue;
+           |}
+           |if ($unchangedByte == ${ColumnTableScan.NOT_IN_DELTA}) {
+           |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
+           |    $colAssign
+           |  } else {
+           |    $col = $defaultValue;
+           |    $isNullVar = true;
+           |  }
+           |} else if ($updateDecoder.readNotNull()) {
+           |  $updatedAssign
+           |} else {
+           |  $col = $defaultValue;
+           |  $isNullVar = true;
+           |}
+        """.stripMargin
+      } else {
         s"""
            |final $jt $col;
            |boolean $isNullVar = false;
@@ -753,14 +831,31 @@ private[sql] final case class ColumnTableScan(
            |  $isNullVar = true;
            |}
         """.stripMargin
+      }
       ExprCode(code, isNullVar, col)
     } else {
-      var code =
+      var code = if (isColumnBatchSorted) {
+        s"""
+           |final $jt $col;
+           |final byte $unchangedByte;
+           |$unchangedCode
+           |if ($unchangedByte == ${ColumnTableScan.NOT_IN_DELTA}) {
+           |  $lastRowFromDictionary = true;
+           |}
+           |// If entry is deleted, return from here
+           |if ($isDeletedEntry) {
+           |  continue;
+           |}
+           |if ($unchangedByte == ${ColumnTableScan.NOT_IN_DELTA}) $colAssign
+           |else $updatedAssign
+        """.stripMargin
+      } else {
         s"""
            |final $jt $col;
            |if ($unchangedCode) $colAssign
            |else $updatedAssign
         """.stripMargin
+      }
       if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {
         code += s"if ($col == 1) $col = $weightVar;\n"
       }
@@ -793,6 +888,11 @@ private[sql] final case class ColumnTableScan(
 }
 
 object ColumnTableScan extends Logging {
+  // Handle inverted bytes that denote incremental insert
+  def getPositive(p: Int): Int = if (p < 0) ~p else p
+  val NOT_IN_DELTA: Byte = 1
+  val INSERT_IN_DELTA: Byte = 0
+  val UPDATE_IN_DELTA: Byte = -1
 
   def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
       schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,

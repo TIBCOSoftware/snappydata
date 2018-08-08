@@ -23,12 +23,14 @@ import io.snappydata.{Constant, Property}
 
 import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal, SortOrder}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
 import org.apache.spark.util.TaskCompletionListener
@@ -88,6 +90,26 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   override protected def opType: String = "Inserted"
 
   override protected def isInsert: Boolean = true
+  private val isColumnBatchSorted: Boolean = relation.isDefined && (relation.get match {
+    case cfr: ColumnFormatRelation =>
+      StoreUtils.isColumnBatchSortedAscending(cfr.columnSortedOrder) ||
+          StoreUtils.isColumnBatchSortedDescending(cfr.columnSortedOrder)
+    case _ => false
+  })
+
+  // Require per-partition sort on partitioning column
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] = if (isColumnBatchSorted
+      && partitionExpressions.nonEmpty) {
+    // Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(partitionExpressions.head.toAttribute)))
+    // For partitionColumns find the matching child columns
+    val schema = tableSchema
+    val childOutput = child.output
+    // for inserts the column names can be different and need to match
+    // by index else search in child output by name
+    val childPartitioningAttributes = partitionColumns.map(partColumn =>
+      childOutput(schema.indexWhere(_.name.equalsIgnoreCase(partColumn))))
+    Seq(childPartitioningAttributes.map(cpa => StoreUtils.getColumnUpdateDeleteOrdering(cpa)))
+  } else super.requiredChildOrdering
 
   /** Frequency of rows to check for total size exceeding batch size. */
   private val (checkFrequency, checkMask) = {
@@ -571,7 +593,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
-         |      ${compressionCodec.id}, $conn);
+         |      ${compressionCodec.id}, $isColumnBatchSorted, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -708,7 +730,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
-         |      ${compressionCodec.id}, $conn);
+         |      ${compressionCodec.id}, $isColumnBatchSorted, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)

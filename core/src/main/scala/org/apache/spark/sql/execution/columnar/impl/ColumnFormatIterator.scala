@@ -18,20 +18,32 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.function.LongFunction
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.cache.DiskBlockSortManager.DiskBlockSorter
 import com.gemstone.gemfire.internal.cache.DistributedRegion.{DiskEntryPage, DiskPosition}
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.concurrent.CustomEntryConcurrentHashMap
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.google.common.primitives.Ints
 import com.koloboke.function.LongObjPredicate
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.util.ReuseFactory
 import io.snappydata.collection.LongObjectHashMap
 
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.sql.execution.columnar.encoding.BitSet
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.codegen.GenerateOrdering
+import org.apache.spark.sql.catalyst.expressions.{Ascending, AttributeReference, AttributeSeq, BindReferences, BoundReference, Descending, Expression, InterpretedOrdering, SortOrder, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
+import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.unsafe.Platform
 
 /**
@@ -66,9 +78,46 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
    */
   private val inMemoryBatches = new java.util.ArrayList[LongObjectHashMap[AnyRef]](4)
   private var inMemoryBatchIndex: Int = _
+  private var inMemorySortedBatches: Array[(InternalRow, LongObjectHashMap[AnyRef])] = _
 
-  private val canOverflow =
+  private val container = distributedRegion.getUserAttribute
+      .asInstanceOf[GemFireContainer]
+  private val columnTableSorting = container.fetchHiveMetaData(false).columnTableSortOrder
+  // TODO VB: Only enable case of sorted scan for join, insert and group by queries
+  // See comments in ColumnTableScan
+  private val isColumnBatchSorted = (StoreUtils.isColumnBatchSortedAscending(columnTableSorting) ||
+      StoreUtils.isColumnBatchSortedDescending(columnTableSorting))
+
+  private val canOverflow = !isColumnBatchSorted &&
     distributedRegion.isOverflowEnabled && distributedRegion.getDataPolicy.withPersistence()
+
+  private val (partitioningProjection, statsLen, partitioningOrdering) = if (isColumnBatchSorted) {
+    val rowBufferTable = GemFireContainer.getRowBufferTableName(container.getQualifiedTableName)
+    val rowBufferRegion = Misc.getRegionForTable(rowBufferTable, true).asInstanceOf[LocalRegion]
+    val paritioningPositions = GemFireXDUtils.getResolver(rowBufferRegion)
+        .asInstanceOf[GfxdPartitionByExpressionResolver].getColumnPositions
+    val tableSchema = container.fetchHiveMetaData(false).schema.asInstanceOf[StructType]
+    val statsSchema = tableSchema.map(f =>
+      ColumnStatsSchema(f.name, f.dataType, nullCountNullable = true))
+    val fullStatsSchema = ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatMap(_.schema)
+    val partUnboundExprs = paritioningPositions.map(pos => pos -1).
+        map(pos => statsSchema(pos).lowerBound)
+    val partitioningExprs = partUnboundExprs.map(ae => {
+      BindReferences.bindReference(ae.asInstanceOf[Expression], fullStatsSchema).
+          asInstanceOf[BoundReference]
+    })
+    val partExprsSchema: AttributeSeq = partUnboundExprs.toSeq
+    val ordering = if (StoreUtils.isColumnBatchSortedAscending(columnTableSorting)) {
+      val sortOrdering = partUnboundExprs.map(ae => SortOrder(BindReferences.bindReference(
+        ae, partExprsSchema), Ascending))
+      GenerateOrdering.generate(sortOrdering)
+    } else {
+      val sortOrdering = partUnboundExprs.map(ae => SortOrder(BindReferences.bindReference(
+        ae, partExprsSchema), Descending))
+      GenerateOrdering.generate(sortOrdering)
+    }
+    (UnsafeProjection.create(partitioningExprs), fullStatsSchema.length, ordering)
+  } else (null, 0, null)
 
   private val projectionBitSet = {
     if (projection.length > 0) {
@@ -123,7 +172,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     checkRegion(region)
     currentRegion = region
     entryIterator = region.entries.regionEntries().iterator().asInstanceOf[MapValueIterator]
-    advanceToNextBatchSet()
+    if (isColumnBatchSorted) {
+      inMemorySortedBatches = initSortedBatchSets()
+    } else advanceToNextBatchSet()
   }
 
   override def initDiskIterator(): Boolean = {
@@ -144,13 +195,22 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   }
 
   override def hasNext: Boolean = {
-    if (entryIterator ne null) {
+    if (isColumnBatchSorted) {
+      inMemoryBatchIndex + 1 < inMemorySortedBatches.length
+    } else if (entryIterator ne null) {
       if (inMemoryBatchIndex + 1 < inMemoryBatches.size()) true else advanceToNextBatchSet()
     } else nextDiskBatch ne null
   }
 
   override def next(): RegionEntry = {
-    if (entryIterator ne null) {
+    if (isColumnBatchSorted) {
+      inMemoryBatchIndex += 1
+      if (inMemoryBatchIndex >= inMemorySortedBatches.length) {
+        if (!advanceToNextBatchSet()) throw new NoSuchElementException
+      }
+      val map = inMemorySortedBatches(inMemoryBatchIndex)
+      map._2.getGlobalState.asInstanceOf[RegionEntry]
+    } else if (entryIterator ne null) {
       inMemoryBatchIndex += 1
       if (inMemoryBatchIndex >= inMemoryBatches.size()) {
         if (!advanceToNextBatchSet()) throw new NoSuchElementException
@@ -170,7 +230,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
 
   override def getColumnValue(columnIndex: Int): AnyRef = {
     val column = columnIndex & 0xffffffffL
-    if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)
+    if (isColumnBatchSorted) {
+      inMemorySortedBatches(inMemoryBatchIndex)._2.get(column)
+    } else if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)
     else if (columnIndex == DELTA_STATROW_COL_INDEX) currentDiskBatch.getDeltaStatsValue
     else currentDiskBatch.entryMap.get(column)
   }
@@ -303,6 +365,77 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       }
     }
     false
+  }
+
+  def initSortedBatchSets(): Array[(InternalRow, LongObjectHashMap[AnyRef])] = {
+    val inMemorySortedBatchBuffer = new ArrayBuffer[(InternalRow, LongObjectHashMap[AnyRef])]()
+    inMemoryBatchIndex = -1
+    while (entryIterator.hasNext) {
+      /**
+       * Maintains the current set of batches that are being iterated.
+       * When all columns provided in the projectionBitSet have been marked as
+       * [[inMemorySortedBatchBuffer]] then the batch is cleared from the map.
+       */
+      val activeBatches = LongObjectHashMap.withExpectedSize[LongObjectHashMap[AnyRef]](4)
+      val partitionRows = LongObjectHashMap.withExpectedSize[InternalRow](4)
+
+      // iterate till next map index since all columns of the same batch
+      // are guaranteed to be in the same index
+      val mapIndex = entryIterator.getMapTableIndex
+      while (entryIterator.hasNext && mapIndex == entryIterator.getMapTableIndex) {
+        val aEntry = entryIterator.next()
+        var entry: RegionEntry = aEntry
+        val key = aEntry.getRawKey.asInstanceOf[ColumnFormatKey]
+        // check if it is one of required projection columns, their deltas or meta-columns
+        val columnIndex = key.columnIndex
+        if ((columnIndex < 0 && columnIndex >= DELETE_MASK_COL_INDEX) || {
+          val tableColumn = ColumnDelta.tableColumnIndex(columnIndex)
+          tableColumn > 0 &&
+              BitSet.isSet(projectionBitSet, Platform.LONG_ARRAY_OFFSET,
+                tableColumn, projectionBitSet.length)
+        }) {
+          // note that the map used below uses value==0 to indicate free, so the
+          // column indexes have to be 1-based (and negative for deltas/meta-data)
+          // and so the same values as that stored in ColumnFormatKey are used
+          val uuidMap = activeBatches.computeIfAbsent(key.uuid, newMapCreator)
+          // set the stats entry in the state
+          if (columnIndex == STATROW_COL_INDEX) {
+            if (uuidMap.getGlobalState eq null) uuidMap.setGlobalState(entry)
+            val statsValue = entry.getValue(currentRegion).asInstanceOf[ColumnFormatValue]
+            val statsVal = statsValue.getValueRetain(FetchRequest.DECOMPRESS)
+            try {
+              val statsRow = Utils.toUnsafeRow(statsVal.getBuffer, statsLen)
+              partitionRows.justPut(key.uuid, partitioningProjection(statsRow).copy())
+            } finally {
+              statsValue.release()
+            }
+          } else {
+            // fetch the TX snapshot entry; the stats row entry is skipped here
+            // since that will be done by higher-level PR iterator that returns
+            // the stats row entry
+            if (txState ne null) {
+              entry = txState.getLocalEntry(distributedRegion, currentRegion,
+                -1 /* not used */ , aEntry, false).asInstanceOf[RegionEntry]
+            }
+            setValue(entry, columnIndex, uuidMap)
+          }
+        }
+      }
+
+      // if there are entries that are overflowed, then pass them to the disk sorter
+      // while entries that are fully in memory are stored and returned
+      if (activeBatches.size() > 0) {
+        activeBatches.forEachWhile(new LongObjPredicate[LongObjectHashMap[AnyRef]] {
+          override def test(uuid: Long, map: LongObjectHashMap[AnyRef]): Boolean = {
+            if (map.getGlobalState ne null) {
+              inMemorySortedBatchBuffer += partitionRows.get(uuid) -> map
+            }
+            true
+          }
+        })
+      }
+    }
+    inMemorySortedBatchBuffer.toArray.sortBy(_._1)(partitioningOrdering)
   }
 }
 

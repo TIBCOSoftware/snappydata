@@ -26,6 +26,7 @@ import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -316,7 +317,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   }
 
   def merge(newValue: ByteBuffer, existingValue: ByteBuffer,
-      existingIsDelta: Boolean, field: StructField): ByteBuffer = {
+      existingIsDelta: Boolean, field: StructField, isColumnBatchSorted: Boolean): ByteBuffer = {
     // TODO: PERF: delta encoder should create a "merged" dictionary i.e. having
     // only elements beyond the main dictionary so that the overall decoder can be
     // dictionary enabled. As of now delta decoder does not have an overall dictionary
@@ -398,14 +399,29 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     var relativePosition2 = 0
     var encoderPosition = -1
 
+    var insertCount = 0
+    def insertAdjustedPosition(pos: Int) = if (pos < 0) pos - insertCount else pos + insertCount
+
     var doProcess = numPositions1 > 0 && numPositions2 > 0
     while (doProcess) {
       encoderPosition += 1
-      val areEqual = position1 == position2
-      val isGreater = position1 > position2
+      val adjustedPosition2 = insertAdjustedPosition(position2)
+      // areEqual would be false if position1 is negative
+      val areEqual = if (isColumnBatchSorted) {
+        position1 == ColumnTableScan.getPositive(adjustedPosition2)
+      } else position1 == position2
+      val isGreater = if (isColumnBatchSorted) {
+        ColumnTableScan.getPositive(position1) > ColumnTableScan.getPositive(adjustedPosition2)
+      } else position1 > position2
       if (isGreater || areEqual) {
         // set next update position to be from second
-        if (existingIsDelta && !areEqual) positionsArray(encoderPosition) = position2
+        if (existingIsDelta && !areEqual) {
+          if (isColumnBatchSorted) {
+            positionsArray(encoderPosition) = adjustedPosition2
+          } else {
+            positionsArray(encoderPosition) = position2
+          }
+        }
         // consume data at position2 and move it if position2 is smaller
         // else if they are equal then newValue gets precedence
         cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
@@ -426,7 +442,12 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       // write for the second was skipped in the first block above
       if (!isGreater) {
         // set next update position to be from first
-        if (existingIsDelta) positionsArray(encoderPosition) = position1
+        if (existingIsDelta) {
+          positionsArray(encoderPosition) = position1
+          if (isColumnBatchSorted) {
+            if (position1 < 0) insertCount += 1
+          }
+        }
         // consume data at position1 and move it
         cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
           columnBytes1, writer, cursor, encoderPosition)
@@ -446,7 +467,13 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // set next update position to be from first
       if (existingIsDelta) {
-        positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
+        if (isColumnBatchSorted) {
+          val pos1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
+          positionsArray(encoderPosition) = pos1
+          if (pos1 < 0) insertCount += 1
+        } else {
+          positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
+        }
         positionCursor1 += 4
       }
       cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
@@ -458,7 +485,12 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // set next update position to be from second
       if (existingIsDelta) {
-        positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
+        if (isColumnBatchSorted) {
+          positionsArray(encoderPosition) =
+              insertAdjustedPosition(ColumnEncoding.readInt(columnBytes2, positionCursor2))
+        } else {
+          positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
+        }
         positionCursor2 += 4
       }
       cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,

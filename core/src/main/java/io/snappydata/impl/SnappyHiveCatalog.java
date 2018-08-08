@@ -424,7 +424,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
                       Utils.toUpperCase(table.getDbName()),
                       tableType, null, -1, -1,
                       null, null, null, null,
-                      tblDataSourcePath, driverClass);
+                      tblDataSourcePath, "", driverClass);
                   metaData.provider = table.getParameters().get(
                       SnappyStoreHiveCatalog.HIVE_PROVIDER());
                   metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
@@ -496,11 +496,29 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;
-          int columnBatchSize = ExternalStoreUtils.sizeAsBytes(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE()), ExternalStoreUtils.COLUMN_BATCH_SIZE());
-          int columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.parseInt(
-              parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS())),
-              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
+          final int columnBatchSize;
+          String columnBatchSizeStr = parameters.get(ExternalStoreUtils.COLUMN_BATCH_SIZE());
+          if (columnBatchSizeStr != null) {
+            columnBatchSize = ExternalStoreUtils.sizeAsBytes(columnBatchSizeStr,
+                ExternalStoreUtils.COLUMN_BATCH_SIZE());
+          } else {
+            columnBatchSize = -1;
+          }
+          final int columnMaxDeltaRows;
+          String columnMaxDeltaRowsStr = parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
+          if (columnMaxDeltaRowsStr != null) {
+            columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.
+                    parseInt(columnMaxDeltaRowsStr), ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
+          } else {
+            columnMaxDeltaRows = -1;
+          }
+          final String columnBatchSorting;
+          String columnBatchSortingStr = parameters.get(StoreUtils.COLUMN_BATCH_SORTED());
+          if (columnBatchSortingStr != null) {
+            columnBatchSorting = columnBatchSortingStr;
+          } else {
+            columnBatchSorting = "";
+          }
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
@@ -521,6 +539,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               dmls,
               dependentRelations,
               tblDataSourcePath,
+              columnBatchSorting,
               driverClass);
 
         case CLOSE_HMC:
