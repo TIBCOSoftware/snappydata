@@ -59,6 +59,7 @@ abstract case class JDBCAppendableRelation(
     with DestroyRelation
     with IndexableRelation
     with Logging
+    with RowLevelSecurityRelation
     with Serializable {
 
   self =>
@@ -72,7 +73,7 @@ abstract case class JDBCAppendableRelation(
   protected final val connProperties: ConnectionProperties =
     externalStore.connProperties
 
-  protected final val connFactory: () => Connection = JdbcUtils
+  override protected final val connFactory: () => Connection = JdbcUtils
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 

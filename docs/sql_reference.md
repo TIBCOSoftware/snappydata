@@ -18,8 +18,6 @@ The following topics are covered in this section:
 
     - **[CREATE SCHEMA](reference/sql_reference/create-schema.md)**
 
-    - **[CREATE SYNONYM](reference/sql_reference/create-synonym.md)**
-
     - **[CREATE SAMPLE TABLE](reference/sql_reference/create-sample-table.md)**
 
     - **[CREATE STREAM TABLE](reference/sql_reference/create-stream-table.md)**
@@ -43,9 +41,7 @@ The following topics are covered in this section:
      - **[DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE](reference/sql_reference/drop-table.md)**
 
      - **[DROP SCHEMA](reference/sql_reference/drop-schema.md)**
-
-     - **[DROP SYNONYMN](reference/sql_reference/drop-synonym.md)**
-
+ 
 - **[GRANT](reference/sql_reference/grant.md)**
 
 - **[INSERT](reference/sql_reference/insert.md)**

@@ -67,14 +67,18 @@ ec2-user          soft    sigpending  524288
 
 **OS Cache Size**</br> 
 When there is a lot of disk activity especially during table joins and during an eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
-The following are the typical configuration to be done on the machines that are running SnappyData processes. 
+
+Add the following to */etc/sysctl.conf* using the command `sudo vim /etc/sysctl.conf` or `sudo gedit /etc/sysctl.conf` or by using an editor of your choice:</br>
 
 ```
-sudo sysctl -w vm.dirty_background_ratio=2
-sudo sysctl -w vm.dirty_ratio=4
-sudo sysctl -w vm.dirty_expire_centisecs=2000
-sudo sysctl -w vm.dirty_writeback_centisecs=300
+vm.dirty_background_ratio=2
+vm.dirty_ratio=4
+vm.dirty_expire_centisecs=2000
+vm.dirty_writeback_centisecs=300
 ```
+Then apply to current session using the command `sudo sysctl -p`
+
+These settings lower the OS cache buffer sizes which reduces long GC pauses during disk flush but can decrease overall disk write throughput. This is especially true for slower magnetic disks where the bulk insert throughput can see a noticeable drop (such as 20%), while the duration of GC pauses should reduce significantly (such as 50% or more). If long GC pauses, for example in the range of 10s of seconds, during bulk inserts, updates, or deletes is not a problem then these settings can be skipped.
 
 **Swap File** </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
