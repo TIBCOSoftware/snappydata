@@ -17,5 +17,5 @@ echo "******************start Executing Query******************"
 --conf resultCollection=$ResultCollection \
 --conf warmUpIterations=$WarmupRuns \
 --conf actualRuns=$AverageRuns \
---conf threadNumber=1
+--conf threadNumber=1 \
 --conf traceEvents=$traceEvents
