@@ -19,5 +19,5 @@ echo "******************start Creating Table******************"
 --conf Persistence_Type=$Persistence_Type \
 --conf NumberOfLoadStages=$NumberOfLoadStages \
 --conf isParquet=$Parquet \
---conf createParquet=$createParquet
+--conf createParquet=$createParquet \
 --conf traceEvents=$traceEvents
