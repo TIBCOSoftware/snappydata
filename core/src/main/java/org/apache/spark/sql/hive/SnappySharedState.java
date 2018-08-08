@@ -73,10 +73,12 @@ public final class SnappySharedState extends SharedState {
       SnappySQLListener listener = new SnappySQLListener(sc.conf());
       if (ExternalStoreUtils.getSQLListener().compareAndSet(null, listener)) {
         sc.addSparkListener(listener);
+        /*
         scala.Option<SparkUI> ui = sc.ui();
-        if (ui.isDefined() && Utils.isLoner(sc)) {
+        if (ui.isDefined()) {
           new SQLTab(listener, ui.get());
         }
+        */
       }
       return ExternalStoreUtils.getSQLListener().get();
     } else {
