@@ -211,8 +211,8 @@ class ViewTest extends SnappyFunSuite {
       expectedResult: Seq[Row]): Unit = {
     session.sql(s"create view viewOnTable as $viewQuery from $table")
 
-    val viewMeta = Seq(Row("id", "int", null), Row("addr", "string", null),
-      Row("rank", "int", null))
+    val viewMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null),
+      Row("RANK", "int", null))
 
     assert(session.sessionCatalog.tableExists("viewOnTable") === true)
     checkAnswer(session.sql("describe viewOnTable"), viewMeta)

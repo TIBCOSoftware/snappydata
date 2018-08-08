@@ -1,6 +1,3 @@
-ENDTASK     taskClass = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_dumpStacks
-            clientNames = locator1;
-
 ENDTASK     taskClass   = sql.snappy.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
             clientNames = locator1;
 
