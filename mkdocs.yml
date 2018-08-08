@@ -15,6 +15,7 @@ pages:
 - 'Getting Started in 5 minutes or Less': 
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'Getting Started by Installing SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
+    - 'Getting Started with SnappyData on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
     - 'Getting Started with Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
@@ -24,6 +25,7 @@ pages:
     - System Requirements: 'install/system_requirements.md'
     - 'Install On-Premise': 'install/install_on_premise.md'
     - 'Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Setting up Cluster on Kubernetes': 'kubernetes.md'
     - 'Building from Source': 'install/building_from_source.md'
     - 'Upgrade Instructions (1.0.0 to 1.0.1)': 'install/upgrade.md'
 #- 'Migration Guide': 'migration/migration.md'
@@ -72,6 +74,7 @@ pages:
 - 'Configuring the Cluster':
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
+    - 'Securing SnappyData Pulse UI Connection': 'configuring_cluster/securinguiconnection.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
@@ -121,7 +124,7 @@ pages:
     - 'Sketching': 'sde/sketching.md'
 - 'Using Database Connectors': 'connectors/connector.md'
 - 'Using Database Connectors':
-#    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
+    - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Using SnappyData CloudBuilder': 'aqp_aws.md'
 - 'Using SnappyData CloudBuilder': 
@@ -166,7 +169,7 @@ pages:
             - 'CREATE FUNCTION': 'reference/sql_reference/create-function.md'
             - 'CREATE INDEX': 'reference/sql_reference/create-index.md'
             - 'CREATE SCHEMA': 'reference/sql_reference/create-schema.md'
-            - 'CREATE SYNONYM': 'reference/sql_reference/create-synonym.md'
+#           - 'CREATE SYNONYM': 'reference/sql_reference/create-synonym.md'
             - 'CREATE STREAM TABLE': 'reference/sql_reference/create-stream-table.md'
             - 'CREATE SAMPLE TABLE': 'reference/sql_reference/create-sample-table.md'
             - 'CREATE TABLE': 'reference/sql_reference/create-table.md'
@@ -180,7 +183,7 @@ pages:
             - 'DROP INDEX': 'reference/sql_reference/drop-index.md'
             - 'DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE': 'reference/sql_reference/drop-table.md'
             - 'DROP SCHEMA': 'reference/sql_reference/drop-schema.md'
-            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
+#            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
@@ -291,6 +294,7 @@ pages:
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
     - 'Preventing disk full errors': 'troubleshooting/preventing_disk_full_errors.md'
     - 'Recovering from disk full errors': 'troubleshooting/recovering_from_disk_full_errors.md'
+    - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
     - 'Collecting logs, stats and dumps using the collect-debug-artifacts script': 'troubleshooting/collect_debug_artifacts.md'
     - 'Troubleshooting error messages': 'troubleshooting/troubleshooting_error_messages.md'  
 #- Additional Information: additional_files/additional_docs.md

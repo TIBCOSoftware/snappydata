@@ -230,7 +230,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         (buildRDDs, buildRDDs.head.getNumPartitions)
       } else {
         // Equal partitions
-        ((streamRDDs ++ buildRDDs), streamRDDs.head.getNumPartitions)
+        (streamRDDs ++ buildRDDs, streamRDDs.head.getNumPartitions)
       }
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
