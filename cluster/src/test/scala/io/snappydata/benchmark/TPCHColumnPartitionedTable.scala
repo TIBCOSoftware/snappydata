@@ -150,8 +150,10 @@ object TPCHColumnPartitionedTable {
         orderDF = ColumnCacheBenchmark.applySchema(orderDF1, newSchema)
         if (createParquet) {
           val startWriteParquetTime = System.currentTimeMillis()
-          //orderDF.write.partitionBy("o_orderkey").bucketBy(buckets.toInt, "o_orderkey").format("parquet").save(s"$path/parquet_orders_$i")
-          orderDF.write.partitionBy("o_orderkey").format("parquet").save(s"$path/parquet_orders_$i")
+          //orderDF.write
+          // .partitionBy("o_orderkey").bucketBy(buckets.toInt, "o_orderkey")
+          // .format("parquet").save(s"$path/parquet_orders_$i")
+          orderDF.repartition(buckets.toInt).write.format("parquet").save(s"$path/parquet_orders_$i")
           val endWriteParquetTime = System.currentTimeMillis()
           if (trace && loadPerfPrintStream != null) {
             loadPerfPrintStream.println(s"TRACE_ORDERS_WRITE_PARQUET, " +
@@ -270,8 +272,10 @@ object TPCHColumnPartitionedTable {
         lineItemDF = ColumnCacheBenchmark.applySchema(lineItemDF1, newSchema)
         if (createParquet) {
           val startWriteParquetTime = System.currentTimeMillis()
-          //lineItemDF.write.partitionBy("l_orderkey").bucketBy(buckets.toInt, "l_orderkey").format("parquet").save(s"$path/parquet_lineitem_$i")
-          lineItemDF.write.partitionBy("l_orderkey").save(s"$path/parquet_lineitem_$i")
+          //lineItemDF.write
+          // .partitionBy("l_orderkey").bucketBy(buckets.toInt, "l_orderkey")
+          // .format("parquet").save(s"$path/parquet_lineitem_$i")
+          lineItemDF.repartition(buckets.toInt).write.format("parquet").save(s"$path/parquet_lineitem_$i")
           val endWriteParquetTime = System.currentTimeMillis()
           if (trace && loadPerfPrintStream != null) {
             loadPerfPrintStream.println(s"TRACE_LINEITEM_WRITE_PARQUET, " +
@@ -381,8 +385,10 @@ object TPCHColumnPartitionedTable {
 
         customerDF = ColumnCacheBenchmark.applySchema(customerDF1, newSchema)
         if (createParquet) {
-          //customerDF.write.partitionBy("c_custkey").bucketBy(buckets.toInt, "c_custkey").format("parquet").save(s"$path/parquet_customer_$i")
-          customerDF.write.partitionBy("c_custkey").format("parquet").save(s"$path/parquet_customer_$i")
+          //customerDF.write
+          // .partitionBy("c_custkey").bucketBy(buckets.toInt, "c_custkey")
+          // .format("parquet").save(s"$path/parquet_customer_$i")
+          customerDF.repartition(buckets.toInt).write.format("parquet").save(s"$path/parquet_customer_$i")
         }
       }
       val newSchema = TPCHTableSchema.newCustomerSchema(customerDF.schema)
@@ -451,8 +457,10 @@ object TPCHColumnPartitionedTable {
 
         partDF = ColumnCacheBenchmark.applySchema(partDF1, newSchema)
         if (createParquet) {
-          //partDF.write.partitionBy("p_partkey").bucketBy(buckets.toInt, "p_partkey").format("parquet").save(s"$path/parquet_part_$i")
-          partDF.write.partitionBy("p_partkey").save(s"$path/parquet_part_$i")
+          //partDF.write
+          // .partitionBy("p_partkey").bucketBy(buckets.toInt, "p_partkey")
+          // .format("parquet").save(s"$path/parquet_part_$i")
+          partDF.repartition(buckets.toInt).write.format("parquet").save(s"$path/parquet_part_$i")
         }
 
       }
@@ -521,8 +529,10 @@ object TPCHColumnPartitionedTable {
 
         partSuppDF = ColumnCacheBenchmark.applySchema(partSuppDF1, newSchema)
         if (createParquet) {
-          //partSuppDF.write.partitionBy("ps_partkey").bucketBy(buckets.toInt, "ps_partkey").format("parquet").save(s"$path/parquet_partsupp_$i")
-          partSuppDF.write.partitionBy("ps_partkey").format("parquet").save(s"$path/parquet_partsupp_$i")
+          //partSuppDF.write
+          // .partitionBy("ps_partkey").bucketBy(buckets.toInt, "ps_partkey")
+          // .format("parquet").save(s"$path/parquet_partsupp_$i")
+          partSuppDF.repartition(buckets.toInt).write.format("parquet").save(s"$path/parquet_partsupp_$i")
         }
       }
       val newSchema = TPCHTableSchema.newPartSuppSchema(partSuppDF.schema)
@@ -674,8 +684,10 @@ object TPCHColumnPartitionedTable {
 
         suppDF = ColumnCacheBenchmark.applySchema(suppDF1, newSchema)
         if (createParquet) {
-          //suppDF.write.partitionBy("S_SUPPKEY").bucketBy(buckets.toInt, "S_SUPPKEY").format("parquet").save(s"$path/parquet_supplier_$i")
-          suppDF.write.partitionBy("S_SUPPKEY").format("parquet").save(s"$path/parquet_supplier_$i")
+          //suppDF.write
+          // .partitionBy("S_SUPPKEY").bucketBy(buckets.toInt, "S_SUPPKEY")
+          // .format("parquet").save(s"$path/parquet_supplier_$i")
+          suppDF.repartition(buckets.toInt).write.format("parquet").save(s"$path/parquet_supplier_$i")
         }
       }
       val newSchema = TPCHTableSchema.newSupplierSchema(suppDF.schema)

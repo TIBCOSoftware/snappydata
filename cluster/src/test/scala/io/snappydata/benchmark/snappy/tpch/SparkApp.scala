@@ -66,12 +66,17 @@ object SparkApp {
 
     // create tables : load tables from (Parquet/ tbl) files into spark cache
 
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, sparkSession.sqlContext, tpchDataPath,
+    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString,
+      sparkSession.sqlContext, tpchDataPath,
       isSnappy = false, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, sparkSession.sqlContext, tpchDataPath,
+
+    TPCHReplicatedTable.createPopulateNationTable(usingOptionString,
+      sparkSession.sqlContext, tpchDataPath,
       isSnappy = false, loadPerfPrintStream)
+
     if (isSupplierColumn) {
-      TPCHColumnPartitionedTable.createAndPopulateSupplierTable(sparkSession.sqlContext, tpchDataPath, false,
+      TPCHColumnPartitionedTable.createAndPopulateSupplierTable(
+        sparkSession.sqlContext, tpchDataPath, false,
         buckets = if (rePartition) buckets_Supplier else "0",
         loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
         isParquet = isParquet)
@@ -80,41 +85,54 @@ object SparkApp {
         tpchDataPath, false, loadPerfPrintStream, numberOfLoadStages)
     }
 
-
     TPCHColumnPartitionedTable.createPopulateOrderTable(sparkSession.sqlContext,
       tpchDataPath,
       isSnappy = false,
       buckets = if (rePartition) buckets_Order_Lineitem else "0",
       loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
-      isParquet = isParquet, trace = traceEvents, cacheTables = cacheTables)
+      isParquet = isParquet,
+      trace = traceEvents,
+      cacheTables = cacheTables)
+
     TPCHColumnPartitionedTable.createPopulateLineItemTable(sparkSession.sqlContext,
       tpchDataPath,
       isSnappy = false,
       buckets = if (rePartition) buckets_Order_Lineitem else "0",
       loadPerfPrintStream = loadPerfPrintStream,
       numberOfLoadingStages = numberOfLoadStages,
-      isParquet = isParquet)
+      isParquet = isParquet,
+      trace = traceEvents,
+      cacheTables = cacheTables)
+
     TPCHColumnPartitionedTable.createPopulateCustomerTable(sparkSession.sqlContext,
       tpchDataPath,
       isSnappy = false,
       buckets = if (rePartition) buckets_Cust_Part_PartSupp else "0",
       loadPerfPrintStream = loadPerfPrintStream,
       numberOfLoadingStages = numberOfLoadStages,
-      isParquet = isParquet)
+      isParquet = isParquet,
+      trace = traceEvents,
+      cacheTables = cacheTables)
+
     TPCHColumnPartitionedTable.createPopulatePartTable(sparkSession.sqlContext,
       tpchDataPath,
       isSnappy = false,
       buckets = if (rePartition) buckets_Cust_Part_PartSupp else "0",
       loadPerfPrintStream = loadPerfPrintStream,
       numberOfLoadingStages = numberOfLoadStages,
-      isParquet = isParquet)
+      isParquet = isParquet,
+      trace = traceEvents,
+      cacheTables = cacheTables)
+
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(sparkSession.sqlContext,
       tpchDataPath,
       isSnappy = false,
       if (rePartition) buckets_Cust_Part_PartSupp else "0",
       loadPerfPrintStream = loadPerfPrintStream,
       numberOfLoadingStages = numberOfLoadStages,
-      isParquet = isParquet)
+      isParquet = isParquet,
+      trace = traceEvents,
+      cacheTables = cacheTables)
 
     // set spark SQL properties and run queries
 
