@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.internal.cache.LocalRegion
 
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
@@ -29,11 +29,11 @@ import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Dist
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
-import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
@@ -114,11 +114,36 @@ private[sql] abstract class PartitionedPhysicalScan(
     } else super.outputPartitioning
   }
 
-  override lazy val simpleString: String = "Partitioned Scan " + extraInformation +
-      " , Requested Columns = " + output.mkString("[", ",", "]") +
-      " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
-      " numBuckets= " + numBuckets +
-      " numPartitions= " + numPartitions)
+  override lazy val simpleString: String = {
+    val s = "Partitioned Scan " + extraInformation +
+        ", Requested Columns = " + output.mkString("[", ",", "]") +
+        " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
+        " numBuckets = " + numBuckets + " numPartitions = " + numPartitions)
+    /* TODO: doesn't work because this simpleString is not re-evaluated (even if made def)
+     * also will need to handle the possible case where numPartitions can change in future
+    if (numPartitions == 1 && numBuckets > 1) {
+      val partitionStr = dataRDD.partitions(0) match {
+        case z: ZippedPartitionsPartition => z.partitions(1).toString
+        case p => p.toString
+      }
+      s += " prunedPartition = " + partitionStr
+    } else {
+      s += " numPartitions = " + numPartitions
+    }
+    */
+    val rdd = dataRDD match {
+      // column scan will create zip of 2 partitions with second being the column one
+      case z: ZippedPartitionsBaseRDD[_] => z.rdds(1)
+      case r => r
+    }
+    val filters = rdd match {
+      case c: ColumnarStorePartitionedRDD => c.filters
+      case r: RowFormatScanRDD => r.filters
+      case s: SmartConnectorColumnRDD => s.filters
+      case _ => Array.empty[Expression]
+    }
+    if (filters != null && filters.length > 0) filters.mkString(s + " filters = ", ",", "") else s
+  }
 }
 
 private[sql] object PartitionedPhysicalScan {
@@ -266,7 +291,6 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       (collectRDD(sc, rdd), shuffleIds)
     }
     if (shuffleIds.nonEmpty) {
-      logInfo(s"SW:0: got shuffleIds=$shuffleIds")
       sc.cleaner match {
         case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
         case None =>

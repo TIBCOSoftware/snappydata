@@ -430,6 +430,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
                   metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
                   metaData.columns = ExternalStoreUtils.getColumnMetadata(
                       ExternalStoreUtils.getTableSchema(table));
+                  if ("VIEW".equalsIgnoreCase(tableType)) {
+                    metaData.viewText = SnappyStoreHiveCatalog
+                        .getViewTextFromHiveTable(table);
+                  }
                   externalTables.add(metaData);
                 }
               } catch (Exception e) {
