@@ -1678,20 +1678,11 @@ public class SnappyTest implements Serializable {
         while (scriptLocationList.size() != scriptNames.size())
           scriptLocationList.add(" ");
       }
-      scriptArgsList = SnappyPrms.getScriptArgs();
-      if (scriptArgsList.size() != scriptNames.size()) {
-        Log.getLogWriter().info("Adding \" \" parameter in the scriptArgs for the  " +
-            "scripts for which no script arguments are specified.");
-        while (scriptArgsList.size() != scriptNames.size())
-          scriptArgsList.add(" ");
-      }
 
       for (int i = 0; i < scriptNames.size(); i++) {
         String userScript = (String) scriptNames.elementAt(i);
         Log.getLogWriter().info("SS - userScript: " + userScript);
         String location = (String) scriptLocationList.elementAt(i);
-        //String dataLocation = snappyTest.getDataLocation(location);
-        String args = (String) scriptArgsList.elementAt(i);
         Log.getLogWriter().info("SS - scriptLocation: " + location);
         String filePath = snappyTest.getScriptLocation(location + File.separator + userScript);
         Log.getLogWriter().info("SS - filePath: " + filePath);
@@ -1699,7 +1690,9 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath() + File.separator + "scriptResult_" +
             RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
-        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", filePath, args);
+        String comma_seperated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
+        String command = filePath + " " + comma_seperated_args_list;
+        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         Log.getLogWriter().info("SS - command is: " + pb.command());
         snappyTest.executeProcess(pb, logFile);
       }
