@@ -34,6 +34,7 @@ import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.collection.ObjectObjectHashMap
@@ -61,7 +62,8 @@ import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, ExternalTableType, HiveClientUtil, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.{PreprocessTableInsertOrPut, SnappySessionState}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableInsertOrPut, SnappySessionState}
+import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -149,7 +151,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
   SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
-  snappyContextFunctions.registerAQPErrorFunctions(this)
+  snappyContextFunctions.registerSnappyFunctions(this)
 
   /**
    * A wrapped version of this session in the form of a [[SQLContext]],
@@ -1390,6 +1392,36 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+  /**
+   * Drop a SnappyData Policy created by a call to SnappySession.createPolicy
+   *
+   *
+   * @param policyIdent      Policy to be dropped
+   * @param ifExists        attempt drop only if the Policy exists
+   *
+   */
+  private[sql] def dropPolicy(policyIdent: QualifiedTableName,
+      ifExists: Boolean): Unit = {
+
+      sessionCatalog.getTableOption(policyIdent) match {
+        case Some(ct) => {
+          var currentUser = this.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+          currentUser = IdUtil.getUserAuthorizationId(
+            if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
+            else this.sessionState.catalog.formatDatabaseName(currentUser))
+
+          if (!SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
+              newQualifiedTableName(ct.properties.getOrElse(
+                PolicyProperties.targetTable, "")), this)) {
+            throw new SQLException("Only Policy Owner can drop the policy", "01548", null)
+          }
+          sessionCatalog.unregisterPolicy(policyIdent, ct)
+        }
+        case None => throw new PolicyNotFoundException(policyIdent.toString, None)
+      }
+
+  }
+
   private[sql] def alterTable(tableName: String, isAddColumn: Boolean,
       column: StructField): Unit = {
     val qualifiedTable = sessionCatalog.newQualifiedTableName(tableName)
@@ -1399,6 +1431,35 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       val colName = Utils.fieldName(column)
       alterTable(qualifiedTable, isAddColumn,
         if (Utils.hasLowerCase(colName)) sessionCatalog.normalizeField(column, colName) else column)
+    }
+  }
+
+  private[sql] def alterTableToggleRLS(tableIdent: QualifiedTableName, enableRls: Boolean): Unit = {
+    val plan = try {
+      sessionCatalog.lookupRelation(tableIdent)
+    } catch {
+      case tnfe: TableNotFoundException => throw tnfe
+    }
+
+    if(sessionCatalog.isTemporaryTable(tableIdent)) {
+      throw new AnalysisException("alter table not supported for temp tables")
+    }
+
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) =>
+        throw new AnalysisException("alter table enable/disable Row Level Security not supported " +
+            "for smart connector mode")
+      case _ =>
+    }
+
+    plan match {
+      case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
+        sessionCatalog.invalidateTable(tableIdent)
+        rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
+        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappySession.clearAllCache()
+      case _ =>
+        throw new AnalysisException("alter table not supported for external tables")
     }
   }
 
@@ -1501,6 +1562,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createIndex(indexIdent, tableIdent, columnsWithDirection, options)
   }
 
+  private[sql] def createPolicy(policyName: TableIdentifier, tableName: QualifiedTableName,
+      policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
+      currentUser: String, filterStr: String, filter: BypassRowLevelSecurity): Unit = {
+
+    if (!SecurityUtils.allowPolicyOp(currentUser, tableName, this)) {
+      throw new SQLException("Only Table Owner can create the policy", "01548", null)
+    }
+
+    if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
+      throw new AnalysisException("Currently Policy only For Select is supported")
+    }
+
+    sessionCatalog.registerPolicy(policyName, tableName, policyFor, applyTo, expandedPolicyApplyTo,
+      currentUser, filterStr, filter)
+  }
   /**
    * Create an index on a table.
    */
@@ -2027,7 +2103,7 @@ object SnappySession extends Logging {
     // literals in push down filters etc
     planCaching &&= (cachedRDD ne null) && executedPlan.find {
       case _: BroadcastHashJoinExec | _: BroadcastNestedLoopJoinExec |
-           _: BroadcastExchangeExec | _: InMemoryTableScanExec => true
+           _: BroadcastExchangeExec | _: InMemoryTableScanExec | _: RangeExec => true
       case p if HiveClientUtil.isHiveExecPlan(p) => true
       case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
       case _ => false
@@ -2053,7 +2129,7 @@ object SnappySession extends Logging {
     new CachedDataFrame(session, execution, origExecutionString, origPlanInfo,
       executionString, planInfo, rdd, shuffleDependencies, RowEncoder(qe.analyzed.schema),
       shuffleCleanups, rddId, noSideEffects, queryHints,
-      executionId, planStartTime, planEndTime)
+      executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
   }
 
   private[this] lazy val planCache = {
@@ -2073,7 +2149,8 @@ object SnappySession extends Logging {
     val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
     val paramsId = parser.sqlParser.getCurrentParamsId
-    val key = CachedKey(session, plan, sqlText, paramLiterals, planCaching)
+    val key = CachedKey(session, session.getCurrentSchema,
+      plan, sqlText, paramLiterals, planCaching)
     var cachedDF: CachedDataFrame = if (planCaching) planCache.getIfPresent(key) else null
     if (cachedDF eq null) {
       // evaluate the plan and cache it if required
@@ -2289,14 +2366,16 @@ object SnappySession extends Logging {
   }
 }
 
-final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
-    val sqlText: String, val hintHashcode: Int) {
+final class CachedKey(val session: SnappySession,
+   val currSchema: String, private val lp: LogicalPlan,
+   val sqlText: String, val hintHashcode: Int) {
 
   private[sql] var currentLiterals: Array[ParamLiteral] = _
   private[sql] var currentParamsId: Int = -1
 
   override val hashCode: Int = {
     var h = ClientResolverUtils.addIntToHashOpt(session.hashCode(), 42)
+    h = ClientResolverUtils.addIntToHashOpt(currSchema.hashCode, h)
     h = ClientResolverUtils.addIntToHashOpt(lp.hashCode(), h)
     ClientResolverUtils.addIntToHashOpt(hintHashcode, h)
   }
@@ -2304,14 +2383,15 @@ final class CachedKey(val session: SnappySession, private val lp: LogicalPlan,
   override def equals(obj: Any): Boolean = {
     obj match {
       case x: CachedKey =>
-        x.hintHashcode == hintHashcode && (x.session eq session) && x.lp == lp
+        x.hintHashcode == hintHashcode && (x.session eq session) &&
+          (x.currSchema == currSchema) && x.lp == lp
       case _ => false
     }
   }
 }
 
 object CachedKey {
-  def apply(session: SnappySession, plan: LogicalPlan, sqlText: String,
+  def apply(session: SnappySession, currschema: String, plan: LogicalPlan, sqlText: String,
       paramLiterals: Array[ParamLiteral], forCaching: Boolean): CachedKey = {
 
     def normalizeExprIds: PartialFunction[Expression, Expression] = {
@@ -2348,6 +2428,6 @@ object CachedKey {
       for (l <- paramLiterals) l.tokenized = true
       plan.transform(transformExprID)
     } else plan
-    new CachedKey(session, normalizedPlan, sqlText, session.queryHints.hashCode())
+    new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
   }
 }

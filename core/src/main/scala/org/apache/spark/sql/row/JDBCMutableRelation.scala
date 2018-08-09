@@ -63,6 +63,7 @@ case class JDBCMutableRelation(
     with DestroyRelation
     with IndexableRelation
     with AlterableRelation
+    with RowLevelSecurityRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -103,7 +104,7 @@ case class JDBCMutableRelation(
   override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
-  protected final val connFactory: () => Connection =
+  override protected final val connFactory: () => Connection =
     JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
       connProperties.connProps.asScala.toMap))
 
@@ -457,14 +458,15 @@ case class JDBCMutableRelation(
   }
 
   override def alterTable(tableIdent: QualifiedTableName,
-                          isAddColumn: Boolean, column: StructField): Unit = {
+        isAddColumn: Boolean, column: StructField): Unit = {
     val conn = connFactory()
     try {
       val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
         conn, dialect, sqlContext)
       val sql = if (isAddColumn) {
-        s"""alter table ${quotedName(table)}
-            add column "${column.name}" ${getDataType(column)}"""
+      val nullable = if (column.nullable) "" else " NOT NULL"
+      s"""alter table ${quotedName(table)}
+            add column "${column.name}" ${getDataType(column)}$nullable"""
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
@@ -487,6 +489,7 @@ case class JDBCMutableRelation(
       conn.close()
     }
   }
+
 }
 
 final class DefaultSource extends MutableRelationProvider with DataSourceRegister {

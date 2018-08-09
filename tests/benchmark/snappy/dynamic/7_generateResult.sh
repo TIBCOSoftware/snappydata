@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries
-mkdir $directory
+directory=$outputLocation/GeneratedResults/$(date "+%Y.%m.%d-%H.%M.%S")
+mkdir -p $directory
 
+cp PerfRun.conf $directory/
 cp $leadDir/* $directory/
 
 latestProp=$directory/latestProp.props
@@ -35,17 +36,11 @@ echo WarmUp = $WarmupRuns >> $latestProp
 echo AverageRuns = $AverageRuns >> $latestProp
 echo LOCATOR = $locator >> $latestProp
 echo LEAD = $leads >> $latestProp
+
 for element in "${servers[@]}";
   do
        echo SERVERS = $element >> $latestProp
   done
-
-
-for i in $directory/*.out
-do
-   cat $latestProp >> $i
-done
-
 
 
 echo "******************Performance Result Generated*****************"

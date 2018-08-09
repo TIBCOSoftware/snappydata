@@ -262,15 +262,18 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
             override def test(uuid: Long, map: LongObjectHashMap[AnyRef]): Boolean = {
               // check if map has overflowed entries
               if (map.getGlobalState eq None) {
-                val diskBatch = new DiskMultiColumnBatch(currentRegion, readerId,
-                  new Array[AnyRef](map.size()))
+                val statsEntry = map.remove((1L << 32) | (STATROW_COL_INDEX & 0xffffffffL))
+                // skip if stats row for the batch is missing from snapshot iterator
+                if (statsEntry eq null) return true
+                val diskBatch = new DiskMultiColumnBatch(statsEntry.asInstanceOf[RegionEntry],
+                  currentRegion, readerId, new Array[AnyRef](map.size()))
                 // collect all the overflowed entries and push those into diskBatch
                 // which will sort them to find the minimum oplog+offset and also
                 // use the same for iteration order for best performance
                 map.forEachWhile(new LongObjPredicate[AnyRef] {
                   override def test(columnIndex: Long, entry: AnyRef): Boolean = {
                     // skip ColumnValues
-                    if ((columnIndex & 0xffffffff00000000L) != 0) {
+                    if ((columnIndex & 0xffffffff00000000L) != 0L) {
                       diskBatch.addEntry(diskPosition, entry.asInstanceOf[RegionEntry])
                     }
                     true
@@ -311,8 +314,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
  * which is unavoidable in current scheme because scan has to read all required
  * columns together.
  */
-private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
-    private var diskEntries: Array[AnyRef]) extends DiskEntryPage(null, _region, _readerId) {
+private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: LocalRegion,
+    _readerId: Int, private var diskEntries: Array[AnyRef])
+    extends DiskEntryPage(_statsEntry, _region, _readerId) {
 
   private var arrayIndex: Int = _
   private var faultIn: Boolean = _
@@ -356,9 +360,7 @@ private final class DiskMultiColumnBatch(_region: LocalRegion, _readerId: Int,
   def addEntry(diskPosition: DiskPosition, entry: RegionEntry): Unit = {
     // store the stats entry separately to provide to top-level iterator
     val key = getKey(entry)
-    if (key.columnIndex == STATROW_COL_INDEX) {
-      this.entry = entry
-    } else if (key.columnIndex == DELTA_STATROW_COL_INDEX) {
+    if (key.columnIndex == DELTA_STATROW_COL_INDEX) {
       this.deltaStatsEntry = entry
     } else {
       // fetch disk position even for in-memory entries because they are likely to
