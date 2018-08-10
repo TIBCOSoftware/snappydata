@@ -16,16 +16,14 @@
  */
 package io.snappydata.hydra.concurrency
 
-import java.io.FileInputStream
 import java.util.Properties
 import java.io.FileInputStream
 
 import com.typesafe.config.Config
-import org.apache.log4j.Logger
 import org.apache.spark.sql.{Row, SnappyJobValid, SnappyJobValidation}
 import org.apache.spark.sql.streaming.SnappyStreamingJob
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.{Seconds, SnappyStreamingContext}
+import org.apache.spark.streaming.{SnappyStreamingContext}
 
 object StreamingActivity extends SnappyStreamingJob {
   override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation =
@@ -34,8 +32,20 @@ object StreamingActivity extends SnappyStreamingJob {
   def typeCast(col: String, field: String): Any = {
     val fType = field.split(sSep)(1)
     fType.trim.toLowerCase() match {
-      case "integer" => col.toInt
-      case "string" => col
+      case "integer" => {
+        if (col == null || col.equals("")) {
+          0
+        } else {
+          col.toInt
+        }
+      }
+      case "string" => {
+        if (col == null || col.equals("")) {
+          ""
+        } else {
+          col
+        }
+      }
       case _ => col
     }
   }
@@ -48,10 +58,11 @@ object StreamingActivity extends SnappyStreamingJob {
   override def runSnappyJob(sns: SnappyStreamingContext, jobConfig: Config): Any = {
     import sns.snappySession.implicits._
     val propertiesPath = jobConfig.getString("prop_path")
+    val inPath = jobConfig.getString("input_path")
     val props: Properties = new Properties()
     props.load(new FileInputStream(propertiesPath))
 
-    val inPath = props.getProperty("input_path")
+
     val tableName = props.getProperty("table_name")
     val enablePutInto = props.getProperty("enable_putinto").trim.toLowerCase().equals("true")
     val schemaStr = props.getProperty("schema_string")
@@ -70,7 +81,8 @@ object StreamingActivity extends SnappyStreamingJob {
       val rddNoSchema = rdd.map(line => {
         val cols = line.split(",")
         val ts = String.valueOf(System.nanoTime())
-        val arr = new Array[Any](cols.size)
+        val numOfFields = line.count(_ == ',') + 1
+        val arr = new Array[Any](numOfFields)
         var i = 0
         cols.foreach(col => {
           if (i == tsColIndx) {
