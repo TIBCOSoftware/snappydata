@@ -267,7 +267,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   @volatile
   @transient protected var columnBuffer = DiskEntry.Helper.NULL_BUFFER
 
-  @GuardedBy("this")
+  @volatile
   @transient protected[columnar] var compressionCodecId: Byte = Constant.DEFAULT_CODECID.id.toByte
   /**
    * This keeps track of whether the buffer is compressed or not.
@@ -297,17 +297,19 @@ class ColumnFormatValue extends SerializedDiskBuffer
   }
 
   def setBuffer(buffer: ByteBuffer, codecId: Int,
-      isCompressed: Boolean, changeOwnerToStorage: Boolean = true): Unit = synchronized {
+      isCompressed: Boolean, changeOwnerToStorage: Boolean = true): Unit = {
     val columnBuffer = if (changeOwnerToStorage) {
       transferToStorage(buffer, GemFireCacheImpl.getCurrentBufferAllocator)
     } else buffer
     // reference count is required to be 1 at this point
-    if (refCount != 1) {
-      throw new IllegalStateException(s"Unexpected refCount=$refCount")
+    synchronized {
+      if (refCount != 1) {
+        throw new IllegalStateException(s"Unexpected refCount=$refCount")
+      }
+      this.columnBuffer = columnBuffer.order(ByteOrder.LITTLE_ENDIAN)
+      this.compressionCodecId = codecId.toByte
+      this.decompressionState = if (isCompressed) 0 else 1
     }
-    this.columnBuffer = columnBuffer.order(ByteOrder.LITTLE_ENDIAN)
-    this.compressionCodecId = codecId.toByte
-    this.decompressionState = if (isCompressed) 0 else 1
   }
 
   private def transferToStorage(buffer: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
@@ -358,46 +360,50 @@ class ColumnFormatValue extends SerializedDiskBuffer
   override def getValueRetain(fetchRequest: FetchRequest): ColumnFormatValue = {
     var entry: AbstractOplogDiskRegionEntry = null
     var regionContext: RegionEntryContext = null
+    var buffer: ByteBuffer = null
+    var transformBuffer = false
     synchronized {
-      val buffer = this.columnBuffer
+      buffer = this.columnBuffer
       if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && incrementReference()) {
-        return transformValueRetain(buffer, fetchRequest)
+        transformBuffer = true
       } else if (fetchRequest eq FetchRequest.DECOMPRESS_IF_IN_MEMORY) {
         return null
       }
       entry = this.entry
       regionContext = this.regionContext
     }
+    if (transformBuffer) return transformValueRetain(buffer, fetchRequest)
     // try to read using DiskId
-    var diskId: DiskId = null
-    if (entry ne null) diskId = entry.getDiskId
+    val diskId = if (entry ne null) entry.getDiskId else null
     if (diskId ne null) {
       val dr = regionContext match {
         case r: LocalRegion => r.getDiskRegionView
         case _ => regionContext.asInstanceOf[DiskRegionView]
       }
       dr.acquireReadLock()
-      try diskId.synchronized {
-        synchronized {
-          if ((columnBuffer ne DiskEntry.Helper.NULL_BUFFER) && incrementReference()) {
-            return transformValueRetain(columnBuffer, fetchRequest)
-          }
+      try diskId.synchronized(synchronized {
+        buffer = this.columnBuffer
+        if ((buffer ne DiskEntry.Helper.NULL_BUFFER) && incrementReference()) {
+          // transform outside any locks (else UMM lock may cause deadlock like in SNAP-2349)
+          transformBuffer = true
+        } else {
           DiskEntry.Helper.getValueOnDiskNoLock(diskId, dr) match {
             case v: ColumnFormatValue =>
               // transfer the buffer from the temporary ColumnFormatValue
-              columnBuffer = v.columnBuffer
+              buffer = v.columnBuffer
+              columnBuffer = buffer
               decompressionState = v.decompressionState
               fromDisk = true
               // restart reference count from 1
               refCount = 1
-              return transformValueRetain(columnBuffer, fetchRequest)
+              transformBuffer = true
 
             case null | _: Token => // return empty buffer
             case o => throw new IllegalStateException(
               s"unexpected value in column store $o")
           }
         }
-      } catch {
+      }) catch {
         case _: EntryDestroyedException | _: DiskAccessException |
              _: RegionDestroyedException =>
         // These exception types mean that value has disappeared from disk
@@ -406,6 +412,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
         // processors like gateway event processors will not expect it.
       } finally {
         dr.releaseReadLock()
+        if (transformBuffer) return transformValueRetain(buffer, fetchRequest)
       }
     }
     this
@@ -417,14 +424,14 @@ class ColumnFormatValue extends SerializedDiskBuffer
       case FetchRequest.ORIGINAL => this
       case _ => decompressValue(buffer, fetchRequest eq FetchRequest.DECOMPRESS_IF_IN_MEMORY)
     }
-    if (result ne this) {
+    if (result ne this) synchronized {
       // decrement reference count that has been incremented by caller
       assert(decrementReference())
     }
     result
   }
 
-  @inline private def getCachePerfStats(context: RegionEntryContext): CachePerfStats = {
+  private def getCachePerfStats(context: RegionEntryContext): CachePerfStats = {
     if (context ne null) context.getCachePerfStats
     else {
       val cache = GemFireCacheImpl.getInstance()
@@ -432,36 +439,76 @@ class ColumnFormatValue extends SerializedDiskBuffer
     }
   }
 
+  private def acquireIncreasedHeap(newBuffer: ByteBuffer, oldBuffer: ByteBuffer,
+      oldHasArray: Boolean, context: RegionEntryContext): Int = {
+    val heapSizeChange = (if (newBuffer.hasArray) newBuffer.capacity() else 0) -
+        (if (oldHasArray) oldBuffer.capacity() else 0)
+    if (heapSizeChange > 0 && !StoreCallbacksImpl.acquireStorageMemory(context.getFullPath,
+      heapSizeChange, buffer = null, offHeap = false, shouldEvict = true)) {
+      throw LocalRegion.lowMemoryException(null, heapSizeChange)
+    }
+    heapSizeChange
+  }
+
+  private def handleBufferReplace(replaced: Boolean, newBuffer: ByteBuffer,
+      oldBuffer: ByteBuffer, heapSizeChange: Int, context: RegionEntryContext): Unit = {
+    if (replaced) {
+      BufferAllocator.releaseBuffer(oldBuffer)
+      // release if there has been a reduction in size
+      // (due to heap/off-heap transition or compression)
+      if (heapSizeChange < 0) {
+        StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
+          -heapSizeChange, offHeap = false)
+      }
+    } else {
+      BufferAllocator.releaseBuffer(newBuffer)
+      // if buffer was not replaced then release storage acquired earlier
+      if (heapSizeChange > 0) {
+        StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
+          heapSizeChange, offHeap = false)
+      }
+    }
+  }
+
   private def decompressValue(buffer: ByteBuffer, onlyIfStored: Boolean): ColumnFormatValue = {
-    if (this.decompressionState != 0) {
+    var position = 0
+    var typeId = 0
+    var context: RegionEntryContext = null
+    var hasArray = false
+    var doReplace = false
+    val doDecompress = synchronized(if (this.decompressionState != 0) {
       if (this.decompressionState > 1) {
         this.decompressionState = 1
       }
-      this
+      false
     } else {
-      // decompress and replace buffer if possible
-      val isDirect = buffer.isDirect
       // check if decompression is required
       assert(buffer.order() eq ByteOrder.LITTLE_ENDIAN)
-      val position = buffer.position()
-      val typeId = buffer.getInt(position)
+      position = buffer.position()
+      typeId = buffer.getInt(position)
       if (typeId >= 0) {
         this.decompressionState = 1
-        return this
+        false
+      } else {
+        context = this.regionContext
+        hasArray = buffer.hasArray
+        // replace buffer only if it is stored in region and no other thread
+        // is reading it; last condition can be relaxed for heap buffers because
+        // the buffer remains valid even after release (which is a no-op)
+        doReplace = (hasArray || this.refCount <= 2) &&
+            // (entry eq null) means no disk persistence
+            (context ne null) && !fromDisk && ((entry eq null) || !entry.isValueNull)
+        // first check if decompression should be skipped
+        // (when onlyIfStored is true and underlying buffer cannot be replaced)
+        !onlyIfStored || doReplace
       }
-      // first check if decompression should be skipped
-      // (when onlyIfStored is true and underlying buffer cannot be replaced)
-      if (onlyIfStored) {
-        if (fromDisk || (isDirect && this.refCount > 2)) return this
-        // check if entry was read from disk without faultin
-        val entry = this.entry
-        if ((entry ne null) && entry.isValueNull) return this
-      }
-
+    })
+    // decompress and replace buffer if possible
+    if (!doDecompress) this
+    else {
       // replace underlying buffer if either no other thread is holding a reference
       // or if this is a heap buffer
       val allocator = GemFireCacheImpl.getCurrentBufferAllocator
-      val context = this.regionContext
       val perfStats = getCachePerfStats(context)
       val startDecompression = perfStats.startDecompression()
       val decompressed = CompressionUtils.codecDecompress(buffer, allocator, position, -typeId)
@@ -469,25 +516,26 @@ class ColumnFormatValue extends SerializedDiskBuffer
         // update decompression stats
         perfStats.endDecompression(startDecompression)
         val newValue = copy(decompressed, isCompressed = false, changeOwnerToStorage = false)
-        if (!isDirect || this.refCount <= 2) {
-          val updateStats = (context ne null) && !fromDisk
-          if (updateStats && !isDirect) {
-            // acquire the increased memory after decompression
-            val numBytes = decompressed.capacity() - buffer.capacity()
-            if (!StoreCallbacksImpl.acquireStorageMemory(context.getFullPath,
-              numBytes, buffer = null, offHeap = false, shouldEvict = true)) {
-              throw LocalRegion.lowMemoryException(null, numBytes)
-            }
-          }
+        if (doReplace) {
           val newBuffer = transferToStorage(decompressed, allocator)
-          // update the statistics before changing self
-          if (updateStats) {
-            context.updateMemoryStats(this, newValue)
+          // acquire the increased storage memory after replacing decompressed buffer;
+          // do it upfront to fail with LME if there is no available memory
+          val heapSizeChange = acquireIncreasedHeap(newBuffer, buffer, hasArray, context)
+          val replaced = synchronized {
+            // check if another thread already replaced the buffer then
+            // no stats changes should be done
+            if ((this.columnBuffer eq buffer) || this.decompressionState <= 0) {
+              // update the statistics before changing self
+              context.updateMemoryStats(this, newValue)
+              this.columnBuffer = newBuffer
+              this.decompressionState = 1
+              true
+            } else false
           }
-          this.columnBuffer = newBuffer
-          this.decompressionState = 1
-          allocator.release(buffer)
-          perfStats.incDecompressedReplaced()
+          handleBufferReplace(replaced, newBuffer, buffer, heapSizeChange, context)
+          if (replaced) perfStats.incDecompressedReplaced()
+          else perfStats.incDecompressedReplaceSkipped()
+
           this
         } else {
           perfStats.incDecompressedReplaceSkipped()
@@ -503,30 +551,45 @@ class ColumnFormatValue extends SerializedDiskBuffer
   }
 
   private def compressValue(buffer: ByteBuffer): ColumnFormatValue = {
-    // a negative value indicates that the buffer is not compressible (either too
-    // small or minimum compression ratio is not achieved)
-    if (this.decompressionState <= 0) this
+    var maxCompressionsExceeded = false
+    var context: RegionEntryContext = null
+    var codecId = 0
+    var hasArray = false
+    var doReplace = false
+    val doCompress = synchronized {
+      // a negative value indicates that the buffer is not compressible (either too
+      // small or minimum compression ratio is not achieved)
+      if (this.decompressionState <= 0) false
+      else {
+        // compress buffer if required
+        if (compressionCodecId != CompressionCodecId.None.id) {
+          maxCompressionsExceeded = this.decompressionState >
+              ColumnFormatEntry.MAX_CONSECUTIVE_COMPRESSIONS
+          context = this.regionContext
+          codecId = this.compressionCodecId
+          hasArray = buffer.hasArray
+          // check if buffer is stored in region and should also be replaced (if multiple
+          // consecutive compressions done and no other thread is reading or this is a heap buffer)
+          doReplace = maxCompressionsExceeded && (hasArray || this.refCount <= 2) &&
+              // (entry eq null) means no disk persistence
+              (context ne null) && !fromDisk && ((entry eq null) || !entry.isValueNull)
+          true
+        } else false
+      }
+    }
+    if (!doCompress) this
     else {
-      // compress buffer if required
-      if (compressionCodecId != CompressionCodecId.None.id) {
-        val isDirect = buffer.isDirect
-        // check if stored buffer should also be replaced (if no other thread
-        // is holding a reference or this is a heap buffer)
-        val maxCompressionsExceeded = this.decompressionState >
-            ColumnFormatEntry.MAX_CONSECUTIVE_COMPRESSIONS
+      {
         val allocator = GemFireCacheImpl.getCurrentBufferAllocator
-        val context = this.regionContext
         val perfStats = getCachePerfStats(context)
         val startCompression = perfStats.startCompression()
         val bufferLen = buffer.remaining()
-        val compressed = CompressionUtils.codecCompress(compressionCodecId,
-          buffer, bufferLen, allocator)
+        val compressed = CompressionUtils.codecCompress(codecId, buffer, bufferLen, allocator)
         if (compressed ne buffer) {
           try {
             // update compression stats
             perfStats.endCompression(startCompression, bufferLen, compressed.limit())
-            if (maxCompressionsExceeded && (!isDirect || this.refCount <= 2)) {
-              val updateStats = (context ne null) && !fromDisk
+            if (doReplace) {
               // trim to size if there is wasted space
               val size = compressed.limit()
               val newBuffer = if (compressed.capacity() >= size + 32) {
@@ -536,23 +599,28 @@ class ColumnFormatValue extends SerializedDiskBuffer
                 trimmed.rewind()
                 trimmed
               } else transferToStorage(compressed, allocator)
-              // update the statistics before changing self
-              if (updateStats) {
-                val newValue = copy(newBuffer, isCompressed = true, changeOwnerToStorage = false)
-                context.updateMemoryStats(this, newValue)
+              // for the case of off-heap to heap transition, acquire increased storage
+              // memory upfront to fail with LME if there is no available memory
+              val heapSizeChange = acquireIncreasedHeap(newBuffer, buffer, hasArray, context)
+              val replaced = synchronized {
+                // check if another thread already replaced the buffer then
+                // no stats changes should be done
+                if ((this.columnBuffer eq buffer) || this.decompressionState > 0) {
+                  // update the statistics before changing self
+                  val newVal = copy(newBuffer, isCompressed = true, changeOwnerToStorage = false)
+                  context.updateMemoryStats(this, newVal)
+                  this.columnBuffer = newBuffer
+                  this.decompressionState = 0
+                  true
+                } else false
               }
-              this.columnBuffer = newBuffer
-              this.decompressionState = 0
-              allocator.release(buffer)
-              // release storage memory for the buffer being transferred to storage
-              // (memory for compressed buffer will be marked released in any case)
-              if (updateStats && !isDirect) {
-                StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
-                  buffer.capacity() - newBuffer.capacity(), offHeap = false)
-              }
+              handleBufferReplace(replaced, newBuffer, buffer, heapSizeChange, context)
+              if (replaced) perfStats.incCompressedReplaced()
+              else perfStats.incCompressedReplaceSkipped()
+
               this
             } else {
-              if (!maxCompressionsExceeded) {
+              if (!maxCompressionsExceeded) synchronized {
                 this.decompressionState = (this.decompressionState + 1).toByte
               }
               perfStats.incCompressedReplaceSkipped()
@@ -568,10 +636,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
           // update skipped compression stats
           perfStats.endCompressionSkipped(startCompression, bufferLen)
           // mark that buffer is not compressible to avoid more attempts
-          this.decompressionState = -1
+          synchronized(this.decompressionState = -1)
           this
         }
-      } else this
+      }
     }
   }
 
@@ -591,7 +659,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
   }
 
   protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
-      changeOwnerToStorage: Boolean): ColumnFormatValue = synchronized {
+      changeOwnerToStorage: Boolean): ColumnFormatValue = {
     new ColumnFormatValue(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
@@ -734,7 +802,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       // owner is already marked for storage
       // if not compressed set the default codecId while the actual one will be
       // set when the value is placed in region (in setDiskLocation) that will
-      // be used in further toData calls if requuired
+      // be used in further toData calls if required
       setBuffer(buffer, if (isCompressed) codecId else Constant.DEFAULT_CODECID.id,
         isCompressed, changeOwnerToStorage = false)
     } else {
@@ -788,11 +856,18 @@ class ColumnFormatValue extends SerializedDiskBuffer
   protected def className: String = "ColumnValue"
 
   override def toString: String = {
-    val buffer = getBuffer
-    val entry = this.entry
-    val diskId = if (entry ne null) entry.getDiskId else null
+    var buffer: ByteBuffer = null
+    var diskId: DiskId = null
+    val contextName = synchronized {
+      buffer = getBuffer
+      diskId = if (entry ne null) entry.getDiskId else null
+      this.regionContext match {
+        case null => ""
+        case context => context.getFullPath
+      }
+    }
     // refCount access is deliberately not synchronized
     s"$className[size=${buffer.remaining()} $buffer diskId=$diskId " +
-        s"context=$regionContext refCount=$refCount]"
+        s"context=$contextName refCount=$refCount]"
   }
 }

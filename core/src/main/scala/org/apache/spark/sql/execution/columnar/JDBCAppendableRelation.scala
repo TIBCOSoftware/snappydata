@@ -115,7 +115,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Expression], prunePartitions: => Int): (RDD[Any], Array[Int]) = {
+      filters: Array[Expression], prunePartitions: () => Int): (RDD[Any], Array[Int]) = {
 
     val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
     (0 until schema.length).foreach(i =>
