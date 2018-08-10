@@ -16,11 +16,14 @@
  */
 package org.apache.spark.sql.store
 
+import java.io.{BufferedReader, FileReader}
 import java.sql.DriverManager
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
+
+import org.apache.spark.sql.SaveMode
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -332,5 +335,54 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     conn.close()
     TestUtil.stopNetServer()
 
+  }
+
+  test("big view") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val session = this.snc.snappySession
+
+    // check temporary view with USING and its meta-data
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val stagingDF = snc.read.load(hfile)
+    snc.createTable("airline", "column", stagingDF.schema,
+      Map.empty[String, String])
+
+
+    // create a big view on it
+    val viewFile = getClass.getResource("/bigviewcase.sql")
+    val br = new BufferedReader(new FileReader(viewFile.getFile))
+    var viewSql = ""
+    var keepGoing = true
+    while(keepGoing) {
+      val x = br.readLine()
+      if (x != null) {
+        viewSql += x
+      } else {
+        keepGoing = false
+      }
+    }
+    val viewname = "AIRLINEBOGUSVIEW"
+    // create view
+    session.sql(viewSql)
+    // query on view
+    session.sql(s"select count(*) from $viewname").collect()
+    // check column names
+    val rs = conn.getMetaData.getColumns(null, null, viewname, "%")
+    var foundValidColumnName = false
+    while(rs.next() && !foundValidColumnName) {
+      val colName = rs.getString("COLUMN_NAME")
+      if  (colName == "YEARI") {
+        foundValidColumnName = true
+      }
+    }
+    assert(foundValidColumnName)
+
+    snc.sql(s"drop view $viewname")
+    snc.sql("drop table airline")
+    conn.close()
+    TestUtil.stopNetServer()
   }
 }

@@ -16,11 +16,16 @@
  */
 package org.apache.spark.sql.aqp
 
+
+import io.snappydata.SnappyDataFunctions.usageStr
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.ExpressionInfo
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
+import org.apache.spark.sql.policy.CurrentUser
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
@@ -33,7 +38,21 @@ class SnappyContextFunctions {
 
   def postRelationCreation(relation: Option[BaseRelation], session: SnappySession): Unit = {}
 
-  def registerAQPErrorFunctions(session: SnappySession) {}
+  def registerSnappyFunctions(session: SnappySession): Unit = {
+    val registry = session.sessionState.functionRegistry
+    val usageStr = "_FUNC_() - Returns the User's UserName who is executing the " +
+        "current SQL statement."
+    val info = new ExpressionInfo(CurrentUser.getClass.getCanonicalName, null,
+      "CURRENT_USER", usageStr, "")
+    registry.registerFunction("CURRENT_USER", info,
+      e => {
+        if (! e.isEmpty) {
+          throw new AnalysisException("Argument(s)  passed for zero arg function " +
+              s"CURRENT_USER")
+        }
+        CurrentUser()
+      })
+  }
 
   def createTopK(session: SnappySession, tableName: String,
       keyColumnName: String, schema: StructType,

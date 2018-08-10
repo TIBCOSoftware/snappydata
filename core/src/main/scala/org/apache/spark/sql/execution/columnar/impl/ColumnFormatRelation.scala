@@ -129,7 +129,7 @@ abstract class BaseColumnFormatRelation(
       Some(() => sqlContext.sparkSession.asInstanceOf[SnappySession]))
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Expression], _ignore: => Int): (RDD[Any], Array[Int]) = {
+      filters: Array[Expression], _ignore: () => Int): (RDD[Any], Array[Int]) = {
 
     // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
     // RDDs needn't have to care for orderless hashing scheme at invocation point.
@@ -146,13 +146,12 @@ abstract class BaseColumnFormatRelation(
       }
     }.filter(_.nonEmpty).map(_.get).unzip
 
-    val pcFields = StructType(fields).toAttributes
-    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
-    val bucketIdGeneration = UnsafeProjection.create(
-      HashPartitioning(pcFields, numBuckets)
-          .partitionIdExpression :: Nil, pcFields)
-
-    def prunePartitions: Int = {
+    def prunePartitions(): Int = {
+      val pcFields = StructType(fields).toAttributes
+      val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
+      val bucketIdGeneration = UnsafeProjection.create(
+        HashPartitioning(pcFields, numBuckets)
+            .partitionIdExpression :: Nil, pcFields)
       if (pruningExpressions.nonEmpty &&
           // verify all the partition columns are provided as filters
           pruningExpressions.length == partitioningColumns.length) {
@@ -177,7 +176,7 @@ abstract class BaseColumnFormatRelation(
     // Remove the update/delete key columns from RDD requiredColumns.
     // These will be handled by the ColumnTableScan directly.
     val columns = requiredColumns.filter(!_.startsWith(ColumnDelta.mutableKeyNamePrefix))
-    val (rdd, projection) = scanTable(table, columns, filters, -1)
+    val (rdd, projection) = scanTable(table, columns, filters, () => -1)
     val partitionEvaluator = rdd match {
       case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
       case s => s.asInstanceOf[SmartConnectorColumnRDD].getPartitionEvaluator
@@ -200,7 +199,7 @@ abstract class BaseColumnFormatRelation(
   def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
       filters: Array[Expression]): (RDD[Any], RDD[Any],
       Seq[RDD[InternalRow]]) = {
-    val (rdd, projection) = scanTable(table, requiredColumns, filters, -1)
+    val (rdd, projection) = scanTable(table, requiredColumns, filters, () => -1)
     val rowRDD = buildRowBufferRDD(() => rdd.partitions, requiredColumns, filters,
       useResultSet = true, projection)
     (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
