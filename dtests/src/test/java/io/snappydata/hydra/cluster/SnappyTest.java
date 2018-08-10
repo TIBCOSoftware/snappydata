@@ -1663,8 +1663,8 @@ public class SnappyTest implements Serializable {
    * Executes user scripts.
    */
   public static synchronized void HydraTask_executeScripts() {
-    Vector scriptNames, scriptLocationList = null, scriptArgsList = null;
-    File log = null, logFile = null;
+    Vector scriptNames, scriptLocationList;
+    File log = null, logFile;
     scriptNames = SnappyPrms.getScriptNames();
     if (scriptNames == null) {
       String s = "No Script names provided for executing in the Hydra TASK";
@@ -1690,8 +1690,8 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath() + File.separator + "scriptResult_" +
             RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
-        String comma_seperated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
-        String command = filePath + " " + comma_seperated_args_list;
+        String comma_separated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
+        String command = filePath + " " + comma_separated_args_list;
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         Log.getLogWriter().info("SS - command is: " + pb.command());
         snappyTest.executeProcess(pb, logFile);
