@@ -88,7 +88,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
             logInfo("SnappyData code generation failed. Falling back to Spark plans.")
             session.sessionState.disableStoreOptimizations = true
             try {
-              val plan = exec().executedPlan
+              val plan = session.sessionState.executePlan(exec().logical).executedPlan
               val result = f(plan)
               // update child for future executions
               child = plan
