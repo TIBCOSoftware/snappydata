@@ -164,9 +164,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   @Override
   public boolean waitForInitialization() {
     // skip for call from within initHMC
-    return (this.initFuture.isDone() || !Thread.currentThread()
-        .getThreadGroup().getName().equals(THREAD_GROUP_NAME)) &&
-        GemFireStore.handleCatalogInit(this.initFuture);
+    return !Thread.currentThread().getThreadGroup().getName().equals(
+        THREAD_GROUP_NAME) && GemFireStore.handleCatalogInit(this.initFuture);
   }
 
   @Override
@@ -431,6 +430,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
                   metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
                   metaData.columns = ExternalStoreUtils.getColumnMetadata(
                       ExternalStoreUtils.getTableSchema(table));
+                  if ("VIEW".equalsIgnoreCase(tableType)) {
+                    metaData.viewText = SnappyStoreHiveCatalog
+                        .getViewTextFromHiveTable(table);
+                  }
                   externalTables.add(metaData);
                 }
               } catch (Exception e) {

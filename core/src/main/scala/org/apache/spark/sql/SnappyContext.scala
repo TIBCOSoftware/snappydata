@@ -1330,3 +1330,6 @@ case class LocalMode(override val sc: SparkContext,
 
 class TableNotFoundException(message: String, cause: Option[Throwable] = None)
     extends AnalysisException(message) with Serializable
+
+class PolicyNotFoundException(message: String, cause: Option[Throwable] = None)
+    extends AnalysisException(message) with Serializable

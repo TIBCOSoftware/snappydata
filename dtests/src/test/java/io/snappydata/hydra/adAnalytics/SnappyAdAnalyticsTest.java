@@ -313,10 +313,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
    * Stop kafka brokers.
    */
   public static synchronized void HydraTask_StopKafkaBrokers() {
-    if(snappyAdAnalyticsTest == null) {
-      snappyAdAnalyticsTest = new SnappyAdAnalyticsTest();
-      kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
-    }
     snappyAdAnalyticsTest.stopKafkaBroker();
   }
 
@@ -338,10 +334,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
    */
 
   public static synchronized void HydraTask_StopKafkaZookeeper() {
-    if(snappyAdAnalyticsTest == null) {
-      snappyAdAnalyticsTest = new SnappyAdAnalyticsTest();
-      kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
-    }
     snappyAdAnalyticsTest.stopKafkaZookeeper();
   }
 

@@ -549,6 +549,186 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     checkForShuffle(groupBy2.logicalPlan, snc, shuffleExpected = true)
   }
 
+  private def loadTables(tableType: String, primaryKey: String,
+      partitioning: String, colocation: String): Unit = {
+
+    snc.sql(s"create table trade.customers" +
+        s" (cid int not null $primaryKey, cust_name varchar(100), " +
+        s"since date, addr varchar(100), tid int) " +
+        s"USING $tableType OPTIONS ($partitioning)")
+
+    snc.sql("create table trade.securities (sec_id int not null," +
+        " symbol varchar(10) not null, price decimal (30, 20)," +
+        " exchange varchar(10) not null, tid int," +
+        " constraint sec_pk primary key (sec_id)," +
+        " constraint sec_uq unique (symbol, exchange)," +
+        " constraint exc_ch check" +
+        " (exchange in ('nasdaq', 'nye', 'amex', 'lse', 'fse', 'hkse', 'tse')))")
+
+    snc.sql(s"create table trade.networth (cid int not null $primaryKey, " +
+        s"cash decimal (30, 20), securities decimal (30, 20), " +
+        s"loanlimit int, availloan decimal (30, 20),  tid int) " +
+        s"USING $tableType OPTIONS ($partitioning$colocation)")
+
+    val contraint = if (primaryKey.isEmpty) "" else s", constraint portf_pk primary key (cid, sid)"
+    snc.sql("create table trade.portfolio (cid int not null," +
+        " sid int not null, qty int not null," +
+        " availQty int not null, subTotal decimal(30,20)," +
+        s" tid int$contraint)" +
+        s" USING $tableType OPTIONS ($partitioning$colocation)")
+
+    snc.sql(s"create table trade.sellorders (oid int not null $primaryKey," +
+        " cid int, sid int, qty int, ask decimal (30, 20), order_time timestamp," +
+        " status varchar(10), tid int)" +
+        s" USING $tableType OPTIONS ($partitioning$colocation)")
+
+    snc.sql(s"insert into trade.customers values(1,'abc','2012-01-14','abc-xyz',1)")
+    snc.sql(s"insert into trade.customers values(2,'aaa','2012-01-14','aaa-xyz',1)")
+    snc.sql(s"insert into trade.customers values(3,'bbb','2012-02-14','abb-xyz',1)")
+    snc.sql(s"insert into trade.customers values(4,'ccc','2012-02-16','ccc-xyz',1)")
+    snc.sql(s"insert into trade.customers values(5,'ddd','2012-01-16','ddd-xyz',1)")
+    snc.sql(s"insert into trade.customers values(6,'eee','2012-03-17','eee-xyz',1)")
+
+    snc.sql("insert into trade.securities values(1,'abc',10.2,'amex',1)")
+    snc.sql("insert into trade.securities values(2,'aaa',10.2,'amex',1)")
+    snc.sql("insert into trade.securities values(3,'bbb',2.3,'nye',1)")
+    snc.sql("insert into trade.securities values(4,'ccc',1.2,'nye',1)")
+    snc.sql("insert into trade.securities values(5,'ddd',5.4,'lse',1)")
+    snc.sql("insert into trade.securities values(6,'eee',15.4,'lse',1)")
+
+    snc.sql("insert into trade.portfolio values(1,1,10,8,11.2,1)")
+    snc.sql("insert into trade.portfolio values(2,2,12,11,13.2,1)")
+    snc.sql("insert into trade.portfolio values(3,3,13,12,15.4,1)")
+    snc.sql("insert into trade.portfolio values(4,4,15,14,17.6,1)")
+    snc.sql("insert into trade.portfolio values(5,5,20,12,14.2,1)")
+    snc.sql("insert into trade.portfolio values(6,6,17,10,12.2,1)")
+
+    snc.sql("insert into trade.sellorders values(1,1,1,10,10.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(2,2,2,8,10.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(3,3,3,9,13.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(4,4,4,12,13.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(5,5,5,15,13.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(6,6,6,19,15.2,'2012-01-14 13:18:42.658','open',1)")
+
+    snc.sql(s"insert into trade.networth values(1,10.2,11.2,10000,5000,1)")
+    snc.sql(s"insert into trade.networth values(2,10.2,11.2,10000,5000,1)")
+    snc.sql(s"insert into trade.networth values(3,13.2,11.2,15000,8000,1)")
+    snc.sql(s"insert into trade.networth values(4,13.2,11.2,12000,3000,1)")
+    snc.sql(s"insert into trade.networth values(5,13.2,14.2,20000,10000,1)")
+    snc.sql(s"insert into trade.networth values(6,15.2,12.2,25000,15000,1)")
+  }
+
+  private def checkQueries_2451(): Unit = {
+
+    var df = snc.sql(s" select f.cid, cust_name, f.sid," +
+        s" so.sid, so.qty, subTotal, oid, order_time, ask" +
+        s" from trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so " +
+        s"where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal >13 and c.cid>3 and f.tid = 1")
+
+    assert(df.collect().size === 2)
+
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal >13 and c.cid>1 and f.tid = 1")
+    assert(df.collect().size === 4)
+
+    df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, " +
+        s"c.cid from trade.customers c, trade.networth n where  n.cid = c.cid" +
+        s" and n.tid = 1 and c.cid > 3")
+    assert(df.collect().size === 3)
+    df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, c.cid" +
+        s" from trade.customers c, trade.networth n where n.cid = c.cid" +
+        s" and n.tid = 1 and c.cid > 5")
+    assert(df.collect().size === 1)
+  }
+
+  private def dropTables(): Unit = {
+    snc.sql("drop table trade.sellorders")
+    snc.sql("drop table trade.portfolio")
+    snc.sql("drop table trade.networth")
+    snc.sql("drop table trade.securities")
+    snc.sql("drop table trade.customers")
+  }
+
+  test("SNAP-2451") {
+
+    loadTables("ROW", "primary key", "partition_by 'cid'", ", colocate_with 'trade.customers'")
+
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold = -1")
+    // snc.sql(s"set snappydata.sql.hashJoinSize=-1")
+
+    checkQueries_2451()
+
+    dropTables()
+    loadTables("COLUMN", "", "", "")
+
+    checkQueries_2451()
+    var df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 1 and f.tid = 1")
+    assert(df.collect().size === 1)
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 2 and f.tid = 1")
+    assert(df.collect().size === 1)
+
+    dropTables()
+    loadTables("COLUMN", "", "partition_by 'cid'", ", colocate_with 'trade.customers'")
+
+    checkQueries_2451()
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 1 and f.tid = 1")
+    var result = df.collect()
+    assert(result.length === 1)
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 2 and f.tid = 1")
+    result = df.collect()
+    assert(result.length === 1)
+    dropTables()
+  }
+
+  test("SNAP-2443") {
+    val testDF = snc.range(100000).selectExpr("id")
+    var splits = testDF.randomSplit(Array(0.7, 0.3))
+    var randomTraining = splits(0)
+    var randomTesting = splits(1)
+    randomTraining.createOrReplaceTempView("randomTraining")
+    var summary = snc.sql("select sum(1) from randomTraining")
+    val one = summary.collect()(0)(0).asInstanceOf[Long]
+    splits = testDF.randomSplit(Array(0.5, 0.5))
+    randomTraining = splits(0)
+    randomTesting = splits(1)
+    randomTraining.createOrReplaceTempView("randomTraining")
+    summary = snc.sql("select sum(1) from randomTraining")
+    val two = summary.collect()(0)(0).asInstanceOf[Long]
+    assert(two < one)
+  }
+
   def partitionToPartitionJoinAssertions(snc: SnappyContext,
       t1: String, t2: String): Unit = {
 
