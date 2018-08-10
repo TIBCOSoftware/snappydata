@@ -30,10 +30,11 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
+import org.apache.spark.sql.execution.columnar.{ColumnDeleteExec, ColumnPutIntoExec, ColumnTableScan, ColumnUpdateExec, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
@@ -278,7 +279,8 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
           SnappySession.getExecutedPlan(child) match {
             case (u: ColumnUpdateExec, _) => u.connProps
             case (d: ColumnDeleteExec, _) => d.connProps
-            case (p: ColumnPutIntoExec, _) => p.updatePlan.asInstanceOf[ColumnUpdateExec].connProps
+            case (p: ColumnPutIntoExec, _) =>
+              p.updatePlan.asInstanceOf[ColumnUpdateExec].connProps
             case _ => throw new IllegalStateException(
               s"Unexpected plan for ${child.getClass.getName}: $child")
           }, sparkContext)
