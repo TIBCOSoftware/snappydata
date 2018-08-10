@@ -57,16 +57,15 @@ object StreamingActivity extends SnappyStreamingJob {
 
   override def runSnappyJob(sns: SnappyStreamingContext, jobConfig: Config): Any = {
     import sns.snappySession.implicits._
-    val propertiesPath = jobConfig.getString("prop_path")
     val inPath = jobConfig.getString("input_path")
-    val props: Properties = new Properties()
-    props.load(new FileInputStream(propertiesPath))
+    val tableName = jobConfig.getString("table_name")
+    val enablePutInto = jobConfig.getString("enable_putinto").trim.toLowerCase().equals("true")
+    val schemaStr = jobConfig.getString("schema_string")
+    val millisToRun = jobConfig.getString("run_millis").toInt
 
-
-    val tableName = props.getProperty("table_name")
-    val enablePutInto = props.getProperty("enable_putinto").trim.toLowerCase().equals("true")
-    val schemaStr = props.getProperty("schema_string")
     val tsColIndx = 0
+    val endTime = System.currentTimeMillis() + millisToRun
+
 
     var tableSchema = new StructType()
     val fieldsInfo = schemaStr.split(fSep)
@@ -110,7 +109,14 @@ object StreamingActivity extends SnappyStreamingJob {
       }
     })
 
+
     sns.start()
-    sns.awaitTermination()
+
+
+    while (System.currentTimeMillis() < endTime) {
+      Thread.sleep(2000)
+    }
+    sns.stop(true, true)
+    // sns.awaitTermination()
   }
 }

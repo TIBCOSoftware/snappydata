@@ -1942,6 +1942,26 @@ public class SnappyTest implements Serializable {
     }
   }
 
+    public static synchronized void createCSVFromTable() {
+        int currentThread = snappyTest.getMyTid();
+        String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
+        SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
+        snappyTest.executeSparkJob(SnappyPrms.getSnappyStreamingJobClassNames(),
+                "snappyStreamingJobResult_" + System.currentTimeMillis() + ".log");
+    }
+
+    public static void streamingActivity() {
+        Runnable simulateStreamingActivity = new Runnable() {
+            public void run() {
+                snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames(),
+                        "snappyStreamingJobResult_" + System.currentTimeMillis() + ".log");
+            }
+        };
+
+        ExecutorService es = Executors.newFixedThreadPool(1);
+        es.submit(simulateStreamingActivity);
+    }
+
   protected void executeSnappyStreamingJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     String curlCommand1 = null, curlCommand2 = null, curlCommand3 = null, contextName = null, APP_PROPS = null;
