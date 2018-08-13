@@ -82,9 +82,6 @@ abstract class BaseColumnFormatRelation(
     with RowInsertableRelation
     with MutableRelation {
 
-    var snappySession: SnappySession = _
-    private def sessionCatalog: SessionCatalog = snappySession.sessionState.catalog
-
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
   override val connectionType: ConnectionType.Value =
@@ -262,13 +259,13 @@ abstract class BaseColumnFormatRelation(
 
     // always use case-insensitive analysis for partitioning columns
     // since table creation can use case-insensitive in creation
-      partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
+    partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
   }
 
-    /** Get key columns of the column table */
-    override def getPrimaryKeyColumns: Seq[String] = {
-        _origOptions.get(ExternalStoreUtils.KEY_COLUMNS).getOrElse("").split(",")
-    }
+  /** Get key columns of the column table */
+  override def getPrimaryKeyColumns: Seq[String] = {
+    _origOptions.get(ExternalStoreUtils.KEY_COLUMNS).getOrElse("").split(",")
+  }
 
     /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan

@@ -19,7 +19,7 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
-import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.{Column, _}
@@ -34,7 +34,6 @@ import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpda
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.internal.CatalogImpl
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
@@ -87,10 +86,6 @@ case class JDBCMutableRelation(
     new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
   private[sql] val resolvedName = table
-
-  var snappySession: SnappySession = _
-
-  private def sessionCatalog: SessionCatalog = snappySession.sessionState.catalog
 
   var tableExists: Boolean = _
 
