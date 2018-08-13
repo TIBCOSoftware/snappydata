@@ -170,6 +170,14 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
+  private def getChildren(parent: RDD[_]): Seq[RDD[_]] = {
+    parent match {
+      case rdd: DelegateRDD[_] =>
+        (rdd.baseRdd +: (rdd.dependencies.map(_.rdd) ++ rdd.otherRDDs)).toSet.toSeq
+      case _ => parent.dependencies.map(_.rdd)
+    }
+  }
+
   @tailrec
   private def clearPartitions(rdds: Seq[RDD[_]]): Unit = {
     val children = rdds.flatMap {
@@ -177,18 +185,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       case r =>
         // f.set(r, null)
         UnsafeHolder.getUnsafe.putObject(r, CachedDataFrame.rdd_partitions_, null)
-        val allRDDs = r match {
-          case rdd: DelegateRDD[_] =>
-            val baseRDD = rdd.baseRdd
-            val otherRDDs = rdd.otherRDDs
-            otherRDDs.map(o =>
-              UnsafeHolder.getUnsafe.putObject(o, CachedDataFrame.rdd_partitions_, null))
-            UnsafeHolder.getUnsafe.putObject(baseRDD, CachedDataFrame.rdd_partitions_, null)
-            otherRDDs ++ Seq(baseRDD)
-          case _ => Seq.empty[RDD[_]]
-        }
-
-        r.dependencies.map(_.rdd) ++ allRDDs.flatMap(b => b.dependencies.map(_.rdd))
+        getChildren(r)
     }
     if (children.nonEmpty) {
       clearPartitions(children)
@@ -204,16 +201,8 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       case null => Nil
       case r =>
         r.getNumPartitions
-        val allRDDs = r match {
-          case rdd: DelegateRDD[_] =>
-            val baseRDD = rdd.baseRdd
-            val otherRDDs = rdd.otherRDDs
-            otherRDDs.map(o => o.getNumPartitions)
-            baseRDD.getNumPartitions
-            otherRDDs ++ Seq(baseRDD)
-          case _ => Seq.empty[RDD[_]]
-        }
-        r.dependencies.map(_.rdd) ++ allRDDs.flatMap(b => b.dependencies.map(_.rdd))
+        getChildren(r)
+
     }
     if (children.nonEmpty) {
       reEvaluatePartitions(children)

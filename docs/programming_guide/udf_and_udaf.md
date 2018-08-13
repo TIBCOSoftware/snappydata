@@ -98,8 +98,9 @@ DROP FUNCTION IF EXISTS app.strnglen
 
 SnappyData uses the same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
 
-## Known Limitation
-In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or SnappySession (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. 
+## Known Limitations
+*	In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or SnappySession (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. 
 As a workaround, you can qualify the schemaname with tablename. </br> 
 For example, to select all rows from table 't1' in schema 'schema1', use query `select * from schema1.t1`
 
+*	In the current version of the product, user defined functions are not displayed when you run the SHOW FUNCTIONS command in SnappyData shell. This will be available in the future releases.
