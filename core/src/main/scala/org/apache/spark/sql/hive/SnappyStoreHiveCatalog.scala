@@ -177,6 +177,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     formatTableName(currentSchema)
   }
 
+  /** API to get primary key or Key Columns of a SnappyData table */
   def getKeyColumns(table: String): Dataset[Column] = {
     val tableIdent = this.newQualifiedTableName(table)
       try {
@@ -200,8 +201,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
         CatalogImpl.makeDataset(keyColumns, snappySession)
       } catch {
-         case _: TableNotFoundException | _: NoSuchTableException =>
-            throw new Exception(s"Table '$table' not found")
+          case _: TableNotFoundException | _: NoSuchTableException =>
+              throw new Exception(s"Table '$table' not found")
+          case ex : Throwable => throw ex
     }
   }
 
