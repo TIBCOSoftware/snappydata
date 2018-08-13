@@ -20,7 +20,7 @@ import java.sql.Connection
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
@@ -32,7 +32,7 @@ import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode}
+import org.apache.spark.sql._
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -112,6 +112,11 @@ trait MutableRelation extends DestroyRelation {
    * UPDATE and DELETE operations for affecting the selected rows.
    */
   def getKeyColumns: Seq[String]
+
+  /**
+    * Get the "primary key" of the row table and "key columns" of the  column table
+  */
+  def getPrimaryKeyColumns: Seq[String]
 
   /** Get the partitioning columns for the table, if any. */
   def partitionColumns: Seq[String]

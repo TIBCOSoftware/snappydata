@@ -18,6 +18,7 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.URL
+import java.util
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -25,7 +26,6 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
@@ -40,9 +40,9 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
-
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.analysis.{FunctionAlreadyExistsException, FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPermanentFunctionException, NoSuchTableException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
@@ -58,9 +58,10 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendab
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils, SQLConf, UDFFunction}
+import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.MutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
@@ -174,6 +175,34 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   override def getCurrentDatabase: String = synchronized {
     formatTableName(currentSchema)
+  }
+
+  def getKeyColumns(table: String): Dataset[Column] = {
+    val tableIdent = this.newQualifiedTableName(table)
+      try {
+        val relation: LogicalRelation = getCachedHiveTable(tableIdent)
+        val keyColumns = relation match {
+          case LogicalRelation(mutable: MutableRelation, _, _) =>
+            val keyCols = mutable.getPrimaryKeyColumns.map(_.toUpperCase())
+            val tableMetadata = this.getTempViewOrPermanentTableMetadata(tableIdent)
+            val partitionColumnNames = tableMetadata.partitionColumnNames.toSet
+            val columns = tableMetadata.schema.map { c =>
+              new Column(
+                name = c.name.toUpperCase,
+                description = c.getComment().orNull,
+                dataType = c.dataType.catalogString,
+                nullable = c.nullable,
+                isPartition = partitionColumnNames.contains(c.name),
+                isBucket = false)
+            }
+            columns.filter(c => keyCols.contains(c.name))
+          case _ => Seq.empty[Column]
+        }
+        CatalogImpl.makeDataset(keyColumns, snappySession)
+      } catch {
+         case _: TableNotFoundException | _: NoSuchTableException =>
+            throw new Exception(s"Table '$table' not found")
+    }
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
