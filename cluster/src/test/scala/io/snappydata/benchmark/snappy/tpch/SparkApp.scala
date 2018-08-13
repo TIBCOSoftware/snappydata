@@ -68,11 +68,15 @@ object SparkApp {
 
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString,
       sparkSession.sqlContext, tpchDataPath,
-      isSnappy = false, loadPerfPrintStream)
+      isSnappy = false, loadPerfPrintStream,
+      trace = traceEvents,
+      cacheTables = cacheTables)
 
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString,
       sparkSession.sqlContext, tpchDataPath,
-      isSnappy = false, loadPerfPrintStream)
+      isSnappy = false, loadPerfPrintStream,
+      trace = traceEvents,
+      cacheTables = cacheTables)
 
     if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(
