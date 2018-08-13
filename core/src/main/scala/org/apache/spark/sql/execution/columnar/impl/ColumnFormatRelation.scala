@@ -19,19 +19,19 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalog.Column
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
@@ -44,6 +44,8 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition}
+import org.apache.spark.sql.internal.CatalogImpl
+import org.dmg.pmml.False
 
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -80,6 +82,8 @@ abstract class BaseColumnFormatRelation(
     with RowInsertableRelation
     with MutableRelation {
 
+    var snappySession: SnappySession = _
+    private def sessionCatalog: SessionCatalog = snappySession.sessionState.catalog
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
@@ -258,10 +262,15 @@ abstract class BaseColumnFormatRelation(
 
     // always use case-insensitive analysis for partitioning columns
     // since table creation can use case-insensitive in creation
-    partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
+      partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
   }
 
-  /**
+    /** Get key columns of the column table */
+    override def getPrimaryKeyColumns: Seq[String] = {
+        _origOptions.get(ExternalStoreUtils.KEY_COLUMNS).getOrElse("").split(",")
+    }
+
+    /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
    * execution should be a count of number of updated rows.
    */

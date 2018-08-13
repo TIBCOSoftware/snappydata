@@ -23,7 +23,7 @@ import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TRIPDATA}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{AnalysisException, Row, SaveMode, TableNotFoundException}
+import org.apache.spark.sql._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import scala.util.{Failure, Success, Try}
@@ -722,4 +722,46 @@ class RowTableTest
 
     session.sql("drop table airline")
   }
+
+    test("Test method for getting key columns and primary keys of column and row tables") {
+        var session = new SnappySession(snc.sparkContext)
+        session.sql("drop table if exists temp1")
+        session.sql("drop table if exists temp2")
+        session.sql("drop table if exists temp3")
+        session.sql("drop table if exists temp4")
+        session.sql("drop table if exists temp5")
+
+        session.sql("create table temp1(id1 bigint not null primary key , name1 varchar(10)) ")
+        session.sql("create table temp2(id1 bigint not null , name1 varchar(10)) " +
+            "USING column OPTIONS(key_columns 'id1' ) ")
+        session.sql("create table temp3(id1 bigint not null , name1 varchar(10), " +
+            "id2 bigint not null, id3 bigint not null) USING column " +
+            "OPTIONS(key_columns 'id1,id2' ) ")
+        session.sql("create table temp4(id1 bigint not null , name1 varchar(10)) ")
+        session.sql("create table temp5(id1 bigint not null , name1 varchar(10)) " +
+            "using column options(partition_by 'name1')")
+
+        session.sql("insert into temp1 values(1,'abc')")
+        session.sql("insert into temp2 values(2,'efd')")
+        session.sql("insert into temp3 values(1,'cde',3,4)")
+        session.sql("insert into temp4 values(1,'abc')")
+        session.sql("insert into temp4 values(1,'abc')")
+
+        val res1 = session.sessionCatalog.getKeyColumns("temp1")
+        assert(res1.collect().size == 1)
+
+        val res2 = session.sessionCatalog.getKeyColumns("temp2")
+        assert(res2.collect().size == 1)
+
+        val res3 = session.sessionCatalog.getKeyColumns("temp3")
+        assert(res3.collect().size == 2)
+
+        val res4 = session.sessionCatalog.getKeyColumns("temp4")
+        assert(res4.collect().size == 0)
+
+        val res5 = session.sessionCatalog.getKeyColumns("temp5")
+        assert(res5.collect().size == 0)
+
+
+    }
 }

@@ -19,10 +19,11 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog
+import org.apache.spark.sql.{Column, _}
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
@@ -33,6 +34,7 @@ import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpda
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.internal.CatalogImpl
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
@@ -85,6 +87,10 @@ case class JDBCMutableRelation(
     new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
   private[sql] val resolvedName = table
+
+  var snappySession: SnappySession = _
+
+  private def sessionCatalog: SessionCatalog = snappySession.sessionState.catalog
 
   var tableExists: Boolean = _
 
@@ -259,6 +265,27 @@ case class JDBCMutableRelation(
       conn.close()
     }
   }
+
+    /** Get primary keys of the row table */
+    override def getPrimaryKeyColumns: Seq[String] = {
+        val conn = ConnectionPool.getPoolConnection(table, dialect,
+            connProperties.poolProps, connProperties.connProps,
+            connProperties.hikariCP)
+        try {
+            val metadata = conn.getMetaData
+            val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
+                table, conn)
+            val primaryKeys = metadata.getPrimaryKeys(null, schemaName, tableName)
+            val primaryKey = new mutable.ArrayBuffer[String](2)
+            while (primaryKeys.next()) {
+                primaryKey += primaryKeys.getString(4)
+            }
+            primaryKey
+            }
+        finally {
+            conn.close()
+        }
+    }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     // use the Insert plan for best performance
