@@ -125,7 +125,8 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateSupplierTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStages : Int = 1)
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStages : Int = 1,
+      trace : Boolean = false, cacheTables : Boolean = true)
       : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
@@ -169,7 +170,9 @@ object TPCHReplicatedTable {
     }
     if(!isSnappy){
       unionSupplierDF.createOrReplaceTempView("SUPPLIER")
-      sqlContext.cacheTable("SUPPLIER")
+      if(cacheTables) {
+        sqlContext.cacheTable("SUPPLIER")
+      }
       sqlContext.table("SUPPLIER").count()
     }
 

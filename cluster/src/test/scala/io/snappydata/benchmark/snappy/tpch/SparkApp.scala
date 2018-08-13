@@ -80,20 +80,28 @@ object SparkApp {
 
     if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(
-        sparkSession.sqlContext, tpchDataPath, false,
+        sparkSession.sqlContext, tpchDataPath,
+        isSnappy = false,
         buckets = if (rePartition) buckets_Supplier else "0",
-        loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
-        isParquet = isParquet)
+        loadPerfPrintStream,
+        numberOfLoadingStages = numberOfLoadStages,
+        isParquet = isParquet,
+        trace = traceEvents,
+        cacheTables = cacheTables)
     } else {
       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, sparkSession.sqlContext,
-        tpchDataPath, false, loadPerfPrintStream, numberOfLoadStages)
+        tpchDataPath, isSnappy = false, loadPerfPrintStream,
+        numberOfLoadingStages = numberOfLoadStages,
+        trace = traceEvents,
+        cacheTables = cacheTables)
     }
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(sparkSession.sqlContext,
       tpchDataPath,
       isSnappy = false,
       buckets = if (rePartition) buckets_Order_Lineitem else "0",
-      loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
+      loadPerfPrintStream,
+      numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet,
       trace = traceEvents,
       cacheTables = cacheTables)
