@@ -64,9 +64,9 @@ object TableCreationJob extends SnappySQLJob {
     snc.dropTable("ORDERS", ifExists = true)
 
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream)
+      loadPerfPrintStream, trace = false, cacheTables = false)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream)
+      loadPerfPrintStream, trace = false, cacheTables = false)
 
     if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snc, tpchDataPath, isSnappy,
