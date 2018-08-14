@@ -136,7 +136,7 @@ For writing jobs users need to include [Maven/SBT dependencies for the latest re
 For example, gradle can be configured as:
 
 ```pre
-compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
+compile('io.snappydata:snappydata-cluster_2.11:1.0.2') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')

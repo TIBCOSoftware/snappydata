@@ -1,5 +1,5 @@
 # Release Notes 
-The SnappyData team is pleased to announce the availability of version 1.0.1 of the platform.
+The SnappyData team is pleased to announce the availability of version 1.0.2 of the platform.
 [**Download the Enterprise Edition here**](https://www.snappydata.io/download).
 
 ## New Features
