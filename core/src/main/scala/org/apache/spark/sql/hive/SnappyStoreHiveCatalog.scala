@@ -41,11 +41,10 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
 
-import org.apache.spark.sql.internal
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionAlreadyExistsException, FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPermanentFunctionException, NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{FunctionAlreadyExistsException, FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPermanentFunctionException, NoSuchTableException}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, ExpressionInfo}
@@ -54,8 +53,7 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.columnar.impl.{DefaultSource => ColumnSource}
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{IndexColumnFormatRelation, DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
@@ -525,7 +523,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               filter
             } else {
               result.copy(condition = org.apache.spark.sql.catalyst.expressions.And(
-                result.condition, filter.condition))
+                filter.condition, result.condition))
             }
         }
         val storedLogicalRelation = this.lookupRelation(newQualifiedTableName(
@@ -1378,6 +1376,10 @@ object SnappyStoreHiveCatalog {
   def getSchemaStringFromHiveTable(table: Table): String =
     JdbcExtendedUtils.readSplitProperty(HIVE_SCHEMA_PROP,
       table.getParameters.asScala).orNull
+
+  def getViewTextFromHiveTable(table: Table): String =
+    JdbcExtendedUtils.readSplitProperty(Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY,
+      table.getParameters.asScala).getOrElse(table.getViewOriginalText)
 
   def getDatabaseOption(client: HiveClient, db: String): Option[CatalogDatabase] = try {
     Some(client.getDatabase(db))

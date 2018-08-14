@@ -439,6 +439,14 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
 
   override def prettyName: String = "DynamicExpression"
 
+  override def toString: String = {
+    def removeCast(expr: Expression): Expression = expr match {
+      case Cast(child, _) => removeCast(child)
+      case _ => expr
+    }
+    "DynExpr(" + removeCast(expr) + ")"
+  }
+
   override def makeCopy(newArgs: Array[AnyRef]): Expression = {
     assert(newArgs.length == 1)
     if (newArgs(0) eq expr) this

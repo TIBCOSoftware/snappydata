@@ -57,7 +57,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   }
 
   override protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
-      changeOwnerToStorage: Boolean): ColumnDelta = synchronized {
+      changeOwnerToStorage: Boolean): ColumnDelta = {
     new ColumnDelta(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
@@ -68,8 +68,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   }
 
   override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
-      prepareForOffHeap: Boolean): AnyRef = synchronized {
-    if (oldValue eq null) {
+      prepareForOffHeap: Boolean): AnyRef = {
+    if (oldValue eq null) synchronized {
       // first delta, so put as is
       val result = new ColumnFormatValue(columnBuffer, compressionCodecId, isCompressed)
       // buffer has been transferred and should be removed from delta

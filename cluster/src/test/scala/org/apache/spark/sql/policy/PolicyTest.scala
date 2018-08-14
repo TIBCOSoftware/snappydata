@@ -238,6 +238,7 @@ class PolicyTest extends SnappyFunSuite
     this.testRecursionBug(rowTableName)
   }
 
+
   test("test policy filter with subquery for row table") {
     this.whereClauseWithExistsCondition(rowTableName)
   }
@@ -334,11 +335,31 @@ class PolicyTest extends SnappyFunSuite
         s"$tableName for select to userX using id < 30 and name = 'name_1'")
     val snc2 = snc.newSession()
     snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
-    val q = s"select * from $tableName where id < 20 and name = 'name_1'"
-    val x = snc2.sql(q)
-    val rs = x.collect()
+    var q = s"select * from $tableName where id < 20 and name = 'name_1'"
+
+    var rs = snc2.sql(q).collect()
     assertEquals(1, rs.length)
+    // now create another policy
+    ownerContext.sql(s"create policy testPolicy2 on  " +
+        s"$tableName for select to userX using id < 20 and name = 'name_2'")
+    rs = snc2.sql(q).collect()
+    assertEquals(0, rs.length)
+
+    ownerContext.sql(s"create policy testPolicy3 on  " +
+        s"$tableName for select to userX using id < 10 and name = 'name_4'")
+
+    ownerContext.sql(s"create policy testPolicy4 on  " +
+        s"$tableName for select to userX using id < 5 and name = 'name_5'")
+
+    q = s"select * from $tableName where id < 20 and name = 'name_1' and id > 10 " +
+        s"and name = 'name7'"
+
+    rs = snc2.sql(q).collect()
+    assertEquals(0, rs.length)
     ownerContext.sql("drop policy testPolicy1")
+    ownerContext.sql("drop policy testPolicy2")
+    ownerContext.sql("drop policy testPolicy3")
+    ownerContext.sql("drop policy testPolicy4")
 
   }
 

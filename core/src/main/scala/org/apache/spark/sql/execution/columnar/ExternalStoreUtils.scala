@@ -476,7 +476,8 @@ object ExternalStoreUtils {
       checkIndexedColumn(a, indexedCols).map(expressions.In(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
-    case expressions.And(left, right) => handledFilter(left, indexedCols) match {
+      // Commenting out the below conditions for SNAP-2463. This needs to be fixed
+    /* case expressions.And(left, right) => handledFilter(left, indexedCols) match {
       case None => handledFilter(right, indexedCols)
       case lf@Some(l) => handledFilter(right, indexedCols) match {
         case None => lf
@@ -491,7 +492,7 @@ object ExternalStoreUtils {
         case None => None
         case Some(r) => Some(expressions.Or(l, r))
       }
-    }
+    } */
     case _ => None
   }
 
