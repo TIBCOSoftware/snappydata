@@ -516,25 +516,6 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long numRowsList;
 
-  /**
-   * Number of stack dump for each thread of locators, servers, leads
-   */
-  public static Long numOfStackDumpItr;
-
-  public static int getNumOfStackDumpItrs(){
-    Long key = numOfStackDumpItr;
-    return tasktab().intAt(key, tab().intAt(key, 3));
-  }
-
-  /**
-   * Sleep time in secs between 2 thread dumps.
-   */
-  public static Long sleepBtwnStackDump;
-
-  public static int getSleepBtwnStackDumps(){
-    Long key = sleepBtwnStackDump;
-    return tasktab().intAt(key, tab().intAt(key, 5));
-  }
 
   public static String getCredentialFile() {
     Long key = credentialFile;
