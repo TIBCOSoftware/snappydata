@@ -20,6 +20,7 @@ package org.apache.spark.sql.catalyst.expressions
 import java.util.concurrent.ConcurrentHashMap
 import javax.xml.bind.DatatypeConverter
 
+import scala.collection.mutable.{Map, HashMap}
 import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -38,13 +39,13 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
+case class TermValues(literalValueRef : String, isNull : String, valueTerm : String)
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
 trait DynamicReplacableConstant extends Expression {
 
-  @transient protected final var literalValueRef: String = _
-  @transient protected final var isNull: String = _
-  @transient protected final var valueTerm: String = _
+  @transient private lazy val termMap :
+    Map[CodegenContext, TermValues] = new HashMap[CodegenContext, TermValues]
 
   def value: Any
 
@@ -59,20 +60,26 @@ trait DynamicReplacableConstant extends Expression {
   override final def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // change the isNull and primitive to consts, to inline them
     val value = this.value
+
     assert(value != null || nullable, "Expected nullable as true when value is null")
     val addMutableState = !ctx.references.exists(_.asInstanceOf[AnyRef] eq this)
     if (addMutableState) {
-      literalValueRef = ctx.addReferenceObj("literal", this,
+      val literalValueRef = ctx.addReferenceObj("literal", this,
         classOf[DynamicReplacableConstant].getName)
-      isNull = ctx.freshName("isNull")
-      valueTerm = ctx.freshName("value")
+      val isNull = ctx.freshName("isNull")
+      val valueTerm = ctx.freshName("value")
+      termMap.put(ctx, TermValues(literalValueRef, isNull, valueTerm))
     } else {
-      assert(literalValueRef ne null)
+      assert(termMap.get(ctx).isDefined)
     }
     val isNullLocal = ev.isNull
     val valueLocal = ev.value
     val dataType = Utils.getSQLDataType(this.dataType)
     val javaType = ctx.javaType(dataType)
+    // get values from map
+    val isNull = termMap.get(ctx).get.isNull
+    val valueTerm = termMap.get(ctx).get.valueTerm
+    val literalValueRef = termMap.get(ctx).get.literalValueRef
     val initCode =
       s"""
          |final boolean $isNullLocal = $isNull;
