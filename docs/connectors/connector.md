@@ -5,4 +5,5 @@ It provides a connection to a datasource and the database.
 
 For more information see:
 
-* [Using the SnappyData CDC (Change Data Capture) Connector](cdc_connector.md)
+* [Using the SnappyData Change Data Capture (CDC) Connector](cdc_connector.md)
+* [Using the SnappyData GemFire Connector](gemfire_connector.md)

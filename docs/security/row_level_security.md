@@ -71,6 +71,11 @@ After the row level security is enabled, the policy gets applied to the users.
 The policy which is created to restrict row level permissions is effective only after you enable the row level security. To enable row level security, execute the following **ALTER DDL** command:
 
 ```
+ALTER TABLE <table_name> ENABLE ROW LEVEL SECURITY;
+```
+For example, 
+
+```
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 ```
 
