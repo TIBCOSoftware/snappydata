@@ -19,11 +19,10 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.catalog.SessionCatalog
-import org.apache.spark.sql.{Column, _}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
@@ -276,7 +275,7 @@ case class JDBCMutableRelation(
                 primaryKey += primaryKeys.getString(4)
             }
             primaryKey
-            }
+        }
         finally {
             conn.close()
         }
