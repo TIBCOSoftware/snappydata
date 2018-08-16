@@ -35,6 +35,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-----|-----|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
+|-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|
 |-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| 
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
@@ -123,6 +124,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-|-|
 |-bind-address|IP address on which the server is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
+|-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|
 |-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). **work** is the default current working directory. |
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.</br>|
