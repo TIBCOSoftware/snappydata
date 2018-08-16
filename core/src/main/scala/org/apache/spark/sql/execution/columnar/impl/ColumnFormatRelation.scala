@@ -262,7 +262,7 @@ abstract class BaseColumnFormatRelation(
     override def getPrimaryKeyColumns: Seq[String] = {
         val keyColsOptions = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
         if (keyColsOptions.isDefined) {
-            keyColsOptions.get.split(",")
+            keyColsOptions.get.split(",").map(_.trim)
         } else {
             Seq.empty[String]
         }
