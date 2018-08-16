@@ -31,6 +31,7 @@ import com.gemstone.gemfire.internal.GFToSlf4jBridge;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.gemstone.gemfire.internal.cache.GemfireCacheHelper;
+import com.gemstone.gemfire.internal.cache.PolicyTableData;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.gemstone.gemfire.internal.shared.SystemProperties;
 import com.pivotal.gemfirexd.Attribute;
@@ -58,6 +59,7 @@ import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
+import org.apache.spark.sql.policy.PolicyProperties;
 import org.apache.spark.sql.sources.JdbcExtendedUtils;
 import org.apache.spark.sql.store.StoreUtils;
 import org.apache.spark.sql.types.StructType;
@@ -216,6 +218,20 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   @Override
+  public List<PolicyTableData> getPolicies(boolean skipLocks) {
+    /* skip if this is already the catalog lookup thread (Hive dropTable
+    //   invokes getTables again)
+    if (Boolean.TRUE.equals(HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get())) {
+      return Collections.emptyList();
+    } */
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.GET_POLICIES, null, null, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    // noinspection unchecked
+    return (List<PolicyTableData>)handleFutureResult(f);
+  }
+
+  @Override
   public ExternalTableMetaData getHiveTableMetaData(String schema, String tableName,
       boolean skipLocks) {
     HMSQuery q = getHMSQuery();
@@ -295,6 +311,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private static final int CLOSE_HMC = 7;
     private static final int GET_TABLE = 8;
     private static final int GET_HIVE_TABLES = 9;
+    private static final int GET_POLICIES = 10;
 
     // More to be added later
 
@@ -317,219 +334,261 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         if (this.skipLock) {
           GfxdDataDictionary.SKIP_LOCKS.set(true);
         }
-      switch (this.qType) {
-        case INIT:
-          // Take read/write lock on metastore. Because of this all the servers
-          // will initiate their hive client one by one. This is important as we
-          // have downgraded the ISOLATION LEVEL from SERIALIZABLE to REPEATABLE READ
-          final String hiveClientObject = "HiveMetaStoreClient";
-          final GfxdDRWLockService lockService = Misc.getMemStoreBooting()
-              .getDDLLockService();
-          final GFToSlf4jBridge logger = (GFToSlf4jBridge)Misc.getI18NLogWriter();
-          final int previousLevel = logger.getLevel();
-          final Logger log4jLogger = LogManager.getRootLogger();
-          final Level log4jLevel = log4jLogger.getEffectiveLevel();
-          logger.info("Starting hive meta-store initialization");
-          // just log the warning messages, during hive client initialization
-          // as it generates hundreds of line of logs which are of no use.
-          // Once the initialization is done, restore the logging level.
-          final boolean reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL
-              || previousLevel == LogWriterImpl.INFO_LEVEL;
-          if (reduceLog) {
-            logger.setLevel(LogWriterImpl.WARNING_LEVEL);
-            log4jLogger.setLevel(Level.WARN);
-          }
-
-          final Object lockOwner = lockService.newCurrentOwner();
-          boolean writeLock = false;
-          boolean dlockTaken = lockService.lock(hiveClientObject,
-              GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
-          boolean lockTaken = false;
-          try {
-            // downgrade dlock to a read lock if hive metastore has already
-            // been initialized by some other server
-            if (dlockTaken && Misc.getRegionByPath("/" + SystemProperties
-                .SNAPPY_HIVE_METASTORE + "/FUNCS", false) != null) {
-              lockService.unlock(hiveClientObject);
-              dlockTaken = false;
-              lockTaken = lockService.readLock(hiveClientObject, lockOwner,
-                  GfxdLockSet.MAX_LOCKWAIT_VAL);
-              // reduce log4j level to avoid "function exists" warnings
-              if (reduceLog) {
-                log4jLogger.setLevel(Level.ERROR);
-              }
-            } else {
-              lockTaken = lockService.writeLock(hiveClientObject, lockOwner,
-                  GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
-              writeLock = true;
+        switch (this.qType) {
+          case INIT:
+            // Take read/write lock on metastore. Because of this all the servers
+            // will initiate their hive client one by one. This is important as we
+            // have downgraded the ISOLATION LEVEL from SERIALIZABLE to REPEATABLE READ
+            final String hiveClientObject = "HiveMetaStoreClient";
+            final GfxdDRWLockService lockService = Misc.getMemStoreBooting()
+                .getDDLLockService();
+            final GFToSlf4jBridge logger = (GFToSlf4jBridge)Misc.getI18NLogWriter();
+            final int previousLevel = logger.getLevel();
+            final Logger log4jLogger = LogManager.getRootLogger();
+            final Level log4jLevel = log4jLogger.getEffectiveLevel();
+            logger.info("Starting hive meta-store initialization");
+            // just log the warning messages, during hive client initialization
+            // as it generates hundreds of line of logs which are of no use.
+            // Once the initialization is done, restore the logging level.
+            final boolean reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL
+                || previousLevel == LogWriterImpl.INFO_LEVEL;
+            if (reduceLog) {
+              logger.setLevel(LogWriterImpl.WARNING_LEVEL);
+              log4jLogger.setLevel(Level.WARN);
             }
-            synchronized (hiveClientSync) {
-              initHMC();
-            }
-          } finally {
-            if (lockTaken) {
-              if (writeLock) {
-                lockService.writeUnlock(hiveClientObject, lockOwner);
-              } else {
-                lockService.readUnlock(hiveClientObject);
-              }
-            }
-            if (dlockTaken) {
-              lockService.unlock(hiveClientObject);
-            }
-            logger.setLevel(previousLevel);
-            log4jLogger.setLevel(log4jLevel);
-            logger.info("Done hive meta-store initialization");
-          }
-          return true;
 
-        case ISROWTABLE_QUERY:
-          hmc = Hive.get();
-          String type = getType(hmc);
-          return type.equalsIgnoreCase(ExternalTableType.Row().name());
-
-        case ISCOLUMNTABLE_QUERY:
-          hmc = Hive.get();
-          type = getType(hmc);
-          return !type.equalsIgnoreCase(ExternalTableType.Row().name());
-
-        case COLUMNTABLE_SCHEMA:
-          hmc = Hive.get();
-          return getSchema(hmc);
-
-        case GET_TABLE:
-          hmc = Hive.get();
-          return getTable(hmc, this.dbName, this.tableName);
-
-        case GET_HIVE_TABLES: {
-          hmc = Hive.get();
-          List<String> schemas = hmc.getAllDatabases();
-          ArrayList<ExternalTableMetaData> externalTables = new ArrayList<>();
-          for (String schema : schemas) {
-            List<String> tables = hmc.getAllTables(schema);
-            for (String tableName : tables) {
-              try {
-                Table table = hmc.getTable(schema, tableName);
-                Properties metadata = table.getMetadata();
-                String tblDataSourcePath = metadata.getProperty("path");
-                tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
-                String driverClass = metadata.getProperty("driver");
-                driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
-                String tableType = ExternalTableType.getTableType(table);
-                if (!ExternalTableType.Row().name().equalsIgnoreCase(tableType)) {
-                  // TODO: FIX ME: should not convert to upper case blindly
-                  // but unfortunately hive meta-store is not case-sensitive
-                  ExternalTableMetaData metaData = new ExternalTableMetaData(
-                      Utils.toUpperCase(table.getTableName()),
-                      Utils.toUpperCase(table.getDbName()),
-                      tableType, null, -1, -1,
-                      null, null, null, null,
-                      tblDataSourcePath, driverClass);
-                  metaData.provider = table.getParameters().get(
-                      SnappyStoreHiveCatalog.HIVE_PROVIDER());
-                  metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
-                  metaData.columns = ExternalStoreUtils.getColumnMetadata(
-                      ExternalStoreUtils.getTableSchema(table));
-                  if ("VIEW".equalsIgnoreCase(tableType)) {
-                    metaData.viewText = SnappyStoreHiveCatalog
-                        .getViewTextFromHiveTable(table);
-                  }
-                  externalTables.add(metaData);
+            final Object lockOwner = lockService.newCurrentOwner();
+            boolean writeLock = false;
+            boolean dlockTaken = lockService.lock(hiveClientObject,
+                GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+            boolean lockTaken = false;
+            try {
+              // downgrade dlock to a read lock if hive metastore has already
+              // been initialized by some other server
+              if (dlockTaken && Misc.getRegionByPath("/" + SystemProperties
+                  .SNAPPY_HIVE_METASTORE + "/FUNCS", false) != null) {
+                lockService.unlock(hiveClientObject);
+                dlockTaken = false;
+                lockTaken = lockService.readLock(hiveClientObject, lockOwner,
+                    GfxdLockSet.MAX_LOCKWAIT_VAL);
+                // reduce log4j level to avoid "function exists" warnings
+                if (reduceLog) {
+                  log4jLogger.setLevel(Level.ERROR);
                 }
-              } catch (Exception e) {
-                // ignore exception and move to next
-                Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
-                    "Failed to retrieve information for " + tableName + ": " + e);
+              } else {
+                lockTaken = lockService.writeLock(hiveClientObject, lockOwner,
+                    GfxdLockSet.MAX_LOCKWAIT_VAL, -1);
+                writeLock = true;
+              }
+              synchronized (hiveClientSync) {
+                initHMC();
+              }
+            } finally {
+              if (lockTaken) {
+                if (writeLock) {
+                  lockService.writeUnlock(hiveClientObject, lockOwner);
+                } else {
+                  lockService.readUnlock(hiveClientObject);
+                }
+              }
+              if (dlockTaken) {
+                lockService.unlock(hiveClientObject);
+              }
+              logger.setLevel(previousLevel);
+              log4jLogger.setLevel(log4jLevel);
+              logger.info("Done hive meta-store initialization");
+            }
+            return true;
+
+          case ISROWTABLE_QUERY:
+            hmc = Hive.get();
+            String type = getType(hmc);
+            return type.equalsIgnoreCase(ExternalTableType.Row().name());
+
+          case ISCOLUMNTABLE_QUERY:
+            hmc = Hive.get();
+            type = getType(hmc);
+            return !type.equalsIgnoreCase(ExternalTableType.Row().name());
+
+          case COLUMNTABLE_SCHEMA:
+            hmc = Hive.get();
+            return getSchema(hmc);
+
+          case GET_TABLE:
+            hmc = Hive.get();
+            return getTable(hmc, this.dbName, this.tableName);
+
+          case GET_HIVE_TABLES: {
+            hmc = Hive.get();
+            List<String> schemas = hmc.getAllDatabases();
+            ArrayList<ExternalTableMetaData> externalTables = new ArrayList<>();
+            for (String schema : schemas) {
+              List<String> tables = hmc.getAllTables(schema);
+              for (String tableName : tables) {
+                try {
+                  Table table = hmc.getTable(schema, tableName);
+                  Properties metadata = table.getMetadata();
+                  String tblDataSourcePath = metadata.getProperty("path");
+                  tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+                  String driverClass = metadata.getProperty("driver");
+                  driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
+                  String tableType = ExternalTableType.getTableType(table);
+                  // exclude policies also from the list of hive tables
+                  if (!(ExternalTableType.Row().name().equalsIgnoreCase(tableType)
+                      || ExternalTableType.Policy().name().equalsIgnoreCase(tableType))) {
+                    // TODO: FIX ME: should not convert to upper case blindly
+                    // but unfortunately hive meta-store is not case-sensitive
+                    ExternalTableMetaData metaData = new ExternalTableMetaData(
+                        Utils.toUpperCase(table.getTableName()),
+                        Utils.toUpperCase(table.getDbName()),
+                        tableType, null, -1, -1,
+                        null, null, null, null,
+                        tblDataSourcePath, driverClass);
+                    metaData.provider = table.getParameters().get(
+                        SnappyStoreHiveCatalog.HIVE_PROVIDER());
+                    metaData.shortProvider = SnappyContext.getProviderShortName(metaData.provider);
+                    metaData.columns = ExternalStoreUtils.getColumnMetadata(
+                        ExternalStoreUtils.getTableSchema(table));
+                    if ("VIEW".equalsIgnoreCase(tableType)) {
+                      metaData.viewText = SnappyStoreHiveCatalog
+                          .getViewTextFromHiveTable(table);
+                    }
+                    externalTables.add(metaData);
+                  }
+                } catch (Exception e) {
+                  // ignore exception and move to next
+                  Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                      "Failed to retrieve information for " + tableName + ": " + e);
+                }
               }
             }
+            return externalTables;
           }
-          return externalTables;
+          case GET_POLICIES: {
+            hmc = Hive.get();
+            List<String> schemas = hmc.getAllDatabases();
+            ArrayList<PolicyTableData> policyData = new ArrayList<>();
+            for (String schema : schemas) {
+              List<String> tables = hmc.getAllTables(schema);
+              for (String tableName : tables) {
+                try {
+                  Table table = hmc.getTable(schema, tableName);
+                  Properties metadata = table.getMetadata();
+
+                  String tableType = ExternalTableType.getTableType(table);
+                  // exclude policies also from the list of hive tables
+                  if (ExternalTableType.Policy().name().equalsIgnoreCase(tableType)) {
+                    String policyFor = Utils.toUpperCase(
+                        metadata.getProperty(PolicyProperties.policyFor()));
+                    String policyApplyTo = Utils.toUpperCase(
+                        metadata.getProperty(PolicyProperties.policyApplyTo()));
+                    String targetTable = Utils.toUpperCase(
+                        metadata.getProperty(PolicyProperties.targetTable()));
+                    String filter = Utils.toUpperCase(
+                        metadata.getProperty(PolicyProperties.filterString()));
+                    String owner = Utils.toUpperCase(
+                        metadata.getProperty(PolicyProperties.policyOwner()));
+                    PolicyTableData metaData = new PolicyTableData(
+                        Utils.toUpperCase(table.getTableName()),
+                        policyFor, policyApplyTo, targetTable, filter, owner);
+                    metaData.columns = ExternalStoreUtils.getColumnMetadata(
+                        ExternalStoreUtils.getTableSchema(table));
+                    policyData.add(metaData);
+                  }
+                } catch (Exception e) {
+                  // ignore exception and move to next
+                  Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
+                      "Failed to retrieve information for " + tableName + ": " + e);
+                }
+              }
+            }
+            return policyData;
+          }
+
+          case GET_ALL_TABLES_MANAGED_IN_DD:
+            hmc = Hive.get();
+            List<String> dbList = hmc.getAllDatabases();
+            HashMap<String, List<String>> dbTablesMap = new HashMap<>();
+            for (String db : dbList) {
+              List<String> tables = hmc.getAllTables(db);
+              // TODO: FIX ME: should not convert to upper case blindly
+              List<String> upperCaseTableNames = new LinkedList<>();
+              for (String t : tables) {
+                Table hiveTab = hmc.getTable(db, t);
+                String tableType = ExternalTableType.getTableType(hiveTab);
+                if (ExternalTableType.isTableBackedByRegion(tableType)) {
+                  upperCaseTableNames.add(Utils.toUpperCase(t));
+                }
+              }
+              dbTablesMap.put(Utils.toUpperCase(db), upperCaseTableNames);
+            }
+            return dbTablesMap;
+          case REMOVE_TABLE:
+            hmc = Hive.get();
+            hmc.dropTable(this.dbName, this.tableName);
+            return true;
+          case GET_COL_TABLE:
+            hmc = Hive.get();
+            Table table = getTableWithRetry(hmc);
+            if (table == null) return null;
+            String fullyQualifiedName = Utils.toUpperCase(table.getDbName()) +
+                "." + Utils.toUpperCase(table.getTableName());
+            StructType schema = ExternalStoreUtils.getTableSchema(table);
+            @SuppressWarnings("unchecked")
+            Map<String, String> parameters = new CaseInsensitiveMap(
+                table.getSd().getSerdeInfo().getParameters());
+            String parts = parameters.get(ExternalStoreUtils.BUCKETS());
+            // get the partitions from the actual table if not in catalog
+            int partitions;
+            if (parts != null) {
+              partitions = Integer.parseInt(parts);
+            } else {
+              PartitionAttributes pattrs = Misc.getRegionForTableByPath(
+                  fullyQualifiedName, true)
+                  .getAttributes().getPartitionAttributes();
+              partitions = pattrs != null ? pattrs.getTotalNumBuckets() : 1;
+            }
+            Object value = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
+            String baseTable = value != null ? value.toString() : "";
+            String dmls = JdbcExtendedUtils.
+                getInsertOrPutString(fullyQualifiedName, schema, false, false);
+            value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
+            String[] dependentRelations = value != null
+                ? value.toString().split(",") : null;
+            int columnBatchSize = ExternalStoreUtils.sizeAsBytes(parameters.get(
+                ExternalStoreUtils.COLUMN_BATCH_SIZE()), ExternalStoreUtils.COLUMN_BATCH_SIZE());
+            int columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.parseInt(
+                parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS())),
+                ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
+            value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
+            String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
+            String tableType = ExternalTableType.getTableType(table);
+            String tblDataSourcePath = table.getMetadata().getProperty("path");
+            tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+            String driverClass = table.getMetadata().getProperty("driver");
+            driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
+            return new ExternalTableMetaData(
+                fullyQualifiedName,
+                schema,
+                tableType,
+                ExternalStoreUtils.getExternalStoreOnExecutor(parameters,
+                    partitions, fullyQualifiedName, schema),
+                columnBatchSize,
+                columnMaxDeltaRows,
+                compressionCodec,
+                baseTable,
+                dmls,
+                dependentRelations,
+                tblDataSourcePath,
+                driverClass);
+
+          case CLOSE_HMC:
+            Hive.closeCurrent();
+            return true;
+
+          default:
+            throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
         }
-
-        case GET_ALL_TABLES_MANAGED_IN_DD:
-          hmc = Hive.get();
-          List<String> dbList = hmc.getAllDatabases();
-          HashMap<String, List<String>> dbTablesMap = new HashMap<>();
-          for (String db : dbList) {
-            List<String> tables = hmc.getAllTables(db);
-            // TODO: FIX ME: should not convert to upper case blindly
-            List <String> upperCaseTableNames = new LinkedList<>();
-            for (String t : tables) {
-              Table hiveTab = hmc.getTable(db, t);
-              String tableType = ExternalTableType.getTableType(hiveTab);
-              if (ExternalTableType.isTableBackedByRegion(tableType)) {
-                upperCaseTableNames.add(Utils.toUpperCase(t));
-              }
-            }
-            dbTablesMap.put(Utils.toUpperCase(db), upperCaseTableNames);
-          }
-          return dbTablesMap;
-        case REMOVE_TABLE:
-          hmc = Hive.get();
-          hmc.dropTable(this.dbName, this.tableName);
-          return true;
-        case GET_COL_TABLE:
-          hmc = Hive.get();
-          Table table = getTableWithRetry(hmc);
-          if (table == null) return null;
-          String fullyQualifiedName = Utils.toUpperCase(table.getDbName()) +
-              "." + Utils.toUpperCase(table.getTableName());
-          StructType schema = ExternalStoreUtils.getTableSchema(table);
-          @SuppressWarnings("unchecked")
-          Map<String, String> parameters = new CaseInsensitiveMap(
-              table.getSd().getSerdeInfo().getParameters());
-          String parts = parameters.get(ExternalStoreUtils.BUCKETS());
-          // get the partitions from the actual table if not in catalog
-          int partitions;
-          if (parts != null) {
-            partitions = Integer.parseInt(parts);
-          } else {
-            PartitionAttributes pattrs = Misc.getRegionForTableByPath(
-                fullyQualifiedName, true)
-                .getAttributes().getPartitionAttributes();
-            partitions = pattrs != null ? pattrs.getTotalNumBuckets() : 1;
-          }
-          Object value = parameters.get(StoreUtils.GEM_INDEXED_TABLE());
-          String baseTable = value != null ? value.toString() : "";
-          String dmls = JdbcExtendedUtils.
-              getInsertOrPutString(fullyQualifiedName, schema, false, false);
-          value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
-          String[] dependentRelations = value != null
-              ? value.toString().split(",") : null;
-          int columnBatchSize = ExternalStoreUtils.sizeAsBytes(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE()), ExternalStoreUtils.COLUMN_BATCH_SIZE());
-          int columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.parseInt(
-              parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS())),
-              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
-          value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
-          String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
-          String tableType = ExternalTableType.getTableType(table);
-          String tblDataSourcePath = table.getMetadata().getProperty("path");
-          tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
-          String driverClass = table.getMetadata().getProperty("driver");
-          driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
-          return new ExternalTableMetaData(
-              fullyQualifiedName,
-              schema,
-              tableType,
-              ExternalStoreUtils.getExternalStoreOnExecutor(parameters,
-                  partitions, fullyQualifiedName, schema),
-              columnBatchSize,
-              columnMaxDeltaRows,
-              compressionCodec,
-              baseTable,
-              dmls,
-              dependentRelations,
-              tblDataSourcePath,
-              driverClass);
-
-        case CLOSE_HMC:
-          Hive.closeCurrent();
-          return true;
-
-        default:
-          throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
-      }
       } finally {
         GfxdDataDictionary.SKIP_LOCKS.set(false);
       }

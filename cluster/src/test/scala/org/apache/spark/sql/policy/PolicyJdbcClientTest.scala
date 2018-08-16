@@ -271,7 +271,18 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     }
   }
 
-  test("sys.syspolicies table") {
+
+
+  test("old query plan invalidation on enabling rls on column table using jdbc client") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
+  }
+
+  test("old query plan invalidation on enabling rls on row table using jdbc client") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(rowTableName)
+  }
+
+  test("syspolicies table/vti") {
+    // create some policies on column & row tables
     val conn = getConnection(Some(tableOwner))
     val stmt = conn.createStatement()
     try {
@@ -281,21 +292,69 @@ class PolicyJdbcClientTest extends SnappyFunSuite
       stmt.execute(s"create policy testPolicy2 on  " +
           s"$rowTableName for select to current_user using id < 30")
 
-      stmt.executeQuery("select * from sys.syspolicies")
+      stmt.execute(s"create policy testPolicy3 on  " +
+          s"$rowTableName for select to current_user using id < 70")
+
+      val rs = stmt.executeQuery("select * from sys.syspolicies")
+      val rsmd = rs.getMetaData
+      val expectedColumns = Set("NAME", "TABLESCHEMANAME", "TABLENAME",
+        "POLICYFOR", "APPLYTO", "FILTER", "OWNER")
+      assertEquals(expectedColumns.size, rsmd.getColumnCount)
+      for (i <- 1 to rsmd.getColumnCount) {
+        assert(expectedColumns.contains(rsmd.getColumnName(i)))
+      }
+
+      val expectedResults = Map("TESTPOLICY1" -> (tableOwner.toUpperCase,
+          colTableName.toUpperCase.substring(colTableName.indexOf('.') + 1),
+          "SELECT", "CURRENT_USER", "ID > 10",
+          tableOwner.toUpperCase),
+        "TESTPOLICY2" -> (tableOwner.toUpperCase,
+            rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
+            "SELECT", "CURRENT_USER", "ID < 30",
+            tableOwner.toUpperCase),
+        "TESTPOLICY3" -> (tableOwner.toUpperCase,
+            rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
+            "SELECT", "CURRENT_USER", "ID < 70",
+            tableOwner.toUpperCase)
+      )
+      var actualNumRows = 0
+      while (rs.next()) {
+        actualNumRows += 1
+        assert(expectedResults.contains(rs.getString("NAME")))
+        val expectedRow = expectedResults.get(rs.getString("NAME")).get
+        assertEquals(expectedRow._1, rs.getString("TABLESCHEMANAME"))
+        assertEquals(expectedRow._2, rs.getString("TABLENAME"))
+        assertEquals(expectedRow._3, rs.getString("POLICYFOR"))
+        assertEquals(expectedRow._4, rs.getString("APPLYTO"))
+        assertEquals(expectedRow._5, rs.getString("FILTER"))
+        assertEquals(expectedRow._6, rs.getString("OWNER"))
+      }
+      assertEquals(expectedResults.size, actualNumRows)
+
+      // check the connection metadata apis are not getting polluted
+      // with policies
+      val md = conn.getMetaData
+      val tableTypes = md.getTableTypes
+      // table type should not include policy
+      while (tableTypes.next()) {
+        val tt = tableTypes.getString(1)
+        assert(tt.toLowerCase.indexOf("policy") == -1)
+        assert(tt.toLowerCase.indexOf("policies") == -1)
+      }
+
+      val rs1 = md.getTables(null, null, "%", null)
+      while (rs1.next()) {
+        val name = rs1.getString("TABLE_NAME").toUpperCase
+        assert(name.indexOf("POLICY") == -1)
+        assert(name.indexOf("POLICIES") == -1)
+      }
+
       stmt.execute("drop policy testPolicy1")
       stmt.execute("drop policy testPolicy2")
+      stmt.execute("drop policy testPolicy3")
     } finally {
       conn.close()
-
     }
-  }
-
-  test("old query plan invalidation on enabling rls on column table using jdbc client") {
-    this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
-  }
-
-  test("old query plan invalidation on enabling rls on row table using jdbc client") {
-    this.testQueryPlanInvalidationOnRLSEnbaling(rowTableName)
   }
 
   private def testQueryPlanInvalidationOnRLSEnbaling(tableName: String): Unit = {
@@ -357,8 +416,6 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     }
 
   }
-
-
 
   private def getConnection(user: Option[String] = None): Connection = {
     val props = new Properties()
