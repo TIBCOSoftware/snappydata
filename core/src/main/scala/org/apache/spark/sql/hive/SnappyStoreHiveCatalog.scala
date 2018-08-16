@@ -18,7 +18,6 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.URL
-import java.util
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -177,35 +176,41 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     formatTableName(currentSchema)
   }
 
-  /** API to get primary key or Key Columns of a SnappyData table */
-  def getKeyColumns(table: String): Dataset[Column] = {
-    val tableIdent = this.newQualifiedTableName(table)
-      try {
-        val relation: LogicalRelation = getCachedHiveTable(tableIdent)
-        val keyColumns = relation match {
-          case LogicalRelation(mutable: MutableRelation, _, _) =>
-            val keyCols = mutable.getPrimaryKeyColumns.map(_.toUpperCase())
-            val tableMetadata = this.getTempViewOrPermanentTableMetadata(tableIdent)
-            val partitionColumnNames = tableMetadata.partitionColumnNames.toSet
-            val columns = tableMetadata.schema.map { c =>
-              new Column(
-                name = c.name.toUpperCase,
-                description = c.getComment().orNull,
-                dataType = c.dataType.catalogString,
-                nullable = c.nullable,
-                isPartition = partitionColumnNames.contains(c.name),
-                isBucket = false)
+    /** API to get primary key or Key Columns of a SnappyData table */
+    def getKeyColumns(table: String): Dataset[Column] = {
+        val tableIdent = this.newQualifiedTableName(table)
+        try {
+            val relation: LogicalRelation = getCachedHiveTable(tableIdent)
+            val keyColumns = relation match {
+                case LogicalRelation(mutable: MutableRelation, _, _) =>
+                    val keyCols = mutable.getPrimaryKeyColumns.map(_.toUpperCase())
+                    if (keyCols.isEmpty) {
+                        Seq.empty[Column]
+                    } else {
+                        val tableMetadata = this.getTempViewOrPermanentTableMetadata(tableIdent)
+                        val fieldsInMetadata =
+                            keyCols.map(k =>
+                                tableMetadata.schema.fields.find(f => f.name.equalsIgnoreCase(k))
+                                    .getOrElse(throw new AnalysisException(s"Invalid key column name $k")))
+                        fieldsInMetadata.map { c =>
+                            new Column(
+                                name = c.name.toUpperCase(),
+                                description = c.getComment().orNull,
+                                dataType = c.dataType.catalogString,
+                                nullable = c.nullable,
+                                isPartition = false, // Setting it to false for SD tables
+                                isBucket = false)
+                        }
+                    }
+                case _ => Seq.empty[Column]
             }
-            columns.filter(c => keyCols.contains(c.name))
-          case _ => Seq.empty[Column]
+            CatalogImpl.makeDataset(keyColumns, snappySession)
+        } catch {
+            case _: TableNotFoundException | _: NoSuchTableException =>
+                throw new Exception(s"Table '$table' not found")
+            case ex: Throwable => throw ex
         }
-        CatalogImpl.makeDataset(keyColumns, snappySession)
-      } catch {
-          case _: TableNotFoundException | _: NoSuchTableException =>
-              throw new Exception(s"Table '$table' not found")
-          case ex : Throwable => throw ex
     }
-  }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,

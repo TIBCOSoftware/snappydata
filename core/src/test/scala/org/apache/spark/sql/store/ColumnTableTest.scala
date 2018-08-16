@@ -1405,10 +1405,9 @@ class ColumnTableTest
             "OPTIONS(key_columns 'id1,id2' ) ")
         session.sql("create table temp3(id1 bigint not null , name1 varchar(10)) " +
             "using column options(partition_by 'name1')")
-
-        session.sql("insert into temp1 values(1,'abc')")
-        session.sql("insert into temp2 values(1,'cde',3,4)")
-        session.sql("insert into temp3 values(1,'abc')")
+        session.sql("create table temp4(id1 bigint not null , name1 varchar(10), " +
+            "id2 bigint not null, id3 bigint not null) USING column " +
+            "OPTIONS(key_columns 'id2,id1,id3' ) ")
 
         val res1 = session.sessionCatalog.getKeyColumns("temp1")
         assert(res1.collect().size == 1)
@@ -1419,6 +1418,14 @@ class ColumnTableTest
         val res3 = session.sessionCatalog.getKeyColumns("temp3")
         assert(res3.collect().size == 0)
 
+        val res4 = session.sessionCatalog.getKeyColumns("temp4")
+        assert(res4.collect().size == 3)
+
+        try {
+            session.sessionCatalog.getKeyColumns("temp5")
+        } catch {
+            case t: Throwable => throw new AssertionError(t.getMessage, t)
+        }
     }
 }
 

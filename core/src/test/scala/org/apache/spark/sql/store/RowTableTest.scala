@@ -727,17 +727,26 @@ class RowTableTest
         var session = new SnappySession(snc.sparkContext)
         session.sql("drop table if exists temp1")
         session.sql("drop table if exists temp2")
+        session.sql("drop table if exists temp3")
 
         session.sql("create table temp1(id1 bigint not null primary key , name1 varchar(10)) ")
         session.sql("create table temp2(id1 bigint not null , name1 varchar(10)) ")
-
-        session.sql("insert into temp1 values(1,'abc')")
-        session.sql("insert into temp2 values(2,'efd')")
+        session.sql("create table temp3(id1 bigint not null , name1 varchar(10), " +
+            "id3 bigint not null, id2 bigint not null, constraint netw_pk primary key (id2, id1)) ")
 
         val res1 = session.sessionCatalog.getKeyColumns("temp1")
         assert(res1.collect().size == 1)
 
         val res2 = session.sessionCatalog.getKeyColumns("temp2")
         assert(res2.collect().size == 0)
+
+        val res3 = session.sessionCatalog.getKeyColumns("temp3")
+        assert(res3.collect().size == 2)
+
+        try {
+            session.sessionCatalog.getKeyColumns("temp5")
+        } catch {
+            case t: Throwable => throw new AssertionError(t.getMessage, t)
+        }
     }
 }
