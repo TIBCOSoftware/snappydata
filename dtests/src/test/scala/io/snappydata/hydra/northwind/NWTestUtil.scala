@@ -475,10 +475,8 @@ object NWTestUtil {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q25_2, "Q25_2",
             tableType, pw, sqlContext)
         }
-        case "Q26" => if (executeQueriesByChangingConstants) {
-          SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26, "Q26",
-            tableType, pw, sqlContext)
-        }
+        case "Q26" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26, "Q26",
+          tableType, pw, sqlContext)
         case "Q26_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26_1, "Q26_1",
             tableType, pw, sqlContext)
