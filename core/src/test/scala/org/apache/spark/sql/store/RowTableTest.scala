@@ -21,12 +21,14 @@ import java.sql.SQLException
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TRIPDATA}
+
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{IntegerType, StructField}
 import org.apache.spark.sql._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import scala.util.{Failure, Success, Try}
+
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 
 /**
  * Tests for ROW tables.
@@ -743,10 +745,10 @@ class RowTableTest
         val res3 = session.sessionCatalog.getKeyColumns("temp3")
         assert(res3.collect().size == 2)
 
-        try {
-            session.sessionCatalog.getKeyColumns("temp5")
-        } catch {
-            case t: Throwable => throw new AssertionError(t.getMessage, t)
+        Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+            case Success(df) => throw new AssertionError(
+                "Should not have succedded with incorrect options")
+            case Failure(error) => // Do nothing
         }
     }
 }
