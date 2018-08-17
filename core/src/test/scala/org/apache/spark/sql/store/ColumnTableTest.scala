@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 import java.sql.{DriverManager, SQLException}
 
 import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -29,8 +30,10 @@ import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyF
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
 import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -1421,10 +1424,10 @@ class ColumnTableTest
         val res4 = session.sessionCatalog.getKeyColumns("temp4")
         assert(res4.collect().size == 3)
 
-        try {
-            session.sessionCatalog.getKeyColumns("temp5")
-        } catch {
-            case t: Throwable => throw new AssertionError(t.getMessage, t)
+        Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+            case Success(df) => throw new AssertionError(
+                "Should not have succedded with incorrect options")
+            case Failure(error) => // Do nothing
         }
     }
 }
