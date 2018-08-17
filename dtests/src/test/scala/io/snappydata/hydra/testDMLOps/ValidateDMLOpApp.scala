@@ -27,7 +27,7 @@ object ValidateDMLOpApp {
   def main(args: Array[String]) {
     val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("DMLOp Application").
+        setAppName("DMLOp Application_" + System.currentTimeMillis()).
         set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)

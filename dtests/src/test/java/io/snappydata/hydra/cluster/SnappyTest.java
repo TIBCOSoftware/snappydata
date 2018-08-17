@@ -27,6 +27,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
@@ -130,7 +131,7 @@ public class SnappyTest implements Serializable {
   /**
    * (String) APP_PROPS to set dynamically
    */
-  public Map<Integer, String> dynamicAppProps = new HashMap<>();
+  public static Map<Integer, String> dynamicAppProps = new HashMap<>();
 
   public enum SnappyNode {
     LOCATOR, SERVER, LEAD, WORKER
@@ -2025,7 +2026,13 @@ public class SnappyTest implements Serializable {
           APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
         }
         if (SnappyPrms.hasDynamicAppProps()) {
-          APP_PROPS = "\"" + APP_PROPS + "," + dynamicAppProps.get(getMyTid()) + "\"";
+          String dmlProps = dynamicAppProps.get(getMyTid());
+          if(dmlProps == null) {
+            dmlProps = dynamicAppProps.get(getMyTid());
+            if(dmlProps == null) throw new TestException("Test issue: dml statement for " +
+                getMyTid() + " is null");
+          }
+          APP_PROPS = "\"" + APP_PROPS + "," + dmlProps + "\"";
           Log.getLogWriter().info("APP_PROPS : " + APP_PROPS);
         }
         String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
