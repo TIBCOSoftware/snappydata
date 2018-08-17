@@ -219,11 +219,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   @Override
   public List<PolicyTableData> getPolicies(boolean skipLocks) {
-    /* skip if this is already the catalog lookup thread (Hive dropTable
+    // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
     if (Boolean.TRUE.equals(HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get())) {
       return Collections.emptyList();
-    } */
+    }
     HMSQuery q = getHMSQuery();
     q.resetValues(HMSQuery.GET_POLICIES, null, null, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
