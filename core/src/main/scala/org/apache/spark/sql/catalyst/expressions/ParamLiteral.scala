@@ -60,31 +60,36 @@ trait DynamicReplacableConstant extends Expression {
   override final def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // change the isNull and primitive to consts, to inline them
     val value = this.value
-
     assert(value != null || nullable, "Expected nullable as true when value is null")
     val addMutableState = !ctx.references.exists(_.asInstanceOf[AnyRef] eq this)
-    if (addMutableState) {
+    val termValues = if (addMutableState) {
       val literalValueRef = ctx.addReferenceObj("literal", this,
         classOf[DynamicReplacableConstant].getName)
       val isNull = ctx.freshName("isNull")
       val valueTerm = ctx.freshName("value")
-      termMap.put(ctx, TermValues(literalValueRef, isNull, valueTerm))
+      val tv = TermValues(literalValueRef, isNull, valueTerm)
+      termMap.put(ctx, tv)
+      tv
     } else {
-      assert(termMap.get(ctx).isDefined)
+      val tvOption = termMap.get(ctx)
+      assert(tvOption.isDefined)
+      tvOption.get
     }
     val isNullLocal = ev.isNull
     val valueLocal = ev.value
     val dataType = Utils.getSQLDataType(this.dataType)
     val javaType = ctx.javaType(dataType)
     // get values from map
-    val isNull = termMap.get(ctx).get.isNull
-    val valueTerm = termMap.get(ctx).get.valueTerm
-    val literalValueRef = termMap.get(ctx).get.literalValueRef
+    val isNull = termValues.isNull
+    val valueTerm = termValues.valueTerm
+    val literalValueRef = termValues.literalValueRef
     val initCode =
       s"""
          |final boolean $isNullLocal = $isNull;
          |final $javaType $valueLocal = $valueTerm;
       """.stripMargin
+
+    // println(initCode)
     if (!addMutableState) {
       // use the already added fields
       return ev.copy(initCode, isNullLocal, valueLocal)
