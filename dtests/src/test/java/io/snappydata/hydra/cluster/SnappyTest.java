@@ -2674,6 +2674,30 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  public static void HydraTask_deployJarUsingJDBC(){
+    snappyTest.executeDeployJar();
+  }
+
+  public void executeDeployJar(){
+    Connection conn = null;
+    try {
+      conn = getLocatorConnection();
+    } catch (SQLException se){
+      throw new TestException("Got exception while getting connection",se);
+    }
+    String userJarPath = snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
+    String deployCmd = "";
+    String jarName = SnappyPrms.getJarIdentifier();
+    try {
+      deployCmd = "deploy jar " + jarName +" '" + userJarPath + "'";
+      Log.getLogWriter().info("Executing deploy jar cmd is: " + deployCmd);
+      conn.createStatement().executeUpdate(deployCmd);
+    } catch (SQLException se) {
+      throw new TestException("Got exception while executing deploy jar:" + deployCmd, se);
+    }
+    closeConnection(conn);
+  }
+
   /**
    * Concurrently stops a List of snappy store VMs, then restarts them.  Waits for the
    * restart to complete before returning.
