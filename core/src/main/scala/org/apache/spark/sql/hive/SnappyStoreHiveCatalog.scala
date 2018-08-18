@@ -1069,6 +1069,24 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+    def getTableType(table: String): String = {
+        val tableIdent = this.newQualifiedTableName(table)
+        try {
+            val relation: LogicalRelation = getCachedHiveTable(tableIdent)
+            // println(relation)
+            val tableType: ExternalTableType = relation match {
+                case LogicalRelation(mutable: BaseRelation, _, _) =>
+                    snappySession.sessionCatalog.getTableType(mutable)
+                case _ => ExternalTableType.apply("None")
+            }
+            tableType.name
+        } catch {
+            case _: TableNotFoundException | _: NoSuchTableException =>
+                throw new Exception(s"Table '$table' not found")
+            case ex: Throwable => throw ex
+        }
+    }
+
   private def toUrl(resource: FunctionResource): URL = {
     val path = resource.uri
     val uri = new Path(path).toUri
