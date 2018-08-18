@@ -1430,6 +1430,56 @@ class ColumnTableTest
             case Failure(error) => // Do nothing
         }
     }
+
+    test("Test method for getting table type of snappy tables") {
+        var session = new SnappySession(snc.sparkContext)
+        session.sql("drop table if exists temp1")
+        session.sql("drop table if exists temp2")
+        session.sql("drop table if exists temp3")
+        session.sql("drop table if exists temp4")
+
+        session.sql("create table temp1(id1 bigint not null , name1 varchar(10)) " +
+            "USING column OPTIONS(key_columns 'id1' ) ")
+        session.sql("create table temp2(id1 bigint not null primary key, name1 varchar(10))")
+        session.sql("create stream table temp3 (id long, " +
+            "text string, fullName string, country string, " +
+            "retweets int, hashtag  string) using twitter_stream " +
+            "options (consumerKey '', consumerSecret '', accessToken ''," +
+            " accessTokenSecret '', rowConverter " +
+            "'org.apache.spark.sql.streaming.TweetToRowsConverter')")
+
+        snc.sql("drop table if exists t1")
+        snc.sql(s"create table t1 (c1 integer,c2 string)")
+        snc.sql(s"insert into t1 values(1,'test1')")
+        snc.sql(s"insert into t1 values(2,'test2')")
+        snc.sql(s"insert into t1 values(3,'test3')")
+        val df = snc.sql("select * from t1")
+        df.show
+        val tempPath = "/tmp/" + System.currentTimeMillis()
+
+        assert(df.count() == 3)
+        df.write.option("header", "true").csv(tempPath)
+        snc.createExternalTable("temp4", "csv",
+            Map( "path" -> tempPath, "header" -> "true", "inferSchema"-> "true" ))
+
+        val res1 = session.sessionCatalog.getTableType("temp1")
+        assert(res1 == "COLUMN")
+
+        val res2 = session.sessionCatalog.getTableType("temp2")
+        assert(res2 == "ROW")
+
+        val res3 = session.sessionCatalog.getTableType("temp3")
+        assert(res3 == "STREAM")
+
+        val res4 = session.sessionCatalog.getTableType("temp4")
+        assert(res4 == "EXTERNAL")
+
+        Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+            case Success(df) => throw new AssertionError(
+                "Should not have succedded with incorrect options")
+            case Failure(error) => // Do nothing
+        }
+    }
 }
 
 case class Record(id: Int, data: Employee)
