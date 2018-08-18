@@ -7,8 +7,8 @@
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-    |[Version 0.7.3](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3) |[Version 0.7.3](https://zeppelin.apache.org/download.html) |[Release 1.0.2](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2)|
-    |[Version 0.7.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.2) |[Version 0.7.2](https://zeppelin.apache.org/download.html) |[Release 1.0.0](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.0)|
+    |[Version 0.7.3](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.2](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2)|
+    |[Version 0.7.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.2) |[Version 0.7.2](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.2/zeppelin-0.7.2-bin-netinst.tgz) |[Release 1.0.0](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.0)|
 
 2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
 
