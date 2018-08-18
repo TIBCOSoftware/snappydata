@@ -1474,7 +1474,7 @@ class ColumnTableTest
         val res4 = session.sessionCatalog.getTableType("temp4")
         assert(res4 == "EXTERNAL")
 
-        Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+        Try(session.sessionCatalog.getTableType("temp5")) match {
             case Success(df) => throw new AssertionError(
                 "Should not have succedded with incorrect options")
             case Failure(error) => // Do nothing
