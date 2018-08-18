@@ -49,6 +49,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -131,7 +132,7 @@ public class SnappyTest implements Serializable {
   /**
    * (String) APP_PROPS to set dynamically
    */
-  public static Map<Integer, String> dynamicAppProps = new HashMap<>();
+  public static Map<Integer, String> dynamicAppProps = new ConcurrentHashMap<>();
 
   public enum SnappyNode {
     LOCATOR, SERVER, LEAD, WORKER

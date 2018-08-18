@@ -256,7 +256,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       //loadTables(conn);
       closeConnection(conn);
     } catch (SQLException se) {
-      throw new TestException("Got exception while executing select query.", se);
+      throw new TestException("Got exception while creating tables in snappy.", se);
     }
   }
 
