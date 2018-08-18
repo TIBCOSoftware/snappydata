@@ -7,9 +7,25 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
-Release 1.0.2-RC1
+Release 1.0.2
 
 - New Features/Fixed Issues
+
+  [SNAP-2459] Adding an API to get primary key or Key Columns of a SnappyData table. (#1123)
+
+  [SNAP-2433] Fixed incorrect server status shown in the UI by storing cluster members stats in map
+  against their DiskStoreUUID(as key) only and removing members ID as key. (#1126)
+
+  [SNAP-2470] Fixed missing SQL tab on SnappyData UI in local mode. (#1122)
+
+  [SNAP-2463] Fixed SELECT query results on ROW tables. Removed complex OR conditions.
+
+  [SNAP-2451] Fixed JOIN query results on ROW tables. Handled the case of DelegateRDD where BaseRDD
+  itself is a DelegateRDD. (#1120)
+
+  (be094ef) Support for displaying VIEWTEXT for views in SYS.HIVETABLES.
+
+  [ENT-40] Fixed recursion in policy filter application.
 
   [SNAP-2349] Fixed the deadlock by reducing the scope of synchronized blocks in ColumnFormatValue
   to only when reading/writing fields. (#1045)
@@ -143,6 +159,41 @@ Release 1.0.2-RC1
   committed. (#1018)
 
   [SNAP-2241] Handled catalog database creation if it's not present during function creation. (#998)
+
+  [SNAP-2080] Allow creation of index on VARCHAR column added through ALTER TABLE. (#996)
+
+  [SNAP-2255] Closing the connection so as to return the pooled connection back to pool. (#995)
+
+  (ce530a9) Eagerly clear shuffle data after a bulk insert/update/put.
+
+  [SNAP-1932] Cleaning up tokenization handling and fixes. Main change is addition of two separate
+  classes for tokenization, a) ParamLiteral and b) TokenLiteral. Both classes extend a common trait
+  TokenizedLiteral. Basic idea being that tokenization will always happen (unless explicitly turned
+  off) independently of plan caching. (#989)
+
+  [SNAP-2244] Stats for delta column batches (#980)
+
+  [SNAP-2243][SNAP-2188] Procedure for smart connector iteration and fixes. Includes fixes for perf
+  issues as noted for all iterators (disk iterator, smart connector and remote iterator). (#979)
+
+  [SNAP-2225] Fixed different results of nearly identical queries, due to join order. (#971)
+
+  [SNAP-2220][SNAP-2157] Corrected row count updated/inserted in a column table via putInto. (#974)
+
+  [SNAP-1931][SNAP-1932][SNAP-1906] Fixed the issue of incomplete plan info in UI due to plan
+  caching changes. (#973)
+
+  (adf4664) Miscellaneous fixes and performance improvements.
+
+  (794d03f) Miscellaneous fixes, added bucket count column to dashboard. (#969)
+
+  (7069522) Corrected the logic of existence join, which was looking for null values earlier. (#966)
+
+  [SNAP-2217] Fixed thread-unsafe paths in stats service and other cleanups. (#965)
+
+  [SNAP-2215] Split out argument value for -log-file specified in conf/locators. (#964)
+
+  [AQP-292] Evaluate grouping keys explicitly if aggregates are using them. (#963)
 
 
 Release 1.0.1
