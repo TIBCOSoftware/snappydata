@@ -1068,15 +1068,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ => ExternalTableType.External
     }
   }
-
+    /** API to get table type of a SnappyData table */
     def getTableType(table: String): String = {
         val tableIdent = this.newQualifiedTableName(table)
         try {
             val relation: LogicalRelation = getCachedHiveTable(tableIdent)
-            // println(relation)
             val tableType: ExternalTableType = relation match {
                 case LogicalRelation(mutable: BaseRelation, _, _) =>
-                    snappySession.sessionCatalog.getTableType(mutable)
+                    snappySession.sessionCatalog.getTableType(mutable) // get the table type for table
                 case _ => ExternalTableType.apply("None")
             }
             tableType.name
