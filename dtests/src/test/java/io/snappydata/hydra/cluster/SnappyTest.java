@@ -2090,7 +2090,10 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath() + File.separator + logFileName;
         logFile = new File(dest);
         if (SnappyPrms.hasDynamicAppProps()) {
-          userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
+          String dmlProps = dynamicAppProps.get(getMyTid());
+          if(dmlProps == null)
+            throw new TestException("dml props for thread " + getMyTid() + " is null)");
+          userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
           int finalStart = SnappyCDCPrms.getInitEndRange() + 1;
@@ -2690,8 +2693,8 @@ public class SnappyTest implements Serializable {
     String jarName = SnappyPrms.getJarIdentifier();
     try {
       deployCmd = "deploy jar " + jarName +" '" + userJarPath + "'";
-      Log.getLogWriter().info("Executing deploy jar cmd is: " + deployCmd);
-      conn.createStatement().executeUpdate(deployCmd);
+      Log.getLogWriter().info("Executing deploy jar cmd : " + deployCmd);
+      conn.createStatement().execute(deployCmd);
     } catch (SQLException se) {
       throw new TestException("Got exception while executing deploy jar:" + deployCmd, se);
     }
