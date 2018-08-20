@@ -1060,13 +1060,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       throw new TestException("Got exception while reading resultset files", ie);
     }
     if (missing.size() > 0) {
-      aStr.append("\nThe following rows are missing in snappy, but exists in derby resultset:");
-      aStr.append(missing.toString());
+      //aStr.append("\nThe following rows are missing in snappy, but exists in derby resultset:");
+      //aStr.append(missing.toString());
+      aStr.append("There are " + missing.size() + " rows missing in snappy. Please check " + missingFileName);
       aStr.append("\n");
     }
     if (unexpected.size() > 0) {
-      aStr.append("\nThe following rows are unexpected in snappy, but missing in derby resultset:");
-      aStr.append(unexpected.toString());
+      //aStr.append("\nThe following rows are missing in derby, but exists in snappy resultset:");
+      //aStr.append(unexpected.toString());
+      aStr.append("There are " + unexpected.size() + " rows unexpected in snappy. Please check "
+          + upexpectedFileName);
       aStr.append("\n");
     }
     return aStr.toString();
