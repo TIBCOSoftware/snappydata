@@ -1,5 +1,5 @@
 # Setting up Cluster on Kubernetes
-Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes. This feature is currently available on an experimental basis.
+Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes. This feature is currently available on an experimental basis. We do not recommend deploying production SnappyData clusters on Kubernetes, yet. 
 
 This following sections are included in this topic:
 
@@ -21,7 +21,7 @@ This following sections are included in this topic:
 
 The following prerequisites must be met to deploy SnappyData on Kubernetes:
 
-*	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher.
+*	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on the Google Container Engine(GKE) as well as on Pivotal Container Service (PKS)
 
 *	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-0/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
 
@@ -60,7 +60,7 @@ In the [output](#output), three services namely **snappydata-leader-public**, **
 **snappydata-server-public**  of type **LoadBalancer** are seen which expose the endpoints for locator, lead, and server respectively. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
 
 **snappydata-leader-public** service exposes port **5050** for SnappyData Pulse and port **8090** to accept [SnappyData jobs](#jobkubernetes).</br>
-**snappydata-locator-public** service exposes port **1527** to accept [JDBC connections](#jdbckubernetes).
+**snappydata-locator-public** service exposes port **1527** to accept [JDBC/ODBC connections](#jdbckubernetes).
 
 You can do the following on the SnappyData cluster that is deployed on Kubernetes:
 
@@ -105,13 +105,16 @@ You can refer to [SnappyData documentation](http://snappydatainc.github.io/snapp
 <a id= querykubernetes> </a>
 ### Executing Queries Using snappy-shell
 
-You  can use Snappy shell to connect to SnappyData and execute your queries. Download the SnappyData distribution from [SnappyData github releases](https://github.com/SnappyDataInc/snappydata/releases). Snappy shell need not run within the Kubernetes cluster.
+You  can use Snappy shell to connect to SnappyData and execute your queries. You can simply connect to one of the pods in the cluster and use the Snappy Shell. Alternatively, you can download the SnappyData distribution from [SnappyData github releases](https://github.com/SnappyDataInc/snappydata/releases). Snappy shell need not run within the Kubernetes cluster.
 
 **To execute queries in Kubernetes deployment:**
 
 1.	Check the SnappyData services running in the Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br>
 The output displays the external IP address of the **snappydata-locator-public** services  and the port number for external connections as shown in the following image:![Snappy-Leader-Service](./Images/services_Locator_Public.png)
+
+2.	Connect to the SnappyData leader pod using .. </br>
+`kubectl exec --namespace=snappy -it snappydata-leader-0 -- bash`
 
 3.	Launch snappy shell and then create tables and execute queries. </br>Following is an example of executing queries using snappy-shell.
 
@@ -212,7 +215,7 @@ This section provides details about the following Kubernetes objects that are us
 
 *	[Services that Expose External Endpoints](#services)
 
-*	[Persistent Volumes](ersistentvolumes)
+*	[Persistent Volumes](#persistentvolumes)
 
 <a id= statefulsets> </a>
 ### Statefulsets for Servers, Leaders, and Locators
@@ -271,6 +274,8 @@ $ ls
 ```
 <a id= notrunning> </a>
 ### Accessing Logs When SnappyData Cluster is not Running
+
+## NOTE: LIZY, THIS SECTION NEEDS REVIEW .... where is this script? Sentence below executes command that requires the cluster to be running... check with shirish ... maybe there is a new utils folder in the root of the product ? 
 
 When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script:</br> `utils/snappy-debug-pod.sh`. This script launches a pod in the Kubernetes cluster with persistent volumes, specified via `--pvc` option, mounted on it and then returns a shell prompt. Volumes are mounted on the path starting with **/data (volume1 on /data0 and so on)**.
 
