@@ -2,7 +2,7 @@
 source PerfRun.conf
 
 #top master and slaves from master machines
-ssh $master sh $sparkHome/sbin/stop-all.sh
+ssh $master bash $sparkHome/sbin/stop-all.sh
 
 rm -rf $sparkHome/conf/slaves
 
