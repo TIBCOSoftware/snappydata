@@ -747,6 +747,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // nothing for others
         }
 
+
+        getPolicies(tableIdent.toString).foreach(
+          policy => unregisterPolicy(newQualifiedTableName(policy), null))
+
         tableIdent.invalidate()
         cachedDataSourceTables.invalidate(tableIdent)
 
@@ -1057,8 +1061,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     tables
   }
 
-
-
   private def getAllTablesIncludingPolicies(): Seq[String] = {
     val allTables = new mutable.ArrayBuffer[String]()
     val currentSchemaName = this.currentSchema
@@ -1090,6 +1092,20 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         case Some(ct) => ct.tableType == CatalogTableType.EXTERNAL &&
             ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
                 equals(ExternalTableType.Policy.name)
+        case _ => false
+      }
+    })
+  }
+
+  private def getPolicies(tableName: String): Seq[String] = {
+    // only get policies
+    getAllTablesIncludingPolicies.filter(name => {
+      val qt = newQualifiedTableName(name)
+      qt.getTableOption(this) match {
+        case Some(ct) => ct.tableType == CatalogTableType.EXTERNAL &&
+            ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
+                equals(ExternalTableType.Policy.name) &&
+            ct.properties.getOrElse(PolicyProperties.targetTable, "").equals(tableName)
         case _ => false
       }
     })

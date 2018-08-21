@@ -16,9 +16,10 @@
  */
 package org.apache.spark.sql.policy
 
-import java.sql.{Connection, DriverManager}
+import java.sql.{Connection, DriverManager, Statement}
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
@@ -416,6 +417,77 @@ class PolicyJdbcClientTest extends SnappyFunSuite
       conn.close()
     }
 
+  }
+
+  test("Drop table with policies using JDBC client") {
+    val seq2 = for (i <- 0 until numElements) yield {
+      (s"name_$i", i)
+    }
+    val rdd2 = sc.parallelize(seq2)
+
+    val dataDF2 = ownerContext.createDataFrame(rdd2)
+
+    val colTableName2: String = s"$tableOwner.ColumnTable2"
+    val rowTableName2: String = s"${tableOwner}.RowTable2"
+    val colTableName3: String = s"${tableOwner}.ColumnTable3"
+
+    ownerContext.sql(s"CREATE TABLE $colTableName2 (name String, id Int) " +
+        s" USING column ")
+    ownerContext.sql(s"CREATE TABLE $rowTableName2 (name String, id Int) " +
+        s" USING row ")
+    ownerContext.sql(s"CREATE TABLE $colTableName3 (name String, id Int) " +
+        s" USING column ")
+
+    dataDF2.write.insertInto(colTableName2)
+    dataDF2.write.insertInto(rowTableName2)
+    dataDF2.write.insertInto(colTableName3)
+
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    try {
+      stmt.execute(s"alter table $colTableName2 enable row level security")
+      stmt.execute(s"alter table $rowTableName2 enable row level security")
+      stmt.execute(s"alter table $colTableName3 enable row level security")
+
+      stmt.execute(s"create policy testPolicy1_for_ColumnTable3 on  " +
+          s"$colTableName3 for select to current_user using id > 11")
+      stmt.execute(s"create policy testPolicy2_for_ColumnTable3 on  " +
+          s"$colTableName3 for select to current_user using id < 22")
+
+      testDropTable(colTableName2, stmt)
+      testDropTable(rowTableName2, stmt)
+
+      // colTableName3 was not dropped, so policies should exist
+      assert(checkIfPoliciesOnTableExist(colTableName3))
+
+      testDropTable(colTableName3, stmt)
+    } finally {
+      conn.close()
+    }
+
+  }
+
+  private def testDropTable(tableName: String, stmt: Statement) {
+    stmt.execute(s"create policy testPolicy11 on  " +
+        s"$tableName for select to current_user using id > 11")
+    stmt.execute(s"create policy testPolicy22 on  " +
+        s"$tableName for select to current_user using id < 22")
+    stmt.execute(s"drop table $tableName")
+    assert(!checkIfPoliciesOnTableExist(tableName), s"Policy for $tableName should not be present")
+  }
+
+  // return true if a policy exists for a table else false
+  private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies(true)
+    val it = policies.listIterator()
+    while (it.hasNext) {
+      val p = it.next()
+      //      println("Actual tablename:" + tableName + ", tableName in policy:" + p.tableName)
+      if ((p.schemaName + "." + p.tableName).equals(tableName.toUpperCase)) {
+        return true
+      }
+    }
+    false
   }
 
   private def getConnection(user: Option[String] = None): Connection = {
