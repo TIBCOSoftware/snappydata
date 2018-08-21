@@ -76,6 +76,7 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
+    TestUtil.stopNetServer()
     super.afterAll()
 
   }

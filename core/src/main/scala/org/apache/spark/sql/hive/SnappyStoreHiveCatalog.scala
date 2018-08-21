@@ -25,6 +25,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
@@ -39,6 +40,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
@@ -51,6 +53,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Subquer
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.execution.ExternalRelation
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.{IndexColumnFormatRelation, DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
@@ -191,7 +194,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                         val fieldsInMetadata =
                             keyCols.map(k =>
                                 tableMetadata.schema.fields.find(f => f.name.equalsIgnoreCase(k))
-                                    .getOrElse(throw new AnalysisException(s"Invalid key column name $k")))
+                                    .getOrElse(
+                                      throw new AnalysisException(s"Invalid key column name $k")))
                         fieldsInMetadata.map { c =>
                             new Column(
                                 name = c.name.toUpperCase(),
@@ -531,10 +535,24 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  final def getCombinedPolicyFilterForTable(rlsRelation: RowLevelSecurityRelation,
-      wrappingLogicalRelation: LogicalRelation):
+  final def getCombinedPolicyFilterForExternalTable(rlsRelation: RowLevelSecurityRelation,
+      wrappingLogicalRelation: Option[LogicalRelation], currentUser: Option[String]):
   Option[Filter] = {
     // filter out policy rows
+    // getCombinedPolicyFilter(rlsRelation, wrappingLogicalRelation, currentUser)
+    None
+  }
+
+  final def getCombinedPolicyFilterForNativeTable(rlsRelation: RowLevelSecurityRelation,
+      wrappingLogicalRelation: Option[LogicalRelation]):
+  Option[Filter] = {
+    // filter out policy rows
+    getCombinedPolicyFilter(rlsRelation, wrappingLogicalRelation, None)
+  }
+
+  private def getCombinedPolicyFilter(rlsRelation: RowLevelSecurityRelation,
+      wrappingLogicalRelation: Option[LogicalRelation], currentUser: Option[String]):
+  Option[Filter] = {
     if (!rlsRelation.isRowLevelSecurityEnabled) {
       None
     } else {
@@ -545,7 +563,17 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
                   equals(ExternalTableType.Policy.name) &&
               ct.properties.getOrElse(PolicyProperties.targetTable, "").
-                  equals(rlsRelation.resolvedName) =>
+                  equals(rlsRelation.resolvedName) &&
+              currentUser.map(user => {
+                val policyOwner = ct.properties.getOrElse(PolicyProperties.policyOwner, "")
+                if (user.equalsIgnoreCase(policyOwner)) {
+                  false
+                } else {
+                  val applyTo = ct.properties.getOrElse(PolicyProperties.policyApplyTo,
+                     "").split(",").filterNot(_.trim.isEmpty)
+                  applyTo.isEmpty || applyTo.exists(_.equalsIgnoreCase(user))
+                }
+              }).getOrElse(true) =>
             Seq(this.lookupRelation(ct.identifier).asInstanceOf[SubqueryAlias].
                 child.asInstanceOf[BypassRowLevelSecurity].child)
           case _ => Seq.empty
@@ -575,14 +603,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  private def remapFilterIfNeeded(filter: Filter, queryLR: LogicalRelation,
+  private def remapFilterIfNeeded(filter: Filter, queryLR: Option[LogicalRelation],
       storedLR: LogicalRelation): Filter = {
-    if (queryLR.output.corresponds(storedLR.output)((a1, a2) => a1.exprId == a2.exprId)) {
+    if (queryLR.isEmpty || queryLR.get.output.
+        corresponds(storedLR.output)((a1, a2) => a1.exprId == a2.exprId)) {
       filter
     } else {
       // remap filter
       val mappingInfo = storedLR.output.map(_.exprId).zip(
-        queryLR.output.map(_.exprId)).toMap
+        queryLR.get.output.map(_.exprId)).toMap
       filter.transformAllExpressions {
         case ar: AttributeReference if mappingInfo.contains(ar.exprId) =>
           AttributeReference(ar.name, ar.dataType, ar.nullable,
@@ -615,6 +644,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           val tableIdent = newQualifiedTableName(table.properties.getOrElse(
             PolicyProperties.targetTable,
             throw new IllegalStateException("Target Table for the policy not found")))
+         /* val targetRelation = snappySession.sessionState.catalog.lookupRelation(tableIdent)
+          val isTargetExternalRelation = targetRelation.find(x => x match {
+            case _: ExternalRelation => true
+            case _ => false
+          }).isDefined
+          */
           val plan = PolicyProperties.createFilterPlan(filterExpression, tableIdent,
             table.properties.getOrElse(PolicyProperties.policyOwner, ""),
             table.properties.getOrElse(PolicyProperties.expandedPolicyApplyTo, "").split(",").
@@ -906,12 +941,19 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               s"but different attributes {${catalogTable.properties.toSeq.mkString(",")}}" +
               s" already exists")
         }
-
       }
-
     }
   }
 
+  def toggleRLSForExternalRelation(tableIdent: QualifiedTableName,
+      enableRowLevelSecurity: Boolean): Unit = {
+    this.getTableOption(tableIdent).foreach(ct => {
+      val newProps = ct.storage.properties +
+          (Constant.EXTERNAL_TABLE_RLS_ENABLE_KEY -> enableRowLevelSecurity.toString)
+      withHiveExceptionHandling(this.client.alterTable(ct.copy(storage =
+          ct.storage.copy(properties = newProps))))
+    })
+  }
 
   def withHiveExceptionHandling[T](function: => T): T = {
     val oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get

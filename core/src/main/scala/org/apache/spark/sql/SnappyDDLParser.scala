@@ -56,8 +56,9 @@ import org.apache.spark.streaming._
 import scala.util.control.NonFatal
 
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-
 import scala.util.control.NonFatal
+
+import org.apache.spark.sql.execution.ExternalRelation
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -352,7 +353,13 @@ abstract class SnappyDDLParser(session: SparkSession)
         import scala.collection.JavaConverters._
         ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       }
-
+      /*
+      val targetRelation = snappySession.sessionState.catalog.lookupRelation(tableIdent)
+      val isTargetExternalRelation =  targetRelation.find(x => x match {
+        case _: ExternalRelation => true
+        case _ => false
+      }).isDefined
+      */
       var currentUser = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
 
       currentUser = IdUtil.getUserAuthorizationId(
@@ -361,8 +368,9 @@ abstract class SnappyDDLParser(session: SparkSession)
 
       val policyIdent = snappySession.sessionState.catalog
           .newQualifiedTableName(policyName)
-      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent, currentUser,
-        expandedApplyTo)
+      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent,
+        currentUser, expandedApplyTo)
+
       CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, expandedApplyTo, currentUser,
         filterStr, filter)
     }
