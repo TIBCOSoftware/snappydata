@@ -37,7 +37,10 @@ To create SnappyData DSN from ODBC Data Sources:
 
 	* **Server (Hostname or IP)**: IP address of the data server which is running in the SnappyData cluster.
 
-	* **Port**: Port number of the server. By default, it is **1528** for the first data server in the cluster.
+	* **Port**: Port number of the server. By default, it is **1528** for the first data server in the cluster, if all the nodes in the cluster are started on the same machine.
+
+	!!!Note
+		ODBC driver cannot connect to the locator and must connect directly to one of the servers. Therefore, in cases where you start a cluster with multiple nodes on different machines and if the server and locator are collocated on a specific machine, then the port number of the server would be higher than that of the locator port which will be 1528. In case the locator is not collocated with the server on a machine then the server port will be 1527.
 
 	* **Login ID**: The login ID required to connect to the server. For example, *app*
 
