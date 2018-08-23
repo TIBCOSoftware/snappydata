@@ -7,6 +7,195 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+Release 1.0.2
+
+- New Features/Fixed Issues
+
+  [SNAP-2459] Adding an API to get primary key or Key Columns of a SnappyData table. (#1123)
+
+  [SNAP-2433] Fixed incorrect server status shown in the UI by storing cluster members stats in map
+  against their DiskStoreUUID(as key) only and removing members ID as key. (#1126)
+
+  [SNAP-2470] Fixed missing SQL tab on SnappyData UI in local mode. (#1122)
+
+  [SNAP-2463] Fixed SELECT query results on ROW tables. Removed complex OR conditions.
+
+  [SNAP-2451] Fixed JOIN query results on ROW tables. Handled the case of DelegateRDD where BaseRDD
+  itself is a DelegateRDD. (#1120)
+
+  (be094ef) Support for displaying VIEWTEXT for views in SYS.HIVETABLES.
+
+  [ENT-40] Fixed recursion in policy filter application.
+
+  [SNAP-2349] Fixed the deadlock by reducing the scope of synchronized blocks in ColumnFormatValue
+  to only when reading/writing fields. (#1045)
+
+  [SNAP-2364] Skip batch if the stats row is missing. This is already handled for in-memory batches
+  and the same has been added for on-disk batches.
+
+  (3a6a8ae) Row Level Security support. (#1084)
+
+  (3bc03ae) Changes to split the view definition string and store it as split properties in the Map
+  to fix the issue of view string size exceeding 37200 chars. (#1118)
+
+  [SNAP-2351][SNAP-2443] Fix a problem with row tables and hash joins. Skip plan caching of Range
+  based DataFrames. (#1112)
+
+  (aed173b) Fixes for Catalog Repair Procedure. (#1113)
+
+  [ENT-21] Set security handlers to all ServletContextHandlers which are part of Dashboard, SQL
+  tabs and Auto-refresh feature web services. (#1115)
+
+  [SNAP-2453] Added a fix to query with optional n arguments. In "FETCH FIRST ROW ONLY" it was
+  expecting to pass n number of first rows. Now made it optional, if n is not passed then it
+  fetches first row only. (#1117)
+
+  [SNAP-2302][SNAP-2303][SNAP-2307] Sqlfixes (#1106)
+
+  [SNAP-2432] Added a system property to avoid pulling jar info from snappydata cluster, if not
+  required, logging a warning if required jar info could not be pulled. (#1104)
+
+  [SNAP-2400] To speed up the dashboard data auto-refresh, removing unnecessary empty checks on
+  table stats info and external table stats info. (#1101)
+
+  [ENT-34] Avoid setting snappydata user name in all pool connections obtained in system. (#1094)
+
+  [SNAP-2438] currentschema should be considered for plan caching. (#1096)
+
+  [ENT-29] Make sure that snapshotTxIdForRead is reset properly. (#1095)
+
+  [SNAP-2421] Fixed concurrent query performance issue by fixing incorrect output partition choice.
+  Due to numBucket check, all the partition pruned queries were converted to hash partition with
+  one partition. This was causing an exchange node to be introduced. (#1087)
+
+  [SNAP-2434] Fixed syntax error when projection mentioned as schema.tablename.* (#1092)
+
+  [SNAP-2351] Added support for PreparedStatement.getMetadata() JDBC API. (#1038)
+
+  [SNAP-2422] HTML code changes for displaying error message if loading Google charts library fails.
+
+  [SNAP-2144] Display only total CPU cores count and remove cores count break up. (#1083)
+
+  [SNAP-2306] Added StreamingQuery.stop on job server session.stop() method call. This will be
+  called from JobManagerActor's JobKill. (#1078)
+
+  [SNAP-2128] Support Store specific DDLs in SnappyDDLParser. (#1003)
+
+  (984c8ce) Added check for boot time manager. If boot time UMM cannot find any memory, it is best
+  to return from that point. This means the system itself is configured with very low memory, which
+  is not capable of handling overhead for keys & region structures. (#1075)
+
+  [SNAP-2398] Smart Connector side changes for deploy jars/packages functionality. (#1071)
+
+  [SNAP-2144] Adding CPU cores details in the ClusterDetails and MemberDetails. (#1068)
+
+  [SNAP-2071] Fixed SnappyData UI becoming unresponsive on LowMemoryException. (#1067)
+
+  [SNAP-2390] Fixed NullPointerException at updateMemberStatistics when cluster was getting
+  restarted. (#1070)
+
+  [SNAP-2387] Fix ParamLiteral handling for common sub-expressions. (#1059)
+
+  (c674c94) Added Spark SQL test suites to SnappyData. (#994)
+
+  (b3c0e56) Changes to impose limit on results fetched from External relation (GemFire) for 
+  "select *" query. (#1051)
+
+  [SNAP-2332] Fixed exception in querying caused by tokenization of constants in aggregate functions
+  by removing param literals from the aggregate functions in prepare phase for prepared statements.
+  (#1041)
+
+  [SNAP-2347] Fix for row tables getting dropped. (#1058)
+
+  [SNAP-2382] Fix for COLUMN table mysteriously shown as ROW table on dashboard after LME in data
+  serever. (#1064)
+
+  [SNAP-2341] Table shown in dashboard even after 'CREATE TABLE ...' is killed. (#1052)
+
+  [SNAP-2388] Change to let 'lead' restart with warnings if deployed jars/coordinates not present
+  during restart. (#1060)
+
+  [SNAP-2186] Fixed off-heap size for Partitioned Regions. (#1053)
+
+  [SNAP-2363] Fixed failure when query on view does not fallback to Spark plan in case Code
+  Generation fails. (#1042)
+
+  [SNAP-2348] Fix invalid decompress call on stats row. (#1044)
+
+  [GITHUB-982] Fixed negative bucket size with eviction. (#1048)
+
+  [SNAP-1334] Added Auto Refresh feature for Dashboard UI and other enhancements. (#1005)
+
+  [SNAP-2356] Release compressed buffers that are skipped. (#1040)
+
+  [SNAP-2308] The fix involves allowing query with decimal numbers suffixed by 'BD' to be parsed
+  correctly and recognized as numeric literals. (#1008)
+
+  (5fbb47a) Taking credentials from globalSparkContext to shutdown the store. (#1024)
+
+  [SNAP-2339] Do not cache UnsafeProjection instance. (#1034)
+
+  [ENT-27] Changes to push down filter predicate to Scan Level for GemFireRelation and reverting
+  ParamLiterals to TokenLiteral (hence Literal) in case of LogicalRelation other than Column Tables
+  Scan. (#1020)
+
+  [SNAP-2338] Added task cancellation checks at the start of new batch in ColumnTableScan. (#1033)
+
+  [SNAP-2312] Handled int overflow case. For a large number of distinct keys ObjectHashSet might
+  have entries near to 1 << 30. Multiplying that to 8 causes int overflow to a negative number.
+
+  [SNAP-2329] Restarting zeppelin interpreter when a deploy happens if the lead hosts a zeppelin
+  interpreter server. Added deploying of jar files and made them persistent too. (#1029)
+
+  [SNAP-2297] Support deployment of packages as a DDL command. (#1021)
+
+  [SNAP-2321] Moved the caching of join dataset after the count operation, as an action will clear
+  the session context object. (#1025)
+
+  [SNAP-1529] Added support for reading maven dependencies using --packages option in our job server
+  scripts (snappy-job.sh). (#1004)
+
+  [SNAP-2296] Make sure that connection is closed when task completes so that transaction is also
+  committed. (#1018)
+
+  [SNAP-2241] Handled catalog database creation if it's not present during function creation. (#998)
+
+  [SNAP-2080] Allow creation of index on VARCHAR column added through ALTER TABLE. (#996)
+
+  [SNAP-2255] Closing the connection so as to return the pooled connection back to pool. (#995)
+
+  (ce530a9) Eagerly clear shuffle data after a bulk insert/update/put.
+
+  [SNAP-1932] Cleaning up tokenization handling and fixes. Main change is addition of two separate
+  classes for tokenization, a) ParamLiteral and b) TokenLiteral. Both classes extend a common trait
+  TokenizedLiteral. Basic idea being that tokenization will always happen (unless explicitly turned
+  off) independently of plan caching. (#989)
+
+  [SNAP-2244] Stats for delta column batches (#980)
+
+  [SNAP-2243][SNAP-2188] Procedure for smart connector iteration and fixes. Includes fixes for perf
+  issues as noted for all iterators (disk iterator, smart connector and remote iterator). (#979)
+
+  [SNAP-2225] Fixed different results of nearly identical queries, due to join order. (#971)
+
+  [SNAP-2220][SNAP-2157] Corrected row count updated/inserted in a column table via putInto. (#974)
+
+  [SNAP-1931][SNAP-1932][SNAP-1906] Fixed the issue of incomplete plan info in UI due to plan
+  caching changes. (#973)
+
+  (adf4664) Miscellaneous fixes and performance improvements.
+
+  (794d03f) Miscellaneous fixes, added bucket count column to dashboard. (#969)
+
+  (7069522) Corrected the logic of existence join, which was looking for null values earlier. (#966)
+
+  [SNAP-2217] Fixed thread-unsafe paths in stats service and other cleanups. (#965)
+
+  [SNAP-2215] Split out argument value for -log-file specified in conf/locators. (#964)
+
+  [AQP-292] Evaluate grouping keys explicitly if aggregates are using them. (#963)
+
+
 Release 1.0.1
 
 - New Features/Fixed Issues

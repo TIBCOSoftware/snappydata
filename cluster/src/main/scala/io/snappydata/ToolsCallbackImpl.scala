@@ -25,17 +25,52 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
+
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.{SparkContext, SparkFiles}
+import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
-import org.apache.spark.ui.SnappyDashboardTab
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.ui.SQLTab
+import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.{SnappyUtils, Utils}
 
-object ToolsCallbackImpl extends ToolsCallback {
+object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def updateUI(sc: SparkContext): Unit = {
-    SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
+
+    SnappyUtils.getSparkUI(sc).foreach(ui => {
+      // Create Snappy Dashboard and SQL tabs.
+      // Set SnappyData authenticator SecurityHandler.
+      SparkCallbacks.getAuthenticatorForJettyServer() match {
+        case Some(_) =>
+          logInfo("Setting auth handler")
+          // Set JettyUtils.skipHandlerStart for adding dashboard and sql security handlers
+          JettyUtils.skipHandlerStart.set(true)
+          // Creating SQL and Dashboard UI tabs
+          if (!sc.isLocal) {
+            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          }
+          new SnappyDashboardTab(ui)
+          // Set security handlers
+          ui.getHandlers.foreach { h =>
+            if (!h.isStarted) {
+              h.setSecurityHandler(JettyUtils.basicAuthenticationHandler())
+              h.start()
+            }
+          }
+          // Unset JettyUtils.skipHandlerStart
+          JettyUtils.skipHandlerStart.set(false)
+        case None => logDebug("Not setting auth handler")
+          // Creating SQL and Dashboard UI tabs
+          if (!sc.isLocal) {
+            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          }
+          new SnappyDashboardTab(ui)
+      }
+    })
+
+
   }
 
   override def removeAddedJar(sc: SparkContext, jarName: String): Unit =

@@ -58,7 +58,6 @@ class MiscTest extends SnappyFunSuite with Logging {
   }
 
   test("SNAP-2434") {
-    snc
     val sqlstrs = Seq(s"select app.test.* from app.test",
       s"select test.* from test", s"select * from test")
     sqlstrs.foreach(sqlstr =>
@@ -73,5 +72,20 @@ class MiscTest extends SnappyFunSuite with Logging {
         case t: Throwable => fail(s"unexpected exception $t")
       }
     )
+  }
+
+  test("SNAP-2438") {
+    try {
+      snc.sql(s"create table good(dept string, sal int) using column options()")
+      snc.sql(s"create table test.good(dept string, sal int) using column options()")
+      snc.sql(s"insert into test.good values('IT', 10000), ('HR', 9000), ('ADMIN', 4000)")
+      var arr = snc.sql(s"select * from good").collect()
+      assert(arr.size === 0)
+      snc.sql(s"set schema test")
+      arr = snc.sql(s"select * from good").collect()
+      assert(arr.size === 3)
+    } finally {
+      snc.sql(s"set schema app")
+    }
   }
 }

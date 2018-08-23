@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 import java.sql.{DriverManager, SQLException}
 
 import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -29,8 +30,10 @@ import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyF
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
 import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -368,6 +371,7 @@ class ColumnTableTest
     assert(r.length === 0)
     logInfo("Successful")
   }
+
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
     //TODO: Suranjan URL misses the hint in connection that gfTx must not be cleared.
@@ -1382,7 +1386,7 @@ class ColumnTableTest
 
     snc.sql("drop table if exists test")
 
-    val rawData=Seq(Seq(1,"emp1",1),Seq(2,"emp2",2),Seq(3,"emp3",3))
+    val rawData = Seq(Seq(1,"emp1",1),Seq(2,"emp2",2),Seq(3,"emp3",3))
 
     val rdd = sc.parallelize(rawData,1).map(s=> Record(s(0).asInstanceOf[Int],Employee(s(1)
       .toString,s(2).asInstanceOf[Int])))
@@ -1391,6 +1395,91 @@ class ColumnTableTest
 
     snc.sql("drop table if exists test")
   }
+    test("Test method for getting key columns of the column tables") {
+        var session = new SnappySession(snc.sparkContext)
+        session.sql("drop table if exists temp1")
+        session.sql("drop table if exists temp2")
+        session.sql("drop table if exists temp3")
+
+        session.sql("create table temp1(id1 bigint not null , name1 varchar(10)) " +
+            "USING column OPTIONS(key_columns 'id1' ) ")
+        session.sql("create table temp2(id1 bigint not null , name1 varchar(10), " +
+            "id2 bigint not null, id3 bigint not null) USING column " +
+            "OPTIONS(key_columns 'id1,id2' ) ")
+        session.sql("create table temp3(id1 bigint not null , name1 varchar(10)) " +
+            "using column options(partition_by 'name1')")
+        session.sql("create table temp4(id1 bigint not null , name1 varchar(10), " +
+            "id2 bigint not null, id3 bigint not null) USING column " +
+            "OPTIONS(key_columns 'id2,id1,id3' ) ")
+
+        val res1 = session.sessionCatalog.getKeyColumns("temp1")
+        assert(res1.collect().size == 1)
+
+        val res2 = session.sessionCatalog.getKeyColumns("temp2")
+        assert(res2.collect().size == 2)
+
+        val res3 = session.sessionCatalog.getKeyColumns("temp3")
+        assert(res3.collect().size == 0)
+
+        val res4 = session.sessionCatalog.getKeyColumns("temp4")
+        assert(res4.collect().size == 3)
+
+        Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+            case Success(df) => throw new AssertionError(
+                "Should not have succedded with incorrect options")
+            case Failure(error) => // Do nothing
+        }
+    }
+
+    test("Test method for getting table type of snappy tables") {
+        var session = new SnappySession(snc.sparkContext)
+        session.sql("drop table if exists temp1")
+        session.sql("drop table if exists temp2")
+        session.sql("drop table if exists temp3")
+        session.sql("drop table if exists temp4")
+
+        session.sql("create table temp1(id1 bigint not null , name1 varchar(10)) " +
+            "USING column OPTIONS(key_columns 'id1' ) ")
+        session.sql("create table temp2(id1 bigint not null primary key, name1 varchar(10))")
+        session.sql("create stream table temp3 (id long, " +
+            "text string, fullName string, country string, " +
+            "retweets int, hashtag  string) using twitter_stream " +
+            "options (consumerKey '', consumerSecret '', accessToken ''," +
+            " accessTokenSecret '', rowConverter " +
+            "'org.apache.spark.sql.streaming.TweetToRowsConverter')")
+
+        snc.sql("drop table if exists t1")
+        snc.sql(s"create table t1 (c1 integer,c2 string)")
+        snc.sql(s"insert into t1 values(1,'test1')")
+        snc.sql(s"insert into t1 values(2,'test2')")
+        snc.sql(s"insert into t1 values(3,'test3')")
+        val df = snc.sql("select * from t1")
+        df.show
+        val tempPath = System.getProperty("user.dir") + System.currentTimeMillis()
+
+        assert(df.count() == 3)
+        df.write.option("header", "true").csv(tempPath)
+        snc.createExternalTable("temp4", "csv",
+            Map( "path" -> tempPath, "header" -> "true", "inferSchema"-> "true" ))
+
+        val res1 = session.sessionCatalog.getTableType("temp1")
+        assert(res1 == "COLUMN")
+
+        val res2 = session.sessionCatalog.getTableType("temp2")
+        assert(res2 == "ROW")
+
+        val res3 = session.sessionCatalog.getTableType("temp3")
+        assert(res3 == "STREAM")
+
+        val res4 = session.sessionCatalog.getTableType("temp4")
+        assert(res4 == "EXTERNAL")
+
+        Try(session.sessionCatalog.getTableType("temp5")) match {
+            case Success(df) => throw new AssertionError(
+                "Should not have succedded with incorrect options")
+            case Failure(error) => // Do nothing
+        }
+    }
 }
 
 case class Record(id: Int, data: Employee)

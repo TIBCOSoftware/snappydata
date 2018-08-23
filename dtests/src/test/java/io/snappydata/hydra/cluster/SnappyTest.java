@@ -127,6 +127,11 @@ public class SnappyTest implements Serializable {
   public static int connPoolType = SnappyConnectionPoolPrms.getConnPoolType(connPool);
   private static HydraThreadLocal localconnection = new HydraThreadLocal();
 
+  public static int finalStart = SnappyCDCPrms.getInitEndRange() + 1;
+  public static int finalEnd = SnappyCDCPrms.getInitEndRange() + 10;
+
+
+
   /**
    * (String) APP_PROPS to set dynamically
    */
@@ -172,6 +177,9 @@ public class SnappyTest implements Serializable {
           snappyTest.generateConfig("primaryLocatorHost");
           snappyTest.generateConfig("primaryLocatorPort");
         }
+
+
+
       }
     }
   }
@@ -1715,60 +1723,6 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected  synchronized void recordSnappyProcessIDinNukeRun(String hostName, String pName){
-    String cmd = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostName;
-    Process pr = null;
-    try {
-      String dest = getCurrentDirPath() + File.separator + "PIDs_" + pName + "_" +
-          hostName + ".log";
-      File logFile = new File(dest);
-      cmd += " jps | grep " + pName + " | awk '{print $1}'";
-      hd = TestConfig.getInstance().getMasterDescription()
-          .getVmDescription().getHostDescription();
-      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
-      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
-      pr = pb.start();
-      pr.waitFor();
-      FileInputStream fis = new FileInputStream(logFile);
-      BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-      String str = null;
-      while ((str = br.readLine()) != null) {
-        int pid = Integer.parseInt(str);
-        try {
-          if (SnappyBB.getBB().getSharedMap().containsKey("pid_"+ pName + "_" + pid)) {
-            Log.getLogWriter().info("Pid " + pid + " is already recorded with Master");
-          } else {
-            Log.getLogWriter().info("Recording PID " + pid + " with Master.");
-            RemoteTestModule.Master.recordPID(hd, pid);
-            SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
-            SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hostName, hostName);
-          }
-        } catch (RemoteException e) {
-          String s = "Unable to access master to record PID: " + pid;
-          throw new HydraRuntimeException(s, e);
-        }
-      }
-      br.close();
-    } catch (IOException e) {
-      String s = "Problem while starting the process : " + pr;
-      throw new TestException(s, e);
-    } catch (InterruptedException e) {
-      String s = "Exception occurred while waiting for the process execution : " + pr;
-      throw new TestException(s, e);
-    }
-  }
-
-  public static String getCurrentDirPath(){
-    String currentDir;
-    try {
-      currentDir = new File(".").getCanonicalPath();
-    } catch (IOException e) {
-      String s = "Problem while accessing the current dir.";
-      throw new TestException(s, e);
-    }
-    return currentDir;
-  }
-
   protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
@@ -2139,21 +2093,40 @@ public class SnappyTest implements Serializable {
           userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
         }
         if (SnappyCDCPrms.getIsCDC()) {
-          int finalStart = SnappyCDCPrms.getInitEndRange() + 1;
-          int finalEnd = SnappyCDCPrms.getInitEndRange() + 1000;
-          Log.getLogWriter().info("Start range and end range : " + finalStart + " & " + finalEnd);
           String appName = SnappyCDCPrms.getAppName();
           if (appName.equals("CDCIngestionApp2")) {
-            int tempFinalStart = (Integer) SnappyBB.getBB().getSharedMap().get("finalStartRange");
-            int tempEndRange = (Integer) SnappyBB.getBB().getSharedMap().get("finalEndRange");
-            Log.getLogWriter().info("For  second Ingestion New Start range and end range : " + tempFinalStart + " & " + tempEndRange);
-            userAppArgs = tempFinalStart + " " + tempEndRange + " " + userAppArgs;
-            SnappyBB.getBB().getSharedMap().put("finalStartRange", tempEndRange + 1);
-            SnappyBB.getBB().getSharedMap().put("finalEndRange", tempEndRange + 1000);
+            int BBfinalStart2 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP2");
+            int BBfinalEnd2 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP2");
+            int finalStart2,finalEnd2;
+            if(BBfinalStart2 == 0 || BBfinalEnd2 == 0) {
+              finalStart2 = finalStart;
+              finalEnd2 = finalEnd;
+            }
+            else {
+              finalStart2 = BBfinalStart2;
+              finalEnd2 = BBfinalEnd2;
+            }
+            userAppArgs = finalStart2 + " " + finalEnd2 + " " + userAppArgs;
+            Log.getLogWriter().info("For CDCIngestionApp2 app New Start range and end range : " + finalStart2 + " & " + finalEnd2 + " and args = " + userAppArgs);
+            SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
+            SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 100);
           } else if (appName.equals("CDCIngestionApp1")) {
-            userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
-            SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
-            SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
+              int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
+              int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
+              int finalStart1,finalEnd1;
+              if(BBfinalStart1 == 0 || BBfinalEnd1 == 0) {
+                 finalStart1 = finalStart;
+                 finalEnd1 = finalEnd;
+              }
+              else {
+              finalStart1 = BBfinalStart1;
+              finalEnd1 = BBfinalEnd1;
+            }
+             userAppArgs = finalStart1 + " " + finalEnd1 + " " + userAppArgs;
+             Log.getLogWriter().info("For CDCIngestionApp1 app New Start range and end range : " + finalStart1 + " & " + finalEnd1 + " and args = " + userAppArgs);
+             SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", finalEnd1 + 1);
+             SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", finalEnd1 +100);
+
           }
           else if(appName.equals("BulkDeleteApp")){
             commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
@@ -2202,6 +2175,22 @@ public class SnappyTest implements Serializable {
     } catch (IOException e) {
       throw new TestException("IOException occurred while retriving destination logFile path " +
           log + "\nError Message:" + e.getMessage());
+    }
+  }
+
+  public static void HydraTask_InitializeBB(){
+    try{
+      Log.getLogWriter().info("InsideHydraTask_InitializeBB ");
+      int startR = SnappyCDCPrms.getInitStartRange();
+      int endR = SnappyCDCPrms.getInitEndRange();
+      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", startR);
+      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", endR);
+      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 5000000);
+      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 10 + (startR + 5000000));
+      Log.getLogWriter().info("Finishe HydraTask_InitializeBB ");
+    }
+    catch(Exception e){
+      Log.getLogWriter().info("HydraTask_InitializeBB exception " + e.getMessage());
     }
   }
 
@@ -2565,28 +2554,6 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  /*Dump stacks for threads in members of snappy cluster*/
-  public static synchronized void HydraTask_dumpStacks() {
-    initSnappyArtifacts();
-    int dumpItr = SnappyPrms.getNumOfStackDumpItrs();
-    for (int i = 0; i < dumpItr; i++) {
-      snappyTest.dumpStacks();
-      if (i < (dumpItr-1)) {
-        sleepForMs(SnappyPrms.getSleepBtwnStackDumps());
-      }
-    }
-  }
-
-  public void dumpStacks() {
-    Set pids = getPidList();
-    Iterator itr = pids.iterator();
-    while(itr.hasNext()) {
-      String val = (String)itr.next();
-      int pid = Integer.parseInt(val);
-      String host = getPidHost(val);
-      ProcessMgr.printProcessStacks(host,pid);
-    }
-  }
 
   /**
    * Create and start snappy server.
@@ -3325,36 +3292,8 @@ public class SnappyTest implements Serializable {
     return masterHost;
   }
 
-  private String printStackTrace(Exception e){
-    StringWriter error = new StringWriter();
-    e.printStackTrace(new PrintWriter(error));
-    return error.toString();
-  }
-
-  public List<String> getHostNameFromConf(String nodeName){
-    List<String>  hostNames = new ArrayList<>();
-    String confFile = snappyTest.getScriptLocation(productConfDirPath + File.separator + nodeName);
-    try {
-      File file = new File(confFile);
-      FileReader fileReader = new FileReader(file);
-      BufferedReader bufferedReader = new BufferedReader(fileReader);
-
-      String line;
-      while ((line = bufferedReader.readLine()) != null) {
-        String[] data = line.trim().split(" ");
-        if(!hostNames.contains(data[0]))
-          hostNames.add(data[0]);
-      }
-      fileReader.close();
-    } catch (IOException e) {
-      Log.getLogWriter().info(printStackTrace(e));
-    }
-    return hostNames;
-  }
-
   protected void startSnappyLocator() {
     File log = null;
-    List<String> hostNames = getHostNameFromConf("locators");
     ProcessBuilder pb = null;
     try {
       if (useRowStore) {
@@ -3367,9 +3306,6 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-      sleepForMs(30);
-      for(int i = 0; i< hostNames.size(); i++)
-        recordSnappyProcessIDinNukeRun(hostNames.get(i), "LocatorLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
@@ -3378,7 +3314,6 @@ public class SnappyTest implements Serializable {
 
   protected void startSnappyServer() {
     File log = null;
-    List<String> hostNames = getHostNameFromConf("servers");
     ProcessBuilder pb = null;
     try {
       if (useRowStore) {
@@ -3397,26 +3332,14 @@ public class SnappyTest implements Serializable {
         /*Thread.sleep(60000);
         startSnappyServer();*/
       }
-      sleepForMs(30);
-      for(int i = 0; i< hostNames.size(); i++)
-        recordSnappyProcessIDinNukeRun(hostNames.get(i), "ServerLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
     }
   }
 
-  public static void sleepForMs(int sleepTimeInSec){
-    try {
-      Thread.sleep(sleepTimeInSec * 1000);
-    } catch (InterruptedException ie) {
-      throw new TestException("Got exception while thread was sleeping..", ie);
-    }
-  }
-
   protected void startSnappyLead() {
     File log = null;
-    List<String> hostNames = getHostNameFromConf("leads");
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
           "start");
@@ -3424,9 +3347,6 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-      sleepForMs(30);
-      for(int i = 0; i< hostNames.size(); i++)
-        recordSnappyProcessIDinNukeRun(hostNames.get(i), "LeaderLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
