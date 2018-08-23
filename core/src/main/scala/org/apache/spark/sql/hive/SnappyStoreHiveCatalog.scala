@@ -734,6 +734,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                                provider: String,
                                options: Map[String, String],
                                relation: Option[BaseRelation]): Unit = {
+    // Check if the cluster is in secure mode and table creation allowed
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      callbacks.checkSchemaPermission(tableIdent.schemaName)
+    }
     val client = this.client
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {

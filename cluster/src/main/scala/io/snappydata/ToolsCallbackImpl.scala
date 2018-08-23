@@ -23,9 +23,11 @@ import java.util.UUID
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
-
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
 import org.apache.spark.sql.catalyst.expressions.Expression
@@ -161,5 +163,29 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       case _ =>
     }
     ret
+  }
+
+  override def checkSchemaPermission(schema: String): Unit = {
+    val ms = Misc.getMemStore
+    if (ms != null) {
+      val isSnappyStoreWithSecurityEnabled = ms.isSnappyStore && Misc.isSecurityEnabled
+      var conn: EmbedConnection = null
+      if (isSnappyStoreWithSecurityEnabled && !ms.tableCreationAllowed) {
+        var contextSet = false
+        try {
+          val dd = ms.getDatabase.getDataDictionary
+          conn = GemFireXDUtils.getTSSConnection(false, true, false)
+          conn.getTR.setupContextStack()
+          contextSet = true
+          val sd = dd.getSchemaDescriptor(schema, null, true)
+          assert(sd != null)
+          if (!sd.getAuthorizationId.toLowerCase.equalsIgnoreCase(schema)) {
+            throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER, schema, schema)
+          }
+        } finally {
+          if (contextSet) conn.getTR.restoreContextStack()
+        }
+      }
+    }
   }
 }
