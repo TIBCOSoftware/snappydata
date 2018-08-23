@@ -38,12 +38,11 @@ object NWTestUtil {
         s"numRows : ${numRows} \n Table Type : ${tableType}")
     println(s"Query ${queryNum} \n df.count for join query is : ${df.count} \n Expected numRows :" +
         s" ${numRows} \n Table Type : ${tableType}")
+    if(df.count() != numRows){
+      pw.println(s"Count mismatch for query ${queryNum} : df.count -> ${df.count()} but " +
+          s"expected numRows -> $numRows. Query => $sqlString Table Type => $tableType")
+    }
     // scalastyle:on println
-    /* assert(df.count() == numRows,
-      s"Mismatch got for query ${queryNum} : df.count -> ${df.count()} but expected numRows " +
-          s"-> $numRows " +
-          s" for query = $sqlString Table Type : $tableType\n" +
-          s"plan : ${df.explain(true)} ") */
     pw.flush()
   }
 
@@ -57,10 +56,11 @@ object NWTestUtil {
         s"\n Table Type : ${tableType}")
     println(s"Query ${queryNum} \n df.count is : ${df.count} \n Expected numRows : ${numRows} \n " +
         s"Table Type : ${tableType}")
+    if(df.count() != numRows){
+      pw.println(s"Count mismatch for query ${queryNum} : df.count -> ${df.count()} but " +
+          s"expected numRows -> $numRows. Query => $sqlString Table Type => $tableType")
+    }
     // scalastyle:on println
-   /* assert(df.count() == numRows,
-      s"Mismatch got for query ${queryNum} : df.count -> ${df.count()} but expected numRows " +
-          s"-> $numRows for query = $sqlString Table Type : $tableType") */
     pw.flush()
   }
 
