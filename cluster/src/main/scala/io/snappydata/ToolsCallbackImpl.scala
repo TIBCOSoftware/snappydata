@@ -25,6 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
@@ -165,7 +166,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     ret
   }
 
-  override def checkSchemaPermission(schema: String): Unit = {
+  override def checkSchemaPermission(schema: String, currentUser: String): Unit = {
     val ms = Misc.getMemStore
     if (ms != null) {
       val isSnappyStoreWithSecurityEnabled = ms.isSnappyStore && Misc.isSecurityEnabled
@@ -177,11 +178,17 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           conn = GemFireXDUtils.getTSSConnection(false, true, false)
           conn.getTR.setupContextStack()
           contextSet = true
-          val sd = dd.getSchemaDescriptor(schema, null, true)
-          assert(sd != null)
-          if (!sd.getAuthorizationId.toLowerCase.equalsIgnoreCase(schema)) {
-            throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER, schema, schema)
+          val sd = dd.getSchemaDescriptor(
+            schema, conn.getLanguageConnection.getTransactionExecute, false)
+          if (sd == null) {
+            if (schema.equals(currentUser)) {
+              throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
+                schema, schema)
+            } else {
+              throw StandardException.newException(SQLState.LANG_SCHEMA_DOES_NOT_EXIST, schema)
+            }
           }
+          PrivilegeInfo.checkOwnership(currentUser, sd, sd, dd)
         } finally {
           if (contextSet) conn.getTR.restoreContextStack()
         }

@@ -737,7 +737,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     // Check if the cluster is in secure mode and table creation allowed
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks != null) {
-      callbacks.checkSchemaPermission(tableIdent.schemaName)
+      // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
+      // using LCC.getAuthorizationId() itself rather than getUserName()
+      val currentUser = IdUtil.getUserAuthorizationId(
+        snappySession.conf.get(Attribute.USERNAME_ATTR))
+      callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
     }
     val client = this.client
     withHiveExceptionHandling(
