@@ -25,6 +25,16 @@ import scala.io.Source
 
 
 object SnappyTestUtils {
+
+  def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
+      tableType: String, pw: PrintWriter, sqlContext: SQLContext,
+      planCachingEnabled: Boolean): Any = {
+    snc.sql("set spark.sql.crossJoin.enabled = true")
+    sqlContext.sql("set spark.sql.crossJoin.enabled = true")
+    assertQueryFullResultSet(snc, sqlString, queryNum, tableType, pw, sqlContext,
+      planCachingEnabled);
+  }
+
   def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
                               tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
@@ -85,8 +95,19 @@ object SnappyTestUtils {
   }
 
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-                               tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
-    var snappyDF = snc.sql(sqlString)
+      tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+    assertQueryFullResultSet(snc, sqlString, queryNum, tableType, pw, sqlContext, true)
+  }
+
+  def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
+      tableType: String, pw: PrintWriter, sqlContext: SQLContext,
+      usePlanCaching: Boolean): Any = {
+    var snappyDF: DataFrame = null
+    if(!usePlanCaching) {
+      snappyDF = snc.sqlUncached(sqlString)
+    } else {
+      snappyDF = snc.sql(sqlString)
+    }
     var sparkDF = sqlContext.sql(sqlString);
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"

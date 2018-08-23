@@ -415,6 +415,7 @@ object NWTestUtil {
 
   def validateQueriesFullResultSet(snc: SnappyContext, tableType: String, pw: PrintWriter,
                                    sqlContext: SQLContext): Unit = {
+    val usePlanCaching: Boolean = false
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q1" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q1, "Q1", tableType,
@@ -469,69 +470,69 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q25_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q25_1, "Q25_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q25_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q25_2, "Q25_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q26" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26, "Q26",
           tableType, pw, sqlContext)
         case "Q26_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26_1, "Q26_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q26_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26_2, "Q26_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q27" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27, "Q27",
           tableType, pw, sqlContext)
         case "Q27_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_1, "Q27_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q27_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_2, "Q27_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q27_3" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_3, "Q27_3",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q27_4" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_4, "Q27_4",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q28" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q28, "Q28",
           tableType, pw, sqlContext)
         case "Q28_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q28_1, "Q28_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q28_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q28_2, "Q28_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q29" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q29, "Q29",
           tableType, pw, sqlContext)
         case "Q29_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q29_1, "Q29_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q29_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q29_2, "Q29_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q30" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q30, "Q30",
           tableType, pw, sqlContext)
         case "Q30_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q30_1, "Q30_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q30_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q30_2, "Q30_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q61" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q61, "Q61",
           tableType, pw, sqlContext)
@@ -541,61 +542,61 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q31_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_1, "Q31_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q31_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_2, "Q31_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q31_3" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_3, "Q31_3",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q31_4" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_4, "Q31_4",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q32" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q32, "Q32",
           tableType, pw, sqlContext)
         case "Q32_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q32_1, "Q32_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q33" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q33, "Q33",
           tableType, pw, sqlContext)
         case "Q33_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q33_1, "Q33_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q34" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q34, "Q34",
           tableType, pw, sqlContext)
         case "Q34_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q34_1, "Q34_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q34_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q34_2, "Q34_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q35" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q35, "Q35",
           tableType, pw, sqlContext)
         case "Q35_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q35_1, "Q35_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q35_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q35_2, "Q35_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q36" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q36, "Q36",
           tableType, pw, sqlContext)
         case "Q36_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q36_1, "Q36_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q36_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q36_2, "Q36_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q37" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q37, "Q37",
           tableType, pw, sqlContext)
@@ -603,11 +604,11 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q38_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q38_1, "Q38_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q38_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q38_2, "Q38_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q39" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q39, "Q39",
           tableType, pw, sqlContext)
@@ -615,11 +616,11 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q40_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q40_1, "Q40_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q40_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q40_2, "Q40_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q41" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q41, "Q41",
           tableType, pw, sqlContext)
@@ -627,21 +628,21 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q42_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q42_1, "Q42_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q42_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q42_2, "Q42_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q43" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q43, "Q43",
           tableType, pw, sqlContext)
         case "Q43_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q43_1, "Q43_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q43_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q43_2, "Q43_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q44" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q44, "Q44",
           tableType, pw, sqlContext) // LeftSemiJoinHash
@@ -657,11 +658,11 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q49_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q49_1, "Q49_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q49_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q49_2, "Q49_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q50" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q50, "Q50",
           tableType, pw, sqlContext)
@@ -669,11 +670,11 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q51_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q51_1, "Q51_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q51_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q51_2, "Q51_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q52" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q52, "Q52",
           tableType, pw, sqlContext)
@@ -685,25 +686,25 @@ object NWTestUtil {
           tableType, pw, sqlContext)
         case "Q55_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q55_1, "Q55_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q55_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q55_2, "Q55_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q56" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56, "Q56",
           tableType, pw, sqlContext)
         case "Q56_1" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56_1, "Q56_1",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q56_2" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56_2, "Q56_2",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q56_3" => if (executeQueriesByChangingConstants) {
           SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56_3, "Q56_3",
-            tableType, pw, sqlContext)
+            tableType, pw, sqlContext, usePlanCaching)
         }
         case "Q57" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q57, "Q57",
           tableType, pw, sqlContext)
@@ -728,6 +729,7 @@ object NWTestUtil {
 
   def validateSelectiveQueriesFullResultSet(snc: SnappyContext, tableType: String, pw:
   PrintWriter, sqlContext: SQLContext): Unit = {
+    val usePlanCaching = false;
     for (q <- NWQueries.queries) {
       q._1 match {
         case "Q6" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q6, "Q6",
@@ -765,37 +767,37 @@ object NWTestUtil {
         case "Q25" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q25, "Q25",
           tableType, pw, sqlContext)
         case "Q25_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q25_1, "Q25_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q25_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q25_2, "Q25_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q26" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26, "Q26",
           tableType, pw, sqlContext)
         case "Q26_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26_1, "Q26_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q26_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q26_2, "Q26_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q27" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27, "Q27",
           tableType, pw, sqlContext)
         case "Q27_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_1, "Q27_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q27_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_2, "Q27_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q27_3" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_3, "Q27_3",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q27_4" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q27_4, "Q27_4",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q28" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q28, "Q28",
           tableType, pw, sqlContext)
         case "Q28_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q28_1, "Q28_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q28_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q28_2, "Q28_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q30" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q30, "Q30",
           tableType, pw, sqlContext)
         case "Q30_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q30_2, "Q30_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q30_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q30_2, "Q30_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q61" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q61, "Q61",
           tableType, pw, sqlContext)
         case "Q62" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q62, "Q62",
@@ -803,81 +805,81 @@ object NWTestUtil {
         case "Q31" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31, "Q31",
           tableType, pw, sqlContext)
         case "Q31_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_1, "Q31_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q31_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_2, "Q31_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q31_3" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_3, "Q31_3",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q31_4" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q31_4, "Q31_4",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q32" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q32, "Q32",
           tableType, pw, sqlContext)
         case "Q32_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q32_1, "Q32_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q33" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q33, "Q33",
           tableType, pw, sqlContext)
         case "Q33_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q33_1, "Q33_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q34" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q34, "Q34",
           tableType, pw, sqlContext)
         case "Q34_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q34_1, "Q34_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q34_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q34_2, "Q34_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q36" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q36, "Q36",
           tableType, pw, sqlContext)
         case "Q36_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q36_1, "Q36_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q36_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q36_2, "Q36_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q37" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q37, "Q37",
           tableType, pw, sqlContext)
         case "Q38" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q38, "Q38",
           tableType, pw, sqlContext)
         case "Q38_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q38_1, "Q38_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q38_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q38_2, "Q38_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q39" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q39, "Q39",
           tableType, pw, sqlContext)
         case "Q40" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q40, "Q40",
           tableType, pw, sqlContext)
         case "Q40_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q40_1, "Q40_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q40_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q40_2, "Q40_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q41" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q41, "Q41",
           tableType, pw, sqlContext)
         case "Q42" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q42, "Q42",
           tableType, pw, sqlContext)
         case "Q42_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q42_1, "Q42_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q42_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q42_2, "Q42_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q43" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q43, "Q43",
           tableType, pw, sqlContext)
         case "Q51" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q51, "Q51",
           tableType, pw, sqlContext)
         case "Q51_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q51_1, "Q51_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q51_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q51_2, "Q51_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q52" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q52, "Q52",
           tableType, pw, sqlContext)
         case "Q55" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q55, "Q55",
           tableType, pw, sqlContext)
         case "Q55_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q55_1, "Q55_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q55_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q55_2, "Q55_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q56" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56, "Q56",
           tableType, pw, sqlContext)
         case "Q56_1" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56_1, "Q56_1",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q56_2" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56_2, "Q56_2",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q56_3" => SnappyTestUtils.assertJoinFullResultSet(snc, NWQueries.Q56_3, "Q56_3",
-          tableType, pw, sqlContext)
+          tableType, pw, sqlContext, usePlanCaching)
         case "Q58" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q58, "Q58",
           tableType, pw, sqlContext)
         case "Q59" => SnappyTestUtils.assertQueryFullResultSet(snc, NWQueries.Q59, "Q59",
