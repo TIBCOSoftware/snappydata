@@ -36,6 +36,10 @@ INITTASK    taskClass   = sql.snappy.SnappyTest taskMethod  = HydraTask_startSna
             runMode = always
             threadGroups = ddlThread;
 
+INITTASK    taskClass   = sql.snappy.SnappyTest taskMethod  = HydraTask_recordProcessIDWithHost
+            runMode = always
+            threadGroups = dataStoreThreads, locator, accessorThreads, ddlThread;
+
 hydra.CachePrms-names = defaultCache;
 hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
