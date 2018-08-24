@@ -1,67 +1,6 @@
 elapsedtime on;
 set spark.sql.shuffle.partitions=29;
 
-SELECT * FROM Categories;
-SELECT * FROM Customers;
-SELECT * FROM Orders;
------ SELECTing Specific Columns 
-SELECT FirstName, LastName FROM Employees;
------ Sorting By Multiple Columns
-SELECT FirstName, LastName FROM Employees ORDER BY LastName;
-
------ Sorting By Column Position
-SELECT Title, FirstName, LastName FROM Employees ORDER BY 1,3;
-
------ Ascending and Descending Sorts
-SELECT Title, FirstName, LastName FROM Employees ORDER BY Title ASC, LastName DESC;
-
------ Checking for Equality
-SELECT Title, FirstName, LastName FROM Employees WHERE Title = 'Sales Representative';
-
------ Checking for Inequality
-SELECT FirstName, LastName FROM Employees WHERE Title <> 'Sales Representative';
-
------ Checking for Greater or Less Than
-SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N';
-
------ Checking for NULL
-SELECT FirstName, LastName FROM Employees WHERE Region IS NULL;
-
------ WHERE and ORDER BY
-SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N' ORDER BY LastName DESC;
-
------ Using the WHERE clause to check for equality or inequality
-SELECT OrderDate, ShippedDate, CustomerID, Freight FROM Orders WHERE OrderDate = Cast('1997-05-19' as TIMESTAMP);
-
------ Using WHERE and ORDER BY Together
-SELECT CompanyName, ContactName, Fax FROM Customers WHERE Fax IS NOT NULL ORDER BY CompanyName;
-
------ The IN Operator
-SELECT TitleOfCourtesy, FirstName, LastName FROM Employees WHERE TitleOfCourtesy IN ('Ms.','Mrs.');
-
------ The LIKE Operator
-SELECT TitleOfCourtesy, FirstName, LastName FROM Employees WHERE TitleOfCourtesy LIKE 'M%';
-
-SELECT FirstName, LastName, BirthDate FROM Employees WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND Cast('1959-12-31 23:59:59' as TIMESTAMP);
-
-SELECT CONCAT(FirstName, ' ', LastName) FROM Employees;
-
-SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate asc;
-
-SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate;
-
-SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal FROM Orders WHERE Freight >= 500;
-
-SELECT SUM(Quantity) AS TotalUnits FROM Order_Details WHERE ProductID=3;
-
-SELECT MIN(HireDate) AS FirstHireDate, MAX(HireDate) AS LastHireDate FROM Employees;
-
-SELECT City, COUNT(EmployeeID) AS NumEmployees FROM Employees WHERE Title = 'Sales Representative' GROUP BY City HAVING COUNT(EmployeeID) > 1 ORDER BY NumEmployees;
-
-SELECT COUNT(DISTINCT City) AS NumCities FROM Employees;
-
-SELECT ProductID, AVG(UnitPrice) AS AveragePrice FROM Products GROUP BY ProductID HAVING AVG(UnitPrice) > 70 ORDER BY AveragePrice;
-
 SELECT CompanyName FROM Customers WHERE CustomerID = (SELECT CustomerID FROM Orders WHERE OrderID = 10290) --GEMFIREXD-PROPERTIES executionEngine=Spark
 ;
 
@@ -142,8 +81,6 @@ select CategoryName, format_number(sum(ProductSales), 2) as CategorySales from (
 
 set spark.sql.crossJoin.enabled=true;
 
-SELECT * FROM orders LEFT SEMI JOIN order_details;
-
 SELECT count(*) FROM orders JOIN order_details;
 
 SELECT count(*) FROM orders LEFT JOIN order_details;
@@ -153,16 +90,6 @@ SELECT count(*) FROM orders RIGHT JOIN order_details;
 SELECT count(*) FROM orders FULL OUTER JOIN order_details;
 
 SELECT count(*) FROM orders FULL JOIN order_details;
-
-SELECT * FROM orders JOIN order_details ON Orders.OrderID = Order_Details.OrderID;
-
-SELECT * FROM orders LEFT JOIN order_details ON Orders.OrderID = Order_Details.OrderID;
-
-SELECT * FROM orders RIGHT JOIN order_details ON Orders.OrderID = Order_Details.OrderID;
-
-SELECT * FROM orders FULL OUTER JOIN order_details ON Orders.OrderID = Order_Details.OrderID;
-
-SELECT * FROM orders FULL JOIN order_details ON Orders.OrderID = Order_Details.OrderID;
 
 select distinct b.ShipName, b.ShipAddress, b.ShipCity, b.ShipRegion, b.ShipPostalCode, b.ShipCountry, b.CustomerID,
      c.CompanyName, c.Address, c.City, c.Region, c.PostalCode, c.Country, concat(d.FirstName,  ' ', d.LastName) as Salesperson,
