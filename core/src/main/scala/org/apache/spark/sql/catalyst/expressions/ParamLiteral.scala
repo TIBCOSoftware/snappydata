@@ -89,7 +89,6 @@ trait DynamicReplacableConstant extends Expression {
          |final $javaType $valueLocal = $valueTerm;
       """.stripMargin
 
-    // println(initCode)
     if (!addMutableState) {
       // use the already added fields
       return ev.copy(initCode, isNullLocal, valueLocal)
