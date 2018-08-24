@@ -170,7 +170,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     val ms = Misc.getMemStoreBootingNoThrow
     if (ms != null) {
       var conn: EmbedConnection = null
-      if (ms.isSnappyStore && !ms.tableCreationAllowed && Misc.isSecurityEnabled) {
+      if (ms.isSnappyStore && Misc.isSecurityEnabled) {
         var contextSet = false
         try {
           val dd = ms.getDatabase.getDataDictionary
@@ -181,6 +181,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
             schema, conn.getLanguageConnection.getTransactionExecute, false)
           if (sd == null) {
             if (schema.equals(currentUser)) {
+              if (ms.tableCreationAllowed()) return
               throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
                 schema, schema)
             } else {
