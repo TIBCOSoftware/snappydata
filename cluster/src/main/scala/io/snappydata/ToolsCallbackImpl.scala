@@ -167,11 +167,10 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   }
 
   override def checkSchemaPermission(schema: String, currentUser: String): Unit = {
-    val ms = Misc.getMemStore
+    val ms = Misc.getMemStoreBootingNoThrow
     if (ms != null) {
-      val isSnappyStoreWithSecurityEnabled = ms.isSnappyStore && Misc.isSecurityEnabled
       var conn: EmbedConnection = null
-      if (isSnappyStoreWithSecurityEnabled && !ms.tableCreationAllowed) {
+      if (ms.isSnappyStore && !ms.tableCreationAllowed && Misc.isSecurityEnabled) {
         var contextSet = false
         try {
           val dd = ms.getDatabase.getDataDictionary
