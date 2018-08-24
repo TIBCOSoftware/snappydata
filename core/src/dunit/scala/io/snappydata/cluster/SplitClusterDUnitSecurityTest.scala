@@ -707,9 +707,8 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"alter table $schema.$t2r add column address string",
       // Create view succeeds but select on it fails, which is comforting.
 //      s"CREATE VIEW $schema.${t1}view4 AS SELECT id, name FROM $schema.$t1",
-      // TODO Uncomment after changes to disallow external tables creation in different schema
-//      s"CREATE EXTERNAL TABLE $schema.${t1}ext4 USING csv OPTIONS(path " +
-//          s"'../../quickstart/src/main/resources/customer.csv')",
+      s"CREATE EXTERNAL TABLE $schema.${t1}ext4 USING csv OPTIONS(path " +
+          s"'../../quickstart/src/main/resources/customer.csv')",
       s"CREATE INDEX $schema.idx4 ON $schema.$t1 (id, name)")
         .foreach(sql => assertFailures(() => {
           executeSQL(user4Stmt, sql)
