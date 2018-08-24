@@ -19,13 +19,11 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
@@ -79,7 +77,6 @@ abstract class BaseColumnFormatRelation(
     with PartitionedDataSourceScan
     with RowInsertableRelation
     with MutableRelation {
-
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
@@ -261,7 +258,17 @@ abstract class BaseColumnFormatRelation(
     partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
   }
 
-  /**
+    /** Get key columns of the column table */
+    override def getPrimaryKeyColumns: Seq[String] = {
+        val keyColsOptions = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+        if (keyColsOptions.isDefined) {
+            keyColsOptions.get.split(",").map(_.trim)
+        } else {
+            Seq.empty[String]
+        }
+    }
+
+    /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
    * execution should be a count of number of updated rows.
    */
