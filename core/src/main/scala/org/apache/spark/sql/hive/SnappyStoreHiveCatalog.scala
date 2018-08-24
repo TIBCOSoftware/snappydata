@@ -734,22 +734,21 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
                                provider: String,
                                options: Map[String, String],
                                relation: Option[BaseRelation]): Unit = {
-    // Check if the cluster is in secure mode and table creation allowed
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks != null) {
-      // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
-      // using LCC.getAuthorizationId() itself rather than getUserName()
-      val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
-      if (user.nonEmpty) {
-        val currentUser = IdUtil.getUserAuthorizationId(user)
-        callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
-      }
-    }
     val client = this.client
     withHiveExceptionHandling(
       client.getTableOption(tableIdent.schemaName, tableIdent.table)) match {
       case None =>
 
+        val callbacks = ToolsCallbackInit.toolsCallback
+        if (callbacks != null) {
+          // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
+          // using LCC.getAuthorizationId() itself rather than getUserName()
+          val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
+          if (user.nonEmpty) {
+            val currentUser = IdUtil.getUserAuthorizationId(user)
+            callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
+          }
+        }
         val newOptions = new CaseInsensitiveMutableHashMap(options)
         // add default batchSize and maxDeltaRows options for column tables
         if (SnappyParserConsts.COLUMN_SOURCE.equalsIgnoreCase(provider) ||
