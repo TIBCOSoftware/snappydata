@@ -65,4 +65,6 @@ trait ToolsCallback {
   def setLeadClassLoader(): Unit
 
   def getLeadClassLoader(): URLClassLoader
+
+  def checkSchemaPermission(schema: String, currentOwner: String): Unit
 }
