@@ -27,6 +27,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
@@ -48,6 +49,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -135,7 +137,7 @@ public class SnappyTest implements Serializable {
   /**
    * (String) APP_PROPS to set dynamically
    */
-  public Map<Integer, String> dynamicAppProps = new HashMap<>();
+  public static Map<Integer, String> dynamicAppProps = new ConcurrentHashMap<>();
 
   public enum SnappyNode {
     LOCATOR, SERVER, LEAD, WORKER
@@ -2033,7 +2035,13 @@ public class SnappyTest implements Serializable {
           APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
         }
         if (SnappyPrms.hasDynamicAppProps()) {
-          APP_PROPS = "\"" + APP_PROPS + "," + dynamicAppProps.get(getMyTid()) + "\"";
+          String dmlProps = dynamicAppProps.get(getMyTid());
+          if(dmlProps == null) {
+            dmlProps = dynamicAppProps.get(getMyTid());
+            if(dmlProps == null) throw new TestException("Test issue: dml statement for " +
+                getMyTid() + " is null");
+          }
+          APP_PROPS = "\"" + APP_PROPS + "," + dmlProps + "\"";
           Log.getLogWriter().info("APP_PROPS : " + APP_PROPS);
         }
         String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
@@ -2090,7 +2098,10 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath() + File.separator + logFileName;
         logFile = new File(dest);
         if (SnappyPrms.hasDynamicAppProps()) {
-          userAppArgs = userAppArgs + " " + dynamicAppProps.get(getMyTid());
+          String dmlProps = dynamicAppProps.get(getMyTid());
+          if(dmlProps == null)
+            throw new TestException("dml props for thread " + getMyTid() + " is null)");
+          userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
           String appName = SnappyCDCPrms.getAppName();
@@ -2707,6 +2718,30 @@ public class SnappyTest implements Serializable {
       String s = "Exception occurred while waiting for snappy-stop-all script execution..";
       throw new TestException(s, e);
     }
+  }
+
+  public static void HydraTask_deployJarUsingJDBC(){
+    snappyTest.executeDeployJar();
+  }
+
+  public void executeDeployJar(){
+    Connection conn = null;
+    try {
+      conn = getLocatorConnection();
+    } catch (SQLException se){
+      throw new TestException("Got exception while getting connection",se);
+    }
+    String userJarPath = snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
+    String deployCmd = "";
+    String jarName = SnappyPrms.getJarIdentifier();
+    try {
+      deployCmd = "deploy jar " + jarName +" '" + userJarPath + "'";
+      Log.getLogWriter().info("Executing deploy jar cmd : " + deployCmd);
+      conn.createStatement().execute(deployCmd);
+    } catch (SQLException se) {
+      throw new TestException("Got exception while executing deploy jar:" + deployCmd, se);
+    }
+    closeConnection(conn);
   }
 
   /**

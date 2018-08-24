@@ -31,7 +31,7 @@ object AirlineDataSparkJobApp {
     // scalastyle:off println
     val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("Airline Data Application").
+        setAppName("Airline Data Application_" + System.currentTimeMillis()).
         set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
