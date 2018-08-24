@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries
+directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize
 mkdir -p  $directory
 
 mv *.csv *.out $directory/
