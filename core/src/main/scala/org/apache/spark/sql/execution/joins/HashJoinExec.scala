@@ -208,7 +208,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
             rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
-        streamRDDs
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
+          preferredLocations) +: streamRDDs.tail
       }
       (streamPlanRDDs, buildRDDs)
     } else {
