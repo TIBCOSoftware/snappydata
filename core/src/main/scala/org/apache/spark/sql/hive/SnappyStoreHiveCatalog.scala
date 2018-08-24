@@ -739,9 +739,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     if (callbacks != null) {
       // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
       // using LCC.getAuthorizationId() itself rather than getUserName()
-      val currentUser = IdUtil.getUserAuthorizationId(
-        snappySession.conf.get(Attribute.USERNAME_ATTR))
-      callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
+      val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
+      if (user.nonEmpty) {
+        val currentUser = IdUtil.getUserAuthorizationId(user)
+        callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
+      }
     }
     val client = this.client
     withHiveExceptionHandling(
