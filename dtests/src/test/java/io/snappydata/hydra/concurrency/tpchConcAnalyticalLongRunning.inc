@@ -1,5 +1,5 @@
 INCLUDE $JTESTS/hydraconfig/hydraparams1.inc;
-INCLUDE $JTESTS/hydraconfig/topology_2.inc;
+INCLUDE $JTESTS/hydraconfig/topology_3.inc;
 
 hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
@@ -18,15 +18,15 @@ THREADGROUP snappySingleThread
             clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${A}\",
                                 ${${A}Hosts}, true)" ncf;
 
-THREADGROUP snappyClientPThreads
-            totalThreads = fcn "(${${B}Hosts} * ${${B}VMsPerHost} *  ${${B}ThreadsPerVM}) " ncf
-            totalVMs     = fcn "(${${B}Hosts} * ${${B}VMsPerHost})" ncf
-            clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${B}\",
-                                ${${B}Hosts}, true)" ncf;
+THREADGROUP snappyClientAThreads
+            totalThreads = fcn "(${${C}Hosts} * ${${C}VMsPerHost} *  ${${C}ThreadsPerVM}) " ncf
+            totalVMs     = fcn "(${${C}Hosts} * ${${C}VMsPerHost})" ncf
+            clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${C}\",
+                                ${${C}Hosts}, true)" ncf;
 
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = initSnappyArtifacts
             runMode = always
-            threadGroups = snappyThreads, snappySingleThread, snappyClientPThreads;
+            threadGroups = snappyThreads, snappySingleThread, snappyClientAThreads;
 
 // create and load tables using snappyJob
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest
@@ -65,10 +65,3 @@ hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar;
 io.snappydata.hydra.cluster.SnappyPrms-isLongRunningTest = true;
 
-/*
-io.snappydata.hydra.cluster.SnappyPrms-isUserConfTest = true;
-io.snappydata.hydra.cluster.SnappyPrms-locatorList = "localhost:1527";
-io.snappydata.hydra.cluster.SnappyPrms-primaryLocatorHost = "localhost";
-io.snappydata.hydra.cluster.SnappyPrms-primaryLocatorPort = "1527";
-io.snappydata.hydra.cluster.SnappyPrms-primaryLocatorHost = "localhost";
-io.snappydata.hydra.cluster.SnappyPrms-primaryLocatorPort = "8090";*/
