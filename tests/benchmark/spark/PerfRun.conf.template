@@ -70,3 +70,9 @@ dataDir=<data-directory-path>
 #Location where final output will be collected
 outputLocation=<path-to-location-for-generating-results>
 
+# Trace events to get granular timing info and report in loadPerfStream
+traceEvents=false
+
+# load tables in Spark cache
+cacheTables=true
+
