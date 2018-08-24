@@ -24,16 +24,10 @@ import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
 
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
-
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
-import org.parboiled2._
-import shapeless.{::, HNil}
-
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
@@ -45,7 +39,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
-import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
@@ -53,10 +47,11 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import scala.util.control.NonFatal
+import org.parboiled2._
+import shapeless.{::, HNil}
 
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
 import scala.util.control.NonFatal
 
 abstract class SnappyDDLParser(session: SparkSession)
@@ -325,7 +320,7 @@ abstract class SnappyDDLParser(session: SparkSession)
                 push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
                 identifier ~ ws ~> {(ldapOpt: Any, x) =>
               ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
-        ).+ (commaSep) ~> {
+        ). + (commaSep) ~> {
         (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
           }).? ~> { (toOpt: Any) =>
       toOpt match {
@@ -349,10 +344,15 @@ abstract class SnappyDDLParser(session: SparkSession)
       val expandedApplyTo = if (applyToAll) {
         Seq.empty[String]
       } else {
-        import scala.collection.JavaConverters._
         ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       }
-
+      /*
+      val targetRelation = snappySession.sessionState.catalog.lookupRelation(tableIdent)
+      val isTargetExternalRelation =  targetRelation.find(x => x match {
+        case _: ExternalRelation => true
+        case _ => false
+      }).isDefined
+      */
       var currentUser = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
 
       currentUser = IdUtil.getUserAuthorizationId(
@@ -361,8 +361,9 @@ abstract class SnappyDDLParser(session: SparkSession)
 
       val policyIdent = snappySession.sessionState.catalog
           .newQualifiedTableName(policyName)
-      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent, currentUser,
-        expandedApplyTo)
+      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent,
+        currentUser, expandedApplyTo)
+
       CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, expandedApplyTo, currentUser,
         filterStr, filter)
     }
