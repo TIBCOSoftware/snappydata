@@ -206,14 +206,14 @@ class SplitClusterDUnitSecurityTest(s: String)
   override def testUpdateDeleteOnColumnTables(): Unit = {}
 
   // Test to make sure that stock spark-shell works with SnappyData core jar
-  def _testSparkShell(): Unit = {
+  def testSparkShell(): Unit = {
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
     SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, locatorClientPort, props)
   }
 
-  def _testPreparedStatements(): Unit = {
+  def testPreparedStatements(): Unit = {
     def executePrepStmt(sql: String): Unit = {
       val ps = user1Conn.prepareStatement(sql)
       ps.setInt(1, 1000)
@@ -253,7 +253,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     * Create row and column tables in embedded mode. Perform select, insert, update, delete and
     * drop from smart side and vice versa.
     */
-  def _testSQLOpsWithValidCredentials(): Unit = {
+  def testSQLOpsWithValidCredentials(): Unit = {
     user1Conn = getConn(jdbcUser1, true)
     val stmt = user1Conn.createStatement()
     val value = "brought up to zero"
@@ -425,7 +425,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     *
     * Attempt to modify hive metastore via a thin connection should fail.
     */
-  def _testGrantRevokeAndHiveModification(): Unit = {
+  def testGrantRevokeAndHiveModification(): Unit = {
     user1Conn = getConn(jdbcUser1)
     val user1Stmt = user1Conn.createStatement()
     val value = "brought up to zero"
@@ -576,7 +576,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     *
     * DMLs: select, insert, update, delete rows
     */
-  def _testAPIsWithValidCredentials(): Unit = {
+  def testAPIsWithValidCredentials(): Unit = {
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
@@ -626,9 +626,12 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   /**
-   * Create a schema owned by group1, create table and index and execute DMLs on it by a user of that group.
+   * Create a schema owned by group1, create table and index and execute DMLs on it by a user
+   * of that group.
    * Repeat that by another member of the same group and ensure it succeeds.
    * Repeat that by a member of a different group and verify it fails.
+   * Grant DML permissions on some tables to another group and ensure it works.
+   * Revoke those permissions on tables from that group and ensure it works too.
    */
   def testLDAPGroupOwnershipJDBC(): Unit = {
     adminConn = getConn(adminUser1)
@@ -802,7 +805,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     jar
   }
 
-  def _testSnappyJob(): Unit = {
+  def testSnappyJob(): Unit = {
     val jobBaseStr = buildJobBaseStr("io.snappydata.cluster", "SnappySecureJob")
     submitAndVerifyJob(jobBaseStr, s" --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out")
 
@@ -848,17 +851,17 @@ class SplitClusterDUnitSecurityTest(s: String)
     assert(consoleLog.contains("The supplied authentication is invalid"), "Job should have failed")
   }
 
-  def _testSnappyStreamingJob(): Unit = {
+  def testSnappyStreamingJob(): Unit = {
     submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyStreamingSecureJob"),
       s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyStreamingValidJob.out")
   }
 
-  def _testSnappyJavaJob(): Unit = {
+  def testSnappyJavaJob(): Unit = {
     submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaSecureJob"),
       s" --conf $opCode=sqlOps --conf $outputFile=SnappyJavaValidJob.out")
   }
 
-  def _testSnappyJavaStreamingJob(): Unit = {
+  def testSnappyJavaStreamingJob(): Unit = {
     submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaStreamingSecureJob"),
       s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyJavaStreamingValidJob.out")
   }
