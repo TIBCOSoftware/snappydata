@@ -47,13 +47,13 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchT
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, AttributeReference, BinaryComparison, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, Literal, NamedExpression, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral, TokenizedLiteral, And => logicalAnd, In => logicalIn, Or => logicalOr}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -1441,7 +1441,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case tnfe: TableNotFoundException => throw tnfe
     }
 
-    if(sessionCatalog.isTemporaryTable(tableIdent)) {
+    if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("alter table not supported for temp tables")
     }
 
@@ -1454,8 +1454,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     plan match {
       case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
-        sessionCatalog.invalidateTable(tableIdent)
         rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
+        sessionCatalog.invalidateAll()
+        tableIdent.invalidate()
         SnappyStoreHiveCatalog.registerRelationDestroy()
         SnappySession.clearAllCache()
       case _ =>
@@ -1573,6 +1574,50 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
       throw new AnalysisException("Currently Policy only For Select is supported")
     }
+
+    /*
+    if (isTargetExternalRelation) {
+      val targetAttributes = this.sessionState.catalog.lookupRelation(tableName).output
+      def checkForValidFilter(filter: BypassRowLevelSecurity): Unit = {
+        def checkExpression(expression: Expression): Unit = {
+          expression match {
+            case _: Attribute =>  // ok
+            case _: Literal =>  // ok
+            case _: TokenizedLiteral => // ok
+            case br: BinaryComparison => {
+              checkExpression(br.left)
+              checkExpression(br.right)
+            }
+            case logicalOr(left, right) => {
+              checkExpression(left)
+              checkExpression(right)
+            }
+            case logicalAnd(left, right) => {
+              checkExpression(left)
+              checkExpression(right)
+            }
+            case logicalIn(value, list) => {
+              checkExpression(value)
+              list.foreach(checkExpression(_))
+            }
+            case _ => // for any other type of expression
+              // it should not contain any attribute of target external relation
+              expression.foreach(x => x match {
+                case ne: NamedExpression => targetAttributes.find(_.exprId == ne.exprId).
+                    foreach( _ => throw new AnalysisException("Filter for external " +
+                        "relation cannot have functions " +
+                        "or dependent subquery involving external table's attribute") )
+              })
+
+          }
+        }
+        checkExpression(filter.child.condition)
+
+      }
+      checkForValidFilter(filter)
+
+    }
+    */
 
     sessionCatalog.registerPolicy(policyName, tableName, policyFor, applyTo, expandedPolicyApplyTo,
       currentUser, filterStr, filter)
