@@ -71,8 +71,9 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
 
       override def stop(): Unit = {
         try {
-          val stopGracefully = config.getBoolean("streaming.stopGracefully")
-          stop(stopSparkContext = false, stopGracefully = stopGracefully)
+          val  stopGracefully = config.getBoolean("streaming.stopGracefully")
+          SnappyStreamingContext.getActive
+              .foreach( c => c.stop(stopSparkContext = false, stopGracefully = stopGracefully))
         } catch {
           case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
         } finally {

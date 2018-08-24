@@ -33,7 +33,7 @@ sbin="$(dirname "$(absPath "$0")")"
 
 # Launch the slaves
 if echo $@ | grep -qw start; then
-  "$sbin/snappy-nodes.sh" lead cd "$SNAPPY_HOME" \; "$sbin/snappy-lead.sh" $@ $LEAD_STARTUP_OPTIONS
+  "$sbin/snappy-nodes.sh" lead cd "$SNAPPY_HOME" \; "$sbin/snappy-lead.sh" "$@" $LEAD_STARTUP_OPTIONS
 else
-  "$sbin/snappy-nodes.sh" lead cd "$SNAPPY_HOME" \; "$sbin/snappy-lead.sh" $@
+  "$sbin/snappy-nodes.sh" lead cd "$SNAPPY_HOME" \; "$sbin/snappy-lead.sh" "$@"
 fi
