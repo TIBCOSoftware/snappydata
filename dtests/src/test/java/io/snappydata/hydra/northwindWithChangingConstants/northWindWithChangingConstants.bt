@@ -1,0 +1,68 @@
+io/snappydata/hydra/northwindWithChangingConstants/nwReplicatedRowTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="ReplicatedRow"
+  createLargeOrderTable = false
+
+io/snappydata/hydra/northwindWithChangingConstants/nwPartitionedRowTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="PartitionedRow"
+  createLargeOrderTable = false
+
+io/snappydata/hydra/northwindWithChangingConstants/nwColumnTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Column"
+  createLargeOrderTable = false
+
+io/snappydata/hydra/northwindWithChangingConstants/nwColocatedTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Colocated"
+  createLargeOrderTable = false
+
+io/snappydata/hydra/northwindWithChangingConstants/nwPersistentReplicatedRowTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="ReplicatedRow"
+  isSmokeRun = false
+
+io/snappydata/hydra/northwindWithChangingConstants/nwPersistentPartitionedRowTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="PartitionedRow"
+
+io/snappydata/hydra/northwindWithChangingConstants/nwPersistentColumnTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Column"
+
+io/snappydata/hydra/northwindWithChangingConstants/nwPersistentColocatedTablesTestWithChangingConstants.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="Colocated"
