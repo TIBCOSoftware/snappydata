@@ -21,15 +21,10 @@ import java.net.URL
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.{Attribute, Constants}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
@@ -40,7 +35,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
-
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
@@ -53,7 +47,6 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Subquer
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.ExternalRelation
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.{IndexColumnFormatRelation, DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
@@ -63,11 +56,15 @@ import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.MutableRelation
-import org.apache.spark.sql.sources._
+import org.apache.spark.sql.sources.{MutableRelation, _}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -535,6 +532,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  private[sql] def isPolicy(ct: CatalogTable): Boolean = {
+    ct.tableType == CatalogTableType.EXTERNAL && (
+        ct.properties.get(JdbcExtendedUtils.TABLETYPE_PROPERTY) match {
+          case Some(ExternalTableType.Policy.name) => true
+          case _ => false
+        })
+  }
+
   final def getCombinedPolicyFilterForExternalTable(rlsRelation: RowLevelSecurityRelation,
       wrappingLogicalRelation: Option[LogicalRelation], currentUser: Option[String]):
   Option[Filter] = {
@@ -559,21 +564,19 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       val policyFilters = getAllTablesIncludingPolicies.flatMap(name => {
         val qt = newQualifiedTableName(name)
         qt.getTableOption(this) match {
-          case Some(ct) if ct.tableType == CatalogTableType.EXTERNAL &&
-              ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
-                  equals(ExternalTableType.Policy.name) &&
+          case Some(ct) if isPolicy(ct) &&
               ct.properties.getOrElse(PolicyProperties.targetTable, "").
                   equals(rlsRelation.resolvedName) &&
-              currentUser.map(user => {
+              currentUser.forall(user => {
                 val policyOwner = ct.properties.getOrElse(PolicyProperties.policyOwner, "")
                 if (user.equalsIgnoreCase(policyOwner)) {
                   false
                 } else {
                   val applyTo = ct.properties.getOrElse(PolicyProperties.policyApplyTo,
-                     "").split(",").filterNot(_.trim.isEmpty)
+                    "").split(",").filterNot(_.trim.isEmpty)
                   applyTo.isEmpty || applyTo.exists(_.equalsIgnoreCase(user))
                 }
-              }).getOrElse(true) =>
+              }) =>
             Seq(this.lookupRelation(ct.identifier).asInstanceOf[SubqueryAlias].
                 child.asInstanceOf[BypassRowLevelSecurity].child)
           case _ => Seq.empty
@@ -632,12 +635,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             Constant.SPLIT_VIEW_TEXT_PROPERTY, table.properties).getOrElse(table.viewText
               .getOrElse(sys.error("Invalid view without text.")))
           snappySession.sessionState.sqlParser.parsePlan(viewText)
-        } else if (table.tableType == CatalogTableType.EXTERNAL &&
-            (table.properties.get(JdbcExtendedUtils.TABLETYPE_PROPERTY) match {
-              case Some(tt) => tt.equals(ExternalTableType.Policy.name)
-              case None => false
-            })
-            ) {
+        } else if (isPolicy(table)) {
           val filterExpression = snappySession.sessionState.sqlParser.parseExpression(
             table.properties.getOrElse(PolicyProperties.filterString,
               throw new IllegalStateException("Filter for the policy not found")))
@@ -928,7 +926,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
         withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
         SnappySession.clearAllCache()
-      case Some(catalogTable) => {
+      case Some(catalogTable) =>
+        // TODO: Ask Asif why two CREATE POLICY with same properties is allowed
         val policyProperties = new mutable.HashMap[String, String]
         policyProperties.put(PolicyProperties.targetTable, targetTable.toString)
         policyProperties.put(PolicyProperties.filterString, filterString)
@@ -945,7 +944,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               s"but different attributes {${catalogTable.properties.toSeq.mkString(",")}}" +
               s" already exists")
         }
-      }
     }
   }
 
@@ -1061,7 +1059,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     tables
   }
 
-  private def getAllTablesIncludingPolicies(): Seq[String] = {
+  private def getAllTablesIncludingPolicies: Seq[String] = {
     val allTables = new mutable.ArrayBuffer[String]()
     val currentSchemaName = this.currentSchema
     var hasCurrentDb = false
@@ -1089,9 +1087,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     getAllTablesIncludingPolicies.filterNot(name => {
       val qt = newQualifiedTableName(name)
       qt.getTableOption(this) match {
-        case Some(ct) => ct.tableType == CatalogTableType.EXTERNAL &&
-            ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
-                equals(ExternalTableType.Policy.name)
+        case Some(ct) => isPolicy(ct)
         case _ => false
       }
     })
@@ -1102,9 +1098,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     getAllTablesIncludingPolicies.filter(name => {
       val qt = newQualifiedTableName(name)
       qt.getTableOption(this) match {
-        case Some(ct) => ct.tableType == CatalogTableType.EXTERNAL &&
-            ct.properties.getOrElse(JdbcExtendedUtils.TABLETYPE_PROPERTY, "").
-                equals(ExternalTableType.Policy.name) &&
+        case Some(ct) => isPolicy(ct) &&
             ct.properties.getOrElse(PolicyProperties.targetTable, "").equals(tableName)
         case _ => false
       }
@@ -1406,6 +1400,30 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   def close(): Unit = synchronized {
     closeHive(client)
+  }
+
+  private[sql] def refreshPolicies(ldapGroup: String): Unit = {
+    val qualifiedLdapGroup = Constants.LDAP_GROUP_PREFIX + ldapGroup
+    val databases = listDatabases().iterator.map(_.toUpperCase).toSet.iterator
+    while (databases.hasNext) {
+      val db = databases.next()
+      val tables = client.listTables(db)
+      withHiveExceptionHandling(tables.foreach(t => {
+        val ct = client.getTable(db, t)
+        if (isPolicy(ct)) {
+          val applyToStr = ct.properties(PolicyProperties.policyApplyTo)
+          if (applyToStr.nonEmpty) {
+            val applyTo = applyToStr.split(",")
+            if (applyTo.contains(qualifiedLdapGroup)) {
+              val expandedApplyTo = ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
+              val newProperties = ct.properties +
+                  (PolicyProperties.expandedPolicyApplyTo -> expandedApplyTo.mkString(","))
+              client.alterTable(ct.copy(properties = newProperties))
+            }
+          }
+        }
+      }))
+    }
   }
 }
 
