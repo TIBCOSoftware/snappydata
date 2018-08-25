@@ -1,15 +1,14 @@
-# Upgrade Instructions (1.0.0 to 1.0.1)
+# Upgrade Instructions
 
 This guide provides information for upgrading systems running an earlier version of SnappyData. We assume that you have SnappyData already installed, and you are upgrading to the latest version of SnappyData.
 
 Before you begin the upgrade, ensure that you understand the new features and any specific requirements for that release.
 
-## Before you begin the upgrade
+## Before You Upgrade
 
 1. Confirm that your system meets the hardware and software requirements described in [System Requirements](../install/system_requirements.md) section.
 
-2. Backup the existing environment: </br>
-Create a backup of the locator, lead, and server configuration files that exist in the **conf** folder located in the SnappyData home directory.
+2. Backup the existing environment: </br>Create a backup of the locator, lead, and server configuration files that exist in the **conf** folder located in the SnappyData home directory.
 
 3. Stop the cluster and verify that all members are stopped: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command. </br>To ensure that all the members have been shut down correctly, use the `sbin/snappy-status-all.sh` command.
 
@@ -24,7 +23,39 @@ Create a backup of the locator, lead, and server configuration files that exist 
 8. [Restart the SnappyData cluster](../howto/start_snappy_cluster.md).
 
 
-## Additional Steps
+## Upgrading to SnappyData Version 1.0.2
+
+The following steps must be specifically followed to upgrade to SnappyData version 1.0.2: 
+
+1.	Add `-J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true` property to the **conf/locators** files for each of the locator as shown:
+
+        conf/locators
+        locator1 -dir=<path1> -peer-discovery-port=<port1> -locators=<locator2:port2> -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+        locator2 -dir=<path2> -peer-discovery-port=<port2> -locators= <locator1:port1> -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+
+2.	Start the cluster and verify that cluster is up and running. Also verify that all the tables are present along with their data. 
+3.	In the existing running cluster, start one more locator without the given system property. 
+4.	Ensure to provide `-locators=oldlocator:port` property in the conf files for the locator as shown:
+
+        locator1 -dir=<path1> -peer-discovery-port=<port1> -locators=<locator2:port2> -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+        locator2 -dir=<path2> -peer-discovery-port=<port2> -locators= <locator1:port1> -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+        locator3 -dir=<path3> -peer-discovery-port=<port3> -locators= <locator1:port1> ,<locator2:port2>
+        
+5.	Shutdown the old locators that were started with the system property, using the commands as shown:
+
+        ./bin/snappy locator stop -dir=-dir=<path1>
+        ./bin/snappy locator stop -dir=-dir=<path2>
+      
+6.	Remove the directory contents from the stopped locators and start those locators without this property:</br> `-J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true` as shown:
+
+		locator1 -dir=<path1> -peer-discovery-port=<port1> -locators=<locator2:port2>,<locator3:port3>
+ 		locator2 -dir=<path2> -peer-discovery-port=<port2> -locators=<locator1:port1>,<locator3:port3>
+ 		locator3 -dir=<path3> -peer-discovery-port=<port3> -locators=<locator1:port1>,<locator2:port2>
+
+7.	Verify the tables and data.
+
+
+## Upgrading from SnappyData Version 1.0.0 to 1.0.1
 
 For best performance, it is recommended that you re-create any large column tables after you upgrade from 1.0.0 to 1.0.1. The following two improvements provided in 1.0.1 take effect:
 
