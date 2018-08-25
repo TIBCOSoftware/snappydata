@@ -162,6 +162,8 @@ if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
 if (new File(rootDir, 'aqp/build.gradle').exists()) {
   include ':snappy-aqp_' + scalaBinaryVersion
   project(':snappy-aqp_' + scalaBinaryVersion).projectDir = "$rootDir/aqp" as File
+  include ':snappy-vector_' + scalaBinaryVersion
+  project(':snappy-vector_' + scalaBinaryVersion).projectDir = "$rootDir/aqp/vector" as File
 }
 
 if (new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()) {

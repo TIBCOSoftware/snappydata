@@ -231,7 +231,7 @@ object Property extends Enumeration {
     "If true then cluster startup will wait for Spark jobserver to be fully initialized " +
         "before marking lead as 'RUNNING'. Default is false.", Some(false), prefix = null)
 
-  val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
+  val SnappyConnection: SparkValue[String] = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +
@@ -239,8 +239,13 @@ object Property extends Enumeration {
      "It is recommended that hostname and client port of the locator " +
      "be specified for this.", None, Constant.SPARK_PREFIX)
 
-  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
-    s"Number of query plans that will be cached.", Some(3000))
+  val PlanCacheSize: SparkValue[Int] = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
+    "Number of query plans that will be cached.", Some(3000), Constant.SPARK_PREFIX)
+
+  val DefaultCompilerFlags: SparkValue[String] = Val[String](
+    s"${Constant.PROPERTY_PREFIX}sql.compilerFlags",
+    "Default compiler flags for native (JNI) plan compilation when applicable.",
+    Some("-O3 -fPIC -DPIC -march=native"), Constant.SPARK_PREFIX)
 
   val ColumnBatchSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +

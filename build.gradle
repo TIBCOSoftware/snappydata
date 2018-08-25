@@ -740,9 +740,7 @@ task product(type: Zip) {
     if (hasGemFireConnectorProject){
        dependsOn ":gemfire-connector:product"
     }
-
   }
-
 
   // create snappydata+spark combined python zip
   destinationDir = file("${snappyProductDir}/python/lib")
@@ -866,6 +864,11 @@ task product(type: Zip) {
       copy {
         from aqpProject.projectDir.path + '/lib'
         into "${snappyProductDir}/jars"
+      }
+      // copy native header files
+      copy {
+        from aqpProject.projectDir.path + '/vector/src/include'
+        into "${snappyProductDir}/include"
       }
       copy {
         from aqpProject.projectDir

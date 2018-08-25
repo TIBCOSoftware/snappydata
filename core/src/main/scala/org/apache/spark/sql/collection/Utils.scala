@@ -789,6 +789,14 @@ object Utils {
     case Some(ui) => Some(ui.executorsListener)
     case _ => None
   }
+
+  def getLocalDir: String = {
+    val conf = SparkEnv.get match {
+      case null => new SparkConf()
+      case env => env.conf
+    }
+    org.apache.spark.util.Utils.getLocalDir(conf)
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],

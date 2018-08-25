@@ -176,14 +176,6 @@ testClasses.doLast {
   copyTestsCommonResources(buildDir)
 }
 
-def copyDirs(def srcDir, def destDir) {
-  mkdir(destDir)
-  copy {
-    from srcDir
-    into destDir
-  }
-}
-
 test.dependsOn ':cleanJUnit'
 scalaTest {
   dependsOn ':cleanScalaTest'
