@@ -54,6 +54,7 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
 
   override def beforeAll(): Unit = {
     this.stopAll()
+
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -83,6 +84,7 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.setProperty(k, ldapProperties.getProperty(k))
     }
+    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
     System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
     System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
     val conf = new org.apache.spark.SparkConf()
@@ -117,6 +119,7 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
     System.setProperty("gemfirexd.authentication.required", "false")
+     System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
   }
 
 

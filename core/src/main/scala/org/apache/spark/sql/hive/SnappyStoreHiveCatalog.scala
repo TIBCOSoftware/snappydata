@@ -781,7 +781,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
           // using LCC.getAuthorizationId() itself rather than getUserName()
           val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
-          if (user.nonEmpty) {
+          if (user.nonEmpty && !(tableIdent.schemaName == SnappyStoreHiveCatalog.dummyTableSchema
+              && tableIdent.table == SnappyStoreHiveCatalog.dummyTableName)) {
             val currentUser = IdUtil.getUserAuthorizationId(user)
             callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
           }
@@ -1457,7 +1458,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 }
 
 object SnappyStoreHiveCatalog {
-
+  val dummyTableSchema = "SYSIBM"
+  val dummyTableName = "SYSDUMMY1"
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
   val HIVE_METASTORE = SystemProperties.SNAPPY_HIVE_METASTORE

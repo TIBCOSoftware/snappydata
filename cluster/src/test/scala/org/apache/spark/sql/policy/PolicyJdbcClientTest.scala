@@ -45,6 +45,8 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   var ownerContext: SnappyContext = _
 
   override def beforeAll(): Unit = {
+    this.stopAll()
+    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -79,6 +81,7 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     ownerContext.dropTable(rowTableName, true)
     TestUtil.stopNetServer()
     super.afterAll()
+    System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
 
   }
 

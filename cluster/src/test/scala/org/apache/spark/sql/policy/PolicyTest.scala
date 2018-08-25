@@ -18,7 +18,7 @@ package org.apache.spark.sql.policy
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Constant, SnappyFunSuite}
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -43,13 +43,11 @@ class PolicyTest extends SnappyFunSuite
   var ownerContext: SnappyContext = _
 
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
-
-
     val conf = new org.apache.spark.SparkConf()
         .setAppName("PolicyTest")
         .setMaster("local[4]")
         .set("spark.sql.crossJoin.enabled", "true")
-
+    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
     if (addOn != null) {
       addOn(conf)
     } else {
@@ -58,6 +56,8 @@ class PolicyTest extends SnappyFunSuite
   }
 
   override def beforeAll(): Unit = {
+    this.stopAll()
+
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -83,6 +83,7 @@ class PolicyTest extends SnappyFunSuite
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
     super.afterAll()
+    System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
   }
 
   test("Policy creation on a column table using snappy context") {

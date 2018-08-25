@@ -50,6 +50,8 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   var ownerContext: SnappyContext = _
 
   override def beforeAll(): Unit = {
+    this.stopAll()
+    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
     super.beforeAll()
 
     val seq = for (i <- 0 until numElements) yield {
@@ -77,6 +79,7 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
     super.afterAll()
+    System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
 
   }
 
