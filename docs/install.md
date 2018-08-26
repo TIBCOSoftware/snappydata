@@ -1,4 +1,4 @@
-# Download and Install
+# Provisioning SnappyData
 
 SnappyData offers two editions of the product, SnappyData Community Edition, and SnappyData Enterprise Edition.
 
@@ -41,11 +41,15 @@ For more information on the capabilities of the Community and Enterprise edition
 
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
-The following installation options are available:
+The following options are available for provisioning SnappyData:
 
-* [Install On-Premise](install/install_on_premise.md) <a id="install-on-premise"></a>
+* [On-Premise](install/install_on_premise.md) <a id="install-on-premise"></a>
 
-* [Setting up Cluster on Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md) <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
+* [Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md) <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
+
+* [Kubernetes](kubernetes.md)
+
+* [Docker](/quickstart/getting_started_with_docker_image.md)
 
 * [Building from Source](install/building_from_source.md)<a id="building-from-source"></a>
 

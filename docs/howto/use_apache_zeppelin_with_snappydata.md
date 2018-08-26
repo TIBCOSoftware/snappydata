@@ -95,4 +95,10 @@
     | %snappydata.snappydata or </br> %snappydata.spark | This interpreter is used to write Scala code in the paragraph. SnappyContext is injected in this interpreter and can be accessed using variable **snc** |
     |%snappydata.sql | This interpreter is used to execute SQL queries on the SnappyData cluster. It also has features of executing approximate queries on the SnappyData cluster.|
 
-2. Click **Save** to apply your changes. For more information on using Zeppelin, see [Using Apache Zeppelin](../isight/quick_start_steps.md#LoggingZeppelin).
+2. Click **Save** to apply your changes.
+
+<heading2> Known Issue</heading2>
+
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
+
+
