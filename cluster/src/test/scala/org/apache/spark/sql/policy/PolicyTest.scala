@@ -41,7 +41,7 @@ class PolicyTest extends SnappyFunSuite
   val colTableName: String = s"$tableOwner.ColumnTable"
   val rowTableName: String = s"${tableOwner}.RowTable"
   var ownerContext: SnappyContext = _
-  var allowCreateTableFlag: Boolean = _
+
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val conf = new org.apache.spark.SparkConf()
         .setAppName("PolicyTest")
@@ -55,15 +55,7 @@ class PolicyTest extends SnappyFunSuite
   }
 
   override def beforeAll(): Unit = {
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (ms != null) {
-      allowCreateTableFlag = ms.tableCreationAllowed
-    }
-    if (!allowCreateTableFlag) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
-    }
     this.stopAll()
-
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -88,11 +80,6 @@ class PolicyTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (allowCreateTableFlag != ms.tableCreationAllowed()) {
-      this.stopAll()
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", allowCreateTableFlag.toString)
-    }
     super.afterAll()
   }
 

@@ -54,20 +54,12 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
   var ownerContext: SnappyContext = _
 
   private val sysUser = "gemfire10"
-  var allowCreateTableFlag: Boolean = _
   var serverHostPort: String = _
 
 
   override def beforeAll(): Unit = {
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (ms != null) {
-      allowCreateTableFlag = ms.tableCreationAllowed
-    }
-    if (allowCreateTableFlag) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "true")
-    }
+    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "true")
     this.stopAll()
-
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -129,10 +121,6 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (allowCreateTableFlag != ms.tableCreationAllowed()) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", allowCreateTableFlag.toString)
-    }
     this.stopAll()
     super.afterAll()
     val ldapServer = LdapTestServer.getInstance()
@@ -148,7 +136,7 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
     System.setProperty("gemfirexd.authentication.required", "false")
-
+    System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
   }
 
 

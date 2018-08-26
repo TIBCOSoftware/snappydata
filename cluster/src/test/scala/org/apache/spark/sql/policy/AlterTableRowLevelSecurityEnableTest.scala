@@ -50,16 +50,8 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   val rowTableName: String = s"${tableOwner}.$rowTable"
 
   var ownerContext: SnappyContext = _
-  var allowCreateTableFlag: Boolean = _
+
   override def beforeAll(): Unit = {
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (ms != null) {
-      allowCreateTableFlag = ms.tableCreationAllowed
-    }
-    if (!allowCreateTableFlag) {
-      this.stopAll()
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
-    }
     super.beforeAll()
 
     val seq = for (i <- 0 until numElements) yield {
@@ -86,11 +78,6 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (allowCreateTableFlag != ms.tableCreationAllowed()) {
-      this.stopAll()
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", allowCreateTableFlag.toString)
-    }
     super.afterAll()
   }
 

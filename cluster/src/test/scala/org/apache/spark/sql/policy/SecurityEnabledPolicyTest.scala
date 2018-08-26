@@ -51,20 +51,10 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
   val colTableName: String = s"$tableOwner.ColumnTable"
   val rowTableName: String = s"${tableOwner}.RowTable"
   var ownerContext: SnappyContext = _
-  var allowCreateTableFlag: Boolean = _
 
   private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (ms != null) {
-      allowCreateTableFlag = ms.tableCreationAllowed
-    }
-    if (!allowCreateTableFlag) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
-    }
-    this.stopAll()
-
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -110,10 +100,6 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (allowCreateTableFlag != ms.tableCreationAllowed()) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", allowCreateTableFlag.toString)
-    }
     this.stopAll()
     super.afterAll()
     val ldapServer = LdapTestServer.getInstance()

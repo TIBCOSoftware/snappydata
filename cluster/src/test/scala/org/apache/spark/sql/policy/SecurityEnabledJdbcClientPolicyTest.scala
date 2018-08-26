@@ -49,20 +49,10 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
   var ownerContext: SnappyContext = _
 
   private val sysUser = "gemfire10"
-  var allowCreateTableFlag: Boolean = _
   var serverHostPort: String = _
 
 
   override def beforeAll(): Unit = {
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (ms != null) {
-      allowCreateTableFlag = ms.tableCreationAllowed
-    }
-    if (!allowCreateTableFlag) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
-    }
-    this.stopAll()
-
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -111,12 +101,9 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (allowCreateTableFlag != ms.tableCreationAllowed()) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", allowCreateTableFlag.toString)
-    }
     this.stopAll()
     super.afterAll()
+
     val ldapServer = LdapTestServer.getInstance()
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
