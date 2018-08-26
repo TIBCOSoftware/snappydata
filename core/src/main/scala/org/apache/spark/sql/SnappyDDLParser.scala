@@ -600,9 +600,9 @@ abstract class SnappyDDLParser(session: SparkSession)
         (() => DMLExternalTable(TableIdentifier(SnappyStoreHiveCatalog.dummyTableName,
           Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-            SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY ->
-                (SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME + "." +
-                    SnappyStoreHiveCatalog.dummyTableName)),
+            SaveMode.Ignore, Map((JdbcExtendedUtils.DBTABLE_PROPERTY,
+                s"${SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME }." +
+                    s"${SnappyStoreHiveCatalog.dummyTableName}")),
             "", None)), input.sliceString(0, input.length)))
   }
 

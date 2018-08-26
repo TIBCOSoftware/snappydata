@@ -198,8 +198,6 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
     } finally {
       conn.close()
     }
-
-
   }
 
 
