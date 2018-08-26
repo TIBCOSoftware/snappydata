@@ -18,7 +18,7 @@ package org.apache.spark.sql.policy
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{Constant, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
