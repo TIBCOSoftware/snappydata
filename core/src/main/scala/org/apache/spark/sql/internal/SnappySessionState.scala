@@ -768,7 +768,6 @@ class SnappyConf(@transient val session: SnappySession)
   private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
-         Property.DisableHashJoin.name |
          Property.HashJoinSize.name |
          Property.HashAggregateSize.name |
          Property.ForceLinkPartitionsToBuckets.name => session.clearPlanCache()
@@ -819,10 +818,12 @@ class SnappyConf(@transient val session: SnappySession)
       }
       session.clearPlanCache()
 
-    case Property.DisableHashJoin.name => value match {
-      case Some(boolVal) => session.disableHashJoin = boolVal.toString.toBoolean
-      case None => session.disableHashJoin = Property.DisableHashJoin.defaultValue.get
-    }
+    case Property.DisableHashJoin.name =>
+      value match {
+        case Some(boolVal) => session.disableHashJoin = boolVal.toString.toBoolean
+        case None => session.disableHashJoin = Property.DisableHashJoin.defaultValue.get
+      }
+      session.clearPlanCache()
 
     case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
 
