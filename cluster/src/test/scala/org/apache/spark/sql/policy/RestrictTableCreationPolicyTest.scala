@@ -20,6 +20,7 @@ import java.sql.{Connection, DriverManager, SQLException}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.{Constant, Property, SnappyFunSuite}
@@ -40,8 +41,9 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
     with BeforeAndAfterAll {
   val user1 = "gemfire1"
   val user2 = "gemfire2"
+  val user3 = "gemfire3"
   val tableCreator = user1
-  val ownerLdapGroup = "gemGroup1"  // users gem1, gem2, gem3
+  val ownerLdapGroup = "gemGroup1" // users gem1, gem2, gem3
   val otherLdapGroup = "gemGroup3" // users gem6, gem7, gem8
   val otherUser = "gemfire6"
   val props = Map.empty[String, String]
@@ -162,6 +164,8 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
     val conn = getConnection(Some(tableCreator))
     val stmt = conn.createStatement()
     val conn1 = getConnection(Some(otherUser))
+    val conn2 = getConnection(Some(user2))
+    val conn3 = getConnection(Some(user3))
     try {
       stmt.execute(s"create policy $schema.testPolicy1 on  " +
           s"$tableName for select to current_user using id < 0")
@@ -174,11 +178,93 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
       rs = stmt1.executeQuery(s"select * from $tableName")
       while (rs.next()) rsSize += 1
       assertEquals(0, rsSize)
-      stmt.execute(s"drop policy $schema.testPolicy1")
+
+      // users gemfire2 & gemfire3 should also not get policy applied on them
+      val stmt2 = conn2.createStatement()
+      rs = stmt2.executeQuery(s"select * from $tableName")
+      rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
+      rsSize = 0
+      val stmt3 = conn3.createStatement()
+      rs = stmt3.executeQuery(s"select * from $tableName")
+      rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
+      rsSize = 0
+      // let user2 drop the policy
+      stmt2.execute(s"drop policy $schema.testPolicy1")
     } finally {
       conn.close()
       conn1.close()
+      conn2.close()
+      conn3.close()
     }
+  }
+
+  test("users of other ldap group not allowed to create or drop policies") {
+    val conn = getConnection(Some(tableCreator))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some(otherUser))
+    val conn2 = getConnection(Some(user2))
+    val conn3 = getConnection(Some(user3))
+    try {
+      val stmt1 = conn1.createStatement()
+      try {
+        stmt1.execute(s"create policy $schema.testPolicy1 on  " +
+            s"$colTableName for select to current_user using id < 0")
+        fail("other user cannot create policy in other's schema")
+      } catch {
+        case _: SQLException =>
+        case _: StandardException =>
+        case th: Throwable => throw th
+      }
+
+      stmt.execute(s"create policy $schema.testPolicy1 on  " +
+          s"$colTableName for select to current_user using id < 0")
+      // let other user drop the policy
+      try {
+        stmt1.execute(s"drop policy $schema.testPolicy1")
+        fail("other user cannot drop policy in other's schema")
+      } catch {
+        case _: SQLException =>
+        case _: StandardException =>
+        case th: Throwable => throw th
+      }
+      val stmt2 = conn2.createStatement()
+      stmt2.execute(s"drop policy $schema.testPolicy1")
+    } finally {
+      conn.close()
+      conn1.close()
+      conn2.close()
+      conn3.close()
+    }
+  }
+
+  test("check toggle row level security behaviour for ldap groups") {
+    val conn = getConnection(Some(tableCreator))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some(otherUser))
+    val conn2 = getConnection(Some(user2))
+    val conn3 = getConnection(Some(user3))
+    try {
+      val stmt1 = conn1.createStatement()
+      try {
+        stmt1.execute(s"alter table $colTableName disable row level security")
+      } catch {
+        case _: SQLException =>
+        case _: StandardException =>
+        case th: Throwable => throw th
+      }
+      val stmt2 = conn2.createStatement()
+      stmt2.execute(s"alter table $colTableName enable row level security")
+    } finally {
+      conn.close()
+      conn1.close()
+      conn2.close()
+      conn3.close()
+    }
+
   }
 
   private def getConnection(user: Option[String] = None): Connection = {
