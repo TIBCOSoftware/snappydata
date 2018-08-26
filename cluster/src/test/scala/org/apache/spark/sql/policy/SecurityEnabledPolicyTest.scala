@@ -17,25 +17,14 @@
 package org.apache.spark.sql.policy
 
 import java.sql.SQLException
-
 import com.pivotal.gemfirexd.Attribute
-import java.sql.SQLException
-
-import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.{Constant, Property, SnappyFunSuite}
-import io.snappydata.core.Data
+import io.snappydata.{Constant, SnappyFunSuite}
+import org.junit.Assert.assertEquals
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
-
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf}
-import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
-import org.apache.spark.sql.catalyst.plans.logical.Filter
-import org.apache.spark.sql.types.StringType
-import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession}
-import org.apache.spark.unsafe.types.UTF8String
 
 class SecurityEnabledPolicyTest extends SnappyFunSuite
     with Logging
@@ -55,6 +44,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
   private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
+    this.stopAll()
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -77,7 +67,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
       getClass.getResource("/auth.ldif").getPath)
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.setProperty(k, ldapProperties.getProperty(k))
     }
@@ -106,7 +96,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
     }
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.clearProperty(k)
       System.clearProperty("gemfirexd." + k)

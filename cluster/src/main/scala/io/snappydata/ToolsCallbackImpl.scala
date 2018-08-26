@@ -189,7 +189,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
             }
           }
           PrivilegeInfo.checkOwnership(currentUser, sd, sd, dd)
-          sd.getAuthorizationId;
+          sd.getAuthorizationId
         } finally {
           if (contextSet) conn.getTR.restoreContextStack()
         }
