@@ -784,8 +784,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           // using LCC.getAuthorizationId() itself rather than getUserName()
           val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
           if (user.nonEmpty && !(
-              tableIdent.schemaName.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME )
-              && tableIdent.table.equalsIgnoreCase(SnappyStoreHiveCatalog.dummyTableName))) {
+              tableIdent.schemaName.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)
+                  && tableIdent.table.equalsIgnoreCase(SnappyStoreHiveCatalog.dummyTableName))) {
             val currentUser = IdUtil.getUserAuthorizationId(user)
             callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
           }
