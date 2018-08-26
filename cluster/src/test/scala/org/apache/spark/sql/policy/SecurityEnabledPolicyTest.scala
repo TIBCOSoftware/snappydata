@@ -22,6 +22,7 @@ import com.pivotal.gemfirexd.Attribute
 import java.sql.SQLException
 
 import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.{Constant, Property, SnappyFunSuite}
 import io.snappydata.core.Data
@@ -49,10 +50,18 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
   val colTableName: String = s"$tableOwner.ColumnTable"
   val rowTableName: String = s"${tableOwner}.RowTable"
   var ownerContext: SnappyContext = _
+  var allowCreateTableFlag: Boolean = _
 
   private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
+    val ms = Misc.getMemStoreBootingNoThrow
+    if (ms != null) {
+      allowCreateTableFlag = ms.tableCreationAllowed
+    }
+    if (!allowCreateTableFlag) {
+      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
+    }
     this.stopAll()
 
     super.beforeAll()
@@ -81,7 +90,6 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.setProperty(k, ldapProperties.getProperty(k))
     }
-    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
     System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
     System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
     val conf = new org.apache.spark.SparkConf()
@@ -101,6 +109,10 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
+    val ms = Misc.getMemStoreBootingNoThrow
+    if (allowCreateTableFlag != ms.tableCreationAllowed()) {
+      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", allowCreateTableFlag.toString)
+    }
     this.stopAll()
     super.afterAll()
     val ldapServer = LdapTestServer.getInstance()

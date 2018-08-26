@@ -18,6 +18,8 @@ package org.apache.spark.sql.policy
 
 import java.sql.{Connection, DriverManager}
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
@@ -48,10 +50,16 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   val rowTableName: String = s"${tableOwner}.$rowTable"
 
   var ownerContext: SnappyContext = _
-
+  var allowCreateTableFlag: Boolean = _
   override def beforeAll(): Unit = {
-    this.stopAll()
-    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
+    val ms = Misc.getMemStoreBootingNoThrow
+    if (ms != null) {
+      allowCreateTableFlag = ms.tableCreationAllowed
+    }
+    if (!allowCreateTableFlag) {
+      this.stopAll()
+      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
+    }
     super.beforeAll()
 
     val seq = for (i <- 0 until numElements) yield {
@@ -78,9 +86,12 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   override def afterAll(): Unit = {
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
+    val ms = Misc.getMemStoreBootingNoThrow
+    if (allowCreateTableFlag != ms.tableCreationAllowed()) {
+      this.stopAll()
+      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", allowCreateTableFlag.toString)
+    }
     super.afterAll()
-    System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
-
   }
 
   test("check rls enable/disable for jdbc client") {
