@@ -601,7 +601,8 @@ abstract class SnappyDDLParser(session: SparkSession)
           Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
             SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY ->
-                s"${SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME }.${SnappyStoreHiveCatalog.dummyTableName}"),
+                (SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME + "." +
+                    SnappyStoreHiveCatalog.dummyTableName)),
             "", None)), input.sliceString(0, input.length)))
   }
 
@@ -914,7 +915,7 @@ case class DeployCommand(
         Misc.checkIfCacheClosing(ex)
         if (restart) {
           logWarning(s"Following mvn coordinate" +
-              s" could not be resolved during restart: ${coordinates}", ex)
+              s" could not be resolved during restart: $coordinates", ex)
           if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
             throw ex
           }
