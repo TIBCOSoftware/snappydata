@@ -122,8 +122,8 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Using Database Connectors': 'connectors/connector.md'
-- 'Using Database Connectors':
+- 'Working with external data sources': 'connectors/connector.md'
+- 'Working with external data sources':
     - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
