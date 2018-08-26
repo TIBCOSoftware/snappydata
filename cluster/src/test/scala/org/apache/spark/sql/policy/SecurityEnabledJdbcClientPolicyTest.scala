@@ -130,7 +130,6 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
     System.setProperty("gemfirexd.authentication.required", "false")
-     System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
   }
 
 

@@ -166,7 +166,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     ret
   }
 
-  override def checkSchemaPermission(schema: String, currentUser: String): Unit = {
+  override def checkSchemaPermission(schema: String, currentUser: String): String = {
     val ms = Misc.getMemStoreBootingNoThrow
     if (ms != null) {
       var conn: EmbedConnection = null
@@ -181,7 +181,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
             schema, conn.getLanguageConnection.getTransactionExecute, false)
           if (sd == null) {
             if (schema.equals(currentUser)) {
-              if (ms.tableCreationAllowed()) return
+              if (ms.tableCreationAllowed()) return currentUser
               throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
                 schema, schema)
             } else {
@@ -192,7 +192,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
         } finally {
           if (contextSet) conn.getTR.restoreContextStack()
         }
+      } else {
+        currentUser
       }
-    }
+    } else currentUser
   }
 }

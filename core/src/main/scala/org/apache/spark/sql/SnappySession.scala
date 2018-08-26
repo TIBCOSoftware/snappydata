@@ -32,8 +32,10 @@ import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
@@ -1409,11 +1411,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           currentUser = IdUtil.getUserAuthorizationId(
             if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
             else this.sessionState.catalog.formatDatabaseName(currentUser))
-
-          if (!SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
-              newQualifiedTableName(ct.properties.getOrElse(
-                PolicyProperties.targetTable, "")), this)) {
-            throw new SQLException("Only Policy Owner can drop the policy", "01548", null)
+          val callbacks = ToolsCallbackInit.toolsCallback
+          if (callbacks != null) {
+            callbacks.checkSchemaPermission(this.sessionCatalog.
+                newQualifiedTableName(ct.properties.getOrElse(
+                  PolicyProperties.targetTable, "")).schemaName, currentUser)
           }
           sessionCatalog.unregisterPolicy(policyIdent, ct)
         }
@@ -1567,8 +1569,18 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
       currentUser: String, filterStr: String, filter: BypassRowLevelSecurity): Unit = {
 
+    /*
     if (!SecurityUtils.allowPolicyOp(currentUser, tableName, this)) {
       throw new SQLException("Only Table Owner can create the policy", "01548", null)
+    }
+    */
+    val callbacks = ToolsCallbackInit.toolsCallback
+    val owner = if (callbacks != null) {
+      // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
+      // using LCC.getAuthorizationId() itself rather than getUserName()
+        callbacks.checkSchemaPermission(tableName.schemaName, currentUser)
+    } else {
+      currentUser
     }
 
     if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
@@ -1620,7 +1632,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     */
 
     sessionCatalog.registerPolicy(policyName, tableName, policyFor, applyTo, expandedPolicyApplyTo,
-      currentUser, filterStr, filter)
+      owner, filterStr, filter)
   }
   /**
    * Create an index on a table.

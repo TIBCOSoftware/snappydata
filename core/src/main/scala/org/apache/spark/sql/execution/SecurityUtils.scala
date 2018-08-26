@@ -83,7 +83,7 @@ object SecurityUtils {
       }
     }
   }
-
+  /*
   def allowPolicyOp(currentUser: String, table: QualifiedTableName,
       session: SnappySession): Boolean = {
     if (Misc.isSecurityEnabled) {
@@ -101,4 +101,5 @@ object SecurityUtils {
       true
     }
   }
+  */
 }

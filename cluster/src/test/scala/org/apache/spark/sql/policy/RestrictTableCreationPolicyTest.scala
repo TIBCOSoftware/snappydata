@@ -16,14 +16,11 @@
  */
 package org.apache.spark.sql.policy
 
-import java.sql.SQLException
+import java.sql.{Connection, DriverManager, SQLException}
+import java.util.Properties
 
-import com.pivotal.gemfirexd.Attribute
-import java.sql.SQLException
-
-import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.{Constant, Property, SnappyFunSuite}
 import io.snappydata.core.Data
@@ -37,31 +34,35 @@ import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession}
 import org.apache.spark.unsafe.types.UTF8String
 
-class SecurityEnabledPolicyTest extends SnappyFunSuite
+class RestrictTableCreationPolicyTest extends SnappyFunSuite
     with Logging
     with BeforeAndAfter
     with BeforeAndAfterAll {
-
   val user1 = "gemfire1"
   val user2 = "gemfire2"
-
+  val tableCreator = user1
+  val ownerLdapGroup = "gemGroup1"  // users gem1, gem2, gem3
+  val otherLdapGroup = "gemGroup3" // users gem6, gem7, gem8
+  val otherUser = "gemfire6"
   val props = Map.empty[String, String]
-  val tableOwner = user1
+  val schema = "tax"
   val numElements = 100
-  val colTableName: String = s"$tableOwner.ColumnTable"
-  val rowTableName: String = s"${tableOwner}.RowTable"
+  val colTableName: String = s"$schema.ColumnTable"
+  val rowTableName: String = s"$schema.RowTable"
   var ownerContext: SnappyContext = _
-  var allowCreateTableFlag: Boolean = _
 
   private val sysUser = "gemfire10"
+  var allowCreateTableFlag: Boolean = _
+  var serverHostPort: String = _
+
 
   override def beforeAll(): Unit = {
     val ms = Misc.getMemStoreBootingNoThrow
     if (ms != null) {
       allowCreateTableFlag = ms.tableCreationAllowed
     }
-    if (!allowCreateTableFlag) {
-      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "false")
+    if (allowCreateTableFlag) {
+      System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "true")
     }
     this.stopAll()
 
@@ -71,15 +72,31 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     }
     val rdd = sc.parallelize(seq)
     ownerContext = snc.newSession()
-    ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableOwner)
-    ownerContext.snappySession.conf.set(Attribute.PASSWORD_ATTR, tableOwner)
+    serverHostPort = TestUtil.startNetServer()
+    ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableCreator)
+    ownerContext.snappySession.conf.set(Attribute.PASSWORD_ATTR, tableCreator)
     val dataDF = ownerContext.createDataFrame(rdd)
-
+    val adminContext = snc.newSession()
+    adminContext.snappySession.conf.set(Attribute.USERNAME_ATTR, sysUser)
+    adminContext.snappySession.conf.set(Attribute.PASSWORD_ATTR, sysUser)
+    val adminConn = getConnection(Some(sysUser))
+    val adminStmt = adminConn.createStatement()
+    try {
+      adminStmt.execute(s"create schema $schema authorization ldapgroup:$ownerLdapGroup")
+    } finally {
+      adminConn.close()
+    }
     ownerContext.sql(s"CREATE TABLE $colTableName (name String, id Int) " +
         s" USING column ")
 
     ownerContext.sql(s"CREATE TABLE $rowTableName (name String, id Int) " +
         s" USING row ")
+    ownerContext.sql(s"grant select on table $colTableName to ldapgroup:$otherLdapGroup")
+    ownerContext.sql(s"grant select on table $rowTableName to ldapgroup:$otherLdapGroup")
+
+    ownerContext.sql(s"alter table $colTableName enable row level security")
+    ownerContext.sql(s"alter table $rowTableName enable row level security")
+
     dataDF.write.insertInto(colTableName)
     dataDF.write.insertInto(rowTableName)
   }
@@ -94,7 +111,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
     System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
     val conf = new org.apache.spark.SparkConf()
-        .setAppName("BugTest")
+        .setAppName("Test")
         .setMaster("local[3]")
         .set(Attribute.AUTH_PROVIDER, ldapProperties.getProperty(Attribute.AUTH_PROVIDER))
         .set(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
@@ -129,90 +146,48 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
     System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
     System.setProperty("gemfirexd.authentication.required", "false")
+
   }
 
 
-  test("Check only owner of the table can create policy and drop it") {
-    val snc2 = snc.newSession()
-    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
-    snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
-    try {
-      snc2.sql(s"create policy testPolicy2 on  " +
-          s"$colTableName for select to current_user using id > 10")
-      fail("Only owner of the table should be allowed to create policy on it")
-    } catch {
-      case sqle: SQLException =>
-      case se: StandardException =>
-      case x: Throwable => throw x
-    }
-
-    ownerContext.sql(s"create policy testPolicy2 on  " +
-        s"$colTableName for select to current_user using id > 10")
-
-    try {
-      snc2.sql(s"drop policy ${tableOwner}.testPolicy2")
-      fail("Only owner of the Policy can drop the policy")
-    } catch {
-      case sqle: SQLException =>
-      case se: StandardException =>
-      case x: Throwable => throw x
-    }
-
-    ownerContext.sql("drop policy testPolicy2")
+  test("Policy creation on a column table using jdbc client") {
+    this.testPolicy(colTableName)
   }
 
-  test("check policy applied to ldap group") {
-    // the ldap group gemGroup2 contains gemfire3, gemfire4, gemfire5
-    ownerContext.sql(s"create policy testPolicy1 on  " +
-        s"$colTableName for select to ldapGroup:gemGroup2, gemfire6 using id > 90")
+  test("Policy creation on a row table using jdbc client") {
+    this.testPolicy(rowTableName)
+  }
 
-    ownerContext.sql(s"alter table $colTableName enable row level security")
+  private def testPolicy(tableName: String) {
+    val conn = getConnection(Some(tableCreator))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some(otherUser))
+    try {
+      stmt.execute(s"create policy $schema.testPolicy1 on  " +
+          s"$tableName for select to current_user using id < 0")
+      var rs = stmt.executeQuery(s"select * from $tableName")
+      var rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
+      rsSize = 0
+      val stmt1 = conn1.createStatement()
+      rs = stmt1.executeQuery(s"select * from $tableName")
+      while (rs.next()) rsSize += 1
+      assertEquals(0, rsSize)
+      stmt.execute(s"drop policy $schema.testPolicy1")
+    } finally {
+      conn.close()
+      conn1.close()
+    }
+  }
 
-    ownerContext.sql(s"GRANT select ON TABLE  $colTableName TO ldapGroup:gemGroup2," +
-        s" gemfire6, gemfire7, gemfire2")
-
-    val snc2 = snc.newSession()
-    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
-    snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
-    var rs = snc2.sql(s"select * from $colTableName")
-    assertEquals(numElements, rs.collect().length)
-
-    val snc3 = snc.newSession()
-    snc3.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire3")
-    snc3.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire3")
-    rs = snc3.sql(s"select * from $colTableName")
-    assertEquals(9, rs.collect().length)
-
-    val snc4 = snc.newSession()
-    snc4.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire4")
-    snc4.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire4")
-    rs = snc4.sql(s"select * from $colTableName")
-    assertEquals(9, rs.collect().length)
-
-    val snc5 = snc.newSession()
-    snc5.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire5")
-    snc5.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire5")
-    rs = snc5.sql(s"select * from $colTableName")
-    assertEquals(9, rs.collect().length)
-
-    val snc6 = snc.newSession()
-    snc6.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire6")
-    snc6.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire6")
-    rs = snc6.sql(s"select * from $colTableName")
-    assertEquals(9, rs.collect().length)
-
-    val snc7 = snc.newSession()
-    snc7.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire7")
-    snc7.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire7")
-    rs = snc7.sql(s"select * from $colTableName")
-    assertEquals(numElements, rs.collect().length)
-
-
-    rs = ownerContext.sql(s"select * from $colTableName")
-    assertEquals(numElements, rs.collect().length)
-
-
+  private def getConnection(user: Option[String] = None): Connection = {
+    val props = new Properties()
+    if (user.isDefined) {
+      props.put(Attribute.USERNAME_ATTR, user.get)
+      props.put(Attribute.PASSWORD_ATTR, user.get)
+    }
+    DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort", props)
   }
 
 }
-
