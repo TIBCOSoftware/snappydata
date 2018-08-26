@@ -51,7 +51,7 @@ ENCRYPT_PASSWORD_OPTIONS="-user=app -auth-provider=NONE -J-Dgemfirexd.thrift-def
 export ENCRYPT_PASSWORD_OPTIONS
 $sbin/snappy-locators.sh start 2>&1 | tee "${tmpOut}"
 
-alreadyRunning="$(grep 'ERROR: .* is already running in directory' "${tmpOut}")"
+locatorStarted="$(grep 'SnappyData Locator pid: .* status: running' "${tmpOut}")"
 rm -f "${tmpOut}"
 
 user=
@@ -63,7 +63,7 @@ for u in ${!userPasswords[@]}; do
   callStr="${callStr} call sys.encrypt_password('$user', '$passwd', 'AES', 0);"
 done
 
-if [ -z "${alreadyRunning}" ]; then
+if [ -n "${locatorStarted}" ]; then
 
 # connect to temporary locators using DRDA
 $sbin/../bin/snappy << EOF
