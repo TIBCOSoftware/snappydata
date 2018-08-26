@@ -18,6 +18,8 @@ package org.apache.spark.sql.policy
 
 import java.sql.{Connection, DriverManager}
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
@@ -77,7 +79,6 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
     ownerContext.dropTable(colTableName, true)
     ownerContext.dropTable(rowTableName, true)
     super.afterAll()
-
   }
 
   test("check rls enable/disable for jdbc client") {

@@ -19,6 +19,7 @@ package org.apache.spark.sql.policy
 import java.sql.{Connection, DriverManager, SQLException}
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.{Constant, Property, SnappyFunSuite}
@@ -48,12 +49,10 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
   var ownerContext: SnappyContext = _
 
   private val sysUser = "gemfire10"
-
   var serverHostPort: String = _
 
 
   override def beforeAll(): Unit = {
-    this.stopAll()
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -104,6 +103,7 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
     ownerContext.dropTable(rowTableName, true)
     this.stopAll()
     super.afterAll()
+
     val ldapServer = LdapTestServer.getInstance()
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()

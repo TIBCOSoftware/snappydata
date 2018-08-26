@@ -22,6 +22,8 @@ import com.pivotal.gemfirexd.Attribute
 import java.sql.SQLException
 
 import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.{Constant, Property, SnappyFunSuite}
 import io.snappydata.core.Data
@@ -53,7 +55,6 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
   private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
-    this.stopAll()
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -127,6 +128,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
       fail("Only owner of the table should be allowed to create policy on it")
     } catch {
       case sqle: SQLException =>
+      case se: StandardException =>
       case x: Throwable => throw x
     }
 
@@ -138,6 +140,7 @@ class SecurityEnabledPolicyTest extends SnappyFunSuite
       fail("Only owner of the Policy can drop the policy")
     } catch {
       case sqle: SQLException =>
+      case se: StandardException =>
       case x: Throwable => throw x
     }
 

@@ -83,22 +83,4 @@ object SecurityUtils {
       }
     }
   }
-
-  def allowPolicyOp(currentUser: String, table: QualifiedTableName,
-      session: SnappySession): Boolean = {
-    if (Misc.isSecurityEnabled) {
-      val connProps = ExternalStoreUtils.validateAndGetAllProps(Some(session), mutable.Map.empty)
-      val pooledConn = ExternalStoreUtils.getConnection("policyConn", connProps, false)
-      try {
-        val stmt = pooledConn.createStatement()
-        stmt.executeQuery(s"select 1 from sys.systables s, sys.sysschemas c where " +
-            s"s.tablename = '${table.table}' and s.tableschemaname = '${table.schemaName}' and " +
-            s"s.schemaid = c.schemaid and c.authorizationid = '$currentUser'").next()
-      } finally {
-        pooledConn.close()
-      }
-    } else {
-      true
-    }
-  }
 }
