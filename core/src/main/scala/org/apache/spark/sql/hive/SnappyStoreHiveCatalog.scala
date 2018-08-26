@@ -35,6 +35,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
@@ -60,11 +61,12 @@ import org.apache.spark.sql.sources.{MutableRelation, _}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
+
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -781,8 +783,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
           // using LCC.getAuthorizationId() itself rather than getUserName()
           val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
-          if (user.nonEmpty && !(tableIdent.schemaName == SnappyStoreHiveCatalog.dummyTableSchema
-              && tableIdent.table == SnappyStoreHiveCatalog.dummyTableName)) {
+          if (user.nonEmpty && !(
+              tableIdent.schemaName.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME )
+              && tableIdent.table.equalsIgnoreCase(SnappyStoreHiveCatalog.dummyTableName))) {
             val currentUser = IdUtil.getUserAuthorizationId(user)
             callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
           }
@@ -1458,7 +1461,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 }
 
 object SnappyStoreHiveCatalog {
-  val dummyTableSchema = "SYSIBM"
   val dummyTableName = "SYSDUMMY1"
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
