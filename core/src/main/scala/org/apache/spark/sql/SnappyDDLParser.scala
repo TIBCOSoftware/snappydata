@@ -915,7 +915,7 @@ case class DeployCommand(
         Misc.checkIfCacheClosing(ex)
         if (restart) {
           logWarning(s"Following mvn coordinate" +
-              s" could not be resolved during restart: ${coordinates}", ex)
+              s" could not be resolved during restart: $coordinates", ex)
           if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
             throw ex
           }

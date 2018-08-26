@@ -32,10 +32,8 @@ import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
-import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
@@ -49,13 +47,13 @@ import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchT
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Attribute, AttributeReference, BinaryComparison, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, Literal, NamedExpression, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral, TokenizedLiteral, And => logicalAnd, In => logicalIn, Or => logicalOr}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -114,11 +112,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             val coordinate = cmdFields(0)
             val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
             val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-            DeployCommand(coordinate, null, repos, cache, true).run(self)
+            DeployCommand(coordinate, null, repos, cache, restart = true).run(self)
           }
           else {
             // Jars we have
-            DeployJarCommand(null, cmdFields(0), true).run(self)
+            DeployJarCommand(null, cmdFields(0), restart = true).run(self)
           }
         })
       case _ => // Nothing
@@ -260,6 +258,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   @transient
   private[sql] var partitionPruning: Boolean = Property.PartitionPruning.get(sessionState.conf)
+
+  @transient
+  private[sql] var disableHashJoin: Boolean = Property.DisableHashJoin.get(sessionState.conf)
 
 
   /**
@@ -1406,7 +1407,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       ifExists: Boolean): Unit = {
 
       sessionCatalog.getTableOption(policyIdent) match {
-        case Some(ct) => {
+        case Some(ct) =>
           var currentUser = this.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
           currentUser = IdUtil.getUserAuthorizationId(
             if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
@@ -1418,7 +1419,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
                   PolicyProperties.targetTable, "")).schemaName, currentUser)
           }
           sessionCatalog.unregisterPolicy(policyIdent, ct)
-        }
         case None => throw new PolicyNotFoundException(policyIdent.toString, None)
       }
 
@@ -2411,7 +2411,7 @@ object SnappySession extends Logging {
 
   var jarServerFiles: Array[String] = Array.empty
 
-  def getJarURIs(): Array[String] = {
+  def getJarURIs: Array[String] = {
     SnappySession.synchronized({
       jarServerFiles
     })
