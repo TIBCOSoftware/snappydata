@@ -45,7 +45,7 @@ class SecurityEnabledJdbcClientPolicyTest extends SnappyFunSuite
 
 
   override def beforeAll(): Unit = {
-    stopAll()
+    this.stopAll()
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
