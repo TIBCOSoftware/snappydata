@@ -66,5 +66,11 @@ trait ToolsCallback {
 
   def getLeadClassLoader(): URLClassLoader
 
-  def checkSchemaPermission(schema: String, currentOwner: String): Unit
+  /**
+   *
+   * @param schema
+   * @param currentOwner
+   * @return the schema owner, can be ldap group
+   */
+  def checkSchemaPermission(schema: String, currentOwner: String): String
 }

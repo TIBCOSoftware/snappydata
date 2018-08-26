@@ -43,7 +43,6 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   val colTableName: String = s"$tableOwner.ColumnTable"
   val rowTableName: String = s"${tableOwner}.RowTable"
   var ownerContext: SnappyContext = _
-
   override def beforeAll(): Unit = {
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
@@ -79,7 +78,6 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     ownerContext.dropTable(rowTableName, true)
     TestUtil.stopNetServer()
     super.afterAll()
-
   }
 
   test("Policy creation on a column table using jdbc client") {

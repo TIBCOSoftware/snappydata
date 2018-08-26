@@ -28,6 +28,7 @@ import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
+
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
@@ -49,10 +50,11 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
 import org.parboiled2._
 import shapeless.{::, HNil}
-
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -595,9 +597,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
     (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
-        (() => DMLExternalTable(TableIdentifier("SYSDUMMY1", Some("SYSIBM")),
+        (() => DMLExternalTable(TableIdentifier(SnappyStoreHiveCatalog.dummyTableName,
+          Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-            SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
+            SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY ->
+                s"${SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME }.${SnappyStoreHiveCatalog.dummyTableName}"),
             "", None)), input.sliceString(0, input.length)))
   }
 
