@@ -16,21 +16,18 @@
  */
 package org.apache.spark.sql.policy
 
-import java.sql.SQLException
-
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.SecurityTestUtils
-import io.snappydata.{Constant, Property, SnappyFunSuite}
-import io.snappydata.core.Data
+import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.SnappyFunSuite
+import org.junit.Assert.{assertEquals, assertTrue}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 
-import org.apache.spark.{Logging, SparkConf}
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.Filter
 import org.apache.spark.sql.types.StringType
-import org.apache.spark.sql.{SaveMode, SnappyContext, SnappySession}
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.{Logging, SparkConf}
 
 class PolicyTest extends SnappyFunSuite
     with Logging
@@ -46,13 +43,10 @@ class PolicyTest extends SnappyFunSuite
   var ownerContext: SnappyContext = _
 
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
-
-
     val conf = new org.apache.spark.SparkConf()
         .setAppName("PolicyTest")
         .setMaster("local[4]")
         .set("spark.sql.crossJoin.enabled", "true")
-
     if (addOn != null) {
       addOn(conf)
     } else {
@@ -61,6 +55,7 @@ class PolicyTest extends SnappyFunSuite
   }
 
   override def beforeAll(): Unit = {
+    this.stopAll()
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -389,4 +384,68 @@ class PolicyTest extends SnappyFunSuite
 
   }
 
+  test("Drop table with policies") {
+    val seq2 = for (i <- 0 until numElements) yield {
+      (s"name_$i", i)
+    }
+    val rdd2 = sc.parallelize(seq2)
+//    ownerContext = snc.newSession()
+//    ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableOwner)
+
+    val dataDF2 = ownerContext.createDataFrame(rdd2)
+
+    val colTableName2: String = s"$tableOwner.ColumnTable2"
+    val rowTableName2: String = s"${tableOwner}.RowTable2"
+    val colTableName3: String = s"${tableOwner}.ColumnTable3"
+
+    ownerContext.sql(s"CREATE TABLE $colTableName2 (name String, id Int) " +
+        s" USING column ")
+    ownerContext.sql(s"CREATE TABLE $rowTableName2 (name String, id Int) " +
+        s" USING row ")
+    ownerContext.sql(s"CREATE TABLE $colTableName3 (name String, id Int) " +
+        s" USING column ")
+
+    dataDF2.write.insertInto(colTableName2)
+    dataDF2.write.insertInto(rowTableName2)
+    dataDF2.write.insertInto(colTableName3)
+    ownerContext.sql(s"alter table $colTableName2 enable row level security")
+    ownerContext.sql(s"alter table $rowTableName2 enable row level security")
+    ownerContext.sql(s"alter table $colTableName3 enable row level security")
+
+    ownerContext.sql(s"create policy testPolicy1_for_ColumnTable3 on  " +
+        s"$colTableName3 for select to current_user using id > 11")
+    ownerContext.sql(s"create policy testPolicy2_for_ColumnTable3 on  " +
+        s"$colTableName3 for select to current_user using id < 22")
+
+    testDropTable(colTableName2)
+    testDropTable(rowTableName2)
+
+    // colTableName3 was not dropped, so policies should exist
+    assert(checkIfPoliciesOnTableExist(colTableName3))
+
+    testDropTable(colTableName3)
+  }
+
+  private def testDropTable(tableName: String) {
+    ownerContext.sql(s"create policy testPolicy11 on  " +
+        s"$tableName for select to current_user using id > 11")
+    ownerContext.sql(s"create policy testPolicy22 on  " +
+        s"$tableName for select to current_user using id < 22")
+    ownerContext.sql(s"drop table $tableName")
+    assert(!checkIfPoliciesOnTableExist(tableName), s"Policy for $tableName should not be present")
+  }
+
+  // return true if a policy exists for a table else false
+  private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies(true)
+    val it = policies.listIterator()
+    while (it.hasNext) {
+      val p = it.next()
+      //      println("Actual tablename:" + tableName + ", tableName in policy:" + p.tableName)
+      if ((p.schemaName + "." + p.tableName).equals(tableName.toUpperCase)) {
+        return true
+      }
+    }
+    false
+  }
 }

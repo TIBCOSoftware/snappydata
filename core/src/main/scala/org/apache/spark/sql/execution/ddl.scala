@@ -19,9 +19,8 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
+import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.hive.QualifiedTableName
@@ -190,7 +189,6 @@ private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
   override def run(session: SparkSession): Seq[Row] = {
     // TODO: Only allow the owner of the target table to create a policy on it
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
     SparkSession.setActiveSession(snc)
     snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
       currentUser, filterStr, filter)
