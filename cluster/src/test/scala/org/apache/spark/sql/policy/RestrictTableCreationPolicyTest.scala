@@ -33,10 +33,8 @@ class RestrictTableCreationPolicyTest extends PolicyTestBase {
   val user2 = "gemfire2"
   val user3 = "gemfire3"
   val tableCreator: String = user1
-  val ownerLdapGroup = "gemGroup1"
-  // users gem1, gem2, gem3
-  val otherLdapGroup = "gemGroup3"
-  // users gem6, gem7, gem8
+  val ownerLdapGroup = "gemGroup1" // users gem1, gem2, gem3
+  val otherLdapGroup = "gemGroup3" // users gem6, gem7, gem8
   val otherUser = "gemfire6"
   val props = Map.empty[String, String]
   val schema = "tax"
@@ -92,6 +90,7 @@ class RestrictTableCreationPolicyTest extends PolicyTestBase {
     ownerContext.dropTable(colTableName, ifExists = true)
     ownerContext.dropTable(rowTableName, ifExists = true)
     super.afterAll()
+    System.clearProperty(Property.SNAPPY_RESTRICT_TABLE_CREATE)
   }
 
 

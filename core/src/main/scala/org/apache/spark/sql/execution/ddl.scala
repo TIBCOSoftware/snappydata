@@ -196,13 +196,13 @@ private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
   override def run(session: SparkSession): Seq[Row] = {
     if (!Misc.isSecurityEnabled && !GemFireStore.ALLOW_RLS_WITHOUT_SECURITY) {
       throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
-        null, new IllegalStateException("Security (" + Attribute.AUTH_PROVIDER +
-            ") not enabled in the system"))
+        null, new IllegalStateException("CREATE POLICY failed: Security (" +
+            Attribute.AUTH_PROVIDER + ") not enabled in the system"))
     }
     if (!Misc.getMemStoreBooting.isRLSEnabled) {
       throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
-        null, new IllegalStateException("Row level security (" + Property.SNAPPY_ENABLE_RLS +
-            ") not enabled in the system"))
+        null, new IllegalStateException("CREATE POLICY failed: Row level security (" +
+            Property.SNAPPY_ENABLE_RLS + ") not enabled in the system"))
     }
     val snc = session.asInstanceOf[SnappySession]
     SparkSession.setActiveSession(snc)
