@@ -18,28 +18,22 @@ package org.apache.spark.sql.policy
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.SnappyFunSuite
 import org.junit.Assert.{assertEquals, assertTrue}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
 import org.apache.spark.sql.catalyst.plans.logical.Filter
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Logging, SparkConf}
 
-class PolicyTest extends SnappyFunSuite
-    with Logging
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
-
+class PolicyTest extends PolicyTestBase {
 
   val props = Map.empty[String, String]
   val tableOwner = "ashahid"
   val numElements = 100
   val colTableName: String = s"$tableOwner.ColumnTable"
-  val rowTableName: String = s"${tableOwner}.RowTable"
+  val rowTableName: String = s"$tableOwner.RowTable"
   var ownerContext: SnappyContext = _
 
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
@@ -55,7 +49,6 @@ class PolicyTest extends SnappyFunSuite
   }
 
   override def beforeAll(): Unit = {
-    this.stopAll()
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -78,8 +71,8 @@ class PolicyTest extends SnappyFunSuite
   }
 
   override def afterAll(): Unit = {
-    ownerContext.dropTable(colTableName, true)
-    ownerContext.dropTable(rowTableName, true)
+    ownerContext.dropTable(colTableName, ifExists = true)
+    ownerContext.dropTable(rowTableName, ifExists = true)
     super.afterAll()
   }
 
@@ -160,7 +153,6 @@ class PolicyTest extends SnappyFunSuite
     // fire again
     rs = snc2.sql(q)
     assertEquals(29, rs.collect().length)
-
 
 
     // now create a policy
@@ -265,17 +257,17 @@ class PolicyTest extends SnappyFunSuite
     var rs = snc2.sql(q1).collect()
     assertEquals(3, rs.length)
     var idResults = rs.map(_.getInt(1))
-    assertTrue(idResults.exists(_ == 4))
-    assertTrue(idResults.exists(_ == 5))
-    assertTrue(idResults.exists(_ == 6))
+    assertTrue(idResults.contains(4))
+    assertTrue(idResults.contains(5))
+    assertTrue(idResults.contains(6))
 
     // fire the query but use table alias and a filter
     val q2 = s"select * from $tableName x where x.id  < 6 "
     rs = snc2.sql(q2).collect()
     assertEquals(2, rs.length)
     idResults = rs.map(_.getInt(1))
-    assertTrue(idResults.exists(_ == 4))
-    assertTrue(idResults.exists(_ == 5))
+    assertTrue(idResults.contains(4))
+    assertTrue(idResults.contains(5))
 
 
     ownerContext.sql("drop policy testPolicy1")
@@ -315,10 +307,10 @@ class PolicyTest extends SnappyFunSuite
     var rs = snc2.sql(q1).collect()
     assertEquals(4, rs.length)
     var idResults = rs.map(x => x.getInt(1) -> x.get(3))
-    assertTrue(idResults.exists(_ == (4, 4)))
-    assertTrue(idResults.exists(_ == (4, 5)))
-    assertTrue(idResults.exists(_ == (5, 4)))
-    assertTrue(idResults.exists(_ == (5, 5)))
+    assertTrue(idResults.contains((4, 4)))
+    assertTrue(idResults.contains((4, 5)))
+    assertTrue(idResults.contains((5, 4)))
+    assertTrue(idResults.contains((5, 5)))
     ownerContext.sql("drop policy testPolicy1")
     ownerContext.sql(s"drop table $mappingTable")
 
@@ -395,8 +387,8 @@ class PolicyTest extends SnappyFunSuite
     val dataDF2 = ownerContext.createDataFrame(rdd2)
 
     val colTableName2: String = s"$tableOwner.ColumnTable2"
-    val rowTableName2: String = s"${tableOwner}.RowTable2"
-    val colTableName3: String = s"${tableOwner}.ColumnTable3"
+    val rowTableName2: String = s"$tableOwner.RowTable2"
+    val colTableName3: String = s"$tableOwner.ColumnTable3"
 
     ownerContext.sql(s"CREATE TABLE $colTableName2 (name String, id Int) " +
         s" USING column ")

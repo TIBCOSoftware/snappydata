@@ -48,11 +48,11 @@ class ExampleTestSuite extends SnappyTestRunner {
     Job("io.snappydata.examples.CreateAndLoadAirlineDataJob", localLead, quickStartJar)
 
     SparkSubmit("AirlineDataApp", appClass = "io.snappydata.examples.AirlineDataSparkApp", None,
-      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4041"),
+      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4051"),
       appJar = quickStartJar)
 
     SparkSubmit("PythonAirlineDataApp", appClass = "", None,
-      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4041"),
+      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4051"),
       appJar = s"$snappyHome/quickstart/python/AirlineDataPythonApp.py")
 
   }
