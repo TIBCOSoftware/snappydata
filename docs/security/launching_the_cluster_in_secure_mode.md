@@ -18,7 +18,7 @@ To enable LDAP authentication, set the following authentication properties in th
 
 * `J-Dgemfirexd.auth-ldap-search-dn`: If the LDAP server does not allow anonymous binding (or if this functionality is disabled), specify the user distinguished name (DN) to use for binding to the LDAP server for searching.
 
-* `J-Dgemfirexd.auth-ldap-search-pw`: The password for the guest user DN, used for looking up the DN (see `Dgemfirexd.auth-ldap-search-dn`). 
+* `J-Dgemfirexd.auth-ldap-search-pw`: The password for the LDAP search user which is used for looking up the DN indicated by configuration parameter `Dgemfirexd.auth-ldap-search-dn`. 
 
 **Example**: 
 
@@ -46,3 +46,4 @@ localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.aut
 			-J-Djavax.net.ssl.trustStorePassword=keystore_password
 
 	javax.net.ssl.trustStore and javax.net.ssl.trustStorePassword must be specified as Java system properties (using the -J option on the Snappy shell).
+
