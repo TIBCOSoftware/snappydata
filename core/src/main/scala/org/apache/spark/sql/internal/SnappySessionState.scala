@@ -22,8 +22,10 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ClassTag, classTag}
+
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
+
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
@@ -36,12 +38,10 @@ import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubque
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
-import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter}
-import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, InsertIntoTable, Join, LogicalPlan, Project, Sort, _}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources._
@@ -50,7 +50,6 @@ import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStra
 import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
@@ -89,7 +88,7 @@ class SnappySessionState(snappySession: SnappySession)
     override lazy val batches: Seq[Batch] = analyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
-          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0 ) {
+          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
             false
           } else {
             true
@@ -412,7 +411,7 @@ class SnappySessionState(snappySession: SnappySession)
       (f: (Expression => Boolean)) =>
         (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
             (exp match {
-              case And(left, right) => f(left)
+              case And(left, _) => f(left)
               case EqualTo(l: Literal, r: Literal) =>
                 l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
               case _ => false
@@ -430,27 +429,26 @@ class SnappySessionState(snappySession: SnappySession)
         // is happening via this command we need to handle it
         case _: RunnableCommand => plan
         case _ if !alreadyPolicyApplied(plan) => plan.transformUp {
-          case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) => {
+          case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) =>
             val policyFilter = snappySession.sessionState.catalog.
-                getCombinedPolicyFilterForTable(rlsRelation, lr)
+                getCombinedPolicyFilterForNativeTable(rlsRelation, Some(lr))
             policyFilter match {
               case Some(filter) => filter.copy(child = lr)
               case None => lr
             }
-          }
 
-          case SubqueryAlias(name, Filter(condition, child), ti) => Filter(condition,
+          case SubqueryAlias(name, LogicalFilter(condition, child), ti) => LogicalFilter(condition,
             SubqueryAlias(name, child, ti))
 
-          case filter1@Filter(condition1, filter2@Filter(condition2, child)) =>
+          case LogicalFilter(condition1, LogicalFilter(condition2, child)) =>
             if (rlsConditionChecker(conditionEvaluator)(condition1)) {
               if (rlsConditionChecker(conditionEvaluator)(condition2)) {
-                Filter(condition1, child)
+                LogicalFilter(condition1, child)
               } else {
-                Filter(And(condition1, condition2), child)
+                LogicalFilter(And(condition1, condition2), child)
               }
             } else {
-              Filter(And(condition2, condition1), child)
+              LogicalFilter(And(condition2, condition1), child)
             }
         }
         case _ => plan
@@ -820,6 +818,13 @@ class SnappyConf(@transient val session: SnappySession)
       }
       session.clearPlanCache()
 
+    case Property.DisableHashJoin.name =>
+      value match {
+        case Some(boolVal) => session.disableHashJoin = boolVal.toString.toBoolean
+        case None => session.disableHashJoin = Property.DisableHashJoin.defaultValue.get
+      }
+      session.clearPlanCache()
+
     case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
 
     case _ => // ignore others
@@ -1079,9 +1084,9 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-class DefaultPlanner(val snappySession: SnappySession, conf: SQLConf,
+class DefaultPlanner(val session: SnappySession, conf: SQLConf,
     extraStrategies: Seq[Strategy])
-    extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
+    extends SparkPlanner(session.sparkContext, conf, extraStrategies)
         with SnappyStrategies {
 
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {

@@ -166,6 +166,8 @@ object Constant {
     // and the Spark impls create the seed in constructor rather than in generated code
     "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
     "LIKE" -> Array(1), "RLIKE" -> Array(1), "APPROX_COUNT_DISTINCT" -> Array(1)))
+
+  val EXTERNAL_TABLE_RLS_ENABLE_KEY = "rls.enabled"
 }
 
 /**
@@ -217,24 +219,25 @@ object Property extends Enumeration {
     } else None
   }
 
-  val Locators = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
+  val Locators: SparkValue[String] = Val[String](s"${Constant.STORE_PROPERTY_PREFIX}locators",
     "The list of locators as comma-separated host:port values that have been " +
         "configured in the SnappyData cluster.", None, Constant.SPARK_PREFIX)
 
-  val McastPort = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcastPort",
+  val McastPort: SparkValue[Int] = Val[Int](s"${Constant.STORE_PROPERTY_PREFIX}mcastPort",
     "[Deprecated] The multicast port configured in the SnappyData cluster " +
         "when locators are not being used. This mode is no longer supported.",
     None, Constant.SPARK_PREFIX)
 
-  val JobServerEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
+  val JobServerEnabled: SparkValue[Boolean] = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled",
     "If true then REST API access via Spark jobserver will be available in " +
         "the SnappyData cluster", Some(true), prefix = null, isPublic = false)
 
-  val JobServerWaitForInit = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}waitForInitialization",
+  val JobServerWaitForInit: SparkValue[Boolean] = Val(
+    s"${Constant.JOBSERVER_PROPERTY_PREFIX}waitForInitialization",
     "If true then cluster startup will wait for Spark jobserver to be fully initialized " +
         "before marking lead as 'RUNNING'. Default is false.", Some(false), prefix = null)
 
-  val SnappyConnection = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
+  val SnappyConnection: SparkValue[String] = Val[String](s"${Constant.PROPERTY_PREFIX}connection",
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +
      "JDBC driver. This will be used to form a JDBC URL of the form " +
@@ -242,10 +245,11 @@ object Property extends Enumeration {
      "It is recommended that hostname and client port of the locator " +
      "be specified for this.", None, Constant.SPARK_PREFIX)
 
-  val PlanCacheSize = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
+  val PlanCacheSize: SparkValue[Int] = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
     s"Number of query plans that will be cached.", Some(3000))
 
-  val ColumnBatchSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}column.batchSize",
+  val ColumnBatchSize: SQLValue[String] = SQLVal[String](
+    s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +
         "store. When inserting data into the column storage this is the unit " +
         "(in bytes or k/m/g suffixes for unit) that will be used to split the data " +
@@ -253,7 +257,8 @@ object Property extends Enumeration {
         s"table using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
         "create table DDL. Maximum allowed size is 2GB.", Some("24m"))
 
-  val ColumnMaxDeltaRows = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
+  val ColumnMaxDeltaRows: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}column.maxDeltaRows",
     "The maximum number of rows that can be in the delta buffer of a column table. " +
         s"The size of delta buffer is already limited by $ColumnBatchSize but " +
         "this allows a lower limit on number of rows for better scan performance. " +
@@ -262,12 +267,21 @@ object Property extends Enumeration {
         s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
         s"create table DDL else this setting is used for the create table.", Some(10000))
 
-  val HashJoinSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}sql.hashJoinSize",
+  val DisableHashJoin: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.disableHashJoin",
+    "Disable hash joins completely including those for replicated row tables. Default is false.",
+    Some(false))
+
+  val HashJoinSize: SQLValue[String] = SQLVal[String](
+    s"${Constant.PROPERTY_PREFIX}sql.hashJoinSize",
     "The join would be converted into a hash join if the table is of size less " +
         "than hashJoinSize. The limit specifies an estimate on the input data size " +
-        "(in bytes or k/m/g/t suffixes for unit). Default value is 100MB.", Some("100m"))
+        "(in bytes or k/m/g/t suffixes for unit). Note that replicated row tables always use " +
+        s"local hash joins regardless of this property. Use ${DisableHashJoin.name} to disable " +
+        s"all hash joins. Default value is 100MB.", Some("100m"))
 
-  val HashAggregateSize = SQLVal[String](s"${Constant.PROPERTY_PREFIX}sql.hashAggregateSize",
+  val HashAggregateSize: SQLValue[String] = SQLVal[String](
+    s"${Constant.PROPERTY_PREFIX}sql.hashAggregateSize",
     "Aggregation will use optimized hash aggregation plan but one that does not " +
         "overflow to disk and can cause OOME if the result of aggregation is large. " +
         "The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) " +
@@ -309,64 +323,72 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.parser.traceError",
     "Property to enable detailed rule tracing for parse errors", Some(false))
 
-  val EnableExperimentalFeatures = SQLVal[Boolean](
+  val EnableExperimentalFeatures: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +
         "optimizer choice during query planning. Default is turned off.",
     Some(false), Constant.SPARK_PREFIX)
 
-  val SchedulerPool = SQLVal[String](
+  val SchedulerPool: SQLValue[String] = SQLVal[String](
     s"${Constant.PROPERTY_PREFIX}scheduler.pool",
     "Property to set the scheduler pool for the current session. This property can " +
       "be used to assign queries to different pools for improving " +
       "throughput of specific queries.", Some("default"))
 
-  val FlushReservoirThreshold = SQLVal[Int](s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
+  val FlushReservoirThreshold: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}flushReservoirThreshold",
     "Reservoirs of sample table will be flushed and stored in columnar format if sampling is done" +
         " on baset table of size more than flushReservoirThreshold." +
         " Default value is 10,000.", Some(10000))
 
-  val NumBootStrapTrials = SQLVal[Int](s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
+  val NumBootStrapTrials: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
     "Number of bootstrap trials to do for calculating error bounds. Default value is 100.",
     Some(100))
 
   // TODO: check with suyog  Why are we having two different error defaults one as 1 & other as .2?
 
-  val MaxErrorAllowed = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.maxErrorAllowed",
+  val MaxErrorAllowed: SQLValue[Double] = SQLVal[Double](
+    s"${Constant.SPARK_PREFIX}sql.aqp.maxErrorAllowed",
     "Maximum relative error tolerable in the approximate value calculation. It should be a " +
-      "fractional value not exceeding 1. Default value is 1.0", Some(1.0d), null, false)
+      "fractional value not exceeding 1. Default value is 1.0",
+    Some(1.0d), prefix = null, isPublic = false)
 
-  val Error = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.error",
+  val Error: SQLValue[Double] = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.error",
     "Maximum relative error tolerable in the approximate value calculation. It should be a " +
       s"fractional value not exceeding 1. Default value is ${Constant.DEFAULT_ERROR}",
     Some(Constant.DEFAULT_ERROR))
 
-  val Confidence = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.confidence",
+  val Confidence: SQLValue[Double] = SQLVal[Double](s"${Constant.SPARK_PREFIX}sql.aqp.confidence",
     "Confidence with which the error bounds are calculated for the approximate value. It should " +
     s"be a fractional value not exceeding 1. Default value is ${Constant.DEFAULT_CONFIDENCE}",
     None)
 
-  val Behavior = SQLVal[String](s"${Constant.SPARK_PREFIX}sql.aqp.behavior",
+  val Behavior: SQLValue[String] = SQLVal[String](s"${Constant.SPARK_PREFIX}sql.aqp.behavior",
     s" The action to be taken if the error computed goes oustide the error tolerance limit. " +
       s"Default value is ${Constant.BEHAVIOR_DO_NOTHING}", None)
 
-  val AqpDebug = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.debug",
+  val AqpDebug: SQLValue[Boolean] = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.debug",
     s" Boolean if true tells engine to do  bootstrap analysis in debug mode returning an array of" +
-      s" values for the iterations. Default is false", Some(false), null, false)
+      s" values for the iterations. Default is false", Some(false), prefix = null, isPublic = false)
 
-  val AqpDebugFixedSeed = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.debug.fixedSeed",
+  val AqpDebugFixedSeed: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.SPARK_PREFIX}sql.aqp.debug.fixedSeed",
     s" Boolean if true tells engine to initialize the seed for poisson value calculation with a " +
-      s"fixed  number 123456789L. Default is false.", Some(false), null, false)
+      s"fixed  number 123456789L. Default is false.", Some(false), prefix = null, isPublic = false)
 
-  val AQPDebugPoissonType = SQLVal[String](s"${Constant.SPARK_PREFIX}sql.aqp.debug.poissonType",
+  val AQPDebugPoissonType: SQLValue[String] = SQLVal[String](
+    s"${Constant.SPARK_PREFIX}sql.aqp.debug.poissonType",
     s" If aqp debugging is enbaled, this property can be used to set different types of algorithm" +
-      s" to generate bootstrap multiplicity numbers. Default is Real", None, null, false)
+      s" to generate bootstrap multiplicity numbers. Default is Real",
+    None, prefix = null, isPublic = false)
 
-  val ClosedFormEstimates = SQLVal[Boolean](s"${Constant.SPARK_PREFIX}sql.aqp.closedFormEstimates",
+  val ClosedFormEstimates: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.SPARK_PREFIX}sql.aqp.closedFormEstimates",
     s"Boolean if false tells engine to use bootstrap analysis for error calculation for all cases" +
-      s". Default is true.", Some(true), null, false)
+      s". Default is true.", Some(true), null, isPublic = false)
 
-  val PutIntoInnerJoinCacheSize =
+  val PutIntoInnerJoinCacheSize: SQLValue[String] =
     SQLVal[String](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
       "The putInto inner join would be cached if the result of " +
           "join with incoming Dataset is of size less " +
