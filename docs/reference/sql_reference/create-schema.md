@@ -35,3 +35,8 @@ CREATE SCHEMA AUTHORIZATION shared;
 ```pre
 CREATE SCHEMA flights AUTHORIZATION anita;
 ```
+*	Create schema **reports** and authorize all members of LDAP group **finance** to all the objects that use the schema. Any member of this LDAP group can GRANT or REVOKE permissions on objects in this schema to other users.
+
+```pre
+CREATE SCHEMA reports AUTHORIZATION ldapgroup:finance;
+```
