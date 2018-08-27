@@ -20,24 +20,23 @@ import java.sql.{Connection, DriverManager, SQLException}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
-import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
+import com.pivotal.gemfirexd.internal.iapi.reference.Property
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
-import io.snappydata.{Constant, SnappyFunSuite}
 import org.junit.Assert.assertEquals
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{Logging, SparkConf}
 
-class RestrictTableCreationPolicyTest extends SnappyFunSuite
-    with Logging
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
+import org.apache.spark.SparkConf
+import org.apache.spark.sql.SnappyContext
+
+class RestrictTableCreationPolicyTest extends PolicyTestBase {
+
   val user1 = "gemfire1"
   val user2 = "gemfire2"
   val user3 = "gemfire3"
-  val tableCreator = user1
-  val ownerLdapGroup = "gemGroup1" // users gem1, gem2, gem3
-  val otherLdapGroup = "gemGroup3" // users gem6, gem7, gem8
+  val tableCreator: String = user1
+  val ownerLdapGroup = "gemGroup1"
+  // users gem1, gem2, gem3
+  val otherLdapGroup = "gemGroup3"
+  // users gem6, gem7, gem8
   val otherUser = "gemfire6"
   val props = Map.empty[String, String]
   val schema = "tax"
@@ -46,13 +45,10 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
   val rowTableName: String = s"$schema.RowTable"
   var ownerContext: SnappyContext = _
 
-  private val sysUser = "gemfire10"
   var serverHostPort: String = _
 
-
   override def beforeAll(): Unit = {
-    this.stopAll()
-    System.setProperty("snappydata.RESTRICT_TABLE_CREATION", "true")
+    System.setProperty(Property.SNAPPY_RESTRICT_TABLE_CREATE, "true")
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
       (s"name_$i", i)
@@ -89,47 +85,13 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
   }
 
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
-    val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
-      getClass.getResource("/auth.ldif").getPath)
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.setProperty(k, ldapProperties.getProperty(k))
-    }
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-    val conf = new org.apache.spark.SparkConf()
-        .setAppName("Test")
-        .setMaster("local[3]")
-        .set(Attribute.AUTH_PROVIDER, ldapProperties.getProperty(Attribute.AUTH_PROVIDER))
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-
-    if (addOn != null) {
-      addOn(conf)
-    } else {
-      conf
-    }
+    newLDAPSparkConf(addOn)
   }
 
   override def afterAll(): Unit = {
-    ownerContext.dropTable(colTableName, true)
-    ownerContext.dropTable(rowTableName, true)
-    this.stopAll()
+    ownerContext.dropTable(colTableName, ifExists = true)
+    ownerContext.dropTable(rowTableName, ifExists = true)
     super.afterAll()
-    val ldapServer = LdapTestServer.getInstance()
-    if (ldapServer.isServerStarted) {
-      ldapServer.stopService()
-    }
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.clearProperty(k)
-      System.clearProperty("gemfirexd." + k)
-      System.clearProperty(Constant.STORE_PROPERTY_PREFIX + k)
-    }
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
-    System.setProperty("gemfirexd.authentication.required", "false")
-    System.clearProperty("snappydata.RESTRICT_TABLE_CREATION")
   }
 
 
@@ -224,7 +186,6 @@ class RestrictTableCreationPolicyTest extends SnappyFunSuite
 
   test("check toggle row level security behaviour for ldap groups") {
     val conn = getConnection(Some(tableCreator))
-    val stmt = conn.createStatement()
     val conn1 = getConnection(Some(otherUser))
     val conn2 = getConnection(Some(user2))
     val conn3 = getConnection(Some(user3))
