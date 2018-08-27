@@ -1140,7 +1140,7 @@ task checkAll {
   if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (isEnterpriseProduct && hasGemFireConnectorProject) {
+  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject && isEnterpriseProduct) {
     dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
