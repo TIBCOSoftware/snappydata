@@ -111,8 +111,7 @@ pages:
     - 'Memory Management': 'best_practices/memory_management.md'      
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Important Settings': 'best_practices/important_settings.md'
-    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'   
-    - 'ODBC and JDBC Clients': 'best_practices/odbc_jdbc_clients.md'    
+    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'      
 - 'Synopsis Data Engine (SDE)': 'aqp.md'
 - 'Synopsis Data Engine (SDE)': 
     - 'Key Concepts': 'sde/key_concepts.md'
@@ -122,8 +121,8 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Working with external data sources': 'connectors/connector.md'
-- 'Working with external data sources':
+- 'Working with External Data Sources': 'connectors/connector.md'
+- 'Working with External Data Sources':
     - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
