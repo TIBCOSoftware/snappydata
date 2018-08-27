@@ -15,7 +15,6 @@ This creates a schema with the given name which provides a mechanism to logicall
 
 The CREATE SCHEMA statement is subject to access control when the **gemfirexd.sql-authorization ** property is set to true for the system. Only the system user can create a schema with a name different from the current user name, and only the system user can specify AUTHORIZATION user-name with a user-name other than the current user name.
 
-There is no single owner of the entire distributed system. Instead, ownership is defined by the distributed member joining the system. The distributed member process must boot up using the user attribute in the properties to indicate owner of that process. A member that boots in this way can create a schema or grant access to a schema across the distributed system.
 
 ## Example
 
