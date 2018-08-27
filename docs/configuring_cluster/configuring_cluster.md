@@ -146,7 +146,29 @@ $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 ```
+## Specifying Configuration Properties using Environment Variables
 
+SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS and LEAD_STARTUP_OPTIONS respectivley for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when SnappyData system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties. 
+
+For example:
+```pre
+# create a spark-env.sh from the template file
+$cp conf/spark-env.sh.template conf/spark-env.sh 
+
+# Following example configuration can be added to spark-env.sh, 
+# it shows how to add security configuration using the environment variables
+
+SECURITY_ARGS="-auth-provider=LDAP -J-Dgemfirexd.auth-ldap-server=ldap://192.168.1.162:389/ -user=user1 -password=password123 -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=password123"
+
+#applies the configuration specified by SECURITY_ARGS to all locators
+LOCATOR_STARTUP_OPTIONS=”$SECURITY_ARGS”
+#applies the configuration specified by SECURITY_ARGS to all servers
+SERVER_STARTUP_OPTIONS=”$SECURITY_ARGS”
+#applies the configuration specified by SECURITY_ARGS to all leads
+LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
+
+
+```
 <a id="configure-smart-connector"></a>
 ## Configuring SnappyData Smart Connector  
 
