@@ -135,6 +135,7 @@ pages:
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
     - 'Launching the Cluster in Secure Mode': 'security/launching_the_cluster_in_secure_mode.md'
+    - 'Specifying Encrypted Passwords in Conf Files or in Client Connections': 'security/specify_encrypt_passwords_conf_client.md'
     - 'Authentication - Connecting to a Secure Cluster': 'security/authentication_connecting_to_a_secure_cluster.md'
     - 'Authorization': 'security/authorization.md'
     - 'Implementing Row Level Security': 'security/row_level_security.md'
