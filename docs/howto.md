@@ -1,4 +1,5 @@
 # Overview
+
 This section introduces you to several common operations such as starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.
 
 **Running the Examples:**
@@ -64,16 +65,4 @@ The following topics are covered in this section:
 * [How to use Apache Zeppelin with SnappyData](howto/use_apache_zeppelin_with_snappydata.md)<a id="howto-zeppelin"></a>
 
 * [How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster](howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md)<a id="howto-concurrentzeppelin"></a>
-
-<heading2> Known Issue</heading2>
-
-If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
-
-<heading2> More Information</heading2>
-
-Refer to these sections for information on SnappyData CloudBuilder:
-
-* [About the Interpreter](isight/quick_start_steps.md#using-the-interpreter) 
-
-* [Example Notebooks](isight/quick_start_steps/#creating-notebooks-try-it-yourself)
 
