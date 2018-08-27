@@ -11,12 +11,10 @@ You can set up SnappyData cluster on Amazon Web Services using one of the follow
 
 <a id="usingcloudbuiler"></a>
 ## SnappyData CloudBuilder
-<!--iSight-Cloud-->CloudBuilder is a cloud-based service that allows for instant visualization of analytic query results on large datasets. <!--iSight-Cloud-->CloudBuilder uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
+[SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder) is a web based utility that allows you to quickly launch SnappyData cluster on AWS instances. It also launches Apache Zeppelin server that allows you to build notebooks that visually represent key elements of your business.
 
-The service provides a web URL that spins up a cluster instance on AWS or users can download the CloudBuilder EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
-With CloudBuilder, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.
+This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started.
 
-This section discusses the steps required for setting up and deploying SnappyData Cloud Cluster on AWS using the SnappyData CloudBuilder. 
 
 * [Prerequisites](#DeployingClusterCloudFormation)
 * [Deploying SnappyData Cloud Cluster Using SnappyData CloudBuilder](#DeployingClusterCloudFormation)
@@ -27,25 +25,24 @@ This section discusses the steps required for setting up and deploying SnappyDat
 ### Prerequisites
 Before you begin:
 
-* Ensure that you have an existing AWS account with required permissions to launch EC2 resources with CloudFormation
+* Ensure that you have an existing AWS account with required permissions to launch EC2 resources with AWS CloudFormation.
 
 * Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
 
-* Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
+* Create an EC2 Key Pair in the region where you want to launch the SnappyData cluster.
 
 <a id="DeployingClusterCloudFormation"></a>
-### Deploying SnappyData Cloud Cluster with SnappyData CloudBuilder
-SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData Cloud cluster. In this release, the configuration supports launching the cluster on a single EC2 instance.
+### Deploying SnappyData Cluster with SnappyData CloudBuilder
+SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData cluster.
 
-It is recommended that you select an instance type with higher processing power and more memory for this cluster, as it would be running multiple processes on it.
+It is recommended that you select an instance type with higher processing power and more memory for the leads and servers  of the cluster.
 
-This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started.
 
-#### Step 1: Launch [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder)
+#### Step 1: Go to [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder) page
 
 #### Step 2: Define your Cluster
 
-##### Community Edition users
+##### For Community Edition
 
 1. **Pick your version**</br> Select the **Community** option. </br>
 	![STEP](../Images/cloudbuilder_community_version.png)
@@ -56,28 +53,28 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 3. **Enter your email**: Provide your email address. </br>
 	![STEP](../Images/cloudbuilder_community_email.png)
 
-4. Click **Generate**. 
+4. Click **Generate**.
 
 5. The next page is displayed where you can [Select the Region and Launch your Cluster](#region).
 
-##### Enterprise Edition users
+##### For Enterprise Edition
 1. **Pick your version**</br> Select the **Enterprise** option.
 
 	![STEP](../Images/cloudbuilder_enterprise_version.png)
 
 2. **Make Locators & Leads Highly Available?**</br>
 
-	* **Select HA/Non-HA for the [Locators](../best_practices/ha_considerations.md)** 
+	* **Select HA/Non-HA for the [Locators](../best_practices/ha_considerations.md)**
 
-	* **Select HA/Non-HA for the [Leads](../best_practices/ha_considerations.md)** </br> Currently, Amazon Elastic Block Storage (EBS) is provided.
+	* **Select HA/Non-HA for the [Leads](../best_practices/ha_considerations.md)** </br>
 
 	![STEP](../Images/cloudbuilder_enterprise_locator_lead_ha.png)
 
 3. [Pick total Memory & Disk](../best_practices/memory_management.md) (GB): </br>
- 
+
 	* **Memory**: Click and drag the bar to select the required memory.
 
-	* **Disk (3x Memory Recommended)**: Click and drag the bar to select the required disk size.
+	* **Disk (3x Memory Recommended)**: Click and drag the bar to select the required disk size. Currently, Amazon Elastic Block Storage (EBS) is provided.
 
 	![STEP](../Images/cloudbuilder_enterprise_memory.png)
 
@@ -106,7 +103,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 		* The region you select must match the EC2 Key Pair you created.
 
 		* If you are not already logged into AWS, you are redirected to the AWS sign-in page. 	
-	
+
     ![STEP](../Images/cloudbuilder_selectedregion.png)
 
 2. On the **Select Template** page, the URL for the Amazon S3 template is pre-populated. Click **Next** to continue.   <br>
@@ -117,13 +114,13 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 	* **Stack name**: You can change the stack name.</br>
 
-	!!! Note 
+	!!! Note
     	The stack name must contain only letters, numbers, dashes, and should start with an alpha character.
-    
+
     * **KeyPairName**: Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. Refer to the Amazon documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
     * **VPCID**: From the drop-down list, select *default* Virtual Private Cloud (VPC) ID of your selected region. Your instances are launched within this VPC.</br> Click **Next** to continue.
-    
+
     ![STEP](../Images/cloudbuilder_create_stack.png)
 
 4. Specify the tags (key-value pairs) for resources in your stack or leave the field empty and click **Next**.
@@ -158,15 +155,15 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 <a id="EC2"></a>
 ## SnappyData EC2 Scripts
 
-The `snappy-ec2` script enables users to quickly launch and manage SnappyData clusters on Amazon EC2. You can also configure the individual nodes of the cluster by providing properties in specific configuration files, which the script reads before launching the cluster.
+The SnappyData EC2 scripts enable you to quickly launch and manage SnappyData clusters on Amazon EC2 instances. They also allow you to provide custom configuration for the cluster via SnappyData configuration files, before launching the cluster.
 
-The `snappy-ec2` script has been derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
+The `snappy-ec2` script is the entry point for these EC2 scripts and is derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
 The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a **.tar.gz** file on [the release page](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
 
 !!! Note
-	The EC2 script is under development. Feel free to try it out and provide your feedback.
-    
+	The EC2 scripts are provided on an experimental basis. Feel free to try it out and provide your feedback as via GitHub issues.
+
 This section covers the following:
 *	[Prerequisites](#EC2prereq)
 *	[Deploying SnappyData Cluster with EC2 Scripts](#launchclusterec2script)
@@ -181,7 +178,7 @@ This section covers the following:
 * Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
 <br/>Refer to the Amazon Web Services EC2 documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
-* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find this information in the AWS IAM console page.<br/>
+* Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find information about generating these keys in the AWS IAM console page.<br/>
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
 
 For example:
@@ -206,7 +203,7 @@ In the command prompt, go to the directory where the **snappydata-ec2-`<version>
 ./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> <action> <your-cluster-name>
 ```
 
-Here: 
+Here:
 
 * `<your-key-name>` refers to the EC2 key pair.
 
@@ -227,7 +224,7 @@ The  names and details of the members are automatically derived from the provide
 
 In the above example, you are launching a SnappyData cluster named **my-cluster** with 2 stores (or servers). The locator is available in security group named **my-cluster-locator** and the store/server are available in **my-cluster-store**.
 
-The cluster is launched in the N. California (us-west-1) region on AWS and starts an Apache Zeppelin server on the instance where the lead is running.</br> 
+The cluster is launched in the N. California (us-west-1) region on AWS and starts an Apache Zeppelin server on the instance where the lead is running.</br>
 The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
 !!! Note
@@ -320,7 +317,7 @@ The SnappyData product directory is located under **/home/ec2-user/snappydata/**
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
 ```
 <a id="ec2destroycluster"></a>
-#### Destroying the cluster
+#### Destroying the Cluster
 
 Destroying a cluster permanently destroys all the data on the local instance stores and on the attached EBS volumes.
 ```pre
@@ -337,7 +334,7 @@ Optionally, you can start an instance of Apache Zeppelin server with the cluster
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin launch cluster-name
 ```
 <a id="ec2moreoption"></a>
-#### More options
+#### More Options
 
 For a complete list of options provided by the script run `./snappy-ec2` (available in the  snappydata-ec2-<version>.tar.gz compressed file). </br>The options are also provided below for quick reference.
 
@@ -376,9 +373,10 @@ Options:
                         for bandwidthbetween zones applies) (default: a single
                         zone chosen at random)
   -a AMI, --ami=AMI     Amazon Machine Image ID to use
-  --enterprise          Use SnappyData Enterprise edition AMI from AWS
-                        Marketplace to launch the cluster. Overrides --ami
-                        option. Extra charges apply. (default: False)
+  --enterprise          (Will be supported soon) Use SnappyData Enterprise
+                        edition AMI from AWS Marketplace to launch the
+                        cluster. Overrides --ami option. Extra charges apply.
+                        (default: False)
   --with-zeppelin       Launch Apache Zeppelin server with the cluster. It'll
                         be launched on the same instance where lead node will
                         be running.
