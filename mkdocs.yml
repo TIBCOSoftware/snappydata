@@ -285,8 +285,7 @@ pages:
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
-    - 'Deploying External Dependency Jar': 'reference/deployment_dependency_jar.md'
-- 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
+    - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
     - 'Member startup problems': 'troubleshooting/member_startup_problems.md'
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
