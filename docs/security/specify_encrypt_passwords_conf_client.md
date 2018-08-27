@@ -4,13 +4,13 @@ SnappyData allows you to specify encrypted passwords, if you do not want to spec
 
 You can generate encrypted passwords before starting the SnappyData cluster and use it in **conf** files of the SnappyData servers, locators and leads. 
 
-You can also generate encrypted passwords for JDBC/ODBC client connections when SnappyData cluster is already started. For that case, using the **SYS.ENCRYPT_PASSWORD** system procedure is a preferable approach.
+You can also generate encrypted passwords for JDBC/ODBC client connections when SnappyData cluster is already started. For that case, using the **SYS.ENCRYPT_PASSWORD** system procedure is a preferable approach as mentioned in the following note.
 
 This script accepts list of users as input, prompts for each user’s password and outputs the encrypted password on the console. A special user AUTH_LDAP_SEARCH_PW can be used to generate encrypted password for the LDAP search user, used for looking up the DN indicated by configuration parameter **-J-Dgemfirexd.auth-ldap-search-pw **in SnappyData **conf** files.
 
 !!!Note
 
-	*	Make sure that SnappyData system is not running when this script is run, because this script launches a locator using the parameters specified in user’s conf/locators file. The script connects to the existing cluster to generate the password if locators could not be started. However, this may not work if the user is a LDAP search user who does not have permissions to access Snappydata cluster. It is recommended to directly connect to cluster and then run the SQL **CALL SYS.ENCRYPT_PASSWORD('<user>', '<password>', 'AES', 0)**,  if encrypted password is to be generated after you start the cluster.
+	*	Make sure that SnappyData system is not running when this script is run, because this script launches a locator using the parameters specified in user’s conf/locators file. The script connects to the existing cluster to generate the password if locators could not be started. However, this may not work if the user is a LDAP search user who does not have permissions to access Snappydata cluster. It is recommended to directly connect to cluster and then run the SQL `CALL SYS.ENCRYPT_PASSWORD('<user>', '<password>', 'AES', 0)`,  if encrypted password is to be generated after you start the cluster.
 	*	The encrypted secret that is returned is specific to this particular SnappyData distributed system, because the system uses a unique private key to generate the secret. An obfuscated version of the private key is stored in the persistent data dictionary (SnappyData catalog). If  the existing data dictionary is ever deleted and recreated, then you must generate and use a new encrypted secret for use with the new distributed system. Also the encrypted password cannot be used in any other SnappyData installation, even if the user and password is the same. You need to generate the encrypted password separately for every other SnappyData installation.
 
 ## Script Usage 
@@ -19,7 +19,7 @@ This script accepts list of users as input, prompts for each user’s password a
   
 ## Example Output
 
-In the example output shown, **snappy-encrypt-password.sh** script is invoked for users **user1** and **AUTH_LDAP_SEARCH_PW** (special user used to indicate LDAP search user, used for looking up the DN). The script outputs encrypted password (marked in bold) for **user1** and **AUTH_LDAP_SEARCH_PW**.
+In the example output shown, **snappy-encrypt-password.sh** script is invoked for users **user1** and **AUTH_LDAP_SEARCH_PW** (special user used to indicate LDAP search user, used for looking up the DN). The script outputs encrypted password for **user1** and **AUTH_LDAP_SEARCH_PW**.
 
 
 ```pre
@@ -74,7 +74,7 @@ For example:
 $cp conf/spark-env.sh.template conf/spark-env.sh 
 
 # edit the conf/spark-env.sh file to add security configuration as shown below
-# encrypted password is marked in bold
+
 SECURITY_ARGS="-auth-provider=LDAP -J-Dgemfirexd.auth-ldap-server=ldap://192.168.1.162:389/ -user=user1 -password=v13b607k2j637b2ae24e60be46613391117b7f234d0 -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=v13b607k2j6174404428eee3374411d97d1d497d3b8"
 
 LOCATOR_STARTUP_OPTIONS=”$SECURITY_ARGS”
@@ -85,7 +85,7 @@ LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
 
 ## Using Encrypted Password in Client Connections
 
-You can generate encrypted password for use in JDBC/ODBC client connections by executing a system procedure with a statement such as **CALL SYS.ENCRYPT_PASSWORD('<user>', '<password>', 'AES', 0)**. 
+You can generate encrypted password for use in JDBC/ODBC client connections by executing a system procedure with a statement such as `CALL SYS.ENCRYPT_PASSWORD('<user>', '<password>', 'AES', 0)`. 
 
 For example: 
 
@@ -99,7 +99,7 @@ user2 = v13b607k2j6c519cc88605e5e8fa778f46fb8b2b610
 
 ```
    
-This procedure accepts user id and plain text password as input arguments and outputs the encrypted password (marked in bold in the above example output). 
+This procedure accepts user id and plain text password as input arguments and outputs the encrypted password. 
 
 !!!Note
 	In the current release of SnappyData, the last two parameters should be “AES” and “0”. 
