@@ -182,6 +182,11 @@ pages:
             - 'DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE': 'reference/sql_reference/drop-table.md'
             - 'DROP SCHEMA': 'reference/sql_reference/drop-schema.md'
 #            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
+        - 'DEPLOY Statements': 'reference/sql_reference/deploy.md'
+        - 'DEPLOYStatements':
+            - 'DEPLOY PACKAGE': 'reference/sql_reference/deploy_package.md'
+            - 'DEPLOY JAR': 'reference/sql_reference/deploy_jar.md'
+            - 'UNDEPLOY': 'reference/sql_reference/undeploy.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
