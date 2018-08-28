@@ -30,6 +30,7 @@ for user in "$@"; do
     echo
     if [ "${passwd1}" != "${passwd2}" ]; then
       echo Passwords for $user do not match
+      echo
     else
       break
     fi

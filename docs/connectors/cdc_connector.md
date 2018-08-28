@@ -1,4 +1,4 @@
-# Using the SnappyData CDC (Change Data Capture) Connector
+# Using the SnappyData Change Data Capture (CDC) Connector
 
 <ent>This feature is available only in the Enterprise version of SnappyData.</ent>
 
