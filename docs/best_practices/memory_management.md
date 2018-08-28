@@ -81,7 +81,7 @@ At the start, each of the two pools is assigned a portion of the available memor
 
 **Example**: Configuration for memory (typically configured in **conf/leads** or **conf/servers**) 
 ```scala
--heap-size = 20g -critical-heap-percentage=90 -eviction-heap-percentage=81
+-heap-size=20g -critical-heap-percentage=90 -eviction-heap-percentage=81
 ```
 
 **Example**: Depicts how SnappyData derives different memory region sizes

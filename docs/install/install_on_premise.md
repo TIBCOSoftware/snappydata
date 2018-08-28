@@ -99,7 +99,10 @@ In case the machines in your cluster do not share a common path as well as canno
 
 1.	Copy and extract the downloaded binaries into each machine. The binaries can be placed in different directory structures. 
 
-3.	[Configure](../configuring_cluster/configuring_cluster.md) each member separately.
+3.	Configure each member separately.
+
+	!!!Note
+			The scripts used for starting individual members in the cluster do not read from the **conf** file of each member, hence there is no need to edit the **conf** files for starting the members. These scripts will start the member with the default configuration properties. To override the default configuration, you can pass the properties as arguments to the above scripts.
 
 5.	Start the members in the cluster one at a time. Start the locator first, then the servers, and finally the leads. Use the following scripts to start the members:
 
@@ -109,8 +112,6 @@ In case the machines in your cluster do not share a common path as well as canno
 	
 	*	`$SNAPPY_HOME/sbin/snappy-lead.sh`
 
-!!!Note
-	These scripts will start the member with the default configuration properties. To override the default configuration, you can pass the properties as arguments to the above scripts.
 
 
 

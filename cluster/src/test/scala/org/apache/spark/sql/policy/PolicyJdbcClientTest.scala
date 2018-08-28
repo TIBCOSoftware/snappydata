@@ -21,19 +21,11 @@ import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
-import io.snappydata.SnappyFunSuite
-import io.snappydata.core.Data
 import org.junit.Assert.assertEquals
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.SnappyContext
 
-class PolicyJdbcClientTest extends SnappyFunSuite
-    with Logging
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
-
+class PolicyJdbcClientTest extends PolicyTestBase {
 
   var serverHostPort: String = _
 
@@ -41,8 +33,9 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   val tableOwner = "ashahid"
   val numElements = 100
   val colTableName: String = s"$tableOwner.ColumnTable"
-  val rowTableName: String = s"${tableOwner}.RowTable"
+  val rowTableName: String = s"$tableOwner.RowTable"
   var ownerContext: SnappyContext = _
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {
@@ -68,14 +61,14 @@ class PolicyJdbcClientTest extends SnappyFunSuite
       stmt.execute(s"alter table $colTableName enable row level security")
       stmt.execute(s"alter table $rowTableName enable row level security")
     } finally {
-      conn.close
+      conn.close()
     }
 
   }
 
   override def afterAll(): Unit = {
-    ownerContext.dropTable(colTableName, true)
-    ownerContext.dropTable(rowTableName, true)
+    ownerContext.dropTable(colTableName, ifExists = true)
+    ownerContext.dropTable(rowTableName, ifExists = true)
     TestUtil.stopNetServer()
     super.afterAll()
   }
@@ -272,7 +265,6 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   }
 
 
-
   test("old query plan invalidation on enabling rls on column table using jdbc client") {
     this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
   }
@@ -321,7 +313,7 @@ class PolicyJdbcClientTest extends SnappyFunSuite
       while (rs.next()) {
         actualNumRows += 1
         assert(expectedResults.contains(rs.getString("NAME")))
-        val expectedRow = expectedResults.get(rs.getString("NAME")).get
+        val expectedRow = expectedResults(rs.getString("NAME"))
         assertEquals(expectedRow._1, rs.getString("TABLESCHEMANAME"))
         assertEquals(expectedRow._2, rs.getString("TABLENAME"))
         assertEquals(expectedRow._3, rs.getString("POLICYFOR"))
@@ -426,8 +418,8 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     val dataDF2 = ownerContext.createDataFrame(rdd2)
 
     val colTableName2: String = s"$tableOwner.ColumnTable2"
-    val rowTableName2: String = s"${tableOwner}.RowTable2"
-    val colTableName3: String = s"${tableOwner}.ColumnTable3"
+    val rowTableName2: String = s"$tableOwner.RowTable2"
+    val colTableName3: String = s"$tableOwner.ColumnTable3"
 
     ownerContext.sql(s"CREATE TABLE $colTableName2 (name String, id Int) " +
         s" USING column ")
@@ -497,5 +489,3 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   }
 
 }
-
-

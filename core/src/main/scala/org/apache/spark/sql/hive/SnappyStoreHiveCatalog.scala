@@ -962,7 +962,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   def toggleRLSForExternalRelation(tableIdent: QualifiedTableName,
-      enableRowLevelSecurity: Boolean): Unit = {
+      enableRowLevelSecurity: Boolean, currentUser: String): Unit = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks != null) {
+      callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
+    }
     this.getTableOption(tableIdent).foreach(ct => {
       val newProps = ct.storage.properties +
           (Constant.EXTERNAL_TABLE_RLS_ENABLE_KEY -> enableRowLevelSecurity.toString)
