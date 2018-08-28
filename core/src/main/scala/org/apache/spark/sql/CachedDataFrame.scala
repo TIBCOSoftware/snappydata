@@ -63,7 +63,8 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int], encoder: Encoder[Row],
     shuffleCleanups: Array[Future[Unit]], val rddId: Int, noSideEffects: Boolean,
     val queryHints: java.util.Map[String, String], private[sql] var currentExecutionId: Long,
-    private[sql] var planStartTime: Long, private[sql] var planEndTime: Long)
+    private[sql] var planStartTime: Long, private[sql] var planEndTime: Long,
+    val linkPart : Boolean = false)
     extends Dataset[Row](snappySession, queryExecution, encoder) with Logging {
 
   private[sql] final def isCached: Boolean = cachedRDD ne null
@@ -148,7 +149,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private[sql] def duplicate(): CachedDataFrame = {
     val cdf = new CachedDataFrame(snappySession, queryExecution, queryExecutionString,
       queryPlanInfo, null, null, cachedRDD, shuffleDependencies, encoder, shuffleCleanups,
-      rddId, noSideEffects, queryHints, -1L, -1L, -1L)
+      rddId, noSideEffects, queryHints, -1L, -1L, -1L, linkPart)
     cdf.log_ = log_
     cdf.levelFlags = levelFlags
     cdf._boundEnc = boundEnc // force materialize boundEnc which is commonly used
@@ -169,6 +170,14 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
+  private def getChildren(parent: RDD[_]): Seq[RDD[_]] = {
+    parent match {
+      case rdd: DelegateRDD[_] =>
+        (rdd.baseRdd +: (rdd.dependencies.map(_.rdd) ++ rdd.otherRDDs)).toSet.toSeq
+      case _ => parent.dependencies.map(_.rdd)
+    }
+  }
+
   @tailrec
   private def clearPartitions(rdds: Seq[RDD[_]]): Unit = {
     val children = rdds.flatMap {
@@ -176,9 +185,28 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       case r =>
         // f.set(r, null)
         UnsafeHolder.getUnsafe.putObject(r, CachedDataFrame.rdd_partitions_, null)
-        r.dependencies.map(_.rdd)
+        getChildren(r)
     }
-    if (children.nonEmpty) clearPartitions(children)
+    if (children.nonEmpty) {
+      clearPartitions(children)
+    }
+  }
+
+  // Its a bit costly operation,
+  // but we are safe as anyway the partitions will be evaluated during RDD execution time.
+  // Once partitions are determined on an RDD it will not do an evaluation again.
+  @tailrec
+  private def reEvaluatePartitions(rdds: Seq[RDD[_]]): Unit = {
+    val children = rdds.flatMap {
+      case null => Nil
+      case r =>
+        r.getNumPartitions
+        getChildren(r)
+
+    }
+    if (children.nonEmpty) {
+      reEvaluatePartitions(children)
+    }
   }
 
   private def setPoolForExecution(): Unit = {
@@ -192,12 +220,17 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
   }
 
+
   private def prepareForCollect(): Boolean = {
     if (prepared) return false
     if (isCached) {
       reset()
       applyCurrentLiterals()
     }
+    // Reset the linkPartitionToBuckets flag before determining RDD partitions.
+    snappySession.linkPartitionsToBuckets(flag = linkPart)
+    // Forcibly re-evaluate the partitions.
+    reEvaluatePartitions(cachedRDD :: Nil)
     setPoolForExecution()
     // update the strings in query execution and planInfo
     if (currentQueryExecutionString eq null) {

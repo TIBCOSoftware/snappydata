@@ -19,13 +19,11 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
@@ -80,7 +78,6 @@ abstract class BaseColumnFormatRelation(
     with RowInsertableRelation
     with MutableRelation {
 
-
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
   override val connectionType: ConnectionType.Value =
@@ -129,7 +126,7 @@ abstract class BaseColumnFormatRelation(
       Some(() => sqlContext.sparkSession.asInstanceOf[SnappySession]))
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Expression], _ignore: => Int): (RDD[Any], Array[Int]) = {
+      filters: Array[Expression], _ignore: () => Int): (RDD[Any], Array[Int]) = {
 
     // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
     // RDDs needn't have to care for orderless hashing scheme at invocation point.
@@ -146,13 +143,12 @@ abstract class BaseColumnFormatRelation(
       }
     }.filter(_.nonEmpty).map(_.get).unzip
 
-    val pcFields = StructType(fields).toAttributes
-    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
-    val bucketIdGeneration = UnsafeProjection.create(
-      HashPartitioning(pcFields, numBuckets)
-          .partitionIdExpression :: Nil, pcFields)
-
-    def prunePartitions: Int = {
+    def prunePartitions(): Int = {
+      val pcFields = StructType(fields).toAttributes
+      val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
+      val bucketIdGeneration = UnsafeProjection.create(
+        HashPartitioning(pcFields, numBuckets)
+            .partitionIdExpression :: Nil, pcFields)
       if (pruningExpressions.nonEmpty &&
           // verify all the partition columns are provided as filters
           pruningExpressions.length == partitioningColumns.length) {
@@ -177,7 +173,7 @@ abstract class BaseColumnFormatRelation(
     // Remove the update/delete key columns from RDD requiredColumns.
     // These will be handled by the ColumnTableScan directly.
     val columns = requiredColumns.filter(!_.startsWith(ColumnDelta.mutableKeyNamePrefix))
-    val (rdd, projection) = scanTable(table, columns, filters, -1)
+    val (rdd, projection) = scanTable(table, columns, filters, () => -1)
     val partitionEvaluator = rdd match {
       case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
       case s => s.asInstanceOf[SmartConnectorColumnRDD].getPartitionEvaluator
@@ -200,7 +196,7 @@ abstract class BaseColumnFormatRelation(
   def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
       filters: Array[Expression]): (RDD[Any], RDD[Any],
       Seq[RDD[InternalRow]]) = {
-    val (rdd, projection) = scanTable(table, requiredColumns, filters, -1)
+    val (rdd, projection) = scanTable(table, requiredColumns, filters, () => -1)
     val rowRDD = buildRowBufferRDD(() => rdd.partitions, requiredColumns, filters,
       useResultSet = true, projection)
     (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
@@ -262,7 +258,17 @@ abstract class BaseColumnFormatRelation(
     partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
   }
 
-  /**
+    /** Get key columns of the column table */
+    override def getPrimaryKeyColumns: Seq[String] = {
+        val keyColsOptions = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+        if (keyColsOptions.isDefined) {
+            keyColsOptions.get.split(",").map(_.trim)
+        } else {
+            Seq.empty[String]
+        }
+    }
+
+    /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
    * execution should be a count of number of updated rows.
    */

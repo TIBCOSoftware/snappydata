@@ -156,15 +156,11 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           memberStats = new MemberStatistics(memMap)
           if (dssUUID != null) {
             members.put(dssUUID.toString, memberStats)
-          } else if (id != null) {
-            members.put(id, memberStats)
           }
         } else {
           memberStats.updateMemberStatistics(memMap)
           if (dssUUID != null) {
             members.put(dssUUID.toString, memberStats)
-          } else if (id != null) {
-            members.put(id, memberStats)
           }
         }
 
@@ -200,8 +196,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
     catch {
       case NonFatal(e) => {
-        log.warn("Exception occurred while collecting Table Statistics: "
-            + e.getMessage, e)
+        log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
+        log.debug(e.getMessage, e)
       }
     }
 
@@ -219,8 +215,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
       catch {
         case NonFatal(e) => {
-          log.warn("Exception occurred while collecting External Table Statistics: "
-              + e.getMessage, e)
+          log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
+          log.debug(e.getMessage, e)
           mutable.Buffer.empty[SnappyExternalTableStats]
         }
       }
