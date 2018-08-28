@@ -16,7 +16,11 @@
  */
 package org.apache.spark.sql.execution
 
-trait ApplyLimitOnExternalRelation {
+
+trait ExternalRelation
+
+
+trait ApplyLimitOnExternalRelation extends ExternalRelation {
   /**
    *
    * @return value > 0 will mean apply limit , else no limit

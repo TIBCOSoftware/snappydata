@@ -122,7 +122,8 @@ class NorthWindTest
   }
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
-    for (q <- NWQueries.queries) {
+    // TODO fix the for scala test as well
+    for (q <- NWQueries.queries.filter(q => !q._1.contains("_"))) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
         case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 1, classOf[RowTableScan])
@@ -245,7 +246,8 @@ class NorthWindTest
   }
 
   private def validatePartitionedRowTableQueries(snc: SnappyContext): Unit = {
-    for (q <- NWQueries.queries) {
+    // TODO fix the for scala test as well
+    for (q <- NWQueries.queries.filter(q => !q._1.contains("_"))) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
         case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 1, classOf[RowTableScan])
@@ -374,7 +376,8 @@ class NorthWindTest
 
   private def validatePartitionedColumnTableQueries(snc: SnappyContext): Unit = {
 
-    for (q <- NWQueries.queries) {
+    // TODO fix the for scala test as well
+    for (q <- NWQueries.queries.filter(q => !q._1.contains("_"))) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
         case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 1, classOf[RowTableScan])
@@ -515,8 +518,8 @@ class NorthWindTest
 
 
   private def validateColocatedTableQueries(snc: SnappyContext): Unit = {
-
-    for (q <- NWQueries.queries) {
+    // TODO fix the for scala test as well
+    for (q <- NWQueries.queries.filter(q => !q._1.contains("_"))) {
       q._1 match {
         case "Q1" => NWQueries.assertQuery(snc, NWQueries.Q1, "Q1", 8, 1, classOf[RowTableScan])
         case "Q2" => NWQueries.assertQuery(snc, NWQueries.Q2, "Q2", 91, 4, classOf[ColumnTableScan])

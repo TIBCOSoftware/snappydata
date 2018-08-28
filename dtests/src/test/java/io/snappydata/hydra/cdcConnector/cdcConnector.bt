@@ -5,17 +5,19 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
     D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
     dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
-    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointqueries.sql"
-    deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
-    insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1"
+    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/selectOps.sql"
+    deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDeleteTemp.sql"
+    insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/scriptsForApp1"
+    mixedDMLQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/dmlOps.sql"
     dataBaseName = testdatabase20G
     threadCnt = 1
+    coresPerStrmApp = 1
     sqlServerInstance = sqlServer1
-    connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2-SNAPSHOT.jar"
+    connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2-RC1.jar"
     driverJar="/home/supriya/.m2/repository/com/microsoft/sqlserver/mssql-jdbc/6.1.0.jre8/mssql-jdbc-6.1.0.jre8.jar"
     pocJar="$GEMFIRE/../../../snappy-poc/cdc/target/original-cdc-test-0.0.1.jar"
     connectionPropFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/cdc_source_connection.properties"
-    sourceDestFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/source_destination_tables.properties"
+    sourceDestFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/source_destination.properties"
     tableListPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/tableListTemp.txt"
     initStartRange=1000001
     initEndRange=1000050
@@ -112,3 +114,4 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
       initEndRange=65000010
       totalTaskTimeSec=172800
       maxResultWaitSec=36000
+   

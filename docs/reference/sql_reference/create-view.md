@@ -10,8 +10,8 @@ snappy> CREATE VIEW [view-name] (column_name, column_name) AS SELECT column_name
 
 ## Description
 
-Views can be described as a virtual table that contain a set of definitions, which is build on top of table(s) or other view(s), but it does not physically store the data like a table.
-VIEW is persistent and visible in system catalog and therefore shared between all connections.
+View can be described as a virtual table that contains a set of definitions, built on top of table(s) or other view(s), but it does not physically store the data like a table.
+View is persistent and visible in system catalog and therefore shared between all connections.
 
 ## Examples </br>
 
