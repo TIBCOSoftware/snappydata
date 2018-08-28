@@ -76,6 +76,25 @@ public class SnappySecurityTest extends SnappyTest {
     }
   }
 
+  public static void grantSchemaPermisson(Boolean isGrant){
+    Vector userVector = SnappySecurityPrms.getUserName();
+    String user = userVector.elementAt(0).toString();
+    String query= " ";
+    String msg = "";
+    Connection conn = null;
+    if (isGrant) {
+      query = "CREATE SCHEMA " + user + " AUTHORIZATION " + user;
+      msg = "Create scheam query is  ";
+    }
+    Log.getLogWriter().info(msg + query);
+    try {
+      conn = getSecuredLocatorConnection("user1", "user123");
+      conn.createStatement().execute(query);
+    } catch (SQLException e) {
+      Log.getLogWriter().info(" Caught Exception " + e.getMessage());
+    }
+  }
+
   public static void grantRevokeOps(Boolean isGrant, Boolean isRevoke, Boolean isPublic) {
     Vector userVector = SnappySecurityPrms.getUserName();
     Vector onSchema = SnappySecurityPrms.getSchema();
@@ -136,6 +155,11 @@ public class SnappySecurityTest extends SnappyTest {
     Boolean isRevoke = SnappySecurityPrms.getIsRevoke();
     Boolean isPublic = SnappySecurityPrms.getIsPublic();
     grantRevokeOps(isGrant, isRevoke, isPublic);
+  }
+
+  public static void HydraTask_GrantSchemaPermisson() {
+    Boolean isGrant = SnappySecurityPrms.getIsGrant();
+    grantSchemaPermisson(isGrant);
   }
 
   public static ArrayList getQueryArr(String fileName, String user) {
