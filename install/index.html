@@ -7,41 +7,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>Download and Install - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../favicon.ico">
   
-
-  
+  <title>Provisioning SnappyData - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
-  <link href="../css/toc.css" rel="stylesheet">
-  <link href="../css/menu.css" rel="stylesheet">
-  <link href="../css/images.css" rel="stylesheet">
-  <link href="../css/style.css" rel="stylesheet">
-  <link href="../css/highlight.css" rel="stylesheet">
+  <link href="../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Download and Install";
+    var mkdocs_page_name = "Provisioning SnappyData";
     var mkdocs_page_input_path = "install.md";
     var mkdocs_page_url = "/install/";
   </script>
   
   <script src="../js/jquery-2.1.1.min.js"></script>
   <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script>
-  <script src="../js/theme.js"></script> 
-  <script src="../js/menu.js"></script>
-  <script src="../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData Documentation</a>
+        <a href=".." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,11 +126,11 @@
           
             <li>
     <li class="toctree-l1 current">
-        <a class="current" href="./">Download and Install</a>
+        <a class="current" href="./">Provisioning SnappyData</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#download-and-install">Download and Install</a></li>
+                <li class="toctree-l3"><a href="#provisioning-snappydata">Provisioning SnappyData</a></li>
                 
             
             </ul>
@@ -143,7 +140,7 @@
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -155,14 +152,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="install_on_premise/">Install On-Premise</a>
+        <a class="" href="install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -176,7 +187,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -425,13 +436,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -762,55 +766,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -882,6 +864,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -896,7 +885,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1077,13 +1087,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1174,9 +1177,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1773,14 +1805,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1812,6 +1844,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1893,7 +1932,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData Documentation</a>
+        <a href="..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1905,14 +1944,7 @@
     
       
     
-    <li>Download and Install</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
+    <li>Provisioning SnappyData</li>
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1921,19 +1953,19 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="download-and-install">Download and Install</h1>
+                <h1 id="provisioning-snappydata">Provisioning SnappyData</h1>
 <p>SnappyData offers two editions of the product, SnappyData Community Edition, and SnappyData Enterprise Edition.</p>
 <p>The SnappyData Community Edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
 The Enterprise Edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.</p>
 <p>For more information on the capabilities of the Community and Enterprise editions see <a href="../additional_files/open_source_components/">Community Edition (Open Source)/Enterprise Edition Components</a>.</p>
 <p><heading2> Download SnappyData Community Edition</heading2></p>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/">Download the SnappyData 1.0.1 Community Edition (Open Source)</a> from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).</p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/">Download the SnappyData 1.0.2 Community Edition (Open Source)</a> from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).</p>
 <ul>
 <li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.1/snappydata-1.0.1-bin.tar.gz"><strong>SnappyData 1.0.1 Release download link</strong></a></p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2/snappydata-1.0.2-bin.tar.gz"><strong>SnappyData 1.0.2 Release download link</strong></a></p>
 </li>
 <li>
-<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.1/snappydata-1.0.1-without-hadoop-bin.tar.gz"><strong>SnappyData 1.0.1 Release (user-provided Hadoop) download link</strong></a> </p>
+<p><a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2/snappydata-1.0.2-without-hadoop-bin.tar.gz"><strong>SnappyData 1.0.2 Release (user-provided Hadoop) download link</strong></a> </p>
 </li>
 </ul>
 <p><heading2> Download SnappyData Enterprise Edition</heading2></p>
@@ -1948,7 +1980,7 @@ The Enterprise Edition includes several additional capabilities that are closed 
 <p>Read the END USER LICENSE AGREEMENT and click the <strong>Agree to terms of service</strong> option to accept it.</p>
 </li>
 <li>
-<p>Click <strong>Download</strong> to download the installer (<strong>snappydata-1.0.1-bin.tar.gz</strong>).</p>
+<p>Click <strong>Download</strong> to download the installer (<strong>snappydata-1.0.2-bin.tar.gz</strong>).</p>
 </li>
 <li>
 <p>You can also download the following additional files by clicking on the links:</p>
@@ -1971,13 +2003,19 @@ The Enterprise Edition includes several additional capabilities that are closed 
 <p><heading2>Installation Options</heading2></p>
 <p><heading3>Prerequisites</heading3></p>
 <p>Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the <em>JAVA_HOME</em> environment variable is set on each computer.</p>
-<p>The following installation options are available:</p>
+<p>The following options are available for provisioning SnappyData:</p>
 <ul>
 <li>
-<p><a href="install_on_premise/">Install On-Premise</a> <a id="install-on-premise"></a></p>
+<p><a href="install_on_premise/">On-Premise</a> <a id="install-on-premise"></a></p>
 </li>
 <li>
-<p><a href="setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services (AWS)</a> <a id="setting-up-cluster-on-amazon-web-services-aws"></a></p>
+<p><a href="setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a> <a id="setting-up-cluster-on-amazon-web-services-aws"></a></p>
+</li>
+<li>
+<p><a href="../kubernetes/">Kubernetes</a></p>
+</li>
+<li>
+<p><a href="../quickstart/getting_started_with_docker_image/">Docker</a></p>
 </li>
 <li>
 <p><a href="building_from_source/">Building from Source</a><a id="building-from-source"></a></p>
@@ -1988,7 +2026,7 @@ The Enterprise Edition includes several additional capabilities that are closed 
     On a Linux system, you can set the limit of open files and thread processes in the <strong>/etc/security/limits.conf</strong> file. 
     </br>A minimum of <strong>8192</strong> is recommended for open file descriptors limit and <strong>&gt;128K</strong> is recommended for the number of active threads. 
     </br>A typical configuration used for SnappyData servers and leads can look like:</p>
-<pre><code class="no-highlight">snappydata          hard    nofile      81920
+<pre><code class="pre">snappydata          hard    nofile      81920
 snappydata          soft    nofile      8192
 snappydata          hard    nproc       unlimited
 snappydata          soft    nproc       524288
@@ -2030,10 +2068,10 @@ snappydata          soft    sigpending  524288
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2046,6 +2084,9 @@ snappydata          soft    sigpending  524288
       
     </span>
 </div>
+    <script src="../js/theme.js"></script>
+      <script src="../custom_theme/js/menu.js"></script>
+      <script src="../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

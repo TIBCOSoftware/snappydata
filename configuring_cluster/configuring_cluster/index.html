@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>Configuration - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>Configuration - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../install/">Download and Install</a>
+        <a class="" href="../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -429,6 +440,8 @@
                 
                     <li><a class="toctree-l4" href="#configuring-data-servers">Configuring Data Servers</a></li>
                 
+                    <li><a class="toctree-l4" href="#specifying-configuration-properties-using-environment-variables">Specifying Configuration Properties using Environment Variables</a></li>
+                
                     <li><a class="toctree-l4" href="#configuring-snappydata-smart-connector">Configuring SnappyData Smart Connector</a></li>
                 
                     <li><a class="toctree-l4" href="#environment-settings">Environment Settings</a></li>
@@ -437,13 +450,6 @@
                 
             
             </ul>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -774,55 +780,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -894,6 +878,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -908,7 +899,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1089,13 +1101,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1186,9 +1191,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1785,14 +1819,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1824,6 +1858,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1905,7 +1946,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1922,13 +1963,6 @@
       
     
     <li>Configuration</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1988,12 +2022,16 @@ These files should contain the hostnames of the nodes (one per line) where you i
 <td>Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.</td>
 </tr>
 <tr>
+<td>-client-port</td>
+<td>The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.</td>
+</tr>
+<tr>
 <td>-dir</td>
 <td>The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the <code>eviction-heap-percentage</code> to 81% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
 </tr>
 <tr>
 <td>-J</td>
@@ -2023,7 +2061,7 @@ These files should contain the hostnames of the nodes (one per line) where you i
 </table>
 <p><a id="locator-example"></a>
 <strong>Example</strong>: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:</p>
-<pre><code class="no-highlight">$ cat conf/locators
+<pre><code class="pre">$ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
 </code></pre>
@@ -2056,7 +2094,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-critical-heap-percentage</td>
-<td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
+<td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
 </tr>
 <tr>
 <td>-dir</td>
@@ -2064,11 +2102,15 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-eviction-heap-percentage</td>
-<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
+<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the <code>eviction-heap-percentage</code> to 81% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+</tr>
+<tr>
+<td>-memory-size</td>
+<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
 </tr>
 <tr>
 <td>-J</td>
@@ -2081,10 +2123,6 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <tr>
 <td>-log-file</td>
 <td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
-</tr>
-<tr>
-<td>-memory-size</td>
-<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
@@ -2111,16 +2149,31 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <td>Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.</td>
 </tr>
 <tr>
+<td>-spark.sql.codegen.cacheSize<a id="codegencache"></a></td>
+<td>Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. Default is 2000.</td>
+</tr>
+<tr>
 <td>-spark.ui.port</td>
 <td>Port for your SnappyData Pulse, which shows tables, memory and workload data. Default is 5050</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Example</strong>: To start a lead (node-l), set <code>spark.executor.cores</code> as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:</p>
-<pre><code class="no-highlight">$ cat conf/leads
+<pre><code class="pre">$ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 </code></pre>
 
+<p><a id="confsecondarylead"></a></p>
+<h3 id="configuring-secondary-lead">Configuring Secondary Lead</h3>
+<p>To configure secondary leads, you must add the required number of entries in the <strong>conf/leads</strong> file. </p>
+<p>For example:</p>
+<pre><code>$ cat conf/leads
+node-l1 -heap-size=4096m -locators=node-b:8888,node-a:9999
+node-l2 -heap-size=4096m -locators=node-b:8888,node-a:9999
+
+</code></pre>
+
+<p>In this example two leads (one on node-l1 and another on node-l2) are configured. Using <code>sbin/snappy-start-all.sh</code>, when you launch the cluster, one of them becomes the primary lead and the other becomes the secondary lead.</p>
 <p><a id="dataserver"></a></p>
 <h2 id="configuring-data-servers">Configuring Data Servers</h2>
 <p>Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the <strong>conf/servers.template</strong> file for some examples. </p>
@@ -2137,39 +2190,39 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tbody>
 <tr>
 <td>-bind-address</td>
-<td>IP address on which the locator is bound. The default behavior is to bind to all local addresses.</td>
+<td>IP address on which the server is bound. The default behavior is to bind to all local addresses.</td>
 </tr>
 <tr>
 <td>-classpath</td>
 <td>Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.</td>
 </tr>
 <tr>
-<td>-critical-heap-percentage</td>
-<td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
+<td>-client-port</td>
+<td>The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.</td>
 </tr>
 <tr>
-<td>-critical-off-heap-percentage</td>
-<td>Sets the critical threshold for off-heap memory usage in percentage, 0-100. </br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of off-heap memory.</td>
+<td>-critical-heap-percentage</td>
+<td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
 </tr>
 <tr>
 <td>-dir</td>
-<td>The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
+<td>The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). <strong>work</strong> is the default current working directory.</td>
 </tr>
 <tr>
 <td>-eviction-heap-percentage</td>
-<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
-</tr>
-<tr>
-<td>-eviction-off-heap-percentage</td>
-<td>Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 81% of whatever is set for <code>-critical-off-heap-percentage</code>. </br>Use this switch to override the default.</td>
+<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the <code>eviction-heap-percentage</code> to 81% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+</tr>
+<tr>
+<td>-memory-size</td>
+<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
 </tr>
 <tr>
 <td>-J</td>
-<td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
+<td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use <strong>-J-XX:+PrintGCDetails</strong> to print the GC details in JVM logs.</td>
 </tr>
 <tr>
 <td>-J-Dgemfirexd.hostname-for-clients</td>
@@ -2180,16 +2233,12 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
 </tr>
 <tr>
-<td>-memory-size</td>
-<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
-</tr>
-<tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
 <td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
 </tr>
 <tr>
 <td>-rebalance<a id="rebalance"></a></td>
-<td>Causes the new member to trigger a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option.</td>
+<td>Causes the new member to trigger a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option. Usually rebalancing is triggered when the overall capacity is increased or reduced through member startup, shut down, or failure.</td>
 </tr>
 <tr>
 <td>-thrift-ssl<a id="thrift-properties"></a></td>
@@ -2202,9 +2251,30 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 </tbody>
 </table>
 <p><strong>Example</strong>: To start a two servers (node-c and node-c), update the configuration file as follows:</p>
-<pre><code class="no-highlight">$ cat conf/servers
+<pre><code class="pre">$ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
+</code></pre>
+
+<h2 id="specifying-configuration-properties-using-environment-variables">Specifying Configuration Properties using Environment Variables</h2>
+<p>SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS and LEAD_STARTUP_OPTIONS respectivley for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in <strong>conf/spark-env.sh</strong> file. This file is sourced when SnappyData system is started. A template file <strong>conf/spark-env.sh.template</strong> is provided in <strong>conf</strong> directory for reference. You can copy this file and use it to configure properties. </p>
+<p>For example:</p>
+<pre><code class="pre"># create a spark-env.sh from the template file
+$cp conf/spark-env.sh.template conf/spark-env.sh 
+
+# Following example configuration can be added to spark-env.sh, 
+# it shows how to add security configuration using the environment variables
+
+SECURITY_ARGS=&quot;-auth-provider=LDAP -J-Dgemfirexd.auth-ldap-server=ldap://192.168.1.162:389/ -user=user1 -password=password123 -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=password123&quot;
+
+#applies the configuration specified by SECURITY_ARGS to all locators
+LOCATOR_STARTUP_OPTIONS=”$SECURITY_ARGS”
+#applies the configuration specified by SECURITY_ARGS to all servers
+SERVER_STARTUP_OPTIONS=”$SECURITY_ARGS”
+#applies the configuration specified by SECURITY_ARGS to all leads
+LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
+
+
 </code></pre>
 
 <p><a id="configure-smart-connector"></a></p>
@@ -2225,9 +2295,9 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 </tbody>
 </table>
 <p><strong>Example</strong>:</p>
-<pre><code class="no-highlight">$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
+<pre><code class="pre">$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
     --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-    --packages &quot;SnappyDataInc:snappydata:1.0.1-s_2.11&quot; 
+    --packages &quot;SnappyDataInc:snappydata:1.0.2-s_2.11&quot; 
 </code></pre>
 
 <p><a id="environment"></a></p>
@@ -2237,14 +2307,14 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 <h3 id="hadoop-provided-settings">Hadoop Provided Settings</h3>
 <p>If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.</p>
 <p>To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:</p>
-<pre><code class="no-highlight">export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
+<pre><code class="pre">export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 </code></pre>
 
 <p><a id="logging"></a></p>
 <h2 id="logging">Logging</h2>
 <p>Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property <em>-log-file</em> as the path of the directory. </br>
 The logging levels can be modified by adding a <em>conf/log4j.properties</em> file in the product directory. </p>
-<pre><code class="no-highlight">$ cat conf/log4j.properties 
+<pre><code class="pre">$ cat conf/log4j.properties 
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 </code></pre>
@@ -2260,7 +2330,7 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../ssl_setup/" class="btn btn-neutral float-right" title="SSL Setup for Client-Server">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../property_description/" class="btn btn-neutral float-right" title="List of Properties">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../../configuration/" class="btn btn-neutral" title="Configuring the Cluster"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -2286,10 +2356,10 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2298,10 +2368,13 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
         <span><a href="../../configuration/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../ssl_setup/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../property_description/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>Important Settings - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>Important Settings - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../install/">Download and Install</a>
+        <a class="" href="../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -418,13 +429,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -690,6 +694,8 @@
                 
                     <li><a class="toctree-l4" href="#snappydata-smart-connector-mode-and-local-mode-settings">SnappyData Smart Connector mode and Local mode settings</a></li>
                 
+                    <li><a class="toctree-l4" href="#code-generation-and-tokenization">Code Generation and Tokenization</a></li>
+                
             
             </ul>
         
@@ -772,55 +778,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -892,6 +876,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -906,7 +897,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1087,13 +1099,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1184,9 +1189,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1783,14 +1817,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1822,6 +1856,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1903,7 +1944,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1920,13 +1961,6 @@
       
     
     <li>Important Settings</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1954,6 +1988,9 @@
 <li>
 <p><a href="#smartconnector-local-settings">SnappyData Smart Connector mode and Local mode Settings</a></p>
 </li>
+<li>
+<p><a href="#codegenerationtokenization">Code Generation and Tokenization</a></p>
+</li>
 </ul>
 <p><a id="buckets"></a></p>
 <h2 id="buckets">Buckets</h2>
@@ -1962,8 +1999,8 @@
 <p>The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.</p>
 <p>If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.</p>
 <p>For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when <a href="../../reference/sql_reference/create-table/">creating a table</a>.</p>
-<p><a id="member-timeout"></a></p>
 <h2 id="member-timeout">member-timeout</h2>
+<p><a id="member-timeout"></a></p>
 <p>The default <a href="../../configuring_cluster/property_description/#member-timeout">member-timeout</a> in SnappyData cluster is 30 seconds. The default <code>spark.network.timeout</code> is 120 seconds and <code>spark.executor.heartbeatInterval</code> is 10 seconds as noted in the <a href="https://spark.apache.org/docs/latest/configuration.html">Spark documents</a>. </br> 
 If applications require node failure detection to be faster, then these properties should be reduced accordingly (<code>spark.executor.heartbeatInterval</code> but must always be much lower than <code>spark.network.timeout</code> as specified in the Spark Documents). </br>
 However, note that this can cause spurious node failures to be reported due to GC pauses. For example, the applications with reduced settings need to be resistant to job failures due to GC settings.</p>
@@ -1993,14 +2030,16 @@ ec2-user          soft    sigpending  524288
 <li><code>ec2-user</code> is the user running SnappyData.</li>
 </ul>
 <p><strong>OS Cache Size</strong></br> 
-When there is a lot of disk activity especially during table joins and during an eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
-The following are the typical configuration to be done on the machines that are running SnappyData processes. </p>
-<pre><code>sudo sysctl -w vm.dirty_background_ratio=2
-sudo sysctl -w vm.dirty_ratio=4
-sudo sysctl -w vm.dirty_expire_centisecs=2000
-sudo sysctl -w vm.dirty_writeback_centisecs=300
+When there is a lot of disk activity especially during table joins and during an eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> </p>
+<p>Add the following to <em>/etc/sysctl.conf</em> using the command <code>sudo vim /etc/sysctl.conf</code> or <code>sudo gedit /etc/sysctl.conf</code> or by using an editor of your choice:</br></p>
+<pre><code>vm.dirty_background_ratio=2
+vm.dirty_ratio=4
+vm.dirty_expire_centisecs=2000
+vm.dirty_writeback_centisecs=300
 </code></pre>
 
+<p>Then apply to current session using the command <code>sudo sysctl -p</code></p>
+<p>These settings lower the OS cache buffer sizes which reduces long GC pauses during disk flush but can decrease overall disk write throughput. This is especially true for slower magnetic disks where the bulk insert throughput can see a noticeable drop (such as 20%), while the duration of GC pauses should reduce significantly (such as 50% or more). If long GC pauses, for example in the range of 10s of seconds, during bulk inserts, updates, or deletes is not a problem then these settings can be skipped.</p>
 <p><strong>Swap File</strong> </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting <code>-Xmx</code> and <code>-Xms</code> settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
 It is recommended to set swap space on your system using the following commands.</p>
@@ -2037,6 +2076,23 @@ For example, if there are 32 cores for the Smart Connector application and the n
 
 <p>CMS collector with ParNew is used by default as above and recommended. GC settings set above have been seen to work best in representative workloads and can be tuned further as per application. For enterprise users <code>off-heap</code> is recommended for best performance.</p>
 <p>Set in the <strong>conf/locators</strong>, <strong>conf/leads</strong>, and <strong>conf/servers</strong> file.</p>
+<p><a id="codegenerationtokenization"></a></p>
+<h2 id="code-generation-and-tokenization">Code Generation and Tokenization</h2>
+<p>SnappyData uses generated code for best performance for most of the queries and internal operations. This is done for both Spark-side whole-stage code generation for queries, for example,<a href="https://databricks.com/blog/2016/05/11/apache-spark-2-0-technical-preview-easier-faster-and-smarter.html">Technical Preview of Apache Spark 2.0 blog</a>, and internally by SnappyData for many operations. For example, rolling over data from row buffer to column store or merging batches among others. </br>The point key lookup queries on row tables and JDBC inserts bypasses this and performs direct operations. However, for all other operations the product uses code generation for best performance.</p>
+<p>In many cases, the first query execution is slightly slower than subsequent query executions. This is primarily due to the overhead of compilation of generated code for the query plan and optimized machine code generation by JVM's hotspot JIT.
+Each distinct piece of generated code is a separate class which is loaded using its own ClassLoader. To reduce these overheads in multiple runs, this class is reused using a cache whose size is controlled by<strong> spark.sql.codegen.cacheSize</strong> property (default is 2000). Thus when the size limit of the cache is breached, the older classes that are used for a while gets removed from the cache.</p>
+<p>Further to minimize the generated plans, SnappyData performs tokenization of the values that are most constant in queries by default. Therefore the queries that differ only in constants can still create the same generated code plan.
+Thus if an application has a fixed number of query patterns that are used repeatedly, then the effect of the slack during the first execution, due to compilation and JIT, is minimized.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A single query pattern constitues of queries that differ only in constant values that are embedded in the query string.</p>
+</div>
+<p>For cases where application has many query patterns, you can increase the value of <strong>spark.sql.codegen.cacheSize</strong> property from the default size of <strong>2000</strong>. </p>
+<p>You can also increase the value for JVM's <strong>ReservedCodeCacheSize</strong> property and add additional RAM capacity accordingly. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the smart connector mode, Apache Spark has the default cache size as 100 which cannot be changed while the same property works if you are using SnappyData's Spark distribution.</p>
+</div>
               
             </div>
           </div>
@@ -2070,10 +2126,10 @@ For example, if there are 32 cores for the Smart Connector application and the n
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2086,6 +2142,9 @@ For example, if there are 32 cores for the Smart Connector application and the n
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

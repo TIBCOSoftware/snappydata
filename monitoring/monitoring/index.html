@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>SnappyData Pulse - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>SnappyData Pulse - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../install/">Download and Install</a>
+        <a class="" href="../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -418,13 +429,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -755,55 +759,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -831,15 +813,21 @@
             
                 <li class="toctree-l3"><a href="#snappydata-pulse">SnappyData Pulse</a></li>
                 
-                    <li><a class="toctree-l4" href="#the-dashboard">The Dashboard</a></li>
+                    <li><a class="toctree-l4" href="#dashboard">Dashboard</a></li>
                 
-                    <li><a class="toctree-l4" href="#member-details-view">Member Details View</a></li>
+                    <li><a class="toctree-l4" href="#member-details">Member Details</a></li>
                 
-                    <li><a class="toctree-l4" href="#sql-page">SQL Page</a></li>
+                    <li><a class="toctree-l4" href="#sql">SQL</a></li>
                 
-                    <li><a class="toctree-l4" href="#jobs-page">Jobs Page</a></li>
+                    <li><a class="toctree-l4" href="#spark-cache">Spark Cache</a></li>
                 
-                    <li><a class="toctree-l4" href="#stages-page">Stages Page</a></li>
+                    <li><a class="toctree-l4" href="#environment">Environment</a></li>
+                
+                    <li><a class="toctree-l4" href="#executors">Executors</a></li>
+                
+                    <li><a class="toctree-l4" href="#jobs">Jobs</a></li>
+                
+                    <li><a class="toctree-l4" href="#stages">Stages</a></li>
                 
             
             </ul>
@@ -892,6 +880,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -906,7 +901,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1087,13 +1103,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1184,9 +1193,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1783,14 +1821,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1822,6 +1860,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1903,7 +1948,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1920,13 +1965,6 @@
       
     
     <li>SnappyData Pulse</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1936,104 +1974,142 @@
             <div class="section">
               
                 <h1 id="snappydata-pulse">SnappyData Pulse</h1>
-<p>SnappyData Pulse is a monitoring system that gives you a high-level overview of the status and performance of the cluster. It provides a simple widget based view, which helps you easily navigate and monitor your cluster.</br></p>
-<p>To access the SnappyData Pulse, start your cluster and open http:<code>&lt;leadhost&gt;</code>:5050/dashboard/ in your web browser. </br>
-<code>&lt;leadhost&gt;</code> is the hostname or IP of the lead node in your cluster.</p>
-<p><img alt="Dashboard" src="../../Images/monitoring_topnav.png" /></p>
-<p>The top-right side of the page displays the date and time when the Dashboard was last updated. Click on the product version number to view details like the build number, source revision, underlying spark version, etc.</p>
+<p>SnappyData Pulse is a dashboard that provides a real time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to easily navigate, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+All the usage details are automatically refreshed after every 5 seconds.</p>
+<p>To access SnappyData Pulse, start your cluster and open <a href="http:&lt;leadhost&gt;:5050/dashboard/">http:<code>&lt;leadhost&gt;</code>:5050/dashboard/</a> in the web browser.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<ul>
-<li>When using Smart Connector with upstream Spark, the <strong>Dashboard</strong> and <strong>Member Details</strong> sections are not displayed. Only the <strong>SQL</strong>, <strong>Jobs</strong> and <strong>Stages</strong> related information is displayed.</li>
-</ul>
+<p><code>&lt;leadhost&gt;</code> is the hostname or IP of the lead node in your cluster which is provided in the <strong>conf/leads</strong> file.</p>
 </div>
+<p><img alt="Dashboard" src="../../Images/Dashboard.png" /></p>
 <p>The following topics are covered in this section:</p>
 <ul>
 <li>
 <p><a href="#dashboard">Dashboard</a></p>
 </li>
 <li>
-<p><a href="#member-details">Member Details View</a></p>
+<p><a href="#memberdetails">Member Details</a></p>
 </li>
 <li>
-<p><a href="#sql">SQL Page</a></p>
+<p><a href="#jobs">Jobs</a></p>
 </li>
 <li>
-<p><a href="#jobs">Jobs Page</a></p>
+<p><a href="#stages">Stages</a></p>
 </li>
 <li>
-<p><a href="#stages">Stages Page</a></p>
+<p><a href="#spark_cache">Spark Cache</a></p>
+</li>
+<li>
+<p><a href="#environment">Environment</a></p>
+</li>
+<li>
+<p><a href="#executors">Executors</a></p>
+</li>
+<li>
+<p><a href="#sql">SQL</a></p>
 </li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When connecting to a SnappyData cluster using Smart Connector, the information related to <strong>SQL</strong>, <strong>Jobs</strong>, and <strong>Stages</strong> are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about SnappyData Smart Connector Mode <a href="../../affinity_modes/connector_mode/">here</a>.</p>
+</div>
+<p>On the top-right side of the SnappyData Pulse page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.</p>
+<p><img alt="" src="../../Images/snapshot.png" /></p>
 <p><a id="dashboard"></a></p>
-<h2 id="the-dashboard">The Dashboard</h2>
-<p>The Dashboard offers the following capabilities and benefits:</p>
+<h2 id="dashboard">Dashboard</h2>
+<p>The Dashboard page graphically presents various cluster level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page are automatically updated after every 5 seconds.</p>
+<p>You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
+<img alt="" src="../../Images/CPU_cores.png" /></p>
+<p>The <strong>Dashboard</strong> page displays the following sections:</p>
 <ul>
 <li>
-<p><a href="#cluster">Cluster Statistics</a></p>
+<p><a href="#cluster">Cluster</a></p>
 </li>
 <li>
-<p><a href="#member">Member Statistics</a></p>
+<p><a href="#member">Members</a></br></p>
 </li>
 <li>
-<p><a href="#table">Table Statistics</a></p>
+<p><a href="#table">Tables</a></p>
 </li>
 <li>
-<p><a href="#external-table">External Table Statistics</a></p>
+<p><a href="#external-table">External Tables</a></p>
 </li>
 </ul>
+<p>You can use the search and sort functionalities in any of the sections, except for the <strong>Cluster</strong> section.  Sorting is enabled to sort items in an ascending and descending order. Further you can also set the number of items that must be listed in each of these sections.</p>
 <p><a id="cluster"></a></p>
-<h3 id="cluster-statistics">Cluster Statistics</h3>
-<p><img alt="Cluster" src="../../Images/monitoring_cluster.png" /></p>
-<ul>
-<li>
-<p><strong>Cluster Status</strong></br>
-    Displays the current status of the cluster. </p>
+<h3 id="cluster">Cluster</h3>
+<p>In the <strong>Cluster</strong> section, you can view the following graphs which are automatically refreshed:</p>
+<p><img alt="Cluster" src="../../Images/Dashboard-Trends.png" /></p>
 <table>
 <thead>
 <tr>
-<th>Status</th>
+<th>Graphs</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Normal</strong></td>
-<td>All nodes in the cluster are running</td>
+<td><strong>CPU Usage</strong></td>
+<td>Graphically presents the trend of CPU utilization by all the nodes in the cluster for the last 15     minutes. The utilization is represented in percentage value.</td>
 </tr>
 <tr>
-<td><strong>Warning</strong></td>
-<td>Some nodes in the cluster are stopped or unavailable</td>
+<td><strong>Heap Usage</strong></td>
+<td>Graphically presents the collective utilization of Heap Memory by all the nodes in the cluster. This  graph displays three trend lines which corresponds to the utilization of Heap Memory for the following:</br> <ul><li>Storage</li><li>Execution</li><li>JVM</li></ul></td>
+</tr>
+<tr>
+<td><strong>Off-Heap Usage</strong></td>
+<td>Graphically presents the collective utilization of Off-Heap Memory by all the nodes in the cluster. This  graph displays two trend lines which corresponds to the utilization of Off-Heap Memory for the following: </br> <ul><li>Storage</li><li>Execution</li></ul></td>
+</tr>
+<tr>
+<td><strong>Disk Space</strong></td>
+<td>Graphically presents the collective utilization of disk space memory by all the nodes in the cluster.</td>
 </tr>
 </tbody>
 </table>
-</li>
-<li>
-<p><strong>CPU Usage</strong> </br>
-   Displays the average CPU utilization of all the nodes present in the cluster.</p>
-</li>
-<li>
-<p><strong>Memory Usage</strong></br>
-   Displays the collective usage of on-heap and off-heap memory by all nodes in the cluster.</p>
-</li>
-<li>
-<p><strong>JVM Heap Usage</strong></br>
-   Displays the collective JVM Heap usage by all nodes in the cluster.</p>
-</li>
-</ul>
 <p><a id="member"></a></p>
-<h3 id="member-statistics">Member Statistics</h3>
-<p><img alt="Dashboard" src="../../Images/monitoring_member.png" /></p>
-<ul>
-<li>
-<p><strong>Members Count</strong></br>
-   Displays the total number of members (leads, locators and data servers) that exist in the cluster. The tooltip displays the count for each member type.</p>
-</li>
-<li>
-<p><strong>Members Status</strong></br>
-   Displays the status of the members, which can be either Running or Stopped.</p>
-</li>
-</ul>
+<h3 id="members">Members</h3>
+<p>In the <strong>Members</strong> section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every 5 seconds.
+<img alt="Members" src="../../Images/Dashboard-MembersList.png" /></p>
+<p>This table provides member details in the following columns:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Status</strong></td>
+<td>Displays the status of the members, which can be either <a href="#statusofmembers">Running or Stopped</a>.</td>
+</tr>
+<tr>
+<td><strong>Member</strong></td>
+<td>Displays a brief description of the member. Click the link in the column to view the <a href="#memberdetails">Member Details</a> where the usage trends and statistics of the members are shown along with the <a href="#memberlogs">Member Logs</a>. Click the drop-down arrow to find information such as the IP address of the host, the current working directory, and the Process ID number.</td>
+</tr>
+<tr>
+<td><strong>Type</strong></td>
+<td>Displays the type of the member. The type can be LEAD, LOCATOR, or DATA SERVER. The name of the active lead member is displayed in bold letters.</td>
+</tr>
+<tr>
+<td><strong>CPU Usage</strong></td>
+<td>Displays the CPU utilized by the member's host.</td>
+</tr>
+<tr>
+<td><strong>Memory Usage</strong></td>
+<td>Displays the collective Heap and Off-Heap memory utilization of a cluster member.</td>
+</tr>
+<tr>
+<td><strong>Heap Memory</strong></td>
+<td>Displays the member's utilized Heap memory versus total Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Heap Memory for storage, execution, and JVM.</td>
+</tr>
+<tr>
+<td><strong>Off-Heap Memory</strong></td>
+<td>Displays the member's used Off-Heap memory and total Off-Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Off-Heap memory for storage and execution.</td>
+</tr>
+</tbody>
+</table>
+<p><a id="statusofmembers"></a></p>
 <table>
 <thead>
 <tr>
@@ -2044,213 +2120,246 @@
 <tbody>
 <tr>
 <td><img alt="Running" src="../../Images/running-status.png" /></td>
-<td>Member is running</td>
+<td>Member is running.</td>
 </tr>
 <tr>
 <td><img alt="Stopped" src="../../Images/stopped-status.png" /></td>
-<td>Member has stopped or is unavailable</td>
+<td>Member has stopped or is unavailable.</td>
 </tr>
 </tbody>
 </table>
-<ul>
-<li>
-<p><strong>Description</strong></br>
-    A brief description of the member is displayed in <strong>Member</strong> column. You can view the detailed description for the member by clicking on the arrow next to the member name.</br>
-    You can view details of the member by clicking on it. The description provides details of the member host, working directory, and process ID.</p>
-</li>
-<li>
-<p><strong>Type</strong></br>
-   Displays the type of member, which can be lead, locator or data server. The active lead is displayed in bold.</p>
-</li>
-<li>
-<p><strong>CPU Usage</strong></br>
-   The CPU utilized by the member's host.</p>
-</li>
-<li>
-<p><strong>Memory Usage</strong></br>
-   Members collective Heap and Off-Heap Memory utilization along with Total Memory.</p>
-</li>
-<li>
-<p><strong>Heap Memory</strong></br>
-   Displays the total available heap memory and used heap memory.</br> 
-   You can view the detailed distribution of the member's heap storage, heap execution memory, their utilization along with JVM Heap utilization by clicking on the arrow next to the member name.</p>
-</li>
-<li>
-<p><strong>Off-Heap Memory Usage</strong></br>
-   Displays the members total off-heap memory and used off-heap memory.</br> You can also view the member's off-heap storage and off-heap execution memory and utilization by clicking on the arrow next to the member name.</p>
-</li>
-</ul>
 <p><a id="table"></a></p>
-<h3 id="table-statistics">Table Statistics</h3>
-<p><img alt="Dashboard" src="../../Images/monitoring_table.png" /></p>
-<ul>
-<li>
-<p><strong>Tables Count</strong></br>
-   Displays the total number of data tables present in the cluster. The tooltip displays the count for the row and column tables.</p>
-</li>
-<li>
-<p><strong>Name</strong></br>
-  Displays the name of the data table.</p>
-</li>
-<li>
-<p><strong>Storage Model</strong></br>
-   Displays the data storage model of the data table. Possible models are ROW and COLUMN.</p>
-</li>
-<li>
-<p><strong>Distribution Type</strong></br>
-   Displays the data distribution type for the table. Possible values are PARTITION, PARTITION_PERSISTENT, PARTITION_REDUNDANT, PARTITION_OVERFLOW, REPLICATE, REPLICATE_PERSISTENT, REPLICATE_OVERFLOW etc.</p>
-</li>
-<li>
-<p><strong>Row Count</strong></br>
-   Displays the row count, which is the number of records present in the data table.</p>
-</li>
-<li>
-<p><strong>Memory Size</strong></br>
-   Displays the heap memory used by data table to store its data/records.</p>
-</li>
-<li>
-<p><strong>Total Size</strong></br>
-   Displays the collective physical memory and disk overflow space used by the data table to store its data/records.
-<!--
- **BUCKETS**</br>
-   Displays the total number of buckets in the data table.
---></p>
-</li>
-</ul>
-<p><img alt="Dashboard" src="../../Images/monitoring_external_table.png" />
-<a id="external-table"></a></p>
-<h3 id="external-table-statistics">External Table Statistics</h3>
-<ul>
-<li>
-<p><strong>Tables Count</strong></br>
-    Displays the total number of external tables present in the cluster. The tooltip displays the total number of external tables.</p>
-</li>
-<li>
-<p><strong>Name</strong></br>
-    Displays the name of the external table.</p>
-</li>
-<li>
-<p><strong>Provider</strong></br>
-    Displays the datastores provide used when creating the external table. For example, Parquet, CSV, JDBC etc.</p>
-</li>
-<li>
-<p><strong>Source</strong></br>
-    For Parquet and CSV format, the path of the data file used to create the external table is displayed. For JDBC, the name of the client driver is displayed.</p>
-</li>
-</ul>
-<p><a id="member-details"></a></p>
-<h2 id="member-details-view">Member Details View</h2>
-<p>The Member Details View offers the following capabilities and benefits:</p>
-<ul>
-<li>
-<p><a href="#memberstats">Member Statistics</a></p>
-</li>
-<li>
-<p><a href="#memberlogs">Member Logs</a></p>
-</li>
-</ul>
-<p>The top-right side of the page displays the last updated date and time for the member.</p>
-<p><a id="memberstats"></a></p>
-<h3 id="member-statistics_1">Member Statistics</h3>
-<p><img alt="Member Stats" src="../../Images//monitoring_memberdetails_stats.png" /></p>
-<ul>
-<li>
-<p><strong>Member Name/ID</strong></br> Displays the name or ID of the member. </p>
-</li>
-<li>
-<p><strong>Type</strong></br> Displays the type of member, which can be LEAD, LOCATOR or DATA SERVER.</p>
-</li>
-<li>
-<p><strong>Process ID</strong></br> Displays the process ID of the member. </p>
-</li>
-<li>
-<p><strong>Heap Memory</strong></br> Displays the total available heap memory, used heap memory, their distribution into heap storage, heap execution memory and their utilization.</p>
-</li>
-<li>
-<p><strong>Off-Heap Memory Usage</strong></br>
-   Displays the members total off-heap memory, used off-heap memory, their distribution into off-heap storage and off-heap execution memory, and their utilization.</p>
-</li>
-<li>
-<p><strong>Member Status</strong></br> Displays the current status of the member which can be either Running or Stopped.</p>
+<h3 id="tables">Tables</h3>
+<p>The <strong>Tables</strong> section lists all the tables in the cluster along with their corresponding statistical details. All these details are automatically refreshed after every 5 seconds.</p>
+<p><img alt="Tables" src="../../Images/Dashboard-TablesList.png" /></p>
+<p>The following columns are displayed in this section:</p>
 <table>
 <thead>
 <tr>
-<th>Status</th>
+<th>Column</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><img alt="Running Member" src="../../Images/running-status.png" /></td>
-<td>Member is running</td>
+<td><strong>Name</strong></td>
+<td>Displays the name of the data table.</td>
 </tr>
 <tr>
-<td><img alt="Stopped Member" src="../../Images/stopped-status.png" /></td>
-<td>Member has been stopped or is unavailable</td>
+<td><strong>Storage Model</strong></td>
+<td>Displays the data storage model of the data table. Possible models are <strong>ROW</strong> and <strong>COLUMN</strong>.</td>
+</tr>
+<tr>
+<td><strong>Distribution Type</strong></td>
+<td>Displays the data distribution type for the table. Possible values are: <ul><li>PARTITION</li><li>REPLICATE</li> </ul></td>
+</tr>
+<tr>
+<td><strong>Row Count</strong></td>
+<td>Displays the row count, which is the number of records present in the data table.</td>
+</tr>
+<tr>
+<td><strong>Memory Size</strong></td>
+<td>Displays the heap memory used by data table to store its data. If less than <strong>Total Size</strong> then the data is overflowing to disk.</td>
+</tr>
+<tr>
+<td><strong>Total Size</strong></td>
+<td>Displays the collective physical memory and disk overflow space used by the data table to store its data.</td>
+</tr>
+<tr>
+<td><strong>Buckets</strong></td>
+<td>Displays the total number of buckets in the data table.</td>
 </tr>
 </tbody>
 </table>
-</li>
-<li>
-<p><strong>CPU Usage</strong></br> The CPU utilized by the member's host.</p>
-</li>
-<li>
-<p><strong>Memory Usage</strong></br> Members collective Heap and Off-Heap Memory utilization along with total memory.</p>
-</li>
-<li>
-<p><strong>Memory JVM Usage</strong></br> Members total JVM Heap and its utilization.</p>
-</li>
-</ul>
+<h3 id="external-tables">External Tables</h3>
+<p>The <strong>External Tables</strong> section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after each 5 seconds.</p>
+<p><img alt="External Tables" src="../../Images/Dashboard-Ext-Tables.png" /></p>
+<p>The following columns are displayed in this section:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>Displays the name of the external table.</td>
+</tr>
+<tr>
+<td><strong>Provider</strong></td>
+<td>Displays the data store provider that is used when the external table was created. For example, Parquet, CSV, JDBC etc.</td>
+</tr>
+<tr>
+<td><strong>Source</strong></td>
+<td>For Parquet and CSV format, the path of the data file used to create the external table is displayed. For JDBC, the name of the client driver is displayed.</td>
+</tr>
+</tbody>
+</table>
+<p><a id="memberdetails"></a></p>
+<h2 id="member-details">Member Details</h2>
+<p>The <strong>Member Details</strong> view shows the usage trend and <a href="#memberstat">statistics</a> of a specific cluster member. To check the <strong>Member</strong> <strong>Details</strong> view,  go to the <a href="#member">Members</a> section and click the link in the <strong>Member</strong> column. Here you can also view the <a href="#memberlogs">Member Logs</a> generated for a cluster member.</p>
+<p><img alt="Member Detail View" src="../../Images/memberdetailview.png" /></p>
+<p><a id="memberstat"></a></p>
+<h3 id="member-statistics">Member Statistics</h3>
+<p>The following member specific statistics are displayed:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Member Name/ID</strong></td>
+<td>Displays the name or ID of the member.</td>
+</tr>
+<tr>
+<td><strong>Type</strong></td>
+<td>Displays the type of member, which can be LEAD, LOCATOR or DATA SERVER.</td>
+</tr>
+<tr>
+<td><strong>Process ID</strong></td>
+<td>Displays the process ID of the member.</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td>Displays the status of the member. This can be either <strong>Running</strong> or <strong>Unavailable</strong></td>
+</tr>
+<tr>
+<td><strong>Heap Memory</strong></td>
+<td>Displays the total available heap memory, used heap memory, their distribution into heap storage, heap execution memory and their utilization.</td>
+</tr>
+<tr>
+<td><strong>Off-Heap Memory Usage</strong></td>
+<td>Displays the members total off-heap memory, used off-heap memory, their distribution into off-heap storage and off-heap execution memory, and their utilization.</td>
+</tr>
+</tbody>
+</table>
+<p>The usage trends of the member is represented in the following graphs:</p>
+<table>
+<thead>
+<tr>
+<th>Graphs</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CPU Usage</strong></td>
+<td>Graphically presents the trend of CPU utilization by the member host for the last 15 minutes. The utilization is represented in percentage value.</td>
+</tr>
+<tr>
+<td><strong>Heap Usage</strong></td>
+<td>Graphically presents the utilization of Heap Memory by the member host. This  graph displays three trend lines which corresponds to the utilization of Heap Memory for the following:</br> <ul><li>Storage</li><li>Execution</li><li>JVM</li></ul></td>
+</tr>
+<tr>
+<td><strong>Off-Heap Usage</strong></td>
+<td>Graphically presents the utilization of Off-Heap Memory by the member host. This  graph displays two trend lines which corresponds to the utilization of Off-Heap Memory for the following: </br> <ul><li>Storage</li><li>Execution</li></ul></td>
+</tr>
+<tr>
+<td><strong>Disk Space</strong></td>
+<td>Graphically presents the utilization of disk space memory by the member host.</td>
+</tr>
+</tbody>
+</table>
 <p><a id="memberlogs"></a></p>
 <h3 id="member-logs">Member Logs</h3>
+<p>In the Member Details page, you can view the logs generated for a single member in the cluster. </p>
 <p><img alt="MemberLogs" src="../../Images/monitoring_memberdetails_logs.png" /></p>
-<ul>
-<li>
-<p><strong>Log File Location</strong></br>Displays the absolute path of the member's primary log file on a host where the current member process is running. </p>
-</li>
-<li>
-<p><strong>Log Details</strong></br>Displays details of the loaded logs like Loaded Bytes, Start and End Indexes of Loaded Bytes and Total Bytes of logs content.</p>
-</li>
-<li>
-<p><strong>Logs</strong></br>Displays the actual log entries from the log files. </br> It also displays two clickable buttons to load more log entries from log files.   </br></p>
-<ul>
-<li><strong>Load New</strong>: Loads latest log entries from the log file (if generated) after logs were last loaded/updated.    </br> </li>
-<li><strong>Load More</strong>: Loads older log entries from log files, if available.</li>
-</ul>
-</li>
-</ul>
+<p>The following details are included:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Log File Location</strong></td>
+<td>Displays the absolute path of the member's primary log file, which is on the host where the current member's processes are running.</td>
+</tr>
+<tr>
+<td><strong>Log Details </strong></td>
+<td>Displays details of the loaded logs such as  Loaded Bytes, Start and End Indexes of Loaded Bytes, and Total Bytes of logs content.</td>
+</tr>
+<tr>
+<td><strong>Logs</strong></td>
+<td>Displays the actual log entries from the log files. </br> It also displays the following buttons: </br> <ul><li><strong>Load New</strong> - Loads the latest log entries from the log file, if generated, after logs were last loaded or updated.</li><li><strong>Load More</strong> - Loads older log entries from log files, if available.</li></ul></td>
+</tr>
+</tbody>
+</table>
 <p><a id="sql"></a></p>
-<h2 id="sql-page">SQL Page</h2>
+<h2 id="sql">SQL</h2>
+<p>The SQL section shows all the queries and their corresponding details along with their execution plans and stagewise breakups.</p>
 <p><img alt="" src="../../Images/query_analysis_sql.png" /></p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Colocated</strong></td>
+<td>When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.</td>
+</tr>
+<tr>
+<td><strong>Whole-Stage Code Generation</strong></td>
+<td>A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.</td>
+</tr>
+<tr>
+<td><strong>Per node execution timing</strong></td>
+<td>Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.</td>
+</tr>
+<tr>
+<td><strong>Pool Name</strong></td>
+<td>Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command <code>set snappydata.scheduler.pool=lowlatency</code>.</td>
+</tr>
+<tr>
+<td><strong>Query Node Details</strong></td>
+<td>Hover over a component to view its details.</td>
+</tr>
+<tr>
+<td><strong>Filter</strong></td>
+<td>Displays the number of rows that are filtered for each node.</td>
+</tr>
+<tr>
+<td><strong>Joins</strong></td>
+<td>If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.</td>
+</tr>
+</tbody>
+</table>
+<p><a id="spark_cache"></a></p>
+<h2 id="spark-cache">Spark Cache</h2>
+<p>Spark Cache is the inbuilt storage mechanism of Spark. When you do a <code>dataSet.cache()</code>, it uses this storage to store the dataset's data in a columnar format. This storage can be configured to be one of the following:</p>
 <ul>
-<li>
-<p><strong>Colocated</strong>: When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.</p>
-</li>
-<li>
-<p><strong>Whole-Stage Code Generation</strong>: A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.</p>
-</li>
-<li>
-<p><strong>Per node execution timing</strong>: Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.</p>
-</li>
-<li>
-<p><strong>Pool Name</strong>: Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command <code>set snappydata.scheduler.pool=lowlatency</code>. </p>
-</li>
-<li>
-<p><strong>Query Node Details</strong>: Move the mouse over a component to view its details.</p>
-</li>
-<li>
-<p><strong>Filter</strong>: Displays the number of rows that are filtered for each node. </p>
-</li>
-<li>
-<p><strong>Joins</strong>: If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.</p>
-</li>
+<li>MEMORY_ONLY,</li>
+<li>MEMORY_AND_DISK,</li>
+<li>MEMORY_ONLY_SER,</li>
+<li>MEMORY_AND_DISK_SER,</li>
+<li>DISK_ONLY,</li>
+<li>MEMORY_ONLY_2,</li>
+<li>MEMORY_AND_DISK_2</li>
 </ul>
+<p>For more details, see <a href="https://spark.apache.org/docs/latest/rdd-programming-guide.html">RDD Persistence section</a>.</p>
+<p><a id="environment"></a></p>
+<h2 id="environment">Environment</h2>
+<p>The Environment page provides detailed configurations for Spark environment including JVM, SparkContext, and SparkSession.</p>
+<p><a id="executors"></a></p>
+<h2 id="executors">Executors</h2>
+<p>Executors are the entities that performs the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.</p>
 <p><a id="jobs"></a></p>
-<h2 id="jobs-page">Jobs Page</h2>
+<h2 id="jobs">Jobs</h2>
+<p>The <strong>Jobs</strong> page lists all the Spark jobs. Each Spark action is translated as a Spark job. A job encapsulates the whole execution of an API or SQL. For example, <code>dataSet.count()</code> triggers a job.</p>
 <p><img alt="" src="../../Images/query_analysis_job.png" /></p>
 <ul>
 <li>
-<p><strong>Status</strong>: Displays the status of the job. </p>
+<p><strong>Status</strong>: Displays the status of the job.</p>
 </li>
 <li>
 <p><strong>Stages</strong>: Click on the stage to view its details. The table displays the time taken for completion of each stage. </p>
@@ -2261,26 +2370,22 @@
 <p>You can cancel a long running job, using the <strong>Kill</strong> option. </br><img alt="kill" src="../../Images/kill_job.png" /></p>
 </div>
 <p><a id="stages"></a></p>
-<h2 id="stages-page">Stages Page</h2>
+<h2 id="stages">Stages</h2>
+<p>The <strong>Stages</strong> page displays the stage details of a Spark Job. Each Spark job is segregated into one or more stages. Each stage is an execution boundary where data exchange between nodes is required.</p>
+<p>On this page, you can view the total time required for all the tasks in a job to complete. You can also view if any of the tasks got delayed for completion. This may occur in case of uneven data distribution.</p>
 <p><img alt="" src="../../Images/query_analysis_stage.png" /></p>
 <ul>
 <li>
-<p>On this page, you can view the total time required for all the tasks in a job to complete.</p>
+<p><strong>Scheduler Delay</strong> indicates the waiting period for the task. Delays can  be caused if there are too many concurrent jobs.</p>
 </li>
 <li>
-<p>You can view if any tasks have taken a long time to complete. This may occur in case of uneven data distribution. </p>
+<p><strong>Shuffle reads and writes</strong>: Shuffles are written to disk and can take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle time.</p>
 </li>
 <li>
-<p>Scheduler Delay indicates the waiting period for the task. Delays can  be caused if there are too many concurrent jobs.</p>
+<p><strong>Number of parallel tasks</strong>: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and <a href="../../best_practices/setup_cluster/">assign appropriate cores to it</a>.</p>
 </li>
 <li>
-<p>Shuffle reads and writes: Shuffles are written to disk and take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle time.  </p>
-</li>
-<li>
-<p>Number of parallel tasks: Due to concurrency, multiple queries may take cores and a particular query may take longer. To fix this, you can create a new scheduler and <a href="../../best_practices/setup_cluster/">assign appropriate cores to it</a>.</p>
-</li>
-<li>
-<p>GC time: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables).</p>
+<p><strong>GC time</strong>: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables).</p>
 </li>
 </ul>
               
@@ -2316,10 +2421,10 @@
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2332,6 +2437,9 @@
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

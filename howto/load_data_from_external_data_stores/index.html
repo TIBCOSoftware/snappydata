@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../install/">Download and Install</a>
+        <a class="" href="../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -437,13 +448,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -774,55 +778,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -894,6 +876,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -908,7 +897,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1089,13 +1099,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1186,9 +1189,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1785,14 +1817,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1824,6 +1856,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1905,7 +1944,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1922,13 +1961,6 @@
       
     
     <li>How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1941,7 +1973,7 @@
 <h1 id="how-to-load-data-from-external-data-stores-eg-hdfs-cassandra-hive-etc">How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)</h1>
 <p>SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.</p>
 <h2 id="example-loading-data-from-csv-file-using-sql">Example - Loading data from CSV file using SQL</h2>
-<pre><code class="no-highlight">// Create an external table based on CSV file
+<pre><code class="pre">// Create an external table based on CSV file
 CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 USING csv OPTIONS (path '../../quickstart/src/main/resources/customer_with_headers.csv', header 'true', inferSchema 'true');
 
 // Create a SnappyData table and load data into CUSTOMER table
@@ -1954,7 +1986,7 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 </div>
 <h2 id="example-loading-csv-files-from-hdfs-using-api">Example - Loading CSV Files from HDFS using API</h2>
 <p>The example below demonstrates how you can read CSV files from HDFS using an API:</p>
-<pre><code class="no-highlight">val dataDF=snc.read.option(&quot;header&quot;,&quot;true&quot;).csv (&quot;../../quickstart/src/main/resources/customer_with_headers.csv&quot;)
+<pre><code class="pre">val dataDF=snc.read.option(&quot;header&quot;,&quot;true&quot;).csv (&quot;../../quickstart/src/main/resources/customer_with_headers.csv&quot;)
 
 // Drop table if it exists
 snc.sql(&quot;drop table if exists CUSTOMER&quot;)
@@ -1965,7 +1997,7 @@ dataDF.write.format(&quot;column&quot;).saveAsTable(&quot;CUSTOMER&quot;)
 
 <h2 id="example-loading-and-enriching-csv-data-from-hdfs">Example - Loading and Enriching CSV Data from HDFS</h2>
 <p>The example below demonstrates how you can load and enrich CSV Data from HDFS:</p>
-<pre><code class="no-highlight">val dataDF = snappy.read.option(&quot;header&quot;, &quot;true&quot;)
+<pre><code class="pre">val dataDF = snappy.read.option(&quot;header&quot;, &quot;true&quot;)
     .csv(&quot;../examples/src/main/resources/customer_with_headers.csv&quot;)
 
 // Drop table if it exists and create it with only required fields
@@ -1994,7 +2026,7 @@ dataDF.select($&quot;C_CUSTKEY&quot;,
 <h2 id="example-loading-from-hive">Example - Loading from Hive</h2>
 <p>As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with <strong>enableHiveSupport</strong> set to <strong>true</strong>). 
 Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. </p>
-<pre><code class="no-highlight">val ds = spark.table(&quot;hiveTable&quot;)
+<pre><code class="pre">val ds = spark.table(&quot;hiveTable&quot;)
 val rdd = ds.rdd
 val session = new SnappySession(sparkContext)
 val df = session.createDataFrame(rdd, ds.schema)
@@ -2051,7 +2083,7 @@ df.show()
 </ol>
 <p><strong> Using SQL to access external RDB tables </strong>
 You can also use plain SQL to access any external RDB using external tables. Create external table on RDBMS table and query it directly from SnappyData as described below:</p>
-<pre><code class="no-highlight">snc.sql(&quot;drop table if exists external_table&quot;)
+<pre><code class="pre">snc.sql(&quot;drop table if exists external_table&quot;)
 snc.sql(s&quot;CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')&quot;)
 snc.sql(&quot;select * from external_table&quot;).show
 </code></pre>
@@ -2066,7 +2098,7 @@ snc.sql(&quot;select * from external_table&quot;).show
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->
 
-<pre><code class="no-highlight">val df = snc.read.format(&quot;org.apache.spark.sql.cassandra&quot;).options(Map( &quot;table&quot; -&gt; &quot;CUSTOMER&quot;, &quot;keyspace&quot; -&gt; &quot;test&quot;)) .load
+<pre><code class="pre">val df = snc.read.format(&quot;org.apache.spark.sql.cassandra&quot;).options(Map( &quot;table&quot; -&gt; &quot;CUSTOMER&quot;, &quot;keyspace&quot; -&gt; &quot;test&quot;)) .load
 df.write.format(&quot;column&quot;).mode(SaveMode.Append).saveAsTable(&quot;CUSTOMER&quot;)
 snc.sql(&quot;select * from CUSTOMER&quot;).show
 </code></pre>
@@ -2103,10 +2135,10 @@ snc.sql(&quot;select * from CUSTOMER&quot;).show
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2119,6 +2151,9 @@ snc.sql(&quot;select * from CUSTOMER&quot;).show
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

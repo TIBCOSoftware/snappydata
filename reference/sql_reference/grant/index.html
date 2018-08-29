@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>GRANT - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../../favicon.ico">
   
-
-  
+  <title>GRANT - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../../css/highlight.css">
-  <link href="../../../css/toc.css" rel="stylesheet">
-  <link href="../../../css/menu.css" rel="stylesheet">
-  <link href="../../../css/images.css" rel="stylesheet">
-  <link href="../../../css/style.css" rel="stylesheet">
-  <link href="../../../css/highlight.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../../js/jquery-2.1.1.min.js"></script>
   <script src="../../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
-  <script src="../../../js/theme.js"></script> 
-  <script src="../../../js/menu.js"></script>
-  <script src="../../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/">Download and Install</a>
+        <a class="" href="../../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -418,13 +429,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -755,55 +759,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -875,6 +857,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -889,7 +878,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1070,13 +1080,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1167,9 +1170,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1795,14 +1827,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1834,6 +1866,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1915,7 +1954,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../..">SnappyData Documentation</a>
+        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1936,13 +1975,6 @@
       
     
     <li>GRANT</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1955,11 +1987,11 @@
 <h2 id="syntax">Syntax</h2>
 <p>The syntax for the GRANT statement differs if you are granting privileges to a table or to a routine.</p>
 <h2 id="syntax-for-tables">Syntax for Tables</h2>
-<pre><code class="no-highlight">GRANT privilege-type ON [ TABLE ] { table-name | view-name } TO grantees
+<pre><code class="pre">GRANT privilege-type ON [ TABLE ] { table-name | view-name } TO grantees
 </code></pre>
 
 <h2 id="syntax-for-routines">Syntax for Routines</h2>
-<pre><code class="no-highlight">GRANT EXECUTE ON { FUNCTION | PROCEDURE } routine-designator TO grantees
+<pre><code class="pre">GRANT EXECUTE ON { FUNCTION | PROCEDURE } routine-designator TO grantees
 </code></pre>
 
 <h2 id="description">Description</h2>
@@ -1970,24 +2002,23 @@
 <li>Insert/Delete rows from a table.</li>
 <li>Select/Update data on a table or subset of columns in a table.</li>
 <li>Create a foreign key reference to the named table or to a subset of columns from a table.</li>
-<li>Define trigger on a table.</li>
 <li>Run a specified function or procedure.</li>
 </ul>
 <p><a id="privilege-type"></a></p>
 <h2 id="privilege-type">privilege-type</h2>
-<pre><code class="no-highlight">ALL PRIVILEGES |  privilege-list
+<pre><code class="pre">ALL PRIVILEGES |  privilege-list
 </code></pre>
 
 <p>Use the ALL PRIVILEGES privilege type to grant all of the permissions to the user for the specified table. You can also grant one or more table privileges by specifying a privilege-list.</p>
 <p><a id="privilege-list"></a></p>
 <h2 id="privilege-list">privilege-list</h2>
-<pre><code class="no-highlight">table-privilege {, table-privilege }*
+<pre><code class="pre">table-privilege {, table-privilege }*
 </code></pre>
 
 <p><a id="table-privilege"></a></p>
 <h2 id="table-privilege">table-privilege</h2>
-<pre><code class="no-highlight">ALTER | DELETE | INSERT | REFERENCES [column-list] | SELECT [column-list] |
-TRIGGER | UPDATE [ column-list ]
+<pre><code class="pre">ALTER | DELETE | INSERT | REFERENCES [column-list] | SELECT [column-list] |
+ UPDATE [ column-list ]
 </code></pre>
 
 <p>Use the <a href="../alter-table/">ALTER</a> privilege to grant permission to the command on the specified table.</p>
@@ -1996,40 +2027,38 @@ TRIGGER | UPDATE [ column-list ]
 <!--Use the REFERENCES privilege type to grant permission to create a foreign key reference to the specified table. If a column list is specified with the REFERENCES privilege, the permission is valid on only the foreign key reference to the specified columns.-->
 
 <p>Use the <a href="../select/">SELECT</a> privilege type to grant permission to perform SELECT statements on a table or view. If a column list is specified with the SELECT privilege, the permission is valid on only those columns. If no column list is specified, then the privilege is valid on all of the columns in the table.</p>
-<!--Use the TRIGGER privilege type to grant permission to create a trigger on the specified table.-->
-
 <p>Use the <a href="../update/">UPDATE</a> privilege type to grant permission to use the UPDATE statement on the specified table. If a column list is specified, the permission applies only to the specified columns. To update a row using a statement that includes a WHERE clause, you must have <a href="../select/">SELECT</a> permission on the columns in the row that you want to update.</p>
 <p><a id="column-list"></a></p>
 <h2 id="column-list">column-list</h2>
-<pre><code class="no-highlight">( column-identifier {, column-identifier }* )
+<pre><code class="pre">( column-identifier {, column-identifier }* )
 </code></pre>
 
 <p><a id="grantees"></a></p>
 <h2 id="grantees">grantees</h2>
-<pre><code class="no-highlight">{ authorization ID | PUBLIC } [,{ authorization ID | PUBLIC } ] *
+<pre><code class="pre">{ authorization ID | PUBLIC } [,{ authorization ID | PUBLIC } ] *
 </code></pre>
 
 <p>You can grant privileges for specific users or for all users. Use the keyword PUBLIC to specify all users. When PUBLIC is specified, the privileges affect all current and future users. The privileges granted to PUBLIC and to individual users are independent privileges. For example, a SELECT privilege on table t is granted to both PUBLIC and to the authorization ID harry. The SELECT privilege is later revoked from the authorization ID harry, but Harry can access the table t through the PUBLIC privilege.</p>
 <p><a id="routine-designator"></a></p>
 <h2 id="routine-designator">routine-designator</h2>
-<pre><code class="no-highlight">{ function-name | procedure-name }
+<pre><code class="pre">{ function-name | procedure-name }
 </code></pre>
 
 <h2 id="example">Example</h2>
 <p>To grant the SELECT privilege on table "t" to the authorization IDs "sam" and "bob:"</p>
-<pre><code class="no-highlight">GRANT SELECT ON TABLE t TO sam,bob;
+<pre><code class="pre">GRANT SELECT ON TABLE t TO sam,bob;
 </code></pre>
 
-<p>To grant the UPDATE and TRIGGER privileges on table "t" to the authorization IDs "john" and "smith:"</p>
-<pre><code class="no-highlight">GRANT UPDATE, TRIGGER ON TABLE t TO john,smith;
+<p>To grant the UPDATE privileges on table "t" to the authorization IDs "john" and "smith:"</p>
+<pre><code class="pre">GRANT UPDATE ON TABLE t TO john,smith;
 </code></pre>
 
 <p>To grant ALTER TABLE privileges on table "t" to the authorization ID "adam:"</p>
-<pre><code class="no-highlight">GRANT ALTER ON TABLE t TO adam;
+<pre><code class="pre">GRANT ALTER ON TABLE t TO adam;
 </code></pre>
 
 <p>To grant the SELECT privilege on table "test.sample" to all users:</p>
-<pre><code class="no-highlight">GRANT SELECT ON TABLE test.sample to PUBLIC;
+<pre><code class="pre">GRANT SELECT ON TABLE test.sample to PUBLIC;
 </code></pre>
 
 <!--To grant the EXECUTE privilege on procedure"p" to the authorization ID "richard:"
@@ -2047,7 +2076,7 @@ TRIGGER | UPDATE [ column-list ]
         <a href="../insert/" class="btn btn-neutral float-right" title="INSERT">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../drop-synonym/" class="btn btn-neutral" title="DROP SYNONYM"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../undeploy/" class="btn btn-neutral" title="UNDEPLOY"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -2070,22 +2099,25 @@ TRIGGER | UPDATE [ column-list ]
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../drop-synonym/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../undeploy/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../insert/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../custom_theme/js/menu.js"></script>
+      <script src="../../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

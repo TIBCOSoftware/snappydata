@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>Building from Source - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>Building from Source - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../">Download and Install</a>
+        <a class="" href="../">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../install_on_premise/">Install On-Premise</a>
+        <a class="" href="../install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -188,7 +199,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -437,13 +448,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -774,55 +778,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -894,6 +876,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -908,7 +897,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1089,13 +1099,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1186,9 +1189,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1785,14 +1817,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1824,6 +1856,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1905,7 +1944,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1917,18 +1956,11 @@
     
       
         
-          <li>Download and Install &raquo;</li>
+          <li>Provisioning SnappyData &raquo;</li>
         
       
     
     <li>Building from Source</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1945,13 +1977,13 @@
 </div>
 <h2 id="build-all-components-of-snappydata">Build all Components of SnappyData</h2>
 <p><strong>Latest release branch</strong></p>
-<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt; --recursive
+<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt; --recursive
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
 
 <p><strong>Master</strong></p>
-<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git --recursive
+<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
@@ -1960,13 +1992,13 @@
 <h2 id="build-only-the-top-level-components">Build only the Top-level Components</h2>
 <p>Use this option if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):</p>
 <p><strong>Latest release branch</strong></p>
-<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt;
+<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt;
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
 
 <p><strong>Master</strong></p>
-<pre><code class="no-highlight">&gt; git clone https://github.com/SnappyDataInc/snappydata.git
+<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
@@ -1993,7 +2025,7 @@
 </li>
 </ul>
 <p>The <em>spark</em>, <em>store</em>, and <em>spark-jobserver</em> directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">git submodules</a>. One can add some aliases in gitconfig to aid pull/push like:</p>
-<pre><code class="no-highlight">[alias]
+<pre><code class="pre">[alias]
   spull = !git pull &amp;&amp; git submodule sync --recursive &amp;&amp; git submodule update --init --recursive
   spush = push --recurse-submodules=on-demand
 </code></pre>
@@ -2004,7 +2036,7 @@
 <p>If you do not want to deal with sub-modules and only work on a SnappyData project, you can clone only the SnappyData repository (without the <code>--recursive</code> option) and the build pulls those SnappyData project jar dependencies from Maven central.</p>
 <p>If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build recognizes the same and build those projects too and includes the same in the top-level product distribution jar. The <em>spark</em> and <em>store</em> submodules can also be built and published independently.</p>
 <p>Useful build and test targets:</p>
-<pre><code class="no-highlight">./gradlew assemble      -  build all the sources
+<pre><code class="pre">./gradlew assemble      -  build all the sources
 ./gradlew testClasses   -  build all the tests
 ./gradlew product       -  build and place the product distribution
                            (in build-artifacts/scala_2.11/snappy)
@@ -2025,7 +2057,7 @@
 
 <p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em><em>build-artifacts/<os></em></em>; where; <em>os</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
 <p>The usual Gradle test run targets (<em>test</em>, <em>check</em>) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (<em>scalaTest</em>) while the <em>check</em> target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <code>--tests</code> option:</p>
-<pre><code class="no-highlight">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
+<pre><code class="pre">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
 &gt; ./gradlew core:scalaTest \
 &gt;    --tests &quot;Test the creation/dropping of table using SQL&quot;  # run a single test (use full name)
 </code></pre>
@@ -2121,10 +2153,10 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../upgrade/" class="btn btn-neutral float-right" title="Upgrade Instructions (1.0.0 to 1.0.1)">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../upgrade/" class="btn btn-neutral float-right" title="Upgrade Instructions">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../setting_up_cluster_on_amazon_web_services/" class="btn btn-neutral" title="Setting up Cluster on Amazon Web Services"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../quickstart/getting_started_with_docker_image/" class="btn btn-neutral" title="Docker"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -2147,22 +2179,25 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../setting_up_cluster_on_amazon_web_services/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../quickstart/getting_started_with_docker_image/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../upgrade/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

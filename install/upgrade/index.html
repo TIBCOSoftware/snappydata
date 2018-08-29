@@ -7,41 +7,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>Upgrade Instructions (1.0.0 to 1.0.1) - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>Upgrade Instructions - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Upgrade Instructions (1.0.0 to 1.0.1)";
+    var mkdocs_page_name = "Upgrade Instructions";
     var mkdocs_page_input_path = "install/upgrade.md";
     var mkdocs_page_url = "/install/upgrade/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../">Download and Install</a>
+        <a class="" href="../">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../install_on_premise/">Install On-Premise</a>
+        <a class="" href="../install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,15 +180,17 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="current" href="./">Upgrade Instructions</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#upgrade-instructions-100-to-101">Upgrade Instructions (1.0.0 to 1.0.1)</a></li>
+                <li class="toctree-l3"><a href="#upgrade-instructions">Upgrade Instructions</a></li>
                 
-                    <li><a class="toctree-l4" href="#before-you-begin-the-upgrade">Before you begin the upgrade</a></li>
+                    <li><a class="toctree-l4" href="#before-you-upgrade">Before You Upgrade</a></li>
                 
-                    <li><a class="toctree-l4" href="#additional-steps">Additional Steps</a></li>
+                    <li><a class="toctree-l4" href="#upgrading-snappydata-version-from-101-to-102">Upgrading SnappyData Version from 1.0.1 to 1.0.2</a></li>
+                
+                    <li><a class="toctree-l4" href="#upgrading-from-snappydata-version-100">Upgrading from SnappyData Version 1.0.0</a></li>
                 
             
             </ul>
@@ -429,13 +442,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -766,55 +772,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -886,6 +870,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -900,7 +891,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1081,13 +1093,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1178,9 +1183,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1777,14 +1811,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1816,6 +1850,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1897,7 +1938,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1909,18 +1950,11 @@
     
       
         
-          <li>Download and Install &raquo;</li>
+          <li>Provisioning SnappyData &raquo;</li>
         
       
     
-    <li>Upgrade Instructions (1.0.0 to 1.0.1)</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
+    <li>Upgrade Instructions</li>
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1929,17 +1963,16 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="upgrade-instructions-100-to-101">Upgrade Instructions (1.0.0 to 1.0.1)</h1>
+                <h1 id="upgrade-instructions">Upgrade Instructions</h1>
 <p>This guide provides information for upgrading systems running an earlier version of SnappyData. We assume that you have SnappyData already installed, and you are upgrading to the latest version of SnappyData.</p>
 <p>Before you begin the upgrade, ensure that you understand the new features and any specific requirements for that release.</p>
-<h2 id="before-you-begin-the-upgrade">Before you begin the upgrade</h2>
+<h2 id="before-you-upgrade">Before You Upgrade</h2>
 <ol>
 <li>
 <p>Confirm that your system meets the hardware and software requirements described in <a href="../system_requirements/">System Requirements</a> section.</p>
 </li>
 <li>
-<p>Backup the existing environment: </br>
-Create a backup of the locator, lead, and server configuration files that exist in the <strong>conf</strong> folder located in the SnappyData home directory.</p>
+<p>Backup the existing environment: </br>Create a backup of the locator, lead, and server configuration files that exist in the <strong>conf</strong> folder located in the SnappyData home directory.</p>
 </li>
 <li>
 <p>Stop the cluster and verify that all members are stopped: You can shut down the cluster using the <code>sbin/snappy-stop-all.sh</code> command. </br>To ensure that all the members have been shut down correctly, use the <code>sbin/snappy-status-all.sh</code> command.</p>
@@ -1956,12 +1989,57 @@ Create a backup of the locator, lead, and server configuration files that exist 
 <li>
 <p>To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.</p>
 </li>
+</ol>
+<h2 id="upgrading-snappydata-version-from-101-to-102">Upgrading SnappyData Version from 1.0.1 to 1.0.2</h2>
+<p>The following steps must be specifically followed to upgrade to SnappyData version 1.0.2: </p>
+<ol>
 <li>
-<p><a href="../../howto/start_snappy_cluster/">Restart the SnappyData cluster</a>.</p>
+<p>In addition to any existing configuration options, add <code>-J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true</code> property to the <strong>conf/locators</strong> files for each of the locator as shown:</p>
+<pre><code>conf/locators
+locator1 -dir=&lt;path1&gt; -peer-discovery-port=&lt;port1&gt; -locators=&lt;locator2:port2&gt; -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+locator2 -dir=&lt;path2&gt; -peer-discovery-port=&lt;port2&gt; -locators= &lt;locator1:port1&gt; -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+</code></pre>
+</li>
+<li>
+<p><a href="../../howto/start_snappy_cluster/">Start the cluster</a> and verify that cluster is up and running. Also verify that all the tables are present along with their data. </p>
+</li>
+<li>
+<p>In the existing running cluster, start one more locator without the given system property and ensure to provide <code>-locators=oldlocator:port</code> property in the conf files for the locator as shown in the following example. In this example configuration below locator3 is added apart from locator1 and locator2. Also locator3 does not specify the property '-J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true`. </p>
+<pre><code>locator1 -dir=&lt;path1&gt; -peer-discovery-port=&lt;port1&gt; -locators=&lt;locator2:port2&gt; -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+locator2 -dir=&lt;path2&gt; -peer-discovery-port=&lt;port2&gt; -locators= &lt;locator1:port1&gt; -J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true
+locator3 -dir=&lt;path3&gt; -peer-discovery-port=&lt;port3&gt; -locators= &lt;locator1:port1&gt; ,&lt;locator2:port2&gt;
+
+Now start the cluster:
+./sbin/snappy-start-all.sh
+</code></pre>
+</li>
+<li>
+<p>Shutdown the old locators that were started with the system property, using the commands as shown:</p>
+<pre><code>./bin/snappy locator stop -dir=-dir=&lt;path1&gt;
+./bin/snappy locator stop -dir=-dir=&lt;path2&gt;
+</code></pre>
+</li>
+<li>
+<p>Remove the directory contents from the stopped locators and start those locators without this property:</br> <code>-J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true</code> as shown:</p>
+<pre><code>Remove the old locator directory contents as follows:
+rm -rf &lt;path1&gt;/*
+rm -rf &lt;path2&gt;/*
+
+Edit the conf/locators file as follows:
+locator1 -dir=&lt;path1&gt; -peer-discovery-port=&lt;port1&gt; -locators=&lt;locator2:port2&gt;,&lt;locator3:port3&gt;
+locator2 -dir=&lt;path2&gt; -peer-discovery-port=&lt;port2&gt; -locators=&lt;locator1:port1&gt;,&lt;locator3:port3&gt;
+locator3 -dir=&lt;path3&gt; -peer-discovery-port=&lt;port3&gt; -locators=&lt;locator1:port1&gt;,&lt;locator2:port2&gt;
+
+Now start the cluster:
+./sbin/snappy-start-all.sh
+</code></pre>
+</li>
+<li>
+<p>Verify the tables and data.</p>
 </li>
 </ol>
-<h2 id="additional-steps">Additional Steps</h2>
-<p>For best performance, it is recommended that you re-create any large column tables after you upgrade from 1.0.0 to 1.0.1. The following two improvements provided in 1.0.1 take effect:</p>
+<h2 id="upgrading-from-snappydata-version-100">Upgrading from SnappyData Version 1.0.0</h2>
+<p>For best performance, it is recommended that you recreate any large column tables after you upgrade from 1.0.0 to 1.0.1/1.0.2. The following two improvements provided in 1.0.1 take effect:</p>
 <ul>
 <li>
 <p>Compression for on-disk and over the network data.</p>
@@ -1975,19 +2053,19 @@ Create a backup of the locator, lead, and server configuration files that exist 
 <p>Ensure that no operations are currently running on the system.</p>
 </div>
 <p>The following example demonstrates how you can re-create your column tables using a Parquet-based external table:</p>
-<pre><code>snappy&gt; create external table table1Parquet using parquet options (path '...') as select * from table1;
+<pre><code class="pre">snappy&gt; create external table table1Parquet using parquet options (path '...') as select * from table1;
 </code></pre>
 
-<pre><code>snappy&gt; drop table table1;
+<pre><code class="pre">snappy&gt; drop table table1;
 </code></pre>
 
-<pre><code>snappy&gt; create table table1 ...;
+<pre><code class="pre">snappy&gt; create table table1 ...;
 </code></pre>
 
-<pre><code>snappy&gt; insert into table1 as select * from table1Parquet;
+<pre><code class="pre">snappy&gt; insert into table1 as select * from table1Parquet;
 </code></pre>
 
-<pre><code>snappy&gt; drop table table1Parquet;
+<pre><code class="pre">snappy&gt; drop table table1Parquet;
 </code></pre>
 
 <div class="admonition note">
@@ -2027,10 +2105,10 @@ Create a backup of the locator, lead, and server configuration files that exist 
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2043,6 +2121,9 @@ Create a backup of the locator, lead, and server configuration files that exist 
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

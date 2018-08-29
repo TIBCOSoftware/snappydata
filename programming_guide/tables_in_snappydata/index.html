@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>Tables in SnappyData - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>Tables in SnappyData - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../install/">Download and Install</a>
+        <a class="" href="../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -418,13 +429,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -764,55 +768,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -884,6 +866,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -898,7 +887,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1079,13 +1089,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1176,9 +1179,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1775,14 +1807,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1814,6 +1846,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1895,7 +1934,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1912,13 +1951,6 @@
       
     
     <li>Tables in SnappyData</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1927,8 +1959,7 @@
           <div role="main">
             <div class="section">
               
-                <p><a id="markdown_link_row_and_column_tables"></a></p>
-<h1 id="tables-in-snappydata">Tables in SnappyData</h1>
+                <h1 id="tables-in-snappydata">Tables in SnappyData</h1>
 <h2 id="row-and-column-tables">Row and Column Tables</h2>
 <p>Column tables organize and manage data in memory in a compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.</p>
 <p><img alt="Column Table" src="../../Images/column_table.png" /></p>
@@ -1936,7 +1967,7 @@
 <img alt="Column Table" src="../../Images/row_table.png" /></p>
 <p>Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.</p>
 <h3 id="ddl-and-dml-syntax-for-tables">DDL and DML Syntax for Tables</h3>
-<pre><code class="no-highlight">CREATE TABLE [IF NOT EXISTS] table_name 
+<pre><code class="pre">CREATE TABLE [IF NOT EXISTS] table_name 
     ( column-definition [ , column-definition  ] * )    
     USING [row | column]
     OPTIONS (
@@ -1961,7 +1992,7 @@ DROP TABLE [IF EXISTS] table_name
 <p>Refer to the <a href="../../best_practices/design_schema/">Best Practices</a> section for more information on partitioning and colocating data and <a href="../../reference/sql_reference/create-table/">CREATE TABLE</a> for information on creating a row/column table.</br>
 DDL extensions are required to <a href="../../reference/sql_reference/create-table/#ddl">configure a table</a> based on user requirements. </p>
 <p>You can also define complex types (Map, Array and StructType) as columns for column tables. </p>
-<pre><code class="no-highlight">snappy.sql(&quot;CREATE TABLE tableName (
+<pre><code class="pre">snappy.sql(&quot;CREATE TABLE tableName (
 col1 INT , 
 col2 Array&lt;Decimal&gt;, 
 col3 Map&lt;Timestamp, Struct&lt;x: Int, y: String, z: Decimal(10,5)&gt;&gt;, 
@@ -1979,7 +2010,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 <pre><code>val snappy: SnappySession = new SnappySession(spark.sparkContext)
 </code></pre>
 <p>Create a SnappyStore table using Spark APIs</p>
-<pre><code class="no-highlight">    val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
+<pre><code class="pre">    val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
     case class Data(col1: Int, col2: Int, col3: Int)
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sparkContext.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
@@ -2011,7 +2042,7 @@ col6 Struct&lt;a: Int, b: String, c: Decimal(10,5)&gt;
 </li>
 </ul>
 <h3 id="dml-operations-on-tables">DML Operations on Tables</h3>
-<pre><code class="no-highlight">INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
+<pre><code class="pre">INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
 UPDATE tablename SET column = value [, column = value ...] [WHERE expression]
@@ -2022,7 +2053,7 @@ TRUNCATE TABLE tablename1;
 
 <h3 id="api-extensions-provided-in-snappycontext">API Extensions Provided in SnappyContext</h3>
 <p>Several APIs have been added in <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a> to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.</p>
-<pre><code class="no-highlight">//  Applicable for both row and column tables
+<pre><code class="pre">//  Applicable for both row and column tables
 def insert(tableName: String, rows: Row*): Int .
 
 // Only for row tables
@@ -2033,7 +2064,7 @@ def delete(tableName: String, filterExpr: String): Int
 </code></pre>
 
 <p><strong>Usage SnappySession.insert()</strong>: Insert one or more [[org.apache.spark.sql.Row]] into an existing table</p>
-<pre><code class="no-highlight">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+<pre><code class="pre">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =&gt;
   snappy.insert(&quot;tableName&quot;, Row.fromSeq(r))
@@ -2041,7 +2072,7 @@ data.map { r =&gt;
 </code></pre>
 
 <p><strong>Usage SnappySession.put()</strong>: Upsert one or more [[org.apache.spark.sql.Row]] into an existing table</p>
-<pre><code class="no-highlight">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+<pre><code class="pre">val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =&gt;
   snappy.put(tableName, Row.fromSeq(r))
@@ -2049,11 +2080,11 @@ data.map { r =&gt;
 </code></pre>
 
 <p>Usage SnappySession.update(): Update all rows in table that match passed filter expression</p>
-<pre><code class="no-highlight">snappy.update(tableName, &quot;ITEMREF = 3&quot; , Row(99) , &quot;ITEMREF&quot; )
+<pre><code class="pre">snappy.update(tableName, &quot;ITEMREF = 3&quot; , Row(99) , &quot;ITEMREF&quot; )
 </code></pre>
 
 <p><strong>Usage SnappySession.delete()</strong>: Delete all rows in table that match passed filter expression</p>
-<pre><code class="no-highlight">snappy.delete(tableName, &quot;ITEMREF = 3&quot;)
+<pre><code class="pre">snappy.delete(tableName, &quot;ITEMREF = 3&quot;)
 </code></pre>
 
 <h3 id="row-buffers-for-column-tables">Row Buffers for Column Tables</h3>
@@ -2096,10 +2127,10 @@ Any query on column table also takes into account the row cached buffer. By doin
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2112,6 +2143,9 @@ Any query on column table also takes into account the row cached buffer. By doin
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

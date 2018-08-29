@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>Release Notes - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../favicon.ico">
   
-
-  
+  <title>Release Notes - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../css/toc.css" rel="stylesheet">
-  <link href="../../css/menu.css" rel="stylesheet">
-  <link href="../../css/images.css" rel="stylesheet">
-  <link href="../../css/style.css" rel="stylesheet">
-  <link href="../../css/highlight.css" rel="stylesheet">
+  <link href="../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
   <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
-  <script src="../../js/menu.js"></script>
-  <script src="../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../install/">Download and Install</a>
+        <a class="" href="../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -418,13 +429,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -755,55 +759,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -875,6 +857,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -889,7 +878,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1070,13 +1080,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1167,9 +1170,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/sql_reference/drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../../reference/sql_reference/deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1766,14 +1798,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1805,6 +1837,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1852,7 +1891,9 @@
                 
                     <li><a class="toctree-l4" href="#performance-enhancements">Performance Enhancements</a></li>
                 
-                    <li><a class="toctree-l4" href="#select-bug-fixes-and-performance-related-fixes">Select bug fixes and performance related fixes</a></li>
+                    <li><a class="toctree-l4" href="#select-fixes-and-performance-related-fixes">Select Fixes and Performance Related Fixes</a></li>
+                
+                    <li><a class="toctree-l4" href="#description-of-download-artifacts">Description of Download Artifacts</a></li>
                 
             
             </ul>
@@ -1899,7 +1940,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation</a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1912,13 +1953,6 @@
       
     
     <li>Release Notes</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1928,256 +1962,231 @@
             <div class="section">
               
                 <h1 id="release-notes">Release Notes</h1>
-<p>The SnappyData team is pleased to announce the availability of version 1.0.1 of the platform.
-<a href="https://www.snappydata.io/download"><strong>Download the Enterprise Edition here</strong></a>.</p>
+<p>The SnappyData team is pleased to announce the availability of version 1.0.2 of the platform. You can find the release artifacts of its Community Edition towards the end of this page.</p>
+<p>You can also download the Enterprise Edition <a href="https://www.snappydata.io/download">here</a>. The following table summarizes the features available in Enterprise and OSS (Community) editions.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th align="center">Community</th>
+<th align="center">Enterprise</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mutable Row &amp; Column Store</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Compatibility with Spark</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Shared Nothing Persistence and HA</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>REST API for Spark Job Submission</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Fault Tolerance for Driver</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Access to the system using JDBC Driver</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>CLI for backup, restore, and export data</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Spark console extensions</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>System Perf/Behavior statistics</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Support for transactions in Row tables</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Support for indexing in Row Tables</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>SQL extensions for stream processing</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Runtime deployment of packages and jars</td>
+<td align="center">X</td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Synopsis Data Engine for Approximate Querying</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>ODBC Driver with High Concurrency</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Off-heap data storage for column tables</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>CDC Stream receiver for SQL Server into SnappyData</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>GemFire/Apache Geode connector</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Row Level Security</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Use encrypted password instead of clear text password</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>Restrict Table, View, Function creation even in user’s own schema</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+<tr>
+<td>LDAP security interface</td>
+<td align="center"></td>
+<td align="center">X</td>
+</tr>
+</tbody>
+</table>
 <h2 id="new-features">New Features</h2>
+<p>The following new features are included in SnappyData 1.0.2 version:</p>
 <ul>
-<li>
-<p>putInto and deleteFrom bulk operations support for column tables (SNAP-2092, SNAP-2093, SNAP-2094):</p>
-</li>
-<li>
-<p>Ability to specify "key columns" in the table DDL to use for putInto and deleteFrom APIs</p>
-</li>
-<li>
-<p>"PUT INTO" SQL or putInto API extension to overwrite existing rows and insert non-existing ones</p>
-</li>
-<li>
-<p>"DELETE FROM" SQL or deleteFrom API extension to delete a set of matching rows</p>
-</li>
-<li>
-<p>UPDATE SQL now supports using expressions with column references of another table in RHS of SET</p>
-</li>
-<li>
-<p>Improvements in cluster restart with off-line, failed nodes or with corrupt meta-data (SNAP-2096)</p>
-</li>
-<li>
-<p>New admin command "unblock" to allow the initialization of a table even if it is waiting for offline members</p>
-</li>
-<li>
-<p>No discard of data (unlike revoke) with the new approach and initialize with the latest online working copy
-    (SNAP-2143)</p>
-</li>
-<li>
-<p>Parallel recovery of data regions to break any cyclic dependencies between the nodes, and allow reporting
-    on all off-line nodes that may have more recent copy of data</p>
-</li>
-<li>
-<p>Many bug-fixes related to startup issues due to meta-data inconsistencies:</p>
-<ul>
-<li>
-<p>Incorrect ConflictingPersistentDataExeption at restart due to disk-store meta-data corruption
-  (SNAP-2097, SNAP-2098)</p>
-</li>
-<li>
-<p>Metadata corruption issues causing GII to fail (SNAP-2140)</p>
-</li>
-</ul>
-</li>
-<li>
-<p>Compression of column batches in disk storage and over the network (SNAP-1743)</p>
-</li>
-<li>
-<p>Support for LZ4 and SNAPPY compression codecs in persistent storage and transport for column table data</p>
-</li>
-<li>
-<p>Smart connector uses compression when pulling from remote hosts while using uncompressed
-    for same host for best performance</p>
-</li>
-<li>
-<p>New SOURCEPATH and COMPRESSION columns in SYS.HIVETABLES virtual table</p>
-</li>
-<li>
-<p>Support for temporary, global temporary and persistent VIEWs (SNAP-2072):</p>
-</li>
-<li>
-<p>CREATE VIEW, CREATE TEMPORARY VIEW and CREATE GLOBAL TEMPORARY VIEW DDLs</p>
-</li>
-<li>
-<p>SQL from JDBC/ODBC for VIEWs routed to Spark execution engine</p>
-</li>
-<li>
-<p>External connectors (like cassandra) used from smart connector no longer require any jars in the
-  snappydata cluster (SNAP-2072)</p>
-</li>
-<li>
-<p>External tables display in dashboard and snappy command-line (SNAP-2086)</p>
-</li>
-<li>
-<p>Auto-configuration of SPARK_PUBLIC_DNS, hostname-for-clients etc in AWS environment (SNAP-2116)</p>
-</li>
-<li>
-<p>Out-of-the-box support for AWS URLs/APIs in the product</p>
-</li>
-<li>
-<p>GRANT/REVOKE SQL support in SnappySession.sql() earlier only allowed from JDBC/ODBC (SNAP-2042)</p>
-</li>
-<li>
-<p>LATERAL VIEW support in SnappySession.sql() (SNAP-1283)</p>
-</li>
-<li>
-<p>FETCH FIRST syntax as an alternative to LIMIT to support some SQL tools that use former</p>
-</li>
-<li>
-<p>Addition of IndexStats in for local row table index lookup and range scans</p>
-</li>
-<li>
-<p>SYS.DISKSTOREIDS virtual table to disk-store IDs being used in the cluster by all members (SNAP-2113)</p>
-</li>
-<li>
-<p>Show ARRAY/MAP/STRUCT complex types in JDBC/ODBC metadata as part of SNAP-2141</p>
-</li>
+<li>Introduced an API in snappy session catalog to get Primary Key of Row tables  or Key Columns of Column Tables, as DataFrame. (SNAP-2459)</li>
+<li>Introduced an API in snappy session catalog to get table type as String (SNAP-2477).</li>
+<li>Added support for arbitrary size view definition. It use to fail when view text size went beyond 32k.
+Support for displaying VIEWTEXT for views in SYS.HIVETABLES. 
+For example: Select viewtext from sys.hivetables where tablename = ‘view_name” will give the text with which the view was created.</li>
+<li>Added Row level Security feature. Admins can define multiple security policies on tables for different users or ldap groups. </br>Refer <a href="../../security/row_level_security/">Row Level Security</a></li>
+<li>Auto refresh of UI page. Now the SnappyData UI page gets updated automatically and frequently. User does not have to refresh or reload. Refer <a href="../../monitoring/monitoring/">SnappyData Pulse</a></li>
+<li>More richer User Interface. Added graphs for memory, CPU consumption etc. for last 15 minutes. The user has the ability to see how the cluster health has been for the last 15 minutes instead of just current state.</li>
+<li>Total CPU core count capacity of the cluster is now displayed on the UI. </br>Refer <a href="../../monitoring/monitoring/">SnappyData Pulse</a></li>
+<li>Bucket count of tables are also displayed now on the user interface.</li>
+<li>Support deployment of packages and jars as DDL command.</li>
+<li>Added support for reading maven dependencies using <strong>--packages</strong> option in our job server scripts. Refer <a href="../../connectors/deployment_dependency_jar/#deploypackages">Deploying Packages in SnappyData</a></li>
+<li>Changes to procedure <strong>sys.repair_catalog</strong> to execute it on the server (earlier this was run on lead by sending a message to it). This will be useful to repair catalog even when lead is down. </br>Refer <a href="../../troubleshooting/catalog_inconsistency/">Catalog Repair</a></li>
+<li>Added support for<strong> PreparedStatement.getMetadata() JDBC API </strong>. This is on an experimental basis.</li>
+<li>Added support for execution of some ddl commands viz CREATE/DROP DISKSTORE, GRANT, REVOKE. CALL procedures from snappy session as well. </li>
+<li>Quote table names in all store DDL/DML/query strings to allow for special characters  and keywords in table names.</li>
+<li>Spark application with same name cannot be submitted to SnappyData. This has been done so that individual apps can be killed by its name when required.</li>
+<li>Users are not allowed to create tables in their own schema based on system property - <code>snappydata.RESTRICT_TABLE_CREATION</code>. In some cases it may be required to control use of cluster resources in which case the table creation is done only by authorized owners of schema.</li>
+<li>Schema can be owned by an LDAP group also and not necessarily by a single user.</li>
+<li>Support for deploying SnappyData on Kubernetes using Helm charts. This feature is currently experimental. </br>Refer <a href="../../kubernetes/">Kubernetes</a></li>
+<li>Disk Store Validate tool enhancement. Validation of disk store can find out all the inconsistencies at once.</li>
+<li>BINARY data type is same as Blob data type.</li>
 </ul>
 <h2 id="performance-enhancements">Performance Enhancements</h2>
+<p>The following performance enhancements are included in SnappyData 1.0.2 version:</p>
 <ul>
-<li>
-<p>Major performance improvements in smart connector mode (SNAP-2101, SNAP-2084)</p>
-</li>
-<li>
-<p>Minimized buffer copying especially when connector executors are colocated with store data nodes</p>
-</li>
-<li>
-<p>Intelligent connector query handling to use key lookups into column table rather than full scan
-    for cases of heavily filtered scan queries</p>
-</li>
-<li>
-<p>Reduced round-trips for operations (transactions, bucket pruning)</p>
-</li>
-<li>
-<p>Allow using SnappyUnifiedMemoryManager with smart connector (SNAP-2084)</p>
-</li>
-<li>
-<p>New memory and disk iterator to minimize faultins and do serial disk reads across concurrent
-  iterators (SNAP-2102):</p>
-</li>
-<li>
-<p>New iterator to substantially reduce faultins in case all data is not in memory</p>
-</li>
-<li>
-<p>Cross-iterator serial disk reads per diskstore to minimize random reads from disk</p>
-</li>
-<li>
-<p>New remote iterator that substantially reduces the memory overhead and caches only current batch</p>
-</li>
-<li>
-<p>Startup performance improvements to cut down on locator/server/lead start and restart times (SNAP-338)</p>
-</li>
-<li>
-<p>Improve performance of reads of variable length data for some queries (SNAP-2118)</p>
-</li>
-<li>
-<p>Use colocated joins with VIEWs when possible (SNAP-2204)</p>
-</li>
-<li>
-<p>Separate disk store for delta buffer regions  to substantially improve column table compaction (SNAP-2121)</p>
-</li>
-<li>
-<p>Projection push-down to scan layer for non-deterministic expressions like spark_partition_id() (SNAP-2036)</p>
-</li>
-<li>
-<p>Parser performance improvements (by ~50%)</p>
-</li>
-<li>
-<p>code-generation cache is larger by default and configurable (SNAP-2120)</p>
+<li>Fixed concurrent query performance issue by resolving the incorrect output partition choice.  Due to numBucket check, all the partition pruned queries were converted to hash partition with one partition. This was causing an exchange node to be introduced. (SNAP-2421)</li>
+<li>Fixed SnappyData UI becoming unresponsive on LowMemoryException.(SNAP-2071)</li>
+<li>Cleaning up tokenization handling and fixes. Main change is addition of the following two separate classes for tokenization: <ul>
+<li><strong>ParamLiteral</strong></li>
+<li><strong>TokenLiteral</strong> </li>
+</ul>
 </li>
 </ul>
-<h2 id="select-bug-fixes-and-performance-related-fixes">Select bug fixes and performance related fixes</h2>
-<p>A sample of bug fixes done as part of this release are noted below. For a more comprehensive list, see <a href="https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt">ReleaseNotes.txt</a>.</p>
+<p>Both classes extend a common trait <strong>TokenizedLiteral</strong>. Tokenization will always happen independently of plan caching, unless it is explicitly turned  off. (SNAP-1932)</p>
 <ul>
-<li>
-<p>Now only overflow-to-disk is allowed as eviction action for tables (SNAP-1501):</p>
-</li>
-<li>
-<p>Only overflow-to-disk is allowed as a valid eviction action and cannot be explicitly specified
-    (LOCAL_DESTROY removed due to possible data inconsistencies)</p>
-</li>
-<li>
-<p>OVERFLOW=false property can be used to disable eviction which is true by default</p>
-</li>
-<li>
-<p>Memory accounting fixes:</p>
-</li>
-<li>
-<p>Incorrect initial memory accounting causing insert failure even with memory available (SNAP-2084)</p>
-</li>
-<li>
-<p>Zero usage shown in UI on restart (SNAP-2180)</p>
-</li>
-<li>
-<p>Disable embedded Zeppelin interpreter in a secure cluster which can bypass security (SNAP-2191)</p>
-</li>
-<li>
-<p>JSON conversion for complex types ARRAY/STRUCT/MAP (SNAP-2056)</p>
-</li>
-<li>
-<p>Fix import of JSON data (SNAP-2087)</p>
-</li>
-<li>
-<p>CREATE TABLE ... AS SELECT * fails without explicit schema (SNAP-2047)</p>
-</li>
-<li>
-<p>Selects missing results or failing during node failures (SNAP-889, SNAP-1547)</p>
-</li>
-<li>
-<p>Incorrect results with joins/anti-joins for some cases having more than one match for a key (SNAP-2212)</p>
-</li>
-<li>
-<p>Fixes and improvements to server and lead status in both the launcher status and SYS.MEMBERS table
-  (SNAP-1960, SNAP-2060, SNAP-1645)</p>
-</li>
-<li>
-<p>Fix global temporary tables/views with SnappySession (SNAP-2072)</p>
-</li>
-<li>
-<p>Fix updates on complex types (SNAP-2141)</p>
-</li>
-<li>
-<p>Column table scan fixes related to null value reads (SNAP-2088)</p>
-</li>
-<li>
-<p>Incorrect reads of column table statistics rows in some cases (SNAP-2124)</p>
-</li>
-<li>
-<p>Disable tokenization for external tables and session flag to disable it and plan caching
-  (SNAP-2114, SNAP-2124)</p>
-</li>
-<li>
-<p>Table meta-data issues with squirrel client and otherwise (SNAP-2083)</p>
-</li>
-<li>
-<p>Case-sensitive column names now work correctly with all operations (GITHUB-900 and other related fixes)</p>
-</li>
-<li>
-<p>Allow for hyphens in schema names</p>
-</li>
-<li>
-<p>Deadlock in transactional operations with GII (SNAP-1950)</p>
-</li>
-<li>
-<p>Couple of fixes in UPDATE SQL:</p>
-</li>
-<li>
-<p>Failure due to rollover during update operation (SNAP-2192)</p>
-</li>
-<li>
-<p>Subquery updates shown as ResultSet rather than update count (SNAP-2156)</p>
-</li>
-<li>
-<p>Correct mismatch between executor and DistributedMember names in some configurations that caused
-  Remote routing of partitions (SNAP-2122)</p>
-</li>
-<li>
-<p>Fixes ported from Apache Geode (GEODE-2109, GEODE-2240)</p>
-</li>
-<li>
-<p>Fixes to all failures in snappy-spark test suite which includes both product and test changes</p>
-</li>
-<li>
-<p>Fixes related to ODBC driver calls to thrift server</p>
-</li>
-<li>
-<p>More comprehensive python API testing (SNAP-2044)</p>
-</li>
+<li>Procedure for smart connector iteration and fixes. Includes fixes for perf issues as noted for all iterators (disk iterator, smart connector and remote iterator). (SNAP-2243)</li>
 </ul>
+<h2 id="select-fixes-and-performance-related-fixes">Select Fixes and Performance Related Fixes</h2>
+<p>The following defect fixes are included in SnappyData 1.0.2 version:</p>
+<ul>
+<li>Fixed incorrect server status shown on the UI. Sometimes due to a race condition for the same member two entries were shown up on the UI. (SNAP-2433)</li>
+<li>Fixed missing SQL tab on SnappyData UI in local mode. (SNAP-2470)</li>
+<li>Fixed few issues related to wrong results for Row tables due to plan caching. (SNAP-2463 - Incorrect pushing down of OR and AND clause filter combination in push down query, SNAP-2351 - re-evaluation of filter was not happening due to plan caching, SNAP-2451, SNAP-2457)</li>
+<li>Skip batch, if the stats row is missing while scanning column values from disk. This was already handled for in-memory batches and the same has been added for on-disk batches. (SNAP-2364)</li>
+<li>Fixes in UI to not let unauthorized users to see any tab. (ENT-21)</li>
+<li>Fixes in SnappyData parser to create inlined table. (SNAP-2302), ‘()’ as optional in some function like ‘current_date()’, ‘current_timestamp()’ etc. (SNAP-2303)</li>
+<li>Consider the current schema name also as part of Caching Key for plan caching. So same query on same table but from different schema should not clash with each other. (SNAP-2438)</li>
+<li>Fix for COLUMN table mysteriously shown as ROW table on dashboard after LME in data  server. (SNAP-2382)</li>
+<li>Fixed off-heap size for Partitioned Regions, showed on UI. (SNAP-2186)</li>
+<li>Fixed failure when query on view does not fallback to Spark plan in case Code Generation fails. (SNAP-2363)</li>
+<li>Fix invalid decompress call on stats row.(SNAP-2348). Use to fail in run time while scanning column tables.(SNAP-2348)</li>
+<li>Fixed negative bucket size with eviction. (GITHUB-982)</li>
+<li>Fixed the issue of incorrect LowMemoryException, even if a lot of memory was left. (SNAP-2356)</li>
+<li>Handled int overflow case in memory accounting. Due to this ExecutionMemoryPool released more memory than it has throws AssertionError (SNAP-2312)</li>
+<li>Fixed the pooled connection not being returned to the pool after authorization check failure which led to unusable cluster. (SNAP-2255)</li>
+<li>Fixed different results of nearly identical queries, due to join order. Its due to EXCHANGE hash ordering being different from table partitioning. It will happen for the specific case when query join order is different from partitioning of one of the tables while the other table being joined is partitioned differently. (SNAP-2225)</li>
+<li>Corrected row count updated/inserted in a column table via putInto. (SNAP-2220)</li>
+<li>Fixed the OOM issue due to hive queries. This was a memory leak. Due to this the system became very slow after sometime even if idle. (SNAP-2248) </li>
+<li>Fixed the issue of incomplete plan and query string info in UI due to plan caching changes.</li>
+<li>Corrected the logic of existence join.</li>
+<li>Sensitive information, like user password, LDAP password etc, which are passed as properties to the cluster are masked on the UI now.</li>
+<li>Schema with boolean columns sometimes returned incorrect null values. Fixed. (SNAP-2436)</li>
+<li>Fixed the scenario where break in colocation chain of buckets due to crash led to disk store metadata going bad causing restart failure.</li>
+<li>Wrong entry count on restart, if region got closed on a server due to DiskAccessException leading to a feeling of loss of data. Do not let the region close in case of LME. This has been done by not letting non IOException get wrapped in DiskAccessException. (SNAP-2375)</li>
+<li>Fix to avoid hang or delay in stop when <strong>stop</strong> is issued and the component has gone into reconnect cycle. (SNAP-2380)</li>
+<li>Handle joining of new servers better. Avoid ConflictingPersistentDataException when a new server starts before any of the old server start. SNAP-2236</li>
+<li>ODBC driver bug fix. Added <strong>EmbedDatabaseMetaData.getTableSchemas</strong>.</li>
+<li>Change the order in which backup is taken. Internal DD diskstore of backup is taken first followed by rest of the disk stores. This helps in stream apps which want to store offset of replayable source in snappydata. They can create the offset table backed up by the internal DD store instead of default or custom disk store.</li>
+</ul>
+<h2 id="description-of-download-artifacts">Description of Download Artifacts</h2>
+<p>The following table describes the download artifacts included in SnappyData 1.0.2 version:</p>
+<table>
+<thead>
+<tr>
+<th>Artifact Name</th>
+<th align="center">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>snappydata-1.0.2-bin.tar.gz</td>
+<td align="center">Full product binary (includes Hadoop 2.7)</td>
+</tr>
+<tr>
+<td>snappydata-1.0.2-without-hadoop-bin.tar.gz</td>
+<td align="center">Product without the Hadoop dependency JARs</td>
+</tr>
+<tr>
+<td>snappydata-client-1.6.2.jar</td>
+<td align="center">Client (JDBC) JAR</td>
+</tr>
+<tr>
+<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/download/v0.7.3.2/snappydata-zeppelin_2.11-0.7.3.2.jar">snappydata-zeppelin_2.11-0.7.3.2.jar</a></td>
+<td align="center">The Zeppelin interpreter jar for SnappyData, compatible with Apache Zeppelin 0.7.3</td>
+</tr>
+</tbody>
+</table>
+<p>EC2 scripts will be made available soon.</p>
               
             </div>
           </div>
@@ -2211,10 +2220,10 @@
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2227,6 +2236,9 @@
       
     </span>
 </div>
+    <script src="../../js/theme.js"></script>
+      <script src="../../custom_theme/js/menu.js"></script>
+      <script src="../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>

@@ -7,26 +7,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <meta name="author" content="SnappyData Team">
-  
-  <title>CREATE TABLE - SnappyData Documentation</title>
-  
-
   <link rel="shortcut icon" href="../../../favicon.ico">
   
-
-  
+  <title>CREATE TABLE - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../../css/highlight.css">
-  <link href="../../../css/toc.css" rel="stylesheet">
-  <link href="../../../css/menu.css" rel="stylesheet">
-  <link href="../../../css/images.css" rel="stylesheet">
-  <link href="../../../css/style.css" rel="stylesheet">
-  <link href="../../../css/highlight.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/toc.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/menu.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/images.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/style.css" rel="stylesheet">
+  <link href="../../../custom_theme/css/highlight.css" rel="stylesheet">
   <link href="../../../extra.css" rel="stylesheet">
-
   
   <script>
     // Current page data
@@ -37,11 +31,7 @@
   
   <script src="../../../js/jquery-2.1.1.min.js"></script>
   <script src="../../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../../js/highlight.pack.js"></script>
-  <script src="../../../js/theme.js"></script> 
-  <script src="../../../js/menu.js"></script>
-  <script src="../../../js/highlight.pack.js"></script>
-
+  <script type="text/javascript" src="../../../js/highlight.pack.js"></script> 
   
 </head>
 
@@ -52,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../../.." class="icon icon-home"> SnappyData Documentation</a>
+        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -61,7 +51,7 @@
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        <ul class="current">
+	<ul class="current">
           
             <li>
     <li class="toctree-l1 ">
@@ -91,14 +81,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started by Installing SnappyData On-Premise</a>
+        <a class="" href="../../../quickstart/getting_started_by_installing_snappydata_on-premise/">Getting Started with SnappyData On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../quickstart/getting_started_with_docker_image/">Getting Started with Docker Image</a>
+        <a class="" href="../../../quickstart/getting_started_on_kubernetes/">Getting Started with SnappyData on Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/getting_started_with_docker_image/">Getting Started with SnappyData on Docker Image</a>
         
     </li>
 
@@ -129,14 +126,14 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/">Download and Install</a>
+        <a class="" href="../../../install/">Provisioning SnappyData</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Download and Install</span></li>
+    <li><span>Provisioning SnappyData</span></li>
 
         
             
@@ -148,14 +145,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/install_on_premise/">Install On-Premise</a>
+        <a class="" href="../../../install/install_on_premise/">On-Premise</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/setting_up_cluster_on_amazon_web_services/">Setting up Cluster on Amazon Web Services</a>
+        <a class="" href="../../../install/setting_up_cluster_on_amazon_web_services/">Amazon Web Services (AWS)</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../kubernetes/">Kubernetes</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/getting_started_with_docker_image/">Docker</a>
         
     </li>
 
@@ -169,7 +180,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../install/upgrade/">Upgrade Instructions (1.0.0 to 1.0.1)</a>
+        <a class="" href="../../../install/upgrade/">Upgrade Instructions</a>
         
     </li>
 
@@ -418,13 +429,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../configuring_cluster/configuring_cluster/">Configuration</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
         
     </li>
 
@@ -755,55 +759,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../connectors/connector/">Using Database Connectors</a>
+        <a class="" href="../../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Using Database Connectors</span></li>
+    <li><span>Working with External Data Sources</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        
+    </li>
 
         
             
     <li class="toctree-l1 ">
         <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-    </ul>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../../aqp_aws/">Using SnappyData CloudBuilder</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <ul class="subnav">
-    <li><span>Using SnappyData CloudBuilder</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../isight/key_components/">Key Components</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../isight/quick_start_steps/">Quick Start Steps</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../isight/the_technology_powering_isight_cloud/">The Technology Powering SnappyData CloudBuilder</a>
         
     </li>
 
@@ -875,6 +857,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../security/specify_encrypt_passwords_conf_client/">Specifying Encrypted Passwords in Conf Files or in Client Connections</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../security/authentication_connecting_to_a_secure_cluster/">Authentication - Connecting to a Secure Cluster</a>
         
     </li>
@@ -889,7 +878,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../security/row_level_security/">Implementing Row Level Security</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../security/configuring_network_encryption_and_authentication_using_ssl/">Configuring Network Encryption and Authentication using SSL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../configuring_cluster/securinguiconnection/">Securing SnappyData Pulse UI Connection</a>
         
     </li>
 
@@ -1070,13 +1080,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../create-synonym/">CREATE SYNONYM</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../create-stream-table/">CREATE STREAM TABLE</a>
         
     </li>
@@ -1176,9 +1179,38 @@
     </li>
 
         
+    </ul>
+
+        
             
     <li class="toctree-l1 ">
-        <a class="" href="../drop-synonym/">DROP SYNONYM</a>
+        <a class="" href="../deploy/">DEPLOY Statements</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>DEPLOY Statements</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../deploy_package/">DEPLOY PACKAGE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../deploy_jar/">DEPLOY JAR</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../undeploy/">UNDEPLOY</a>
         
     </li>
 
@@ -1775,14 +1807,14 @@
     </li>
 
         
-    </ul>
-<li>
-          
-            <li>
+            
     <li class="toctree-l1 ">
         <a class="" href="../../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
+
+        
+    </ul>
 <li>
           
             <li>
@@ -1814,6 +1846,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../troubleshooting/catalog_inconsistency/">Resolving Catalog Inconsistency Issues</a>
         
     </li>
 
@@ -1895,7 +1934,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../..">SnappyData Documentation</a>
+        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
       </nav>
 
       
@@ -1916,13 +1955,6 @@
       
     
     <li>CREATE TABLE</li>
-<!--    <li class="wy-breadcrumbs-aside">
-      
-        
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
-        
-      
-    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1933,9 +1965,9 @@
               
                 <h1 id="create-table">CREATE TABLE</h1>
 <p><strong>To Create Row/Column Table:</strong></p>
-<pre><code class="no-highlight">CREATE TABLE [IF NOT EXISTS] table_name 
+<pre><code class="pre">CREATE TABLE [IF NOT EXISTS] table_name 
     ( column-definition [ , column-definition  ] * )    
-    USING [row | column]
+    USING [row | column] // If not specified, a row table is created.
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
     PARTITION_BY 'column-name', // If not specified, replicated table for row tables, and partitioned internally for column tables.
@@ -1957,14 +1989,14 @@
 <p>The column definition defines the name of a column and its data type.</p>
 <p><a id="column-definition"></a>
 <code>column-definition</code> (for Column Table)</p>
-<pre><code class="no-highlight">column-definition: column-name column-data-type [NOT NULL]
+<pre><code class="pre">column-definition: column-name column-data-type [NOT NULL]
 
 column-name: 'unique column name'
 </code></pre>
 
 <p><a id="row-definition"></a>
 <code>column-definition</code> (for Row Table)</p>
-<pre><code class="no-highlight">column-definition: column-definition-for-row-table | table-constraint
+<pre><code class="pre">column-definition: column-definition-for-row-table | table-constraint
 
 column-definition-for-row-table: column-name column-data-type [ column-constraint ] *
     [ [ WITH ] DEFAULT { constant-expression | NULL } 
@@ -1976,7 +2008,7 @@ column-definition-for-row-table: column-name column-data-type [ column-constrain
 <p>Refer to the <a href="#id-columns">identity</a> section for more information on GENERATED.</br>
 Refer to the <a href="#constraint">constraint</a> section for more information on table-constraint and column-constraint.</p>
 <p><code>column-data-type</code></p>
-<pre><code class="no-highlight">column-data-type: 
+<pre><code class="pre">column-data-type: 
     BIGINT |
     BINARY |
     BLOB |
@@ -2003,7 +2035,7 @@ Refer to the <a href="#constraint">constraint</a> section for more information o
 
 <p>Column tables can also use ARRAY, MAP and STRUCT types.</br>
 Decimal and numeric has default precision of 38 and scale of 18.</br>
-In this release, LONG is supported only for column tables. It is recommended to use BEGINT for row tables instead.</p>
+In this release, LONG is supported only for column tables. It is recommended to use BIGINT for row tables instead.</p>
 <p>If no option is specified, default values are provided. </p>
 <p><a id="ddl"></a>
 <a id="colocate-with"></a>
@@ -2082,7 +2114,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 <p>For example, <code>create table if not exists Table1 (a int)</code> is equivalent to <code>create table if not exists Table1 (a int) using row</code>.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="example-column-table-partitioned-on-a-single-column">Example: Column Table Partitioned on a Single Column</h3>
-<pre><code class="no-highlight">snappy&gt;CREATE TABLE CUSTOMER ( 
+<pre><code class="pre">snappy&gt;CREATE TABLE CUSTOMER ( 
     C_CUSTKEY     INTEGER NOT NULL,
     C_NAME        VARCHAR(25) NOT NULL,
     C_ADDRESS     VARCHAR(40) NOT NULL,
@@ -2095,7 +2127,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 </code></pre>
 
 <h3 id="example-column-table-partitioned-with-10-buckets-and-persistence-enabled">Example: Column Table Partitioned with 10 Buckets and Persistence Enabled</h3>
-<pre><code class="no-highlight">snappy&gt;CREATE TABLE CUSTOMER ( 
+<pre><code class="pre">snappy&gt;CREATE TABLE CUSTOMER ( 
     C_CUSTKEY     INTEGER NOT NULL,
     C_NAME        VARCHAR(25) NOT NULL,
     C_ADDRESS     VARCHAR(40) NOT NULL,
@@ -2108,7 +2140,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 </code></pre>
 
 <h3 id="example-replicated-persistent-row-table">Example: Replicated, Persistent Row Table</h3>
-<pre><code class="no-highlight">snappy&gt;CREATE TABLE SUPPLIER ( 
+<pre><code class="pre">snappy&gt;CREATE TABLE SUPPLIER ( 
       S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
       S_NAME STRING NOT NULL, 
       S_ADDRESS STRING NOT NULL, 
@@ -2120,7 +2152,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 </code></pre>
 
 <h3 id="example-row-table-partitioned-with-10-buckets-and-overflow-enabled">Example: Row Table Partitioned with 10 Buckets and Overflow Enabled</h3>
-<pre><code class="no-highlight">snappy&gt;CREATE TABLE SUPPLIER ( 
+<pre><code class="pre">snappy&gt;CREATE TABLE SUPPLIER ( 
       S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
       S_NAME STRING NOT NULL, 
       S_ADDRESS STRING NOT NULL, 
@@ -2136,7 +2168,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 </code></pre>
 
 <h3 id="example-create-table-using-select-query">Example: Create Table using Select Query</h3>
-<pre><code class="no-highlight">CREATE TABLE CUSTOMER_STAGING USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY') AS SELECT * FROM CUSTOMER ;
+<pre><code class="pre">CREATE TABLE CUSTOMER_STAGING USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY') AS SELECT * FROM CUSTOMER ;
 </code></pre>
 
 <p>With this alternate form of the CREATE TABLE statement, you specify the column names and/or the column data types with a query. The columns in the query result are used as a model for creating the columns in the new table.</p>
@@ -2145,7 +2177,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 <h3 id="example-create-table-using-spark-dataframe-api">Example: Create Table using Spark DataFrame API</h3>
 <p>For information on using the Apache Spark API, refer to <a href="../../../sde/running_queries/#using-the-spark-dataframe-api">Using the Spark DataFrame API</a>.</p>
 <h3 id="example-create-column-table-with-put-into">Example: Create Column Table with PUT INTO</h3>
-<pre><code class="no-highlight">snappy&gt; CREATE TABLE COL_TABLE (
+<pre><code class="pre">snappy&gt; CREATE TABLE COL_TABLE (
       PRSN_EVNT_ID BIGINT NOT NULL,
       VER bigint NOT NULL,
       CLIENT_ID BIGINT NOT NULL,
@@ -2187,13 +2219,11 @@ The maximum number of rows that can be in the delta buffer of a column table for
 <li>
 <p>Create the table with the required eviction configuration.</p>
 <p>For example, to evict using LRU entry count and overflow evicted rows to a disk store (OverflowDiskStore):</p>
-<pre><code>CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
-USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
+<pre><code>CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
 </code></pre>
 <p>To create a table that simply removes evicted data from memory without persisting the evicted data, use the <code>DESTROY</code> eviction action. For example:
 Default in SnappyData for <code>synchronous</code> is <code>persistence</code>, <code>overflow</code> is <code>true</code> and <code>eviction_by</code> is <code>LRUHEAPPERCENT</code>.</p>
-<pre><code>CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
-USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
+<pre><code>CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
 </code></pre>
 </li>
 </ol>
@@ -2225,7 +2255,7 @@ Column constraints and table constraints have the same function; the difference 
 <p>Column-level constraints (except for check constraints) refer to only one column.
 If you do not specify a name for a column or table constraint, then SnappyData generates a unique name.</p>
 <p><strong>Example</strong>: The following example demonstrates how to create a table with <code>FOREIGN KEY</code>: </br></p>
-<pre><code class="no-highlight">snappy&gt; create table trading.customers (cid int not null, cust_name varchar(100), since date, addr varchar(100), tid int, primary key (cid));
+<pre><code class="pre">snappy&gt; create table trading.customers (cid int not null, cust_name varchar(100), since date, addr varchar(100), tid int, primary key (cid));
 
 snappy&gt; create table trading.networth (cid int not null, cash decimal (30, 20), securities decimal (30, 20), loanlimit int, availloan decimal (30, 20),  tid int, constraint netw_pk primary key (cid), constraint cust_newt_fk foreign key (cid) references trading.customers (cid));
 
@@ -2241,29 +2271,29 @@ CUSTOMERS           |CID                 |SQL180403162038220  |TRADING          
 SnappyData supports both GENERATED ALWAYS and GENERATED BY DEFAULT identity columns only for BIGINT and INTEGER data types. The START WITH and INCREMENT BY clauses are supported only for GENERATED BY DEFAULT identity columns.</p>
 <p>For a GENERATED ALWAYS identity column, SnappyData increments the default value on every insertion, and stores the incremented value in the column. You cannot insert a value directly into a GENERATED ALWAYS identity column, and you cannot update a value in a GENERATED ALWAYS identity column. Instead, you must either specify the DEFAULT keyword when inserting data into the table or you must leave the identity column out of the insertion column list.</p>
 <p>Consider a table with the following column definition:</p>
-<pre><code class="no-highlight">create table greetings (i int generated always as identity, ch char(50)) using row;
+<pre><code class="pre">create table greetings (i int generated always as identity, ch char(50)) using row;
 </code></pre>
 
 <p>You can insert rows into the table using either the DEFAULT keyword or by omitting the identity column from the INSERT statement:</p>
-<pre><code class="no-highlight">insert into greetings values (DEFAULT, 'hello');
+<pre><code class="pre">insert into greetings values (DEFAULT, 'hello');
 </code></pre>
 
-<pre><code class="no-highlight">insert into greetings(ch) values ('hi');
+<pre><code class="pre">insert into greetings(ch) values ('hi');
 </code></pre>
 
 <p>The values that SnappyData automatically generates for a GENERATED ALWAYS identity column are unique.</p>
 <p>For a GENERATED BY DEFAULT identity column, SnappyData increments and uses a default value for an INSERT only when no explicit value is given. To use the generated default value, either specify the DEFAULT keyword when inserting into the identity column or leave the identity column out of the INSERT column list.</p>
 <p>In contrast to GENERATED ALWAYS identity columns, with a GENERATED BY DEFAULT column you can specify an identity value to use instead of the generated default value. To specify a value, include it in the INSERT statement.</p>
 <p>For example, consider a table created using the statement:</p>
-<pre><code class="no-highlight">create table greetings (i int generated by default as identity, ch char(50)); 
+<pre><code class="pre">create table greetings (i int generated by default as identity, ch char(50)); 
 </code></pre>
 
 <p>The following statement specifies the value “1” for the identity column:</p>
-<pre><code class="no-highlight">insert into greetings values (1, 'hi'); 
+<pre><code class="pre">insert into greetings values (1, 'hi'); 
 </code></pre>
 
 <p>These statements both use generated default values:</p>
-<pre><code class="no-highlight">insert into greetings values (DEFAULT, 'hello');
+<pre><code class="pre">insert into greetings values (DEFAULT, 'hello');
 insert into greetings(ch) values ('bye');
 </code></pre>
 
@@ -2318,10 +2348,10 @@ insert into greetings(ch) values ('bye');
       </div>
 
     </section>
-
+    
   </div>
 
-<div class="rst-versions" role="note" style="cursor: pointer">
+  <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
@@ -2334,6 +2364,9 @@ insert into greetings(ch) values ('bye');
       
     </span>
 </div>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../custom_theme/js/menu.js"></script>
+      <script src="../../../custom_theme/js/highlight.pack.js"></script>
 
 </body>
 </html>
