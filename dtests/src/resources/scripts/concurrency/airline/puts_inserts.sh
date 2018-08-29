@@ -13,21 +13,6 @@ COMM
 props_path=$1
 . $props_path
 
-lead=$2
-app_jar=$3
-copy_freq=$4
-input_path=$5
-table_name=$6
-enable_putinto=$7
-streaming_sample_size=$8
-batch_interval=$9
-snappy_home=${10}
-num_of_secs_to_run=${11}
-
-echo "table_name=$table_name" >> $props_path
-echo "enable_putinto=$enable_putinto" >> $props_path
-echo "snappy_home=$snappy_home" >> $props_path
-
 its=`date '+%H_%M_%S'`
 input_path_ts="${input_path}_$its"
 
