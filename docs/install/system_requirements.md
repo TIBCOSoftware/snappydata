@@ -9,7 +9,7 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 **Memory**: SnappyData works well with anywhere from 8GB of memory to hundreds of GB of memory. While exact memory requirements depend on the end user application, we recommend allocating no more than 75% of the memory to SnappyData. We recommend using a machine with at least 8GB of RAM when working with SnappyData.
 
 !!!Note
-	In an Enterprise cluster, a minimum 8 GB memory is required for lead and server. Whereas for OSS, the cluster can start with the available memory.
+	It is recommended to have a minimum of 8GB memory for server-grade machines.
     
 **CPU Cores**: SnappyData is a highly multi-threaded system and can take advantage of CPU cores to deliver higher throughput. It has been tested with multi-core multi-CPU machines. We recommend using machines with at least 16 cores when working with SnappyData. The degree of parallelism you can achieve with SnappyData directly depends on the number of cores, as higher core machines perform better than lower core machines.
 

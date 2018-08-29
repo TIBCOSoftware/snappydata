@@ -127,8 +127,7 @@ undeploy spark-daria_2.11.8-2.2.0_0.10.0.jar
 ```
 
 !!!Attention
-	*	If during restart, for any d
-	*	reason the deployed jars and packages are not reinstalled automatically by the system, a warning is shown in the log file. If you want to fail the restart, then you need to set a system property in the **conf** file to stop restarts completely. The name of the system property is **FAIL_ON_JAR_UNAVAILABILITY**.
+	*	If during restart, for any reason the deployed jars and packages are not reinstalled automatically by the system, a warning is shown in the log file. If you want to fail the restart, then you need to set a system property in the **conf** file to stop restarts completely. The name of the system property is **FAIL_ON_JAR_UNAVAILABILITY**.
 	*	If you want to use external repositories, ensure to maintain internet connectivity at least on the lead nodes.
 	*	It is highly recommended to use a local cache path to store the downloaded jars of a package, because the next time the same deploy is executed, it can be picked from the local path.
 	*	Ensure that this path is available on the lead nodes.

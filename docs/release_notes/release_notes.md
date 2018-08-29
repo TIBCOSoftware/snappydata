@@ -43,12 +43,12 @@ For example: Select viewtext from sys.hivetables where tablename = â€˜view_nameâ
 *	Total CPU core count capacity of the cluster is now displayed on the UI. </br>Refer [SnappyData Pulse](/monitoring/monitoring.md)
 *	Bucket count of tables are also displayed now on the user interface.
 *	Support deployment of packages and jars as DDL command.
-*	Added support for reading maven dependencies using **--packages** option in our job server scripts.
+*	Added support for reading maven dependencies using **--packages** option in our job server scripts. Refer [Deploying Packages in SnappyData](/connectors/deployment_dependency_jar.md#deploypackages)
 *	Changes to procedure **sys.repair_catalog** to execute it on the server (earlier this was run on lead by sending a message to it). This will be useful to repair catalog even when lead is down. </br>Refer [Catalog Repair](/troubleshooting/catalog_inconsistency.md)
 *	Added support for** PreparedStatement.getMetadata() JDBC API **. This is on an experimental basis.
 *	Added support for execution of some ddl commands viz CREATE/DROP DISKSTORE, GRANT, REVOKE. CALL procedures from snappy session as well. 
-*	Quote table names in all store DDL/DML/query strings to allow for special characters  and keywords in table names
-Spark application with same name cannot be submitted to SnappyData. This has been done so that individual apps can be killed by its name when required.
+*	Quote table names in all store DDL/DML/query strings to allow for special characters  and keywords in table names.
+*	Spark application with same name cannot be submitted to SnappyData. This has been done so that individual apps can be killed by its name when required.
 *	Users are not allowed to create tables in their own schema based on system property - `snappydata.RESTRICT_TABLE_CREATION`. In some cases it may be required to control use of cluster resources in which case the table creation is done only by authorized owners of schema.
 *	Schema can be owned by an LDAP group also and not necessarily by a single user.
 *	Support for deploying SnappyData on Kubernetes using Helm charts. This feature is currently experimental. </br>Refer [Kubernetes](/kubernetes.md)
