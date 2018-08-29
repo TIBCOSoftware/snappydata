@@ -115,5 +115,3 @@ snappy> connect client 'localhost:1527;user=user2;password=v13b607k2j6c519cc8860
 Using CONNECTION1
 
 ```
-
-

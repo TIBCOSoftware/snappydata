@@ -114,6 +114,14 @@ Intellij is the IDE commonly used by the snappydata developers. Those who really
 - Test the full build.
 - For JDK 7: _Open Run->Edit Configurations_. Expand Defaults, and select Application. Add _-XX:MaxPermSize=350m_ in VM options. Similarly add it to VM parameters for ScalaTest and JUnit. Most of unit tests will have trouble without this option.
 - For JUnit configuration also append _/build-artifacts_ to the working directory i.e. the directory should be _\$MODULE_DIR\$/build-artifacts_. Likewise change working directory for ScalaTest to be inside _build-artifacts_ otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.
+- If you see below error during building the project, open module settings, select the module snappy-cluster_2.11, go to its Dependencies tab and ensure that snappy-spark-unsafe_2.11 comes before spark-unsafe (or just find snappy-spark-unsafe_2.11 and move it to top).
+
+```
+Error:(236, 18) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+      if (source.getByte(i) == first && matchAt(source, target, i)) return true
+Error:(233, 24) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+    val first = target.getByte(0)
+```
 
 
 ### Running a scalatest/junit
