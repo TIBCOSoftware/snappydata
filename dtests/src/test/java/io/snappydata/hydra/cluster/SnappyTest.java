@@ -134,7 +134,6 @@ public class SnappyTest implements Serializable {
   public static int finalEnd = SnappyCDCPrms.getInitEndRange() + 10;
 
 
-
   /**
    * (String) APP_PROPS to set dynamically
    */
@@ -180,7 +179,6 @@ public class SnappyTest implements Serializable {
           snappyTest.generateConfig("primaryLocatorHost");
           snappyTest.generateConfig("primaryLocatorPort");
         }
-
 
 
       }
@@ -517,23 +515,14 @@ public class SnappyTest implements Serializable {
 
   protected static String getLocatorsList(String userKey) {
     String locatorsList = null;
-    Set<String> locatorHostPortList = new LinkedHashSet<>();
     if (isLongRunningTest) {
       locatorsList = getDataFromFile("locatorList");
-      if (locatorsList == null) locatorsList = getLocatorList(userKey);
-      if (locatorsList == null && isUserConfTest) {
-        for (int i = 0; i < SnappyPrms.getLocatorList().size(); i++) {
-          String value = SnappyPrms.getLocatorList().get(i);
-          locatorHostPortList.add(value);
-        }
-        if (locatorHostPortList.size() == 0) {
-          return "";
-        }
-        locatorsList = StringUtils.join(locatorHostPortList, ",");
-        Log.getLogWriter().info("SS - locatorsList is :" + locatorsList);
+      if (isUserConfTest) {
+        locatorsList = SnappyPrms.getLocatorList();
         snappyTest.writeNodeConfigData("locatorList", locatorsList, false);
-        if (isLongRunningTest) writeLocatorConnectionInfo();
+        writeLocatorConnectionInfo();
       }
+      if (locatorsList == null) locatorsList = getLocatorList(userKey);
     } else locatorsList = getLocatorList(userKey);
     return locatorsList;
   }
@@ -679,7 +668,6 @@ public class SnappyTest implements Serializable {
 
   protected void writeNodeConfigData(String fileName, String nodeLogDir, boolean append) {
     String filePath = productConfDirPath + fileName;
-    Log.getLogWriter().info("SS - filePath is : " + filePath + ":" + fileName);
     File file = new File(filePath);
     snappyTest.writeToFile(nodeLogDir, file, append);
   }
@@ -1113,7 +1101,7 @@ public class SnappyTest implements Serializable {
    */
   protected static void writeLocatorConnectionInfo() {
     List<String> endpoints = validateLocatorEndpointData();
-    snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0), true);
+    snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0), false);
   }
 
   /**
@@ -1130,10 +1118,8 @@ public class SnappyTest implements Serializable {
    */
   protected static void writeLeadHostPortInfo() {
     leadHost = snappyTest.getLeadHost();
-    Log.getLogWriter().info("SS - leadHost is : " + leadHost );
     snappyTest.writeNodeConfigData("leadHost", leadHost, false);
     String leadPort = snappyTest.getLeadPort();
-    Log.getLogWriter().info("SS - leadPort is : " + leadPort );
     snappyTest.writeNodeConfigData("leadPort", leadPort, false);
   }
 
@@ -1217,7 +1203,7 @@ public class SnappyTest implements Serializable {
       if (isLongRunningTest) {
         endpoints = getLocatorEndpointFromFile();
         if (isUserConfTest) {
-          endpoints = SnappyPrms.getLocatorList();
+          endpoints = Arrays.asList(SnappyPrms.getLocatorList().split(","));
           snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0), true);
         }
       }
@@ -2035,7 +2021,6 @@ public class SnappyTest implements Serializable {
       leadHost = getDataFromFile("leadHost");
       if (leadHost == null && isUserConfTest) {
         leadHost = SnappyPrms.getLeadHost();
-        Log.getLogWriter().info("SS - lead host is :  " + leadHost);
         snappyTest.writeNodeConfigData("leadHost", leadHost, false);
       }
       if (leadHost == null)
@@ -2105,9 +2090,9 @@ public class SnappyTest implements Serializable {
         }
         if (SnappyPrms.hasDynamicAppProps()) {
           String dmlProps = dynamicAppProps.get(getMyTid());
-          if(dmlProps == null) {
+          if (dmlProps == null) {
             dmlProps = dynamicAppProps.get(getMyTid());
-            if(dmlProps == null) throw new TestException("Test issue: dml statement for " +
+            if (dmlProps == null) throw new TestException("Test issue: dml statement for " +
                 getMyTid() + " is null");
           }
           APP_PROPS = "\"" + APP_PROPS + "," + dmlProps + "\"";
@@ -2168,7 +2153,7 @@ public class SnappyTest implements Serializable {
         logFile = new File(dest);
         if (SnappyPrms.hasDynamicAppProps()) {
           String dmlProps = dynamicAppProps.get(getMyTid());
-          if(dmlProps == null)
+          if (dmlProps == null)
             throw new TestException("dml props for thread " + getMyTid() + " is null)");
           userAppArgs = userAppArgs + " " + dmlProps;
         }
@@ -2177,12 +2162,11 @@ public class SnappyTest implements Serializable {
           if (appName.equals("CDCIngestionApp2")) {
             int BBfinalStart2 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP2");
             int BBfinalEnd2 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP2");
-            int finalStart2,finalEnd2;
-            if(BBfinalStart2 == 0 || BBfinalEnd2 == 0) {
+            int finalStart2, finalEnd2;
+            if (BBfinalStart2 == 0 || BBfinalEnd2 == 0) {
               finalStart2 = finalStart;
               finalEnd2 = finalEnd;
-            }
-            else {
+            } else {
               finalStart2 = BBfinalStart2;
               finalEnd2 = BBfinalEnd2;
             }
@@ -2191,24 +2175,22 @@ public class SnappyTest implements Serializable {
             SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
             SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 100);
           } else if (appName.equals("CDCIngestionApp1")) {
-              int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
-              int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
-              int finalStart1,finalEnd1;
-              if(BBfinalStart1 == 0 || BBfinalEnd1 == 0) {
-                 finalStart1 = finalStart;
-                 finalEnd1 = finalEnd;
-              }
-              else {
+            int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
+            int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
+            int finalStart1, finalEnd1;
+            if (BBfinalStart1 == 0 || BBfinalEnd1 == 0) {
+              finalStart1 = finalStart;
+              finalEnd1 = finalEnd;
+            } else {
               finalStart1 = BBfinalStart1;
               finalEnd1 = BBfinalEnd1;
             }
-             userAppArgs = finalStart1 + " " + finalEnd1 + " " + userAppArgs;
-             Log.getLogWriter().info("For CDCIngestionApp1 app New Start range and end range : " + finalStart1 + " & " + finalEnd1 + " and args = " + userAppArgs);
-             SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", finalEnd1 + 1);
-             SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", finalEnd1 +100);
+            userAppArgs = finalStart1 + " " + finalEnd1 + " " + userAppArgs;
+            Log.getLogWriter().info("For CDCIngestionApp1 app New Start range and end range : " + finalStart1 + " & " + finalEnd1 + " and args = " + userAppArgs);
+            SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", finalEnd1 + 1);
+            SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", finalEnd1 + 100);
 
-          }
-          else if(appName.equals("BulkDeleteApp")){
+          } else if (appName.equals("BulkDeleteApp")) {
             commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
                 " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
           }
@@ -2258,8 +2240,8 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_InitializeBB(){
-    try{
+  public static void HydraTask_InitializeBB() {
+    try {
       Log.getLogWriter().info("InsideHydraTask_InitializeBB ");
       int startR = SnappyCDCPrms.getInitStartRange();
       int endR = SnappyCDCPrms.getInitEndRange();
@@ -2268,8 +2250,7 @@ public class SnappyTest implements Serializable {
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 5000000);
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 10 + (startR + 5000000));
       Log.getLogWriter().info("Finishe HydraTask_InitializeBB ");
-    }
-    catch(Exception e){
+    } catch (Exception e) {
       Log.getLogWriter().info("HydraTask_InitializeBB exception " + e.getMessage());
     }
   }
@@ -2551,13 +2532,13 @@ public class SnappyTest implements Serializable {
       String masterHost = productConfDirPath + sep + "masterHost";
       String primaryLocatorHost = productConfDirPath + sep + "primaryLocatorHost";
       String primaryLocatorPort = productConfDirPath + sep + "primaryLocatorPort";
-      Files.delete(Paths.get(locatorList));
-      Files.delete(Paths.get(locatorConnInfo));
-      Files.delete(Paths.get(leadHost));
-      Files.delete(Paths.get(leadPort));
-      Files.delete(Paths.get(masterHost));
-      Files.delete(Paths.get(primaryLocatorHost));
-      Files.delete(Paths.get(primaryLocatorPort));
+      if (new File(locatorList).exists()) Files.delete(Paths.get(locatorList));
+      if (new File(locatorConnInfo).exists()) Files.delete(Paths.get(locatorConnInfo));
+      if (new File(leadHost).exists()) Files.delete(Paths.get(leadHost));
+      if (new File(leadPort).exists()) Files.delete(Paths.get(leadPort));
+      if (new File(masterHost).exists()) Files.delete(Paths.get(masterHost));
+      if (new File(primaryLocatorHost).exists()) Files.delete(Paths.get(primaryLocatorHost));
+      if (new File(primaryLocatorPort).exists()) Files.delete(Paths.get(primaryLocatorPort));
       Log.getLogWriter().info("Long Running Test artifacts deleted.");
     }
     // Removing twitter data directories if exists.
@@ -2789,22 +2770,22 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_deployJarUsingJDBC(){
+  public static void HydraTask_deployJarUsingJDBC() {
     snappyTest.executeDeployJar();
   }
 
-  public void executeDeployJar(){
+  public void executeDeployJar() {
     Connection conn = null;
     try {
       conn = getLocatorConnection();
-    } catch (SQLException se){
-      throw new TestException("Got exception while getting connection",se);
+    } catch (SQLException se) {
+      throw new TestException("Got exception while getting connection", se);
     }
     String userJarPath = snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
     String deployCmd = "";
     String jarName = SnappyPrms.getJarIdentifier();
     try {
-      deployCmd = "deploy jar " + jarName +" '" + userJarPath + "'";
+      deployCmd = "deploy jar " + jarName + " '" + userJarPath + "'";
       Log.getLogWriter().info("Executing deploy jar cmd : " + deployCmd);
       conn.createStatement().execute(deployCmd);
     } catch (SQLException se) {

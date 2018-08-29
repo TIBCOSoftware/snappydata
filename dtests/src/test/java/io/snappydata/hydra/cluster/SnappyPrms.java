@@ -705,9 +705,9 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
-  public static List<String> getLocatorList() {
+  public static String getLocatorList() {
     Long key = locatorList;
-    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector("localhost:1527")));
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost:1527"));
   }
 
   public static String getPrimaryLocatorHost() {
