@@ -36,6 +36,7 @@ object TableCreationJob extends SnappySQLJob {
   var numberOfLoadStages : String = _
   var isParquet : Boolean = _
   var createParquet : Boolean = _
+  var traceEvents : Boolean = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
@@ -63,9 +64,9 @@ object TableCreationJob extends SnappySQLJob {
     snc.dropTable("ORDERS", ifExists = true)
 
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream)
+      loadPerfPrintStream, trace = false, cacheTables = false)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream)
+      loadPerfPrintStream, trace = false, cacheTables = false)
 
     if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snc, tpchDataPath, isSnappy,
@@ -78,19 +79,19 @@ object TableCreationJob extends SnappySQLJob {
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet, createParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulateLineItemTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet, createParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet, createParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet, createParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet, createParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -157,6 +158,12 @@ object TableCreationJob extends SnappySQLJob {
 
     createParquet = if (config.hasPath("createParquet")) {
       config.getBoolean("createParquet")
+    } else {
+      false
+    }
+
+    traceEvents = if (config.hasPath("traceEvents")) {
+      config.getBoolean("traceEvents")
     } else {
       false
     }

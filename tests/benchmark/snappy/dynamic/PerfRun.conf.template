@@ -108,3 +108,6 @@ ExpectedResultsAvailableAt=<path-to-stock-spark-result>
 #Location of query results files
 ActualResultsAvailableAt=<path-to-actual-results>
 #ActualResultsAvailableAt=/home/kishor/SNAPPY/CURRENTWORK/volumeTesting/23May_SNAPPY_RESULT
+
+# Trace events to get granular timing info and report in loadPerfStream
+traceEvents=true

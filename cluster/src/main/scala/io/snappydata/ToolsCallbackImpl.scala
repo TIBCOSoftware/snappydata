@@ -19,21 +19,22 @@ package io.snappydata
 import java.io.File
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
-import java.util.UUID
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.ui.SQLTab
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
-import org.apache.spark.util.{SnappyUtils, Utils}
+import org.apache.spark.util.SnappyUtils
+import org.apache.spark.{Logging, SparkCallbacks, SparkContext}
 
 object ToolsCallbackImpl extends ToolsCallback with Logging {
 
@@ -77,8 +78,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     sc.removeAddedJar(jarName)
 
   /**
-    * Callback to spark Utils to fetch file
-    */
+   * Callback to spark Utils to fetch file
+   */
   override def doFetchFile(
       url: String,
       targetDir: File,
@@ -92,7 +93,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   }
 
   override def addURIs(alias: String, jars: Array[String],
-    deploySql: String, isPackage: Boolean = true): Unit = {
+      deploySql: String, isPackage: Boolean = true): Unit = {
     if (alias != null) {
       Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
     }
@@ -105,7 +106,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     // Close and reopen interpreter
     if (alias != null) {
       try {
-        lead.closeAndReopenInterpreterServer();
+        lead.closeAndReopenInterpreterServer()
       } catch {
         case ite: InvocationTargetException => assert(ite.getCause.isInstanceOf[SecurityException])
       }
@@ -131,19 +132,18 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def removePackage(alias: String): Unit = {
     GemFireXDUtils.waitForNodeInitialization()
-    val packageRegion = Misc.getMemStore.getGlobalCmdRgn()
+    val packageRegion = Misc.getMemStore.getGlobalCmdRgn
     packageRegion.destroy(alias)
   }
 
   override def setLeadClassLoader(): Unit = {
     val instance = ServiceManager.currentFabricServiceInstance
     instance match {
-      case li: LeadImpl => {
+      case li: LeadImpl =>
         val loader = li.urlclassloader
         if (loader != null) {
           Thread.currentThread().setContextClassLoader(loader)
         }
-      }
       case _ =>
     }
   }
@@ -152,14 +152,46 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     var ret: URLClassLoader = null
     val instance = ServiceManager.currentFabricServiceInstance
     instance match {
-      case li: LeadImpl => {
+      case li: LeadImpl =>
         val loader = li.urlclassloader
         if (loader != null) {
           ret = loader
         }
-      }
       case _ =>
     }
     ret
+  }
+
+  override def checkSchemaPermission(schema: String, currentUser: String): String = {
+    val ms = Misc.getMemStoreBootingNoThrow
+    if (ms != null) {
+      var conn: EmbedConnection = null
+      if (ms.isSnappyStore && Misc.isSecurityEnabled) {
+        var contextSet = false
+        try {
+          val dd = ms.getDatabase.getDataDictionary
+          conn = GemFireXDUtils.getTSSConnection(false, true, false)
+          conn.getTR.setupContextStack()
+          contextSet = true
+          val sd = dd.getSchemaDescriptor(
+            schema, conn.getLanguageConnection.getTransactionExecute, false)
+          if (sd == null) {
+            if (schema.equals(currentUser)) {
+              if (ms.tableCreationAllowed()) return currentUser
+              throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
+                schema, schema)
+            } else {
+              throw StandardException.newException(SQLState.LANG_SCHEMA_DOES_NOT_EXIST, schema)
+            }
+          }
+          PrivilegeInfo.checkOwnership(currentUser, sd, sd, dd)
+          sd.getAuthorizationId
+        } finally {
+          if (contextSet) conn.getTR.restoreContextStack()
+        }
+      } else {
+        currentUser
+      }
+    } else currentUser
   }
 }

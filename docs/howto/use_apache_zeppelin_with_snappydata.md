@@ -7,8 +7,9 @@
 	
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-    |[Version 0.7.3](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3) |[Version 0.7.3](https://zeppelin.apache.org/download.html) |[Release 1.0.1](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.1)|
-    |[Version 0.7.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.2) |[Version 0.7.2](https://zeppelin.apache.org/download.html) |[Release 1.0.0](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.0)|
+    |[Version 0.7.3.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.2) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.2](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2)|
+    |[Version 0.7.3](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.2](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.1)|
+    |[Version 0.7.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.2) |[Version 0.7.2](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.2/zeppelin-0.7.2-bin-netinst.tgz) |[Release 1.0.0](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.0)|
 
 2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
 
@@ -95,4 +96,10 @@
     | %snappydata.snappydata or </br> %snappydata.spark | This interpreter is used to write Scala code in the paragraph. SnappyContext is injected in this interpreter and can be accessed using variable **snc** |
     |%snappydata.sql | This interpreter is used to execute SQL queries on the SnappyData cluster. It also has features of executing approximate queries on the SnappyData cluster.|
 
-2. Click **Save** to apply your changes. For more information on using Zeppelin, see [Using Apache Zeppelin](../isight/quick_start_steps.md#LoggingZeppelin).
+2. Click **Save** to apply your changes.
+
+<heading2> Known Issue</heading2>
+
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
+
+
