@@ -1,7 +1,6 @@
 package io.snappydata.hydra.cdcConnector;
 
 import com.gemstone.gemfire.GemFireConfigException;
-import com.gemstone.gemfire.InternalGemFireError;
 import hydra.*;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
@@ -131,8 +130,6 @@ public class SnappyCDCTest extends SnappyTest {
 
     File orgName = new File(snappyPath + "/conf/" + nodeType);
     File bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
-    File tempConfFile = new File(snappyPath + "/conf/" + nodeType +"_temp");
-    File newNodeConfFile = new File(snappyPath + "/conf/" + nodeType +"_nn");
     
 //    FileUtils.copyFile(orgName, bkName);
 /*    if (orgName.renameTo(bkName)) {
@@ -155,7 +152,7 @@ String nodeConfig = nodeInfo+"\n";
        // stopCluster(snappyPath,);
        FileUtils.copyFile(orgName, bkName);
 
-
+        File tempConfFile = new File(snappyPath + "/conf/" + nodeType +"_temp");
         if (nodeType.equalsIgnoreCase("servers")) {
           FileWriter fw = new FileWriter(tempConfFile,true);
           fw.write(nodeConfig);
@@ -173,21 +170,26 @@ String nodeConfig = nodeInfo+"\n";
           }
           br.close();
           bw.close();
-          FileUtils.copyFile(tempConfFile, newNodeConfFile);
           if (tempConfFile.renameTo(orgName)) {
       Log.getLogWriter().info("File renamed to " + orgName);
     } else {
       Log.getLogWriter().info("Error");
-   }
+}
 
           clusterRestart(snappyPath, true, "",false,"",false);
         } else if (nodeType.equalsIgnoreCase("leads")) {
           clusterRestart(snappyPath, true, nodeType,false,"",false);
         }
 
-
+        //delete the temp conf file created.
+        if (tempConfFile.delete()) {
+          System.out.println(tempConfFile.getName() + " is deleted!");
+        } else {
+          System.out.println("Delete operation is failed.");
+        }
 //        FileUtils.copyFile(bkName, orgName);
       }
+       FileUtils.copyFile(bkName, orgName);
 
     } catch (FileNotFoundException e) {
       // File not found
@@ -195,44 +197,9 @@ String nodeConfig = nodeInfo+"\n";
     } catch (IOException e) {
       // Error when writing to the file
       e.printStackTrace();
-    }catch(InternalGemFireError ex){
-      Log.getLogWriter().info("Got " + ex.getMessage());
-      try {
-        //run the original conf ,where older servers will start first.
-        FileUtils.copyFile(bkName, orgName);
-        clusterRestart(snappyPath, true, "",false,"",false);
-
-        Thread.sleep(120000);
-        //run the temp file ,where the newer server will start
-        if (newNodeConfFile.renameTo(orgName)) {
-          Log.getLogWriter().info("File renamed to " + orgName);
-        } else {
-          Log.getLogWriter().info("Error");
-        }
-        clusterRestart(snappyPath, false, "",false,"",false);
-      }
-      catch (IOException e) {
-        // Error when writing to the file
-        e.printStackTrace();
-      }
-      catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       Log.getLogWriter().info("Caught Exception in addNewNode " + e.getMessage());
     }
-    finally{
-      try {
-       //restore the original file
-       FileUtils.copyFile(bkName, orgName);
-//        clusterRestart(snappyPath, true, "",false,"",false);
-      }
-      catch (IOException e) {
-        // Error when writing to the file
-        e.printStackTrace();
-      }
-     }
   }
 
   public static void clusterModifyAndRestart(String snappyPath,String nodeType,String nodeConfig){
@@ -324,15 +291,15 @@ String nodeConfig = nodeInfo+"\n";
     String[] tableArr = new String [tableCnt];
     Map<String,Integer> tableCntMap = new HashMap<>();
     int cnt = 0;
-      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP'";
+      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs1 = con.createStatement().executeQuery(tableQry);
       while(rs1.next())
       {
         String tableName = rs1.getString("TABLENAME");
-        if(!tableName.contains("SNAPPYSYS_INTERNA")) {
+      //  if(!tableName.contains("SNAPPYSYS_INTERNA")) {
           tableArr[cnt] = tableName;
           cnt++;
-        }
+        //}
       }
       rs1.close();
       for(int i = 0;i<tableArr.length;i++){
@@ -618,6 +585,7 @@ String nodeConfig = nodeInfo+"\n";
      snappyTest.executeProcess(pbClustStop, logFile);
      Long totalTime = (System.currentTimeMillis() - startTime);
      Log.getLogWriter().info("The cluster took " + totalTime + " ms to shut down");
+     getClusterStatus(snappyPath,logFile);
    }
 
   public static void startCluster(String snappyPath,File logFile){
@@ -626,7 +594,17 @@ String nodeConfig = nodeInfo+"\n";
     snappyTest.executeProcess(pbClustStart, logFile);
     Long totalTime1 = (System.currentTimeMillis() - startTime1);
     Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to start up");
+    getClusterStatus(snappyPath,logFile);
   }
+
+   public static void getClusterStatus(String snappyPath,File logFile){
+    Log.getLogWriter().info("Now getting cluster status");
+    ProcessBuilder pbClustStats = new ProcessBuilder(snappyPath + "/sbin/snappy-status-all.sh");
+    Long startTime1 = System.currentTimeMillis();
+    snappyTest.executeProcess(pbClustStats, logFile);
+    Long totalTime1 = (System.currentTimeMillis() - startTime1);
+    Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to report status");
+   }
 
   public static void stopIndividualNode(String snappyPath,String script,File logFile){
     try {

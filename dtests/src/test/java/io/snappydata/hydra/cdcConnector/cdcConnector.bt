@@ -23,7 +23,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
     initEndRange=1000050
     numVMsToStop=1
 
- io/snappydata/hydra/cdcConnector/cdcHATest.conf
+ /*io/snappydata/hydra/cdcConnector/cdcHATest.conf
     A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
     B=lead leadHosts=1 leadVMsPerHost=2 leadThreadsPerVM=2
     C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -114,4 +114,4 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
       initEndRange=65000010
       totalTaskTimeSec=172800
       maxResultWaitSec=36000
-   
+   */
