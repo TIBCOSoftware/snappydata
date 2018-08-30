@@ -124,7 +124,7 @@ allprojects {
     snappyStoreVersion = '1.6.2'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.1'
+    zeppelinInterpreterVersion = '0.7.3.2'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
@@ -887,10 +887,12 @@ task product(type: Zip) {
         copy {
           from gfeConnectorProject.jar.destinationDir
           into "${snappyProductDir}/connectors"
+          include "*.jar"
         }
         copy {
           from gfeFunctionProject.jar.destinationDir
           into "${snappyProductDir}/connectors"
+          include "*.jar"
         }
         copy {
           from "${gemfireConnectorProject.projectDir}/examples/quickstart/data"
@@ -1138,7 +1140,7 @@ task checkAll {
   if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (isEnterpriseProduct && hasGemFireConnectorProject) {
+  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject && isEnterpriseProduct) {
     dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
@@ -1176,7 +1178,7 @@ int getLast(includeTestFiles, pattern) {
 }
 
 task packageZeppelinInterpreter { doLast {
-  String zeppelinInterpreterJarName = "snappydata-zeppelin-${zeppelinInterpreterVersion}.jar"
+  String zeppelinInterpreterJarName = "snappydata-zeppelin_${scalaBinaryVersion}-${zeppelinInterpreterVersion}.jar"
   String zeppelinInterpreterDir = System.env.ZEPPELIN_INTERPRETER_DIR
 
   if (zeppelinInterpreterDir == null || zeppelinInterpreterDir.length() == 0) {

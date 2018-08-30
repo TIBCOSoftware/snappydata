@@ -16,23 +16,16 @@
  */
 package org.apache.spark.sql.policy
 
-import java.sql.{Connection, DriverManager}
+import java.sql.{Connection, DriverManager, Statement}
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
-import io.snappydata.SnappyFunSuite
-import io.snappydata.core.Data
 import org.junit.Assert.assertEquals
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.SnappyContext
 
-class PolicyJdbcClientTest extends SnappyFunSuite
-    with Logging
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
-
+class PolicyJdbcClientTest extends PolicyTestBase {
 
   var serverHostPort: String = _
 
@@ -40,7 +33,7 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   val tableOwner = "ashahid"
   val numElements = 100
   val colTableName: String = s"$tableOwner.ColumnTable"
-  val rowTableName: String = s"${tableOwner}.RowTable"
+  val rowTableName: String = s"$tableOwner.RowTable"
   var ownerContext: SnappyContext = _
 
   override def beforeAll(): Unit = {
@@ -68,16 +61,16 @@ class PolicyJdbcClientTest extends SnappyFunSuite
       stmt.execute(s"alter table $colTableName enable row level security")
       stmt.execute(s"alter table $rowTableName enable row level security")
     } finally {
-      conn.close
+      conn.close()
     }
 
   }
 
   override def afterAll(): Unit = {
-    ownerContext.dropTable(colTableName, true)
-    ownerContext.dropTable(rowTableName, true)
+    ownerContext.dropTable(colTableName, ifExists = true)
+    ownerContext.dropTable(rowTableName, ifExists = true)
+    TestUtil.stopNetServer()
     super.afterAll()
-
   }
 
   test("Policy creation on a column table using jdbc client") {
@@ -271,7 +264,17 @@ class PolicyJdbcClientTest extends SnappyFunSuite
     }
   }
 
-  test("sys.syspolicies table") {
+
+  test("old query plan invalidation on enabling rls on column table using jdbc client") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
+  }
+
+  test("old query plan invalidation on enabling rls on row table using jdbc client") {
+    this.testQueryPlanInvalidationOnRLSEnbaling(rowTableName)
+  }
+
+  test("syspolicies table/vti") {
+    // create some policies on column & row tables
     val conn = getConnection(Some(tableOwner))
     val stmt = conn.createStatement()
     try {
@@ -281,21 +284,69 @@ class PolicyJdbcClientTest extends SnappyFunSuite
       stmt.execute(s"create policy testPolicy2 on  " +
           s"$rowTableName for select to current_user using id < 30")
 
-      stmt.executeQuery("select * from sys.syspolicies")
+      stmt.execute(s"create policy testPolicy3 on  " +
+          s"$rowTableName for select to current_user using id < 70")
+
+      val rs = stmt.executeQuery("select * from sys.syspolicies")
+      val rsmd = rs.getMetaData
+      val expectedColumns = Set("NAME", "TABLESCHEMANAME", "TABLENAME",
+        "POLICYFOR", "APPLYTO", "FILTER", "OWNER")
+      assertEquals(expectedColumns.size, rsmd.getColumnCount)
+      for (i <- 1 to rsmd.getColumnCount) {
+        assert(expectedColumns.contains(rsmd.getColumnName(i)))
+      }
+
+      val expectedResults = Map("TESTPOLICY1" -> (tableOwner.toUpperCase,
+          colTableName.toUpperCase.substring(colTableName.indexOf('.') + 1),
+          "SELECT", "CURRENT_USER", "ID > 10",
+          tableOwner.toUpperCase),
+        "TESTPOLICY2" -> (tableOwner.toUpperCase,
+            rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
+            "SELECT", "CURRENT_USER", "ID < 30",
+            tableOwner.toUpperCase),
+        "TESTPOLICY3" -> (tableOwner.toUpperCase,
+            rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
+            "SELECT", "CURRENT_USER", "ID < 70",
+            tableOwner.toUpperCase)
+      )
+      var actualNumRows = 0
+      while (rs.next()) {
+        actualNumRows += 1
+        assert(expectedResults.contains(rs.getString("NAME")))
+        val expectedRow = expectedResults(rs.getString("NAME"))
+        assertEquals(expectedRow._1, rs.getString("TABLESCHEMANAME"))
+        assertEquals(expectedRow._2, rs.getString("TABLENAME"))
+        assertEquals(expectedRow._3, rs.getString("POLICYFOR"))
+        assertEquals(expectedRow._4, rs.getString("APPLYTO"))
+        assertEquals(expectedRow._5, rs.getString("FILTER"))
+        assertEquals(expectedRow._6, rs.getString("OWNER"))
+      }
+      assertEquals(expectedResults.size, actualNumRows)
+
+      // check the connection metadata apis are not getting polluted
+      // with policies
+      val md = conn.getMetaData
+      val tableTypes = md.getTableTypes
+      // table type should not include policy
+      while (tableTypes.next()) {
+        val tt = tableTypes.getString(1)
+        assert(tt.toLowerCase.indexOf("policy") == -1)
+        assert(tt.toLowerCase.indexOf("policies") == -1)
+      }
+
+      val rs1 = md.getTables(null, null, "%", null)
+      while (rs1.next()) {
+        val name = rs1.getString("TABLE_NAME").toUpperCase
+        assert(name.indexOf("POLICY") == -1)
+        assert(name.indexOf("POLICIES") == -1)
+      }
+
       stmt.execute("drop policy testPolicy1")
       stmt.execute("drop policy testPolicy2")
+      stmt.execute("drop policy testPolicy3")
     } finally {
       conn.close()
-
     }
-  }
-
-  test("old query plan invalidation on enabling rls on column table using jdbc client") {
-    this.testQueryPlanInvalidationOnRLSEnbaling(colTableName)
-  }
-
-  test("old query plan invalidation on enabling rls on row table using jdbc client") {
-    this.testQueryPlanInvalidationOnRLSEnbaling(rowTableName)
   }
 
   private def testQueryPlanInvalidationOnRLSEnbaling(tableName: String): Unit = {
@@ -358,7 +409,76 @@ class PolicyJdbcClientTest extends SnappyFunSuite
 
   }
 
+  test("Drop table with policies using JDBC client") {
+    val seq2 = for (i <- 0 until numElements) yield {
+      (s"name_$i", i)
+    }
+    val rdd2 = sc.parallelize(seq2)
 
+    val dataDF2 = ownerContext.createDataFrame(rdd2)
+
+    val colTableName2: String = s"$tableOwner.ColumnTable2"
+    val rowTableName2: String = s"$tableOwner.RowTable2"
+    val colTableName3: String = s"$tableOwner.ColumnTable3"
+
+    ownerContext.sql(s"CREATE TABLE $colTableName2 (name String, id Int) " +
+        s" USING column ")
+    ownerContext.sql(s"CREATE TABLE $rowTableName2 (name String, id Int) " +
+        s" USING row ")
+    ownerContext.sql(s"CREATE TABLE $colTableName3 (name String, id Int) " +
+        s" USING column ")
+
+    dataDF2.write.insertInto(colTableName2)
+    dataDF2.write.insertInto(rowTableName2)
+    dataDF2.write.insertInto(colTableName3)
+
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    try {
+      stmt.execute(s"alter table $colTableName2 enable row level security")
+      stmt.execute(s"alter table $rowTableName2 enable row level security")
+      stmt.execute(s"alter table $colTableName3 enable row level security")
+
+      stmt.execute(s"create policy testPolicy1_for_ColumnTable3 on  " +
+          s"$colTableName3 for select to current_user using id > 11")
+      stmt.execute(s"create policy testPolicy2_for_ColumnTable3 on  " +
+          s"$colTableName3 for select to current_user using id < 22")
+
+      testDropTable(colTableName2, stmt)
+      testDropTable(rowTableName2, stmt)
+
+      // colTableName3 was not dropped, so policies should exist
+      assert(checkIfPoliciesOnTableExist(colTableName3))
+
+      testDropTable(colTableName3, stmt)
+    } finally {
+      conn.close()
+    }
+
+  }
+
+  private def testDropTable(tableName: String, stmt: Statement) {
+    stmt.execute(s"create policy testPolicy11 on  " +
+        s"$tableName for select to current_user using id > 11")
+    stmt.execute(s"create policy testPolicy22 on  " +
+        s"$tableName for select to current_user using id < 22")
+    stmt.execute(s"drop table $tableName")
+    assert(!checkIfPoliciesOnTableExist(tableName), s"Policy for $tableName should not be present")
+  }
+
+  // return true if a policy exists for a table else false
+  private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies(true)
+    val it = policies.listIterator()
+    while (it.hasNext) {
+      val p = it.next()
+      //      println("Actual tablename:" + tableName + ", tableName in policy:" + p.tableName)
+      if ((p.schemaName + "." + p.tableName).equals(tableName.toUpperCase)) {
+        return true
+      }
+    }
+    false
+  }
 
   private def getConnection(user: Option[String] = None): Connection = {
     val props = new Properties()
@@ -369,5 +489,3 @@ class PolicyJdbcClientTest extends SnappyFunSuite
   }
 
 }
-
-

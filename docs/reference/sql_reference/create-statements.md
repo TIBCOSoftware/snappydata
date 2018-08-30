@@ -1,6 +1,6 @@
 # Create Statements
 
-Use Create statements to create functions, indexes, procedures, schemas, synonyms, tables, triggers, and views.
+Use Create statements to create functions, indexes, procedures, schemas, tables, and views.
 
 -   **[CREATE DISKSTORE](create-diskstore.md)**
 

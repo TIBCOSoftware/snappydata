@@ -33,7 +33,7 @@ sbin="$(dirname "$(absPath "$0")")"
 
 # Launch the slaves
 if echo $@ | grep -qw start; then
-  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" $@ $LOCATOR_STARTUP_OPTIONS
+  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" "$@" $LOCATOR_STARTUP_OPTIONS $ENCRYPT_PASSWORD_OPTIONS
 else
-  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" $@
+  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" "$@"
 fi
