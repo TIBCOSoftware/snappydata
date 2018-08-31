@@ -10,6 +10,8 @@ io/snappydata/hydra/clusterRecovery/newNodeStartingFirstTest.conf
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
     dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
     snappyPath="$GEMFIRE/../snappy"
+    nodeName=""
+    nodeDirPath=""
 
 
 io/snappydata/hydra/clusterRecovery/clusterRestartWithMinMem.conf

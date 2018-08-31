@@ -26,7 +26,7 @@ object EvictionTestNWQueriesApp {
   def main(args: Array[String]) {
     val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("EvictionTestNWQueriesApp Application").
+        setAppName("EvictionTestNWQueriesApp Application_" + System.currentTimeMillis()).
         set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)

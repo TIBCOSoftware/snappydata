@@ -26,7 +26,7 @@ Any Spark application can also use the SnappyData as store and Spark as a comput
 // Start the Spark standalone cluster from SnappyData base directory
 $ ./sbin/start-all.sh 
 // Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf  $SNAPPY_HOME/examples/jars/quickstart.jar
+$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort $SNAPPY_HOME/examples/jars/quickstart.jar
 
 // The results can be seen on the command line.
 ```

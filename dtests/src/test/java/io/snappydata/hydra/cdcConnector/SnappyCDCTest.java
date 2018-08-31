@@ -291,15 +291,15 @@ String nodeConfig = nodeInfo+"\n";
     String[] tableArr = new String [tableCnt];
     Map<String,Integer> tableCntMap = new HashMap<>();
     int cnt = 0;
-      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP'";
+      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs1 = con.createStatement().executeQuery(tableQry);
       while(rs1.next())
       {
         String tableName = rs1.getString("TABLENAME");
-        if(!tableName.contains("SNAPPYSYS_INTERNA")) {
+      //  if(!tableName.contains("SNAPPYSYS_INTERNA")) {
           tableArr[cnt] = tableName;
           cnt++;
-        }
+        //}
       }
       rs1.close();
       for(int i = 0;i<tableArr.length;i++){

@@ -13,7 +13,6 @@ SHOW
    INDEXES [ IN schemaName | FROM table-Name ] |
    PROCEDURES [ IN schemaName ] |
    SCHEMAS |
-   SYNONYMS [ IN schemaName ] |
    TABLES [ IN schemaName ] |
    VIEWS [ IN schemaName ] |
 }
@@ -32,12 +31,9 @@ The following are covered in this section:
 
 - [SHOW SCHEMAS](#schemas)
 
-- [SHOW SYNONYMS](#synonyms)
-
 - [SHOW TABLES](#tables)
 
 - [SHOW VIEWS](#views)
-
 
 ## Description
 
@@ -246,26 +242,6 @@ SYSSTAT
 12 rows selected
 ```
 
-<a id= synonyms> </a>
-<h4>**SHOW SYNONYMS**</h4>
-
-SHOW SYNONYMS displays all synonyms in the database that have been created with the CREATE SYNONYMS statement.
-
-If `IN schemaName` is specified, only synonyms in the specified schema are displayed.
-
-**Example**
-
-``` pre
-snappy> CREATE SYNONYM myairline FOR airlineREF_1;
-
-snappy> SHOW SYNONYMS;
-TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
------------------------------------------------------------------------------------ 
-APP                 |MYAIRLINE                     |SYNONYM   |                    
-
-1 row selected
-```
-
 <a id= tables> </a>
 <h4>**SHOW TABLES**</h4>
 
@@ -334,8 +310,6 @@ APP                 |V2                            |VIEW      |
 
 * [CREATE SCHEMA](../sql_reference/create-schema/)
 
-* [CREATE SYNONYM]()
-
-* [CREATE TABLE using ](../sql_reference/create-table.md)
+* [CREATE TABLE](../sql_reference/create-table.md)
 
 * [CREATE VIEW]()
