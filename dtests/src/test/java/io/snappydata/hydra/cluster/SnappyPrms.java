@@ -863,7 +863,7 @@ public class SnappyPrms extends BasePrms {
 
   public static String getUserConfLocation() {
     Long key = userConfLocation;
-    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, SnappyTest.productConfDirPath));
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
   public static Vector getPersistenceModeList() {

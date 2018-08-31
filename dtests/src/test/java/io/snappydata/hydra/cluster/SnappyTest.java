@@ -941,9 +941,12 @@ public class SnappyTest implements Serializable {
   }
 
   protected void copyUserConfs(String fileName) {
-    //if (doneCopying) return;
     String filePath = productConfDirPath + fileName;
-    File srcDir = new File(SnappyPrms.getUserConfLocation());
+    String userConfLocation = SnappyPrms.getUserConfLocation();
+    if (userConfLocation == null) {
+      throw new TestException("User conf location is not provided for starting the cluster..");
+    }
+    File srcDir = new File(userConfLocation);
     File srcFile = null, destDir = null;
     try {
       String srcFilePath = srcDir.getCanonicalPath() + File.separator + fileName;
@@ -956,7 +959,6 @@ public class SnappyTest implements Serializable {
     } catch (IOException e) {
       throw new TestException("Error occurred while copying conf from file: " + srcFile + "\n " + e.getMessage());
     }
-    //doneCopying = true;
   }
 
   /**
