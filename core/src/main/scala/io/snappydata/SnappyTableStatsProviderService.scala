@@ -162,15 +162,11 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           memberStats = new MemberStatistics(memMap)
           if (dssUUID != null) {
             members.justPut(dssUUID.toString, memberStats)
-          } else if (id != null) {
-            members.justPut(id, memberStats)
           }
         } else {
           memberStats.updateMemberStatistics(memMap)
           if (dssUUID != null) {
             members.justPut(dssUUID.toString, memberStats)
-          } else if (id != null) {
-            members.justPut(id, memberStats)
           }
         }
 
@@ -205,10 +201,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
     catch {
-      case NonFatal(e) => {
+      case NonFatal(e) =>
         log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
         log.debug(e.getMessage, e)
-      }
     }
 
     val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
@@ -217,18 +212,16 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       try {
         // External Tables
         hiveTables.collect {
-          case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
+          case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
             new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
               table.externalStore, table.dataSourcePath, table.driverClass)
-          }
         }
       }
       catch {
-        case NonFatal(e) => {
+        case NonFatal(e) =>
           log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
           log.debug(e.getMessage, e)
           mutable.Buffer.empty[SnappyExternalTableStats]
-        }
       }
     }
 
@@ -243,11 +236,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
         val tableName = rs.getTableName
-        if (tableTypesMap.contains(tableName.toUpperCase)
-            && tableTypesMap.get(tableName.toUpperCase).get.equalsIgnoreCase("COLUMN")) {
-          rs.setColumnTable(true)
-        } else {
-          rs.setColumnTable(false)
+        tableTypesMap.get(tableName.toUpperCase) match {
+          case Some("COLUMN") => rs.setColumnTable(true)
+          case _ => rs.setColumnTable(false)
         }
         rs
       })
@@ -322,7 +313,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
                 val bucketRegion = itr.getHostedBucketRegion
                 if (bucketRegion.getBucketAdvisor.isPrimary) {
                   val batchRowCount = key.getColumnBatchRowCount(bucketRegion, re,
-                      numColumnsInTable)
+                    numColumnsInTable)
                   rowsInColumnBatch += batchRowCount
                   // check if bucket has multiple small batches
                   if (key.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX &&

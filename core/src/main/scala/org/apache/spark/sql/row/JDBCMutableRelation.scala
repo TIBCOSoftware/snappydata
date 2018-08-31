@@ -65,7 +65,7 @@ case class JDBCMutableRelation(
     with DestroyRelation
     with IndexableRelation
     with AlterableRelation
-    with RowLevelSecurityRelation
+    with NativeTableRowLevelSecurityRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -262,6 +262,27 @@ case class JDBCMutableRelation(
     }
   }
 
+    /** Get primary keys of the row table */
+    override def getPrimaryKeyColumns: Seq[String] = {
+        val conn = ConnectionPool.getPoolConnection(table, dialect,
+            connProperties.poolProps, connProperties.connProps,
+            connProperties.hikariCP)
+        try {
+            val metadata = conn.getMetaData
+            val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
+                table, conn)
+            val primaryKeys = metadata.getPrimaryKeys(null, schemaName, tableName)
+            val primaryKey = new mutable.ArrayBuffer[String](2)
+            while (primaryKeys.next()) {
+                primaryKey += primaryKeys.getString(4)
+            }
+            primaryKey
+        }
+        finally {
+            conn.close()
+        }
+    }
+
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
@@ -447,13 +468,12 @@ case class JDBCMutableRelation(
 
   private def getDataType(column: StructField): String = {
     val dataType: String = dialect match {
-      case d: JdbcExtendedDialect => {
+      case d: JdbcExtendedDialect =>
         val jd = d.getJDBCType(column.dataType, column.metadata)
         jd match {
           case Some(x) => x.databaseTypeDefinition
           case _ => column.dataType.simpleString
         }
-      }
       case _ => column.dataType.simpleString
     }
     dataType

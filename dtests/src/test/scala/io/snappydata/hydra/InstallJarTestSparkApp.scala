@@ -26,7 +26,7 @@ import scala.util.{Failure, Success, Try}
 
 object InstallJarTestSparkApp {
   val conf = new SparkConf().
-      setAppName("InstallJarTest Application")
+      setAppName("InstallJarTest Application_" + System.currentTimeMillis())
   val sc = new SparkContext(conf)
   val snc = SnappyContext(sc)
 

@@ -52,17 +52,27 @@ trait ToolsCallback {
   }
 
   def addURIs(alias: String, jars: Array[String],
-    deploySql: String, isPackage: Boolean = true): Unit
+      deploySql: String, isPackage: Boolean = true): Unit
 
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
 
-  def getAllGlobalCmnds(): Array[String]
+  def getAllGlobalCmnds: Array[String]
 
-  def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]]
+  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]]
 
   def removePackage(alias: String): Unit
 
   def setLeadClassLoader(): Unit
 
-  def getLeadClassLoader(): URLClassLoader
+  def getLeadClassLoader: URLClassLoader
+
+  /**
+   * Check whether a user has permission to change the given schema (e.g. add/drop tables)
+   *
+   * @param schema      the schema name for the permission check
+   * @param currentUser the user for the permission check
+   * @return if permission is allowed, return the schema owner which can be ldap group
+   *         else this throws an appropriate StandardException
+   */
+  def checkSchemaPermission(schema: String, currentUser: String): String
 }

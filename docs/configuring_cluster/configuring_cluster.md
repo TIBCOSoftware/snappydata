@@ -35,6 +35,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-----|-----|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
+|-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|
 |-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| 
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
@@ -84,6 +85,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-spark.executor.cores|The number of cores to use on each server. |
 |-spark.network.timeout|The default timeout for all network interactions while running queries. |
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
+|-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. Default is 2000.|
 |-spark.ui.port|Port for your SnappyData Pulse, which shows tables, memory and workload data. Default is 5050|
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
@@ -122,6 +124,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-|-|
 |-bind-address|IP address on which the server is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
+|-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|
 |-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). **work** is the default current working directory. |
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.</br>|
@@ -143,7 +146,29 @@ $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 ```
+## Specifying Configuration Properties using Environment Variables
 
+SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS and LEAD_STARTUP_OPTIONS respectivley for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when SnappyData system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties. 
+
+For example:
+```pre
+# create a spark-env.sh from the template file
+$cp conf/spark-env.sh.template conf/spark-env.sh 
+
+# Following example configuration can be added to spark-env.sh, 
+# it shows how to add security configuration using the environment variables
+
+SECURITY_ARGS="-auth-provider=LDAP -J-Dgemfirexd.auth-ldap-server=ldap://192.168.1.162:389/ -user=user1 -password=password123 -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=password123"
+
+#applies the configuration specified by SECURITY_ARGS to all locators
+LOCATOR_STARTUP_OPTIONS=”$SECURITY_ARGS”
+#applies the configuration specified by SECURITY_ARGS to all servers
+SERVER_STARTUP_OPTIONS=”$SECURITY_ARGS”
+#applies the configuration specified by SECURITY_ARGS to all leads
+LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
+
+
+```
 <a id="configure-smart-connector"></a>
 ## Configuring SnappyData Smart Connector  
 
@@ -158,7 +183,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 ```pre
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-	--packages "SnappyDataInc:snappydata:1.0.1-s_2.11" 
+	--packages "SnappyDataInc:snappydata:1.0.2-s_2.11" 
 ```
 <a id="environment"></a>
 ## Environment Settings

@@ -26,7 +26,7 @@ object ValidateNWQueriesApp {
   def main(args: Array[String]) {
     val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("ValidateNWQueries Application").
+        setAppName("ValidateNWQueries Application_" + System.currentTimeMillis()).
         set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)

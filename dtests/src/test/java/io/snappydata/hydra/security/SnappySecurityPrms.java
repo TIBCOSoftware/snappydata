@@ -46,6 +46,8 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long isPublicAccess;
 
+  public static Long isGroupAccess;
+
   public static Long onSchema;
 
   public static Long dmlOperations;
@@ -87,6 +89,11 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static boolean getIsPublic() {
     Long key = isPublicAccess;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsGroup() {
+    Long key = isGroupAccess;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

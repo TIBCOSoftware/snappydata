@@ -35,7 +35,7 @@ for element in "${servers[@]}";
 echo "******************Created conf/servers******************"
 
 
-sh $SnappyData/sbin/snappy-start-all.sh
+bash $SnappyData/sbin/snappy-start-all.sh
 
 #echo "******************start locators******************"
 #sh $SnappyData/sbin/snappy-locators.sh start -classpath=$TPCHJar

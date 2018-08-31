@@ -19,23 +19,11 @@ package org.apache.spark.sql.policy
 import java.sql.{Connection, DriverManager}
 
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
-import io.snappydata.SnappyFunSuite
-import io.snappydata.core.Data
 import org.junit.Assert._
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.{SaveMode, SnappyContext}
-import org.apache.spark.sql.catalyst.expressions.{EqualTo, Literal}
-import org.apache.spark.sql.catalyst.plans.logical.Filter
-import org.apache.spark.sql.types.StringType
-import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.sql.SnappyContext
 
-class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
-    with Logging
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
-
+class AlterTableRowLevelSecurityEnableTest extends PolicyTestBase {
 
   var serverHostPort: String = _
 
@@ -45,7 +33,7 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   val rowTable = "RowTable"
   val numElements = 100
   val colTableName: String = s"$tableOwner.$colTable"
-  val rowTableName: String = s"${tableOwner}.$rowTable"
+  val rowTableName: String = s"$tableOwner.$rowTable"
 
   var ownerContext: SnappyContext = _
 
@@ -74,10 +62,9 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   }
 
   override def afterAll(): Unit = {
-    ownerContext.dropTable(colTableName, true)
-    ownerContext.dropTable(rowTableName, true)
+    ownerContext.dropTable(colTableName, ifExists = true)
+    ownerContext.dropTable(rowTableName, ifExists = true)
     super.afterAll()
-
   }
 
   test("check rls enable/disable for jdbc client") {
@@ -197,8 +184,6 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
     } finally {
       conn.close()
     }
-
-
   }
 
 
@@ -207,5 +192,3 @@ class AlterTableRowLevelSecurityEnableTest extends SnappyFunSuite
   }
 
 }
-
-

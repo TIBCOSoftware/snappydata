@@ -118,7 +118,6 @@ public class CDCPerfSparkJob {
     Connection sqlConn = null;
     Connection snappyConn ;
     try {
-      sqlConn = getSqlServerConnection(serverInstance);
       System.out.println("The hostPort is " + hostPort);
       for (int i = 0; i < qlist.size(); i++) {
         String query = qlist.get(i);
@@ -140,19 +139,20 @@ public class CDCPerfSparkJob {
         else
         {
           System.out.println("Query contains insert/delete");
+          sqlConn = getSqlServerConnection(serverInstance);
           sqlConn.createStatement().execute(query);
         }
       }
     } catch (Exception ex) {
       System.out.println("Exception inside runMixedQuery() method" + ex.getMessage());
     } finally {
-      try {
-        if(!sqlConn.isClosed())
-          sqlConn.close();
+    /*  try {
+       *//* if(!sqlConn.isClosed())
+          sqlConn.close();*//*
 
       } catch (SQLException e) {
         e.printStackTrace();
-      }
+      }*/
     }
   }
 
@@ -165,7 +165,8 @@ public class CDCPerfSparkJob {
       for (int i = 0; i < qlist.size(); i++) {
         System.out.println("The query is " + qlist.get(i));
         PreparedStatement ps = conn.prepareStatement(qlist.get(i));
-        ps.setInt(1, (startRange - 1));
+      //  ps.setInt(1, (startRange - 1));
+        ps.setInt(1, 1);
         ps.execute();
         System.out.println("successfully executed the query");
       }
