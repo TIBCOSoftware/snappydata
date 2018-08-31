@@ -465,7 +465,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               } catch (Exception e) {
                 // ignore exception and move to next
                 Misc.getI18NLogWriter().warning(LocalizedStrings.DEBUG,
-                    "Failed to retrieve information for " + tableName + ": " + e);
+                    "Failed to retrieve information for " + tableName, e);
               }
             }
           }

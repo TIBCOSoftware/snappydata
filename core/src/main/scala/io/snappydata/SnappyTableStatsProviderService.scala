@@ -216,8 +216,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
               table.externalStore, table.dataSourcePath, table.driverClass)
         }
-      }
-      catch {
+      } catch {
         case NonFatal(e) =>
           log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
           log.debug(e.getMessage, e)
@@ -237,7 +236,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
         val tableName = rs.getTableName
         tableTypesMap.get(tableName.toUpperCase) match {
-          case Some("COLUMN") => rs.setColumnTable(true)
+          case Some(t) if t.equalsIgnoreCase("COLUMN") => rs.setColumnTable(true)
           case _ => rs.setColumnTable(false)
         }
         rs
