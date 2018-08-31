@@ -181,9 +181,23 @@ function execute() {
       export SPARK_LOCAL_IP=$host
       preCommand="export SPARK_LOCAL_IP=$SPARK_LOCAL_IP; "
     fi
+
+    clientBindAddress=
+    clientHostName=
+    clientPort=
+    dumpServerInfo=
+    for arg in $args $"${@// /\\ }"; do
+      case "$arg" in
+        -client-bind-address=*) clientBindAddress="$(echo $arg | sed 's/-client-bind-address=//')" ;;
+        -hostname-for-clients=*) clientHostName="$(echo $arg | sed 's/-hostname-for-clients=//')" ;;
+        -client-port=*) clientPort="$(echo $arg | sed 's/-client-port=//')" ;;
+        -dump-server-info) dumpServerInfo=1 ;;
+      esac
+    done
     # set the default client-bind-address and locator's peer-discovery-address
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead" ]; then
+    if [ -z "${clientBindAddress}" -a "${componentType}" != "lead" ]; then
       args="${args} -client-bind-address=${host}"
+      clientBindAddress="${host}"
     fi
     if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
@@ -194,8 +208,18 @@ function execute() {
       preCommand="${preCommand}export SPARK_PUBLIC_DNS=$SPARK_PUBLIC_DNS; "
     fi
     # Set hostname-for-clients on AWS as per SPARK_PUBLIC_DNS
-    if [ -n "${SPARK_IS_AWS_INSTANCE}" -a -n "${SPARK_PUBLIC_DNS}" -a "${componentType}" != "lead" -a "${host}" != 'localhost' -a "${host}" != "127.0.0.1" -a "${host}" != "::1" ] && ! echo $args $"${@// /\\ }" | grep -q 'hostname-for-clients='; then
+    if [ -n "${SPARK_IS_AWS_INSTANCE}" -a -n "${SPARK_PUBLIC_DNS}" -a "${componentType}" != "lead" -a "${host}" != 'localhost' -a "${host}" != "127.0.0.1" -a "${host}" != "::1" -a -z "${clientHostName}" ]; then
       args="${args} -hostname-for-clients=${SPARK_PUBLIC_DNS}"
+      clientHostName="${SPARK_PUBLIC_DNS}"
+    fi
+
+    if [ -n "${dumpServerInfo}" ]; then
+      if [ -n "${clientHostName}" ]; then
+        echo "${clientHostName}:${clientPort}"
+      else
+        echo "${clientBindAddress}:${clientPort}"
+      fi
+      exit 0
     fi
   else
     args="${dirparam}"
@@ -210,16 +234,22 @@ function execute() {
     fi
   fi
 
+  postArgs=
+  for arg in "${@// /\\ }"; do
+    case "$arg" in
+      -*) postArgs="$postArgs $arg"
+    esac
+  done
   if [ "$host" != "localhost" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
       (ssh $SPARK_SSH_OPTS "$host" \
-        "{ if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi; } && " $"${preCommand}${@// /\\ } ${args};" \
+        "{ if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi; } && " $"${preCommand}${@// /\\ } ${args} ${postArgs};" \
         < /dev/null 2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     else
       # ssh reads from standard input and eats all the remaining lines.Connect its standard input to nowhere:
-      (ssh $SPARK_SSH_OPTS "$host" $"${preCommand}${@// /\\ } ${args}" < /dev/null \
+      (ssh $SPARK_SSH_OPTS "$host" $"${preCommand}${@// /\\ } ${args} ${postArgs}" < /dev/null \
         2>&1 | sed "s/^/$host: /") &
       LAST_PID="$!"
     fi
@@ -230,7 +260,7 @@ function execute() {
          mkdir -p "$dirfolder"
       fi
     fi
-    launchcommand="${@// /\\ } ${args} < /dev/null 2>&1"
+    launchcommand="${@// /\\ } ${args} ${postArgs} < /dev/null 2>&1"
     eval $launchcommand &
     LAST_PID="$!"
   fi

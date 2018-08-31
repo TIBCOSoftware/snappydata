@@ -59,7 +59,7 @@ abstract case class JDBCAppendableRelation(
     with DestroyRelation
     with IndexableRelation
     with Logging
-    with RowLevelSecurityRelation
+    with NativeTableRowLevelSecurityRelation
     with Serializable {
 
   self =>

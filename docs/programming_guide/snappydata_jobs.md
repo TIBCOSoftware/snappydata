@@ -71,7 +71,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/S
 !!! Note
 	When submitting concurrent jobs user must ensure that the `--app-name` parameter is different for each concurrent job. If two applications with the same name are submitted concurrently, the job fails and an error is reported, as the job server maintains a map of the application names and jar files used for that application.
     
-The program must be compiled and bundled as a jar file and submitted to jobs server as shown below.
+The program must be compiled and bundled as a jar file and submitted to jobs server as shown below:
 
 ```pre
 $ ./bin/snappy-job.sh submit  \
@@ -79,7 +79,9 @@ $ ./bin/snappy-job.sh submit  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
+    --packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.7
 ```
+
 The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id of this job.
 
 - `--lead`: Specifies the host name of the lead node along with the port on which it accepts jobs (8090)
@@ -89,6 +91,8 @@ The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id
 -  `--class`: Specifies the name of the class that contains implementation of the Spark job to be run
 
 -  `--app-jar`: Specifies the jar file that packages the code for Spark job
+
+-  `--packages`: Specifies the packages names, which must be comma separated. These package names can be used to inform Spark about all the dependencies of a job. For more details, refer to [Deploying Dependency Jars](/connectors/deployment_dependency_jar.md).
 
 The status returned by the utility is displayed below:
 
@@ -136,7 +140,7 @@ For writing jobs users need to include [Maven/SBT dependencies for the latest re
 For example, gradle can be configured as:
 
 ```pre
-compile('io.snappydata:snappydata-cluster_2.11:1.0.1') {
+compile('io.snappydata:snappydata-cluster_2.11:1.0.2') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')

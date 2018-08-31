@@ -21,6 +21,7 @@ import java.net.{URL, URLClassLoader}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
+
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -30,6 +31,7 @@ import io.snappydata.impl.SnappyHiveCatalog
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.util.VersionInfo
 import org.apache.log4j.LogManager
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.SparkPlan
@@ -146,9 +148,12 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
       }
       val hc = newClient()
       // Perform some action to hit other paths that could throw warning messages.
-      ifSmartConn(() => {hc.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS")})
+      ifSmartConn(() => {
+        hc.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS")
+      })
       hc
-    } finally { // reset log config
+    } finally {
+      // reset log config
       ifSmartConn(() => {
         ClientSharedUtils.initLog4J(null, currentLevel)
       })
@@ -304,8 +309,8 @@ object HiveClientUtil {
     // replay global sql commands
     if (ToolsCallbackInit.toolsCallback != null) {
       SnappyContext.getClusterMode(sparkContext) match {
-        case _: SnappyEmbeddedMode => {
-          val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
+        case _: SnappyEmbeddedMode =>
+          val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds
           // logInfo(s"deploycmnds size = ${deployCmds.size}")
           // deployCmds.foreach(s => logDebug(s"s"))
           deployCmds.foreach(d => {
@@ -315,14 +320,14 @@ object HiveClientUtil {
               val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
               val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
               val session = SparkSession.builder().getOrCreate()
-              DeployCommand(coordinate, null, repos, cache, true).run(session)
+              DeployCommand(coordinate, alias = null, repos = repos, jarCache = cache,
+                restart = true).run(session)
             }
             else {
               // Jars we have
-              DeployJarCommand(null, cmdFields(0), true)
+              DeployJarCommand(alias = null, paths = cmdFields(0), restart = true)
             }
           })
-        }
         case _ => // Nothing
       }
     }

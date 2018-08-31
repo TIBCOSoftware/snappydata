@@ -56,7 +56,8 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateRegionTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null,
+      trace : Boolean = false, cacheTables : Boolean = true): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val regionData = sc.textFile(s"$path/region.tbl")
@@ -77,7 +78,9 @@ object TPCHReplicatedTable {
       regionDF.write.insertInto("REGION")
     } else {
       regionDF.createOrReplaceTempView("REGION")
-      sqlContext.cacheTable("REGION")
+      if(cacheTables) {
+        sqlContext.cacheTable("REGION")
+      }
       sqlContext.table("REGION").count()
     }
     val endTime = System.currentTimeMillis()
@@ -87,7 +90,8 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateNationTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null,
+      trace : Boolean = false, cacheTables : Boolean = true): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val nationData = sc.textFile(s"$path/nation.tbl")
@@ -109,7 +113,9 @@ object TPCHReplicatedTable {
       nationDF.write.insertInto("NATION")
     } else {
       nationDF.createOrReplaceTempView("NATION")
-      sqlContext.cacheTable("NATION")
+      if(cacheTables) {
+        sqlContext.cacheTable("NATION")
+      }
       sqlContext.table("NATION").count()
     }
     val endTime = System.currentTimeMillis()
@@ -119,7 +125,8 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateSupplierTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStages : Int = 1)
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStages : Int = 1,
+      trace : Boolean = false, cacheTables : Boolean = true)
       : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
@@ -163,7 +170,9 @@ object TPCHReplicatedTable {
     }
     if(!isSnappy){
       unionSupplierDF.createOrReplaceTempView("SUPPLIER")
-      sqlContext.cacheTable("SUPPLIER")
+      if(cacheTables) {
+        sqlContext.cacheTable("SUPPLIER")
+      }
       sqlContext.table("SUPPLIER").count()
     }
 

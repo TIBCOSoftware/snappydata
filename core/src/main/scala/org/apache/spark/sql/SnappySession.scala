@@ -103,7 +103,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     // replay global sql commands
     SnappyContext.getClusterMode(sparkContext) match {
       case _: SnappyEmbeddedMode =>
-        val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
+        val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds
         val nonEmpty = deployCmds.length > 0
         if (nonEmpty) {
           logInfo(s"deployCmnds size = ${deployCmds.length}")
@@ -115,11 +115,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             val coordinate = cmdFields(0)
             val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
             val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-            DeployCommand(coordinate, null, repos, cache, true).run(self)
+            DeployCommand(coordinate, null, repos, cache, restart = true).run(self)
           }
           else {
             // Jars we have
-            DeployJarCommand(null, cmdFields(0), true).run(self)
+            DeployJarCommand(null, cmdFields(0), restart = true).run(self)
           }
         })
       case _ => // Nothing
@@ -264,6 +264,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   @transient
   private[sql] var partitionPruning: Boolean = Property.PartitionPruning.get(sessionState.conf)
+
+  @transient
+  private[sql] var disableHashJoin: Boolean = Property.DisableHashJoin.get(sessionState.conf)
 
 
   /**
@@ -1456,19 +1459,18 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       ifExists: Boolean): Unit = {
 
       sessionCatalog.getTableOption(policyIdent) match {
-        case Some(ct) => {
+        case Some(ct) =>
           var currentUser = this.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
           currentUser = IdUtil.getUserAuthorizationId(
             if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
             else this.sessionState.catalog.formatDatabaseName(currentUser))
-
-          if (!SecurityUtils.allowPolicyOp(currentUser, this.sessionCatalog.
-              newQualifiedTableName(ct.properties.getOrElse(
-                PolicyProperties.targetTable, "")), this)) {
-            throw new SQLException("Only Policy Owner can drop the policy", "01548", null)
+          val callbacks = ToolsCallbackInit.toolsCallback
+          if (callbacks != null) {
+            callbacks.checkSchemaPermission(this.sessionCatalog.
+                newQualifiedTableName(ct.properties.getOrElse(
+                  PolicyProperties.targetTable, "")).schemaName, currentUser)
           }
           sessionCatalog.unregisterPolicy(policyIdent, ct)
-        }
         case None => throw new PolicyNotFoundException(policyIdent.toString, None)
       }
 
@@ -1493,7 +1495,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case tnfe: TableNotFoundException => throw tnfe
     }
 
-    if(sessionCatalog.isTemporaryTable(tableIdent)) {
+    if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("alter table not supported for temp tables")
     }
 
@@ -1506,8 +1508,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     plan match {
       case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
-        sessionCatalog.invalidateTable(tableIdent)
         rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
+        sessionCatalog.invalidateAll()
+        tableIdent.invalidate()
         SnappyStoreHiveCatalog.registerRelationDestroy()
         SnappySession.clearAllCache()
       case _ =>
@@ -1618,16 +1621,70 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
       currentUser: String, filterStr: String, filter: BypassRowLevelSecurity): Unit = {
 
+    /*
     if (!SecurityUtils.allowPolicyOp(currentUser, tableName, this)) {
       throw new SQLException("Only Table Owner can create the policy", "01548", null)
+    }
+    */
+    val callbacks = ToolsCallbackInit.toolsCallback
+    val owner = if (callbacks != null) {
+      // TODO: the authorizationID should be correctly set in SparkSQLExecuteImpl
+      // using LCC.getAuthorizationId() itself rather than getUserName()
+        callbacks.checkSchemaPermission(tableName.schemaName, currentUser)
+    } else {
+      currentUser
     }
 
     if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
       throw new AnalysisException("Currently Policy only For Select is supported")
     }
 
+    /*
+    if (isTargetExternalRelation) {
+      val targetAttributes = this.sessionState.catalog.lookupRelation(tableName).output
+      def checkForValidFilter(filter: BypassRowLevelSecurity): Unit = {
+        def checkExpression(expression: Expression): Unit = {
+          expression match {
+            case _: Attribute =>  // ok
+            case _: Literal =>  // ok
+            case _: TokenizedLiteral => // ok
+            case br: BinaryComparison => {
+              checkExpression(br.left)
+              checkExpression(br.right)
+            }
+            case logicalOr(left, right) => {
+              checkExpression(left)
+              checkExpression(right)
+            }
+            case logicalAnd(left, right) => {
+              checkExpression(left)
+              checkExpression(right)
+            }
+            case logicalIn(value, list) => {
+              checkExpression(value)
+              list.foreach(checkExpression(_))
+            }
+            case _ => // for any other type of expression
+              // it should not contain any attribute of target external relation
+              expression.foreach(x => x match {
+                case ne: NamedExpression => targetAttributes.find(_.exprId == ne.exprId).
+                    foreach( _ => throw new AnalysisException("Filter for external " +
+                        "relation cannot have functions " +
+                        "or dependent subquery involving external table's attribute") )
+              })
+
+          }
+        }
+        checkExpression(filter.child.condition)
+
+      }
+      checkForValidFilter(filter)
+
+    }
+    */
+
     sessionCatalog.registerPolicy(policyName, tableName, policyFor, applyTo, expandedPolicyApplyTo,
-      currentUser, filterStr, filter)
+      owner, filterStr, filter)
   }
   /**
    * Create an index on a table.
@@ -2415,7 +2472,7 @@ object SnappySession extends Logging {
 
   var jarServerFiles: Array[String] = Array.empty
 
-  def getJarURIs(): Array[String] = {
+  def getJarURIs: Array[String] = {
     SnappySession.synchronized({
       jarServerFiles
     })

@@ -80,7 +80,6 @@ abstract class BaseColumnFormatRelation(
     with RowInsertableRelation
     with MutableRelation {
 
-
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
   override val connectionType: ConnectionType.Value =
@@ -264,6 +263,14 @@ abstract class BaseColumnFormatRelation(
   protected def markMutablePlan(): Unit = {
     sqlContext.sparkSession.asInstanceOf[SnappySession].setMutablePlanOwner(
       resolvedName, persist = false)
+  }
+
+  /** Get key columns of the column table */
+  override def getPrimaryKeyColumns: Seq[String] = {
+    val keyColsOptions = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+    if (keyColsOptions.isDefined) {
+      keyColsOptions.get.split(",").map(_.trim)
+    } else Nil
   }
 
   /**

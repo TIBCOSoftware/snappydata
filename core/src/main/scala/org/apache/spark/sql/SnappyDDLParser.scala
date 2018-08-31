@@ -26,9 +26,11 @@ import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 import org.parboiled2._
@@ -45,7 +47,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
-import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
@@ -53,11 +55,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import scala.util.control.NonFatal
-
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-
-import scala.util.control.NonFatal
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -325,7 +322,7 @@ abstract class SnappyDDLParser(session: SparkSession)
                 push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
                 identifier ~ ws ~> {(ldapOpt: Any, x) =>
               ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
-        ).+ (commaSep) ~> {
+        ). + (commaSep) ~> {
         (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
           }).? ~> { (toOpt: Any) =>
       toOpt match {
@@ -349,10 +346,15 @@ abstract class SnappyDDLParser(session: SparkSession)
       val expandedApplyTo = if (applyToAll) {
         Seq.empty[String]
       } else {
-        import scala.collection.JavaConverters._
         ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       }
-
+      /*
+      val targetRelation = snappySession.sessionState.catalog.lookupRelation(tableIdent)
+      val isTargetExternalRelation =  targetRelation.find(x => x match {
+        case _: ExternalRelation => true
+        case _ => false
+      }).isDefined
+      */
       var currentUser = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
 
       currentUser = IdUtil.getUserAuthorizationId(
@@ -361,8 +363,9 @@ abstract class SnappyDDLParser(session: SparkSession)
 
       val policyIdent = snappySession.sessionState.catalog
           .newQualifiedTableName(policyName)
-      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent, currentUser,
-        expandedApplyTo)
+      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent,
+        currentUser, expandedApplyTo)
+
       CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, expandedApplyTo, currentUser,
         filterStr, filter)
     }
@@ -594,9 +597,12 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
     (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
-        (() => DMLExternalTable(TableIdentifier("SYSDUMMY1", Some("SYSIBM")),
+        (() => DMLExternalTable(TableIdentifier(SnappyStoreHiveCatalog.dummyTableName,
+          Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-            SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
+            SaveMode.Ignore, Map((JdbcExtendedUtils.DBTABLE_PROPERTY,
+                s"${SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME }." +
+                    s"${SnappyStoreHiveCatalog.dummyTableName}")),
             "", None)), input.sliceString(0, input.length)))
   }
 
@@ -976,7 +982,7 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet()
+    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {

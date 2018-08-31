@@ -17,11 +17,17 @@
 
 package org.apache.spark.sql.execution
 
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
+import com.pivotal.gemfirexd.internal.iapi.reference.Property
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan}
+import org.apache.spark.sql.catalyst.expressions.SortDirection
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.hive.QualifiedTableName
@@ -188,9 +194,17 @@ private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
     filter: BypassRowLevelSecurity) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    // TODO: Only allow the owner of the target table to create a policy on it
+    if (!Misc.isSecurityEnabled && !GemFireStore.ALLOW_RLS_WITHOUT_SECURITY) {
+      throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
+        null, new IllegalStateException("CREATE POLICY failed: Security (" +
+            Attribute.AUTH_PROVIDER + ") not enabled in the system"))
+    }
+    if (!Misc.getMemStoreBooting.isRLSEnabled) {
+      throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
+        null, new IllegalStateException("CREATE POLICY failed: Row level security (" +
+            Property.SNAPPY_ENABLE_RLS + ") not enabled in the system"))
+    }
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
     SparkSession.setActiveSession(snc)
     snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
       currentUser, filterStr, filter)
