@@ -104,6 +104,90 @@ class PolicyJdbcClientTest extends PolicyTestBase {
     }
   }
 
+  test("Policy application on views on table with policy created before view creation") {
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some("UserX"))
+    try {
+      stmt.execute(s"create policy testPolicy1 on  " +
+          s"$colTableName for select to current_user using id < 0")
+      stmt.execute(s"create policy testPolicy2 on  " +
+          s"$rowTableName for select to current_user using id < 0")
+      stmt.execute(s"CREATE VIEW col_view  AS SELECT id FROM $colTableName")
+      stmt.execute(s"CREATE VIEW row_view  AS SELECT id FROM $rowTableName")
+      var rs = stmt.executeQuery(s"select * from col_view")
+      var rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
+      rsSize = 0
+
+      rs = stmt.executeQuery(s"select * from row_view")
+      rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
+      rsSize = 0
+
+      val stmt1 = conn1.createStatement()
+      rs = stmt1.executeQuery(s"select * from $tableOwner.col_view")
+      while (rs.next()) rsSize += 1
+      assertEquals(0, rsSize)
+
+      rs = stmt1.executeQuery(s"select * from $tableOwner.row_view")
+      while (rs.next()) rsSize += 1
+      assertEquals(0, rsSize)
+
+      stmt.execute("drop policy testPolicy1")
+      stmt.execute("drop policy testPolicy2")
+    } finally {
+      stmt.execute("drop view col_view")
+      stmt.execute("drop view row_view")
+      conn.close()
+      conn1.close()
+    }
+  }
+
+  test("Policy application on views on table with policy created after view creation") {
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some("UserX"))
+    try {
+      stmt.execute(s"CREATE VIEW col_view  AS SELECT id FROM $colTableName")
+      stmt.execute(s"CREATE VIEW row_view  AS SELECT id FROM $rowTableName")
+      stmt.execute(s"create policy testPolicy1 on  " +
+          s"$colTableName for select to current_user using id < 0")
+      stmt.execute(s"create policy testPolicy2 on  " +
+          s"$rowTableName for select to current_user using id < 0")
+      var rs = stmt.executeQuery(s"select * from col_view")
+      var rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
+      rsSize = 0
+
+      rs = stmt.executeQuery(s"select * from row_view")
+      rsSize = 0
+      while (rs.next()) rsSize += 1
+      assertEquals(numElements, rsSize)
+      rsSize = 0
+
+      val stmt1 = conn1.createStatement()
+      rs = stmt1.executeQuery(s"select * from $tableOwner.col_view")
+      while (rs.next()) rsSize += 1
+      assertEquals(0, rsSize)
+
+      rs = stmt1.executeQuery(s"select * from $tableOwner.row_view")
+      while (rs.next()) rsSize += 1
+      assertEquals(0, rsSize)
+
+      stmt.execute("drop policy testPolicy1")
+      stmt.execute("drop policy testPolicy2")
+    } finally {
+      stmt.execute("drop view col_view")
+      stmt.execute("drop view row_view")
+      conn.close()
+      conn1.close()
+    }
+  }
+
   test("test multiple policies application using snappy context on column table") {
     this.testMultiplePolicy(colTableName)
   }
