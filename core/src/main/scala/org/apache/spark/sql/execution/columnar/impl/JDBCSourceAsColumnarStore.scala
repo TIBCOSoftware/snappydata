@@ -36,7 +36,7 @@ import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.thrift.StatementAttrs
-import io.snappydata.thrift.internal.{ClientBlob, ClientStatement}
+import io.snappydata.thrift.internal.{ClientBlob, ClientConnection, ClientStatement}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializerPool, StructTypeSerializer}
@@ -941,7 +941,16 @@ class SmartConnectorRowRDD(_session: SnappySession,
       thriftConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
         new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
         tableName, true).setMetadataVersion(relDestroyVersion).setLockOwner(updateOwner))
+    } else thriftConn.setCommonStatementAttributes(null)
+    try {
+      executeQuery(thriftConn, conn)
+    } finally if (isPartitioned) {
+      thriftConn.setCommonStatementAttributes(null)
     }
+  }
+
+  private def executeQuery(thriftConn: ClientConnection,
+      conn: Connection): (Connection, Statement, ResultSet) = {
     val sqlText = s"SELECT $columnList FROM ${quotedName(tableName)}$filterWhereClause"
 
     val args = filterWhereArgs
@@ -964,7 +973,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
     // get the txid which was used to take the snapshot.
     if (!commitTx) {
-      val getSnapshotTXId = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID(?)")
+      val getSnapshotTXId = thriftConn.prepareStatement("values sys.GET_SNAPSHOT_TXID(?)")
       getSnapshotTXId.setBoolean(1, delayRollover)
       val rs = getSnapshotTXId.executeQuery()
       rs.next()
@@ -974,7 +983,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
       SmartConnectorRDDHelper.snapshotTxIdForRead.set(txId)
       logDebug(s"The snapshot tx id is $txId and tablename is $tableName")
     }
-    thriftConn.setCommonStatementAttributes(null)
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)
   }
