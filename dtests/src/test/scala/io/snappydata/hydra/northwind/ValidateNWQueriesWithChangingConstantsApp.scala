@@ -38,21 +38,36 @@ object ValidateNWQueriesWithChangingConstantsApp {
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
     val threadID = Thread.currentThread().getId
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
         ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     // scalastyle:off println
-      pw.println(s"createAndLoadSparkTables Test started at : " + System.currentTimeMillis)
-      NWTestUtil.createAndLoadSparkTables(sqlContext)
-      println(s"createAndLoadSparkTables Test completed successfully at : " + System
-          .currentTimeMillis)
-      pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System
-          .currentTimeMillis)
-      pw.println(s"ValidateQueries for ${tableType} tables Queries Test started at :" +
-          s" " + System.currentTimeMillis)
-        NWTestUtil.executeAndValidateQueriesByChangingConstants(snc, tableType, pw, sqlContext)
-      pw.println(s"validateQueries for ${tableType} tables Queries Test completed  " +
-          s"successfully at : " + System.currentTimeMillis)
+    var startTime = System.currentTimeMillis()
+    pw.println(s"createAndLoadSparkTables Test started at : " + startTime)
+    NWTestUtil.createAndLoadSparkTables(sqlContext)
+    var finishTime = System.currentTimeMillis()
+    var totalTime = (finishTime -startTime)/1000
+    pw.println(s"createAndLoadSparkTables completed successfully in :" + totalTime + " secs.")
+    pw.flush()
+    pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at" +
+        s" :  " + System.currentTimeMillis)
+    startTime = System.currentTimeMillis()
+    val failedQueries: String = NWTestUtil.executeAndValidateQueriesByChangingConstants(snc,
+      tableType, pw, sqlContext)
+    finishTime = System.currentTimeMillis()
+    totalTime = (finishTime - startTime)/1000
+    if (!failedQueries.isEmpty) {
+      println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. See " +
+          s"${getCurrentDirectory}/${outputFile}")
+      pw.println(s"Total execution took ${totalTime} seconds.")
+      pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
+      pw.close()
+      throw new Exception(s"Validation task failed for ${tableType} tables. See " +
+          s"${getCurrentDirectory}/${outputFile}")
+    }
+      pw.println(s"ValidateQueries for ${tableType} tables Test completed successfully in : " +
+          totalTime + " secs.")
     pw.close()
   }
 }

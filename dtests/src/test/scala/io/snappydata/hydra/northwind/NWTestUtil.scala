@@ -358,9 +358,9 @@ object NWTestUtil {
   }
 
   def executeAndValidateQueriesByChangingConstants(snc: SnappyContext, tableType: String,
-      pw: PrintWriter, sqlContext: SQLContext): Unit = {
+      pw: PrintWriter, sqlContext: SQLContext): String = {
     executeQueriesByChangingConstants = true
-    validateQueries(snc, tableType, pw, sqlContext)
+    return validateQueries(snc, tableType, pw, sqlContext)
   }
 
   def validateSelectiveQueriesFullResultSet(snc: SnappyContext, tableType: String, pw:
