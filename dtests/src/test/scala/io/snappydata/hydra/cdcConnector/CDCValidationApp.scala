@@ -17,18 +17,16 @@
 package io.snappydata.hydra.cdcConnector
 
 
-import java.io.{File, PrintWriter}
-import java.sql.{Connection, DriverManager, ResultSet}
+import java.io.PrintWriter
+import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
-import breeze.numerics.abs
-import io.snappydata.hydra.SnappyTestUtils.{getTempDir, writeToFile}
-import org.apache.spark.sql.{SQLContext, SnappyContext}
-import org.apache.spark.{SparkConf, SparkContext}
-
-import scala.collection.mutable
-import scala.io.Source
 import scala.util.{Failure, Random, Success, Try}
+
+import breeze.numerics.abs
+
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.{SparkConf, SparkContext}
 
 
 object CDCValidationApp {
