@@ -1,4 +1,4 @@
-site_name: SnappyData Documentation
+site_name: SnappyData Documentation<br/><sub>v.1.0.2</sub>
 site_url: http://www.snappydata.io
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
@@ -123,6 +123,7 @@ pages:
     - 'Sketching': 'sde/sketching.md'
 - 'Working with External Data Sources': 'connectors/connector.md'
 - 'Working with External Data Sources':
+    - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
     - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
@@ -182,6 +183,11 @@ pages:
             - 'DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE': 'reference/sql_reference/drop-table.md'
             - 'DROP SCHEMA': 'reference/sql_reference/drop-schema.md'
 #            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
+        - 'DEPLOY Statements': 'reference/sql_reference/deploy.md'
+        - 'DEPLOY Statements':
+            - 'DEPLOY PACKAGE': 'reference/sql_reference/deploy_package.md'
+            - 'DEPLOY JAR': 'reference/sql_reference/deploy_jar.md'
+            - 'UNDEPLOY': 'reference/sql_reference/undeploy.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'

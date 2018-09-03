@@ -5,7 +5,7 @@ Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform 
 You can set up SnappyData cluster on Amazon Web Services using one of the following options:
 
 *	[SnappyData CloudBuilder](#usingcloudbuiler)
-*	[ECS Scripts](#EC2)	
+*	[EC2 Scripts](#EC2)	
 *	[AWS Management Console](#usingawsmgmtconsole)
 
 
