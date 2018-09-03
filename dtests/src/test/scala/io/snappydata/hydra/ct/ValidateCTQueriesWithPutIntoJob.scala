@@ -18,13 +18,15 @@
 package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
+
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import util.TestException
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SnappySession, SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 class ValidateCTQueriesWithPutIntoJob extends SnappySQLJob {
 
@@ -32,7 +34,8 @@ class ValidateCTQueriesWithPutIntoJob extends SnappySQLJob {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
     val threadID = Thread.currentThread().getId
-    val outputFile = "ValidateCTQueriesJob_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
+    val outputFile =
+      "ValidateCTQueriesJob_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))
     val tableType = jobConfig.getString("tableType")
     val insertUniqueRecords = jobConfig.getString("insertUniqueRecords").toBoolean
@@ -44,27 +47,35 @@ class ValidateCTQueriesWithPutIntoJob extends SnappySQLJob {
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataFilesLocation)
       CTQueries.snc = snc
+      // scalastyle:off println
       pw.println(s"Validation for $tableType tables started in snappy Job")
       val fullResultSetValidation: Boolean = jobConfig.getBoolean("fullResultSetValidation")
       val sc = SparkContext.getOrCreate()
       val sqlContext = SQLContext.getOrCreate(sc)
-      if (fullResultSetValidation)
+      if (fullResultSetValidation) {
         pw.println(s"Test will perform fullResultSetValidation")
-      else
+      }
+      else {
         pw.println(s"Test will not perform fullResultSetValidation")
+      }
       val startTime = System.currentTimeMillis
-      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-        sqlContext, insertUniqueRecords, skipNumRowsValidation)
+      CTTestUtil.insertUniqueRecords = insertUniqueRecords
+      SnappyTestUtils.numRowsValidation = skipNumRowsValidation
+      SnappyTestUtils.validateFullResultSet = fullResultSetValidation
+      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, sqlContext)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")
       if (!failedQueries.isEmpty) {
-        println(s"Validation failed for ${tableType} for queries ${failedQueries}. See ${getCurrentDirectory}/${outputFile}")
+        println(s"Validation failed for ${tableType} for queries ${failedQueries}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
         pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
         pw.close()
-        throw new TestException(s"Validation task failed for ${tableType}. See ${getCurrentDirectory}/${outputFile}")
+        throw new TestException(s"Validation task failed for ${tableType}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
       }
-      println(s"Validation for $tableType tables completed. See ${getCurrentDirectory}/${outputFile}")
+      println(s"Validation for $tableType tables completed. " +
+          s"See ${getCurrentDirectory}/${outputFile}")
       pw.println(s"Validation for $tableType tables completed.")
       pw.close()
     } match {
