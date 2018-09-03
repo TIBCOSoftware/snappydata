@@ -11,3 +11,7 @@ The following topics are covered in this section:
 * [Configuring High Availability for a Partitioned Table](configure_high_availability.md)
 
 * [Configuring Logging](configure_logging.md)
+
+* [Securing SnappyData Pulse UI Connections](../configuring_cluster/securinguiconnection.md)
+
+* [Getting Information from SnappyData System Tables](monitor-manage.md)

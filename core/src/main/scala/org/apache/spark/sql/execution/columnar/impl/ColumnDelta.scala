@@ -27,11 +27,10 @@ import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow}
+import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 /**
@@ -58,7 +57,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   }
 
   override protected def copy(buffer: ByteBuffer, isCompressed: Boolean,
-      changeOwnerToStorage: Boolean): ColumnDelta = synchronized {
+      changeOwnerToStorage: Boolean): ColumnDelta = {
     new ColumnDelta(buffer, compressionCodecId, isCompressed, changeOwnerToStorage)
   }
 
@@ -69,8 +68,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   }
 
   override def apply(region: Region[_, _], key: AnyRef, oldValue: AnyRef,
-      prepareForOffHeap: Boolean): AnyRef = synchronized {
-    if (oldValue eq null) {
+      prepareForOffHeap: Boolean): AnyRef = {
+    if (oldValue eq null) synchronized {
       // first delta, so put as is
       val result = new ColumnFormatValue(columnBuffer, compressionCodecId, isCompressed)
       // buffer has been transferred and should be removed from delta
@@ -196,7 +195,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       statsSchema(statsIndex + 2) = nullCountField
     }
     if (!hasChange) return null // indicates caller to return old column value
-    val projection = CodeGeneration.compileProjection("STATS_MERGE_PROJECT", statsSchema)
+    // generate InternalRow to UnsafeRow projection
+    val projection = UnsafeProjection.create(statsSchema.map(_.dataType))
     val statsRow = projection.apply(new GenericInternalRow(values))
     Utils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
   }

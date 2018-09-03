@@ -19,12 +19,11 @@ package org.apache.spark.sql
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.typesafe.config.{Config, ConfigException}
-import io.snappydata.Constant
+import io.snappydata.{Constant, ServiceManager}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
-
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.util.SnappyUtils
 
@@ -80,15 +79,26 @@ object SnappySessionFactory {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
+      // Calling this method from JobKill.
       override def stop(): Unit = {
-        // not stopping anything here because SQLContext doesn't have one.
+        // Stopping all StreamingQueries started by the session.
+        // If it's a normal job there won't be any streaming query and it will be a no -op.
+        this.sessionState.streamingQueryManager.active.foreach(q => q.stop())
       }
 
       // Callback added to provide our classloader to load job classes.
       // If Job class directly refers to any jars which has been provided
       // by install_jars, this can help.
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
-        SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val cl = SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+        val loader = lead.urlclassloader
+        if (loader != null) {
+          loader.getURLs.foreach(u => {
+            cl.addURL(u)
+          })
+        }
+        cl
       }
     }
 }

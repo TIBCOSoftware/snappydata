@@ -17,10 +17,10 @@
 package org.apache.spark.sql.streaming
 
 import com.typesafe.config.{Config, ConfigException}
+import io.snappydata.ServiceManager
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
-
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation, SnappySessionFactory}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
@@ -71,8 +71,9 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
 
       override def stop(): Unit = {
         try {
-          val stopGracefully = config.getBoolean("streaming.stopGracefully")
-          stop(stopSparkContext = false, stopGracefully = stopGracefully)
+          val  stopGracefully = config.getBoolean("streaming.stopGracefully")
+          SnappyStreamingContext.getActive
+              .foreach( c => c.stop(stopSparkContext = false, stopGracefully = stopGracefully))
         } catch {
           case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
         } finally {
@@ -84,7 +85,15 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
       // If Job class directly refers to any jars which has been provided
       // by install_jars, this can help.
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
-        SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val cl = SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+        val loader = lead.urlclassloader
+        if (loader != null) {
+          loader.getURLs.foreach(u => {
+            cl.addURL(u)
+          })
+        }
+        cl
       }
     }
   }

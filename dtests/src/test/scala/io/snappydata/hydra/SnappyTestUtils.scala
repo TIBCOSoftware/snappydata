@@ -35,25 +35,43 @@ object SnappyTestUtils {
   query validation has failed.
   */
   def assertJoin(snc: SnappyContext, sqlString: String, queryNum: String, pw: PrintWriter,
+      sqlContext: SQLContext, usePlanCaching: Boolean): Boolean = {
+    var validationFailed = false
+    numRowsValidation = false
+    validationFailed = assertJoin(snc, sqlString, 0, queryNum, pw, sqlContext, usePlanCaching)
+    return validationFailed
+  }
+
+  def assertJoin(snc: SnappyContext, sqlString: String, queryNum: String, pw: PrintWriter,
       sqlContext: SQLContext): Boolean = {
     var validationFailed = false
     numRowsValidation = false
-    validationFailed = assertJoin(snc, sqlString, 0, queryNum, pw, sqlContext)
+    validationFailed = assertJoin(snc, sqlString, 0, queryNum, pw, sqlContext, true)
     return validationFailed
   }
+
 
   /*
   Executes the join query, matches the result with expected result, returns false if the query
   validation has failed.
   */
+  def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, pw:
+  PrintWriter, sqlContext: SQLContext): Boolean = {
+    var validationFailed = false
+    numRowsValidation = true
+    validationFailed = assertJoin(snc, sqlString, numRows, queryNum, pw, sqlContext, true)
+    return validationFailed
+  }
+
   def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
-      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
+      pw: PrintWriter, sqlContext: SQLContext, usePlanCaching: Boolean): Boolean = {
     var validationFailed = false
     snc.sql("set spark.sql.crossJoin.enabled = true")
     if (validateFullResultSet) {
       sqlContext.sql("set spark.sql.crossJoin.enabled = true")
     }
-    validationFailed = assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext)
+    validationFailed = assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext,
+      usePlanCaching)
     return validationFailed
   }
 
@@ -62,19 +80,36 @@ object SnappyTestUtils {
    query validation has failed.
    */
   def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String,
-      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
+      pw: PrintWriter, sqlContext: SQLContext, usePlanCaching: Boolean): Boolean = {
     numRowsValidation = false
-    assertQuery(snc, sqlString, 0, queryNum, pw, sqlContext)
+    assertQuery(snc, sqlString, 0, queryNum, pw, sqlContext, usePlanCaching)
   }
 
-  /*
+  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String,
+      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
+    numRowsValidation = false
+    assertQuery(snc, sqlString, 0, queryNum, pw, sqlContext, true)
+  }
+
+    def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
+        pw: PrintWriter, sqlContext: SQLContext): Boolean = {
+      numRowsValidation = true
+      assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext, true)
+    }
+
+    /*
    Executes the query, matches the result with expected result, returns false if the query
    validation has failed.
    */
   def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
-      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
+      pw: PrintWriter, sqlContext: SQLContext, usePlanCaching: Boolean): Boolean = {
     var validationFailed = false
-    var snappyDF = snc.sql(sqlString)
+    var snappyDF: DataFrame = null
+    if(!usePlanCaching) {
+      snappyDF = snc.sqlUncached(sqlString)
+    } else {
+      snappyDF = snc.sql(sqlString)
+    }
     val count = snappyDF.count
     // scalastyle:off println
     println(s"Query $queryNum")
@@ -90,7 +125,6 @@ object SnappyTestUtils {
     }
     var fullRSValidationFailed: Boolean = false
     if (validateFullResultSet) {
-
       val snappyQueryFileName = s"Snappy_${queryNum}"
       val snappyDest: String = getQueryResultDir("snappyQueryFiles") +
           File.separator + snappyQueryFileName

@@ -16,7 +16,9 @@
  */
 package org.apache.spark.sql
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.io._
+import java.net.{URI, URL}
+import java.nio.file.{Files, Paths}
 import java.sql.{CallableStatement, Connection, SQLException}
 
 import com.pivotal.gemfirexd.Attribute
@@ -24,13 +26,15 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 import io.snappydata.impl.SmartConnectorRDDHelper
 import org.apache.hadoop.hive.ql.metadata.Table
-
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.{StructField, StructType}
-import org.apache.spark.{Logging, Partition}
+import org.apache.spark.util.MutableURLClassLoader
+import org.apache.spark.{Logging, Partition, SparkContext}
+
+import scala.collection.mutable
 
 class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
@@ -46,6 +50,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private val createUDFString = "call sys.CREATE_SNAPPY_UDF(?, ?, ?, ?)"
   private val dropUDFString = "call sys.DROP_SNAPPY_UDF(?, ?)"
   private val alterTableStmtString = "call sys.ALTER_SNAPPY_TABLE(?, ?, ?, ?, ?)"
+  private val getJarsStmtString = "call sys.GET_DEPLOYED_JARS(?)"
   private var getMetaDataStmt: CallableStatement = _
   private var createSnappyTblStmt: CallableStatement = _
   private var dropSnappyTblStmt: CallableStatement = _
@@ -54,15 +59,16 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private var createUDFStmt: CallableStatement = _
   private var dropUDFStmt: CallableStatement = _
   private var alterTableStmt: CallableStatement = _
+  private var getJarsStmt: CallableStatement = _
 
   clusterMode match {
-    case ThinClientConnectorMode(_, url) =>
+    case ThinClientConnectorMode(sc, url) =>
       connectionURL = url
-      initializeConnection()
+      initializeConnection(sc)
     case _ =>
   }
 
-  def initializeConnection(): Unit = {
+  def initializeConnection(sc: SparkContext): Unit = {
     val jdbcOptions = new JDBCOptions(connectionURL + getSecurePart + ";route-query=false;", "",
       Map("driver" -> Constant.JDBC_CLIENT_DRIVER))
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
@@ -74,6 +80,15 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     createUDFStmt = conn.prepareCall(createUDFString)
     dropUDFStmt = conn.prepareCall(dropUDFString)
     alterTableStmt = conn.prepareCall(alterTableStmtString)
+    getJarsStmt = conn.prepareCall(getJarsStmtString)
+    if (sc != null && System.getProperty("pull-deployed-jars", "true").toBoolean) {
+      try {
+        executeGetJarsStmt(sc)
+      } catch {
+        case sqle: SQLException => logWarning(s"could not get jar and" +
+            s" package information from snappy cluster", sqle)
+      }
+    }
   }
 
   private def getSecurePart: String = {
@@ -97,7 +112,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
         // attempt to create a new connection if connection
         // is closed
         conn.close()
-        initializeConnection()
+        initializeConnection(null)
         function
     }
   }
@@ -165,6 +180,35 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
     alterTableStmt.setString(4, column.dataType.simpleString)
     alterTableStmt.setBoolean(5, column.nullable)
     alterTableStmt.execute()
+  }
+
+  private def executeGetJarsStmt(sc: SparkContext): Unit = {
+    getJarsStmt.registerOutParameter(1, java.sql.Types.VARCHAR)
+    getJarsStmt.execute()
+    val jarsString = getJarsStmt.getString(1)
+    var mutableList = new mutable.MutableList[URL]
+    if (jarsString != null && jarsString.nonEmpty) {
+      // comma separated list of file urls will be obtained
+      jarsString.split(",").foreach(f => {
+        mutableList.+=(new URL(f))
+        val jarpath = f.substring(5)
+        if (Files.isReadable(Paths.get(jarpath))) {
+          try {
+            sc.addJar(jarpath)
+          } catch {
+            // warn
+            case ex: Exception => logWarning(s"could not add path $jarpath to SparkContext", ex)
+          }
+        } else {
+          // May be the smart connector app does not care about the deployed jars or
+          // the path is not readable so just log warning
+          logWarning(s"could not add path $jarpath to SparkContext as the file is not readable")
+        }
+      })
+      val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+      val newClassLoader = new MutableURLClassLoader(mutableList.toArray, parentLoader)
+      Thread.currentThread().setContextClassLoader(newClassLoader)
+    }
   }
 
   private def executeDropTableStmt(tableIdent: QualifiedTableName,

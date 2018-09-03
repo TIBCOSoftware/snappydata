@@ -21,12 +21,14 @@ import java.sql.SQLException
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TRIPDATA}
+
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{AnalysisException, Row, SaveMode, TableNotFoundException}
+import org.apache.spark.sql._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import scala.util.{Failure, Success, Try}
+
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 
 /**
  * Tests for ROW tables.
@@ -71,6 +73,22 @@ class RowTableTest
     snc.createTable(tableName, "row", dataDF.schema, props)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
+    assert(r.length == 0)
+    println("Successful")
+  }
+
+  test("Test the fetch first n row only test. with and without n parameter") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.createTable(tableName, "row", dataDF.schema, props)
+    var result = snc.sql("SELECT * FROM " + tableName + " fetch first 4 row only ")
+    var r = result.collect
+    assert(r.length == 0)
+
+    result = snc.sql("SELECT * FROM " + tableName + " fetch first row only")
+    r = result.collect
     assert(r.length == 0)
     println("Successful")
   }
@@ -706,4 +724,31 @@ class RowTableTest
 
     session.sql("drop table airline")
   }
+
+    test("Test method for getting primary keys of row tables") {
+        var session = new SnappySession(snc.sparkContext)
+        session.sql("drop table if exists temp1")
+        session.sql("drop table if exists temp2")
+        session.sql("drop table if exists temp3")
+
+        session.sql("create table temp1(id1 bigint not null primary key , name1 varchar(10)) ")
+        session.sql("create table temp2(id1 bigint not null , name1 varchar(10)) ")
+        session.sql("create table temp3(id1 bigint not null , name1 varchar(10), " +
+            "id3 bigint not null, id2 bigint not null, constraint netw_pk primary key (id2, id1)) ")
+
+        val res1 = session.sessionCatalog.getKeyColumns("temp1")
+        assert(res1.collect().size == 1)
+
+        val res2 = session.sessionCatalog.getKeyColumns("temp2")
+        assert(res2.collect().size == 0)
+
+        val res3 = session.sessionCatalog.getKeyColumns("temp3")
+        assert(res3.collect().size == 2)
+
+        Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+            case Success(df) => throw new AssertionError(
+                "Should not have succedded with incorrect options")
+            case Failure(error) => // Do nothing
+        }
+    }
 }

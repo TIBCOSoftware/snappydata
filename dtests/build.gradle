@@ -156,3 +156,5 @@ testClasses.doLast {
     }
   }
 }
+
+check.dependsOn test, scalaTest

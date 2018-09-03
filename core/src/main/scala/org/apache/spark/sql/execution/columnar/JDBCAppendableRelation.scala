@@ -59,6 +59,7 @@ abstract case class JDBCAppendableRelation(
     with DestroyRelation
     with IndexableRelation
     with Logging
+    with NativeTableRowLevelSecurityRelation
     with Serializable {
 
   self =>
@@ -67,10 +68,12 @@ abstract case class JDBCAppendableRelation(
 
   var tableExists: Boolean = _
 
+  var tableCreated : Boolean = _
+
   protected final val connProperties: ConnectionProperties =
     externalStore.connProperties
 
-  protected final val connFactory: () => Connection = JdbcUtils
+  override protected final val connFactory: () => Connection = JdbcUtils
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 
@@ -112,7 +115,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Expression], prunePartitions: => Int): (RDD[Any], Array[Int]) = {
+      filters: Array[Expression], prunePartitions: () => Int): (RDD[Any], Array[Int]) = {
 
     val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
     (0 until schema.length).foreach(i =>

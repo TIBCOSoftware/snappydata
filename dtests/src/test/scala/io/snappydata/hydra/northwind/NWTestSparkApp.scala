@@ -28,7 +28,7 @@ object NWTestSparkApp {
 
   def main(args: Array[String]) {
     val conf = new SparkConf().
-        setAppName("NWTestSpark Application")
+        setAppName("NWTestSpark Application_" + System.currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)

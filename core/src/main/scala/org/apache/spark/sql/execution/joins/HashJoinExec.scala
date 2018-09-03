@@ -203,12 +203,13 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
-        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
-        streamRDDs
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
+          preferredLocations) +: streamRDDs.tail
       }
       (streamPlanRDDs, buildRDDs)
     } else {
@@ -230,7 +231,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         (buildRDDs, buildRDDs.head.getNumPartitions)
       } else {
         // Equal partitions
-        ((streamRDDs ++ buildRDDs), streamRDDs.head.getNumPartitions)
+        (streamRDDs ++ buildRDDs, streamRDDs.head.getNumPartitions)
       }
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
@@ -247,17 +248,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
-        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd, buildRDDs,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs.map(rdd => new DelegateRDD[InternalRow](
-          rdd.sparkContext, rdd, preferredLocations))
+          rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, preferredLocations)))
+        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
     }
   }
 
@@ -274,10 +275,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
-        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs
       }
@@ -309,17 +310,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
-        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd, buildRDDs,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
             streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-              rdd.sparkContext, rdd, preferredLocations))
+              rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs.map(rdd => new DelegateRDD[InternalRow](
-          rdd.sparkContext, rdd, preferredLocations))
+          rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, preferredLocations)))
+        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
     }
   }
 

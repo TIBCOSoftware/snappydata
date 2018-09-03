@@ -17,12 +17,21 @@
 
 package org.apache.spark.sql.execution
 
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
+import com.pivotal.gemfirexd.internal.iapi.reference.Property
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
@@ -91,6 +100,20 @@ private[sql] case class DropTableOrViewCommand(isView: Boolean, ifExists: Boolea
   }
 }
 
+private[sql] case class DropPolicyCommand(ifExists: Boolean,
+    policyIdentifer: TableIdentifier) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    // check for table/view
+    val qualifiedName = catalog.newQualifiedTableName(policyIdentifer)
+
+    snc.dropPolicy(qualifiedName, ifExists)
+    Nil
+  }
+}
+
 private[sql] case class TruncateManagedTableCommand(ifExists: Boolean,
     tableIdent: TableIdentifier) extends RunnableCommand {
 
@@ -110,6 +133,17 @@ private[sql] case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
     snc.alterTable(catalog.newQualifiedTableName(tableIdent), isAddColumn = true, addColumn)
+    Nil
+  }
+}
+
+private[sql] case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
+    enableRls: Boolean) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.catalog
+    snc.alterTableToggleRLS(catalog.newQualifiedTableName(tableIdent), enableRls)
     Nil
   }
 }
@@ -149,6 +183,31 @@ private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
     val tableIdent = catalog.newQualifiedTableName(baseTable)
     val indexIdent = catalog.newQualifiedTableName(indexName)
     snc.createIndex(indexIdent, tableIdent, indexColumns, options)
+    Nil
+  }
+}
+
+private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
+    tableIdent: QualifiedTableName,
+    policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
+    currentUser: String, filterStr: String,
+    filter: BypassRowLevelSecurity) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    if (!Misc.isSecurityEnabled && !GemFireStore.ALLOW_RLS_WITHOUT_SECURITY) {
+      throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
+        null, new IllegalStateException("CREATE POLICY failed: Security (" +
+            Attribute.AUTH_PROVIDER + ") not enabled in the system"))
+    }
+    if (!Misc.getMemStoreBooting.isRLSEnabled) {
+      throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
+        null, new IllegalStateException("CREATE POLICY failed: Row level security (" +
+            Property.SNAPPY_ENABLE_RLS + ") not enabled in the system"))
+    }
+    val snc = session.asInstanceOf[SnappySession]
+    SparkSession.setActiveSession(snc)
+    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
+      currentUser, filterStr, filter)
     Nil
   }
 }

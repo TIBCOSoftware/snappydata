@@ -2,7 +2,7 @@
 
 ## Syntax
 
-```no-highlight
+```pre
 AUTOCOMMIT { ON | OFF }
 ```
 
@@ -15,11 +15,9 @@ If auto-commit mode is changed from **off** to **on** when a transaction is outs
 
 ## Example
 
-```no-highlight
-snappy(PEERCLIENT)> AUTOCOMMIT off;
-snappy(PEERCLIENT)> insert into airlines VALUES ('NA', 'New Airline', 0.20, 0.07, 0.6, 1.7, 20, 10, 5);
+```pre
+snappy> AUTOCOMMIT off;
+snappy> INSERT INTO greetings values (DEFAULT, 'hello');
 1 row inserted/updated/deleted
-snappy(PEERCLIENT)> commit;
+snappy> COMMIT;
 ```
-
-

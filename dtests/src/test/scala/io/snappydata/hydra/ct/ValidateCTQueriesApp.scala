@@ -28,7 +28,7 @@ object ValidateCTQueriesApp {
 
   def main(args: Array[String]) {
     val conf = new SparkConf().
-        setAppName("ValidateCTQueriesApp Application")
+        setAppName("ValidateCTQueriesApp Application_" + System.currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
