@@ -19,12 +19,16 @@ package org.apache.spark.sql.execution
 
 import java.sql.SQLException
 
+import scala.collection.mutable
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.Authorizer
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, TransactionResourceImpl}
 
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources.ConnectionProperties
 
 /**
@@ -73,6 +77,7 @@ object SecurityUtils {
           // Since it is a pooled connection, the  underlying embed connection
           // should not be closed, instead pooled connection should be closed,
           // so that connection pool is not exhausted
+          pooledConnection.commit()
           pooledConnection.close()
         }
       }

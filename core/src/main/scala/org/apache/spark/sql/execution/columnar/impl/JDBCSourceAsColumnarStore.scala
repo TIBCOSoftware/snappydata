@@ -29,8 +29,7 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
-import com.gemstone.gemfire.internal.shared.SystemProperties
-import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
@@ -56,7 +55,7 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.util.TaskCompletionListener
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, TaskContext, TaskKilledException}
 
 /**
  * Column Store implementation for GemFireXD.
@@ -88,9 +87,18 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     schema = StructTypeSerializer.read(kryo, input, c = null)
   }
 
+  private def checkTaskCancellation(): Unit = {
+    val context = TaskContext.get()
+    if ((context ne null) && context.isInterrupted()) {
+      throw new TaskKilledException
+    }
+  }
+
   override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    // check for task cancellation before further processing
+    checkTaskCancellation()
     if (partitionId >= 0) {
       doInsertOrPut(columnTableName, batch, batchId, partitionId, maxDeltaRows,
         compressionCodecId, conn)
@@ -222,6 +230,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def storeDelete(columnTableName: String, buffer: ByteBuffer, partitionId: Int,
       batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit = {
+    // check for task cancellation before further processing
+    checkTaskCancellation()
     val value = new ColumnDeleteDelta(buffer, compressionCodecId, isCompressed = false)
     connectionType match {
       case ConnectionType.Embedded =>
@@ -485,7 +495,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       rowBuffer: String,
       projection: Array[Int],
       filters: Array[Expression],
-      prunePartitions: => Int,
+      prunePartitions: () => Int,
       session: SparkSession,
       schema: StructType,
       delayRollover: Boolean): RDD[Any] = {
@@ -493,7 +503,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession, tableName, projection,
-          (filters eq null) || filters.length == 0, prunePartitions, this)
+          filters, (filters eq null) || filters.length == 0, prunePartitions, this)
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -515,7 +525,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
             connProperties.hikariCP),
-          schema, this, parts, prunePartitions , embdClusterRelDestroyVersion, delayRollover)
+          schema, this, parts, prunePartitions, embdClusterRelDestroyVersion, delayRollover)
     }
   }
 
@@ -588,7 +598,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         iter.next()
       }
       // release the batch buffers
-      batch.buffers.foreach(UnsafeHolder.releaseIfDirectBuffer)
+      batch.buffers.foreach(b => if (b ne null) BufferAllocator.releaseBuffer(b))
     }
   }
 
@@ -648,15 +658,16 @@ final class ColumnarStorePartitionedRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var projection: Array[Int],
-    private var fullScan: Boolean,
-    @(transient @param) partitionPruner: => Int,
+    @transient private[sql] val filters: Array[Expression],
+    private[sql] var fullScan: Boolean,
+    @(transient @param) partitionPruner: () => Int,
     @transient private val store: JDBCSourceAsColumnarStore)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   private[this] var allPartitions: Array[Partition] = _
   private val evaluatePartitions: () => Array[Partition] = () => {
     val region = Misc.getRegionForTable(tableName, true)
-    partitionPruner match {
+    partitionPruner() match {
       case -1 if allPartitions != null =>
         allPartitions
       case -1 =>
@@ -745,12 +756,12 @@ final class SmartConnectorColumnRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var projection: Array[Int],
-    @transient private val filters: Array[Expression],
+    @transient private[sql] val filters: Array[Expression],
     private var connProperties: ConnectionProperties,
     private var schema: StructType,
     @transient private val store: ExternalStore,
     @transient private val allParts: Array[Partition],
-    @(transient @param) partitionPruner: => Int,
+    @(transient @param) partitionPruner: () => Int,
     private var relDestroyVersion: Int,
     private var delayRollover: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -764,32 +775,40 @@ final class SmartConnectorColumnRDD(
     val conn: Connection = helper.getConnection(connProperties, part)
     logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
-    // fetch all the column blobs pushing down the filters
-    val (statement, rs, txId) = helper.prepareScan(conn, tableName, projection,
-      serializedFilters, part, relDestroyVersion)
-    val itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
-      context, partitionId)
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
+      case "" => null
+      case id => id
+    }
+    var itr: Iterator[ByteBuffer] = null
+    try {
+      // fetch all the column blobs pushing down the filters
+      val (statement, rs) = helper.prepareScan(conn, txId,
+        tableName, projection,
+        serializedFilters, part, relDestroyVersion)
+      itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
+        context, partitionId)
+    } finally {
+      if (context ne null) {
+        context.addTaskCompletionListener { _ =>
+          logDebug(s"The txid going to be committed is $txId " + tableName)
 
-    if (context ne null) {
-      context.addTaskCompletionListener { _ =>
-        logDebug(s"The txid going to be committed is $txId " + tableName)
-
-        // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-        ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
-        ps.executeUpdate()
-        logDebug(s"The txid being committed is $txId")
-        ps.close()
-        SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
-        logDebug(s"closed connection for task from listener $partitionId")
-        try {
-          conn.close()
-          logDebug("closed connection for task " + context.partitionId())
-        } catch {
-          case NonFatal(e) => logWarning("Exception closing connection", e)
+          // if ((txId ne null) && !txId.equals("null")) {
+          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+          ps.setString(1, if (txId ne null) txId else "")
+          ps.setString(2, if (delayRollover) tableName else "")
+          ps.executeUpdate()
+          logDebug(s"The txid being committed is $txId")
+          ps.close()
+          SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
+          logDebug(s"closed connection for task from listener $partitionId")
+          try {
+            conn.close()
+            logDebug("closed connection for task " + context.partitionId())
+          } catch {
+            case NonFatal(e) => logWarning("Exception closing connection", e)
+          }
+          // }
         }
-        // }
       }
     }
     itr
@@ -810,7 +829,7 @@ final class SmartConnectorColumnRDD(
     split.asInstanceOf[SmartExecutorBucketPartition].hostList.map(_._1)
   }
 
-  def getPartitionEvaluator: () => Array[Partition] = () => partitionPruner match {
+  def getPartitionEvaluator: () => Array[Partition] = () => partitionPruner() match {
     case -1 => allParts
     case bucketId =>
       val part = allParts(bucketId).asInstanceOf[SmartExecutorBucketPartition]
@@ -1004,21 +1023,21 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
     delayRollover: Boolean) extends TaskCompletionListener {
-  val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
-  var isSuccess = false
+  private val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
+  private var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
     val txId = connAndTxId(1).asInstanceOf[String]
-    val conn = connAndTxId(0).asInstanceOf[Connection]
-    if (connAndTxId(1) != null) {
+    val conn = Option(connAndTxId(0).asInstanceOf[Connection])
+    if (connAndTxId(1) ne null) {
       if (success()) {
-        store.commitTx(txId, delayRollover, Some(conn))
+        store.commitTx(txId, delayRollover, conn)
       }
       else {
-        store.rollbackTx(txId, Some(conn))
+        store.rollbackTx(txId, conn)
       }
     }
-    store.closeConnection(Some(conn))
+    store.closeConnection(conn)
   }
 
   def success(): Boolean = {

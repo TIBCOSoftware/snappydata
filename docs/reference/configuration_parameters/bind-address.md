@@ -3,7 +3,7 @@
 
 ## Description
 
-!!!Note 
+!!! Note 
 	This setting is relevant only for multi-homed hosts (machines with multiple network interface cards). 
 
 Adapter card the cache binds to for peer-to-peer communication. It also specifies the default location for SnappyData servers to listen on, which is used unless overridden by the `server-bind-address`.

@@ -55,7 +55,7 @@ import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal,
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext}
+import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext, TaskKilledException}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -539,6 +539,9 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin
     } else ""
+
+    val getContext = Utils.genTaskContextFunction(ctx)
+    val taskKilledClass = classOf[TaskKilledException].getName
     ctx.addNewFunction(nextBatch,
       s"""
          |private boolean $nextBatch() throws Exception {
@@ -563,6 +566,10 @@ private[sql] final case class ColumnTableScan(
          |    $numBatchRows = 1;
          |    $incrementNumRowsSnippet
          |  } else {
+         |    // check for task cancellation before start of processing of a new batch
+         |    if ($getContext() != null && $getContext().isInterrupted()) {
+         |      throw new $taskKilledClass();
+         |    }
          |    $batchInit
          |    $deletedCount = $colInput.getDeletedRowCount();
          |    $incrementBatchOutputRows
@@ -799,12 +806,15 @@ object ColumnTableScan extends Logging {
       val allStats = schemaAttrs.map(a => a ->
           // nullCount as nullable works for both full stats and delta stats
           // though former will never be null (latter can be for non-updated columns)
-          ColumnStatsSchema(a.name, a.dataType, nullCountNullable = true))
+          ColumnStatsSchema(a.name, a.dataType, nullCountNullable = false))
       (AttributeMap(allStats),
           ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
     } else (null, Nil)
 
     def statsFor(a: Attribute) = columnBatchStatsMap(a)
+
+    def filterInList(l: Seq[Expression]): Boolean =
+      l.length <= 200 && !l.exists(!TokenLiteral.isConstant(_))
 
     // Returned filter predicate should return false iff it is impossible
     // for the input expression to evaluate to `true' based on statistics
@@ -825,9 +835,9 @@ object ColumnTableScan extends Logging {
       case EqualTo(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
         statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
 
-      case In(a: AttributeReference, l) if !l.exists(!TokenLiteral.isConstant(_)) =>
+      case In(a: AttributeReference, l) if filterInList(l) =>
         statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
-      case DynamicInSet(a: AttributeReference, l) if !l.exists(!TokenLiteral.isConstant(_)) =>
+      case DynamicInSet(a: AttributeReference, l) if filterInList(l) =>
         statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
 
       case LessThan(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>

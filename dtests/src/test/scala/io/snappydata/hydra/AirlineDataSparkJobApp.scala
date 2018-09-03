@@ -30,7 +30,8 @@ object AirlineDataSparkJobApp {
   def main(args: Array[String]) {
     // scalastyle:off println
     val conf = new SparkConf().
-        setAppName("Airline Data Application")
+        setAppName("Airline Data Application_" + System.currentTimeMillis())
+
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     snc.sql("set spark.sql.shuffle.partitions=6")

@@ -240,6 +240,7 @@ class SnappyStreamingSuite
     kafkaUtils.createTopic(topic)
 
     val add = kafkaUtils.brokerAddress
+    ssnc.sql("drop table if exists directKafkaStream")
     ssnc.sql("create stream table directKafkaStream (" +
       " publisher string, advertiser string)" +
       " using directkafka_stream options(" +

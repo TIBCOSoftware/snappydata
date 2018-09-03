@@ -35,16 +35,16 @@ for element in "${servers[@]}";
 echo "******************Created conf/servers******************"
 
 
-#sh $SnappyData/sbin/snappy-start-all.sh start -classpath=$TPCHJar
+bash $SnappyData/sbin/snappy-start-all.sh
 
-echo "******************start locators******************"
+#echo "******************start locators******************"
 #sh $SnappyData/sbin/snappy-locators.sh start -classpath=$TPCHJar
-$SnappyData/sbin/snappy-locators.sh start
+#$SnappyData/sbin/snappy-locators.sh start
 
-echo "******************start servers******************"
-$SnappyData/sbin/snappy-servers.sh -bg start
+#echo "******************start servers******************"
+#$SnappyData/sbin/snappy-servers.sh -bg start
 #sh $SnappyData/sbin/snappy-servers.sh start -classpath=$TPCHJar
 
-echo "******************start leads******************"
-$SnappyData/sbin/snappy-leads.sh start
+#echo "******************start leads******************"
+#$SnappyData/sbin/snappy-leads.sh start
 #sh $SnappyData/sbin/snappy-leads.sh start -classpath=$TPCHJar

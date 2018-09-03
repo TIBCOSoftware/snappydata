@@ -28,7 +28,7 @@ In this document, you can find information on how to manually upgrade GemFire XD
 Use the `shut-down-all` and `locator stop` commands to stop all members. 
 For example: 
 
-``` 
+```pre
 $ gfxd shut-down-all -locators=localhost[10101]
 $ gfxd locator stop -dir=$HOME/locator
 ```
@@ -37,7 +37,7 @@ $ gfxd locator stop -dir=$HOME/locator
 In this step, you create a backup of all the data directories.
 For example: 
 
-```
+```pre
 $cp -R node1-server /backup/snappydata/
 $cp -R node2-server /backup/snappydata/
 ```
@@ -116,18 +116,18 @@ These configuration files contain hostname of the node where a locator/server is
 ### Starting the SnappyData RowStore Cluster 
 After creating the configuration files start SnappyData RowStore using the following command:
 
-```
+```pre
 snappy-start-all rowstore
 ```
 
 The above command starts the SnappyData servers and locators with properties as mentioned in the **conf/servers** and **conf/locators** files. The `rowstore` option instructs SnappyData not to start the lead node, which is used when SnappyData is used for SnappyData specific extensions (like column store, running spark jobs etc.)
 
-!!! Note:
+!!! Note
 	Ensure that the distributed system is running by executing the command `snappy-status-all`.
 
 For example:
 
-```
+```pre
 $snappy-status-all
 SnappyData Locator pid: 13750 status: running
 SnappyData Server pid: 13897 status: running
@@ -142,7 +142,7 @@ SnappyData Leader pid: 0 status: stopped
 The system is started and you may fire queries on the snappy-shell to check the status of the upgrade. The `gfxd` shell is replaced by the `snappy-sql` command in SnappyData.
 For example:
 
-``` 
+```pre
 snappy-sql rowstore
 >gfxd version 1.6.0 
 gfxd> connect client '127.0.0.1:1527';
@@ -179,7 +179,7 @@ SYSIBM                |SYSDUMMY1                      |SYSTEM TABLE|
 
 You can execute `show members` query to see the running members:
 
-```
+```pre
 snappy> show members;
 ```
 

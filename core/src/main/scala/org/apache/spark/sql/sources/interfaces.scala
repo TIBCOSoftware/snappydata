@@ -16,17 +16,23 @@
  */
 package org.apache.spark.sql.sources
 
+import java.sql.Connection
+
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.{Row, SQLContext, SaveMode}
+import org.apache.spark.sql._
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -106,6 +112,11 @@ trait MutableRelation extends DestroyRelation {
    * UPDATE and DELETE operations for affecting the selected rows.
    */
   def getKeyColumns: Seq[String]
+
+  /**
+    * Get the "primary key" of the row table and "key columns" of the  column table
+  */
+  def getPrimaryKeyColumns: Seq[String]
 
   /** Get the partitioning columns for the table, if any. */
   def partitionColumns: Seq[String]
@@ -263,6 +274,12 @@ trait DestroyRelation {
   def tableExists: Boolean
 
   /**
+    * Return true if table is created by the relation. This will be used to check
+    * while destroying the table incase of a failure while creating the table
+    */
+  def tableCreated: Boolean
+
+  /**
    * Truncate the table represented by this relation.
    */
   def truncate(): Unit
@@ -315,6 +332,76 @@ trait AlterableRelation {
   def alterTable(tableIdent: QualifiedTableName,
                  isAddColumn: Boolean, column: StructField): Unit
 }
+
+trait RowLevelSecurityRelation {
+  def isRowLevelSecurityEnabled: Boolean
+  private[sql] val resolvedName: String
+  def enableOrDisableRowLevelSecurity(tableIdent: QualifiedTableName,
+      enableRowLevelSecurity: Boolean)
+}
+
+@DeveloperApi
+trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation{
+
+  protected val connFactory: () => Connection
+  protected def dialect: JdbcDialect
+
+  val sqlContext: SQLContext
+  val table: String
+  override def enableOrDisableRowLevelSecurity(tableIdent: QualifiedTableName,
+      enableRowLevelSecurity: Boolean): Unit = {
+      val conn = connFactory()
+      try {
+        val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
+          conn, dialect, sqlContext)
+        val sql = if (enableRowLevelSecurity) {
+          s"""alter table ${quotedName(table)} enable row level security"""
+        } else {
+          s"""alter table ${quotedName(table)} disable row level security"""
+        }
+        if (tableExists) {
+          JdbcExtendedUtils.executeUpdate(sql, conn)
+        } else {
+          throw new AnalysisException(s"table $table does not exist.")
+        }
+      } catch {
+        case se: java.sql.SQLException =>
+          if (se.getMessage.contains("No suitable driver found")) {
+            throw new AnalysisException(s"${se.getMessage}\n" +
+                "Ensure that the 'driver' option is set appropriately and " +
+                "the driver jars available (--jars option in spark-submit).")
+          } else {
+            throw se
+          }
+      } finally {
+        conn.commit()
+        conn.close()
+      }
+    }
+
+  def isRowLevelSecurityEnabled: Boolean = {
+    val conn = connFactory()
+    try {
+      JdbcExtendedUtils.isRowLevelSecurityEnabled(resolvedName,
+        conn, dialect, sqlContext)
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw se
+        }
+    } finally {
+      conn.commit()
+      conn.close()
+    }
+  }
+
+
+}
+
 
 /**
  * ::DeveloperApi::

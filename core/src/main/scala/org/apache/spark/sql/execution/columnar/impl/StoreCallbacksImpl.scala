@@ -21,7 +21,6 @@ import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
@@ -41,7 +40,6 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.SnappyTableStatsProviderService
-
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
@@ -50,7 +48,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFo
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, SortDirection, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
@@ -60,6 +58,8 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, SparkContext}
+
+import java.net.URLClassLoader
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -112,7 +112,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           val dependents = if (catalogEntry.dependents != null) {
             val tables = Misc.getMemStore.getAllContainers.asScala.
                 map(x => (x.getSchemaName + "." + x.getTableName, x.fetchHiveMetaData(false)))
-            catalogEntry.dependents.toSeq.map(x => tables.find(x == _._1).get._2)
+            catalogEntry.dependents.toSeq.map(x => tables.find(
+              c => x == c._1 && (c._2 ne null)).get._2)
           } else Nil
 
           val tableName = container.getQualifiedTableName
@@ -620,6 +621,18 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def clearConnectionPools(): Unit = {
     ConnectionPool.clear()
+  }
+
+  override def getLeadClassLoader() : URLClassLoader =
+    ToolsCallbackInit.toolsCallback.getLeadClassLoader()
+
+  override def clearSessionCache(onlyQueryPlanCache: Boolean = false): Unit = {
+    SnappySession.clearAllCache(onlyQueryPlanCache)
+  }
+
+  override def refreshPolicies(ldapGroup: String): Unit = {
+    val session = new SnappySession(SparkContext.getActive.get)
+    session.sessionCatalog.refreshPolicies(ldapGroup)
   }
 }
 

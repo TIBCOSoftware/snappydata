@@ -20,10 +20,13 @@ package io.snappydata.hydra.ct
 import java.io.PrintWriter
 
 import io.snappydata.hydra.{SnappyTestUtils}
+import org.apache.spark.sql.snappy._
 
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object CTTestUtil {
+
+  var insertUniqueRecords: Boolean = false;
 
   def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
 
@@ -47,7 +50,7 @@ object CTTestUtil {
   }
 
   def createPersistPartitionedRowTables(snc: SnappyContext,
-      persistenceMode: String, redundancy: String): Unit = {
+                                        persistenceMode: String, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS(partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "', PERSISTENT '" +
         persistenceMode + "')")
@@ -82,7 +85,7 @@ object CTTestUtil {
 
   // to add eviction attributes
   def createColocatedRowTablesWithEviction(snc: SnappyContext, redundancy: String,
-      persistenceMode: String): Unit = {
+                                           persistenceMode: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING row OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', redundancy '" + redundancy + "', buckets '11', PERSISTENT '" +
         persistenceMode + "')")
@@ -98,6 +101,13 @@ object CTTestUtil {
         + "')")
   }
 
+  def createColumnTablesWithKeyColumns(snc: SnappyContext, redundancy: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " using column options(redundancy '" +
+        redundancy + "' , key_columns 'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " using column options(redundancy '" + redundancy
+        + "', key_columns 'EXEC_DID')")
+  }
+
   def createPersistColumnTables(snc: SnappyContext, persistenceMode: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " using column options(PERSISTENT '" +
         persistenceMode + "')")
@@ -105,11 +115,27 @@ object CTTestUtil {
         persistenceMode + "')")
   }
 
+  def createPersistColumnTablesWithKeyColumns(snc: SnappyContext, persistenceMode: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " using column options(PERSISTENT '" +
+        persistenceMode + "' , key_columns 'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " using column options(PERSISTENT '" +
+        persistenceMode + "', key_columns 'EXEC_DID')")
+  }
+
   def createColocatedColumnTables(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
     snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
         "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS')")
+  }
+
+  def createColocatedColumnTablesWithKeyColumns(snc: SnappyContext, redundancy: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "' , key_columns " +
+        "'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS' , " +
+        "key_columns 'EXEC_DID')")
   }
 
   def createPersistColocatedColumnTables(snc: SnappyContext, redundancy: String, persistenceMode:
@@ -122,6 +148,17 @@ object CTTestUtil {
         "COLOCATE_WITH 'ORDERS_DETAILS')")
   }
 
+
+  def createPersistColocatedColumnTablesWithKeyColumns(snc: SnappyContext, redundancy: String,
+                                                       persistenceMode: String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" +
+        redundancy + "', key_columns 'SINGLE_ORDER_DID') ")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', PERSISTENT '" + persistenceMode + "', redundancy '" + redundancy + "',  " +
+        "COLOCATE_WITH 'ORDERS_DETAILS' , key_columns 'EXEC_DID')")
+  }
+
   // to add eviction attributes
   def createColumnTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
@@ -130,12 +167,33 @@ object CTTestUtil {
         "buckets '11', redundancy '" + redundancy + "')")
   }
 
+
+  def createColumnTablesWithEvictionAndKeyColumns(snc: SnappyContext, redundancy: String): Unit
+  = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "' , key_columns " +
+        "'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "' , key_columns 'EXEC_DID')")
+  }
+
+
   // to add eviction attributes
   def createColocatedColumnTablesWithEviction(snc: SnappyContext, redundancy: String): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
         "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "')")
     snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
         "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS')")
+  }
+
+  def createColocatedColumnTablesWithEvictionAndKeyColumns(snc: SnappyContext, redundancy:
+  String): Unit = {
+    snc.sql(CTQueries.orders_details_create_ddl + " USING column OPTIONS (partition_by " +
+        "'SINGLE_ORDER_DID', buckets '11', redundancy '" + redundancy + "' , key_columns " +
+        "'SINGLE_ORDER_DID')")
+    snc.sql(CTQueries.exec_details_create_ddl + " USING column OPTIONS (partition_by 'EXEC_DID', " +
+        "buckets '11', redundancy '" + redundancy + "', COLOCATE_WITH 'ORDERS_DETAILS' , " +
+        "key_columns 'EXEC_DID')")
   }
 
   /*
@@ -147,14 +205,42 @@ object CTTestUtil {
   }
 
   /*
+  Load data to already created tables by removing duplicate records.
+ */
+  def loadTablesByRemovingDuplicateRecords(snc: SnappyContext): Unit = {
+    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID").write.insertInto("orders_details")
+    CTQueries.exec_details_df(snc).dropDuplicates("EXEC_DID").write.insertInto("exec_details")
+  }
+
+  /*
+  Load data to existing tables using putInto API.
+ */
+
+  def addDataUsingPutInto(snc: SnappyContext): Unit = {
+    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID").write.putInto("orders_details")
+    CTQueries.exec_details_df(snc).dropDuplicates("EXEC_DID").write.putInto("exec_details")
+  }
+
+  /*
    Create and load tables in Spark
    */
+
   def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
-    CTQueries.orders_details_df(sqlContext).createOrReplaceTempView("orders_details")
     // scalastyle:off println
-    println(s"orders_details Table created successfully in spark")
-    CTQueries.exec_details_df(sqlContext).createOrReplaceTempView("exec_details")
-    println(s"exec_details Table created successfully in spark")
+    if (insertUniqueRecords) {
+      CTQueries.orders_details_df(sqlContext).
+          dropDuplicates("SINGLE_ORDER_DID").createOrReplaceTempView("orders_details")
+      println(s"orders_details Table created successfully in spark")
+      CTQueries.exec_details_df(sqlContext).
+          dropDuplicates("EXEC_DID").createOrReplaceTempView("exec_details")
+      println(s"exec_details Table created successfully in spark")
+    }
+    else {
+      CTQueries.orders_details_df(sqlContext).createOrReplaceTempView("orders_details")
+      println(s"orders_details Table created successfully in spark")
+      CTQueries.exec_details_df(sqlContext).createOrReplaceTempView("exec_details")
+      println(s"exec_details Table created successfully in spark")
+    }
   }
 
   /*
@@ -170,13 +256,13 @@ object CTTestUtil {
     if (SnappyTestUtils.validateFullResultSet) {
       // scalastyle:off println
       pw.println(s"createAndLoadSparkTables started ...")
+
       val startTime = System.currentTimeMillis
       CTTestUtil.createAndLoadSparkTables(sqlContext)
       val finishTime = System.currentTimeMillis()
       pw.println(s"createAndLoadSparkTables completed successfully in : " + ((finishTime -
           startTime)/1000) + " seconds")
     }
-
     for (q <- CTQueries.queries) {
       var queryExecuted = true;
       var hasValidationFailed = false;

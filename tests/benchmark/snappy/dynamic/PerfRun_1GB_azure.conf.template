@@ -1,0 +1,102 @@
+#Do not change the way of queries, sparkProperties, sparkSqlProperties. Just change the values inside strings
+
+#queries to be run
+queries="\"1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21\""
+#queries=10
+#queries="\"1-3-14\""
+
+
+#spark Properties spefied in lead
+#spark-executor-cores has nothing to do with CPU cores available.
+#sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
+sparkProperties="-heap-size=1g -memory-size=1g -conserve-sockets=false"
+
+#Spark Sql properties are specified while executing query
+#spark.sql.shuffle.partitions=${shufflePartitions},spark.sql.inMemoryColumnarStorage.compressed=${inMemoryColumnarStorageCompressed}
+#spark.sql.inMemoryColumnarStorage.compressed=false
+sparkSqlProperties="\"\""
+
+#location of checkout
+SnappyData=/data1/users/perfuser/snappydata/build-artifacts/scala-2.11/snappy
+#SnappyData=/data1/users/perfuser/snappydata-0.7-bin
+
+#number of buckets for order and lineitem tables
+buckets_Order_Lineitem=128
+
+#number of buckets for Customer, Part and PartSupplier tables
+buckets_Cust_Part_PartSupp=128
+
+#Are Nation, Region, Supplier tables column tables?
+IsSupplierColumnTable=true
+
+#number of buckets for Nation, Region, Supplier
+buckets_Supplier=128
+
+#Redundancy Level
+Redundancy=0
+
+#Whether region is persistent
+Persistence=false
+
+#Type of Persistence
+Persistence_Type=SYNCHRONOUS
+
+#Loading from parquet or csv file
+Parquet=false
+
+#From how many files data should be loaded in table
+#NumberOfLoadStages=10
+NumberOfLoadStages=10
+
+#Machine Setup
+locator=10.1.0.4
+leads=10.1.0.4
+servers=(10.1.0.5 10.1.0.6 10.1.0.7)
+#servers=(localhost)
+
+#Port required while doing exeution through JDBC
+port=1527
+
+#Log Directories
+locatorDir=/vol1/users/perfuser/perf_run/TPCH/locator
+leadDir=/vol1/users/perfuser/perf_run/TPCH/lead
+serverDir=/vol1/users/perfuser/perf_run/TPCH/server
+
+#Locator Properties
+locatorProperties="-conserve-sockets=false -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
+
+#Server properties
+#serverMemory="-heap-size=1g -memory-size=2g  -conserve-sockets=false-J-XX:NewRatio=9 -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
+serverMemory="-heap-size=4g -memory-size=10g"
+
+### While collecting results for result validation, always keep isDynamic=false and resultCollection=true. In this case WarmupRuns and AverageRuns will not be considered
+### In case of Performance run, isDynamic is true, resultCollection is false and set the required number of warmupRuns and AverageRuns
+#represent whether query should use dynamic paramters or static
+IsDynamic=false
+
+#Whether to collect results.For performance testing this should be false.
+ResultCollection=true
+
+#warmUpIterations
+WarmupRuns=2
+#Actual runs whose average will be taken and repordted as performance
+AverageRuns=3
+
+# location of jar which has TPCH related class files
+TPCHJar=/data1/users/perfuser/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.2-SNAPSHOT-tests.jar
+
+#Size of the TPCH data. Do not chage format
+#dataSize=1GB_Stages
+dataSize=1GB
+
+#Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
+dataDir=/data1/users/perfuser/TPCH_$dataSize
+
+#Location where final output will be collected
+outputLocation=/data1/users/perfuser/RESULTS/TPCH_1GB/SNAPPY_RESULT
+
+#GoldenFile against which query results should be compared
+ExpectedResultsAvailableAt=/data1/users/perfuser/RESULTS/TPCH_1GB/STOCK_SPARK_RESULT
+
+#Location of query results files
+ActualResultsAvailableAt=/data1/users/perfuser/RESULTS/TPCH_1GB/21Feb_SNAPPY_RESULT
