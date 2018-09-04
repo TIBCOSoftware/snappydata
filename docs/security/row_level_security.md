@@ -1,5 +1,7 @@
 # Implementing  Row Level Security
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+
 The following topics are covered in this section:
 
 *	[Overview of Row Level Security](#rlsoverview)
