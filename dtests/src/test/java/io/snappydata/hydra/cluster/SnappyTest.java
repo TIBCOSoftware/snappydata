@@ -1785,44 +1785,10 @@ public class SnappyTest implements Serializable {
           ".log";
       File logFile = new File(dest);
       if (!logFile.exists()) {
-        String command;
-        if (pName.equals("Master"))
-          command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
-        else command = "jps | grep " + pName + " | awk '{print $1}'";
-        hd = TestConfig.getInstance().getMasterDescription()
-            .getVmDescription().getHostDescription();
-        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
-        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
-        pr = pb.start();
-        pr.waitFor();
-        FileInputStream fis = new FileInputStream(logFile);
-        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-        String str = null;
-        while ((str = br.readLine()) != null) {
-          int pid = Integer.parseInt(str);
-          try {
-            if (pids.contains(pid)) {
-              Log.getLogWriter().info("Pid is already recorded with Master" + pid);
-            } else {
-              pids.add(pid);
-              RemoteTestModule.Master.recordPID(hd, pid);
-              SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
-              SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + HostHelper
-                  .getLocalHost(), HostHelper.getLocalHost());
-            }
-          } catch (RemoteException e) {
-            String s = "Unable to access master to record PID: " + pid;
-            throw new HydraRuntimeException(s, e);
-          }
-          Log.getLogWriter().info("pid value successfully recorded with Master");
-        }
-        br.close();
+        recordProcessIds(pName, HostHelper.getLocalHost(), logFile);
       }
     } catch (IOException e) {
       String s = "Problem while starting the process : " + pr;
-      throw new TestException(s, e);
-    } catch (InterruptedException e) {
-      String s = "Exception occurred while waiting for the process execution : " + pr;
       throw new TestException(s, e);
     }
   }
@@ -1838,39 +1804,9 @@ public class SnappyTest implements Serializable {
         String command;
         command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostName;
         pb = new ProcessBuilder("/bin/bash", "-c", command);
-        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
         pr = pb.start();
         pr.waitFor();
-        if (pName.equals("Master"))
-          command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
-        else command = "jps | grep " + pName + " | awk '{print $1}'";
-        hd = TestConfig.getInstance().getMasterDescription()
-            .getVmDescription().getHostDescription();
-        pb = new ProcessBuilder("/bin/bash", "-c", command);
-        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
-        pr = pb.start();
-        pr.waitFor();
-        FileInputStream fis = new FileInputStream(logFile);
-        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-        String str;
-        while ((str = br.readLine()) != null) {
-          int pid = Integer.parseInt(str);
-          try {
-            if (pids.contains(pid)) {
-              Log.getLogWriter().info("Pid is already recorded with Master" + pid);
-            } else {
-              pids.add(pid);
-              RemoteTestModule.Master.recordPID(hd, pid);
-              SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
-              SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hostName, hostName);
-            }
-          } catch (RemoteException e) {
-            String s = "Unable to access master to record PID: " + pid;
-            throw new HydraRuntimeException(s, e);
-          }
-          Log.getLogWriter().info("pid value successfully recorded with Master");
-        }
-        br.close();
+        recordProcessIds(pName, hostName, logFile);
       }
     } catch (IOException e) {
       String s = "Problem while starting the process : " + pr;
@@ -1880,6 +1816,51 @@ public class SnappyTest implements Serializable {
       throw new TestException(s, e);
     }
   }
+
+  protected static void recordProcessIds(String pName, String hostName, File logFile) {
+    String command;
+    ProcessBuilder pb;
+    Process pr = null;
+    try {
+      if (pName.equals("Master"))
+        command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
+      else command = "jps | grep " + pName + " | awk '{print $1}'";
+      hd = TestConfig.getInstance().getMasterDescription()
+          .getVmDescription().getHostDescription();
+      pb = new ProcessBuilder("/bin/bash", "-c", command);
+      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+      pr = pb.start();
+      pr.waitFor();
+      FileInputStream fis = new FileInputStream(logFile);
+      BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+      String str;
+      while ((str = br.readLine()) != null) {
+        int pid = Integer.parseInt(str);
+        try {
+          if (pids.contains(pid)) {
+            Log.getLogWriter().info("Pid is already recorded with Master" + pid);
+          } else {
+            pids.add(pid);
+            RemoteTestModule.Master.recordPID(hd, pid);
+            SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
+            SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hostName, hostName);
+          }
+        } catch (RemoteException e) {
+          String s = "Unable to access master to record PID: " + pid;
+          throw new HydraRuntimeException(s, e);
+        }
+        Log.getLogWriter().info("pid value successfully recorded with Master");
+      }
+      br.close();
+    } catch (IOException e) {
+      String s = "Problem while starting the process : " + pr;
+      throw new TestException(s, e);
+    } catch (InterruptedException e) {
+      String s = "Exception occurred while waiting for the process execution : " + pr;
+      throw new TestException(s, e);
+    }
+  }
+
 
   /**
    * Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.
