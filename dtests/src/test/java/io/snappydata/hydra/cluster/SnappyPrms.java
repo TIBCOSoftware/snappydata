@@ -366,6 +366,11 @@ public class SnappyPrms extends BasePrms {
   public static Long leadHost;
 
   /**
+   * Parameter used to get the host name for the spark master to be started in the test.
+   */
+  public static Long sparkMasterHost;
+
+  /**
    * Parameter used to get the port number for the primary leader to be started in the test.
    */
   public static Long leadPort;
@@ -525,6 +530,12 @@ public class SnappyPrms extends BasePrms {
    * (VectorsetValues of Strings) A list of values for table List
    */
   public static Long tableList;
+
+  /**
+   * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master.
+   * (VectorsetValues of Strings) A list of values for hostName List
+   */
+  public static Long hostNames;
 
   /**
    * Parameter used to get the user specified index List required for validation.
@@ -728,6 +739,11 @@ public class SnappyPrms extends BasePrms {
   public static String getLeadPort() {
     Long key = leadPort;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "8090"));
+  }
+
+  public static String getMasterHost() {
+    Long key = sparkMasterHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
   public static String getLeaderLauncherProps() {
@@ -948,6 +964,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getTableList() {
     Long key = tableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getHostNameList() {
+    Long key = hostNames;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 

@@ -970,6 +970,9 @@ public class SnappyTest implements Serializable {
     snappyTest.copyUserConfs("servers");
     snappyTest.copyUserConfs("leads");
     snappyTest.copyUserConfs("locators");
+    if (useSmartConnectorMode) {
+      snappyTest.copyUserConfs("slaves");
+    }
   }
 
 
@@ -1789,11 +1792,6 @@ public class SnappyTest implements Serializable {
         hd = TestConfig.getInstance().getMasterDescription()
             .getVmDescription().getHostDescription();
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
-      /*File log = new File(".");
-      pb.redirectErrorStream(true);
-      String dest = log.getCanonicalPath() + File.separator + "PIDs_" + HostHelper.getLocalHost() +
-          ".log";
-      File logFile = new File(dest);*/
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
         pr = pb.start();
         pr.waitFor();
@@ -1829,6 +1827,59 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  protected synchronized void recordSnappyProcessIDinNukeRun(String pName, String hostName) {
+    Process pr = null;
+    ProcessBuilder pb;
+    try {
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "PIDs_" + pName + "_" + hostName + ".log";
+      File logFile = new File(dest);
+      if (!logFile.exists()) {
+        String command;
+        command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostName;
+        pb = new ProcessBuilder("/bin/bash", "-c", command);
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+        pr = pb.start();
+        pr.waitFor();
+        if (pName.equals("Master"))
+          command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
+        else command = "jps | grep " + pName + " | awk '{print $1}'";
+        hd = TestConfig.getInstance().getMasterDescription()
+            .getVmDescription().getHostDescription();
+        pb = new ProcessBuilder("/bin/bash", "-c", command);
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+        pr = pb.start();
+        pr.waitFor();
+        FileInputStream fis = new FileInputStream(logFile);
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        String str;
+        while ((str = br.readLine()) != null) {
+          int pid = Integer.parseInt(str);
+          try {
+            if (pids.contains(pid)) {
+              Log.getLogWriter().info("Pid is already recorded with Master" + pid);
+            } else {
+              pids.add(pid);
+              RemoteTestModule.Master.recordPID(hd, pid);
+              SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
+              SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hostName, hostName);
+            }
+          } catch (RemoteException e) {
+            String s = "Unable to access master to record PID: " + pid;
+            throw new HydraRuntimeException(s, e);
+          }
+          Log.getLogWriter().info("pid value successfully recorded with Master");
+        }
+        br.close();
+      }
+    } catch (IOException e) {
+      String s = "Problem while starting the process : " + pr;
+      throw new TestException(s, e);
+    } catch (InterruptedException e) {
+      String s = "Exception occurred while waiting for the process execution : " + pr;
+      throw new TestException(s, e);
+    }
+  }
 
   /**
    * Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.
@@ -2606,6 +2657,27 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  public static synchronized void HydraTask_recordProcessIDWithHostWithUserConfsTest() {
+    Vector hostNames = SnappyPrms.getHostNameList();
+    if (hostNames.isEmpty()) {
+      throw new TestException("List of Host Names " +
+          "required for recording the hostnames with hydra master is not specified");
+    }
+
+    for (int i = 0; i < hostNames.size(); i++) {
+      String hostName = (String) hostNames.elementAt(i);
+      if (useRowStore) {
+        snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator", hostName);
+        snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher", hostName);
+      } else {
+        snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher", hostName);
+        snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher", hostName);
+        snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher", hostName);
+        snappyTest.recordSnappyProcessIDinNukeRun("Worker", hostName);
+        snappyTest.recordSnappyProcessIDinNukeRun("Master", hostName);
+      }
+    }
+  }
 
   /**
    * Create and start snappy locator using snappy-locators.sh script.
@@ -3350,11 +3422,19 @@ public class SnappyTest implements Serializable {
   protected static String getSparkMasterHost() {
     String masterHost = null;
     if (isLongRunningTest) {
-      masterHost = getDataFromFile("masterHost");
-      if (masterHost == null) {
-        masterHost = getMasterHost();
+      if (isUserConfTest) {
+        masterHost = SnappyPrms.getMasterHost();
+        if (masterHost == null)
+          throw new TestException("Spark Master hostname configuration parameter not provided.");
         Log.getLogWriter().info("masterHost is : " + masterHost);
         snappyTest.writeNodeConfigData("masterHost", masterHost, false);
+      } else {
+        masterHost = getDataFromFile("masterHost");
+        if (masterHost == null) {
+          masterHost = getMasterHost();
+          Log.getLogWriter().info("masterHost is : " + masterHost);
+          snappyTest.writeNodeConfigData("masterHost", masterHost, false);
+        }
       }
     } else masterHost = getMasterHost();
     return masterHost;
