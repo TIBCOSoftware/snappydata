@@ -20,10 +20,10 @@
 #set -vx
 
 usage(){
-  echo "Usage: concurrency.sh <snappydata-base-directory-path>  <result-directory-path>" 1>&2
+  echo "Usage: concurrency_mixedWorkLoad_tpch.sh <snappydata-base-directory-path>  <result-directory-path>" 1>&2
   echo " result-directory-path         Location to put the test results " 1>&2
   echo " snappydata-base-directory-path    checkout path of snappy-data " 1>&2
-  echo " (e.g. sh concurrency.sh /home/swati/snappydata /data/snappyHydraLogs)" 1>&2
+  echo " (e.g. sh concurrency_mixedWorkLoad_tpch.sh /home/swati/snappydata /data/snappyHydraLogs)" 1>&2
   exit 1
 }
 
@@ -37,7 +37,7 @@ resultDir=$1
 mkdir -p $resultDir
 shift
 
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/concurrency/startEmbeddedModeClusterWithUserConfs.bt
+$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1 -l  $SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main/io/snappydata/hydra/cluster/local.startEmbeddedModeClusterWithUserConfs.conf -d false io/snappydata/hydra/cluster/startEmbeddedModeClusterWithUserConfs.bt
 sleep 30;
 
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -l  $SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main/io/snappydata/hydra/concurrency/local.concurrency_mixedWorkload.conf -d false io/snappydata/hydra/concurrency/tpchConcMixedWorkLoadTest.bt
@@ -46,5 +46,5 @@ sleep 30;
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -l  $SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main/io/snappydata/hydra/concurrency/local.concurrency_PLWorkload.conf -d false io/snappydata/hydra/concurrency/tpchConcPLWorkLoadTest.bt
 sleep 30;
 
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/concurrency/stopEmbeddedModeClusterWithUserConfs.bt
+$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/stopEmbeddedModeClusterWithUserConfs.bt
 
