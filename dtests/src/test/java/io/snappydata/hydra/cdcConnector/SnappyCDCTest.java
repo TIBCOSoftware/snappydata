@@ -104,6 +104,7 @@ public class SnappyCDCTest extends SnappyTest {
        String s = "Exception occurred while waiting for the process execution : " + pr;
        throw new util.TestException(s, e);
      }
+      Log.getLogWriter().info("The parameters for clusterRestart are snappyPath = " + snappyPath +"\nnodeType = " + nodeType +"\n isStopStart = "+isStopStart);    
      clusterRestart(snappyPath,isStopStart,nodeType,false,"",false);
   }
 
@@ -266,6 +267,7 @@ String nodeConfig = nodeInfo+"\n";
       }
       //Start the cluster after 1 min
      // Thread.sleep(60000);
+      Log.getLogWriter().info("Invoking startCluster");
       startCluster(snappyPath,logFile);
       snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
     }catch(GemFireConfigException ex ){
@@ -589,6 +591,7 @@ String nodeConfig = nodeInfo+"\n";
    }
 
   public static void startCluster(String snappyPath,File logFile){
+    Log.getLogWriter().info("Inside startCluster");
     ProcessBuilder pbClustStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
     Long startTime1 = System.currentTimeMillis();
     snappyTest.executeProcess(pbClustStart, logFile);
