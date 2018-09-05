@@ -1,8 +1,8 @@
-io/snappydata/hydra/clusterRecovery/newNodeStartingFirstTest.conf
+io/snappydata/hydra/clusterRecovery/colocationChainDropTest.conf
     A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
     dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
-    snappyFileLoc="$GEMFIRE/../snappy"
+    snappyPath="$GEMFIRE/../snappy"
 
 
 /*io/snappydata/hydra/clusterRecovery/allLocatorsDownRebalanceTest.conf
