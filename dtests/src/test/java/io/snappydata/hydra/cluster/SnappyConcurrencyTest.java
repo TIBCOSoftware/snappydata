@@ -80,8 +80,13 @@ public class SnappyConcurrencyTest extends SnappyTest {
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
-        query = (String)queryVect.elementAt(queryNum);
-        rs = conn.createStatement().executeQuery(query);
+        query = (String) queryVect.elementAt(queryNum);
+        if (query.contains("create temporary view")) {
+          rs = conn.createStatement().executeQuery(query);
+          rs = conn.createStatement().executeQuery("select s_suppkey, s_name, s_address, s_phone, total_revenue " +
+              "from SUPPLIER, revenue where s_suppkey = supplier_no and total_revenue = (select max(total_revenue) " +
+              "from  revenue ) order by s_suppkey");
+        } else rs = conn.createStatement().executeQuery(query);
       } catch (SQLException se) {
         throw new TestException("Got exception while executing Analytical query:" + query, se);
       }
@@ -91,7 +96,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
-        query = (String)queryVect.elementAt(queryNum);
+        query = (String) queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
@@ -106,10 +111,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
   }
 
   public static void validateNumQueriesExecuted() throws SQLException {
-    int numQueriesExecuted = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
-    int numpointLookUpQueriesExecuted = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB
+    int numQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
+    int numpointLookUpQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB
         .numPointLookUpQueriesExecuted);
-    int numAggregationQueriesExecuted = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numAggregationQueriesExecuted);
+    int numAggregationQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numAggregationQueriesExecuted);
     Log.getLogWriter().info("Total number of queries executed : " + numQueriesExecuted);
     Log.getLogWriter().info("Total number of pointLookUp queries executed : " +
         numpointLookUpQueriesExecuted);
