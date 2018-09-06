@@ -81,23 +81,23 @@ private[sql] trait SnappyStrategies {
       plan match {
         case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right) =>
           // check for hash join with replicated table first
-          if (false && canBuildRight(joinType) && canLocalJoin(right)) {
+          if (canBuildRight(joinType) && canLocalJoin(right)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildRight, replicatedTableJoin = true)
-          } else if (false && canBuildLeft(joinType) && canLocalJoin(left)) {
+          } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildLeft, replicatedTableJoin = true)
           }
           // check for collocated joins before going for broadcast
           else if (isCollocatedJoin(joinType, left, leftKeys, right, rightKeys)) {
             val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
-            if (false && buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+            if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                 joinType, joins.BuildLeft, replicatedTableJoin = false)
-            } else if (false && canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
+            } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                 joinType, joins.BuildRight, replicatedTableJoin = false)
-            } else if (false && buildLeft) {
+            } else if (buildLeft) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                 joinType, joins.BuildLeft, replicatedTableJoin = false)
             } else if (RowOrdering.isOrderable(leftKeys)) {
@@ -119,8 +119,8 @@ private[sql] trait SnappyStrategies {
               BuildLeft, condition, planLater(left), planLater(right)))
           }
           // prefer local hash join after exchange over sort merge join if size is small enough
-          else if (false && (canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
-              !RowOrdering.isOrderable(leftKeys))) {
+          else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
+              !RowOrdering.isOrderable(leftKeys)) {
             if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
                 left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
@@ -129,8 +129,8 @@ private[sql] trait SnappyStrategies {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                 joinType, joins.BuildRight, replicatedTableJoin = false)
             }
-          } else if (false && (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) ||
-              !RowOrdering.isOrderable(leftKeys))) {
+          } else if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) ||
+              !RowOrdering.isOrderable(leftKeys)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildLeft, replicatedTableJoin = false)
           } else Nil
