@@ -81,7 +81,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
         query = (String) queryVect.elementAt(queryNum);
-        if (query.contains("create temporary view")) {
+        if (query.contains("create temporary view revenue")) {
+          // Changes specific to TPCH Q15 execution as the query has dependancy on temporary view revenue
           rs = conn.createStatement().executeQuery(query);
           rs = conn.createStatement().executeQuery("select s_suppkey, s_name, s_address, s_phone, total_revenue " +
               "from SUPPLIER, revenue where s_suppkey = supplier_no and total_revenue = (select max(total_revenue) " +
