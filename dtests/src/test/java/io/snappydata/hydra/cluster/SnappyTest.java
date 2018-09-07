@@ -2544,18 +2544,18 @@ public class SnappyTest implements Serializable {
     String locatorConf = productConfDirPath + sep + "locators";
     String serverConf = productConfDirPath + sep + "servers";
     String leadConf = productConfDirPath + sep + "leads";
-    Files.delete(Paths.get(locatorConf));
+    if (new File(locatorConf).exists()) Files.delete(Paths.get(locatorConf));
     Log.getLogWriter().info("locators file deleted");
-    Files.delete(Paths.get(serverConf));
+    if (new File(serverConf).exists()) Files.delete(Paths.get(serverConf));
     Log.getLogWriter().info("servers file deleted");
-    Files.delete(Paths.get(leadConf));
+    if (new File(leadConf).exists()) Files.delete(Paths.get(leadConf));
     Log.getLogWriter().info("leads file deleted");
     if (useSmartConnectorMode) {
       String slaveConf = productConfDirPath + sep + "slaves";
       String sparkEnvConf = productConfDirPath + sep + "spark-env.sh";
-      Files.delete(Paths.get(slaveConf));
+      if (new File(slaveConf).exists()) Files.delete(Paths.get(slaveConf));
       Log.getLogWriter().info("slaves file deleted");
-      Files.delete(Paths.get(sparkEnvConf));
+      if (new File(sparkEnvConf).exists()) Files.delete(Paths.get(sparkEnvConf));
       Log.getLogWriter().info("spark-env.sh file deleted");
     }
     if (isLongRunningTest) {
