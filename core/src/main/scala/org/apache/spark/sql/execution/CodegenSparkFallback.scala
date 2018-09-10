@@ -81,7 +81,14 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
           case Some(exec) =>
-            logInfo("SnappyData code generation failed. Falling back to Spark plans.", t)
+            val msg = new StringBuilder
+            var cause = t
+            while (cause ne null) {
+              if (msg.nonEmpty) msg.append(" => ")
+              msg.append(cause)
+              cause = cause.getCause
+            }
+            logInfo(s"SnappyData code generation failed due to $msg. Falling back to Spark plans.")
             session.sessionState.disableStoreOptimizations = true
             try {
               val plan = exec().executedPlan
