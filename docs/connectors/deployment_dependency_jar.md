@@ -35,7 +35,7 @@ Packages can be deployed in SnappyData using the **DEPLOY PACKAGE** SQL. You can
 !!!Note
 	SnappyData requires internet connectivity to connect to repositories which are hosted outside the network. Otherwise, the resolution of the package fails.
 
-For resolving the package, Maven Central and Spark packages, located at http://dl.bintray.com/spark-packages, are searched by default. Hence, you must specify the repository only if the package is not there at **Maven Central** or in the **spark-package** repository.
+For resolving the package, Maven Central and Spark packages, located at [http://dl.bintray.com/spark-packages](http://dl.bintray.com/spark-packages), are searched by default. Hence, you must specify the repository only if the package is not there at **Maven Central** or in the **spark-package** repository.
 
 !!!Tip
 	Use **spark-packages.org** to search for Spark packages. Most of the popular Spark packages are listed here.

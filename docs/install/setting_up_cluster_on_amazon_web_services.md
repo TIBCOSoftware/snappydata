@@ -16,14 +16,13 @@ You can set up SnappyData cluster on Amazon Web Services using one of the follow
 This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started.
 
 
-* [Prerequisites](#DeployingClusterCloudFormation)
+* [Prerequisites](#prerequisitescloudbuiler)
 * [Deploying SnappyData Cloud Cluster Using SnappyData CloudBuilder](#DeployingClusterCloudFormation)
 
 
 
 <a id="prerequisitescloudbuiler"></a>
 ### Prerequisites
-Before you begin:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources with AWS CloudFormation.
 
