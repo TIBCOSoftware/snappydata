@@ -51,7 +51,7 @@ For example: Select viewtext from sys.hivetables where tablename = â€˜view_nameâ
 *	Spark application with same name cannot be submitted to SnappyData. This has been done so that individual apps can be killed by its name when required.
 *	Users are not allowed to create tables in their own schema based on system property - `snappydata.RESTRICT_TABLE_CREATION`. In some cases it may be required to control use of cluster resources in which case the table creation is done only by authorized owners of schema.
 *	Schema can be owned by an LDAP group also and not necessarily by a single user.
-*	Support for deploying SnappyData on Kubernetes using Helm charts. This feature is currently experimental. </br>Refer [Kubernetes](/kubernetes.md)
+*	Support for deploying SnappyData on Kubernetes using Helm charts. </br>Refer [Kubernetes](/kubernetes.md)
 *	Disk Store Validate tool enhancement. Validation of disk store can find out all the inconsistencies at once.
 *	BINARY data type is same as BLOB data type.
 
