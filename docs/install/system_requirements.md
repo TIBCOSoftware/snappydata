@@ -27,7 +27,6 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 |CentOS|CentOS 6, 7 (Minimum recommended kernel version: 3.10.0-693.2.2.el7.x86_64)|
 
 
-
 ## Host Machine Requirements
 Requirements for each host:
 
@@ -47,6 +46,8 @@ Requirements for each host:
 
 * Time synchronization service such as Network Time Protocol (NTP).
 
+* cURL must be installed on lead nodes for snappy scripts to work. On Red Hat based systems it can be installed using `sudo yum install curl` while on Debian/Ubuntu based systems, you can install using `sudo apt-get install curl `command.
+
 !!! Note
 	* For troubleshooting, you must run a time synchronization service on all hosts. Synchronized time stamps allow you to merge log messages from different hosts, for an accurate chronological history of a distributed run.
 
@@ -59,6 +60,12 @@ Requirements for each host:
 
 - Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.
 
+## Python Integration using pyspark 
+-	The Python pyspark module has the same requirements as in Apache Spark. The numpy package is required by many modules of pyspark including the examples shipped with SnappyData. On recent Red Hat based systems, it can be installed using `sudo yum install numpy` or `sudo yum install python2-numpy` commands. Whereas, on Debian/Ubuntu based systems, you can install using the `sudo apt-get install python-numpy` command.
+
+-	Some of the python APIs can use SciPy to optimize some algorithms (in linalg package), and some others need Pandas. On recent Red Hat based systems SciPy can be installed using `sudo yum install scipy` command. Whereas,  on Debian/Ubuntu based systems you can install using the `sudo apt-get install python-scipy` command.. Likewise, Pandas on recent Red Hat based systems can be installed using `sudo yum installed python-pandas` command, while on Debian/Ubuntu based systems it can be installed using the `sudo apt-get install python-pandas` command.
+
+-	On Red Hat based systems, some of the above Python packages may be available only after enabling the **EPEL** repository. If these are not available in the repositories for your OS version or if using **EPEL** is not an option, then you can use **pip**. Refer to the respective project documentation for details and alternative options such as Anaconda.
 
 ## Filesystem Type for Linux Platforms
 
