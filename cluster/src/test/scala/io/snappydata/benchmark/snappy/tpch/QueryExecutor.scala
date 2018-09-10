@@ -37,6 +37,10 @@ object QueryExecutor {
     planFileStream.close()
   }
 
+  def setRandomSeed(randomSeed : Integer): Unit ={
+    TPCH_Queries.setRandomSeed(randomSeed)
+  }
+
   def execute_statement(queryNumber: String, isResultCollection: Boolean, stmt: PreparedStatement,
       warmup: Integer, runsForAverage: Integer, avgPrintStream: PrintStream = null): Unit = {
 
@@ -141,7 +145,7 @@ object QueryExecutor {
         val queryResultsPrintStream: PrintStream = new PrintStream(queryResultsFileStream)
 
         try {
-          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
+                var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
           val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)
           println(s"$queryNumber : ${resultSet.length}")
 
