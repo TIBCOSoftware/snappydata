@@ -769,7 +769,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   // scalastyle:off
   def generateMapLookup(entryVar: String, localValueVar: String,
-      keyIsUnique: String, numRows: String, nullMaskVars: Array[String],
+      mapSize: String, keyIsUnique: String, initMap: String,
+      initMapCode: String, numRows: String, nullMaskVars: Array[String],
       initCode: String, checkCond: (Option[ExprCode], String, Option[Expression]),
       streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
       streamOutput: Seq[Attribute], buildKeyVars: Seq[ExprCode],
@@ -806,6 +807,11 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // if a stream-side key is null then skip (or null for outer join)
     val nullStreamKey = streamKeyVars.filter(_.isNull != "false")
         .map(v => s"!${v.isNull}")
+    // continue to next entry on no match
+    val continueOnNull = joinType match {
+      case Inner | LeftSemi => true
+      case _ => false
+    }
     // filter as per min/max if provided; the min/max variables will be
     // initialized by the caller outside the loop after creating the map
     val minMaxFilter = integralKeys.zipWithIndex.map {
@@ -816,7 +822,11 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$keyVar >= $minVar && $keyVar <= $maxVar"
     }
     // generate the initial filter condition from above two
-    val initFilters = nullStreamKey ++ minMaxFilter
+    // also add a mapSize check but when continueOnNull is true, then emit a continue immediately
+    val (checkMapSize, initFilters) = if (continueOnNull) {
+      (s"if ($mapSize == 0) continue;\n", nullStreamKey ++ minMaxFilter)
+    }
+    else ("", s"$mapSize != 0" +: (nullStreamKey ++ minMaxFilter))
     val initFilterCode = if (initFilters.isEmpty) ""
     else initFilters.mkString("if (", " &&\n", ")")
 
@@ -869,11 +879,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         }"""
     }
 
-    // continue to next entry on no match
-    val continueOnNull = joinType match {
-      case Inner | LeftSemi => true
-      case _ => false
-    }
     // optimized path for single key string column if dictionary is present
     val lookup = mapLookup(entryVar, hashVar(0), streamKeys, streamKeyVars,
       valueInit = null)
@@ -976,7 +981,10 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     }
 
     s"""
-      $className $entryVar = null;
+      if (!$initMap) {
+        $initMapCode
+      }
+      $checkMapSize$className $entryVar = null;
       $hashInit
       $mapLookupCode
       $entryConsume

@@ -390,8 +390,11 @@ abstract class SnappyDDLParser(session: SparkSession)
       StringBuilder :: TableEnd :: HNil] = rule {
     ddlEnd.asInstanceOf[Rule[StringBuilder :: HNil,
         StringBuilder :: TableEnd :: HNil]] |
-    (capture(ANY ~ beforeDDLEnd.*) ~> ((s: StringBuilder, n: String) =>
-      s.append(n))) ~ tableEnd1
+    // no free form pass through to store layer if USING has been provided
+    // to detect genuine syntax errors correctly rather than store throwing
+    // some irrelevant error
+    (!(ws ~ (USING ~ qualifiedName | OPTIONS ~ options)) ~ capture(ANY ~ beforeDDLEnd.*) ~>
+        ((s: StringBuilder, n: String) => s.append(n))) ~ tableEnd1
   }
 
   protected final def tableEnd: Rule2[StringBuilder, TableEnd] = rule {

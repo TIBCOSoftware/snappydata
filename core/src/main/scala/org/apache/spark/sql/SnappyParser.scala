@@ -110,7 +110,7 @@ class SnappyParser(session: SnappySession)
           s.charAt(len - 2) match {
             case 'B' | 'b' => return toDecimalLiteral(s.substring(0, len - 2),
               checkExactNumeric = false)
-            case c if (Character.isDigit(c)) => return newTokenizedLiteral(
+            case c if Character.isDigit(c) => return newTokenizedLiteral(
               java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
             case _ => throw new ParseException(s"Found non numeric token $s")
           }
@@ -267,6 +267,10 @@ class SnappyParser(session: SnappySession)
 
   protected final def week: Rule1[Long] = rule {
     integral ~ WEEK ~> ((num: String) => num.toLong)
+  }
+
+  protected final def intervalType: Rule1[DataType] = rule {
+    INTERVAL ~> (() => CalendarIntervalType)
   }
 
   protected def intervalLiteral: Rule1[Expression] = rule {
@@ -916,7 +920,7 @@ class SnappyParser(session: SnappySession)
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
     } |
-    CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
+    CAST ~ '(' ~ ws ~ expression ~ AS ~ (dataType | intervalType) ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
         keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
