@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Troubleshooting error messages - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>Troubleshooting Error Messages - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -24,7 +24,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Troubleshooting error messages";
+    var mkdocs_page_name = "Troubleshooting Error Messages";
     var mkdocs_page_input_path = "troubleshooting/troubleshooting_error_messages.md";
     var mkdocs_page_url = "/troubleshooting/troubleshooting_error_messages/";
   </script>
@@ -1410,6 +1410,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/validate_diskstore/">validate-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1798,14 +1812,14 @@
     </li>
 
         
-            
+    </ul>
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
         <a class="" href="../troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
-
-        
-    </ul>
 <li>
           
             <li>
@@ -1815,7 +1829,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../member_startup_problems/">Member startup problems</a>
+        <a class="" href="../member_startup_problems/">Member Startup Problems</a>
         
     </li>
 
@@ -1829,14 +1843,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../preventing_disk_full_errors/">Preventing disk full errors</a>
+        <a class="" href="../preventing_disk_full_errors/">Preventing Disk Full Errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        <a class="" href="../recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
         
     </li>
 
@@ -1850,14 +1864,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../collect_debug_artifacts/">Collecting logs, stats and dumps using the collect-debug-artifacts script</a>
+        <a class="" href="../collect_debug_artifacts/">Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script</a>
         
     </li>
 
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">Troubleshooting error messages</a>
+        <a class="current" href="./">Troubleshooting Error Messages</a>
         
             <ul>
             
@@ -1940,7 +1954,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="../..">Docs</a> &raquo;</li>
+    <li><a href="">Docs</a> &raquo;</li>
     
       
         
@@ -1948,7 +1962,14 @@
         
       
     
-    <li>Troubleshooting error messages</li>
+    <li>Troubleshooting Error Messages</li>
+<!--    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -1978,6 +1999,7 @@
 <li>
 <p><a href="#no-data-store">ForcedDisconnectException Error: "No Data Store found in the distributed system for: {0}"</a></p>
 </li>
+<li><a href="#queryfailiterate">Node went down or data no longer available while iterating the results</a>.</li>
 </ul>
 <p><a id="region0"></a>
 <error> <strong>Error Message:</strong> </error> 
@@ -2047,6 +2069,19 @@ One possible reason for this could be that large GC pauses are causing the membe
 <p><action> <strong>Solution:</strong> </br>
 To minimize the chances of this happening, you can increase the DistributedSystem property <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a>. This setting also controls the length of time required to notice a network failure. Also, review your memory configuration and configure to use <a href="../../best_practices/memory_management/#snappydata-off-heap-memory">off-heap memory</a>.
 </action></p>
+<!-- --------------------------------------------------------------------------- -->
+
+<p><a id="queryfailiterate"></a>
+<error> <strong>Error Message:</strong> </error> 
+<error-text>
+Node went down or data no longer available while iterating the results.
+</error-text></p>
+<p><diagnosis> <strong>Diagnosis:</strong></br>
+In cases where a node fails while a JDBC/ODBC client or job is consuming result of a query, then it can result in the query failing with such an exception. 
+</diagnosis></p>
+<p><action> <strong>Solution:</strong> </br>
+This is expected behaviour where the product does not retry, since partial results are already consumed by the application. Application must retry the entire query after discarding any changes due to partial results that are consumed.
+</action></p>
               
             </div>
           </div>
@@ -2057,7 +2092,7 @@ To minimize the chances of this happening, you can increase the DistributedSyste
         <a href="../../additional_files/open_source_components/" class="btn btn-neutral float-right" title="Community Edition/ Enterprise Edition Features">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../collect_debug_artifacts/" class="btn btn-neutral" title="Collecting logs, stats and dumps using the collect-debug-artifacts script"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../collect_debug_artifacts/" class="btn btn-neutral" title="Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   

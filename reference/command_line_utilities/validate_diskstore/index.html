@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../../favicon.ico">
   
-  <title>disconnect - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>validate-disk-store - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -24,9 +24,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "disconnect";
-    var mkdocs_page_input_path = "reference/interactive_commands/disconnect.md";
-    var mkdocs_page_url = "/reference/interactive_commands/disconnect/";
+    var mkdocs_page_name = "validate-disk-store";
+    var mkdocs_page_input_path = "reference/command_line_utilities/validate_diskstore.md";
+    var mkdocs_page_url = "/reference/command_line_utilities/validate_diskstore/";
   </script>
   
   <script src="../../../js/jquery-2.1.1.min.js"></script>
@@ -1377,7 +1377,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-launcher/">Command Line Utilities</a>
+        <a class="" href="../store-launcher/">Command Line Utilities</a>
         
     </li>
 
@@ -1389,124 +1389,32 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-backup/">backup and restore</a>
+        <a class="" href="../store-backup/">backup and restore</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-compact-all-disk-stores/">compact-all-disk-stores</a>
+        <a class="" href="../store-compact-all-disk-stores/">compact-all-disk-stores</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-compact-disk-store/">compact-disk-store</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/validate_diskstore/">validate-disk-store</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-unblock-disk-stores/">unblock-disk-store</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-run/">run</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../command_line_utilities/store-version/">version</a>
-        
-    </li>
-
-        
-    </ul>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../store_command_reference/">Snappy-SQL Shell Interactive Commands</a>
-        
-    </li>
-
-        
-            
-    <ul class="subnav">
-    <li><span>Snappy-SQL Shell Interactive Commands</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../autocommit/">autocommit</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../commit/">commit</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../connect_client/">connect client</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../connect/">connect</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../describe/">describe</a>
+        <a class="" href="../store-compact-disk-store/">compact-disk-store</a>
         
     </li>
 
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">disconnect</a>
+        <a class="current" href="./">validate-disk-store</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#disconnect">disconnect</a></li>
+                <li class="toctree-l3"><a href="#validate-disk-store">validate-disk-store</a></li>
                 
                     <li><a class="toctree-l4" href="#syntax">Syntax</a></li>
                 
@@ -1522,49 +1430,141 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../elapsedtime/">elapsedtime</a>
+        <a class="" href="../store-list-missing-disk-stores/">list-missing-disk-stores</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../exit/">exit</a>
+        <a class="" href="../store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../maximumdisplaywidth/">MaximumDisplayWidth</a>
+        <a class="" href="../store-unblock-disk-stores/">unblock-disk-store</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../rollback/">rollback</a>
+        <a class="" href="../store-run/">run</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../run/">run</a>
+        <a class="" href="../store-version/">version</a>
+        
+    </li>
+
+        
+    </ul>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/store_command_reference/">Snappy-SQL Shell Interactive Commands</a>
+        
+    </li>
+
+        
+            
+    <ul class="subnav">
+    <li><span>Snappy-SQL Shell Interactive Commands</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/autocommit/">autocommit</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../set_connection/">set connection</a>
+        <a class="" href="../../interactive_commands/commit/">commit</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../show/">show</a>
+        <a class="" href="../../interactive_commands/connect_client/">connect client</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/connect/">connect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/describe/">describe</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/disconnect/">disconnect</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/elapsedtime/">elapsedtime</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/exit/">exit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/maximumdisplaywidth/">MaximumDisplayWidth</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/rollback/">rollback</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/set_connection/">set connection</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../interactive_commands/show/">show</a>
         
     </li>
 
@@ -1968,11 +1968,11 @@
         
       
         
-          <li>Snappy-SQL Shell Interactive Commands &raquo;</li>
+          <li>Command Line Utilities &raquo;</li>
         
       
     
-    <li>disconnect</li>
+    <li>validate-disk-store</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -1988,20 +1988,37 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="disconnect">disconnect</h1>
-<p>Disconnects from the database.</p>
+                <h1 id="validate-disk-store">validate-disk-store</h1>
+<p>Verifies the health of an offline disk store and provides information about the tables using that disk store.</p>
 <h2 id="syntax">Syntax</h2>
-<pre><code class="pre">DISCONNECT [ ALL | CURRENT | ConnectionIdentifier ]
+<pre><code>./bin/snappypy validate-disk-store &lt;diskStoreName&gt; &lt;directory&gt;+
 </code></pre>
 
+<p>In the syntax, you must provide the name of disk store to be validated and the path which stores the disk store files.</p>
 <h2 id="description">Description</h2>
-<p>Disconnects from the database. Specifically, issues a <code>java.sql.Connection.close</code> request against the connection indicated on the command line. There must be a current connection at the time the request is made.</p>
-<p>If ALL is specified, all known connections are closed and there will be no current connection.</p>
-<p>Disconnect CURRENT is the same as Disconnect without indicating a connection; the default connection is closed.</p>
-<p>If a connection name is specified with an identifier, the command disconnects the named connection. The name must be the name of a connection in the current session provided with the <a href="../connect/">Connect</a> command.</p>
-<p>If the <a href="../connect/">Connect</a> command without the AS clause was used, you can supply the name the system generated for the connection. If the current connection is the named connection when the command completes, there will be no current connection and you must issue a <a href="../connect/">Connect</a> command.</p>
+<p>The SnappyData <strong>validate-disk-store </strong>command verifies the health of your offline disk store and gives you information about the following:
+<em>   Tables that are using that disk store
+</em>   Total number of rows 
+*   Number of records that would be removed, if you have compacted the store.</p>
+<p>You can use this command:</p>
+<ul>
+<li>Before compacting an offline disk store, to determine whether it is worthwhile.</li>
+<li>Before restoring a disk store.</li>
+<li>Any time you want ensure the disk store is in good shape.</li>
+</ul>
 <h2 id="example">Example</h2>
-<pre><code class="pre">snappy&gt; DISCONNECT CONNECTION1;
+<pre><code> ./bin/snappy validate-disk-store GFXD-DEFAULT-DISKSTORE /home/alex/snappy/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-server-1
+</code></pre>
+
+<p>This command displays an output  as shown in the following example:</p>
+<pre><code>log4j:WARN No appenders could be found for logger (org.eclipse.jetty.util.log).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+/__UUID_PERSIST: entryCount=42
+/APP/SNAPPYSYS_INTERNAL____AIRLINE_COLUMN_STORE_ entryCount=0 bucketCount=8
+/partitioned_region entryCount=6 bucketCount=10
+Disk store contains 1 compactable records.
+Total number of region entries in this disk store is: 6
 </code></pre>
               
             </div>
@@ -2010,10 +2027,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../elapsedtime/" class="btn btn-neutral float-right" title="elapsedtime">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../store-list-missing-disk-stores/" class="btn btn-neutral float-right" title="list-missing-disk-stores">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../describe/" class="btn btn-neutral" title="describe"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../store-compact-disk-store/" class="btn btn-neutral" title="compact-disk-store"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -2045,10 +2062,10 @@
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../describe/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../store-compact-disk-store/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../elapsedtime/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../store-list-missing-disk-stores/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

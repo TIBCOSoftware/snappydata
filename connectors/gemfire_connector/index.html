@@ -1429,6 +1429,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/validate_diskstore/">validate-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1817,14 +1831,14 @@
     </li>
 
         
-            
+    </ul>
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
-
-        
-    </ul>
 <li>
           
             <li>
@@ -1834,7 +1848,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/member_startup_problems/">Member startup problems</a>
+        <a class="" href="../../troubleshooting/member_startup_problems/">Member Startup Problems</a>
         
     </li>
 
@@ -1848,14 +1862,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing disk full errors</a>
+        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing Disk Full Errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
         
     </li>
 
@@ -1869,14 +1883,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/collect_debug_artifacts/">Collecting logs, stats and dumps using the collect-debug-artifacts script</a>
+        <a class="" href="../../troubleshooting/collect_debug_artifacts/">Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting error messages</a>
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
         
     </li>
 
@@ -1952,7 +1966,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="../..">Docs</a> &raquo;</li>
+    <li><a href="">Docs</a> &raquo;</li>
     
       
         
@@ -1961,6 +1975,13 @@
       
     
     <li>Using the SnappyData GemFire Connector</li>
+<!--    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -2127,7 +2148,8 @@ snappy&gt; select * from SnappyDataTable;
 <p>Execute the following to deploy the <strong>gemfire-function</strong> jar:</p>
 <pre><code>Deploy SnappyData GemFire Connector's gemfire-function jar (`gfeFunct
 ions-1.0.2.jar`):
-gfsh&gt;deploy --jar=&lt;SnappyData Product Home&gt;/snappy-connectors/gemfire-connector/gfeFunctions/build-artifacts/scala-2.11/libs/gfeFunctions-1.0.2.jar
+gfsh&gt;deploy --jar=&lt;SnappyData Product Home&gt;//connectors/gfeFunctions-0.9.2.jar
+
 
 </code></pre>
 
@@ -2303,7 +2325,7 @@ The <strong>DistributedSystemInitializer</strong> implementation needs to be pac
 </code></pre>
 <p>Following is a sample from the servers and leads file:</p>
 <pre><code>localhost -locators=localhost:10334 -client-bind-address=localhost -client-port=1528 -heap-size=20g
--classpath=&lt;SnappyData-Product-Home&gt;/snappy-connectors/gemfire-connector/connector/build-artifacts/scala-2.11/libs/connector_2.11-1.0.2.jar:&lt;path-to-jar&gt;/person.jar
+-classpath=&lt;SnappyData-Product-Home&gt;//connectors/connector_2.11-0.9.2.jar:&lt;path-to-jar&gt;/person.jar
 -snappydata.connector.gemfire-grid.&lt;uniqueIDForGrid&gt;=localhost[55221]
 </code></pre>
 
@@ -2449,7 +2471,7 @@ At the time of table creation, an option with key = <strong>column.selector</str
 <tbody>
 <tr>
 <td><strong>max.rows.restrict</strong></td>
-<td>This parameter is used to restrict the number of rows that are fetched from an external table, when a query of type <strong>select * from external_table</strong> is executed. This restriction, if specified,  is applied to queries without any filter, limit, aggregate function, and projection such that it tends to bring all the rows from the external region. Note that this restriction is not applied in case of DDL statement such as <strong>create table X using row column as select * from external_table</strong></td>
+<td>This parameter is used to restrict the number of rows that are fetched from an external table, when a query of type <strong>select * from external_table</strong> is executed. This restriction, if specified,  is applied to queries without any filter, limit, aggregate function, and projection such that it tends to bring all the rows from the external region. Note that this restriction is not applied in case of DDL statement such as <strong>create table X using row column as select * from external_table</strong>. The default value for is 10,000.</td>
 </tr>
 <tr>
 <td><strong>column.selector</strong></td>
@@ -2457,7 +2479,7 @@ At the time of table creation, an option with key = <strong>column.selector</str
 </tr>
 <tr>
 <td><strong>max.buckets.per.partition</strong></td>
-<td>This parameter is used to control the concurrency and number of tasks created to fetch data from an external region. This property is useful only for Partitioned Region. For more details, refer to <a href="#controllingtaskconcurrency">Controlling Task Concurrency in SnappyData When Accessing GemFire</a>.</td>
+<td>This parameter is used to control the concurrency and number of tasks created to fetch data from an external region. This property is useful only for Partitioned Region. For more details, refer to <a href="#controllingtaskconcurrency">Controlling Task Concurrency in SnappyData When Accessing GemFire</a>.  The default value is 3.</td>
 </tr>
 <tr>
 <td><strong>security.username</strong>  and <strong>security.password</strong></td>
@@ -2465,7 +2487,7 @@ At the time of table creation, an option with key = <strong>column.selector</str
 </tr>
 <tr>
 <td><strong>pdxtype.maxscan</strong></td>
-<td>This parameter determines the maximum number of entries from the region which is scanned to completely determine the schema of the external table from the Pdx instances that is stored in the region. The default value is 100</td>
+<td>This parameter determines the maximum number of entries from the region which is scanned to completely determine the schema of the external table from the Pdx instances that is stored in the region. The default value is 100.</td>
 </tr>
 </tbody>
 </table>

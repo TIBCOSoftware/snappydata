@@ -1431,6 +1431,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/validate_diskstore/">validate-disk-store</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/store-list-missing-disk-stores/">list-missing-disk-stores</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-revoke-missing-disk-stores/">revoke-missing-disk-store</a>
         
     </li>
@@ -1819,14 +1833,14 @@
     </li>
 
         
-            
+    </ul>
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
-
-        
-    </ul>
 <li>
           
             <li>
@@ -1836,7 +1850,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/member_startup_problems/">Member startup problems</a>
+        <a class="" href="../../troubleshooting/member_startup_problems/">Member Startup Problems</a>
         
     </li>
 
@@ -1850,14 +1864,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing disk full errors</a>
+        <a class="" href="../../troubleshooting/preventing_disk_full_errors/">Preventing Disk Full Errors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from disk full errors</a>
+        <a class="" href="../../troubleshooting/recovering_from_disk_full_errors/">Recovering from Disk Full Errors</a>
         
     </li>
 
@@ -1871,14 +1885,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/collect_debug_artifacts/">Collecting logs, stats and dumps using the collect-debug-artifacts script</a>
+        <a class="" href="../../troubleshooting/collect_debug_artifacts/">Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting error messages</a>
+        <a class="" href="../../troubleshooting/troubleshooting_error_messages/">Troubleshooting Error Messages</a>
         
     </li>
 
@@ -1954,7 +1968,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="../..">Docs</a> &raquo;</li>
+    <li><a href="">Docs</a> &raquo;</li>
     
       
         
@@ -1963,6 +1977,13 @@
       
     
     <li>Configuration</li>
+<!--    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li> !-->
   </ul>
 </br>
  <b>This document is a work in progress and will be progressively updated.</b>
@@ -2036,6 +2057,10 @@ These files should contain the hostnames of the nodes (one per line) where you i
 <tr>
 <td>-J</td>
 <td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
+</tr>
+<tr>
+<td>-J-Dsnappydata.enable-rls</td>
+<td>Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
 </tr>
 <tr>
 <td>-locators</td>
@@ -2115,6 +2140,10 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <tr>
 <td>-J</td>
 <td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
+</tr>
+<tr>
+<td>-J-Dsnappydata.enable-rls</td>
+<td>Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
 </tr>
 <tr>
 <td>-locators</td>
@@ -2227,6 +2256,10 @@ node-l2 -heap-size=4096m -locators=node-b:8888,node-a:9999
 <tr>
 <td>-J-Dgemfirexd.hostname-for-clients</td>
 <td>The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the <code>client-bind-address</code> to be given to clients. </br> This value can be different from <code>client-bind-address</code> for cases where the servers/locators are behind a NAT firewall (AWS for example) where <code>client-bind-address</code> needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by the hostname translation itself, that is, the hostname used in <code>client-bind-address</code> resolves to internal IP address from inside and to the public IP address from outside, but for other cases, this property is required</td>
+</tr>
+<tr>
+<td>-J-Dsnappydata.enable-rls</td>
+<td>Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
 </tr>
 <tr>
 <td>-log-file</td>
