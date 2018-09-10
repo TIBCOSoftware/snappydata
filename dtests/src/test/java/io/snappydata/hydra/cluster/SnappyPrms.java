@@ -228,6 +228,12 @@ public class SnappyPrms extends BasePrms {
    * (boolean) - whether test is started using user specified confs for serevrs, leads and locators.
    */
   public static Long isUserConfTest;
+
+  /**
+   * (boolean) - whether TPCH schema is used in test for running the queries concurrently.
+   */
+  public static Long isTPCHSchema;
+
   /**
    * (boolean) - whether to enable time statistics. snappy hydra already sets the
    * enable-time-statistics to true.

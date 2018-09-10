@@ -70,7 +70,7 @@ hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";
 
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar;
 io.snappydata.hydra.cluster.SnappyPrms-isLongRunningTest = true;
-
+io.snappydata.hydra.cluster.SnappyPrms-isTPCHSchema = true;
 /*
 io.snappydata.hydra.cluster.SnappyPrms-isUserConfTest = true;
 io.snappydata.hydra.cluster.SnappyPrms-locatorList = "localhost:1527";

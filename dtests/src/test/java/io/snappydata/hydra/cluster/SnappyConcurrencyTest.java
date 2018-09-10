@@ -33,6 +33,8 @@ import static hydra.Prms.totalTaskTimeSec;
 
 public class SnappyConcurrencyTest extends SnappyTest {
 
+  public static boolean isTPCHSchema = TestConfig.tab().booleanAt(SnappyPrms.isTPCHSchema, false);  //default to false
+
   public static void runPointLookUpQueries() throws SQLException {
     Vector<String> queryVect = SnappyPrms.getPointLookUpQueryList();
     long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
@@ -75,19 +77,19 @@ public class SnappyConcurrencyTest extends SnappyTest {
     Log.getLogWriter().info("SS - totalTaskTime : " + totalTaskTime);
     String query = null;
     ResultSet rs;
+    if (isTPCHSchema) {
+      query = "create or replace temporary view revenue as select  l_suppkey as supplier_no, " +
+          "sum(l_extendedprice * (1 - l_discount)) as total_revenue from LINEITEM where l_shipdate >= '1993-02-01'" +
+          " and l_shipdate <  add_months('1996-01-01',3) group by l_suppkey";
+      conn.createStatement().executeUpdate(query);
+    }
     long startTime = System.currentTimeMillis();
     long endTime = startTime + 300000;
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
-        query = (String) queryVect.elementAt(queryNum);
-        if (query.contains("create temporary view revenue")) {
-          // Changes specific to TPCH Q15 execution as the query has dependancy on temporary view revenue
-          rs = conn.createStatement().executeQuery(query);
-          rs = conn.createStatement().executeQuery("select s_suppkey, s_name, s_address, s_phone, total_revenue " +
-              "from SUPPLIER, revenue where s_suppkey = supplier_no and total_revenue = (select max(total_revenue) " +
-              "from  revenue ) order by s_suppkey");
-        } else rs = conn.createStatement().executeQuery(query);
+        query = queryVect.elementAt(queryNum);
+        rs = conn.createStatement().executeQuery(query);
       } catch (SQLException se) {
         throw new TestException("Got exception while executing Analytical query:" + query, se);
       }
@@ -97,7 +99,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
-        query = (String) queryVect.elementAt(queryNum);
+        query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
