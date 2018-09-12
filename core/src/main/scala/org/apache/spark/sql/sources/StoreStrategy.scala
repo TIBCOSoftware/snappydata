@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
-import org.apache.spark.sql.internal.PutIntoColumnTable
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PutIntoColumnTable}
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 import org.apache.spark.sql.{Strategy, _}
 
@@ -79,11 +79,22 @@ object StoreStrategy extends Strategy {
     case AlterTableAddColumn(tableIdent, addColumn) =>
       ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn)) :: Nil
 
+    case AlterTableToggleRowLevelSecurity(tableIdent, enableRls) =>
+      ExecutedCommandExec(AlterTableToggleRowLevelSecurityCommand(tableIdent, enableRls)) :: Nil
+
     case AlterTableDropColumn(tableIdent, column) =>
       ExecutedCommandExec(AlterTableDropColumnCommand(tableIdent, column)) :: Nil
 
     case CreateIndex(indexName, baseTable, indexColumns, options) =>
       ExecutedCommandExec(CreateIndexCommand(indexName, baseTable, indexColumns, options)) :: Nil
+
+    case CreatePolicy(policyName, tableName, policyFor, applyTo, expandedApplyTo,
+    currentUser, filterStr, filter: BypassRowLevelSecurity) =>
+      ExecutedCommandExec(CreatePolicyCommand(policyName, tableName, policyFor, applyTo,
+        expandedApplyTo, currentUser, filterStr, filter)) :: Nil
+
+    case DropPolicy(ifExists, policyIdent) =>
+      ExecutedCommandExec(DropPolicyCommand(ifExists, policyIdent)) :: Nil
 
     case DropIndex(ifExists, indexName) =>
       ExecutedCommandExec(DropIndexCommand(indexName, ifExists)) :: Nil

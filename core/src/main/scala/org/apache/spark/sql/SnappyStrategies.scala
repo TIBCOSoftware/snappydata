@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
 import io.snappydata.Property
@@ -57,7 +56,7 @@ private[sql] trait SnappyStrategies {
   }
 
   def isDisabled: Boolean = {
-    snappySession.sessionState.disableStoreOptimizations
+    session.sessionState.disableStoreOptimizations
   }
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
@@ -76,7 +75,7 @@ private[sql] trait SnappyStrategies {
   }
 
   object HashJoinStrategies extends Strategy with JoinQueryPlanning {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled || session.disableHashJoin) {
       Nil
     } else {
       plan match {

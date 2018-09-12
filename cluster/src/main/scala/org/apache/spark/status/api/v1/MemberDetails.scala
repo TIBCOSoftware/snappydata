@@ -82,6 +82,7 @@ object MemberDetails {
       }
     }
 
+    val cores = memberDetails.getCores
     val cpuActive = memberDetails.getCpuActive
     val clients = memberDetails.getClientsCount
 
@@ -126,7 +127,7 @@ object MemberDetails {
       MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE);
 
     new MemberSummary(memberId, nameOrId.toString, host, shortDirName, fullDirName,
-      logFile, processId, status, memberType, isLocator, isDataServer, isLead, isActiveLead,
+      logFile, processId, status, memberType, isLocator, isDataServer, isLead, isActiveLead, cores,
       cpuActive, clients, jvmHeapMax, jvmHeapUsed, jvmHeapTotal, jvmHeapFree, heapStoragePoolUsed,
       heapStoragePoolSize, heapExecutionPoolUsed, heapExecutionPoolSize, heapMemorySize,
       heapMemoryUsed, offHeapStoragePoolUsed, offHeapStoragePoolSize, offHeapExecutionPoolUsed,

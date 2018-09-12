@@ -1,0 +1,2 @@
+SPARK_LOCAL_DIRS=/vol1/users/perfuser/tmp
+SPARK_EXECUTOR_MEMORY=40g

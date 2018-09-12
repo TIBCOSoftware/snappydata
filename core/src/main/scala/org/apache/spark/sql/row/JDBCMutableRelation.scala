@@ -19,7 +19,7 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -63,6 +63,7 @@ case class JDBCMutableRelation(
     with DestroyRelation
     with IndexableRelation
     with AlterableRelation
+    with NativeTableRowLevelSecurityRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -87,6 +88,8 @@ case class JDBCMutableRelation(
 
   var tableExists: Boolean = _
 
+  var tableCreated : Boolean = false
+
   final lazy val schemaFields: Map[String, StructField] =
     Utils.schemaFields(schema)
 
@@ -101,7 +104,7 @@ case class JDBCMutableRelation(
   override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] =
     filters.filter(ExternalStoreUtils.unhandledFilter)
 
-  protected final val connFactory: () => Connection =
+  override protected final val connFactory: () => Connection =
     JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
       connProperties.connProps.asScala.toMap))
 
@@ -152,6 +155,7 @@ case class JDBCMutableRelation(
             pass.asInstanceOf[String])
         }
         JdbcExtendedUtils.executeUpdate(sql, conn)
+        tableCreated = true
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,
             sqlContext.conf.caseSensitiveAnalysis, conn)
@@ -185,7 +189,7 @@ case class JDBCMutableRelation(
       sqlContext.sparkContext,
       schema,
       requiredColumns,
-      filters.flatMap(translateToFilter),
+      filters.flatMap(translateToFilter(_)),
       parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
@@ -255,6 +259,27 @@ case class JDBCMutableRelation(
       conn.close()
     }
   }
+
+    /** Get primary keys of the row table */
+    override def getPrimaryKeyColumns: Seq[String] = {
+        val conn = ConnectionPool.getPoolConnection(table, dialect,
+            connProperties.poolProps, connProperties.connProps,
+            connProperties.hikariCP)
+        try {
+            val metadata = conn.getMetaData
+            val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
+                table, conn)
+            val primaryKeys = metadata.getPrimaryKeys(null, schemaName, tableName)
+            val primaryKey = new mutable.ArrayBuffer[String](2)
+            while (primaryKeys.next()) {
+                primaryKey += primaryKeys.getString(4)
+            }
+            primaryKey
+        }
+        finally {
+            conn.close()
+        }
+    }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     // use the Insert plan for best performance
@@ -454,14 +479,15 @@ case class JDBCMutableRelation(
   }
 
   override def alterTable(tableIdent: QualifiedTableName,
-                          isAddColumn: Boolean, column: StructField): Unit = {
+        isAddColumn: Boolean, column: StructField): Unit = {
     val conn = connFactory()
     try {
       val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
         conn, dialect, sqlContext)
       val sql = if (isAddColumn) {
-        s"""alter table ${quotedName(table)}
-            add column "${column.name}" ${getDataType(column)}"""
+      val nullable = if (column.nullable) "" else " NOT NULL"
+      s"""alter table ${quotedName(table)}
+            add column "${column.name}" ${getDataType(column)}$nullable"""
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
@@ -484,6 +510,7 @@ case class JDBCMutableRelation(
       conn.close()
     }
   }
+
 }
 
 final class DefaultSource extends MutableRelationProvider with DataSourceRegister {

@@ -86,12 +86,12 @@ io/snappydata/hydra/storeTests/alterTable/addDropForeignKeyWithAccessors.conf
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
 
-io/snappydata/hydra/storeTests/alterTablesUniqWithDataAccessors.conf
+io/snappydata/hydra/storeTests/alterTable/alterTablesUniqWithDataAccessors.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
 
-io/snappydata/hydra/storeTests/alterTablesNonUniqWithDataAccessors.conf
+io/snappydata/hydra/storeTests/alterTable/alterTablesNonUniqWithDataAccessors.conf
     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2

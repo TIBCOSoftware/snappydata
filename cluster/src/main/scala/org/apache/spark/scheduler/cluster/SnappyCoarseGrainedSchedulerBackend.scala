@@ -113,7 +113,7 @@ class BlockManagerIdListener(sc: SparkContext)
     SnappyContext.clearBlockIds()
 
   private def handleNewExecutorJoin(bid: BlockManagerId) = {
-    val uris = SnappySession.getJarURIs()
+    val uris = SnappySession.getJarURIs
     Utils.mapExecutors[Unit](sc, () => {
       ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
       Iterator.empty

@@ -20,6 +20,7 @@ package org.apache.spark.sql.catalyst.expressions
 import java.util.concurrent.ConcurrentHashMap
 import javax.xml.bind.DatatypeConverter
 
+import scala.collection.mutable.{Map, HashMap}
 import scala.collection.mutable.ArrayBuffer
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -38,13 +39,13 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
+case class TermValues(literalValueRef : String, isNull : String, valueTerm : String)
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
 trait DynamicReplacableConstant extends Expression {
 
-  @transient protected final var literalValueRef: String = _
-  @transient protected final var isNull: String = _
-  @transient protected final var valueTerm: String = _
+  @transient private lazy val termMap :
+    Map[CodegenContext, TermValues] = new HashMap[CodegenContext, TermValues]
 
   def value: Any
 
@@ -61,23 +62,33 @@ trait DynamicReplacableConstant extends Expression {
     val value = this.value
     assert(value != null || nullable, "Expected nullable as true when value is null")
     val addMutableState = !ctx.references.exists(_.asInstanceOf[AnyRef] eq this)
-    if (addMutableState) {
-      literalValueRef = ctx.addReferenceObj("literal", this,
+    val termValues = if (addMutableState) {
+      val literalValueRef = ctx.addReferenceObj("literal", this,
         classOf[DynamicReplacableConstant].getName)
-      isNull = ctx.freshName("isNull")
-      valueTerm = ctx.freshName("value")
+      val isNull = ctx.freshName("isNull")
+      val valueTerm = ctx.freshName("value")
+      val tv = TermValues(literalValueRef, isNull, valueTerm)
+      termMap.put(ctx, tv)
+      tv
     } else {
-      assert(literalValueRef ne null)
+      val tvOption = termMap.get(ctx)
+      assert(tvOption.isDefined)
+      tvOption.get
     }
     val isNullLocal = ev.isNull
     val valueLocal = ev.value
     val dataType = Utils.getSQLDataType(this.dataType)
     val javaType = ctx.javaType(dataType)
+    // get values from map
+    val isNull = termValues.isNull
+    val valueTerm = termValues.valueTerm
+    val literalValueRef = termValues.literalValueRef
     val initCode =
       s"""
          |final boolean $isNullLocal = $isNull;
          |final $javaType $valueLocal = $valueTerm;
       """.stripMargin
+
     if (!addMutableState) {
       // use the already added fields
       return ev.copy(initCode, isNullLocal, valueLocal)
@@ -155,11 +166,11 @@ trait TokenizedLiteral extends LeafExpression with DynamicReplacableConstant {
   // avoid constant folding and let it be done by TokenizedLiteralFolding
   // so that generated code does not embed constants when there are constant
   // expressions (common case being a CAST when literal type does not match exactly)
-  override def foldable: Boolean = _foldable
+  override final def foldable: Boolean = _foldable
 
   def valueString: String
 
-  def markFoldable(b: Boolean): TokenizedLiteral = {
+  final def markFoldable(b: Boolean): TokenizedLiteral = {
     _foldable = b
     this
   }
@@ -211,7 +222,9 @@ final class TokenLiteral(_value: Any, _dataType: DataType)
  */
 final case class ParamLiteral(var value: Any, var dataType: DataType,
     var pos: Int, @transient private[sql] val execId: Int,
-    private[sql] var tokenized: Boolean = false)
+    private[sql] var tokenized: Boolean = false,
+    private[sql] var positionIndependent: Boolean = false,
+    @transient private[sql] var valueEquals: Boolean = false)
     extends TokenizedLiteral with KryoSerializable {
 
   override def nullable: Boolean = dataType eq NullType
@@ -230,7 +243,8 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def hashCode(): Int = {
     if (tokenized) {
-      ClientResolverUtils.addIntToHashOpt(pos, dataType.hashCode())
+      if (positionIndependent) dataType.hashCode()
+      else ClientResolverUtils.addIntToHashOpt(pos, dataType.hashCode())
     } else {
       val valueHashCode = value match {
         case null => 0
@@ -245,10 +259,12 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
     case a: AnyRef if this eq a => true
     case l: ParamLiteral =>
       // match by position only if "tokenized" else value comparison (no-caching case)
-      if (tokenized) pos == l.pos && dataType == l.dataType
+      if (tokenized && !valueEquals) pos == l.pos && dataType == l.dataType
       else dataType == l.dataType && valueEquals(l)
     case _ => false
   }
+
+  override def semanticEquals(other: Expression): Boolean = equals(other)
 
   private def valueEquals(p: ParamLiteral): Boolean = value match {
     case null => p.value == null
@@ -264,6 +280,7 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
     StructTypeSerializer.writeType(kryo, output, dataType)
     output.writeVarInt(pos, true)
     output.writeBoolean(tokenized)
+    output.writeBoolean(positionIndependent)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -271,6 +288,7 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
     dataType = StructTypeSerializer.readType(kryo, input)
     pos = input.readVarInt(true)
     tokenized = input.readBoolean()
+    positionIndependent = input.readBoolean()
   }
 
   override def valueString: String = value match {
@@ -431,6 +449,14 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
   override def nodeName: String = "DynamicExpression"
 
   override def prettyName: String = "DynamicExpression"
+
+  override def toString: String = {
+    def removeCast(expr: Expression): Expression = expr match {
+      case Cast(child, _) => removeCast(child)
+      case _ => expr
+    }
+    "DynExpr(" + removeCast(expr) + ")"
+  }
 
   override def makeCopy(newArgs: Array[AnyRef]): Expression = {
     assert(newArgs.length == 1)

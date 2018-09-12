@@ -52,9 +52,23 @@ object TestUtils {
         samples.foreach(s => snc.dropTable(s.toString(), ifExists = true))
 
         val parents = mutable.HashSet[String]()
+
         val allTables = ss.catalog.getTables(None)
+
+        // allows to skip dropping any tables not required to be dropped
+        val skipPatterns = Seq("SYSIBM")
+
+        val tablesToBeDropped = allTables.filter(x => {
+          val tableName = x._1
+          var allow = true
+          for (skipPattern <- skipPatterns) {
+            if (tableName.startsWith(skipPattern)) allow = false
+          }
+          allow
+        })
+        
         val allRegions = mutable.HashSet[String]()
-        val allTablesWithRegions = allTables.map { t =>
+        val allTablesWithRegions = tablesToBeDropped.map { t =>
           val table = t._1
           val tableName = if (table.indexOf('.') < 0) "APP." + table else table
           val path = Misc.getRegionPath(tableName)
