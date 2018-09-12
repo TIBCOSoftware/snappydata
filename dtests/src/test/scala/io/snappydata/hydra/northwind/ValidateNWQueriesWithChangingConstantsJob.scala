@@ -21,7 +21,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
-import io.snappydata.hydra.northwind
+import io.snappydata.hydra.{SnappyTestUtils, northwind}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
@@ -38,6 +38,9 @@ class ValidateNWQueriesWithChangingConstantsJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
+    SnappyTestUtils.validateFullResultSet = true
+    SnappyTestUtils.numRowsValidation = true
+    SnappyTestUtils.tableType = tableType
     Try {
       snc.sql("set spark.sql.shuffle.partitions=23")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")

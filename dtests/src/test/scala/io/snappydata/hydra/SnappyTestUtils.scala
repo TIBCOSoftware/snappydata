@@ -17,12 +17,12 @@
 
 package io.snappydata.hydra
 
-import java.io.{File, PrintWriter}
+import java.io.{BufferedReader, File, FileNotFoundException, FileReader, IOException, PrintWriter}
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 
-import scala.io.Source
+import java.util
 
 object SnappyTestUtils {
 
@@ -141,22 +141,23 @@ object SnappyTestUtils {
 
       try {
         if (!snappyFile.exists()) {
-          val snap_col1 = snappyDF.schema.fieldNames(0)
-          val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
-          snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
+          // val snap_col1 = snappyDF.schema.fieldNames(0)
+          // val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
+          snappyDF = snappyDF.repartition(1) // .sortWithinPartitions(snap_col1, snap_col: _*)
           writeToFile(snappyDF, snappyDest, snc)
           // writeResultSetToCsv(snappyDF, snappyFile)
           pw.println(s"${queryNum} Result Collected in file ${snappyDest}")
         }
         if (!sparkFile.exists()) {
-          val col1 = sparkDF.schema.fieldNames(0)
-          val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-          sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+          // val col1 = sparkDF.schema.fieldNames(0)
+          // val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
+          sparkDF = sparkDF.repartition(1) // .sortWithinPartitions(col1, col: _*)
           writeToFile(sparkDF, sparkDest, snc)
           // writeResultSetToCsv(sparkDF, sparkFile)
           pw.println(s"${queryNum} Result Collected in file ${sparkDest}")
         }
-        fullRSValidationFailed = compareFiles(snappyFile, sparkFile, pw, fullRSValidationFailed)
+        fullRSValidationFailed = compareFiles(snappyFile, sparkFile, pw, queryNum,
+           fullRSValidationFailed)
       } catch {
         case ex: Exception => {
           fullRSValidationFailed = true
@@ -246,15 +247,75 @@ object SnappyTestUtils {
    */
   def isIgnorable(actualLine: String, expectedLine: String): Boolean = {
     var canBeIgnored = false
+    if ((actualLine != null && actualLine.size > 0) && (expectedLine != null && expectedLine.size
+     > 0)) {
+      val actualArray = actualLine.split(",")
+      val expectedArray = expectedLine.split(",")
+      var diff: Double = 0.0
+      if(actualArray.length != expectedArray.length){
+        canBeIgnored = false
+      } else {
+        for (i <- 0 to actualArray.length) {
+          val value1 = actualArray(i).toDouble
+          val value2 = expectedArray(i).toDouble
+          if(value1 > value2) diff = value1.-(value2).doubleValue
+          else diff = value2.-(value1).doubleValue
+          println("diff is " + diff)
+          if (diff <= 0.01) canBeIgnored = true
+        }
+      }
+    }
     return canBeIgnored
   }
 
-  def compareFiles(snappyFile: File, sparkFile: File, pw: PrintWriter, validationFailed: Boolean):
-  Boolean = {
+  def executeProcess(pb: ProcessBuilder, logFile: File, pw: PrintWriter): Int = {
+    var p: Process = null
+    try {
+      if (logFile != null) {
+        pb.redirectErrorStream(true)
+        pb.redirectError(ProcessBuilder.Redirect.PIPE)
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile))
+      }
+      p = pb.start
+      if (logFile != null) {
+        assert(pb.redirectInput eq ProcessBuilder.Redirect.PIPE)
+        assert(pb.redirectOutput.file eq logFile)
+        assert(p.getInputStream.read == -1)
+      }
+      val rc = p.waitFor
+      if ((rc == 0) || (pb.command.contains("grep") && rc == 1)) {
+        pw.println("Process executed successfully")
+        0
+      }
+      else {
+        pw.println("Process execution failed with exit code: " + rc)
+        1
+      }
+    } catch {
+      case e: IOException =>
+        pw.println("Exception occurred while starting the process:" + pb + "\nError Message:" + e
+            .getMessage)
+        1
+      case e: InterruptedException =>
+        pw.println("Exception occurred while waiting for the process execution:" + p + "\nError " +
+            "Message:" + e.getMessage)
+        1
+    }
+  }
+
+  def compareFiles(snappyFile: File, sparkFile: File, pw: PrintWriter, queryNum:
+  String, validationFailed: Boolean)
+  : Boolean = {
     var hasValidationFailed = validationFailed
 
     val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+
+    hasValidationFailed = compareFiles(getQueryResultDir("snappyQueryFiles"), actualFile.iterator
+        .next().getAbsolutePath, expectedFile.iterator.next().getAbsolutePath,
+      pw, queryNum, hasValidationFailed)
+
+    /*
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
     val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines()
 
@@ -262,10 +323,14 @@ object SnappyTestUtils {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
       if (!actualLine.equals(expectedLine)) {
-        isIgnorable(actualLine, expectedLine)
-        hasValidationFailed = true
-        pw.println(s"Expected Result : $expectedLine")
-        pw.println(s"Actual Result   : $actualLine")
+        if (!isIgnorable(actualLine, expectedLine)) {
+          hasValidationFailed = true
+          pw.println(s"Expected Result : $expectedLine")
+          pw.println(s"Actual Result   : $actualLine")
+        } else {
+          hasValidationFailed = false
+        }
+
       }
     }
     // scalastyle:off println
@@ -284,6 +349,91 @@ object SnappyTestUtils {
         }
       }
     }
+    */
+    hasValidationFailed
+  }
+
+  def compareFiles(dir: String, snappyResultsFile: String, sparkResultsFile: String,
+      pw: PrintWriter, queryNum: String, hasValidationFailed: Boolean): Boolean = {
+    val aStr = new StringBuilder
+    var pb: ProcessBuilder = null
+    var command: String = null
+    val missingFileName = dir + File.separator + "missing_" + queryNum + ".txt"
+    val unexpectedFileName = dir + File.separator + "unexpected_" + queryNum + ".txt"
+    try {
+      var writer = new PrintWriter(missingFileName)
+      writer.print("")
+      writer.close()
+      writer = new PrintWriter(unexpectedFileName)
+      writer.print("")
+      writer.close()
+    } catch {
+      case fe: FileNotFoundException =>
+        pw.println("Log exception while overwirting the result mismatch files", fe)
+        false
+    }
+    val unexpectedResultsFile = new File(unexpectedFileName)
+    val missingResultsFile = new File(missingFileName)
+    command = "grep -v -F -x -f " + sparkResultsFile + " " + snappyResultsFile
+    pb = new ProcessBuilder("/bin/bash", "-c", command)
+    pw.println("Executing command : " + command)
+    // get the unexpected rows in snappy
+    executeProcess(pb, unexpectedResultsFile, pw)
+    command = "grep -v -F -x -f " + snappyResultsFile + " " + sparkResultsFile
+    pb = new ProcessBuilder("/bin/bash", "-c", command)
+    pw.println("Executing command : " + command)
+    // get the missing rows in snappy
+    executeProcess(pb, missingResultsFile, pw)
+    var unexpectedRsReader: BufferedReader = null
+    var missingRsReader: BufferedReader = null
+    try {
+      unexpectedRsReader = new BufferedReader(new FileReader(unexpectedResultsFile))
+      missingRsReader = new BufferedReader(new FileReader(missingResultsFile))
+    } catch {
+      case fe: FileNotFoundException =>
+        pw.println("Could not find file to compare results.", fe)
+        false
+    }
+    var line: String = null
+    val unexpected = new util.ArrayList[String]
+    val missing = new util.ArrayList[String]
+    try {
+      while ( {
+        (line = unexpectedRsReader.readLine) != null
+      }) unexpected.add("\n  " + line)
+      while ( {
+        (line = missingRsReader.readLine) != null
+      }) missing.add("\n  " + line)
+      unexpectedRsReader.close()
+      missingRsReader.close()
+    } catch {
+      case ie: IOException =>
+        pw.println("Got exception while reading resultset files", ie)
+    }
+    if (missing.size > 0) {
+      if (missing.size < 20) {
+        aStr.append("\nThe following " + missing.size + " rows are missing from snappy resultset:")
+        aStr.append(missing.toString)
+      }
+      else {
+        aStr.append("There are " + missing.size + " rows missing in snappy for " + queryNum + "." +
+            " " + "Please check " + missingFileName)
+      }
+      aStr.append("\n")
+    }
+    if (unexpected.size > 0) {
+      if (unexpected.size < 20) {
+        aStr.append("\nThe following " + unexpected.size +
+            " rows from snappy resultset are unexpected: ")
+        aStr.append(unexpected.toString)
+      }
+      else {
+        aStr.append("There are " + unexpected.size + " rows unexpected in snappy for " + queryNum +
+            ". Please check " + unexpectedFileName)
+      }
+      aStr.append("\n")
+    }
+    pw.println(aStr.toString)
     hasValidationFailed
   }
 
@@ -349,7 +499,7 @@ object SnappyTestUtils {
       } else {
         pw.println(s"zero results in query $queryNum.")
       }
-      hasValidationFailed = compareFiles(snappyFile, sortedGoldenFile, pw,
+      hasValidationFailed = compareFiles(snappyFile, sortedGoldenFile, pw, queryNum,
         hasValidationFailed)
 
     } catch {

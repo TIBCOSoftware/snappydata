@@ -83,95 +83,95 @@ object NWTestUtil {
           startTime) / 1000) + " seconds")
     }
     for (q <- NWQueries.queries) {
-      var queryExecuted = true;
+      var queryExecuted = false;
       var hasValidationFailed = false;
 
       if (!executeQueriesByChangingConstants) {
         q._1 match {
           case "Q1" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q1, 8, "Q1",
-            pw, sqlContext)
+            pw, sqlContext); queryExecuted = true
           case "Q2" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q2, 91,
-            "Q2", pw, sqlContext)
+            "Q2", pw, sqlContext); queryExecuted = true
           case "Q3" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q3, 830,
-            "Q3", pw, sqlContext)
+            "Q3", pw, sqlContext); queryExecuted = true
           case "Q4" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q4, 9, "Q4",
-            pw, sqlContext)
+            pw, sqlContext); queryExecuted = true
           case "Q5" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q5, 9, "Q5",
-            pw, sqlContext)
+            pw, sqlContext); queryExecuted = true
           case "Q6" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q6, 9, "Q6",
-            pw, sqlContext)
+            pw, sqlContext); queryExecuted = true
           case "Q7" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q7, 9, "Q7",
-            pw, sqlContext)
+            pw, sqlContext); queryExecuted = true
           case "Q8" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q8, 6, "Q8",
-            pw, sqlContext)
+            pw, sqlContext); queryExecuted = true
           case "Q9" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q9, 3, "Q9",
-            pw, sqlContext)
+            pw, sqlContext); queryExecuted = true
           case "Q10" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q10, 2,
-            "Q10", pw, sqlContext)
+            "Q10", pw, sqlContext); queryExecuted = true
           case "Q11" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q11, 4,
-            "Q11", pw, sqlContext)
+            "Q11", pw, sqlContext); queryExecuted = true
           case "Q12" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q12, 2,
-            "Q12", pw, sqlContext)
+            "Q12", pw, sqlContext); queryExecuted = true
           case "Q13" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q13, 2,
-            "Q13", pw, sqlContext)
+            "Q13", pw, sqlContext); queryExecuted = true
           case "Q14" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q14, 69,
-            "Q14", pw, sqlContext)
+            "Q14", pw, sqlContext); queryExecuted = true
           case "Q15" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q15, 5,
-            "Q15", pw, sqlContext)
+            "Q15", pw, sqlContext); queryExecuted = true
           case "Q16" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q16, 8,
-            "Q16", pw, sqlContext)
+            "Q16", pw, sqlContext); queryExecuted = true
           case "Q17" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q17, 3,
-            "Q17", pw, sqlContext)
+            "Q17", pw, sqlContext); queryExecuted = true
           case "Q18" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q18, 9,
-            "Q18", pw, sqlContext)
+            "Q18", pw, sqlContext); queryExecuted = true
           case "Q19" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q19, 13,
-            "Q19", pw, sqlContext)
+            "Q19", pw, sqlContext); queryExecuted = true
           case "Q20" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q20, 1,
-            "Q20", pw, sqlContext)
+            "Q20", pw, sqlContext); queryExecuted = true
           case "Q21" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q21, 1,
-            "Q21", pw, sqlContext)
+            "Q21", pw, sqlContext); queryExecuted = true
           case "Q22" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q22, 1,
-            "Q22", pw, sqlContext)
+            "Q22", pw, sqlContext); queryExecuted = true
           case "Q23" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q23, 1,
-            "Q23", pw, sqlContext)
+            "Q23", pw, sqlContext); queryExecuted = true
           case "Q24" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, NWQueries.Q24, 4,
-            "Q24", pw, sqlContext)
+            "Q24", pw, sqlContext); queryExecuted = true
           case "Q37" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q37, 77,
-            "Q37", pw, sqlContext)
+            "Q37", pw, sqlContext); queryExecuted = true
           case "Q39" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q39, 9,
-            "Q39", pw, sqlContext)
+            "Q39", pw, sqlContext); queryExecuted = true
           case "Q41" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q41, 2155,
-            "Q41", pw, sqlContext)
+            "Q41", pw, sqlContext); queryExecuted = true
           case "Q44" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q44, 830,
-            "Q44", pw, sqlContext) // LeftSemiJoinHash
+            "Q44", pw, sqlContext); queryExecuted = true // LeftSemiJoinHash
           case "Q45" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q45,
-            1788650, "Q45", pw, sqlContext)
+            1788650, "Q45", pw, sqlContext); queryExecuted = true
           case "Q46" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q46,
-            1788650, "Q46", pw, sqlContext)
+            1788650, "Q46", pw, sqlContext); queryExecuted = true
           case "Q47" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q47,
-            1788650, "Q47", pw, sqlContext)
+            1788650, "Q47", pw, sqlContext); queryExecuted = true
           case "Q48" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q48,
-            1788650, "Q48", pw, sqlContext)
+            1788650, "Q48", pw, sqlContext); queryExecuted = true
           case "Q50" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q50,
-            2155, "Q50", pw, sqlContext)
+            2155, "Q50", pw, sqlContext); queryExecuted = true
           case "Q52" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q52,
-            2155, "Q52", pw, sqlContext)
+            2155, "Q52", pw, sqlContext); queryExecuted = true
           case "Q53" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q53,
-            2155, "Q53", pw, sqlContext)
+            2155, "Q53", pw, sqlContext); queryExecuted = true
           case "Q54" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q54,
-            2155, "Q54", pw, sqlContext)
+            2155, "Q54", pw, sqlContext); queryExecuted = true
           case "Q57" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q57,
-            120, "Q57", pw, sqlContext)
+            120, "Q57", pw, sqlContext); queryExecuted = true
           case "Q58" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q58,
-            1, "Q58", pw, sqlContext)
+            1, "Q58", pw, sqlContext); queryExecuted = true
           case "Q59" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q59, 1,
-            "Q59", pw, sqlContext)
+            "Q59", pw, sqlContext); queryExecuted = true
           case "Q60" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q60, 947,
-            "Q60", pw, sqlContext)
+            "Q60", pw, sqlContext); queryExecuted = true
           case "Q61" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q61, 480,
-            "Q61", pw, sqlContext)
+            "Q61", pw, sqlContext); queryExecuted = true
           case "Q62" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q62,
-            480, "Q62", pw, sqlContext)
+            480, "Q62", pw, sqlContext); queryExecuted = true
           case _ => // do nothing
         }
       }
@@ -183,7 +183,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q25_2, 1, "Q25_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q26" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q26, 86,
           "Q26", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -191,7 +191,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q26_2, 60, "Q26_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q27" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q27, 9, "Q27",
           pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -203,7 +203,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q27_4, 6, "Q27_4", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q28" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q28, 12,
           "Q28", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -211,7 +211,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q28_2, 5, "Q28_2",
               pw, sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q29" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q29, 8,
           "Q29", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -219,7 +219,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q29_2, 6, "Q29_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q30" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q30, 8, "Q30",
           pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -227,7 +227,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q30_2, 6, "Q30_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q31" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q31, 830,
           "Q31", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -239,19 +239,19 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q31_4, 484, "Q31_4", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q32" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q32, 8, "Q32",
           pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q32_1, 282, "Q32_1", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q33" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q33, 37,
           "Q33", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q33_1, 769, "Q33_1",
               pw, sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q34" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q34, 5,
           "Q34", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -259,7 +259,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q34_2, 4, "Q34_2",
               pw, sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q35" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q35, 3, "Q35",
           pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -267,7 +267,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q35_2, 3, "Q35_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q36" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q36, 290,
           "Q36", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -275,7 +275,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q36_2, 61, "Q36_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q38" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q38, 2155,
           "Q38", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -283,8 +283,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q38_2, 2041, "Q38_2",
               pw, sqlContext, usePlanCaching)
-          }
-
+          }; queryExecuted = true
         case "Q40" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q40, 830,
           "Q40", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -292,7 +291,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q40_2, 9, "Q40_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q42" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q42, 22,
           "Q42", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -300,7 +299,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q42_2, 7, "Q42_2",
               pw, sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q43" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q43, 830,
           "Q43", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -308,7 +307,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q43_2, 2, "Q43_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q49" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q49, 1788650,
           "Q49", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -316,7 +315,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q49_2, 1741240, "Q49_2",
               pw, sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q51" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q51, 2155,
           "Q51", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -324,7 +323,7 @@ object NWTestUtil {
               pw, sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q51_2, 2041, "Q51_2",
               pw, sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q55" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q55, 21,
           "Q55", pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -332,7 +331,7 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q55_2, 6, "Q55_2", pw,
               sqlContext, usePlanCaching)
-          }
+          }; queryExecuted = true
         case "Q56" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56, 8, "Q56",
           pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
@@ -342,13 +341,13 @@ object NWTestUtil {
               sqlContext, usePlanCaching)
             hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56, 8, "Q56_3", pw,
               sqlContext, usePlanCaching)
-          }
-        case _ =>
-          pw.println(s"Did not execute ${q._1}.")
-          queryExecuted = false
+          }; queryExecuted = true
+        case _ => // do nothing
       }
       if (queryExecuted) {
         pw.println(s"Execution completed for query ${q._1}")
+      } else {
+        pw.println(s"Did not execute ${q._1}.")
       }
       if (hasValidationFailed) {
         failedQueries = SnappyTestUtils.addToFailedQueryList(failedQueries, q._1)
