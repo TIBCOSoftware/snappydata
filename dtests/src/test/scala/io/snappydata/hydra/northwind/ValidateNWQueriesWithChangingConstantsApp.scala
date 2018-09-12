@@ -18,16 +18,16 @@ package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import io.snappydata.hydra.SnappyTestUtils
+
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
 object ValidateNWQueriesWithChangingConstantsApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("ValidateNWQueries Application_" + System.currentTimeMillis()).
-        set("snappydata.connection", connectionURL)
+        setAppName("ValidateNWQueries Application_" + System.currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
@@ -38,6 +38,9 @@ object ValidateNWQueriesWithChangingConstantsApp {
     NWQueries.dataFilesLocation = dataFilesLocation
     val tableType = args(1)
     val threadID = Thread.currentThread().getId
+    SnappyTestUtils.validateFullResultSet = true
+    SnappyTestUtils.numRowsValidation = true
+    SnappyTestUtils.tableType = tableType
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
         ".out"
