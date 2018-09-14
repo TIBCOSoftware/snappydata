@@ -21,15 +21,21 @@ import java.net.URL
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import com.pivotal.gemfirexd.{Attribute, Constants}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
+import com.pivotal.gemfirexd.{Attribute, Constants}
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -61,12 +67,6 @@ import org.apache.spark.sql.sources.{MutableRelation, _}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.control.NonFatal
-
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -178,42 +178,42 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     formatTableName(currentSchema)
   }
 
-    /** API to get primary key or Key Columns of a SnappyData table */
-    def getKeyColumns(table: String): Dataset[Column] = {
-        val tableIdent = this.newQualifiedTableName(table)
-        try {
-            val relation: LogicalRelation = getCachedHiveTable(tableIdent)
-            val keyColumns = relation match {
-                case LogicalRelation(mutable: MutableRelation, _, _) =>
-                    val keyCols = mutable.getPrimaryKeyColumns.map(_.toUpperCase())
-                    if (keyCols.isEmpty) {
-                        Seq.empty[Column]
-                    } else {
-                        val tableMetadata = this.getTempViewOrPermanentTableMetadata(tableIdent)
-                        val fieldsInMetadata =
-                            keyCols.map(k =>
-                                tableMetadata.schema.fields.find(f => f.name.equalsIgnoreCase(k))
-                                    .getOrElse(
-                                      throw new AnalysisException(s"Invalid key column name $k")))
-                        fieldsInMetadata.map { c =>
-                            new Column(
-                                name = c.name.toUpperCase(),
-                                description = c.getComment().orNull,
-                                dataType = c.dataType.catalogString,
-                                nullable = c.nullable,
-                                isPartition = false, // Setting it to false for SD tables
-                                isBucket = false)
-                        }
-                    }
-                case _ => Seq.empty[Column]
+  /** API to get primary key or Key Columns of a SnappyData table */
+  def getKeyColumns(table: String): Dataset[Column] = {
+    val tableIdent = this.newQualifiedTableName(table)
+    try {
+      val relation: LogicalRelation = getCachedHiveTable(tableIdent)
+      val keyColumns = relation match {
+        case LogicalRelation(mutable: MutableRelation, _, _) =>
+          val keyCols = mutable.getPrimaryKeyColumns.map(_.toUpperCase())
+          if (keyCols.isEmpty) {
+            Seq.empty[Column]
+          } else {
+            val tableMetadata = this.getTempViewOrPermanentTableMetadata(tableIdent)
+            val fieldsInMetadata =
+              keyCols.map(k =>
+                tableMetadata.schema.fields.find(f => f.name.equalsIgnoreCase(k))
+                    .getOrElse(
+                      throw new AnalysisException(s"Invalid key column name $k")))
+            fieldsInMetadata.map { c =>
+              new Column(
+                name = c.name.toUpperCase(),
+                description = c.getComment().orNull,
+                dataType = c.dataType.catalogString,
+                nullable = c.nullable,
+                isPartition = false, // Setting it to false for SD tables
+                isBucket = false)
             }
-            CatalogImpl.makeDataset(keyColumns, snappySession)
-        } catch {
-            case _: TableNotFoundException | _: NoSuchTableException =>
-                throw new Exception(s"Table '$table' not found")
-            case ex: Throwable => throw ex
-        }
+          }
+        case _ => Seq.empty[Column]
+      }
+      CatalogImpl.makeDataset(keyColumns, snappySession)
+    } catch {
+      case _: TableNotFoundException | _: NoSuchTableException =>
+        throw new Exception(s"Table '$table' not found")
+      case ex: Throwable => throw ex
     }
+  }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected val cachedDataSourceTables: LoadingCache[QualifiedTableName,
@@ -493,7 +493,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   def unregisterPolicy(policyIdent: QualifiedTableName, ct: CatalogTable): Unit = {
-    val client = this.client
     policyIdent.invalidate()
     cachedDataSourceTables.invalidate(policyIdent)
     registerRelationDestroy()
@@ -597,10 +596,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         }
         val storedLogicalRelation = this.lookupRelation(newQualifiedTableName(
           rlsRelation.resolvedName)).
-            find(_ match {
+            find {
               case _: LogicalRelation => true
               case _ => false
-            }).get.asInstanceOf[LogicalRelation]
+            }.get.asInstanceOf[LogicalRelation]
 
         Some(remapFilterIfNeeded(combinedPolicyFilters, wrappingLogicalRelation,
           storedLogicalRelation))
@@ -620,7 +619,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       filter.transformAllExpressions {
         case ar: AttributeReference if mappingInfo.contains(ar.exprId) =>
           AttributeReference(ar.name, ar.dataType, ar.nullable,
-            ar.metadata)(mappingInfo.get(ar.exprId).get, ar.qualifier, ar.isGenerated)
+            ar.metadata)(mappingInfo(ar.exprId), ar.qualifier, ar.isGenerated)
       }
     }
   }
