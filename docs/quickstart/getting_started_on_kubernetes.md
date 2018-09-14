@@ -1,5 +1,5 @@
 # Getting Started with SnappyData on Kubernetes
-Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes. This feature is currently available on an experimental basis.
+Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes.
 
 This following sections are included in this topic:
 
