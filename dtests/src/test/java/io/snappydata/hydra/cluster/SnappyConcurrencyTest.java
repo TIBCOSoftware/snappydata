@@ -33,16 +33,19 @@ import static hydra.Prms.totalTaskTimeSec;
 
 public class SnappyConcurrencyTest extends SnappyTest {
 
+  public static long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
+  public static long warmUpTimeSec = TestConfig.tasktab().longAt(SnappyPrms.warmUpTimeSec, TestConfig.tab().
+      longAt(SnappyPrms.warmUpTimeSec, 300));
+
   public static boolean isTPCHSchema = TestConfig.tab().booleanAt(SnappyPrms.isTPCHSchema, false);  //default to false
 
   public static void runPointLookUpQueries() throws SQLException {
     Vector<String> queryVect = SnappyPrms.getPointLookUpQueryList();
-    long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
     String query = null;
     Connection conn = getLocatorConnection();
     ResultSet rs;
     long startTime = System.currentTimeMillis();
-    long endTime = startTime + 300000;
+    long endTime = startTime + warmUpTimeSec * 1000;
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
@@ -73,8 +76,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
   public static void runAnalyticalQueries() throws SQLException {
     Connection conn = getLocatorConnection();
     Vector<String> queryVect = SnappyPrms.getAnalyticalQueryList();
-    long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
-    Log.getLogWriter().info("SS - totalTaskTime : " + totalTaskTime);
     String query = null;
     ResultSet rs;
     if (isTPCHSchema) {
@@ -84,7 +85,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
       conn.createStatement().executeUpdate(query);
     }
     long startTime = System.currentTimeMillis();
-    long endTime = startTime + 300000;
+    long endTime = startTime + warmUpTimeSec * 1000;
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
