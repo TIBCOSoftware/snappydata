@@ -46,7 +46,7 @@ import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
 import io.snappydata.Constant;
 import org.apache.commons.collections.map.CaseInsensitiveMap;
-import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.InvalidTableException;
@@ -87,8 +87,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     this.initFuture = hmsQueriesExecutorService.submit(q);
   }
 
-  private static String setDefaultPath(HiveConf metadataConf,
-      HiveConf.ConfVars var, String path) {
+  private static String setDefaultPath(SnappyHiveConf metadataConf,
+      ConfVars var, String path) {
     String pathUsed = metadataConf.get(var.varname);
     if (pathUsed == null || pathUsed.isEmpty() ||
         pathUsed.equals(var.getDefaultExpr())) {
@@ -117,7 +117,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
    * @return the location of hive warehouse (unused but hive creates the directory)
    */
   public static String initCommonHiveMetaStoreProperties(
-      HiveConf metadataConf) {
+      SnappyHiveConf metadataConf) {
     metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE);
     // Tomcat pool has been shown to work best but does not work in split mode
     // because upstream spark does not ship with it (and the one in snappydata-core
@@ -127,14 +127,14 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // and the thrift JDBC connection fails since its default timeout is infinite.
     // The DBCP 1.x versions are thoroughly outdated and should not be used but
     // the expectation is that the one bundled in datanucleus will be in better shape.
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_POOLING_TYPE,
+    metadataConf.setVar(ConfVars.METASTORE_CONNECTION_POOLING_TYPE,
         "dbcp-builtin");
     // set the scratch dir inside current working directory (unused but created)
-    setDefaultPath(metadataConf, HiveConf.ConfVars.SCRATCHDIR, "./hive");
+    setDefaultPath(metadataConf, ConfVars.SCRATCHDIR, "./hive");
     // set the warehouse dir inside current working directory (unused but created)
     String warehouse = setDefaultPath(metadataConf,
-        HiveConf.ConfVars.METASTOREWAREHOUSE, "./warehouse");
-    metadataConf.setVar(HiveConf.ConfVars.HADOOPFS, "file:///");
+        ConfVars.METASTOREWAREHOUSE, "./warehouse");
+    metadataConf.setVar(ConfVars.HADOOPFS, "file:///");
 
     metadataConf.set("datanucleus.connectionPool.testSQL", "VALUES(1)");
 
@@ -606,7 +606,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private void initHMC() {
       ExternalStoreUtils.registerBuiltinDrivers();
 
-      HiveConf metadataConf = new HiveConf();
+      SnappyHiveConf metadataConf = new SnappyHiveConf();
       String urlSecure = "jdbc:snappydata:" +
           ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
           getCommonJDBCSuffix();
@@ -619,17 +619,17 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
             getCommonJDBCSuffix();
         /*
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
             bootProperties.get("user").toString());
-        metadataConf.setVar(HiveConf.ConfVars.METASTOREPWD,
+        metadataConf.setVar(ConfVars.METASTOREPWD,
             bootProperties.get("password").toString());
         */
       } else {
-        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
             Misc.SNAPPY_HIVE_METASTORE);
       }
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, urlSecure);
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+      metadataConf.setVar(ConfVars.METASTORECONNECTURLKEY, urlSecure);
+      metadataConf.setVar(ConfVars.METASTORE_CONNECTION_DRIVER,
           Constant.JDBC_EMBEDDED_DRIVER());
       initCommonHiveMetaStoreProperties(metadataConf);
 
