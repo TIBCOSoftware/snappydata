@@ -305,9 +305,15 @@ if [ -n "$LEADHOSTLIST" -a -n "$isServerStart" ]; then
   while read slave || [[ -n "$slave" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
     host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
-    if [ -z "${leadCountArr["$host"]}" ]; then
+    args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
+    leadCount=${leadCountArr["$host"]}
+    # marker for the case when lead heap/memory has been configured explicitly
+    # in which case server side auto-configuration will also be skipped
+    if echo $args $"${@// /\\ }" | grep -q "heap-size=\|memory-size="; then
+      leadCountArr["$host"]=-1
+    elif [ -z "$leadCount" ]; then
       leadCountArr["$host"]=1
-    else
+    elif [ $leadCount -ge 0 ]; then
       ((leadCountArr["$host"]++))
     fi
   done < "$LEADHOSTLIST"
@@ -362,7 +368,7 @@ if [ -n "${HOSTLIST}" ]; then
       args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
       # disable implicit off-heap for nodes having multiple servers configured
       if [ -n "$isServerStart" ]; then
-        if [ ${countArr["$host"]} -gt 1 -a -z "$(echo $args $"${@// /\\ }" | grep -q 'memory-size=')" ]; then
+        if [ ${countArr["$host"]} -gt 1 -a -z "$(echo $args $"${@// /\\ }" | grep 'memory-size=')" ]; then
           args="$args -memory-size=0"
         fi
         # check number of leads on the same node
