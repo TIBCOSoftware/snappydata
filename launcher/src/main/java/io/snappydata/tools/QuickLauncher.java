@@ -297,7 +297,7 @@ class QuickLauncher extends LauncherBase {
     final int numArgs = args.length;
     final LinkedHashMap<String, Object> options = new LinkedHashMap<>(numArgs);
     final ArrayList<String> vmArgs = new ArrayList<>(2);
-    boolean hostData = true;
+    boolean hostData = !this.isLocator;
 
     // skip first two arguments for node type and action
     for (int i = 2; i < numArgs; i++) {

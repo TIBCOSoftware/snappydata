@@ -99,10 +99,10 @@ object ServiceUtils {
       // no DataDictionary persistence for non-embedded mode
       properties.setProperty("persist-dd", "false")
     }
-    // set the log-level from initialized SparkContext's level
+    // set the log-level from initialized SparkContext's level if set to higher level than default
     if (!properties.containsKey("log-level")) {
       val level = org.apache.log4j.Logger.getRootLogger.getLevel
-      if (level ne null) {
+      if ((level ne null) && level.isGreaterOrEqual(org.apache.log4j.Level.WARN)) {
         properties.setProperty("log-level",
           ClientSharedUtils.convertToJavaLogLevel(level).getName.toLowerCase)
       }
