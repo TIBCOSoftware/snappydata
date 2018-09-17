@@ -225,7 +225,8 @@ public class SnappyPrms extends BasePrms {
   public static Long isLongRunningTest;
 
   /**
-   * (boolean) - whether test is started using user specified confs for serevrs, leads and locators.
+   * (boolean) - whether test is started using user specified confs for serevrs, leads, locators and workers members
+   * in case of embedded/smart connector mode cluster test.
    */
   public static Long isUserConfTest;
 
@@ -359,17 +360,20 @@ public class SnappyPrms extends BasePrms {
 
   /**
    * Parameter used to get the user list of locators host:port to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
    * (VectorsetValues of Strings) A comma-seperated list of values for locators host:port.
    */
   public static Long locatorList;
 
   /**
    * Parameter used to get the host name for the primary locator to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
    */
   public static Long primaryLocatorHost;
 
   /**
    * Parameter used to get the port number for the primary locator to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
    */
   public static Long primaryLocatorPort;
 
@@ -380,11 +384,13 @@ public class SnappyPrms extends BasePrms {
 
   /**
    * Parameter used to get the host name for the spark master to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
    */
   public static Long sparkMasterHost;
 
   /**
    * Parameter used to get the port number for the primary leader to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
    */
   public static Long leadPort;
 
@@ -545,7 +551,8 @@ public class SnappyPrms extends BasePrms {
   public static Long tableList;
 
   /**
-   * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master.
+   * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
+   * while starting the cluster with user specified confs.
    * (VectorsetValues of Strings) A list of values for hostName List
    */
   public static Long hostNames;
@@ -565,7 +572,7 @@ public class SnappyPrms extends BasePrms {
 
   /**
    * Parameter used to get the location for the user specified confs for starting SnappyData members.
-   * Framework will treat its corresponding parameter as product conf dir path string in case not provided.
+   * An exception will be thrown in case not provided.
    */
   public static Long userConfLocation;
 

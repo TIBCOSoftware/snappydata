@@ -964,7 +964,7 @@ public class SnappyTest implements Serializable {
   /**
    * Mandatory to use this method in case of stating the cluster with user specified confs for SnappyData members.
    * These confs includes servers, leads and locators files for starting data store nodes, snappydata leader and
-   * locator nodes.
+   * locator nodes in embedded mode and additionaly slaves conf in case of smart connector mode.
    **/
   public static synchronized void HydraTask_copyUserConfs() {
     snappyTest.copyUserConfs("servers");
