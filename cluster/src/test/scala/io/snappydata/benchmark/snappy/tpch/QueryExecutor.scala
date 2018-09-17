@@ -145,7 +145,7 @@ object QueryExecutor {
         val queryResultsPrintStream: PrintStream = new PrintStream(queryResultsFileStream)
 
         try {
-                var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
+          var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
           val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)
           println(s"$queryNumber : ${resultSet.length}")
 
