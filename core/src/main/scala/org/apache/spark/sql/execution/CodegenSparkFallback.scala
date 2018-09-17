@@ -18,6 +18,7 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.SystemFailure
+import org.codehaus.commons.compiler.CompileException
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -39,32 +40,27 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
   override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 
   protected[sql] def isCodeGenerationException(t: Throwable): Boolean = {
-    t match {
-      case e: Error =>
-        if (SystemFailure.isJVMFailureError(e)) {
-          SystemFailure.initiateFailure(e)
-          // If this ever returns, rethrow the error. We're poisoned
-          // now, so don't let this thread continue.
-          throw e
-        }
-        e match {
-          // assume all stack overflow failures are due to compilation issues in janino
-          // for very large code
-          case _: StackOverflowError => true
-          case _ => false
-        }
-      case _ =>
-        // search for any janino or code generation exception
-        var cause = t
-        do {
-          if (cause.isInstanceOf[CodeGenerationException] ||
-              cause.toString.contains("janino")) {
-            return true
+    // search for any janino or code generation exception
+    var cause = t
+    do {
+      cause match {
+        // assume all stack overflow failures are due to compilation issues in janino
+        // for very large code
+        case _: StackOverflowError | _: CodeGenerationException | _: CompileException =>
+          return true
+        case e: Error =>
+          if (SystemFailure.isJVMFailureError(e)) {
+            SystemFailure.initiateFailure(e)
+            // If this ever returns, rethrow the error. We're poisoned
+            // now, so don't let this thread continue.
+            throw e
           }
-          cause = cause.getCause
-        } while (cause ne null)
-        false
-    }
+        case _ if cause.toString.contains("janino") => return true
+        case _ =>
+      }
+      cause = cause.getCause
+    } while (cause ne null)
+    false
   }
 
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
@@ -85,7 +81,14 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
         session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
           case Some(exec) =>
-            logInfo("SnappyData code generation failed. Falling back to Spark plans.")
+            val msg = new StringBuilder
+            var cause = t
+            while (cause ne null) {
+              if (msg.nonEmpty) msg.append(" => ")
+              msg.append(cause)
+              cause = cause.getCause
+            }
+            logInfo(s"SnappyData code generation failed due to $msg. Falling back to Spark plans.")
             session.sessionState.disableStoreOptimizations = true
             try {
               val plan = exec().executedPlan

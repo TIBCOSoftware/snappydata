@@ -415,7 +415,7 @@ object SnappyParserConsts {
   final val ALTER: Keyword = nonReservedKeyword("alter")
   final val ANTI: Keyword = nonReservedKeyword("anti")
   final val CACHE: Keyword = nonReservedKeyword("cache")
-  final val CALL:Keyword = nonReservedKeyword("call")
+  final val CALL: Keyword = nonReservedKeyword("call")
   final val CLEAR: Keyword = nonReservedKeyword("clear")
   final val CLUSTER: Keyword = nonReservedKeyword("cluster")
   final val COLUMN: Keyword = nonReservedKeyword("column")

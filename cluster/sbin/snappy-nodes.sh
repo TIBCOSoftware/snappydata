@@ -52,7 +52,7 @@ if [ "$1" = "-bg" -o "$1" = "--background" ]; then
   shift
 fi
 export RUN_IN_BACKGROUND
-  
+
 # Check if --config is passed as an argument. It is an optional parameter.
 # Exit if the argument is not a directory.
 if [ "$1" == "--config" ]
@@ -88,6 +88,9 @@ case $componentType in
     if [ -f "${SPARK_CONF_DIR}/servers" ]; then
       HOSTLIST="${SPARK_CONF_DIR}/servers"
     fi
+    if [ -f "${SPARK_CONF_DIR}/leads" ]; then
+      LEADHOSTLIST="${SPARK_CONF_DIR}/leads"
+    fi
     ;;
   (lead)
     if [ -f "${SPARK_CONF_DIR}/leads" ]; then
@@ -108,7 +111,7 @@ fi
 
 default_loc_port=10334
 
-function readalllocators { 
+function readAllLocators() {
   retVal=
   while read loc || [[ -n "${loc}" ]]; do
     [[ -z "$(echo $loc | grep ^[^#] | grep -v ^$ )" ]] && continue
@@ -117,13 +120,13 @@ function readalllocators {
     else
       retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*#\1:$default_loc_port#g")"
     fi
-  done < "${SPARK_CONF_DIR}/locators" 
+  done < "${SPARK_CONF_DIR}/locators"
   echo ${retVal#","}
 }
 
 LOCATOR_IS_LOCAL=
 if [ -f "${SPARK_CONF_DIR}/locators" ]; then
-  allLocators="$(readalllocators)"
+  allLocators="$(readAllLocators)"
   LOCATOR_ARGS="-locators=$allLocators"
   if echo $allLocators | egrep -wq '(localhost|127\.0\.0\.1|::1)'; then
     LOCATOR_IS_LOCAL=1
@@ -180,6 +183,10 @@ function execute() {
     if [ -z "$SPARK_LOCAL_IP" ]; then
       export SPARK_LOCAL_IP=$host
       preCommand="export SPARK_LOCAL_IP=$SPARK_LOCAL_IP; "
+    fi
+    # set host-data=false explicitly for leads
+    if [ "$componentType" = "lead" ]; then
+      args="${args} -host-data=false"
     fi
 
     clientBindAddress=
@@ -287,22 +294,96 @@ function execute() {
 }
 
 index=1
-declare -a arr
-if [ -n "${HOSTLIST}" ]; then
-  while read slave || [[ -n "${slave}" ]]; do
+isServerStart=
+declare -A leadCountArr
+if [ "$componentType" = "server" -a -n "$(echo $"${@// /\\ }" | grep -w start)" ]; then
+  isServerStart=1
+fi
+# check leads on the same nodes as servers
+# (and if none then memory-size can be increased)
+if [ -n "$LEADHOSTLIST" -a -n "$isServerStart" ]; then
+  while read slave || [[ -n "$slave" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
-    arr+=("${slave}");
     host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
     args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
-    if echo $"${@// /\\ }" | grep -wq "start\|status"; then
+    leadCount=${leadCountArr["$host"]}
+    # marker for the case when lead heap/memory has been configured explicitly
+    # in which case server side auto-configuration will also be skipped
+    if echo $args $"${@// /\\ }" | grep -q "heap-size=\|memory-size="; then
+      leadCountArr["$host"]=-1
+    elif [ -z "$leadCount" ]; then
+      leadCountArr["$host"]=1
+    elif [ $leadCount -ge 0 ]; then
+      ((leadCountArr["$host"]++))
+    fi
+  done < "$LEADHOSTLIST"
+fi
+
+function getNumLeadsOnNode() {
+  host="$1"
+  numLeadsOnNode=
+  if [ ${#leadCountArr[@]} -gt 0 ]; then
+    numLeadsOnNode=${leadCountArr["$host"]}
+  elif [ "$host" = "localhost" ]; then
+    numLeadsOnNode=1
+  fi
+  if [ -z "$numLeadsOnNode" ]; then
+    numLeadsOnNode=0
+  fi
+  echo $numLeadsOnNode
+}
+
+if [ -n "${HOSTLIST}" ]; then
+  declare -a arr
+  declare -A countArr
+  isStartOrStatus=
+
+  while read slave || [[ -n "${slave}" ]]; do
+    [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
+    arr+=("${slave}")
+    if [ -n "$isServerStart" ]; then
+      host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
+      if [ -z "${countArr["$host"]}" ]; then
+        countArr["$host"]=1
+      else
+        ((countArr["$host"]++))
+      fi
+    fi
+  done < "$HOSTLIST"
+
+
+  numSlaves=${#arr[@]}
+  if [ $numSlaves -eq 0 ]; then
+    arr+=(localhost)
+    countArr[localhost]=1
+    numSlaves=1
+  fi
+
+  if echo $"${@// /\\ }" | grep -wq "start\|status"; then
+    isStartOrStatus=1
+  fi
+  for slave in "${arr[@]}"; do
+    if [ -n "$isStartOrStatus" ]; then
+      host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
+      args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
+      # disable implicit off-heap for nodes having multiple servers configured
+      if [ -n "$isServerStart" ]; then
+        if [ ${countArr["$host"]} -gt 1 -a -z "$(echo $args $"${@// /\\ }" | grep 'memory-size=')" ]; then
+          args="$args -memory-size=0"
+        fi
+        # check number of leads on the same node
+        args="$args -J-Dsnappydata.numLeadsOnNode=$(getNumLeadsOnNode "$host")"
+      fi
       execute "$@"
     fi
     ((index++))
-  done < $HOSTLIST
+  done
+
+  # stop nodes in reverse order
   if echo $"${@// /\\ }" | grep -wq "stop"; then
-    line=${#arr[@]}
+    line=$numSlaves
     if [ $((index-1)) -eq $line ]; then
-      for (( i=${#arr[@]}-1 ; i>=0 ; i-- )) ; do
+      for (( i=$numSlaves-1 ; i>=0 ; i-- )) ; do
         ((index--))
         CONF_ARG=${arr[$i]}
         host="$(echo "$CONF_ARG "| tr -s ' ' | cut -d ' ' -f1)"
@@ -314,6 +395,9 @@ if [ -n "${HOSTLIST}" ]; then
 else
   host="localhost"
   args=""
+  if [ -n "$isServerStart" ]; then
+    args="$args -J-Dsnappydata.numLeadsOnNode=$(getNumLeadsOnNode "$host")"
+  fi
   execute "$@"
 fi
 wait
