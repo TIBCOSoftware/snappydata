@@ -53,7 +53,8 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   } else {
@@ -62,7 +63,8 @@ dependencies {
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
 
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
@@ -72,7 +74,8 @@ dependencies {
     testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     testCompile("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}")
+    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
+    testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
 
     testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
@@ -111,7 +114,8 @@ dependencies {
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
-  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
 
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
