@@ -233,12 +233,12 @@ object StringBenchmark {
    */
   def sparkContains(source: UTF8String, target: UTF8String): Boolean = {
     if (target.numBytes == 0) return true
-    val first = target.getByte(0)
-    var i = 0
-    while (i <= source.numBytes - target.numBytes) {
-      if (source.getByte(i) == first && matchAt(source, target, i)) return true
-      i += 1
-    }
+//    val first = target.getBytes(0)
+//    var i = 0
+//    while (i <= source.numBytes - target.numBytes) {
+//      if (source.getByte(i) == first && matchAt(source, target, i)) return true
+//      i += 1
+//    }
     false
   }
 
