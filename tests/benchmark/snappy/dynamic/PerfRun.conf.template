@@ -111,3 +111,6 @@ ActualResultsAvailableAt=<path-to-actual-results>
 
 # Trace events to get granular timing info and report in loadPerfStream
 traceEvents=true
+
+# seed value for random number used in generating query parameter data
+randomSeed=42

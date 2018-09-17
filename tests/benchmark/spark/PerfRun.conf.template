@@ -76,3 +76,6 @@ traceEvents=false
 # load tables in Spark cache
 cacheTables=true
 
+# seed value for random number used in generating query parameter data
+randomSeed=42
+
