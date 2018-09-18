@@ -33,14 +33,29 @@ import static hydra.Prms.totalTaskTimeSec;
 
 public class SnappyConcurrencyTest extends SnappyTest {
 
+  public static long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
+  public static long warmUpTimeSec = TestConfig.tasktab().longAt(SnappyPrms.warmUpTimeSec, TestConfig.tab().
+      longAt(SnappyPrms.warmUpTimeSec, 300));
+
+  public static boolean isTPCHSchema = TestConfig.tab().booleanAt(SnappyPrms.isTPCHSchema, false);  //default to false
+
   public static void runPointLookUpQueries() throws SQLException {
     Vector<String> queryVect = SnappyPrms.getPointLookUpQueryList();
-    long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
     String query = null;
     Connection conn = getLocatorConnection();
     ResultSet rs;
     long startTime = System.currentTimeMillis();
-    long endTime = startTime + totalTaskTime * 1000;
+    long endTime = startTime + warmUpTimeSec * 1000;
+    while (endTime > System.currentTimeMillis()) {
+      try {
+        int queryNum = new Random().nextInt(queryVect.size());
+        query = queryVect.elementAt(queryNum);
+        rs = conn.createStatement().executeQuery(query);
+      } catch (SQLException se) {
+        throw new TestException("Got exception while executing pointLookUp query:" + query, se);
+      }
+    }
+    endTime = startTime + totalTaskTime * 1000;
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
@@ -61,16 +76,31 @@ public class SnappyConcurrencyTest extends SnappyTest {
   public static void runAnalyticalQueries() throws SQLException {
     Connection conn = getLocatorConnection();
     Vector<String> queryVect = SnappyPrms.getAnalyticalQueryList();
-    long totalTaskTime = TestConfig.tab().longAt(totalTaskTimeSec);
-    Log.getLogWriter().info("SS - totalTaskTime : " + totalTaskTime);
     String query = null;
     ResultSet rs;
+    if (isTPCHSchema) {
+      query = "create or replace temporary view revenue as select  l_suppkey as supplier_no, " +
+          "sum(l_extendedprice * (1 - l_discount)) as total_revenue from LINEITEM where l_shipdate >= '1993-02-01'" +
+          " and l_shipdate <  add_months('1996-01-01',3) group by l_suppkey";
+      conn.createStatement().executeUpdate(query);
+    }
     long startTime = System.currentTimeMillis();
-    long endTime = startTime + totalTaskTime * 1000;
+    long endTime = startTime + warmUpTimeSec * 1000;
     while (endTime > System.currentTimeMillis()) {
       try {
         int queryNum = new Random().nextInt(queryVect.size());
-        query = (String) queryVect.elementAt(queryNum);
+        query = queryVect.elementAt(queryNum);
+        rs = conn.createStatement().executeQuery(query);
+      } catch (SQLException se) {
+        throw new TestException("Got exception while executing Analytical query:" + query, se);
+      }
+    }
+    startTime = System.currentTimeMillis();
+    endTime = startTime + totalTaskTime * 1000;
+    while (endTime > System.currentTimeMillis()) {
+      try {
+        int queryNum = new Random().nextInt(queryVect.size());
+        query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);

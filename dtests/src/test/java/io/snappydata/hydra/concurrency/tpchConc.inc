@@ -103,9 +103,9 @@ ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
             clientNames = locator1;
 
 hydra.Prms-totalTaskTimeSec           = 900;
-hydra.Prms-maxResultWaitSec           = 1200;
+hydra.Prms-maxResultWaitSec           = 3600;
 
-hydra.Prms-maxCloseTaskResultWaitSec  = 1200;
+hydra.Prms-maxCloseTaskResultWaitSec  = 3600;
 hydra.Prms-serialExecution            = false;
 
 hydra.CachePrms-names = defaultCache;

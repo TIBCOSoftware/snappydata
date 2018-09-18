@@ -16,6 +16,7 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.util.List;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -224,6 +225,17 @@ public class SnappyPrms extends BasePrms {
   public static Long isLongRunningTest;
 
   /**
+   * (boolean) - whether test is started using user specified confs for serevrs, leads, locators and workers members
+   * in case of embedded/smart connector mode cluster test.
+   */
+  public static Long isUserConfTest;
+
+  /**
+   * (boolean) - whether TPCH schema is used in test for running the queries concurrently.
+   */
+  public static Long isTPCHSchema;
+
+  /**
    * (boolean) - whether to enable time statistics. snappy hydra already sets the
    * enable-time-statistics to true.
    */
@@ -305,6 +317,13 @@ public class SnappyPrms extends BasePrms {
   public static Long sleepTimeSecsForMemberStatus;
 
   /**
+   * (int) warmUp time in secs for concurrenct queries execution.
+   * Number of seconds the queries should be executed before recording the execution time for calculating
+   * the latency and throughput stats in concurrency tests.
+   */
+  public static Long warmUpTimeSec;
+
+  /**
    * (int) Number of times the test should retry submitting failed job in case of lead node failover.
    */
   public static Long numTimesToRetry;
@@ -339,6 +358,41 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long analyticalQueryList;
 
+  /**
+   * Parameter used to get the user list of locators host:port to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   * (VectorsetValues of Strings) A comma-seperated list of values for locators host:port.
+   */
+  public static Long locatorList;
+
+  /**
+   * Parameter used to get the host name for the primary locator to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long primaryLocatorHost;
+
+  /**
+   * Parameter used to get the port number for the primary locator to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long primaryLocatorPort;
+
+  /**
+   * Parameter used to get the host name for the primary leader to be started in the test.
+   */
+  public static Long leadHost;
+
+  /**
+   * Parameter used to get the host name for the spark master to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long sparkMasterHost;
+
+  /**
+   * Parameter used to get the port number for the primary leader to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long leadPort;
 
   /**
    * Parameter used to get the leaderLauncher properties specified by user while launching
@@ -497,6 +551,13 @@ public class SnappyPrms extends BasePrms {
   public static Long tableList;
 
   /**
+   * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
+   * while starting the cluster with user specified confs.
+   * (VectorsetValues of Strings) A list of values for hostName List
+   */
+  public static Long hostNames;
+
+  /**
    * Parameter used to get the user specified index List required for validation.
    * (VectorsetValues of Strings) A list of values for index List
    */
@@ -508,6 +569,12 @@ public class SnappyPrms extends BasePrms {
    * (VectorsetValues of Strings) A list of values for connetcion properties list
    */
   public static Long connPropsList;
+
+  /**
+   * Parameter used to get the location for the user specified confs for starting SnappyData members.
+   * An exception will be thrown in case not provided.
+   */
+  public static Long userConfLocation;
 
   /**
    * Parameter used to get the number of Rows in each table provided in table List. This is
@@ -669,6 +736,36 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
+  public static String getLocatorList() {
+    Long key = locatorList;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost:1527"));
+  }
+
+  public static String getPrimaryLocatorHost() {
+    Long key = primaryLocatorHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost"));
+  }
+
+  public static String getPrimaryLocatorPort() {
+    Long key = primaryLocatorPort;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "1527"));
+  }
+
+  public static String getLeadHost() {
+    Long key = leadHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost"));
+  }
+
+  public static String getLeadPort() {
+    Long key = leadPort;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "8090"));
+  }
+
+  public static String getMasterHost() {
+    Long key = sparkMasterHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
   public static String getLeaderLauncherProps() {
     Long key = leaderLauncherProps;
     String leaderLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
@@ -800,6 +897,11 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
+  public static String getUserConfLocation() {
+    Long key = userConfLocation;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
   public static Vector getPersistenceModeList() {
     Long key = persistenceMode;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
@@ -882,6 +984,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getTableList() {
     Long key = tableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getHostNameList() {
+    Long key = hostNames;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
