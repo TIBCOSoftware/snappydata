@@ -307,6 +307,8 @@ pages:
 theme: readthedocs
 theme_dir: 'docs/custom_theme'
 
+requirements_file: requirements.txt
+
 extra_javascript:
     - 'js/menu.js'
     - 'js/highlight.pack.js'
