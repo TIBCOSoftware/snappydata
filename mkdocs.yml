@@ -310,18 +310,18 @@ custom_dir: 'docs/custom_theme'
 requirements_file: requirements.txt
 
 extra_javascript:
-    - 'js/menu.js'
-    - 'js/highlight.pack.js'
+    - 'custom_theme/js/menu.js'
+    - 'custom_theme/js/highlight.pack.js'
 
 extra_css:
-    - 'css/toc.css'
-    - 'css/menu.css'
-    - 'css/images.css'
-    - 'css/style.css'
-    - 'css/highlight.css'
+    - 'custom_theme/css/toc.css'
+    - 'custom_theme/css/menu.css'
+    - 'custom_theme/css/images.css'
+    - 'custom_theme/css/style.css'
+    - 'custom_theme/css/highlight.css'
     - 'extra.css'
     
 markdown_extensions:
-    - markdown.extensions.admonition 
+    - admonition 
     
 copyright: Copyright &copy; 2018 SnappyData Inc.
