@@ -677,6 +677,7 @@ class SnappySessionState(snappySession: SnappySession)
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
+    OptimizeSortPlans,
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(snappySession.sessionState.conf),
     InsertCachedPlanFallback(snappySession, topLevel),
