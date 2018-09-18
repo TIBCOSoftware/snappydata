@@ -670,6 +670,8 @@ object Utils {
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
 
+  def getInternalSparkConf(sc: SparkContext): SparkConf = sc.conf
+
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
     conf.getOption(name) match {

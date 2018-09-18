@@ -625,6 +625,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def getLeadClassLoader() : URLClassLoader =
     ToolsCallbackInit.toolsCallback.getLeadClassLoader()
+
+  override def clearSessionCache(onlyQueryPlanCache: Boolean = false): Unit = {
+    SnappySession.clearAllCache(onlyQueryPlanCache)
+  }
+
+  override def refreshPolicies(ldapGroup: String): Unit = {
+    val session = new SnappySession(SparkContext.getActive.get)
+    session.sessionCatalog.refreshPolicies(ldapGroup)
+  }
 }
 
 trait StoreCallback extends Serializable {

@@ -43,7 +43,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val clusterStatsDetails = {
       val clustersStatsTitle = createTitleNode(SnappyDashboardPage.clusterStatsTitle,
-                                 SnappyDashboardPage.clusterStatsTitleTooltip)
+                                 SnappyDashboardPage.clusterStatsTitleTooltip,
+                                 "clustersStatsTitle",
+                                 true)
       val clusterDetails = clusterStats
 
       clustersStatsTitle ++ clusterDetails
@@ -51,7 +53,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val membersStatsDetails = {
       val membersStatsTitle = createTitleNode(SnappyDashboardPage.membersStatsTitle,
-                                SnappyDashboardPage.membersStatsTitleTooltip)
+                                SnappyDashboardPage.membersStatsTitleTooltip,
+                                "membersStatsTitle",
+                                true)
       val membersStatsTable = memberStats
 
       membersStatsTitle ++ membersStatsTable
@@ -59,7 +63,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val tablesStatsDetails = {
       val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle,
-                                SnappyDashboardPage.tablesStatsTitleTooltip)
+                                SnappyDashboardPage.tablesStatsTitleTooltip,
+                                "tablesStatsTitle",
+                                true)
       val tablesStatsTable = tableStats
 
       tablesStatsTitle ++ tablesStatsTable
@@ -67,7 +73,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
     val extTablesStatsDetails = {
       val extTablesStatsTitle = createTitleNode(SnappyDashboardPage.extTablesStatsTitle,
-        SnappyDashboardPage.extTablesStatsTitleTooltip)
+                                SnappyDashboardPage.extTablesStatsTitleTooltip,
+                                "extTablesStatsTitle",
+                                false)
       val extTablesStatsTable = extTableStats
 
       extTablesStatsTitle ++ extTablesStatsTable
@@ -107,8 +115,12 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def createTitleNode(title: String, tooltip: String): Seq[Node] = {
-    <div class="row-fluid">
+  private def createTitleNode(title: String, tooltip: String, nodeId: String, display:Boolean):
+    Seq[Node] = {
+
+    val displayDefault: String =if (display) { "" } else { "display: none;" }
+
+    <div class="row-fluid" id={nodeId} style={displayDefault} >
       <div class="span12">
         <h4 class="title-node-h4" data-toggle="tooltip" data-placement="top" title={tooltip}>
           {title}
@@ -271,7 +283,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 
   private def extTableStats(): Seq[Node] = {
 
-    <div class="container-fluid">
+    <div class="container-fluid" id="extTableStatsGridContainer" style="display: none;">
       <table id="extTableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>

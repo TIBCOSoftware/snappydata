@@ -14,6 +14,25 @@ The [GRANT](../reference/sql_reference/grant.md) statement is used to grant spec
 	
 	* Only administrators can execute built-in procedures (like INSTALL-JAR)
 
+### Adding Restrictions in Default Schema
+
+Users in SnappyData cluster have their own schema by default when they log into the cluster. They have full access within this schema.
+But in some cases, cluster administrators may need to ensure controlled use of the cluster resources by its users and may need to enforce restrictions on them.
+
+This can be achieved by setting the system property `snappydata.RESTRICT_TABLE_CREATION` to true in **conf** files at the time of starting the cluster.
+This forbids the users to create tables in their default schema. Users also cannot execute queries on tables in the schema.
+
+Administrators, however, can explicitly grant permissions to these users on their respective default schemas using GRANT command. The default value of the property is false.
+
+You need to prefix `-J-D` to the property name while specifying it in the conf files (locators, leads, and servers).
+```
+$ cat conf/servers
+localhost -auth-provider=LDAP -J-Dsnappydata.RESTRICT_TABLE_CREATION=true -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
+          -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com \
+          -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com \
+          -J-Dgemfirexd.auth-ldap-search-pw=user123
+```
+
 ## LDAP Groups in SnappyData Authorization
 SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.
 

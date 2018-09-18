@@ -1,7 +1,7 @@
 # SnappyData Pulse
 
-SnappyData Pulse is a monitoring system that gives a high-level overview of the status and performance of the cluster.  Pulse provides a simple widget based view, which allows you to easily navigate, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster. 
-All the usage details are automatically refreshed after every 5 seconds, thus you can supervise the live status of your cluster.
+SnappyData Pulse is a dashboard that provides a real time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to easily navigate, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+All the usage details are automatically refreshed after every 5 seconds.
 
 
 To access SnappyData Pulse, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
@@ -31,7 +31,7 @@ The following topics are covered in this section:
 
 
 !!! Note
-	When using Smart Connector with upstream Spark, the information related to **SQL**, **Jobs**, and **Stages** are only displayed. The **Dashboard** and **Member Details** sections are not displayed.
+	When connecting to a SnappyData cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about SnappyData Smart Connector Mode [here](../affinity_modes/connector_mode.md).
 
 On the top-right side of the SnappyData Pulse page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 
@@ -110,7 +110,7 @@ The following columns are displayed in this section:
 |   **Storage Model**     |    Displays the data storage model of the data table. Possible models are **ROW** and **COLUMN**.    |
 |   **Distribution Type**     |      Displays the data distribution type for the table. Possible values are: <ul><li>PARTITION</li><li>REPLICATE</li> </ul> |
 |   **Row Count**     |   Displays the row count, which is the number of records present in the data table.|
-|**Memory Size**    |    Displays the heap memory used by data table to store its data.    |
+|**Memory Size**    |    Displays the heap memory used by data table to store its data. If less than **Total Size** then the data is overflowing to disk.   |
 |     **Total Size**   |     Displays the collective physical memory and disk overflow space used by the data table to store its data.   |
 |      **Buckets**  |  Displays the total number of buckets in the data table.|
 
