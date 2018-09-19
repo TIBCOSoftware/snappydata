@@ -22,4 +22,5 @@ $ResultCollection \
 $WarmupRuns \
 $AverageRuns \
 $traceEvents \
-$cacheTables
+$cacheTables \
+$randomSeed
