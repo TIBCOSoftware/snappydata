@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 <<COMM
 # EXAMPLE VALUES
 snappy_home="/home/hemanth/workspace/snappydata/build-artifacts/scala-2.11"
