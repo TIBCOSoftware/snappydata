@@ -55,6 +55,10 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   private def newTopic(): String = s"topic-${topicId.getAndIncrement()}"
 
   test("SnappyData Structured Streaming with Kafka") {
+
+    snc.sql("drop table if exists users")
+    snc.sql("create table users (id int) using column options(key_columns 'id')")
+
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
     kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
@@ -65,40 +69,29 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
-      //.option("kafka.metadata.max.age.ms", "1")
-      //.option("maxOffsetsPerTrigger", 10)
       .option("subscribe", topic)
       .option("startingOffsets", "earliest")
       .load
-
-    /*
-    streamingDF.schema for kafka source
-    |-- key: binary (nullable = true)
-    |-- value: binary (nullable = true)
-    |-- topic: string (nullable = true)
-    |-- partition: integer (nullable = true)
-    |-- offset: long (nullable = true)
-    |-- timestamp: timestamp (nullable = true)
-    |-- timestampType: integer (nullable = true)
-    */
 
     val streamingQuery = streamingDF
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
       .as[(String, String)]
       .map(kv => kv._2.toInt)
       .writeStream
-      .format("memory")
+      .format("snappystore")
       .queryName("simple")
       .outputMode("append")
       .trigger(ProcessingTime("1 seconds"))
+      .option("tablename", "APP.USERS").option("SINKID", "abc")
+      .option("checkpointLocation", "/tmp/snappyTable")
       .start
 
     streamingQuery.awaitTermination(timeoutMs = 15000)
-    assert(113 == session.sql("select * from simple").count)
+    assert(113 == session.sql("select * from APP.USERS").count)
   }
 
 
-  test("ETL Job") {
+  ignore("ETL Job") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -140,7 +133,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     assert(113 == session.sql("select * from snappyTable").count)
   }
 
-  test("infinite streaming aggregation") {
+  ignore("infinite streaming aggregation") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -184,7 +177,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     assert(2.0 == session.sql("select avg(count) from snappyAggrTable").collect()(0).getDouble(0))
   }
 
-  test("sliding window aggregation") {
+  ignore("sliding window aggregation") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -230,7 +223,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   }
 
 
-  test("streaming DataFrame join to static DataFrame") {
+  ignore("streaming DataFrame join to static DataFrame") {
     val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
     val dfBlackList = snc.createDataFrame(rdd)
     // create a SnappyData table

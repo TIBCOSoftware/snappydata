@@ -158,7 +158,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.dropTable("tableJoinResult", ifExists = true)
   }
 
-  test("avoid shuffle reuse in CQs") {
+  ignore("avoid shuffle reuse in CQs") {
     val queue = new scala.collection.mutable.Queue[RDD[Tweet]]
     for (i <- 1 until 31 by 10) {
       queue.enqueue(sc.parallelize(i to i + 9).map(i => Tweet(i, s"Text$i")))
@@ -184,7 +184,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     }
   }
 
-  test("stream to big table join CQ using SnappyHashJoin") {
+  ignore("stream to big table join CQ using SnappyHashJoin") {
     val queue = new scala.collection.mutable.Queue[RDD[Tweet]]
     for (i <- 1 until 31 by 10) {
       queue.enqueue(sc.parallelize(i to i + 9).map(i => Tweet(i, s"Text$i")))
@@ -215,7 +215,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.dropTable("refTable", ifExists = true)
     snc.dropTable("tableJoinResult", ifExists = true)
   }
-  test("stream creation using Product or schema") {
+  ignore("stream creation using Product or schema") {
     val queue1 = new scala.collection.mutable.Queue[RDD[Row]]
     for (i <- 1 until 17 by 4) {
       queue1.enqueue(sc.parallelize(i to i + 3).map(i => Row(i, s"Text$i")))
