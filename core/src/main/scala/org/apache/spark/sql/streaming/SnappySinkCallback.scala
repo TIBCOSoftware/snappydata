@@ -121,8 +121,9 @@ import org.apache.spark.sql.snappy._
 class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, sinkProps: Properties,
               batchId: Long, df: Dataset[Row], posDup: Boolean) {
-    val snappyTable = sinkProps.getProperty(tableNameProperty).toUpperCase
 
+    df.cache()
+    val snappyTable = sinkProps.getProperty(tableNameProperty).toUpperCase
     DefaultSnappySinkCallback.log.debug(s"Processing for $snappyTable and batchId $batchId")
 
     val tableName = sinkProps.getProperty(tableNameProperty).toUpperCase
