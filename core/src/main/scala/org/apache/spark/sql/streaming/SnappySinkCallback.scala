@@ -29,7 +29,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.util.Utils
 
-trait SnappyStreamSink {
+trait SnappySinkCallback {
 
   def process(snappySession: SnappySession, sinkProps: Properties,
               batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean = false): Unit
@@ -49,11 +49,11 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
     val cc = try {
       Utils.classForName(parameters("sink")).newInstance()
     } catch {
-      case _: NoSuchElementException => new DefaultSnappySink()
+      case _: NoSuchElementException => new DefaultSnappySinkCallback()
     }
 
     SnappyStoreSink(sqlContext.asInstanceOf[SnappyContext].snappySession, props,
-      cc.asInstanceOf[SnappyStreamSink])
+      cc.asInstanceOf[SnappySinkCallback])
   }
 
   private def createSinkStateTableIfNotExist(sqlContext: SQLContext) = {
@@ -65,12 +65,12 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
   }
 
   @Override
-  def shortName(): String = "snappystore"
+  def shortName(): String = "snappysink"
 
 }
 
 case class SnappyStoreSink(snappySession: SnappySession,
-                           properties: Properties, sink: SnappyStreamSink) extends Sink {
+                           properties: Properties, sinkCallback: SnappySinkCallback) extends Sink {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val sinkId = properties.getProperty("sinkid").toUpperCase
@@ -93,7 +93,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
       }
     }
 
-    sink.process(snappySession, properties, batchId, convert(data), posDup)
+    sinkCallback.process(snappySession, properties, batchId, convert(data), posDup)
   }
 
   /**
@@ -112,18 +112,18 @@ case class SnappyStoreSink(snappySession: SnappySession,
   }
 }
 
-object DefaultSnappySink {
-  private val log = Logger.getLogger(classOf[DefaultSnappySink].getName)
+object DefaultSnappySinkCallback {
+  private val log = Logger.getLogger(classOf[DefaultSnappySinkCallback].getName)
 }
 
 import org.apache.spark.sql.snappy._
 
-class DefaultSnappySink extends SnappyStreamSink {
+class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, sinkProps: Properties,
               batchId: Long, df: Dataset[Row], posDup: Boolean) {
     val snappyTable = sinkProps.getProperty(tableNameProperty).toUpperCase
 
-    DefaultSnappySink.log.debug("Processing for " + snappyTable + " batchId " + batchId)
+    DefaultSnappySinkCallback.log.debug(s"Processing for $snappyTable and batchId $batchId")
 
     val tableName = sinkProps.getProperty(tableNameProperty).toUpperCase
     val keyColumnsDefined = !snappySession.sessionCatalog.getKeyColumns(tableName).head(1).isEmpty
