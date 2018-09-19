@@ -45,13 +45,7 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
                   outputMode: OutputMode): Sink = {
     val props = new Properties()
     parameters.foreach { case (k, v) => props.setProperty(k, v) }
-    // TODO: Check here for the sink provided, if not then add DefaultSnappySink
-    // Get all other property too, e.g sink name
-    // create a persistent metadata table if not exists and then check if there
-    // is a row against that sink name
-    // currently no check for duplicate.
     createSinkStateTableIfNotExist(sqlContext)
-
     val cc = try {
       Utils.classForName(parameters("sink")).newInstance()
     } catch {
@@ -64,10 +58,9 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 
   private def createSinkStateTableIfNotExist(sqlContext: SQLContext) = {
     sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
-      s" ${DefaultSnappySink.sinkStateTable}(" +
+      s" ${Constants.sinkStateTable}(" +
       " sink_id varchar(200)," +
       " batchid long, " +
-      " status varchar(10), " +
       " PRIMARY KEY (sink_id)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
   }
 
@@ -80,11 +73,9 @@ case class SnappyStoreSink(snappySession: SnappySession,
                            properties: Properties, sink: SnappyStreamSink) extends Sink {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
-    // TODO: before callback: store the batchID in the table, with start
-    // change the callback to have an extra column indicating possibleDuplicate
     val sinkId = properties.getProperty("sinkid").toUpperCase
 
-    val updated = snappySession.sql(s"update ${DefaultSnappySink.sinkStateTable} " +
+    val updated = snappySession.sql(s"update ${Constants.sinkStateTable} " +
       s"set batchid=$batchId where sink_id='$sinkId' and batchid != $batchId")
       .collect()(0).getAs("count").asInstanceOf[Long]
 
@@ -93,7 +84,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
 
     if (updated == 0) {
       try {
-        snappySession.insert(DefaultSnappySink.sinkStateTable, Row(sinkId, batchId, "start"))
+        snappySession.insert(Constants.sinkStateTable, Row(sinkId, batchId))
         posDup = false
       }
       catch {
@@ -103,9 +94,6 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
 
     sink.process(snappySession, properties, batchId, convert(data), posDup)
-    // TODO: after callback: store the batchID in the table, with end(small optimization)
-    // snappySession.sql(s"update ${DefaultSnappySink.sinkStateTable} set status = \"end\" where " +
-    //  s"sinkid=$sinkId and batchid = $batchId ")
   }
 
   /**
@@ -125,8 +113,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
 }
 
 object DefaultSnappySink {
-  val sinkStateTable = s"SNAPPY_SINK_STATE_TABLE"
-  val log = Logger.getLogger(classOf[DefaultSnappySink].getName)
+  private val log = Logger.getLogger(classOf[DefaultSnappySink].getName)
 }
 
 import org.apache.spark.sql.snappy._
@@ -134,7 +121,7 @@ import org.apache.spark.sql.snappy._
 class DefaultSnappySink extends SnappyStreamSink {
   def process(snappySession: SnappySession, sinkProps: Properties,
               batchId: Long, df: Dataset[Row], posDup: Boolean) {
-    val snappyTable = sinkProps.getProperty("tablename").toUpperCase
+    val snappyTable = sinkProps.getProperty(tableNameProperty).toUpperCase
 
     DefaultSnappySink.log.debug("Processing for " + snappyTable + " batchId " + batchId)
 
@@ -145,14 +132,14 @@ class DefaultSnappySink extends SnappyStreamSink {
       if (eventTypeColumnAvailable) {
         // TODO: handle scenario when a batch contain multiple records with
         // same key columns using conflation.
-
         val deleteDf = df.filter(df(eventTypeColumn) === deleteEventType)
           .drop(eventTypeColumn)
         deleteDf.write.deleteFrom(tableName)
         if (posDup) {
-          val insertDf = df.filter(df(eventTypeColumn).isin(Seq(insertEventType, updateEventType)))
-            .drop(eventTypeColumn)
-          insertDf.write.insertInto(tableName)
+          val upsertEventTypes = List(insertEventType, updateEventType)
+          val upsertDf = df.filter(df(eventTypeColumn).isin(upsertEventTypes: _*))
+              .drop(eventTypeColumn)
+          upsertDf.write.putInto(tableName)
         } else {
           val insertDf = df.filter(df(eventTypeColumn) === insertEventType)
             .drop(eventTypeColumn)
@@ -187,4 +174,5 @@ object Constants {
   val updateEventType = 1
   val deleteEventType = 2
   val tableNameProperty = "tablename"
+  val sinkStateTable = s"SNAPPY_SINK_STATE_TABLE"
 }
