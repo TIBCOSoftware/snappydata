@@ -78,7 +78,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .as[(String, String)]
       .map(kv => kv._2.toInt)
       .writeStream
-      .format("snappystore")
+      .format("snappysink")
       .queryName("simple")
       .outputMode("append")
       .trigger(ProcessingTime("1 seconds"))
