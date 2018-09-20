@@ -1155,7 +1155,7 @@ object SnappyContext extends Logging {
       if (ExternalStoreUtils.isLocalMode(sc)) {
         val props = sc.conf.getOption(Constant.STORE_PROPERTY_PREFIX +
             Attribute.USERNAME_ATTR) match {
-          case Some(user) => val prps = new java.util.Properties();
+          case Some(user) => val prps = new java.util.Properties()
             val pass = sc.conf.get(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, "")
             prps.put(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, user)
             prps.put(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, pass)

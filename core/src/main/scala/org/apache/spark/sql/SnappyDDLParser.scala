@@ -129,6 +129,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def CODEGEN: Rule0 = rule { keyword(Consts.CODEGEN) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
@@ -140,6 +141,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
   final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXPLAIN: Rule0 = rule { keyword(Consts.EXPLAIN) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
   final def FETCH: Rule0 = rule { keyword(Consts.FETCH) }
@@ -193,6 +195,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
+  final def USE: Rule0 = rule { keyword(Consts.USE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
   final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
@@ -695,7 +698,8 @@ abstract class SnappyDDLParser(session: SparkSession)
             SetCommand(None)
           }
         }
-    )
+    ) |
+    USE ~ identifier ~> SetSchema
   }
 
   protected def reset: Rule1[LogicalPlan] = rule {

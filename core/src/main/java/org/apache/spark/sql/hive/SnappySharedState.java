@@ -30,7 +30,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.ui.SQLListener;
 import org.apache.spark.sql.execution.ui.SQLTab;
 import org.apache.spark.sql.execution.ui.SnappySQLListener;
-import org.apache.spark.sql.hive.client.HiveClient;
+import org.apache.spark.sql.hive.client.HiveClientImpl;
 import org.apache.spark.sql.internal.SharedState;
 import org.apache.spark.sql.internal.StaticSQLConf;
 import org.apache.spark.ui.SparkUI;
@@ -43,7 +43,7 @@ public final class SnappySharedState extends SharedState {
   /**
    * A Hive client used to interact with the meta-store.
    */
-  private final HiveClient client;
+  private final HiveClientImpl client;
 
   /**
    * The ExternalCatalog implementation used for SnappyData (either
@@ -94,15 +94,15 @@ public final class SnappySharedState extends SharedState {
     try {
       // avoid inheritance of activeSession
       SparkSession.clearActiveSession();
-      this.client = HiveClientUtil$.MODULE$.newClient(sparkContext());
+      this.client = (HiveClientImpl)HiveClientUtil$.MODULE$.newClient(sparkContext());
 
       ClusterMode mode = SnappyContext.getClusterMode(sparkContext());
       if (mode instanceof ThinClientConnectorMode) {
         this.snappyCatalog = new SnappyConnectorExternalCatalog(this.client,
-            sparkContext().hadoopConfiguration());
+            this.client.conf());
       } else {
         this.snappyCatalog = new SnappyExternalCatalog(this.client,
-            sparkContext().hadoopConfiguration());
+            this.client.conf());
       }
 
       // Initialize global temporary view manager.
@@ -147,7 +147,7 @@ public final class SnappySharedState extends SharedState {
     return sharedState;
   }
 
-  public HiveClient metadataHive() {
+  public HiveClientImpl metadataHive() {
     return this.client;
   }
 

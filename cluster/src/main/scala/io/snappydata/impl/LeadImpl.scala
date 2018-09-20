@@ -47,12 +47,14 @@ import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROP
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
+import org.apache.hive.service.cli.thrift.ThriftCLIService
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
@@ -222,12 +224,13 @@ class LeadImpl extends ServerImpl with Lead
       logInfo("About to send profile update after initialization completed.")
       ServerGroupUtils.sendUpdateProfile()
 
+      val startHiveServer = Property.HiveServerEnabled.get(conf)
       var jobServerWait = false
       var confFile: Array[String] = null
       var jobServerConfig: Config = null
       var startupString: String = null
       if (Property.JobServerEnabled.get(conf)) {
-        jobServerWait = Property.JobServerWaitForInit.get(conf)
+        jobServerWait = startHiveServer || Property.JobServerWaitForInit.get(conf)
         confFile = conf.getOption("jobserver.configFile") match {
           case None => Array[String]()
           case Some(c) => Array(c)
@@ -263,6 +266,22 @@ class LeadImpl extends ServerImpl with Lead
       // start the service to gather table statistics
       SnappyTableStatsProviderService.start(sc, url = null)
 
+      if (startHiveServer) {
+        val useHiveSession = Property.HiveServerEnableHive.get(conf)
+        val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
+        val iter = hiveService.getServices.iterator()
+        while (iter.hasNext) {
+          iter.next() match {
+            case service: ThriftCLIService =>
+              val address = service.getServerIPAddress
+              val port = service.getPortNumber
+              val kind = if (useHiveSession) "hive" else "snappy"
+              addStartupMessage(s"Started hive thrift server (session=$kind) on: $address[$port]")
+            case _ =>
+          }
+        }
+      }
+
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
 
@@ -275,7 +294,7 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       if (jobServerWait) {
-        // mark RUNNING after job server and zeppelin initialization if so configured
+        // mark RUNNING after job server, hive server and zeppelin initialization if so configured
         markLauncherRunning(if (startupString ne null) s"Started $startupString" else null)
       }
     }
@@ -377,7 +396,7 @@ class LeadImpl extends ServerImpl with Lead
     servicesStarted = true
   }
 
-  private def markLauncherRunning(message: String): Unit = {
+  private def addStartupMessage(message: String): Unit = {
     if ((message ne null) && !message.isEmpty) {
       val launcher = CacheServerLauncher.getCurrentInstance
       if (launcher ne null) {
@@ -389,6 +408,10 @@ class LeadImpl extends ServerImpl with Lead
         }
       }
     }
+  }
+
+  private def markLauncherRunning(message: String): Unit = {
+    addStartupMessage(message)
     notifyRunningInLauncher(Status.RUNNING)
   }
 
@@ -427,6 +450,7 @@ class LeadImpl extends ServerImpl with Lead
       case _: CacheClosedException =>
     }
     bootProperties.clear()
+    SnappyHiveThriftServer2.close()
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
     servicesStarted = false
@@ -525,7 +549,7 @@ class LeadImpl extends ServerImpl with Lead
       SnappyAuthenticator.auth = new SnappyAuthenticator {
 
         override def authenticate(userPass: Option[UserPass]): Future[Option[AuthInfo]] = {
-          Future { checkCredentials(userPass) }
+          Future(checkCredentials(userPass))
         }
 
         def checkCredentials(userPass: Option[UserPass]): Option[AuthInfo] = {

@@ -34,7 +34,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.execution.command.{ShowColumnsCommand, ShowCreateTableCommand, ShowDatabasesCommand, ShowFunctionsCommand, ShowTablePropertiesCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
@@ -1167,6 +1167,17 @@ class SnappyParser(session: SnappySession)
     SHOW ~ CREATE ~ TABLE ~ tableIdentifier ~> ShowCreateTableCommand
   }
 
+  protected final def explain: Rule1[LogicalPlan] = rule {
+    EXPLAIN ~ (EXTENDED ~ push(true) | CODEGEN ~ push(false)).? ~ start ~> ((flagVal: Any,
+        plan: LogicalPlan) => plan match {
+      case _: DescribeTableCommand => ExplainCommand(OneRowRelation)
+      case _ =>
+        val flag = flagVal.asInstanceOf[Option[Boolean]]
+        ExplainCommand(plan, extended = flag.isDefined && flag.get,
+          codegen = flag.isDefined && !flag.get)
+    })
+  }
+
   private var tokenize = false
 
   private var canTokenize = false
@@ -1190,7 +1201,7 @@ class SnappyParser(session: SnappySession)
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
         (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
-            deployPackages))
+            deployPackages | explain))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],
