@@ -31,9 +31,10 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.catalyst.parser.ParseException
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog.SYS_SCHEMA
 import org.apache.spark.sql.sources.{BaseRelation, DependencyCatalog, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.{MetadataBuilder, StructField, StructType}
@@ -55,7 +56,10 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
         this.relationDestroyVersion = globalVersion
       }
 
-      cachedDataSourceTables(table)._3
+      if (table.schemaName == SYS_SCHEMA) {
+        RelationInfo(partitions = Array(new SmartExecutorBucketPartition(0, 0, ArrayBuffer.empty)))
+      }
+      else cachedDataSourceTables(table)._3
     } catch {
       case e@(_: UncheckedExecutionException | _: ExecutionException) =>
         throw e.getCause
@@ -235,5 +239,5 @@ case class RelationInfo(numBuckets: Int = 1,
     indexCols: Array[String] = Array.empty,
     pkCols: Array[String] = Array.empty,
     partitions: Array[org.apache.spark.Partition] = Array.empty,
-    embdClusterRelDestroyVersion: Int = -1) {
+    embedClusterRelDestroyVersion: Int = -1) {
 }

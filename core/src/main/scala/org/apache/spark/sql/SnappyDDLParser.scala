@@ -122,8 +122,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def USER: Rule0 = rule { keyword(Consts.USER) }
 
   // non-reserved keywords
-  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
-  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
@@ -132,16 +130,22 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
+  final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
+  final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
+  final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
+  final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
   final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
+  final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
   final def FETCH: Rule0 = rule { keyword(Consts.FETCH) }
   final def FIRST: Rule0 = rule { keyword(Consts.FIRST) }
   final def FN: Rule0 = rule { keyword(Consts.FN) }
+  final def FOR: Rule0 = rule { keyword(Consts.FOR) }
   final def FULL: Rule0 = rule { keyword(Consts.FULL) }
   final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
   final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
@@ -155,8 +159,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def JARS: Rule0 = rule { keyword(Consts.JARS) }
   final def LAST: Rule0 = rule { keyword(Consts.LAST) }
   final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
+  final def LDAPGROUP: Rule0 = rule { keyword(Consts.LDAPGROUP) }
+  final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def LIST: Rule0 = rule { keyword(Consts.LIST) }
+  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
   final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
@@ -168,8 +175,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
   final def REPLACE: Rule0 = rule { keyword(Consts.REPLACE) }
+  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
+  final def SCHEMAS: Rule0 = rule { keyword(Consts.SCHEMAS) }
+  final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
   final def SORT: Rule0 = rule { keyword(Consts.SORT) }
@@ -178,19 +188,13 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def STREAM: Rule0 = rule { keyword(Consts.STREAM) }
   final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
   final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
+  final def TBLPROPERTIES: Rule0 = rule { keyword(Consts.TBLPROPERTIES) }
   final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
   final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
-  final def FOR: Rule0 = rule { keyword(Consts.FOR) }
-  final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
-  final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
-  final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
-  final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
-  final def LDAPGROUP: Rule0 = rule { keyword(Consts.LDAPGROUP) }
-  final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -639,11 +643,18 @@ abstract class SnappyDDLParser(session: SparkSession)
    * This will display all columns of table `avroTable` includes column_name,
    *   column_type,comment
    */
-  protected def describeTable: Rule1[LogicalPlan] = rule {
-    DESCRIBE ~ (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
+  protected def describe: Rule1[LogicalPlan] = rule {
+    (DESCRIBE | DESC) ~ (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
         ((extended: Any, tableIdent: TableIdentifier) =>
           DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-              .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
+              .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)) |
+    (DESCRIBE | DESC) ~ FUNCTION ~ (EXTENDED ~ push(true)).? ~
+        functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
+      DescribeFunctionCommand(name,
+        extended.asInstanceOf[Option[Boolean]].isDefined)) |
+    (DESCRIBE | DESC) ~ SCHEMAS ~ (EXTENDED ~ push(true)).? ~ identifier ~>
+        ((extended: Any, name: String) =>
+          DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined))
   }
 
   protected def refreshTable: Rule1[LogicalPlan] = rule {
@@ -689,15 +700,28 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   // It can be the following patterns:
+  // SHOW TABLES IN schema;
+  // SHOW DATABASES;
+  // SHOW COLUMNS IN table;
+  // SHOW TBLPROPERTIES table;
   // SHOW FUNCTIONS;
   // SHOW FUNCTIONS mydb.func1;
   // SHOW FUNCTIONS func1;
   // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
   protected def show: Rule1[LogicalPlan] = rule {
-   SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
-      ShowTablesCommand(ident.asInstanceOf[Option[String]], None)) |
-       SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ LIKE.? ~
-        (functionIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
+    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
+        ((ident: Any, pat: Any) =>
+          ShowTablesCommand(ident.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
+    SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
+      ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
+    SHOW ~ COLUMN ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
+        ((table: TableIdentifier, db: Any) =>
+          ShowColumnsCommand(db.asInstanceOf[Option[String]], table)) |
+    SHOW ~ TBLPROPERTIES ~ tableIdentifier ~ ('(' ~ ws ~ optionKey ~ ')' ~ ws).? ~>
+        ((table: TableIdentifier, propertyKey: Any) =>
+          ShowTablePropertiesCommand(table, propertyKey.asInstanceOf[Option[String]])) |
+    SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ (LIKE.? ~
+        (functionIdentifier | stringLiteral)).? ~> { (id: Any, nameOrPat: Any) =>
       val (user, system) = id.asInstanceOf[Option[String]]
           .map(_.toLowerCase) match {
         case None | Some("all") => (true, true)
@@ -715,14 +739,8 @@ abstract class SnappyDDLParser(session: SparkSession)
         case _ => throw new ParseException(
           s"SHOW FUNCTIONS $nameOrPat unexpected")
       }
-    }
-  }
-
-  protected def desc: Rule1[LogicalPlan] = rule {
-    DESCRIBE ~ FUNCTION ~ (EXTENDED ~ push(true)).? ~
-        functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
-      DescribeFunctionCommand(name,
-        extended.asInstanceOf[Option[Boolean]].isDefined))
+    } |
+    SHOW ~ CREATE ~ TABLE ~ tableIdentifier ~> ShowCreateTableCommand
   }
 
   // helper non-terminals
@@ -791,17 +809,21 @@ abstract class SnappyDDLParser(session: SparkSession)
     (tableSchema ~> (Some(_)) | ws ~> (() => None)).named("tableSchema") ~ EOI
   }
 
-  protected final def pair: Rule1[(String, String)] = rule {
-    qualifiedName ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
+  protected final def optionKey: Rule1[String] = rule {
+    qualifiedName | stringLiteral
+  }
+
+  protected final def option: Rule1[(String, String)] = rule {
+    optionKey ~ ('=' ~ ws).? ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
   }
 
   protected final def options: Rule1[Map[String, String]] = rule {
-    '(' ~ ws ~ (pair * commaSep) ~ ')' ~ ws ~>
+    '(' ~ ws ~ (option * commaSep) ~ ')' ~ ws ~>
         ((pairs: Any) => pairs.asInstanceOf[Seq[(String, String)]].toMap)
   }
 
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTable | describeTable | refreshTable | dropTable | truncateTable |
+    createTable | describe | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTable | createStream | streamContext |

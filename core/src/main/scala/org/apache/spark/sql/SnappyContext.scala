@@ -826,6 +826,8 @@ object SnappyContext extends Logging {
   val SAMPLE_SOURCE_CLASS = "org.apache.spark.sql.sampling.DefaultSource"
   val TOPK_SOURCE = "approx_topk"
   val TOPK_SOURCE_CLASS = "org.apache.spark.sql.topk.DefaultSource"
+  // internal provider to indicate a system table/VTI
+  private[sql] val SYSTABLE_SOURCE = "sys"
 
   val FILE_STREAM_SOURCE = "file_stream"
   val DIRECT_KAFKA_STREAM_SOURCE = "directkafka_stream"

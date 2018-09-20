@@ -21,15 +21,17 @@ import java.util
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
+
 import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI
-import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+import org.apache.hadoop.hive.ql.metadata.HiveException
 import org.apache.thrift.TException
+
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalogUtils._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression, InterpretedPredicate}
@@ -37,7 +39,6 @@ import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.PartitioningUtils
 import org.apache.spark.sql.hive.client.HiveClient
-import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
 
 private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: Configuration)
@@ -111,6 +112,12 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       case NonFatal(e) if isClientException(e) =>
         throw new AnalysisException(
           e.getClass.getCanonicalName + ": " + e.getMessage, cause = Some(e))
+    }
+  }
+
+  override protected def requireDbExists(db: String): Unit = {
+    if (!databaseExists(db)) {
+      throw new AnalysisException(s"Schema '$db' not found")
     }
   }
 
@@ -276,22 +283,27 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     }
   }
 
-  override def getTable(db: String, table: String): CatalogTable = withClient {
-    withHiveExceptionHandling {
-      val catalogTable = client.getTable(db, table)
-      // TODO: remove the type check and return for all types for consistency
-      if (catalogTable.tableType == CatalogTableType.VIEW) {
-        // update the meta-data from properties
-        ExternalStoreUtils.getTableSchema(catalogTable.properties) match {
-          case Some(schema) => catalogTable.copy(schema = schema)
-          case None => catalogTable
-        }
-      } else catalogTable
+  override def getTable(db: String, table: String): CatalogTable = {
+    getTableOption(db, table) match {
+      case Some(catalogTable) => catalogTable
+      case None => throw new NoSuchTableException(db, table)
     }
   }
 
   override def getTableOption(db: String, table: String): Option[CatalogTable] = withClient {
-    withHiveExceptionHandling(client.getTableOption(db, table))
+    withHiveExceptionHandling {
+      val catalogTableOpt = client.getTableOption(db, table)
+      if (catalogTableOpt.isEmpty) return None
+      val catalogTable = catalogTableOpt.get
+      // TODO: remove the type check and return for all types for consistency
+      if (catalogTable.tableType == CatalogTableType.VIEW) {
+        // update the meta-data from properties
+        ExternalStoreUtils.getTableSchema(catalogTable.properties) match {
+          case Some(schema) => Some(catalogTable.copy(schema = schema))
+          case None => catalogTableOpt
+        }
+      } else catalogTableOpt
+    }
   }
 
   override def tableExists(db: String, table: String): Boolean = withClient {
@@ -299,12 +311,10 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   override def listTables(db: String): Seq[String] = withClient {
-    requireDbExists(db)
     withHiveExceptionHandling(client.listTables(db))
   }
 
   override def listTables(db: String, pattern: String): Seq[String] = withClient {
-    requireDbExists(db)
     withHiveExceptionHandling(client.listTables(db, pattern))
   }
 
@@ -351,30 +361,30 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   // Partitions
   // --------------------------------------------------------------------------
 
-  val SPARK_SQL_PREFIX = "spark.sql."
+  val SPARK_SQL_PREFIX: String = "spark.sql."
 
-  val DATASOURCE_PREFIX = SPARK_SQL_PREFIX + "sources."
-  val DATASOURCE_PROVIDER = DATASOURCE_PREFIX + "provider"
-  val DATASOURCE_SCHEMA = DATASOURCE_PREFIX + "schema"
-  val DATASOURCE_SCHEMA_PREFIX = DATASOURCE_SCHEMA + "."
-  val DATASOURCE_SCHEMA_NUMPARTS = DATASOURCE_SCHEMA_PREFIX + "numParts"
-  val DATASOURCE_SCHEMA_NUMPARTCOLS = DATASOURCE_SCHEMA_PREFIX + "numPartCols"
-  val DATASOURCE_SCHEMA_NUMSORTCOLS = DATASOURCE_SCHEMA_PREFIX + "numSortCols"
-  val DATASOURCE_SCHEMA_NUMBUCKETS = DATASOURCE_SCHEMA_PREFIX + "numBuckets"
-  val DATASOURCE_SCHEMA_NUMBUCKETCOLS = DATASOURCE_SCHEMA_PREFIX + "numBucketCols"
-  val DATASOURCE_SCHEMA_PART_PREFIX = DATASOURCE_SCHEMA_PREFIX + "part."
-  val DATASOURCE_SCHEMA_PARTCOL_PREFIX = DATASOURCE_SCHEMA_PREFIX + "partCol."
-  val DATASOURCE_SCHEMA_BUCKETCOL_PREFIX = DATASOURCE_SCHEMA_PREFIX + "bucketCol."
-  val DATASOURCE_SCHEMA_SORTCOL_PREFIX = DATASOURCE_SCHEMA_PREFIX + "sortCol."
+  val DATASOURCE_PREFIX: String = SPARK_SQL_PREFIX + "sources."
+  val DATASOURCE_PROVIDER: String = DATASOURCE_PREFIX + "provider"
+  val DATASOURCE_SCHEMA: String = DATASOURCE_PREFIX + "schema"
+  val DATASOURCE_SCHEMA_PREFIX: String = DATASOURCE_SCHEMA + "."
+  val DATASOURCE_SCHEMA_NUMPARTS: String = DATASOURCE_SCHEMA_PREFIX + "numParts"
+  val DATASOURCE_SCHEMA_NUMPARTCOLS: String = DATASOURCE_SCHEMA_PREFIX + "numPartCols"
+  val DATASOURCE_SCHEMA_NUMSORTCOLS: String = DATASOURCE_SCHEMA_PREFIX + "numSortCols"
+  val DATASOURCE_SCHEMA_NUMBUCKETS: String = DATASOURCE_SCHEMA_PREFIX + "numBuckets"
+  val DATASOURCE_SCHEMA_NUMBUCKETCOLS: String = DATASOURCE_SCHEMA_PREFIX + "numBucketCols"
+  val DATASOURCE_SCHEMA_PART_PREFIX: String = DATASOURCE_SCHEMA_PREFIX + "part."
+  val DATASOURCE_SCHEMA_PARTCOL_PREFIX: String = DATASOURCE_SCHEMA_PREFIX + "partCol."
+  val DATASOURCE_SCHEMA_BUCKETCOL_PREFIX: String = DATASOURCE_SCHEMA_PREFIX + "bucketCol."
+  val DATASOURCE_SCHEMA_SORTCOL_PREFIX: String = DATASOURCE_SCHEMA_PREFIX + "sortCol."
 
-  val STATISTICS_PREFIX = SPARK_SQL_PREFIX + "statistics."
-  val STATISTICS_TOTAL_SIZE = STATISTICS_PREFIX + "totalSize"
-  val STATISTICS_NUM_ROWS = STATISTICS_PREFIX + "numRows"
-  val STATISTICS_COL_STATS_PREFIX = STATISTICS_PREFIX + "colStats."
+  val STATISTICS_PREFIX: String = SPARK_SQL_PREFIX + "statistics."
+  val STATISTICS_TOTAL_SIZE: String = STATISTICS_PREFIX + "totalSize"
+  val STATISTICS_NUM_ROWS: String = STATISTICS_PREFIX + "numRows"
+  val STATISTICS_COL_STATS_PREFIX: String = STATISTICS_PREFIX + "colStats."
 
-  val TABLE_PARTITION_PROVIDER = SPARK_SQL_PREFIX + "partitionProvider"
-  val TABLE_PARTITION_PROVIDER_CATALOG = "catalog"
-  val TABLE_PARTITION_PROVIDER_FILESYSTEM = "filesystem"
+  val TABLE_PARTITION_PROVIDER: String = SPARK_SQL_PREFIX + "partitionProvider"
+  val TABLE_PARTITION_PROVIDER_CATALOG: String = "catalog"
+  val TABLE_PARTITION_PROVIDER_FILESYSTEM: String = "filesystem"
 
   /**
     * Returns the fully qualified name used in table properties for a particular column stat.
@@ -504,8 +514,8 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
         partialSpec.map(lowerCasePartitionSpec)))
     clientPartitionNames.map { partName =>
       val partSpec = PartitioningUtils.parsePathFragmentAsSeq(partName)
-      partSpec.map { case (partName, partValue) =>
-        partColNameMap(partName.toLowerCase) + "=" + escapePathName(partValue)
+      partSpec.map { case (part, partValue) =>
+        partColNameMap(part.toLowerCase) + "=" + escapePathName(partValue)
       }.mkString("/")
     }
   }

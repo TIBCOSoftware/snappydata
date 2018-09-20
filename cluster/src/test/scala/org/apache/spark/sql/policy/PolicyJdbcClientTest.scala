@@ -419,11 +419,16 @@ class PolicyJdbcClientTest extends PolicyTestBase {
       }
 
       val rs1 = md.getTables(null, null, "%", null)
+      // should find the SYS.SYSPOLICIES table in meta-data
+      var foundSysPolicies = false
       while (rs1.next()) {
-        val name = rs1.getString("TABLE_NAME").toUpperCase
-        assert(name.indexOf("POLICY") == -1)
-        assert(name.indexOf("POLICIES") == -1)
+        if (rs1.getString("TABLE_NAME") == "SYSPOLICIES") {
+          foundSysPolicies = true
+          assert(rs1.getString("TABLE_SCHEM") === "SYS")
+          assert(rs1.getString("TABLE_TYPE") === "VIRTUAL TABLE")
+        }
       }
+      assert(foundSysPolicies, "Failed to find SYS.SYSPOLICIES table in meta-data")
 
       stmt.execute("drop policy testPolicy1")
       stmt.execute("drop policy testPolicy2")

@@ -334,9 +334,9 @@ object ExternalStoreUtils {
     }
   }
 
-  def getConnProps(session: SparkSession, url: String, driver: String, dialect: JdbcDialect,
-      poolProps: Map[String, String], connProps: Properties, executorConnProps: Properties,
-      hikariCP: Boolean): ConnectionProperties = {
+  private def getConnProps(session: SparkSession, url: String, driver: String,
+      dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
+      executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
     val (user, password) = getCredentials(session)
 
     val isSnappy = dialect match {

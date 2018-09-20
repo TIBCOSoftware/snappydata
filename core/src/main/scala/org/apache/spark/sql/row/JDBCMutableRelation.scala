@@ -19,7 +19,9 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
+
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -84,7 +86,7 @@ case class JDBCMutableRelation(
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
     new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
-  private[sql] val resolvedName = table
+  override def resolvedName: String = table
 
   var tableExists: Boolean = _
 
@@ -189,7 +191,7 @@ case class JDBCMutableRelation(
       sqlContext.sparkContext,
       schema,
       requiredColumns,
-      filters.flatMap(translateToFilter(_)),
+      filters.flatMap(translateToFilter),
       parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
@@ -466,13 +468,12 @@ case class JDBCMutableRelation(
 
   private def getDataType(column: StructField): String = {
     val dataType: String = dialect match {
-      case d: JdbcExtendedDialect => {
+      case d: JdbcExtendedDialect =>
         val jd = d.getJDBCType(column.dataType, column.metadata)
         jd match {
           case Some(x) => x.databaseTypeDefinition
           case _ => column.dataType.simpleString
         }
-      }
       case _ => column.dataType.simpleString
     }
     dataType

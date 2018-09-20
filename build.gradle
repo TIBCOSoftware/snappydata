@@ -81,6 +81,11 @@ allprojects {
     options.compilerArgs << '-XDignore.symbol.file'
     options.fork = true
     options.forkOptions.javaHome = file(System.properties['java.home'])
+    options.forkOptions.jvmArgs = [ '-J-Xmx2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
+  }
+  // heap setting for forked processes
+  tasks.withType(JavaForkOptions) {
+    jvmArgs = [ '-Xmx2g', '-XX:ReservedCodeCacheSize=512m', '-Djava.net.preferIPv4Stack=true' ]
   }
   tasks.withType(ScalaCompile) {
     // scalaCompileOptions.optimize = true

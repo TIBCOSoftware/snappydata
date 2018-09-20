@@ -16,18 +16,16 @@
  */
 package io.snappydata.util
 
-import io.snappydata.Constant
-import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
-
 import scala.collection.mutable
 
 import _root_.com.gemstone.gemfire.cache.Region
 import _root_.com.gemstone.gemfire.internal.cache.PartitionedRegion
 import _root_.com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
-import org.apache.spark.sql.hive.ExternalTableType
+import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, SnappyContext}
 
@@ -56,7 +54,7 @@ object TestUtils {
         val allTables = ss.catalog.getTables(None)
 
         // allows to skip dropping any tables not required to be dropped
-        val skipPatterns = Seq("SYSIBM")
+        val skipPatterns = Seq("SYSIBM.", "SYS.", SnappyStoreHiveCatalog.HIVE_METASTORE)
 
         val tablesToBeDropped = allTables.filter(x => {
           val tableName = x._1
