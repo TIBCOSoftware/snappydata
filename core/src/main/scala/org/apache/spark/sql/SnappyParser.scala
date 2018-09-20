@@ -1117,8 +1117,10 @@ class SnappyParser(session: SnappySession)
 
   private var canTokenize = false
 
+  private[sql] var inView = false
+
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize)
+    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize && !inView)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
@@ -1126,7 +1128,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def ENABLE_TOKENIZE: Rule0 = rule {
-    MATCH ~> (() => canTokenize = true)
+    MATCH ~> (() => if (!inView) canTokenize = true)
   }
 
   protected final def DISABLE_TOKENIZE: Rule0 = rule {
