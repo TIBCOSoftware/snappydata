@@ -114,11 +114,15 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 
 To import into IntelliJ IDEA:
 
-* Upgrade IntelliJ IDEA to version 2016.x, including the latest Scala plug-in. Older versions (pre 14.x) have trouble dealing with Scala code, particularly some of the code in Spark. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via *JAVA_HOME*).
+- Update Intellij to the latest 16.x version, including the latest Scala plugin. Older versions have trouble dealing with scala code particularly some of the code in Spark. Newer versions have trouble running tests with gradle import since they do not honour the build output directory as set in gradle. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via JAVA_HOME).
 
-* Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase `-Xmx` option to be something like *-Xmx2g* for comfortable use.
+- Increase the `Xmx` to 2g or more (4g, if possible) in the **IDEA global vmoptions** (in product bin directory, files named **idea64.vmoptions** for 64-bit and **idea.vmoptions** for 32-bit).
 
-* Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Clear the **Create separate module per source set** option, while other options can continue with the default . Click **Next** in the following screens.<br/>
+- If using Java 8 release 144 or later, also add **-Djdk.util.zip.ensureTrailingSlash=false** to the **global vmoptions** file to fix an [IDEA issue](https://intellij-support.jetbrains.com/hc/en-us/community/posts/115000754864--SOLVED-No-default-file-and-code-templates).
+
+* Increase the available JVM heap size for IDEA. Open **bin/idea64.vmoptions** (assuming 64-bit JVM) and increase `-Xmx` option to be something like **-Xmx2g** for comfortable use.
+
+* Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Click Next in the following screen. Clear the **Create separate module per source set** option, while other options can continue with the default. Click **Next** in the following screens.<br/>
     
 	!!! Note
 		
@@ -152,6 +156,17 @@ To import into IntelliJ IDEA:
 * Test the full build.
 
 * For JUnit tests configuration also append **/build-artifacts** to the working directory. That is, open **Run> Edit Configurations**, expand **Defaults** and select **JUnit**, the working directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise, append **build-artifacts** to working directory for ScalaTest. Without this, all intermediate log and other files pollute the source tree and will have to be cleaned manually.
+
+* If you see the following error while building the project, open module settings, select the module **snappy-cluster_2.11**, go to its **Dependencies** tab and ensure that **snappy-spark-unsafe_2.11** comes before **spark-unsafe** or just find **snappy-spark-unsafe_2.11** and move it to top.
+
+```pre
+Error:(236, 18) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+if (source.getByte(i) == first && matchAt(source, target, i)) return true
+Error:(233, 24) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+val first = target.getByte(0)
+```
+
+Even with above, running unit tests in IDEA may result in more runtime errors due to unexpected slf4j versions. A more comprehensive way to correct, both the compilation and unit test problems in IDEA, is to update the snappy-cluster or for whichever module unit tests are to be run and have the **TEST** imports at the end. The easiest way to do that is to close IDEA, open the module IML file (.idea/modules/cluster/snappy-cluster_2.11.iml in this case) in an editor. Search for **scope="TEST"** and move all those lines to the bottom just before `</component>` close tag.
 
 ## Running a ScalaTest/JUnit
 
