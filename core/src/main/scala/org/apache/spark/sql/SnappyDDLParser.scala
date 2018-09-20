@@ -24,10 +24,17 @@ import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
 
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
+import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
+import org.parboiled2._
+import shapeless.{::, HNil}
 
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
@@ -48,13 +55,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import org.parboiled2._
-import shapeless.{::, HNil}
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
-import scala.util.control.NonFatal
-
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -163,6 +163,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def LIST: Rule0 = rule { keyword(Consts.LIST) }
+  final def MEMBERS: Rule0 = rule { keyword(Consts.MEMBERS) }
   final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
@@ -230,7 +231,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def SETS: Rule0 = rule { keyword(Consts.SETS) }
   final def LATERAL: Rule0 = rule { keyword(Consts.LATERAL) }
 
-  // DDLs, SET, SHOW etc
+  // DDLs, SET etc
 
   final type TableEnd = (Option[String], Option[Map[String, String]],
       Option[LogicalPlan])
@@ -644,17 +645,19 @@ abstract class SnappyDDLParser(session: SparkSession)
    *   column_type,comment
    */
   protected def describe: Rule1[LogicalPlan] = rule {
-    (DESCRIBE | DESC) ~ (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
-        ((extended: Any, tableIdent: TableIdentifier) =>
-          DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-              .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)) |
-    (DESCRIBE | DESC) ~ FUNCTION ~ (EXTENDED ~ push(true)).? ~
-        functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
-      DescribeFunctionCommand(name,
-        extended.asInstanceOf[Option[Boolean]].isDefined)) |
-    (DESCRIBE | DESC) ~ SCHEMA ~ (EXTENDED ~ push(true)).? ~ identifier ~>
-        ((extended: Any, name: String) =>
-          DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined))
+    (DESCRIBE | DESC) ~ (
+        FUNCTION ~ (EXTENDED ~ push(true)).? ~
+            functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
+          DescribeFunctionCommand(name,
+            extended.asInstanceOf[Option[Boolean]].isDefined)) |
+        SCHEMA ~ (EXTENDED ~ push(true)).? ~ identifier ~>
+            ((extended: Any, name: String) =>
+              DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined)) |
+        (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
+            ((extended: Any, tableIdent: TableIdentifier) =>
+              DescribeTableCommand(tableIdent, Map.empty[String, String], extended
+                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
+    )
   }
 
   protected def refreshTable: Rule1[LogicalPlan] = rule {
@@ -697,50 +700,6 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def reset: Rule1[LogicalPlan] = rule {
     RESET ~> { () => ResetCommand }
-  }
-
-  // It can be the following patterns:
-  // SHOW TABLES IN schema;
-  // SHOW DATABASES;
-  // SHOW COLUMNS IN table;
-  // SHOW TBLPROPERTIES table;
-  // SHOW FUNCTIONS;
-  // SHOW FUNCTIONS mydb.func1;
-  // SHOW FUNCTIONS func1;
-  // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
-  protected def show: Rule1[LogicalPlan] = rule {
-    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
-        ((ident: Any, pat: Any) =>
-          ShowTablesCommand(ident.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
-    SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
-      ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
-    SHOW ~ COLUMN ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
-        ((table: TableIdentifier, db: Any) =>
-          ShowColumnsCommand(db.asInstanceOf[Option[String]], table)) |
-    SHOW ~ TBLPROPERTIES ~ tableIdentifier ~ ('(' ~ ws ~ optionKey ~ ')' ~ ws).? ~>
-        ((table: TableIdentifier, propertyKey: Any) =>
-          ShowTablePropertiesCommand(table, propertyKey.asInstanceOf[Option[String]])) |
-    SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ (LIKE.? ~
-        (functionIdentifier | stringLiteral)).? ~> { (id: Any, nameOrPat: Any) =>
-      val (user, system) = id.asInstanceOf[Option[String]]
-          .map(_.toLowerCase) match {
-        case None | Some("all") => (true, true)
-        case Some("system") => (false, true)
-        case Some("user") => (true, false)
-        case Some(x) =>
-          throw new ParseException(s"SHOW $x FUNCTIONS not supported")
-      }
-      nameOrPat match {
-        case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
-          name.database, Some(name.funcName), user, system)
-        case Some(pat: String) => ShowFunctionsCommand(
-          None, Some(pat), user, system)
-        case None => ShowFunctionsCommand(None, None, user, system)
-        case _ => throw new ParseException(
-          s"SHOW FUNCTIONS $nameOrPat unexpected")
-      }
-    } |
-    SHOW ~ CREATE ~ TABLE ~ tableIdentifier ~> ShowCreateTableCommand
   }
 
   // helper non-terminals
@@ -827,7 +786,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     createView | createTempViewUsing | dropView |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show
+    createIndex | dropIndex | createFunction | dropFunction | grantRevoke
   }
 
   protected def query: Rule1[LogicalPlan]

@@ -450,6 +450,7 @@ object SnappyParserConsts {
   final val LEVEL: Keyword = nonReservedKeyword("level")
   final val LIMIT: Keyword = nonReservedKeyword("limit")
   final val LIST: Keyword = nonReservedKeyword("list")
+  final val MEMBERS: Keyword = nonReservedKeyword("members")
   final val MINUS: Keyword = nonReservedKeyword("minus")
   final val NATURAL: Keyword = nonReservedKeyword("natural")
   final val NULLS: Keyword = nonReservedKeyword("nulls")
