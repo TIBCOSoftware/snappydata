@@ -21,7 +21,7 @@ import io.snappydata.SnappyFunSuite
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.streaming.{Duration, Milliseconds, SnappyStreamingContext}
+import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -37,7 +37,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
 
   val session = snc
 
-  def batchDuration: Duration = Milliseconds(500)
+  def batchDuration: Duration = Seconds(1)
 
   def creatingFunc(): SnappyStreamingContext = {
     val context = new SnappyStreamingContext(sc, batchDuration)
@@ -84,6 +84,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
       .foreachDataFrame(_.write.insertInto("slidingWin"))
 
     ssnc.start()
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
 
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       val defaultCnt = ssnc.sql("select * from defaultWin").count
@@ -98,6 +99,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.dropTable("defaultWin", ifExists = true)
     snc.dropTable("tumblingWin", ifExists = true)
     snc.dropTable("slidingWin", ifExists = true)
+
   }
 
   test("stream to stream and stream to table join") {
@@ -121,7 +123,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.dropTable("streamJoinResult", ifExists = true)
     snc.createTable("streamJoinResult", "column", stream2.schema, empty)
     val streamToStream = ssnc.registerCQ("SELECT t1.id, t2.text FROM " +
-      "tweetStream1 window (duration 500 milliseconds, slide 500 milliseconds) t1 " +
+      "tweetStream1 window (duration 1 seconds, slide 1 seconds) t1 " +
       "JOIN tweetStream2 t2 ON t1.id = t2.id ")
     streamToStream.foreachDataFrame(_.write.insertInto("streamJoinResult"))
 
@@ -130,13 +132,14 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.createDataFrame(Seq(Tweet(5, "Text5"), Tweet(15, "Text10"), Tweet(25, "Text25")))
       .write.insertInto("refTable")
     val streamToTable = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
-      "(duration 500 milliseconds, slide 500 milliseconds) " +
+      "(duration 1 seconds, slide 1 seconds) " +
       "t1 JOIN refTable t2 ON t1.id = t2.id")
     snc.dropTable("tableJoinResult", ifExists = true)
     snc.createTable("tableJoinResult", "column", stream1.schema, empty)
     streamToTable.foreachDataFrame(_.write.insertInto("tableJoinResult"))
 
     ssnc.start()
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       var actual = ssnc.sql("select id from totalRows").collect() map (_.getInt(0))
       assert(actual.length === 30)
@@ -158,7 +161,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.dropTable("tableJoinResult", ifExists = true)
   }
 
-  ignore("avoid shuffle reuse in CQs") {
+  test("avoid shuffle reuse in CQs") {
     val queue = new scala.collection.mutable.Queue[RDD[Tweet]]
     for (i <- 1 until 31 by 10) {
       queue.enqueue(sc.parallelize(i to i + 9).map(i => Tweet(i, s"Text$i")))
@@ -168,7 +171,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
       " tweetStream window (duration 1 seconds, slide 1 seconds)" +
       " where text like '%7%' order by text")
     val result = new scala.collection.mutable.ArrayBuffer[String]()
-    ssnc.start()
+
     cqResults.foreachDataFrame {
       _.collect().foreach { row =>
         result.synchronized {
@@ -176,6 +179,10 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
         }
       }
     }
+
+    ssnc.start()
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
+
     val expected = Seq("Text7", "Text17", "Text27")
     eventually(timeout(5000 milliseconds), interval(200 milliseconds)) {
       assert(result.synchronized {
@@ -184,7 +191,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     }
   }
 
-  ignore("stream to big table join CQ using SnappyHashJoin") {
+  test("stream to big table join CQ using SnappyHashJoin") {
     val queue = new scala.collection.mutable.Queue[RDD[Tweet]]
     for (i <- 1 until 31 by 10) {
       queue.enqueue(sc.parallelize(i to i + 9).map(i => Tweet(i, s"Text$i")))
@@ -197,17 +204,22 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.createDataFrame(Seq(Tweet(5, "Text5"), Tweet(15, "Text10"), Tweet(25, "Text25")))
       .write.insertInto("refTable")
     import session.implicits._
-    snc.sparkContext.range(1, 1000000).map(l => (l, l.toString))
+    snc.sparkContext.range(100, 1000000).map(l => (l, l.toString))
       .toDF("id", "text").write.insertInto("refTable")
 
     val streamToBigTable = ssnc.registerCQ("SELECT t1.id, t2.text FROM tweetStream" +
-      " window (duration 500 milliseconds, slide 500 milliseconds) t1 " +
+      " window (duration 1 seconds, slide 1 seconds) t1 " +
       " JOIN refTable t2 ON t1.id = t2.id")
+
     snc.dropTable("tableJoinResult", ifExists = true)
     snc.createTable("tableJoinResult", "column", stream.schema, empty)
     streamToBigTable.foreachDataFrame(_.write.insertInto("tableJoinResult"))
-    eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
-      val expected = Seq(5, 15, 25)
+
+    ssnc.start
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
+
+    eventually(timeout(200000.milliseconds), interval(1000.milliseconds)) {
+      val expected = Seq(5)
       val actual = ssnc.sql("select id from tableJoinResult").collect() map (_.getInt(0))
       expected.foreach(v => assert(actual.contains(v)))
       assert(expected.length == actual.length)
@@ -215,7 +227,8 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.dropTable("refTable", ifExists = true)
     snc.dropTable("tableJoinResult", ifExists = true)
   }
-  ignore("stream creation using Product or schema") {
+
+  test("stream creation using Product or schema") {
     val queue1 = new scala.collection.mutable.Queue[RDD[Row]]
     for (i <- 1 until 17 by 4) {
       queue1.enqueue(sc.parallelize(i to i + 3).map(i => Row(i, s"Text$i")))
@@ -227,7 +240,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     rowStream.foreachDataFrame(df => assert(df.count == 4))
 
     val queue2 = new scala.collection.mutable.Queue[RDD[Tweet]]
-    for (i <- 1 until 4) {
+    for (i <- 1 until 5) {
       queue2.enqueue(sc.parallelize(i to i).map(i => Tweet(i, s"Text$i")))
     }
     val tweetStream = ssnc.createSchemaDStream(ssnc.queueStream[Tweet](queue2))
