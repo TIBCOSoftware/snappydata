@@ -652,7 +652,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
       DescribeFunctionCommand(name,
         extended.asInstanceOf[Option[Boolean]].isDefined)) |
-    (DESCRIBE | DESC) ~ SCHEMAS ~ (EXTENDED ~ push(true)).? ~ identifier ~>
+    (DESCRIBE | DESC) ~ SCHEMA ~ (EXTENDED ~ push(true)).? ~ identifier ~>
         ((extended: Any, name: String) =>
           DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined))
   }
