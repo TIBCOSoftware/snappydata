@@ -61,11 +61,11 @@ deploy package <name> ‘packages’ [ repos ‘repositories’ ] [ path 'some p
 deploy package spark_deep_learning_0_3_0 databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11 /home/snappydata/work
 ```
 
+*	Deploy packages from a non-default repository.
+
 ```pre
 deploy package spark_redshift_300 com.databricks:spark-redshift_2.10:3.0.0-preview1 /home/snappydata/work
 ```
-
-*	Deploy packages from a non-default repository.	
 
 <a id= deployjars> </a>
 ## Deploying Jars in SnappyData
@@ -116,6 +116,9 @@ You can remove the deployed jars with the **undeploy** command. This command rem
 
 ### Syntax for Removing Deployed Jars
 
+```pre
+undeploy <name>
+```
 
 !!!Note
 	The removal is only captured when you use the **undeploy** command,  the jars are removed only when the system restarts.
