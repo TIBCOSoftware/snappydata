@@ -12,6 +12,8 @@ The following topics are covered in this section:
 
 * [Recovering from disk full errors](recovering_from_disk_full_errors.md)
 
+* [Resolving Catalog Inconsistency Issues](catalog_inconsistency.md)
+
 * [Collecting logs, stats and dumps using the collect-debug-artifacts script](collect_debug_artifacts.md)
 
-<!-- [Troubleshooting Error Messages](troubleshooting_error_messages.md) -->
+*	[Troubleshooting Error Messages](troubleshooting_error_messages.md)

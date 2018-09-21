@@ -1,4 +1,4 @@
-# Using the SnappyData CDC (Change Data Capture) Connector
+# Using the SnappyData Change Data Capture (CDC) Connector
 
 <ent>This feature is available only in the Enterprise version of SnappyData.</ent>
 
@@ -8,7 +8,7 @@ The CDC technology is used in a database to track changed data so that the ident
 A CDC enabled system (SQL database) automatically captures changes from the source table, these changes are then updated on the target system (SnappyData tables).</br>
 It provides an efficient framework which allows users to capture *individual data changes* like insert, update, and delete in the source tables (instead of dealing with the entire data), and apply them to the SnappyData tables to keep both the source and target tables in sync.
 
-!!! Info:
+!!! Info
 	Spark structured streaming and SnappyData mutable APIs are used to keep the source and target tables in sync. For writing a Spark structured streaming application, refer to the Spark documentation.
 
 ![CDC Workflow](../Images/cdc_tables.png)
@@ -116,7 +116,7 @@ Optionally, you can use any Spark API to transform your data obtained from the s
 
 The sample usage can be as follows:
 
-```no-highlight
+```pre
 Dataset<Row> ds = reader.load();
 ds.filter(<filter_condition>)
 ```
@@ -125,7 +125,7 @@ ds.filter(<filter_condition>)
 
 To write into SnappyData tables you need to have a StreamWriter as follows:
 
-```no-highlight
+```pre
 ds.writeStream()
         .trigger(ProcessingTime.create(10, TimeUnit.SECONDS))
         .format("snappystore")
@@ -148,14 +148,14 @@ The **sink** option is mandatory for SnappyStore sink. This option is required t
 
 The above trait contains a single method, which user needs to implement. A user can use SnappyData mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.
 
-```no-highlight
+```pre
     def process(snappySession: SnappySession, sinkProps: Properties,
         batchId: Long, df: Dataset[Row]): Unit
 ```
 
 The following examples illustrates how you can write into a [SnappyData table](http://snappydatainc.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
 
-```no-highlight
+```pre
 package io.snappydata.app;
 
 import java.util.List;
@@ -227,7 +227,7 @@ public class ProcessEvents implements SnappyStreamSink {
 
 		CREATE TABLE <table_name> USING column OPTIONS(partition_by '<column_name>', buckets '<num_partitions>',key_columns '<primary_key>') AS (SELECT * FROM from external table);
 
-!!!Note:
+!!! Note
 
 	- Writing data from different tables to a single table is currently not supported as the schema for incoming data frame cannot be changed. 
 

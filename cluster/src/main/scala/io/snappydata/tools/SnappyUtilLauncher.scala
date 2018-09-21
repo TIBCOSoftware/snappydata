@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
 import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
 import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
+import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 
 /**
  * Launcher class encompassing snappy processes command lines.
@@ -102,7 +103,7 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 }
 
 
-object SnappyUtilLauncher {
+object SnappyUtilLauncher extends StoreCallback {
 
   init()
 

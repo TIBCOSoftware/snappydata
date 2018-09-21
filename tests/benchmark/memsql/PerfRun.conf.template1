@@ -1,0 +1,29 @@
+queries=1,2,3,4,5,6,7,8,9,10,12,13,14,15,16,18,19,20,22,17,21,11
+#,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,20,22
+
+aggregator=10.1.0.4
+port=3306
+
+dataSize=1GB
+
+dataDir=/data1/users/perfuser/TPCH_$dataSize
+
+outputLocation=/data1/users/perfuser/RESULTS/TPCH_$dataSize/MEMSQL
+
+TPCHJar=/data1/users/perfuser/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.2-SNAPSHOT-tests.jar
+
+mysqlConnectorJar=/data1/users/perfuser/mysql-connector-java-5.1.45/mysql-connector-java-5.1.45-bin.jar
+
+queryPlan=false
+
+isDynamic=true
+
+#Whether to collect results.For performance testing this should be false.
+ResultCollection=false
+
+#warmUpIterations
+WarmupRuns=3
+#Actual runs whose average will be taken and repordted as performance
+AverageRuns=4
+
+

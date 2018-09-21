@@ -22,7 +22,6 @@ import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
-import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.{DeleteFromTable, PutIntoTable}
 import org.apache.spark.{Partition, TaskContext}
 
@@ -78,7 +77,7 @@ object snappy extends Serializable {
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
       new MapPartitionsPreserveRDD[U, T](rdd,
-        (context, part, iter) => iter.map(cleanF))
+        (_, _, iter) => iter.map(cleanF))
     }
 
     /**
@@ -94,8 +93,19 @@ object snappy extends Serializable {
         f: Iterator[T] => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+      new MapPartitionsPreserveRDD(rdd, (_, _,
           itr: Iterator[T]) => cleanedF(itr), preservesPartitioning)
+    }
+
+    /**
+     * Like [[mapPartitionsPreserve]] but also skips closure cleaning like
+     * Spark's mapPartitionsInternal.
+     */
+    private[spark] def mapPartitionsPreserveInternal[U: ClassTag](
+        f: Iterator[T] => Iterator[U],
+        preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
+      new MapPartitionsPreserveRDD(rdd, (_, _, itr: Iterator[T]) => f(itr),
+        preservesPartitioning)
     }
 
     /**
@@ -112,7 +122,7 @@ object snappy extends Serializable {
         f: (Int, Iterator[T]) => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+      new MapPartitionsPreserveRDD(rdd, (_, part: Partition,
           itr: Iterator[T]) => cleanedF(part.index, itr), preservesPartitioning)
     }
 
@@ -156,7 +166,7 @@ object snappy extends Serializable {
   private[this] val parColsMethod = classOf[DataFrameWriter[_]]
       .getDeclaredMethods.find(_.getName.contains("$normalizedParCols"))
       .getOrElse(sys.error("Failed to obtain method  " +
-      "normalizedParCols from DataFrameWriter"))
+          "normalizedParCols from DataFrameWriter"))
 
   dfField.setAccessible(true)
   parColsMethod.setAccessible(true)

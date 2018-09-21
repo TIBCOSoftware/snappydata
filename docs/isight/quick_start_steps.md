@@ -127,7 +127,7 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 5. On the **Review** page, verify the details and click **Create** to create a stack.
 
-	!!! Note: 
+	!!! Note
     	This operation may take a few minutes to complete.
 
 6. The next page lists the existing stacks. Click **Refresh** to view the updated list and the status of the stack creation.
@@ -138,7 +138,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 7. Click on the **Outputs** tab, to view the links (URL) required for launching Apache Zeppelin, which provides web-based notebooks for data exploration. <br>
 	![Public IP](../Images/aws_links.png)
 
-	!!! Note: 
+	!!! Note
     	If the status of the stack displays **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common problems that might have caused the failure are:
 
 		* **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
@@ -147,7 +147,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 		* **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*
 
-!!! Warning: 
+!!! Warning
 	To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
 
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
@@ -157,7 +157,7 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 
 SnappyData provides a script (`snappy-ec2`) that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2).
 
-The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also from the latest [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases). The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
+The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also on the [Release page](https://github.com/SnappyDataInc/snappy-cloud-tools/releases). The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
 
 For more information on setting up the cluster using the EC2 script, refer to [Using SnappyData EC2 scripts](../install/setting_up_cluster_on_amazon_web_services.md#EC2).
 
@@ -183,7 +183,7 @@ SnappyData provides you with predefined buckets which contain datasets. When dat
 
 To define a table that references the data in AWS S3, create a paragraph in the following format:
 
-```
+```pre
 %sql
 DROP TABLE IF EXISTS <table_name> ;
 CREATE EXTERNAL TABLE <table_name> USING parquet OPTIONS(path 's3a://<AWS_ACCESS_KEY_ID>:<AWS_SECRET_ACCESS_KEY>@<bucket_Name>/<folder_name>');
@@ -193,10 +193,10 @@ The values are:
 
 **Property** | **Description/Value**
 ---------------|-----------------------------
-```<table_name>``` |The name of the table
-```<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID> ```| Security credentials used to authenticate and authorize calls that you make to AWS. 
-```<bucket_Name> ```| The name of the bucket where the folder is located. Default value: zeppelindemo 
-```<folder_name>``` | The folder name where the data is stored. Default value: nytaxifaredata 
+`<table_name>` |The name of the table
+`<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID> `| Security credentials used to authenticate and authorize calls that you make to AWS. 
+`<bucket_Name> `| The name of the bucket where the folder is located. Default value: zeppelindemo 
+`<folder_name>` | The folder name where the data is stored. Default value: nytaxifaredata 
 
 <a id="LoggingZeppelin"></a>
 ## Using Apache Zeppelin
@@ -225,7 +225,7 @@ Connecting the SnappyData Interpreter to the SnappyData cluster is represented i
 SnappyData Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.
 
-!!! Note:
+!!! Note
     	*	The SnappyData Interpreter provides a basic auto-completion functionality. Press (Ctrl+.) on the keyboard to view a list of suggestions.
 
         * 	It is recommended that you use the SQL interpreter to run queries on the SnappyData cluster, as an out of memory error may be reported with running the Scala interpreter. 
@@ -243,7 +243,7 @@ SnappyData provides a list of connection-specific SQL properties that can be app
 
 In the following example, `spark.sql.shuffle.partitions` allows you to specify the number of partitions to be used for this query:
 
-```
+```pre
 %sql
 set spark.sql.shuffle.partitions=6; 
 select medallion,avg(trip_distance) as avgTripDist from nyctaxi group by medallion order by medallion desc limit 100 with error
@@ -254,13 +254,13 @@ In this case, the query is first executed on the sample table and the approximat
 
 In the following example, you can see that the query is first executed on the sample table, and the time required to execute the query is displayed. 
 At the same time, the query is executed on the base table, and the total time required to execute the query on the base table is displayed.
-```
+```pre
 %sql show-instant-results-first
 select avg(trip_time_in_secs/60) tripTime, hour(pickup_datetime), count(*) howManyTrips, absolute_error(tripTime) from nyctaxi where pickup_latitude < 40.767588 and pickup_latitude > 40.749775 and pickup_longitude > -74.001632 and  pickup_longitude < -73.974595 and dropoff_latitude > 40.716800 and  dropoff_latitude <  40.717776 and dropoff_longitude >  -74.017682 and dropoff_longitude < -74.000945 group by hour(pickup_datetime);
 ```
 ![Example](../Images/DirectivesinApacheZeppelin.png)
 
-!!! Note: 
+!!! Note
 	This directive works only for the SQL interpreter and an error may be displayed for the Scala interpreter.
 
 ## Scala Interpreter

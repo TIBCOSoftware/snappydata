@@ -16,7 +16,8 @@ Spark executors are dynamically launched when the first Spark Job arrives.
 In this mode, one can write Spark programs using jobs. For more details, refer to the [SnappyData Jobs](../programming_guide/snappydata_jobs.md) section.
 
 **Example: Submit a Spark Job to the SnappyData Cluster**
-```
+
+```pre
 ./bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 ```
 

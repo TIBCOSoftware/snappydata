@@ -23,6 +23,7 @@ import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -155,12 +156,12 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           memberStats = new MemberStatistics(memMap)
           if (dssUUID != null) {
             members.put(dssUUID.toString, memberStats)
-          } else {
-            members.put(id, memberStats)
           }
         } else {
           memberStats.updateMemberStatistics(memMap)
-          members.put(dssUUID.toString, memberStats)
+          if (dssUUID != null) {
+            members.put(dssUUID.toString, memberStats)
+          }
         }
 
         memberStats.setStatus("Running")
@@ -181,8 +182,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
+    var resultObtained: Boolean = false
     try {
       if (dataServers != null && dataServers.size() > 0) {
         result = FunctionService.onMembers(dataServers)
@@ -190,36 +191,66 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             .execute(SnappyRegionStatsCollectorFunction.ID).getResult(5, TimeUnit.SECONDS).
             asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
             .asScala
+        resultObtained = true
       }
     }
     catch {
-      case NonFatal(e) => log.warn(e.getMessage, e)
-    }
-
-    try {
-      // External Tables
-      val hiveTables: java.util.List[ExternalTableMetaData] =
-        Misc.getMemStore.getExternalCatalog.getHiveTables(true)
-      externalTables = hiveTables.asScala.collect {
-        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
-          new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-            table.externalStore, table.dataSourcePath, table.driverClass)
+      case NonFatal(e) => {
+        log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
+        log.debug(e.getMessage, e)
       }
     }
-    catch {
-      case NonFatal(e) => log.warn(e.getMessage, e)
+
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
+
+    val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
+      try {
+        // External Tables
+        hiveTables.collect {
+          case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
+              table.externalStore, table.dataSourcePath, table.driverClass)
+          }
+        }
+      }
+      catch {
+        case NonFatal(e) => {
+          log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
+          log.debug(e.getMessage, e)
+          mutable.Buffer.empty[SnappyExternalTableStats]
+        }
+      }
     }
 
-    if(result.flatMap(_.getRegionStats.asScala).size == 0) {
-      // Return last updated tableSizeInfo
-      (tableSizeInfo.values.toSeq,
-       result.flatMap(_.getIndexStats.asScala),
-       externalTables)
-    } else {
+    if (resultObtained) {
       // Return updated tableSizeInfo
-      (result.flatMap(_.getRegionStats.asScala),
-       result.flatMap(_.getIndexStats.asScala),
-       externalTables)
+      // Map to hold hive table type against table names as keys
+      val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
+      hiveTables.foreach(ht => {
+        val key = ht.schema.toString.concat("." + ht.entityName)
+        tableTypesMap.put(key.toUpperCase, ht.tableType)
+      })
+
+      val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
+        val tableName = rs.getTableName
+        if (tableTypesMap.contains(tableName.toUpperCase)
+            && tableTypesMap.get(tableName.toUpperCase).get.equalsIgnoreCase("COLUMN")) {
+          rs.setColumnTable(true)
+        } else {
+          rs.setColumnTable(false)
+        }
+        rs
+      })
+
+      // Return updated details
+      (regionStats,
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
+    } else {
+      // Return last successfully updated tableSizeInfo
+      (tableSizeInfo.values.toSeq,
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
     }
   }
 

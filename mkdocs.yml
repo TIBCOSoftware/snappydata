@@ -1,4 +1,4 @@
-site_name: SnappyData Documentation
+site_name: SnappyData Documentation<br/><sub>v.1.0.2</sub>
 site_url: http://www.snappydata.io
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
@@ -13,19 +13,23 @@ pages:
 # - Introduction: snappyIntroduction.md
 - 'Getting Started in 5 minutes or Less': 'quickstart.md'
 - 'Getting Started in 5 minutes or Less': 
+#    - 'SnappyData Quick Start': 'quickstart/snappydataquick_start.md'
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
-    - 'Getting Started by Installing SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
-    - 'Getting Started with Docker Image': 'quickstart/getting_started_with_docker_image.md'
+    - 'Getting Started with SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
+    - 'Getting Started with SnappyData on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
+    - 'Getting Started with SnappyData on Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
-- 'Download and Install': 'install.md'
-- 'Download and Install':
-    - System Requirements: 'install/system_requirements.md'
-    - 'Install On-Premise': 'install/install_on_premise.md'
-    - 'Setting up Cluster on Amazon Web Services': 'install/setting_up_cluster_on_amazon_web_services.md'
+- 'Provisioning SnappyData': 'install.md'
+- 'Provisioning SnappyData':
+    - 'System Requirements': 'install/system_requirements.md'
+    - 'On-Premise': 'install/install_on_premise.md'
+    - 'Amazon Web Services (AWS)': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Kubernetes': 'kubernetes.md'
+    - 'Docker': 'quickstart/getting_started_with_docker_image.md'
     - 'Building from Source': 'install/building_from_source.md'
-    - 'Upgrade Instructions (1.0.0 to 1.0.1)': 'install/upgrade.md'
+    - 'Upgrade Instructions': 'install/upgrade.md'
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
@@ -71,7 +75,6 @@ pages:
 - 'Configuring the Cluster': 'configuration.md'
 - 'Configuring the Cluster':
     - 'Configuration': 'configuring_cluster/configuring_cluster.md'
-    - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
@@ -109,7 +112,7 @@ pages:
     - 'Memory Management': 'best_practices/memory_management.md'      
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Important Settings': 'best_practices/important_settings.md'
-    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'    
+    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'      
 - 'Synopsis Data Engine (SDE)': 'aqp.md'
 - 'Synopsis Data Engine (SDE)': 
     - 'Key Concepts': 'sde/key_concepts.md'
@@ -119,15 +122,11 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Using Database Connectors': 'connectors/connector.md'
-- 'Using Database Connectors':
-#    - 'How to Use the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
+- 'Working with External Data Sources': 'connectors/connector.md'
+- 'Working with External Data Sources':
+    - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
+    - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
-- 'Using SnappyData CloudBuilder': 'aqp_aws.md'
-- 'Using SnappyData CloudBuilder': 
-    - 'Key Components': 'isight/key_components.md'
-    - 'Quick Start Steps': 'isight/quick_start_steps.md'
-    - 'The Technology Powering SnappyData CloudBuilder': 'isight/the_technology_powering_isight_cloud.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
@@ -138,9 +137,13 @@ pages:
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
     - 'Launching the Cluster in Secure Mode': 'security/launching_the_cluster_in_secure_mode.md'
+    - 'Specifying Encrypted Passwords in Conf Files or in Client Connections': 'security/specify_encrypt_passwords_conf_client.md'
     - 'Authentication - Connecting to a Secure Cluster': 'security/authentication_connecting_to_a_secure_cluster.md'
     - 'Authorization': 'security/authorization.md'
+    - 'Implementing Row Level Security': 'security/row_level_security.md'
     - 'Configuring Network Encryption and Authentication using SSL': 'security/configuring_network_encryption_and_authentication_using_ssl.md'
+    - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
+    - 'Securing SnappyData Pulse UI Connection': 'configuring_cluster/securinguiconnection.md'
     - 'User Names for Authentication, Authorization, and Membership': 'security/user_names_for_authentication_authorization_and_membership.md'
 - 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
 - 'Evaluating Statistics for the System and Applications':
@@ -166,7 +169,7 @@ pages:
             - 'CREATE FUNCTION': 'reference/sql_reference/create-function.md'
             - 'CREATE INDEX': 'reference/sql_reference/create-index.md'
             - 'CREATE SCHEMA': 'reference/sql_reference/create-schema.md'
-            - 'CREATE SYNONYM': 'reference/sql_reference/create-synonym.md'
+#           - 'CREATE SYNONYM': 'reference/sql_reference/create-synonym.md'
             - 'CREATE STREAM TABLE': 'reference/sql_reference/create-stream-table.md'
             - 'CREATE SAMPLE TABLE': 'reference/sql_reference/create-sample-table.md'
             - 'CREATE TABLE': 'reference/sql_reference/create-table.md'
@@ -180,7 +183,12 @@ pages:
             - 'DROP INDEX': 'reference/sql_reference/drop-index.md'
             - 'DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE': 'reference/sql_reference/drop-table.md'
             - 'DROP SCHEMA': 'reference/sql_reference/drop-schema.md'
-            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
+#            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
+        - 'DEPLOY Statements': 'reference/sql_reference/deploy.md'
+        - 'DEPLOY Statements':
+            - 'DEPLOY PACKAGE': 'reference/sql_reference/deploy_package.md'
+            - 'DEPLOY JAR': 'reference/sql_reference/deploy_jar.md'
+            - 'UNDEPLOY': 'reference/sql_reference/undeploy.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
@@ -209,7 +217,8 @@ pages:
         - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
         - 'compact-all-disk-stores': 'reference/command_line_utilities/store-compact-all-disk-stores.md'
         - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
-#        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md' (to be confirmed later 1.0.2)
+        - 'validate-disk-store': 'reference/command_line_utilities/validate_diskstore.md' 
+        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md' 
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
         - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
@@ -287,12 +296,13 @@ pages:
     - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
-    - 'Member startup problems': 'troubleshooting/member_startup_problems.md'
+    - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
-    - 'Preventing disk full errors': 'troubleshooting/preventing_disk_full_errors.md'
-    - 'Recovering from disk full errors': 'troubleshooting/recovering_from_disk_full_errors.md'
-    - 'Collecting logs, stats and dumps using the collect-debug-artifacts script': 'troubleshooting/collect_debug_artifacts.md'
-    - 'Troubleshooting error messages': 'troubleshooting/troubleshooting_error_messages.md'  
+    - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
+    - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
+    - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
+    - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
+    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
 #- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
@@ -320,6 +330,6 @@ extra_css:
     - 'extra.css'
     
 markdown_extensions:
-    - markdown.extensions.admonition 
+    - admonition 
     
 copyright: Copyright &copy; 2018 SnappyData Inc.

@@ -8,7 +8,7 @@ An online backup saves the following:
 - Configuration files from the member startup.
 - A restore script (restore.sh) copies the files back to their original locations.
 
-!!! Note:
+!!! Note
 	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
 	- SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
 
@@ -55,7 +55,7 @@ You can use one of two formats:
 ## Backup Directory Structure and Contents
 The backup directory contains a backup of the persistent data.  Below is the structure of files and directories backed up in a distributed system:
 
-```no-highlight
+```pre
 2018-03-15-05-31-46:
 10_80_141_112_10715_ec_v0_7393 10_80_141_112_10962_v1_57099
 
@@ -77,7 +77,7 @@ GFXD-DD-DISKSTORE_76705038-10de-4b3e-955b-446546fe4036 GFXD-DEFAULT-DISKSTORE_15
 | Directory  | Contents                                                     |
 | ---------- | ------------------------------------------------------------ |
 | config     | For internal use                                             |
-| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using the [CREATE DISKSTORE](../reference/sql_reference/create-diskstore) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
+| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using [CREATE DISKSTORE](/reference/sql_reference/create-diskstore) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
 | user       | For internal use                                             |
 | README.txt | The file contains information about other files in a directory. |
 | restore.sh | Script that copies files back to their original locations.   |
@@ -114,7 +114,7 @@ To perform a full backup:
 
 If the operation is successful, you see a message like this:
 
-```no-highlight
+```pre
 The following disk stores were backed up:
 	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
 	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
@@ -136,13 +136,13 @@ If members are missing from the baseline directory because they were offline or 
 
 To perform an incremental backup, execute the backup command but specify the baseline directory as well as your incremental backup directory (both can be the same directory). </br>For example:
 
-```no-highlight
+```pre
 ./bin/snappy backup -baseline=<SnappyBackupLocation> <SnappyBackupLocation> -locators=<peer-discovery-address>
 ```
 
 The tool reports on the success of the operation. If the operation is successful, you see a message like this:
 
-```no-highlight
+```pre
 The following disk stores were backed up:
 	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
 	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]

@@ -21,15 +21,17 @@ import java.net.{URL, URLClassLoader}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
+
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
-import io.snappydata.impl.SnappyHiveCatalog
-import org.apache.hadoop.hive.conf.HiveConf
+import io.snappydata.impl.{SnappyHiveCatalog, SnappyHiveConf}
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars
 import org.apache.hadoop.util.VersionInfo
 import org.apache.log4j.LogManager
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.SparkPlan
@@ -133,7 +135,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
         val props = new Properties()
         props.setProperty("log4j.logger.DataNucleus.Datastore", "ERROR")
         props.setProperty("log4j.logger.DataNucleus.Query", "ERROR")
-        ClientSharedUtils.initLog4J(null, props, currentLevel)
+        ClientSharedUtils.initLog4j(null, props, currentLevel)
       })
       // wait for store hive client to initialize first
       val store = Misc.getMemStoreBootingNoThrow
@@ -150,7 +152,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
       hc
     } finally { // reset log config
       ifSmartConn(() => {
-        ClientSharedUtils.initLog4J(null, currentLevel)
+        ClientSharedUtils.initLog4j(null, currentLevel)
       })
     }
   }
@@ -165,12 +167,10 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
   private def newClient(): HiveClient = SnappyHiveCatalog.hiveClientSync.synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
-    // We instantiate a HiveConf here to read in the hive-site.xml file and
-    // then pass the options into the isolated client loader
-    val metadataConf = new HiveConf()
+    val metadataConf = new SnappyHiveConf
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
-        metadataConf.setBoolVar(HiveConf.ConfVars.METASTORE_AUTO_CREATE_SCHEMA, false)
+        metadataConf.setBoolVar(ConfVars.METASTORE_AUTO_CREATE_SCHEMA, false)
         metadataConf.set("datanucleus.generateSchema.database.mode", "none")
       case _ =>
     }
@@ -188,13 +188,13 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
           ";user=" + user.get
       logURL + ";password=" + password.get + ";"
     } else {
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+      metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
         SystemProperties.SNAPPY_HIVE_METASTORE)
       dbURL
     }
     logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
+    metadataConf.setVar(ConfVars.METASTORECONNECTURLKEY, secureDbURL)
+    metadataConf.setVar(ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
     val warehouse = SnappyHiveCatalog.initCommonHiveMetaStoreProperties(metadataConf)
     logInfo("Default warehouse location is " + warehouse)
@@ -304,7 +304,7 @@ object HiveClientUtil {
     // replay global sql commands
     if (ToolsCallbackInit.toolsCallback != null) {
       SnappyContext.getClusterMode(sparkContext) match {
-        case _: SnappyEmbeddedMode => {
+        case _: SnappyEmbeddedMode =>
           val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
           // logInfo(s"deploycmnds size = ${deployCmds.size}")
           // deployCmds.foreach(s => logDebug(s"s"))
@@ -315,14 +315,13 @@ object HiveClientUtil {
               val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
               val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
               val session = SparkSession.builder().getOrCreate()
-              DeployCommand(coordinate, null, repos, cache).run(session)
+              DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
             }
             else {
               // Jars we have
-              DeployJarCommand(null, cmdFields(0))
+              DeployJarCommand(null, cmdFields(0), restart = true)
             }
           })
-        }
         case _ => // Nothing
       }
     }

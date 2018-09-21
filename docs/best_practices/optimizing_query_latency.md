@@ -93,7 +93,7 @@ For example, setting EVICTION_BY to `LRUHEAPPERCENT` allows table data to be evi
 
 Refer to [CREATE TABLE](../reference/sql_reference/create-table.md) link to understand how to configure [OVERFLOW](../reference/sql_reference/create-table.md#overflow) and [EVICTION_BY](../reference/sql_reference/create-table.md#eviction-by) clauses.
 
-!!! Tip:
+!!! Tip
 	By default eviction is set to `overflow-to-disk`.
 
 ## Known Limitation

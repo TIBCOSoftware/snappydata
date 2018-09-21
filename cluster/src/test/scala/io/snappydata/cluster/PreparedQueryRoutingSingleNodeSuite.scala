@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -24,7 +24,7 @@ import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.sql.{ParseException, SnappyContext, SnappySession}
 
 class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -229,8 +229,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
     SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val tableName = "order_line_col"
     try {
-      val tableName = "order_line_col"
       snc.sql(s"create table $tableName (ol_int_id  integer," +
           s" ol_int2_id  integer, ol_str_id STRING) using column " +
           "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
@@ -241,6 +241,33 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       PreparedQueryRoutingSingleNodeSuite.insertRows(tableName, 1000, serverHostPort)
       query0(tableName, serverHostPort)
     } finally {
+      snc.sql(s"drop table $tableName")
+      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  test("test Metadata for Prepared Statement via JDBC") {
+    SnappySession.getPlanCache.invalidateAll()
+    assert(SnappySession.getPlanCache.asMap().size() == 0)
+    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    val tableName = "order_line_col"
+    try {
+      snc.sql(s"create table $tableName (ol_int_id  integer," +
+          s" ol_int2_id  integer, ol_str_id STRING) using column " +
+          "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
+
+      val serverHostPort = TestUtil.startNetServer()
+      // println("network server started")
+      PreparedQueryRoutingSingleNodeSuite.insertRows(tableName, 100, serverHostPort)
+      query6(tableName, serverHostPort)
+      query7(tableName, serverHostPort)
+      query8(tableName, serverHostPort)
+      query9(tableName, serverHostPort)
+      query10(tableName, serverHostPort)
+      query11(tableName, serverHostPort)
+      query12(tableName, serverHostPort)
+    } finally {
+      snc.sql(s"drop table $tableName")
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
     }
   }
@@ -422,6 +449,299 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query5-2", prepStatement.executeQuery,
         Array(600, 700, 800), 4)
 
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query6(tableName: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select count(ol_int_id) as a , sum(ol_int2_id) as b, ol_str_id as c " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" group by ol_str_id " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+
+      val rs: ResultSet = prepStatement.executeQuery
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+      assert(rs.getMetaData().getColumnCount() == 3)
+
+      var index = 0
+      while (rs.next()) {
+        val i = rs.getInt(1)
+        // val j = rs.getInt(2)
+        // val s = rs.getString(3)
+        // scalastyle:off println
+        // println(s"row($index) $i $j $s ")
+        // scalastyle:on println
+        index += 1
+      }
+      assert(index == 20)
+
+      // scalastyle:off println
+      // println(s"$qryName Number of rows read " + index)
+      // scalastyle:on println
+      rs.close()
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query7(tableName: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select count(ol_int_id) , sum(ol_int2_id), ol_str_id  " +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" group by ol_str_id " +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+
+      val rs: ResultSet = prepStatement.executeQuery
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+      assert(rs.getMetaData().getColumnCount() == 3)
+
+      var index = 0
+      while (rs.next()) {
+        val i = rs.getInt(1)
+        // val j = rs.getInt(2)
+        // val s = rs.getString(3)
+        // scalastyle:off println
+        // println(s"row($index) $i $j $s ")
+        // scalastyle:on println
+        index += 1
+      }
+      assert(index == 100)
+
+      // scalastyle:off println
+      // println(s"$qryName Number of rows read " + index)
+      // scalastyle:on println
+      rs.close()
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query8(tableName: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id as a, ol_int2_id as b, ol_int_id as c" +
+          s" from $tableName " +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+
+      val rs: ResultSet = prepStatement.executeQuery
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+      assert(rs.getMetaData().getColumnCount() == 3)
+
+      var index = 0
+      while (rs.next()) {
+        val i = rs.getInt(1)
+        // val j = rs.getInt(2)
+        // val s = rs.getString(3)
+        // scalastyle:off println
+        // println(s"row($index) $i $j $s ")
+        // scalastyle:on println
+        index += 1
+      }
+      assert(index == 100)
+
+      // scalastyle:off println
+      // println(s"$qryName Number of rows read " + index)
+      // scalastyle:on println
+      rs.close()
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query9(tableName: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id, ol_int2_id, ol_int_id" +
+          s" from $tableName " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+
+      val rs: ResultSet = prepStatement.executeQuery
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+      assert(rs.getMetaData().getColumnCount() == 3)
+
+      var index = 0
+      while (rs.next()) {
+        val i = rs.getInt(1)
+        // val j = rs.getInt(2)
+        // val s = rs.getString(3)
+        // scalastyle:off println
+        // println(s"row($index) $i $j $s ")
+        // scalastyle:on println
+        index += 1
+      }
+      assert(index == 20)
+
+      // scalastyle:off println
+      // println(s"$qryName Number of rows read " + index)
+      // scalastyle:on println
+      rs.close()
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query10(tableName: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select ol_int_id as a, ol_int2_id as b, ol_int_id as c" +
+          s" from $tableName " +
+          s" where ol_int_id < ? " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      prepStatement.setInt(1, 500)
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+
+      val rs: ResultSet = prepStatement.executeQuery
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+      assert(rs.getMetaData().getColumnCount() == 3)
+
+      var index = 0
+      while (rs.next()) {
+        val i = rs.getInt(1)
+        // val j = rs.getInt(2)
+        // val s = rs.getString(3)
+        // scalastyle:off println
+        // println(s"row($index) $i $j $s ")
+        // scalastyle:on println
+        index += 1
+      }
+      assert(index == 20)
+
+      // scalastyle:off println
+      // println(s"$qryName Number of rows read " + index)
+      // scalastyle:on println
+      rs.close()
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query11(tableName: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select count(distinct ol_int_id) , sum(ol_int2_id), ol_str_id  " +
+          s" from $tableName " +
+          s" group by ol_str_id " +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+
+      val rs: ResultSet = prepStatement.executeQuery
+      assert(prepStatement.getMetaData().getColumnCount() == 3)
+      assert(rs.getMetaData().getColumnCount() == 3)
+
+      var index = 0
+      while (rs.next()) {
+        val i = rs.getInt(1)
+        // val j = rs.getInt(2)
+        // val s = rs.getString(3)
+        // scalastyle:off println
+        // println(s"row($index) $i $j $s ")
+        // scalastyle:on println
+        index += 1
+      }
+      assert(index == 100)
+
+      // scalastyle:off println
+      // println(s"$qryName Number of rows read " + index)
+      // scalastyle:on println
+      rs.close()
+      // Thread.sleep(1000000)
+    } finally {
+      if (prepStatement != null) prepStatement.close()
+      conn.close()
+    }
+  }
+
+  def query12(tableName: String, serverHostPort: String): Unit = {
+    // sc.setLogLevel("TRACE")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    var prepStatement: java.sql.PreparedStatement = null
+    try {
+      val qry = s"select distinct(ol_int_id)  " +
+          s" from $tableName " +
+          s" limit 20" +
+          s""
+
+      prepStatement = conn.prepareStatement(qry)
+      assert(prepStatement.getMetaData().getColumnCount() == 1)
+
+      val rs: ResultSet = prepStatement.executeQuery
+      assert(prepStatement.getMetaData().getColumnCount() == 1)
+      assert(rs.getMetaData().getColumnCount() == 1)
+
+      var index = 0
+      while (rs.next()) {
+        val i = rs.getInt(1)
+        // val j = rs.getInt(2)
+        // val s = rs.getString(3)
+        // scalastyle:off println
+        // println(s"row($index) $i $j $s ")
+        // scalastyle:on println
+        index += 1
+      }
+      assert(index == 20)
+
+      // scalastyle:off println
+      // println(s"$qryName Number of rows read " + index)
+      // scalastyle:on println
+      rs.close()
       // Thread.sleep(1000000)
     } finally {
       if (prepStatement != null) prepStatement.close()
@@ -656,11 +976,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       close(prepStatement3)
 
       val prepStatement4 = conn.prepareStatement(s"select * from double_tab" +
-          s" where round(d, ?) < round(?, ?)")
+          s" where round(d, 2) < round(3.33, 2)")
       assert(cacheMap.size() == 0)
-      prepStatement4.setInt(1, 2)
-      prepStatement4.setDouble(2, 3.33)
-      prepStatement4.setInt(3, 2)
+
       update = prepStatement4.executeQuery()
       index = 0
       while (update.next()) {
@@ -701,9 +1019,40 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       assert(index == 1)
       assert(cacheMap.size() == 2)
       close(prepStatement5)
+      try {
+        val faultyPrepStatement = conn.prepareStatement(s"select * from double_tab" +
+            s" where round(d, ?) < round(?, ?)")
+        fail("PreparedStatement creation should have failed")
+      } catch {
+        case sqle: SQLException
+          if sqle.getMessage.indexOf("cannot have parameterized argument") != -1 =>
+        case x: Throwable => throw x
+      }
     } finally {
       conn.close()
     }
+  }
+
+  test("Test bug SNAP-2446") {
+    var conn: Connection = null
+    val ddlStr = s"create table MAP(MAP_CONNECTION_ID BIGINT NOT NULL," +
+        s" SOURCE_DATA_CONNECTION_CODE INT NOT NULL," +
+        s" DESTINATION_DATA_CONNECTION_CODE INT NOT NULL," +
+        s" ACTIVE_FLAG BOOLEAN, PRIMARY KEY(MAP_CONNECTION_ID)) USING ROW OPTIONS()"
+
+    snc.sql(ddlStr)
+    snc.sql(s"insert into MAP values (-28416, 19375, 424345, true)")
+    val serverHostPort = TestUtil.startNetServer()
+    conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort + "/route-query=false/")
+
+    val sqlText = s"SELECT DESTINATION_DATA_CONNECTION_CODE," +
+        "SOURCE_DATA_CONNECTION_CODE,ACTIVE_FLAG FROM MAP"
+
+    val rs2 = conn.createStatement().executeQuery(sqlText)
+    assert(rs2.next())
+    assert(rs2.getBoolean(3))
+    conn.close()
   }
 
   test("Test broadcast hash joins and scalar sub-queries") {

@@ -16,6 +16,8 @@ Depending on your preference you can try any of the following options:
 
 * [Getting started with Docker image](quickstart/getting_started_with_docker_image.md)
 
+* [Getting started with SnappyData on Kubernetes](quickstart/getting_started_on_kubernetes.md)
+
 This section contains instructions and examples using which, you can try out SnappyData in 5 minutes or less. 
 
 * [Using Spark Scala APIs](quickstart/using_spark_scala_apis.md)
@@ -24,5 +26,5 @@ This section contains instructions and examples using which, you can try out Sna
 
 * [Using SQL](quickstart/using_sql.md)
 
-!!! Note: 
+!!! Note
 	Support for Microsoft Azure will be provided in future releases.

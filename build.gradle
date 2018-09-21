@@ -71,7 +71,7 @@ allprojects {
   apply plugin: 'nebula.ospackage-base'
 
   group = 'io.snappydata'
-  version = '1.0.2-SNAPSHOT'
+  version = '1.0.2'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -106,7 +106,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.1'
+    snappySparkVersion = '2.1.1.3'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
@@ -121,9 +121,10 @@ allprojects {
     janinoVersion = '3.0.8'
     derbyVersion = '10.12.1.1'
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.2-SNAPSHOT'
+    snappyStoreVersion = '1.6.2'
     snappydataVersion = version
     pulseVersion = '1.5.1'
+    zeppelinInterpreterVersion = '0.7.3.2'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
@@ -132,7 +133,7 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.6'
+    sparkJobServerVersion = '0.6.2.7'
     kolobokeVersion = '1.0.0'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
@@ -737,7 +738,6 @@ task product(type: Zip) {
     if (hasGemFireConnectorProject){
        dependsOn ":gemfire-connector:product"
     }
-
   }
 
 
@@ -858,17 +858,47 @@ task product(type: Zip) {
         exclude '.git*'
       }
     }
-    if (isEnterpriseProduct && hasAqpProject) {
-      // copy enterprise shared libraries for optimized JNI calls
-      copy {
-        from aqpProject.projectDir.path + '/lib'
-        into "${snappyProductDir}/jars"
+    if (isEnterpriseProduct) {
+      if (hasAqpProject) {
+        // copy enterprise shared libraries for optimized JNI calls
+        copy {
+          from aqpProject.projectDir.path + '/lib'
+          into "${snappyProductDir}/jars"
+        }
+        copy {
+          from aqpProject.projectDir
+          into snappyProductDir
+          include 'NOTICE'
+          include '*EULA*'
+        }
       }
-      copy {
-        from aqpProject.projectDir
-        into snappyProductDir
-        include 'NOTICE'
-        include '*EULA*'
+
+      def jdbcConnectorProject = project(":snappy-jdbc-connector_${scalaBinaryVersion}")
+      def gemfireConnectorProject = project(":gemfire-connector")
+      def gfeConnectorProject = project(":gemfire-connector:connector_${scalaBinaryVersion}")
+      def gfeFunctionProject = project(":gemfire-connector:gfeFunctions")
+      if (hasJdbcConnectorProject) {
+        copy {
+          from jdbcConnectorProject.jar.destinationDir
+          into "${snappyProductDir}/connectors"
+        }
+      }
+      if (hasGemFireConnectorProject) {
+        copy {
+          from gfeConnectorProject.jar.destinationDir
+          into "${snappyProductDir}/connectors"
+          include "*.jar"
+        }
+        copy {
+          from gfeFunctionProject.jar.destinationDir
+          into "${snappyProductDir}/connectors"
+          include "*.jar"
+        }
+        copy {
+          from "${gemfireConnectorProject.projectDir}/examples/quickstart/data"
+          into "${snappyProductDir}/connectors"
+          include "persons.jar"
+        }
       }
     }
     copy {
@@ -897,10 +927,15 @@ task product(type: Zip) {
       from("${examplesProject.projectDir}/src")
       into "${snappyProductDir}/quickstart/src"
     }
-
     copy {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
+    }
+    def clientProject = project(':snappy-store:snappydata-store-client')
+    copy {
+      from clientProject.shadowJar.destinationDir
+      into "${snappyProductDir}/connectors"
+      include clientProject.shadowJar.archiveName
     }
   }
 }
@@ -962,6 +997,7 @@ buildRpm {
   requires('perl')
   requires('curl')
   dependsOn ':packageVSD'
+  dependsOn ':packageZeppelinInterpreter'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without_hadoop'
   }
@@ -976,6 +1012,7 @@ buildDeb {
   requires('curl')
   recommends('java8-sdk')
   dependsOn ':packageVSD'
+  dependsOn ':packageZeppelinInterpreter'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop'
   }
@@ -987,6 +1024,7 @@ distTar {
   dependsOn product
   // also package VSD
   dependsOn ':packageVSD'
+  dependsOn ':packageZeppelinInterpreter'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
@@ -997,6 +1035,7 @@ distZip {
   dependsOn product
   // also package VSD
   dependsOn ':packageVSD'
+  dependsOn ':packageZeppelinInterpreter'
   classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
@@ -1101,7 +1140,7 @@ task checkAll {
   if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (isEnterpriseProduct && hasGemFireConnectorProject) {
+  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject && isEnterpriseProduct) {
     dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
@@ -1137,6 +1176,34 @@ int getLast(includeTestFiles, pattern) {
     File f -> f.name.indexOf(pattern) >= 0
   }
 }
+
+task packageZeppelinInterpreter { doLast {
+  String zeppelinInterpreterJarName = "snappydata-zeppelin_${scalaBinaryVersion}-${zeppelinInterpreterVersion}.jar"
+  String zeppelinInterpreterDir = System.env.ZEPPELIN_INTERPRETER_DIR
+
+  if (zeppelinInterpreterDir == null || zeppelinInterpreterDir.length() == 0) {
+    zeppelinInterpreterDir = "${projectDir}/../zeppelin-interpreter"
+  }
+
+  String zeppelinInterpreterLibDir = "${zeppelinInterpreterDir}/build-artifacts/libs"
+  if (file(zeppelinInterpreterDir).canWrite()) {
+    exec {
+      executable "${zeppelinInterpreterDir}/gradlew"
+      workingDir = zeppelinInterpreterDir
+      args 'clean', 'product', 'distTar'
+    }
+    println ''
+    println "Copying Zeppelin Interpreter jar from ${zeppelinInterpreterLibDir} to ${snappyProductDir}/jars"
+    println ''
+    copy {
+      from "${zeppelinInterpreterLibDir}"
+      into "${snappyProductDir}/jars"
+      include "${zeppelinInterpreterJarName}"
+    }
+  } else {
+    println "Skipping including Zeppelin Interpreter jar due to unwritable ${zeppelinInterpreterDir}"
+  }
+} }
 
 task packagePulse { doLast {
   String pulseWarName = "pulse-${pulseVersion}.war"
@@ -1199,6 +1266,7 @@ task sparkPackage {
 
 packagePulse.mustRunAfter product
 packageVSD.mustRunAfter product
+packageZeppelinInterpreter.mustRunAfter product
 
 distTar.mustRunAfter clean, cleanAll, product
 distZip.mustRunAfter clean, cleanAll, product

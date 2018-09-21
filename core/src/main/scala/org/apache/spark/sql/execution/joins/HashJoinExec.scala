@@ -69,6 +69,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   @transient private var hashMapTerm: String = _
   @transient private var mapDataTerm: String = _
   @transient private var maskTerm: String = _
+  @transient private var initMap: String = _
+  @transient private var initMapCode: String = _
+  @transient private var mapSize: String = _
   @transient private var keyIsUniqueTerm: String = _
   @transient private var numRowsTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
@@ -203,12 +206,13 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
-        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
-        streamRDDs
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
+          preferredLocations) +: streamRDDs.tail
       }
       (streamPlanRDDs, buildRDDs)
     } else {
@@ -230,7 +234,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         (buildRDDs, buildRDDs.head.getNumPartitions)
       } else {
         // Equal partitions
-        ((streamRDDs ++ buildRDDs), streamRDDs.head.getNumPartitions)
+        (streamRDDs ++ buildRDDs, streamRDDs.head.getNumPartitions)
       }
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
@@ -247,17 +251,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
-        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd, buildRDDs,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs.map(rdd => new DelegateRDD[InternalRow](
-          rdd.sparkContext, rdd, preferredLocations))
+          rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, preferredLocations)))
+        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
     }
   }
 
@@ -274,10 +278,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
-        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs
       }
@@ -309,17 +313,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
         // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
-        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd, buildRDDs,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
             streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-              rdd.sparkContext, rdd, preferredLocations))
+              rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs.map(rdd => new DelegateRDD[InternalRow](
-          rdd.sparkContext, rdd, preferredLocations))
+          rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, preferredLocations)))
+        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
     }
   }
 
@@ -332,12 +336,16 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def doProduce(ctx: CodegenContext): String = {
-    val initMap = ctx.freshName("initMap")
+    initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 
     val createMap = ctx.freshName("createMap")
     val createMapClass = ctx.freshName("CreateMap")
     val getOrCreateMap = ctx.freshName("getOrCreateMap")
+
+    val beforeMap = ctx.freshName("beforeMap")
+    val buildTime = metricTerm(ctx, "buildTime")
+    val numOutputRows = metricTerm(ctx, "numOutputRows")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
@@ -360,6 +368,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // generate local variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
     maskTerm = ctx.freshName("hashMapMask")
+    mapSize = ctx.freshName("mapSize")
     keyIsUniqueTerm = ctx.freshName("keyIsUnique")
     numRowsTerm = ctx.freshName("numRows")
 
@@ -369,6 +378,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     mapAccessor = ObjectHashMapAccessor(session, ctx, buildSideKeys,
       buildPlan.output, "LocalMap", hashMapTerm, mapDataTerm, maskTerm,
       multiMap = true, this, this.parent, buildPlan)
+
+    val entryClass = mapAccessor.getClassName
+    ctx.addMutableState(s"$entryClass[]", mapDataTerm, "")
+    ctx.addMutableState("int", maskTerm, "")
+    ctx.addMutableState("int", mapSize, s"$mapSize = -1;")
+    ctx.addMutableState("boolean", keyIsUniqueTerm, s"$keyIsUniqueTerm = true;")
 
     val buildRDDs = ctx.addReferenceObj("buildRDDs", rdds.toArray,
       s"${classOf[RDD[_]].getName}[]")
@@ -408,11 +423,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val numIterators = ctx.freshName("numIterators")
     ctx.addMutableState("int", numIterators, s"inputs = $allIterators;")
 
-    val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
-
     val longLived = replicatedTableJoin
-
     val buildSideCreateMap =
       s"""$hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
       $numKeyColumns, $longLived, scala.reflect.ClassTag$$.MODULE$$.apply(
@@ -428,12 +440,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       ctx.addNewFunction(getOrCreateMap,
         s"""
         public final void $createMap() throws java.io.IOException {
-           $buildSideCreateMap
+          $buildSideCreateMap
         }
 
         public final void $getOrCreateMap() throws java.io.IOException {
           $hashMapTerm = $cacheClass.get($cacheKeyTerm, new $createMapClass(),
-             $contextName, 1, scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+            $contextName, 1, scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
         }
 
         public final class $createMapClass implements java.util.concurrent.Callable {
@@ -460,35 +472,38 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
 
-    val buildTime = metricTerm(ctx, "buildTime")
-    val numOutputRows = metricTerm(ctx, "numOutputRows")
     // initialization of min/max for integral keys
     val initMinMaxVars = mapAccessor.integralKeys.zipWithIndex.map {
       case (indexKey, index) =>
         val minVar = mapAccessor.integralKeysMinVars(index)
         val maxVar = mapAccessor.integralKeysMaxVars(index)
+        ctx.addMutableState("long", minVar, "")
+        ctx.addMutableState("long", maxVar, "")
         s"""
-          final long $minVar = $hashMapTerm.getMinValue($indexKey);
-          final long $maxVar = $hashMapTerm.getMaxValue($indexKey);
+          $minVar = $hashMapTerm.getMinValue($indexKey);
+          $maxVar = $hashMapTerm.getMaxValue($indexKey);
         """
     }.mkString("\n")
 
+    initMapCode =
+        s"""
+          final long $beforeMap = System.nanoTime();
+          $getOrCreateMap();
+          $buildTime.${metricAdd(s"(System.nanoTime() - $beforeMap) / 1000000")};
+
+          this.$initMap = true;
+          this.$mapSize = $hashMapTerm.size();
+          this.$keyIsUniqueTerm = $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
+          $initMinMaxVars
+          this.$maskTerm = $maskTerm = $hashMapTerm.mask();
+          this.$mapDataTerm = $mapDataTerm = ($entryClass[])$hashMapTerm.data();"""
+
     val produced = streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
 
-    val beforeMap = ctx.freshName("beforeMap")
-
     s"""
-      boolean $keyIsUniqueTerm = true;
-      if (!$initMap) {
-        final long $beforeMap = System.nanoTime();
-        $getOrCreateMap();
-        $buildTime.${metricAdd(s"(System.nanoTime() - $beforeMap) / 1000000")};
-        $initMap = true;
-      }
-      $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
-      $initMinMaxVars
-      final int $maskTerm = $hashMapTerm.mask();
-      final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+      boolean $keyIsUniqueTerm = this.$keyIsUniqueTerm;
+      int $maskTerm = this.$maskTerm;
+      $entryClass[] $mapDataTerm = this.$mapDataTerm;
       long $numRowsTerm = 0L;
       try {
         ${session.evaluateFinallyCode(ctx, produced)}
@@ -524,8 +539,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
-    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
-      numRowsTerm, nullMaskVars, initCode, checkCondition, streamSideKeys,
+    mapAccessor.generateMapLookup(entryVar, localValueVar,
+      mapSize, keyIsUniqueTerm, initMap, initMapCode, numRowsTerm,
+      nullMaskVars, initCode, checkCondition, streamSideKeys,
       streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, input,
       resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
   }

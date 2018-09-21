@@ -2,7 +2,7 @@
 
 Removes a disk store configuration from the SnappyData cluster.
 
-```no-highlight
+```pre
 DROP DISKSTORE [ IF EXISTS ] store-name
 ```
 
@@ -16,7 +16,7 @@ User-defined name of the disk store configuration that you want to remove. The a
 
 This command removes the disk store "STORE1" from the cluster:
 
-```no-highlight
+```pre
 DROP DISKSTORE store1;
 ```
 
