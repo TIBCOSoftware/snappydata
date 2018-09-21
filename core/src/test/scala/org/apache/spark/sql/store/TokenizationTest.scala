@@ -310,6 +310,15 @@ class TokenizationTest
     snc.sql("SELECT dept_id, last_name, salary, " +
         "LAG(salary, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
         "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LAG(salary, 1, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LEAD(salary, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LEAD(salary, 1, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
   }
 
   test("Test external tables no plan caching") {
