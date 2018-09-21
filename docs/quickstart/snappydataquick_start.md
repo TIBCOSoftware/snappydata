@@ -184,15 +184,13 @@ SnappyData contains various quickstart scripts that can be used to run some basi
 
 You can also try the following:
 
-```pre
-# Create and load a row table:
+*	**Create and load a row table:**
 
-run ./quickstart/scripts/create_and_load_row_table.sql;
+		run ./quickstart/scripts/create_and_load_row_table.sql;
 
-# View the status of the system:
+*	**View the status of the system:**
 
-run ./quickstart/scripts/status_queries.sql;
-```
+		run ./quickstart/scripts/status_queries.sql;
 
 <a id= createcoltabwithext> </a>
 ## Create a Column Table Using an External Table 
@@ -319,4 +317,4 @@ The SnappyData Leader has stopped.
 The SnappyData Server has stopped.
 The SnappyData Locator has stopped.
 ```
-For more details, refer to [Stopping the Cluster](/stop_snappy_cluster.md)
+For more details, refer to [Stopping the Cluster](/howto/stop_snappy_cluster.md)
