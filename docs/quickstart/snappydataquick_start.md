@@ -22,6 +22,7 @@ In this section, you will get a quick tour to start a SnappyData cluster and try
 
 *	[Stop Cluster](#stop_snappy_cluster)
 
+
 <a id= st_snappy_cluster> </a>
 ## Start SnappyData Cluster
 
@@ -29,6 +30,7 @@ Navigate to the SnappyData product root directory to start the cluster. Run the 
 
 ```pre
 $./sbin/snappy-start-all.sh
+
 Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 9086 status: running
   Distributed system now has 1 members.
@@ -45,7 +47,7 @@ SnappyData Leader pid: 9370 status: running
 ```
 
 For more details, refer to [Starting SnappyData Cluster](/howto/start_snappy_cluster.md). 
-You can connect to SnappyData shell and run the `select id, kind, netservers from sys.members;` query to view the cluster members.
+You can connect to [Snappy SQL shell](#connectsnappyshell) and run the `select id, kind, netservers from sys.members;` query to view the cluster members.
 
 		./bin/snappy
 		connect client '127.0.0.1:1527';
@@ -75,7 +77,7 @@ SnappyData Leader pid: 10468 status: running
 Connect to  [Snappy SQL shell](#connectsnappyshell) to perform various SQL operations.
 
 
-Alternatively , you can access the [SnappyData Pulse](/monitoring/monitoring.md) monitoring tool by entering  [http:`<leadhost>`:5050/dashboard/]() in the web browser.` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Pulse dashboards, after starting a cluster, you can check the status of each of the cluster member.
+Alternatively , you can access the [SnappyData Pulse](/monitoring/monitoring.md) monitoring tool by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Pulse dashboards, after starting a cluster, you can check the status of each of the cluster member.
 
 <a id= connectsnappyshell> </a>
 ## Connect/Disconnect to SnappyData Shell
@@ -85,7 +87,7 @@ After starting the SnappyData cluster, run these commands together to start the 
 ./bin/snappy
 connect client '127.0.0.1:1527';
 ```
-Type **exit** or press **CTRL + C** to disconnect the SnappyData Shell. 
+Type **exit;** or press **CTRL + C** to disconnect the SnappyData Shell.
 
 <a id= create_tab> </a>
 ## Create Tables
@@ -132,7 +134,7 @@ SnappyData contains various quickstart scripts that can be used to run some basi
 			
             ./bin/snappy
 			connect client '127.0.0.1:1527';
-    		run 'quickstart/scripts/create_and_load_column_table.sql';
+    		run quickstart/scripts/create_and_load_column_table.sql;
             
             # Use the following command to view the details of the external table. 
 			describe staging_airline;
@@ -185,11 +187,11 @@ You can also try the following:
 ```pre
 # Create and load a row table:
 
-run './quickstart/scripts/create_and_load_row_table.sql';
+run ./quickstart/scripts/create_and_load_row_table.sql;
 
 # View the status of the system:
 
-run './quickstart/scripts/status_queries.sql'
+run ./quickstart/scripts/status_queries.sql;
 ```
 
 <a id= createcoltabwithext> </a>
@@ -245,21 +247,39 @@ Similarly as the quickstart scripts, you can try to create an external table nam
 
         1 row selected
 
-After running these queries, you can check the details of table on the SnappyData Pulse Dashboards. The details of the newly created tables are displayed in the Tables section.
+After running these queries, you can check the table details on the SnappyData Pulse Dashboards. The details of the newly created tables are displayed in the **Tables** section.
+
+![External Table & Tables on Dashboard](../Images/externaltable_scripts.png)
 
 <a id= runqry> </a>
 ## Run Queries
 
-You can try a couple of analytical queries shown:
+You can try a couple of analytical queries as shown:
 
+*	**Query to find the average arrival delay.**
+ 
 ```
-// Add a query to find the average arrival delay. 
 select avg(arrdelay) from airline;
 
-// Add a query for avg arrival delay for a specific airline
-select max(arrdelay) from airline where DEST = '';
-```
+avg(ARRDELAY)         
+----------------------
+6.735443              
 
+1 row selected
+
+```
+*	**Query for avg arrival delay of a specific airline.**
+
+```
+select max(arrdelay) from airline where DEST = '';
+
+max(ARRDELAY)
+-------------
+NULL         
+
+1 row selected
+
+```
 <a id= addservercluster> </a>
 ## Add Servers into Cluster
 
@@ -267,7 +287,7 @@ You can add more than one server to a cluster. To add a new server, do the follo
 
 1.	Go to SnappyData home directory.</br>`cd snappydata/build-artifacts/scala-2.11/snappy`
 2.	Create a configuration file named **servers** in the conf folder in the the SnappyData home directory. To do so, you can copy the existing template files **servers.template** and rename it to **servers** as shown:</br>`cp -f conf/servers.template conf/servers`
-3. Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. For example, suppose there is an entry **localhost** in this file for the primary server. You can add an entry **localhost** below this entry for the additional server. The **servers** file should contain the hostnames of the nodes (one per line) where you intend to start the member.
+3. Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. </br>For example, suppose there is an entry **localhost** in this file for the primary server. You can add an entry **localhost** below this entry for the additional server. The **servers** file should contain the hostnames of the nodes (one per line) where you intend to start the member.
 4. From the SnappyData home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the SnappyData Pulse UI. 
 
 <a id= rebalancedataonserver> </a>
@@ -300,4 +320,3 @@ The SnappyData Server has stopped.
 The SnappyData Locator has stopped.
 ```
 For more details, refer to [Stopping the Cluster](/stop_snappy_cluster.md)
-
