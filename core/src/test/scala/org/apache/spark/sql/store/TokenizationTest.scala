@@ -301,6 +301,7 @@ class TokenizationTest
         "LAG(salary) OVER (PARTITION BY dept_id ORDER BY salary) " +
         "AS lower_salary FROM employees")
     snc.sql("select * from v1")
+    snc.sql("drop table employees")
   }
 
   test("SNAP-2566-1") {
@@ -319,6 +320,7 @@ class TokenizationTest
     snc.sql("SELECT dept_id, last_name, salary, " +
         "LEAD(salary, 1, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
         "AS lower_salary FROM employees")
+    snc.sql("drop table employees")
   }
 
   test("Test external tables no plan caching") {
