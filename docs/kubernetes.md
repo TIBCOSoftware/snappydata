@@ -7,6 +7,8 @@ The following sections are included in this topic:
 
 *	[Deploying SnappyData Chart on Kubernetes](#deploykubernetes)
 
+*	[Setting up PKS Environment for Kubernetes](#pkskubernetes)
+
 *	[Interacting with SnappyData Cluster on Kubernetes](#interactkubernetes)
 
 *	[List of Configuration Parameters for SnappyData Chart](#chartparameters)
@@ -49,6 +51,26 @@ You can monitor the Kubernetes UI dashboard to check the status of the component
 
 SnappyData chart dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
 
+<a id= pkskubernetes> </a>
+### Setting up PKS Environment for Kubernetes
+PKS enables you to provision, operate, and manage Kubernetes. If you deploy SnappyData on-premises, you can get the Pivotal Container Services (PKS) environment setup done for Kubernetes.
+
+- PKS on vSphere: Follow these [instructions](https://docs.pivotal.io/runtimes/pks/1-0/vsphere.html) 
+- Create a Kubernetes cluster using PKS CLI : After you setup PKS, create a k8s cluster as described 
+[here](https://docs.pivotal.io/runtimes/pks/1-0/using.html)
+
+If a Kubernetes cluster is available and you are planning to use PKS, then you must do the following:
+
+- Install the PKS command line tool. See instructions [here](https://docs.pivotal.io/runtimes/pks/1-0/installing-pks-cli.html)
+
+- Install kubectl on your local development machine and configure access to the kubernetes/PKS cluster.</br>See instructions for kubectl [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/). 
+
+- You must have appropriate permissions to list, create, edit and delete pods in your cluster. You can verify that you 
+can list these resources by running `kubectl auth can-i <list|create|edit|delete> pods`.
+
+- The service account credentials used by the driver pods must be allowed to create pods, services and configmaps. For example, if you are using `default` service account, assign **edit** role to it for namespace **spark** by using following command:
+
+		kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=spark:default
 
 <a id= interactkubernetes> </a>
 ## Interacting with SnappyData Cluster on Kubernetes
