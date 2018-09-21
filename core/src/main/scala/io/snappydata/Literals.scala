@@ -162,6 +162,7 @@ object Constant {
     "FIRST" -> Array(1), "LAST" -> Array(1),
     "WINDOW" -> Array(1, 2, 3), "RAND" -> Array(0), "RANDN" -> Array(0),
     "PARSE_URL" -> Array(0, 1, 2),
+    "LAG" -> Array(1), "LEAD" -> Array(1),
     // rand() plans are not to be cached since each run should use different seed
     // and the Spark impls create the seed in constructor rather than in generated code
     "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
