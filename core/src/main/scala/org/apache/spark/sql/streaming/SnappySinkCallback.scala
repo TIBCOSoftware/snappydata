@@ -88,7 +88,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
         posDup = false
       }
       catch {
-        case _: SQLException => posDup = true
+        case e: SQLException if e.getSQLState.equals("23505") => posDup = true
         case exception: Throwable => throw exception
       }
     }
