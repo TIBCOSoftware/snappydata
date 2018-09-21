@@ -293,6 +293,36 @@ class TokenizationTest
     assert(cacheMap.size() == 2)
   }
 
+  test("SNAP-2566") {
+    snc.sql("CREATE TABLE employees " +
+        "(employee_number INT NOT NULL, last_name VARCHAR(50) NOT NULL, " +
+        "first_name VARCHAR(50) NOT NULL, salary INT, dept_id INT) using column")
+    snc.sql("create view v1 as SELECT dept_id, last_name, salary, " +
+        "LAG(salary) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("select * from v1")
+    snc.sql("drop table employees")
+  }
+
+  test("SNAP-2566-1") {
+    snc.sql("CREATE TABLE employees " +
+        "(employee_number INT NOT NULL, last_name VARCHAR(50) NOT NULL, " +
+        "first_name VARCHAR(50) NOT NULL, salary INT, dept_id INT) using column")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LAG(salary, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LAG(salary, 1, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LEAD(salary, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LEAD(salary, 1, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("drop table employees")
+  }
+
   test("Test external tables no plan caching") {
     val cacheMap = SnappySession.getPlanCache.asMap()
     val hfile: String = getClass.getResource("/2015.parquet").getPath
