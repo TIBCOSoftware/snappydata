@@ -635,12 +635,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           val viewText = JdbcExtendedUtils.readSplitProperty(
             Constant.SPLIT_VIEW_TEXT_PROPERTY, table.properties).getOrElse(table.viewText
               .getOrElse(sys.error("Invalid view without text.")))
-          try {
-            snappySession.sessionState.sqlParser.sqlParser.inView = true
-            snappySession.sessionState.sqlParser.parsePlan(viewText)
-          } finally {
-            snappySession.sessionState.sqlParser.sqlParser.inView = false
-          }
+          snappySession.sessionState.sqlParser.parsePlan(viewText)
         } else if (isPolicy(table)) {
           val filterExpression = snappySession.sessionState.sqlParser.parseExpression(
             table.properties.getOrElse(PolicyProperties.filterString,

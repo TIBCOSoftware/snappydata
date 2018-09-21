@@ -1057,37 +1057,24 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
 
     // Validate the view SQL - make sure we can parse it and analyze it.
     // If we cannot analyze the generated query, there is probably a bug in SQL generation.
-    var oldInView = false
-    var snappySession: SnappySession = null
-    if (sparkSession.isInstanceOf[SnappySession]) {
-      snappySession = sparkSession.asInstanceOf[SnappySession]
-      oldInView = snappySession.sessionState.sqlParser.sqlParser.inView
-      snappySession.sessionState.sqlParser.sqlParser.inView = true
-    }
     try {
-      try {
-        sparkSession.sql(viewSQL).queryExecution.assertAnalyzed()
-      } catch {
-        case NonFatal(e) =>
-          throw new RuntimeException(s"Failed to analyze the canonicalized SQL: $viewSQL", e)
-      }
-      var opts = JdbcExtendedUtils.addSplitProperty(viewSQL, Constant.SPLIT_VIEW_TEXT_PROPERTY,
-        properties)
-      opts = JdbcExtendedUtils.addSplitProperty(originalText.getOrElse(viewSQL),
-        Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
-
-      opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
-        SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP, opts)
-
-      val dummyText = "select 1"
-      val dummyPlan = sparkSession.sessionState.sqlParser.parsePlan(dummyText)
-      val cmd = CreateViewCommand(name, Nil, comment, opts.toMap, Some(dummyText),
-        dummyPlan, allowExisting, replace, viewType)
-      cmd.run(sparkSession)
-    } finally {
-      if (sparkSession.isInstanceOf[SnappySession]) {
-        snappySession.sessionState.sqlParser.sqlParser.inView = oldInView
-      }
+      sparkSession.sql(viewSQL).queryExecution.assertAnalyzed()
+    } catch {
+      case NonFatal(e) =>
+        throw new RuntimeException(s"Failed to analyze the canonicalized SQL: $viewSQL", e)
     }
+    var opts = JdbcExtendedUtils.addSplitProperty(viewSQL, Constant.SPLIT_VIEW_TEXT_PROPERTY,
+      properties)
+    opts = JdbcExtendedUtils.addSplitProperty(originalText.getOrElse(viewSQL),
+      Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
+
+    opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
+      SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP, opts)
+
+    val dummyText = "select 1"
+    val dummyPlan = sparkSession.sessionState.sqlParser.parsePlan(dummyText)
+    val cmd = CreateViewCommand(name, Nil, comment, opts.toMap, Some(dummyText),
+      dummyPlan, allowExisting, replace, viewType)
+    cmd.run(sparkSession)
   }
 }
