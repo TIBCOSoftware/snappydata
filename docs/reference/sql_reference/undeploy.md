@@ -6,9 +6,9 @@ Removes the jars that are directly installed and the jars that are associated wi
 ## Syntax 
 
 ```pre
-undeploy <name>
+undeploy <jar-name>
 ```
-*	**name** - Name of the jar that must be removed.  
+*	**jar-name** - Name of the jar that must be removed.  
 
 
 ## Description
