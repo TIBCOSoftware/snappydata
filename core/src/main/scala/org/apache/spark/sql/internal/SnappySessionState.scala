@@ -1520,3 +1520,11 @@ case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
 case class BypassRowLevelSecurity(child: LogicalFilter) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
 }
+
+/**
+ * Wrap plan-specific query hints (like joinType).
+ */
+case class LogicalPlanWithHints(child: LogicalPlan, hints: Map[String, String])
+    extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
+}

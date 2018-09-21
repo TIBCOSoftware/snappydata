@@ -466,6 +466,19 @@ object QueryHint extends Enumeration {
   val JoinOrder = Value("joinOrder")
 
   /**
+   * Query hint to force a join type for the current join. This should appear after
+   * the required table/plan in FROM where the specific join type has to be forced.
+   * Note that this will enable the specific join type only if it is possible
+   * for that table in the join and silently ignore otherwise.
+   *
+   * Possible values are broadcast, hash.
+   *
+   * Example:<br>
+   * SELECT * FROM t1 /`*`+ joinType(broadcast) -- broadcast t1 *`/`, t2 where ...
+   */
+  val JoinType: Value = Value("joinType")
+
+  /**
    * Query hint for SQL queries to serialize STRING type as CLOB rather than
    * as VARCHAR.
    *

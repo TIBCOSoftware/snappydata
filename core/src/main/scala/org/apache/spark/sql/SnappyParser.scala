@@ -33,7 +33,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.internal.LikeEscapeSimplification
+import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
@@ -163,8 +163,9 @@ class SnappyParser(session: SnappySession)
 
   }
 
-  private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
-      optAlias: Option[String]) = {
+  private def updatePerTableQueryHint(tableIdent: TableIdentifier,
+      optAlias: Option[String]): Unit = {
+    if (queryHints.isEmpty) return
     val indexHint = queryHints.remove(QueryHint.Index.toString)
     if (indexHint ne null) {
       val table = optAlias match {
@@ -172,6 +173,19 @@ class SnappyParser(session: SnappySession)
         case _ => tableIdent.unquotedString
       }
       queryHints.put(QueryHint.Index.toString + table, indexHint)
+    }
+  }
+
+  private def updatePerPlanQueryHints(plan: LogicalPlan): LogicalPlan = {
+    if (queryHints.isEmpty) return plan
+    // check for join type hint
+    queryHints.remove(QueryHint.JoinType.toString) match {
+      case null => plan
+      case joinTypeHint => plan match {
+        case LogicalPlanWithHints(child, hints) =>
+          LogicalPlanWithHints(child, hints + (QueryHint.JoinType.toString -> joinTypeHint))
+        case _ => LogicalPlanWithHints(plan, Map(QueryHint.JoinType.toString -> joinTypeHint))
+      }
     }
   }
 
@@ -783,8 +797,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    ((inlineTable | relationFactor) ~ tableValuedFunctionExpressions.?) ~>
-        ((lp: LogicalPlan, se: Any) => {
+    (((inlineTable | relationFactor) ~> ((lp: LogicalPlan) => updatePerPlanQueryHints(lp))) ~
+        tableValuedFunctionExpressions.?) ~> ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
         case Some(exprs) =>

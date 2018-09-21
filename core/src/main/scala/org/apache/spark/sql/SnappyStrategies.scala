@@ -18,7 +18,7 @@ package org.apache.spark.sql
 
 import scala.util.control.NonFatal
 
-import io.snappydata.Property
+import io.snappydata.{Property, QueryHint}
 
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
@@ -37,7 +37,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, SQLConf}
+import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, LogicalPlanWithHints, SQLConf}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -75,8 +75,17 @@ private[sql] trait SnappyStrategies {
   }
 
   object HashJoinStrategies extends Strategy with JoinQueryPlanning {
+
+    override protected def planLater(plan: LogicalPlan): SparkPlan = plan match {
+      case LogicalPlanWithHints(child, _) => PlanLater(child)
+      case _ => PlanLater(plan)
+    }
+
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled || session.disableHashJoin) {
-      Nil
+      plan match {
+        case LogicalPlanWithHints(child, _) => planLater(child) :: Nil
+        case _ => Nil
+      }
     } else {
       plan match {
         case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right) =>
@@ -135,6 +144,7 @@ private[sql] trait SnappyStrategies {
               joinType, joins.BuildLeft, replicatedTableJoin = false)
           } else Nil
 
+        case LogicalPlanWithHints(child, _) => planLater(child) :: Nil
         case _ => Nil
       }
     }
@@ -262,7 +272,11 @@ private[sql] object JoinStrategy {
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
     plan.statistics.isBroadcastable ||
-        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold || (plan match {
+      case LogicalPlanWithHints(_, hints)
+        if hints.get(QueryHint.JoinType.toString).contains("broadcast") => true
+      case _ => false
+    })
   }
 
   /**
@@ -270,7 +284,12 @@ private[sql] object JoinStrategy {
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
     plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
-      Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
+      Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue) ||
+        (plan match {
+          case LogicalPlanWithHints(_, hints)
+            if hints.get(QueryHint.JoinType.toString).contains("hash") => true
+          case _ => false
+        })
   }
 
   def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
