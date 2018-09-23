@@ -91,7 +91,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   }
 
 
-  ignore("ETL Job") {
+  test("ETL Job") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -111,15 +111,14 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .option("maxOffsetsPerTrigger", 10)
       .option("subscribe", topic)
       .option("startingOffsets", startingOffsets)
-      // .option("failOnDataLoss", "false")
       .load
 
     val streamingQuery = streamingDF
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
       .as[(String, String)]
       .writeStream
-      .format("memory")// .format("snappy")
-      //.option("checkpointLocation", "/tmp/snappyTable")
+      .format("memory")
+     // .option("checkpointLocation", "/tmp/etl")
       .queryName("snappyTable")
       .outputMode("append")
       .trigger(ProcessingTime("1 seconds"))
@@ -133,7 +132,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     assert(113 == session.sql("select * from snappyTable").count)
   }
 
-  ignore("infinite streaming aggregation") {
+  test("infinite streaming aggregation") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -160,8 +159,8 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").groupBy("value").count()
       .as[(String, String)]
       .writeStream
-      .format("memory") // .format("snappy")
-      // .option("checkpointLocation", "/tmp/snappyAggrTable")
+      .format("memory")
+      .option("checkpointLocation", "/tmp/infinite-"+System.currentTimeMillis())
       .queryName("snappyAggrTable")
       .outputMode("complete")
       .trigger(ProcessingTime("1 seconds"))
@@ -177,7 +176,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     assert(2.0 == session.sql("select avg(count) from snappyAggrTable").collect()(0).getDouble(0))
   }
 
-  ignore("sliding window aggregation") {
+  test("sliding window aggregation") {
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -211,7 +210,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
 
     val streamingQuery = windowedAggregation
       .writeStream
-      .format("memory")//.format("snappy")
+      .format("memory")
       .option("checkpointLocation", "/tmp/snappyWindowAggrTable")
       .outputMode("complete")
       .queryName("snappyWindowAggrTable")
@@ -222,8 +221,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     streamingQuery.stop()
   }
 
-
-  ignore("streaming DataFrame join to static DataFrame") {
+  test("streaming DataFrame join to static DataFrame") {
     val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
     val dfBlackList = snc.createDataFrame(rdd)
     // create a SnappyData table
@@ -260,51 +258,6 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     assert(10 == session.sql("select * from snappyResultTable").count)
   }
 
-  // Inner join between two streaming DataFrames/Datasets is not supported;;
-  ignore(" Unsupported - streaming DataFrame join to streaming DataFrame") {
-    val topic1 = newTopic()
-    val topic2 = newTopic()
-
-    kafkaTestUtils.createTopic(topic1, partitions = 3)
-    kafkaTestUtils.createTopic(topic2, partitions = 3)
-
-    val streamingDF1 = session
-      .readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
-      .option("subscribe", topic1)
-      .option("startingOffsets", "earliest").load
-      .selectExpr("CAST(value AS STRING) accountNo").as[(String)]
-
-    // Read the accounts from Kafka source
-    val streamingDF2 = session
-      .readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
-      .option("subscribe", topic2)
-      .option("startingOffsets", "earliest").load
-      .selectExpr("CAST(value AS STRING) accountNo").as[(String)]
-
-    val streamingQuery = streamingDF1.join(streamingDF2, "accountNo")
-      .writeStream
-      .outputMode("append")
-      .format("console")
-      .option("checkpointLocation", "/tmp/snappyResultTable")
-      .queryName("snappyResultTable")
-      .trigger(ProcessingTime("1 seconds"))
-      .start
-
-    kafkaTestUtils.sendMessages(topic1, (10 to 20).map(_.toString).toArray, Some(1))
-    kafkaTestUtils.sendMessages(topic1, (20 to 30).map(_.toString).toArray, Some(2))
-
-    kafkaTestUtils.sendMessages(topic2, (10 to 20).map(_.toString).toArray, Some(2))
-    kafkaTestUtils.sendMessages(topic2, (20 to 30).map(_.toString).toArray, Some(1))
-
-    streamingQuery.awaitTermination(timeoutMs = 15000)
-    session.sql("select * from snappyResultTable").show
-  }
-
-
   // Unsupported operations with streaming DataFrames/Datasets -
 
   // Multiple streaming aggregations (i.e. a chain of aggregations on a
@@ -329,34 +282,4 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   // sorting on the input stream is not supported, as it requires keeping
   // track of all the data received in the stream.
   // This is therefore fundamentally hard to execute efficiently.
-
-  ignore("SnappyForeachWriter sink") {
-    val topic = newTopic()
-    kafkaTestUtils.createTopic(topic, partitions = 3)
-    kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
-    kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
-    kafkaTestUtils.sendMessages(topic, Array("1"), Some(2))
-
-    val streamingDF = session
-      .readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
-      .option("kafka.metadata.max.age.ms", "1")
-      .option("maxOffsetsPerTrigger", 10)
-      .option("subscribe", topic)
-      .option("startingOffsets", "earliest")
-      .load
-
-    val streamingQuery = streamingDF
-      .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-      .as[(String, String)]
-      .map(kv => kv._2.toInt)
-      .writeStream
-      //.foreach(new SnappyForeachWriter())
-      .outputMode("append")
-      .trigger(ProcessingTime("3 seconds"))
-      .start
-
-    streamingQuery.awaitTermination(timeoutMs = 15000)
-  }
 }
