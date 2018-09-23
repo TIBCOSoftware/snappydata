@@ -16,10 +16,6 @@
  */
 package org.apache.spark.sql.streaming
 
-import scala.reflect.ClassTag
-
-import kafka.serializer.Decoder
-
 import org.apache.kafka.common.TopicPartition
 import org.apache.spark.Logging
 import org.apache.spark.sql._
@@ -28,13 +24,10 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
-import org.apache.spark.util.Utils
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
 
 import scala.collection.mutable.HashMap
-import scala.util.Random
 import scala.util.control.NonFatal
 
 class DirectKafkaStreamSource extends StreamPlanProvider with DataSourceRegister {
@@ -42,17 +35,17 @@ class DirectKafkaStreamSource extends StreamPlanProvider with DataSourceRegister
   override def shortName(): String = SnappyContext.KAFKA_STREAM_SOURCE
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String],
-      schema: StructType): BaseRelation = {
+                              options: Map[String, String],
+                              schema: StructType): BaseRelation = {
     new DirectKafkaStreamRelation(sqlContext, options, schema)
   }
 }
 
 final class DirectKafkaStreamRelation(
-    @transient override val sqlContext: SQLContext,
-    opts: Map[String, String],
-    override val schema: StructType)
-    extends StreamBaseRelation(opts)
+                                       @transient override val sqlContext: SQLContext,
+                                       opts: Map[String, String],
+                                       override val schema: StructType)
+  extends StreamBaseRelation(opts)
     with Logging with Serializable {
 
   val topics = options("subscribe").split(",").toList
@@ -66,26 +59,9 @@ final class DirectKafkaStreamRelation(
   val preferredHosts = LocationStrategies.PreferConsistent
   val startingOffsets = JsonUtils.partitionOffsets(options("startingOffsets"))
 
-//  val K = options.getOrElse("K", "java.lang.String")
-//  val V = options.getOrElse("V", "java.lang.String")
-//  val KD = options.getOrElse("KD", "kafka.serializer.StringDecoder")
-//  val VD = options.getOrElse("VD", "kafka.serializer.StringDecoder")
-
   override protected def createRowStream(): DStream[InternalRow] = {
-//    val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))
-//    val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
-//    val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
-//    val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
-//    KafkaUtils.createDirectStream[Any, Any, Decoder[Any], Decoder[Any]](context,
-//      kafkaParams, topicsSet)(ck, cv, ckd, cvd).mapPartitions { iter =>
-//      val encoder = RowEncoder(schema)
-//      // need to call copy() below since there are builders at higher layers
-//      // (e.g. normal Seq.map) that store the rows and encoder reuses buffer
-//      iter.flatMap(p => rowConverter.toRows(p._2).iterator.map(
-//        encoder.toRow(_).copy()))
-//    }
-val consumerStrategies = ConsumerStrategies
-  .Subscribe[String, String](topics, kafkaParams, startingOffsets)
+    val consumerStrategies = ConsumerStrategies
+      .Subscribe[String, String](topics, kafkaParams, startingOffsets)
 
     val stream = KafkaUtils.createDirectStream[String, String](context,
       preferredHosts, consumerStrategies)
@@ -144,7 +120,7 @@ private object JsonUtils {
         partOffsets.map { case (part, offset) =>
           new TopicPartition(topic, part) -> offset
         }
-      }.toMap
+      }
     } catch {
       case NonFatal(x) =>
         throw new IllegalArgumentException(
