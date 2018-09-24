@@ -277,7 +277,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("value2", "10") :: Nil)
 
-    assert(cacheMap.size() == 1)
+    assert(cacheMap.size() == 2)
 
     checkAnswer(snc.sql(
       """
@@ -290,7 +290,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("10") :: Nil)
 
-    assert(cacheMap.size() == 2)
+    assert(cacheMap.size() == 4)
   }
 
   test("SNAP-2566") {
