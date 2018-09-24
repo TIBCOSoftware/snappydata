@@ -32,7 +32,7 @@ import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructFiel
 import org.apache.spark.streaming.{Milliseconds, SnappyStreamingContext}
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
-with BeforeAndAfter with BeforeAndAfterAll {
+    with BeforeAndAfter with BeforeAndAfterAll {
   private val session = snc.sparkSession
 
   import session.implicits._
@@ -80,12 +80,12 @@ with BeforeAndAfter with BeforeAndAfterAll {
 
   test("_eventType column: absent, key columns: defined, table type: column") {
     val testId = testIdGenerator.getAndIncrement()
-    createTable()
+    createTable()()
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
     val dataBatch1 = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-    Seq(3, "name3", 30))
+      Seq(3, "name3", 30))
     kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
 
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
@@ -97,32 +97,32 @@ with BeforeAndAfter with BeforeAndAfterAll {
     streamingQuery.processAllAvailable()
 
     val rows = Array(Row(1, "name11", 40), Row(2, "name2", 10),
-    Row(3, "name3", 30), Row(4, "name4", 50))
+      Row(3, "name3", 30), Row(4, "name4", 50))
     assertData(rows)
   }
 
   test("_eventType column: absent, key columns: undefined, table type: column") {
     val testId = testIdGenerator.getAndIncrement()
-    createTable(withKeyColumn = false)
+    createTable(withKeyColumn = false)()
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
 
     val dataBatch = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-    Seq(3, "name3", 30), Seq(1, "name1", 30))
+      Seq(3, "name3", 30), Seq(1, "name1", 30))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
 
     val rows = Array(Row(1, "name1", 30), Row(1, "name1", 30), Row(2, "name2", 10),
-    Row(3, "name3", 30))
+      Row(3, "name3", 30))
     assertData(rows)
   }
 
   test("_eventType column: present, key columns: defined, table type: column") {
     val testId = testIdGenerator.getAndIncrement()
-    createTable()
+    createTable()()
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -141,7 +141,86 @@ with BeforeAndAfter with BeforeAndAfterAll {
 
   test("_eventType column: present, key columns: undefined, table type: column") {
     val testId = testIdGenerator.getAndIncrement()
-    createTable(withKeyColumn = false)
+    createTable(withKeyColumn = false)()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+
+    val dataBatch = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+    kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
+
+    val thrown = intercept[StreamingQueryException] {
+      val streamingQuery = createAndStartStreamingQuery(topic, testId)
+      streamingQuery.processAllAvailable()
+    }
+
+    val errorMessage = "_eventType is present in data but key columns are not defined on table."
+    assert(thrown.getCause.getMessage == errorMessage)
+  }
+
+  test("_eventType column: absent, key columns: defined, table type: row") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()(isRowTable = true)
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+
+    val dataBatch1 = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
+      Seq(3, "name3", 30))
+    kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
+
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
+    waitTillTheBatchIsPickedForProcessing(0, testId)
+
+    val dataBatch2 = Seq(Seq(1, "name11", 40), Seq(4, "name4", 50))
+    kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
+
+    streamingQuery.processAllAvailable()
+
+    val rows = Array(Row(1, "name11", 40), Row(2, "name2", 10),
+      Row(3, "name3", 30), Row(4, "name4", 50))
+    assertData(rows)
+  }
+
+  test("_eventType column: absent, key columns: undefined, table type: row") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable(withKeyColumn = false)(isRowTable = true)
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
+
+    val dataBatch = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
+      Seq(3, "name3", 30), Seq(1, "name1", 30))
+    kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
+
+    streamingQuery.processAllAvailable()
+
+    val rows = Array(Row(1, "name1", 30), Row(1, "name1", 30), Row(2, "name2", 10),
+      Row(3, "name3", 30))
+    assertData(rows)
+  }
+
+  test("_eventType column: present, key columns: defined, table type: row") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()(isRowTable = true)
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+
+    val dataBatch1 = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+    kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
+
+    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
+    waitTillTheBatchIsPickedForProcessing(0, testId)
+
+    val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
+    kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name11", 30), Row(3, "name3", 30)))
+  }
+
+  test("_eventType column: present, key columns: undefined, table type: row") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable(withKeyColumn = false)(isRowTable = true)
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -159,7 +238,7 @@ with BeforeAndAfter with BeforeAndAfterAll {
 
   test("streaming query restart") {
     val testId = testIdGenerator.getAndIncrement()
-    createTable()
+    createTable()()
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -205,13 +284,14 @@ with BeforeAndAfter with BeforeAndAfterAll {
     assertResult(expectedData)(actualData)
   }
 
-  private def createTable(withKeyColumn: Boolean = true, isRowTable: Boolean = false) = {
-    def provider = if (isRowTable) "row" else "column"
-
-    def options = if (withKeyColumn) "options(key_columns 'id')" else ""
-
+  private def createTable(withKeyColumn: Boolean = true)(isRowTable: Boolean = false) = {
     snc.sql("drop table if exists users")
-    val s = s"create table users (id long, name varchar(40), age int) using $provider $options"
+    def provider = if (isRowTable) "row" else "column"
+    def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id')" else ""
+    def primaryKey = if (isRowTable && withKeyColumn) "primary key" else ""
+
+    val s = s"create table users (id long $primaryKey, name varchar(40), age int) " +
+        s"using $provider $options"
     LogManager.getRootLogger.error(s)
     snc.sql(s)
   }
@@ -244,18 +324,20 @@ with BeforeAndAfter with BeforeAndAfterAll {
 
     streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]
-        .map(_.split(",")).map(r => {
-      if (r.length == 4) {
-        Row(r(0).toLong, r(1), r(2).toInt, r(3).toInt)
-      } else {
-        Row(r(0).toLong, r(1), r(2).toInt)
-      }
-    })
+        .map(_.split(","))
+        .map(r => {
+          if (r.length == 4) {
+            Row(r(0).toLong, r(1), r(2).toInt, r(3).toInt)
+          } else {
+            Row(r(0).toLong, r(1), r(2).toInt)
+          }
+        })
         .writeStream
         .format("snappysink")
         .queryName(s"USERS_$testId")
         .trigger(ProcessingTime("1 seconds"))
-        .option("tableName", tableName).option("streamQueryId", streamQueryId(testId))
+        .option("tableName", tableName)
+        .option("streamQueryId", streamQueryId(testId))
         .option("checkpointLocation", checkpointDirectory)
         .start()
   }
