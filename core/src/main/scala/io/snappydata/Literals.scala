@@ -118,6 +118,13 @@ object Constant {
 
   val MAX_CHAR_SIZE = 254
 
+  // allowed values for QueryHint.JoinType
+  val JOIN_TYPE_BROADCAST = "broadcast"
+  val JOIN_TYPE_HASH = "hash"
+  val JOIN_TYPE_SORT = "sort"
+  val ALLOWED_JOIN_TYPE_HINTS: List[String] =
+    List(JOIN_TYPE_BROADCAST, JOIN_TYPE_HASH, JOIN_TYPE_SORT)
+
   /**
    * Limit the maximum number of rows in a column batch (applied before
    * [[Property.ColumnBatchSize]] property).
@@ -144,7 +151,7 @@ object Constant {
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 
   // -10 in sequence will mean all arguments, -1 will mean all odd argument and
-  // -2 will mean all even arguments.
+  // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.
   // Empty argument array means plan caching has to be disabled.
   val FOLDABLE_FUNCTIONS: ObjectObjectHashMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
     "ROUND" -> Array(1), "BROUND" -> Array(1), "PERCENTILE" -> Array(1), "STACK" -> Array(0),
@@ -158,7 +165,8 @@ object Constant {
     "TRANSLATE" -> Array(1, 2), "UNIX_TIMESTAMP" -> Array(1),
     "TO_UNIX_TIMESTAMP" -> Array(1), "FROM_UNIX_TIMESTAMP" -> Array(1),
     "TO_UTC_TIMESTAMP" -> Array(1), "FROM_UTC_TIMESTAMP" -> Array(1),
-    "TRUNC" -> Array(1), "NEXT_DAY" -> Array(1),
+    "FROM_UNIXTIME" -> Array(1), "TRUNC" -> Array(1), "NEXT_DAY" -> Array(1),
+    "GET_JSON_OBJECT" -> Array(1), "JSON_TUPLE" -> Array(-3, 0),
     "FIRST" -> Array(1), "LAST" -> Array(1),
     "WINDOW" -> Array(1, 2, 3), "RAND" -> Array(0), "RANDN" -> Array(0),
     "PARSE_URL" -> Array(0, 1, 2),
@@ -471,7 +479,8 @@ object QueryHint extends Enumeration {
    * Note that this will enable the specific join type only if it is possible
    * for that table in the join and silently ignore otherwise.
    *
-   * Possible values are broadcast, hash.
+   * Possible values are [[Constant.JOIN_TYPE_BROADCAST]], [[Constant.JOIN_TYPE_HASH]],
+   * [[Constant.JOIN_TYPE_SORT]].
    *
    * Example:<br>
    * SELECT * FROM t1 /`*`+ joinType(broadcast) -- broadcast t1 *`/`, t2 where ...

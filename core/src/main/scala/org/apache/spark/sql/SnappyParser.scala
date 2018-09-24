@@ -176,19 +176,6 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  private def updatePerPlanQueryHints(plan: LogicalPlan): LogicalPlan = {
-    if (queryHints.isEmpty) return plan
-    // check for join type hint
-    queryHints.remove(QueryHint.JoinType.toString) match {
-      case null => plan
-      case joinTypeHint => plan match {
-        case LogicalPlanWithHints(child, hints) =>
-          LogicalPlanWithHints(child, hints + (QueryHint.JoinType.toString -> joinTypeHint))
-        case _ => LogicalPlanWithHints(plan, Map(QueryHint.JoinType.toString -> joinTypeHint))
-      }
-    }
-  }
-
   private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String) = {
     if (!queryHints.isEmpty) {
       val hintStr = hint.toString
@@ -215,7 +202,7 @@ class SnappyParser(session: SnappySession)
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
     numericLiteral |
     booleanLiteral |
-    NULL ~> (() => newTokenizedLiteral(null, NullType))
+    NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
   protected final def paramLiteralQuestionMark: Rule1[Expression] = rule {
@@ -650,21 +637,6 @@ class SnappyParser(session: SnappySession)
         })
   }
 
-  protected final def join: Rule1[JoinRuleType] = rule {
-    joinType.? ~ JOIN ~ relationWithExternal ~ (
-        ON ~ expression ~> ((t: Any, r: LogicalPlan, j: Expression) =>
-          (t.asInstanceOf[Option[JoinType]], r, Some(j))) |
-        USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
-            ((t: Any, r: LogicalPlan, ids: Any) =>
-              (Some(UsingJoin(t.asInstanceOf[Option[JoinType]]
-                  .getOrElse(Inner), ids.asInstanceOf[Seq[String]])), r, None)) |
-        MATCH ~> ((t: Option[JoinType], r: LogicalPlan) => (t, r, None))
-    ) |
-    NATURAL ~ joinType.? ~ JOIN ~ relationWithExternal ~> ((t: Any,
-        r: LogicalPlan) => (Some(NaturalJoin(t.asInstanceOf[Option[JoinType]]
-        .getOrElse(Inner))), r, None))
-  }
-
   protected final def joinType: Rule1[JoinType] = rule {
     INNER ~> (() => Inner) |
     LEFT ~ (
@@ -797,8 +769,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    (((inlineTable | relationFactor) ~> ((lp: LogicalPlan) => updatePerPlanQueryHints(lp))) ~
-        tableValuedFunctionExpressions.?) ~> ((lp: LogicalPlan, se: Any) => {
+    ((inlineTable | relationFactor) ~ tableValuedFunctionExpressions.?) ~>
+        ((lp: LogicalPlan, se: Any) => {
       se.asInstanceOf[Option[Seq[Expression]]] match {
         case None => lp
         case Some(exprs) =>
@@ -810,14 +782,37 @@ class SnappyParser(session: SnappySession)
     })
   }
 
+  protected final def withHints(plan: LogicalPlan): LogicalPlan = {
+    if (hasPlanHints) {
+      var newPlan = plan
+      val planHints = this.planHints
+      while (planHints.size() > 0) {
+        newPlan match {
+          case l: LogicalPlanWithHints =>
+            newPlan = new LogicalPlanWithHints(l.child, l.hints + planHints.pop())
+          case _ => newPlan = new LogicalPlanWithHints(plan, Map(planHints.pop()))
+        }
+      }
+      newPlan
+    } else plan
+  }
+
   protected final def relation: Rule1[LogicalPlan] = rule {
-    relationWithExternal ~ (
-        join. + ~> ((r1: LogicalPlan, joins: Any) => joins.asInstanceOf[
-            Seq[JoinRuleType]].foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
-          Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
-        }) |
-        MATCH.asInstanceOf[Rule[LogicalPlan :: HNil, LogicalPlan :: HNil]]
-    )
+    relationWithExternal ~> ((plan) => withHints(plan)) ~ (
+        joinType.? ~ JOIN ~ relationWithExternal ~ (
+            ON ~ expression ~> ((l: LogicalPlan, t: Any, r: LogicalPlan, e: Expression) =>
+              withHints(Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e)))) |
+            USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
+                ((l: LogicalPlan, t: Any, r: LogicalPlan, ids: Any) =>
+                  withHints(Join(l, r, UsingJoin(t.asInstanceOf[Option[JoinType]]
+                      .getOrElse(Inner), ids.asInstanceOf[Seq[String]]), None))) |
+            MATCH ~> ((l: LogicalPlan, t: Option[JoinType], r: LogicalPlan) =>
+              withHints(Join(l, r, t.getOrElse(Inner), None)))
+        ) |
+        NATURAL ~ joinType.? ~ JOIN ~ relationWithExternal ~> ((l: LogicalPlan, t: Any,
+            r: LogicalPlan) => withHints(Join(l, r, NaturalJoin(t.asInstanceOf[Option[JoinType]]
+            .getOrElse(Inner)), None)))
+    ).*
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
@@ -856,11 +851,12 @@ class SnappyParser(session: SnappySession)
         exprs
       case args =>
         exprs.indices.map(index => exprs(index) match {
-          case l: TokenizedLiteral if Ints.contains(args, index) ||
+          case l: TokenizedLiteral if (args(0) == -3 && !Ints.contains(args, index)) ||
+              (args(0) != -3 && (Ints.contains(args, index) ||
               // all args          // all odd args
               (args(0) == -10) || (args(0) == -1 && (index & 0x1) == 1) ||
               // all even args
-              (args(0) == -2 && (index & 0x1) == 0) =>
+              (args(0) == -2 && (index & 0x1) == 0))) =>
             l match {
               case pl: ParamLiteral  if pl.tokenized && _isPreparePhase =>
                 throw new ParseException(s"function $fnName cannot have " +
