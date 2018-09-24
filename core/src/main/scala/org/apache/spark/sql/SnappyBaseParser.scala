@@ -71,7 +71,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   protected def handleQueryHint(hint: String, hintValue: String): Unit = {
     // check for a plan-level hint
     if (Consts.allowedPlanHints.contains(hint)) planHints.push(hint -> hintValue)
-    else queryHints.put(hint, hintValue)
+    queryHints.put(hint, hintValue)
   }
 
   protected final def commentBodyOrHint: Rule0 = rule {
