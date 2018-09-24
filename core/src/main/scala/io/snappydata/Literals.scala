@@ -170,6 +170,21 @@ object Constant {
   val EXTERNAL_TABLE_RLS_ENABLE_KEY = "rls.enabled"
 }
 
+object StreamingConstants {
+  val EVENT_TYPE_COLUMN = "_eventType"
+  val SINK_STATE_TABLE = s"SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
+  val SNAPPY_SINK_NAME = "snappysink"
+  val TABLE_NAME = "tablename"
+  val STREAM_QUERY_ID = "streamqueryid"
+  val SINK_CALLBACK = "sinkcallback"
+
+  object EventType {
+    val INSERT = 0
+    val UPDATE = 1
+    val DELETE = 2
+  }
+}
+
 /**
  * Property names should be as per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html

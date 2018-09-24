@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.io.Path
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyFunSuite, StreamingConstants}
 import org.apache.log4j.LogManager
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -32,8 +32,7 @@ import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructFiel
 import org.apache.spark.streaming.{Milliseconds, SnappyStreamingContext}
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
-    with BeforeAndAfter with BeforeAndAfterAll {
-
+with BeforeAndAfter with BeforeAndAfterAll {
   private val session = snc.sparkSession
 
   import session.implicits._
@@ -42,10 +41,11 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   protected var ssnc: SnappyStreamingContext = _
 
   private val batchDurationMillis: Long = 1000
-  private val batchWriteWaitMillis = 7000
-  private val streamTimeoutMillis = 10000
-
   private val testIdGenerator = new AtomicInteger(0)
+  private val tableName = "APP.USERS"
+  private val checkpointDirectory = "/tmp/SnappyStoreSinkProviderSuite"
+
+  private def getTopic(id: Int) = s"topic-$id"
 
   override def beforeAll() {
     kafkaTestUtils = new KafkaTestUtils
@@ -59,10 +59,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     }
   }
 
-  def creatingFunc(): SnappyStreamingContext = {
-    val context = new SnappyStreamingContext(sc, Milliseconds(batchDurationMillis))
-    context
-  }
+  private def creatingFunc() = new SnappyStreamingContext(sc, Milliseconds(batchDurationMillis))
 
   before {
     SnappyStreamingContext.getActive.foreach {
@@ -70,8 +67,6 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     }
     ssnc = SnappyStreamingContext.getActiveOrCreate(creatingFunc)
   }
-
-  private val checkpointDirectory = "/tmp/SnappyStoreSinkProviderSuite"
 
   after {
     baseCleanup(false)
@@ -83,40 +78,30 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     Path(checkpointDirectory).deleteRecursively()
   }
 
-
   test("_eventType column: absent, key columns: defined, table type: column") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()
     val topic = getTopic(testId)
-
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
     val dataBatch1 = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-      Seq(3, "name3", 30))
-
+    Seq(3, "name3", 30))
     kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
 
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
-    Thread.sleep(batchDurationMillis + batchWriteWaitMillis)
-
-    val rows1 = Array(Row(1, "name1", 30), Row(2, "name2", 10), Row(3, "name3", 30))
-    assertData(rows1)
+    waitTillTheBatchIsPickedForProcessing(0, testId)
 
     val dataBatch2 = Seq(Seq(1, "name11", 40), Seq(4, "name4", 50))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
 
-    streamingQuery.awaitTermination(streamTimeoutMillis)
+    streamingQuery.processAllAvailable()
 
     val rows = Array(Row(1, "name11", 40), Row(2, "name2", 10),
-      Row(3, "name3", 30), Row(4, "name4", 50))
+    Row(3, "name3", 30), Row(4, "name4", 50))
     assertData(rows)
   }
 
-
-  private def getTopic(id: Int) = s"topic-$id"
-
-
-  test("_eventType column: absent, key columns: not-defined, table type: column") {
+  test("_eventType column: absent, key columns: undefined, table type: column") {
     val testId = testIdGenerator.getAndIncrement()
     createTable(withKeyColumn = false)
     val topic = getTopic(testId)
@@ -125,14 +110,13 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
 
     val dataBatch = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-      Seq(3, "name3", 30), Seq(1, "name1", 30))
-
+    Seq(3, "name3", 30), Seq(1, "name1", 30))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
-    streamingQuery.awaitTermination(streamTimeoutMillis)
+    streamingQuery.processAllAvailable()
 
     val rows = Array(Row(1, "name1", 30), Row(1, "name1", 30), Row(2, "name2", 10),
-      Row(3, "name3", 30))
+    Row(3, "name3", 30))
     assertData(rows)
   }
 
@@ -146,19 +130,16 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
 
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
-
-    Thread.sleep(batchDurationMillis + batchWriteWaitMillis)
-
-    assertData(Array(Row(1, "name1", 20), Row(2, "name2", 10)))
+    waitTillTheBatchIsPickedForProcessing(0, testId)
 
     val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
-    streamingQuery.awaitTermination(timeoutMs = streamTimeoutMillis)
+    streamingQuery.processAllAvailable()
 
     assertData(Array(Row(1, "name11", 30), Row(3, "name3", 30)))
   }
 
-  test("_eventType column: present, key columns: not-defined, table type: column") {
+  test("_eventType column: present, key columns: undefined, table type: column") {
     val testId = testIdGenerator.getAndIncrement()
     createTable(withKeyColumn = false)
     val topic = getTopic(testId)
@@ -167,21 +148,60 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val dataBatch = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
-
     val thrown = intercept[StreamingQueryException] {
       val streamingQuery = createAndStartStreamingQuery(topic, testId)
-      streamingQuery.awaitTermination(timeoutMs = streamTimeoutMillis)
+      streamingQuery.processAllAvailable()
     }
 
     val errorMessage = "_eventType is present in data but key columns are not defined on table."
     assert(thrown.getCause.getMessage == errorMessage)
+  }
 
+  test("streaming query restart") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+
+    kafkaTestUtils.sendMessages(topic, (0 to 10).map(i => s"$i,name$i,$i,0").toArray)
+
+    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
+    waitTillTheBatchIsPickedForProcessing(0, testId)
+
+    kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,0").toArray)
+    waitTillTheBatchIsPickedForProcessing(1, testId)
+
+    streamingQuery.stop()
+
+    val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId)
+
+    kafkaTestUtils.sendMessages(topic, (21 to 30).map(i => s"$i,name$i,$i,0").toArray)
+    waitTillTheBatchIsPickedForProcessing(2, testId)
+    streamingQuery1.processAllAvailable()
+
+    assertData((0 to 30).map(i => Row(i, s"name$i", i)).toArray)
   }
 
 
+  private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
+      retries: Int = 15): Unit = {
+    if (retries == 0) {
+      throw new RuntimeException(s"Batch id $batchId not found in sink status table " +
+          s"even after $retries retries")
+    }
+    val sql = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
+        s"where stream_query_id = '${streamQueryId(testId)}'"
+    val batchIdFromTable = snc.sql(sql).collect()
+
+    if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
+      Thread.sleep(1000)
+      waitTillTheBatchIsPickedForProcessing(batchId, testId, retries - 1)
+    }
+  }
+
   private def assertData(expectedData: Array[Row]) = {
     expectedData.equals()
-    val actualData = session.sql("select * from APP.USERS order by id").collect()
+    val actualData = session.sql("select * from " + tableName + " order by id").collect()
     assertResult(expectedData)(actualData)
   }
 
@@ -225,19 +245,22 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]
         .map(_.split(",")).map(r => {
-          if (r.length == 4) {
-            Row(r(0).toLong, r(1), r(2).toInt, r(3).toInt)
-          } else {
-            Row(r(0).toLong, r(1), r(2).toInt)
-          }
-        })
+      if (r.length == 4) {
+        Row(r(0).toLong, r(1), r(2).toInt, r(3).toInt)
+      } else {
+        Row(r(0).toLong, r(1), r(2).toInt)
+      }
+    })
         .writeStream
         .format("snappysink")
         .queryName(s"USERS_$testId")
-        .outputMode("append")
         .trigger(ProcessingTime("1 seconds"))
-        .option("tablename", "APP.USERS").option("SINKID", s"users_$testId")
+        .option("tableName", tableName).option("streamQueryId", streamQueryId(testId))
         .option("checkpointLocation", checkpointDirectory)
         .start()
+  }
+
+  private def streamQueryId(testId: Int) = {
+    s"USERS_$testId"
   }
 }
