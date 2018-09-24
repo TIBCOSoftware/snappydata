@@ -535,9 +535,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
             return this
           }
           val startDecompression = perfStats.startDecompression()
-          // de-compressor can change buffer position, so create a duplicate
-          CompressionUtils.codecDecompress(buffer.duplicate(), decompressed, outputLen,
-            position, -typeId)
+          CompressionUtils.codecDecompress(buffer, decompressed, outputLen, position, -typeId)
           // update decompression stats
           perfStats.endDecompression(startDecompression)
           // proper refCount check at this point to ensure no other thread is holding reference
@@ -620,9 +618,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
           if (this.decompressionState <= 0) return this
 
           val startCompression = perfStats.startCompression()
-          // compressor can change buffer position, so create a duplicate
-          compressed = CompressionUtils.codecCompress(codecId, buffer.duplicate(),
-            bufferLen, compressed)
+          compressed = CompressionUtils.codecCompress(codecId, buffer, bufferLen, compressed)
           if (compressed ne buffer) {
             // update compression stats
             perfStats.endCompression(startCompression, bufferLen, compressed.limit())
@@ -673,7 +669,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
           val heapSizeChange = determineHeapSizeChange(newBuffer, buffer, hasArray)
           handleBufferReplace(replaced, newBuffer, buffer, heapSizeChange, context)
           // replace underlying storage with trimmed buffer if different
-          if (newBuffer ne buffer) synchronized {
+          if (newBuffer ne compressed) synchronized {
             replaceStoredBuffer(newBuffer, 0, isCompressed = true, context)
           }
           releaseExecMemory = true

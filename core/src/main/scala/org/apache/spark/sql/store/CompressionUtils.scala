@@ -148,11 +148,15 @@ object CompressionUtils {
           position + 8, result, 0, outputLen)
       case CompressionCodecId.SNAPPY_ID =>
         input.position(position + 8)
-        if (input.isDirect) {
-          Snappy.uncompress(input, result)
-        } else {
-          Snappy.uncompress(input.array(), input.arrayOffset() +
-              input.position(), input.remaining(), result.array(), 0)
+        try {
+          if (input.isDirect) {
+            Snappy.uncompress(input, result)
+          } else {
+            Snappy.uncompress(input.array(), input.arrayOffset() +
+                input.position(), input.remaining(), result.array(), 0)
+          }
+        } finally {
+          input.position(position)
         }
     }
     result.rewind()
