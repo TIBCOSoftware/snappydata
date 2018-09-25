@@ -203,7 +203,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
     val stmt = conn.createStatement()
     val conn1 = getConnection(Some("UserX"))
     val stmt1 = conn1.createStatement()
-    stmt.execute(s"CREATE TABLE temp (username String, id Int) " +
+    ownerContext.sql(s"CREATE TABLE temp (username String, id Int) " +
         s" USING $tableType ")
     val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
       "USERY" -> 8, "USERY" -> 9)
