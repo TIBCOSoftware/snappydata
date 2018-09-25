@@ -1521,3 +1521,18 @@ case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
 case class BypassRowLevelSecurity(child: LogicalFilter) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
 }
+
+/**
+ * Wrap plan-specific query hints (like joinType). This extends Spark's BroadcastHint
+ * so that filters/projections etc can be pushed below this by optimizer.
+ */
+class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
+    extends BroadcastHint(_child) {
+
+  override def productArity: Int = 2
+
+  override def productElement(n: Int): Any = n match {
+    case 0 => child
+    case 1 => hints
+  }
+}

@@ -40,13 +40,12 @@ clustermode=
 while (( "$#" )); do
   param="$1"
   case $param in
+    # Check for background/foreground start
     -bg | --background)
-      # Check for background start
       BACKGROUND=-bg
     ;;
     -fg | --foreground)
-      # Check for foreground start
-      BACKGROUND=""
+      BACKGROUND=-fg
     ;;
     rowstore)
       clustermode="rowstore"

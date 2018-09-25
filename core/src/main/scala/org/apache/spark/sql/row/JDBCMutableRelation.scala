@@ -19,7 +19,9 @@ package org.apache.spark.sql.row
 import java.sql.Connection
 
 import scala.collection.mutable
+
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -189,7 +191,7 @@ case class JDBCMutableRelation(
       sqlContext.sparkContext,
       schema,
       requiredColumns,
-      filters.flatMap(translateToFilter(_)),
+      filters.flatMap(translateToFilter),
       parts, jdbcOptions).asInstanceOf[RDD[Any]]
     (rdd, Nil)
   }
@@ -321,16 +323,24 @@ case class JDBCMutableRelation(
     }
   }
 
-  override def executeUpdate(sql: String): Int = {
+  override def executeUpdate(sql: String, defaultSchema: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
       connProperties.hikariCP)
+    var currentSchema: String = null
     try {
+      if (defaultSchema ne null) {
+        currentSchema = connection.getSchema
+        if (defaultSchema != currentSchema) {
+          connection.setSchema(defaultSchema)
+        }
+      }
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()
       stmt.close()
       result
     } finally {
+      if (currentSchema ne null) connection.setSchema(currentSchema)
       connection.commit()
       connection.close()
     }
@@ -466,13 +476,12 @@ case class JDBCMutableRelation(
 
   private def getDataType(column: StructField): String = {
     val dataType: String = dialect match {
-      case d: JdbcExtendedDialect => {
+      case d: JdbcExtendedDialect =>
         val jd = d.getJDBCType(column.dataType, column.metadata)
         jd match {
           case Some(x) => x.databaseTypeDefinition
           case _ => column.dataType.simpleString
         }
-      }
       case _ => column.dataType.simpleString
     }
     dataType
