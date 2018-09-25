@@ -164,7 +164,7 @@ Python users can submit a Python application using `./bin/spark-submit` in the S
 ./bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
-    --conf spark.ui.port=4042 /quickstart/python/CreateTable.py
+    --conf spark.ui.port=4042 ./quickstart/python/CreateTable.py
 ```
 
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.

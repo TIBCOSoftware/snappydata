@@ -58,11 +58,11 @@ deploy package <unique-alias-name> ‘packages’ [ repos ‘repositories’ ] [
 **Deploy packages from a default repository:**
 	
 ``` pre
-deploy package deeplearning spark spark_deep_learning_0_3_0 databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11 /home/snappydata/work
+deploy package deeplearning 'databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11' path '/home/snappydata/work';
 ```
 
 ```pre
-deploy package Sparkredshift spark_redshift_300 com.databricks:spark-redshift_2.10:3.0.0-preview1 /home/snappydata/work
+deploy package Sparkredshift 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/snappydata/work';
 ```
 
 <a id= deployjars> </a>
@@ -132,7 +132,7 @@ undeploy <jar-name>
 ### Example 
 	
 ```pre
-undeploy spark-daria_2.11.8-2.2.0_0.10.0.jar 
+undeploy RedshiftDataSource;
 ```
 
 !!!Attention
