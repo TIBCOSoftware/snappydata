@@ -42,6 +42,10 @@ object QueryExecutionJdbc {
     var warmup: Integer = args(4).toInt
     var runsForAverage: Integer = args(5).toInt
     var isDynamic: Boolean = args(6).toBoolean
+    var traceEvents: Boolean = args(7).toBoolean
+    val randomSeed: Integer = args(8).toInt
+
+    TPCH_Queries.setRandomSeed(randomSeed)
 
     for (query <- queries) {
       var prepStatement: PreparedStatement = null

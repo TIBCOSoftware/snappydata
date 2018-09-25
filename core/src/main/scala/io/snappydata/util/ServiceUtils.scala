@@ -92,12 +92,20 @@ object ServiceUtils {
 
   def invokeStartFabricServer(sc: SparkContext,
       hostData: Boolean): Unit = {
-    val properties = getStoreProperties(sc.getConf.getAll)
+    val properties = getStoreProperties(Utils.getInternalSparkConf(sc).getAll)
     // overriding the host-data property based on the provided flag
     if (!hostData) {
       properties.setProperty("host-data", "false")
       // no DataDictionary persistence for non-embedded mode
       properties.setProperty("persist-dd", "false")
+    }
+    // set the log-level from initialized SparkContext's level if set to higher level than default
+    if (!properties.containsKey("log-level")) {
+      val level = org.apache.log4j.Logger.getRootLogger.getLevel
+      if ((level ne null) && level.isGreaterOrEqual(org.apache.log4j.Level.WARN)) {
+        properties.setProperty("log-level",
+          ClientSharedUtils.convertToJavaLogLevel(level).getName.toLowerCase)
+      }
     }
     ServerManager.getServerInstance.start(properties)
 

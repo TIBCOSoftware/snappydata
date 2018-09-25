@@ -62,18 +62,27 @@ CREATE POLICY name ON table_name
 	CURRENT_USER implies to any user who is excecuting the query. 
     
     
-In the following example, we create a policy named **just_own_clients** where only user **tom** can view the data. 
+In the following example, we create a policy named **just_own_clients** where a user can view only the row where that user is the account manager.
+For example, if we want this rule to apply only to user **Tom**, then we can create the policy as shown:
 
 ```
 CREATE POLICY just_own_clients ON clients
     FOR SELECT
-    TO CURRENT_USER
+    TO TOM
     USING ACCOUNT_MANAGER = CURRENT_USER();
 ```
-**CURRENT_USER() ** is a built-in function which returns the name of the user who is currently executing the query. 
-If you want to apply the policy to selective users, then instead of **TO CURRENT_USER** you can provide the name of the individual users or LDAP group. 
+As per the the above policy, user **Tom** can see only one row, where as other users can view all the rows.
 
-After the row level security policy is enabled, the policy gets applied to the users.
+The same can be also applied to a LDAP group as shown:
+
+```
+CREATE POLICY just_own_clients ON clients
+    FOR SELECT
+    TO ldapgroup:group1
+    USING ACCOUNT_MANAGER = CURRENT_USER();
+```
+
+After the row level security policy is enabled, the policy gets applied to the corresponding users.
 
 <a id= enablerowlevelsecurity> </a>
 ## Enabling Row Level Security

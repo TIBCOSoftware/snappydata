@@ -16,11 +16,13 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.net.URLClassLoader
 import java.sql.SQLException
 import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
@@ -40,6 +42,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.SnappyTableStatsProviderService
+
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
@@ -58,8 +61,6 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, SparkContext}
-
-import java.net.URLClassLoader
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -244,11 +245,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
             ${ctx.declareAddedFunctions()}
 
-            public boolean check($rowClass statsRow, boolean isLastStatsRow) {
+            public boolean check($rowClass statsRow, boolean isLastStatsRow, boolean isDelta) {
               // TODO: don't have the update count for delta row (only insert count)
               // so adding the delta "insert" count to full count read in previous call
               $numRows += statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
-              return $filterFunction(statsRow, $numRows, isLastStatsRow);
+              return $filterFunction(statsRow, $numRows, isLastStatsRow, isDelta);
             }
          }
       """
@@ -283,9 +284,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
               numColumnsInStatBlob)
             // check the delta stats after full stats (null columns will be treated as failure
             // which is what is required since it means that only full stats check should be done)
-            if (filterPredicate.check(statsRow, deltaStatsRow eq null) ||
-                ((deltaStatsRow ne null) &&
-                    filterPredicate.check(deltaStatsRow, isLastStatsRow = true))) {
+            if (filterPredicate.check(statsRow, deltaStatsRow eq null, isDelta = false) ||
+                ((deltaStatsRow ne null) && filterPredicate.check(deltaStatsRow,
+                  isLastStatsRow = true, isDelta = true))) {
               return
             }
             batchIterator.moveNext()
@@ -623,7 +624,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ConnectionPool.clear()
   }
 
-  override def getLeadClassLoader() : URLClassLoader =
+  override def getLeadClassLoader: URLClassLoader =
     ToolsCallbackInit.toolsCallback.getLeadClassLoader()
 
   override def clearSessionCache(onlyQueryPlanCache: Boolean = false): Unit = {
@@ -646,5 +647,5 @@ trait StoreCallback extends Serializable {
  * an additional argument for the same to determine whether to update metrics or not.
  */
 trait StatsPredicate {
-  def check(row: UnsafeRow, isLastStatsRow: Boolean): Boolean
+  def check(row: UnsafeRow, isLastStatsRow: Boolean, isDelta: Boolean): Boolean
 }
