@@ -159,6 +159,11 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         df.write.insertInto(tableName)
       }
     }
+    // test hook for validating idempotency
+    if (parameters.contains("internal___failBatch")
+        && parameters("internal___failBatch") == "true") {
+      throw new RuntimeException("dummy failure for test")
+    }
   }
 
   private def dropEventTypeColumn(df: Dataset[Row]) = {

@@ -236,7 +236,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assert(thrown.getCause.getMessage == errorMessage)
   }
 
-  test("streaming query restart") {
+  test("test idempotency") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
     val topic = getTopic(testId)
@@ -246,27 +246,30 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
-
-    kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,0").toArray)
-    waitTillTheBatchIsPickedForProcessing(1, testId)
-
     streamingQuery.stop()
 
-    val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId)
+    val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId, true, true)
+    kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,0").toArray)
+    try {
+      streamingQuery1.processAllAvailable()
+    } catch {
+      case ex: StreamingQueryException if ex.cause.getMessage == "dummy failure for test" =>
+        streamingQuery1.stop()
+    }
+
+    val streamingQuery2: StreamingQuery = createAndStartStreamingQuery(topic, testId)
 
     kafkaTestUtils.sendMessages(topic, (21 to 30).map(i => s"$i,name$i,$i,0").toArray)
-    waitTillTheBatchIsPickedForProcessing(2, testId)
-    streamingQuery1.processAllAvailable()
+    waitTillTheBatchIsPickedForProcessing(1, testId)
+    streamingQuery2.processAllAvailable()
 
     assertData((0 to 30).map(i => Row(i, s"name$i", i)).toArray)
   }
 
-
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
       retries: Int = 15): Unit = {
     if (retries == 0) {
-      throw new RuntimeException(s"Batch id $batchId not found in sink status table " +
-          s"even after $retries retries")
+      throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
     val sql = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
         s"where stream_query_id = '${streamQueryId(testId)}'"
@@ -279,7 +282,6 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
   private def assertData(expectedData: Array[Row]) = {
-    expectedData.equals()
     val actualData = session.sql("select * from " + tableName + " order by id").collect()
     assertResult(expectedData)(actualData)
   }
@@ -297,7 +299,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
   private def createAndStartStreamingQuery(topic: String, testId: Int,
-      withEventTypeColumn: Boolean = true) = {
+      withEventTypeColumn: Boolean = true, failBatch: Boolean = false) = {
     val streamingDF = session
         .readStream
         .format("kafka")
@@ -322,7 +324,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     implicit val encoder = RowEncoder(schema)
 
-    streamingDF.selectExpr("CAST(value AS STRING)")
+    val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]
         .map(_.split(","))
         .map(r => {
@@ -339,7 +341,12 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
         .option("tableName", tableName)
         .option("streamQueryId", streamQueryId(testId))
         .option("checkpointLocation", checkpointDirectory)
-        .start()
+    if (failBatch) {
+      streamWriter.option("internal___failBatch", "true").start()
+    }
+    else {
+      streamWriter.start()
+    }
   }
 
   private def streamQueryId(testId: Int) = {
