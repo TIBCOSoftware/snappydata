@@ -14,6 +14,7 @@ The following topics are covered in this section:
 * [Region {0} bucket {1} has persistent data that is no longer online stored at these locations: {2}](#persistent-data)
 
 * [ForcedDisconnectException Error: "No Data Store found in the distributed system for: {0}"](#no-data-store)
+* [Node went down or data no longer available while iterating the results](#queryfailiterate).
 
 <a id="region0"></a>
 <error> **Error Message:** </error> 
@@ -96,4 +97,20 @@ One possible reason for this could be that large GC pauses are causing the membe
 
 <action> **Solution:** </br>
 To minimize the chances of this happening, you can increase the DistributedSystem property [member-timeout](../best_practices/important_settings.md#member-timeout). This setting also controls the length of time required to notice a network failure. Also, review your memory configuration and configure to use [off-heap memory](../best_practices/memory_management.md#snappydata-off-heap-memory).
+</action>
+
+<!-- --------------------------------------------------------------------------- -->
+
+<a id="queryfailiterate"></a>
+<error> **Error Message:** </error> 
+<error-text>
+Node went down or data no longer available while iterating the results.
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+In cases where a node fails while a JDBC/ODBC client or job is consuming result of a query, then it can result in the query failing with such an exception. 
+</diagnosis>
+
+<action> **Solution:** </br>
+This is expected behaviour where the product does not retry, since partial results are already consumed by the application. Application must retry the entire query after discarding any changes due to partial results that are consumed.
 </action>

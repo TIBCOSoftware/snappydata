@@ -32,28 +32,28 @@ You can also download the Enterprise Edition [here](https://www.snappydata.io/do
 
 The following new features are included in SnappyData 1.0.2 version:
 
-*	Introduced an API in snappy session catalog to get Primary Key of Row tables  or Key Columns of Column Tables, as DataFrame. (SNAP-2459)
-*	Introduced an API in snappy session catalog to get table type as String (SNAP-2477).
+*	Introduced an API in snappy session catalog to get Primary Key of Row tables  or Key Columns of Column Tables, as DataFrame. 
+*	Introduced an API in snappy session catalog to get table type as String.
 *	Added support for arbitrary size view definition. It use to fail when view text size went beyond 32k.
 Support for displaying VIEWTEXT for views in SYS.HIVETABLES. 
 For example: Select viewtext from sys.hivetables where tablename = ‘view_name” will give the text with which the view was created.
-*	Added Row level Security feature. Admins can define multiple security policies on tables for different users or ldap groups. </br>Refer [Row Level Security](/security/row_level_security.md)
-*	Auto refresh of UI page. Now the SnappyData UI page gets updated automatically and frequently. User does not have to refresh or reload. Refer [SnappyData Pulse](/monitoring/monitoring.md)
-*	More richer User Interface. Added graphs for memory, CPU consumption etc. for last 15 minutes. The user has the ability to see how the cluster health has been for the last 15 minutes instead of just current state.
+*	Added Row level Security feature. Admins can define multiple security policies on tables for different users or LDAP groups. Refer [Row Level Security](/security/row_level_security.md)
+*	Auto refresh of UI page. Now the SnappyData UI page gets updated automatically and frequently. Users need not refresh or reload. Refer [SnappyData Pulse](/monitoring/monitoring.md)
+*	Richer user interface. Added graphs for memory, CPU consumption etc. for last 15 minutes. The user has the ability to see how the cluster health has been for the last 15 minutes instead of just current state.
 *	Total CPU core count capacity of the cluster is now displayed on the UI. </br>Refer [SnappyData Pulse](/monitoring/monitoring.md)
 *	Bucket count of tables are also displayed now on the user interface.
-*	Support deployment of packages and jars as DDL command.
-*	Added support for reading maven dependencies using **--packages** option in our job server scripts. Refer [Deploying Packages in SnappyData](/connectors/deployment_dependency_jar.md#deploypackages)
+*	Support deployment of packages and jars as DDL command. Refer [Deploy](/reference/sql_reference/deploy.md)
+*	Added support for reading maven dependencies using **--packages** option in our job server scripts. Refer [Deploying Packages in SnappyData](/connectors/deployment_dependency_jar.md#deploypackages).
 *	Changes to procedure **sys.repair_catalog** to execute it on the server (earlier this was run on lead by sending a message to it). This will be useful to repair catalog even when lead is down. </br>Refer [Catalog Repair](/troubleshooting/catalog_inconsistency.md)
-*	Added support for** PreparedStatement.getMetadata() JDBC API **. This is on an experimental basis.
-*	Added support for execution of some ddl commands viz CREATE/DROP DISKSTORE, GRANT, REVOKE. CALL procedures from snappy session as well. 
+*	Added support for **PreparedStatement.getMetadata() JDBC API**. This is on an experimental basis.
+*	Added support for execution of some DDL commands viz CREATE/DROP DISKSTORE, GRANT, REVOKE. CALL procedures from snappy session as well.
 *	Quote table names in all store DDL/DML/query strings to allow for special characters  and keywords in table names.
 *	Spark application with same name cannot be submitted to SnappyData. This has been done so that individual apps can be killed by its name when required.
 *	Users are not allowed to create tables in their own schema based on system property - `snappydata.RESTRICT_TABLE_CREATION`. In some cases it may be required to control use of cluster resources in which case the table creation is done only by authorized owners of schema.
 *	Schema can be owned by an LDAP group also and not necessarily by a single user.
-*	Support for deploying SnappyData on Kubernetes using Helm charts. This feature is currently experimental. </br>Refer [Kubernetes](/kubernetes.md)
+*	Support for deploying SnappyData on Kubernetes using Helm charts. </br>Refer [Kubernetes](/kubernetes.md)
 *	Disk Store Validate tool enhancement. Validation of disk store can find out all the inconsistencies at once.
-*	BINARY data type is same as Blob data type.
+*	BINARY data type is same as BLOB data type.
 
 ## Performance Enhancements
 
@@ -62,10 +62,11 @@ The following performance enhancements are included in SnappyData 1.0.2 version:
 *	Fixed concurrent query performance issue by resolving the incorrect output partition choice.  Due to numBucket check, all the partition pruned queries were converted to hash partition with one partition. This was causing an exchange node to be introduced. (SNAP-2421)
 *	Fixed SnappyData UI becoming unresponsive on LowMemoryException.(SNAP-2071)
 *	Cleaning up tokenization handling and fixes. Main change is addition of the following two separate classes for tokenization: 
+
 	*	**ParamLiteral**
 	*	**TokenLiteral** 
 
-Both classes extend a common trait **TokenizedLiteral**. Tokenization will always happen independently of plan caching, unless it is explicitly turned  off. (SNAP-1932)
+	Both classes extend a common trait **TokenizedLiteral**. Tokenization will always happen independently of plan caching, unless it is explicitly turned  off. (SNAP-1932)
 
 *	Procedure for smart connector iteration and fixes. Includes fixes for perf issues as noted for all iterators (disk iterator, smart connector and remote iterator). (SNAP-2243)
 
@@ -78,10 +79,10 @@ The following defect fixes are included in SnappyData 1.0.2 version:
 *	Fixed missing SQL tab on SnappyData UI in local mode. (SNAP-2470)
 *	Fixed few issues related to wrong results for Row tables due to plan caching. (SNAP-2463 - Incorrect pushing down of OR and AND clause filter combination in push down query, SNAP-2351 - re-evaluation of filter was not happening due to plan caching, SNAP-2451, SNAP-2457)
 *	Skip batch, if the stats row is missing while scanning column values from disk. This was already handled for in-memory batches and the same has been added for on-disk batches. (SNAP-2364)
-*	Fixes in UI to not let unauthorized users to see any tab. (ENT-21)
+*	Fixes in UI to forbid unauthorized users to view any tab. (ENT-21)
 *	Fixes in SnappyData parser to create inlined table. (SNAP-2302), ‘()’ as optional in some function like ‘current_date()’, ‘current_timestamp()’ etc. (SNAP-2303)
 *	Consider the current schema name also as part of Caching Key for plan caching. So same query on same table but from different schema should not clash with each other. (SNAP-2438)
-*	Fix for COLUMN table mysteriously shown as ROW table on dashboard after LME in data  server. (SNAP-2382)
+*	Fix for COLUMN table shown as ROW table on dashboard after LME in data  server. (SNAP-2382)
 *	Fixed off-heap size for Partitioned Regions, showed on UI. (SNAP-2186)
 *	Fixed failure when query on view does not fallback to Spark plan in case Code Generation fails. (SNAP-2363)
 *	Fix invalid decompress call on stats row.(SNAP-2348). Use to fail in run time while scanning column tables.(SNAP-2348)
