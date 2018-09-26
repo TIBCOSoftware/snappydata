@@ -26,9 +26,9 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.json4s.NoTypeHints
 import org.json4s.jackson.Serialization
-
 import scala.collection.mutable.HashMap
 import scala.util.control.NonFatal
+import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
 
 class DirectKafkaStreamSource extends StreamPlanProvider with DataSourceRegister {
 
