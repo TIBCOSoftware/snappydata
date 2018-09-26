@@ -513,8 +513,9 @@ private[sql] final case class ColumnTableScan(
           $batchAssign
           // check the delta stats after full stats (null columns will be treated as failure
           // which is what is required since it means that only full stats check should be done)
-          if ($filterFunction($statsRow, $numFullRows, $deltaStatsRow == null) ||
-              ($deltaStatsRow != null && $filterFunction($deltaStatsRow, $numDeltaRows, true))) {
+          if ($filterFunction($statsRow, $numFullRows, $deltaStatsRow == null, false) ||
+              ($deltaStatsRow != null && $filterFunction($deltaStatsRow,
+               $numDeltaRows, true, true))) {
             break;
           }
           if (!$colInput.hasNext()) return false;
@@ -811,7 +812,7 @@ object ColumnTableScan extends Logging {
           ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
     } else (null, Nil)
 
-    def statsFor(a: Attribute) = columnBatchStatsMap(a)
+    def statsFor(a: Attribute): ColumnStatsSchema = columnBatchStatsMap(a)
 
     def filterInList(l: Seq[Expression]): Boolean =
       l.length <= 200 && !l.exists(!TokenLiteral.isConstant(_))
@@ -926,10 +927,12 @@ object ColumnTableScan extends Logging {
     ctx.addNewFunction(filterFunction,
       s"""
          |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm,
-         |    boolean isLastStatsRow) {
+         |    boolean isLastStatsRow, boolean isDelta) {
          |  // Skip the column batches based on the predicate
          |  ${predicateEval.code}
-         |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
+         |  if (isDelta && (${predicateEval.isNull} || ${predicateEval.value})) {
+         |    return true;
+         |  } else if (!${predicateEval.isNull} && ${predicateEval.value}) {
          |    return true;
          |  } else {
          |    // add to skipped metric only if both stats say so

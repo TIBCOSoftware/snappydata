@@ -34,7 +34,7 @@ sbin="$(dirname "$(absPath "$0")")"
 "$sbin"/snappy-locators.sh status "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh status "$@"
+"$sbin"/snappy-servers.sh -fg status "$@"
 
 # Start Leads
 if [ "$1" != "rowstore" ]; then
