@@ -41,6 +41,7 @@ import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
+import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
@@ -569,6 +570,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, logicalPlan)
   }
 
+  override def internalCreateDataFrame(catalystRows: RDD[InternalRow],
+      schema: StructType): DataFrame = super.internalCreateDataFrame(catalystRows, schema)
 
   /**
    * Create a stratified sample table.
@@ -1734,7 +1737,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(this), new mutable.HashMap[String, String])
+      Some(this), mutable.Map.empty[String, String])
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
@@ -1913,6 +1916,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     new GenericRow(rowAsArray)
   }
 
+  private[sql] def defaultConnectionProps: ConnectionProperties =
+    ExternalStoreUtils.validateAndGetAllProps(Some(this), mutable.Map.empty[String, String])
+
+  private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
+    ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
 
   /**
    * Fetch the topK entries in the Approx TopK synopsis for the specified

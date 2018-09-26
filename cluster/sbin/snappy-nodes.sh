@@ -176,31 +176,28 @@ function execute() {
         args="${args} -J-Dp2p.minJoinTries=1"
       fi
     fi
-    # set the default bind-address and SPARK_LOCAL_IP
-    if ! echo $args $"${@// /\\ }" | grep -q '[-]bind-address='; then
-      args="${args} -bind-address=$host"
-    fi
-    if [ -z "$SPARK_LOCAL_IP" ]; then
-      export SPARK_LOCAL_IP=$host
-      preCommand="export SPARK_LOCAL_IP=$SPARK_LOCAL_IP; "
-    fi
-    # set host-data=false explicitly for leads
-    if [ "$componentType" = "lead" ]; then
-      args="${args} -host-data=false"
-    fi
 
+    bindAddress=
     clientBindAddress=
     clientHostName=
     clientPort=
     dumpServerInfo=
     for arg in $args $"${@// /\\ }"; do
       case "$arg" in
+        -bind-address=*) bindAddress="$(echo $arg | sed 's/-bind-address=//')" ;;
         -client-bind-address=*) clientBindAddress="$(echo $arg | sed 's/-client-bind-address=//')" ;;
         -hostname-for-clients=*) clientHostName="$(echo $arg | sed 's/-hostname-for-clients=//')" ;;
         -client-port=*) clientPort="$(echo $arg | sed 's/-client-port=//')" ;;
         -dump-server-info) dumpServerInfo=1 ;;
       esac
     done
+    # set the default bind-address and SPARK_LOCAL_IP
+    if [ -z "${bindAddress}" ]; then
+      args="${args} -bind-address=$host"
+      bindAddress="${host}"
+    fi
+    preCommand="${preCommand}export SPARK_LOCAL_IP=$bindAddress; "
+
     # set the default client-bind-address and locator's peer-discovery-address
     if [ -z "${clientBindAddress}" -a "${componentType}" != "lead" ]; then
       args="${args} -client-bind-address=${host}"
@@ -209,15 +206,13 @@ function execute() {
     if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
     fi
-    # set the public hostname for Spark Web UI
-    if [ -z "$SPARK_PUBLIC_DNS" -a "${componentType}" = "lead" ]; then
-      export SPARK_PUBLIC_DNS=$host
-      preCommand="${preCommand}export SPARK_PUBLIC_DNS=$SPARK_PUBLIC_DNS; "
+    # set the public hostname for Spark Web UI to hostname-for-clients if configured
+    if [ -n "${clientHostName}" ]; then
+      preCommand="${preCommand}export SPARK_PUBLIC_DNS=${clientHostName}; "
     fi
-    # Set hostname-for-clients on AWS as per SPARK_PUBLIC_DNS
-    if [ -n "${SPARK_IS_AWS_INSTANCE}" -a -n "${SPARK_PUBLIC_DNS}" -a "${componentType}" != "lead" -a "${host}" != 'localhost' -a "${host}" != "127.0.0.1" -a "${host}" != "::1" -a -z "${clientHostName}" ]; then
-      args="${args} -hostname-for-clients=${SPARK_PUBLIC_DNS}"
-      clientHostName="${SPARK_PUBLIC_DNS}"
+    # set host-data=false explicitly for leads
+    if [ "${componentType}" = "lead" ]; then
+      args="${args} -host-data=false"
     fi
 
     if [ -n "${dumpServerInfo}" ]; then
