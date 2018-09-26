@@ -1717,7 +1717,7 @@ public class SnappyTest implements Serializable {
    * Executes user scripts.
    */
   public static synchronized void HydraTask_executeScripts() {
-    Vector scriptNames, scriptLocationList;
+    Vector scriptNames;
     File log = null, logFile;
     scriptNames = SnappyPrms.getScriptNames();
     if (scriptNames == null) {
@@ -1725,20 +1725,11 @@ public class SnappyTest implements Serializable {
       throw new TestException(s);
     }
     try {
-      scriptLocationList = SnappyPrms.getScriptLocationList();
-      if (scriptLocationList.size() != scriptNames.size()) {
-        Log.getLogWriter().info("Adding \" \" parameter in the scriptLocationList for the  " +
-            "scripts for which no script location is specified.");
-        while (scriptLocationList.size() != scriptNames.size())
-          scriptLocationList.add(" ");
-      }
 
       for (int i = 0; i < scriptNames.size(); i++) {
         String userScript = (String) scriptNames.elementAt(i);
         Log.getLogWriter().info("SS - userScript: " + userScript);
-        String location = (String) scriptLocationList.elementAt(i);
-        Log.getLogWriter().info("SS - scriptLocation: " + location);
-        String filePath = snappyTest.getScriptLocation(location + File.separator + userScript);
+        String filePath = snappyTest.getScriptLocation(userScript);
         Log.getLogWriter().info("SS - filePath: " + filePath);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "scriptResult_" +
