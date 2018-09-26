@@ -386,7 +386,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     TestUtil.stopNetServer()
   }
 
-  ignore("Column table creation test - SNAP-2577") {
+  test("Column table creation test - SNAP-2577") {
     snc
     var serverHostPort2 = TestUtil.startNetServer()
     var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
