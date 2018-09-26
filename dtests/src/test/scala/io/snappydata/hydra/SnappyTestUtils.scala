@@ -21,8 +21,9 @@ import java.io.{BufferedReader, File, FileNotFoundException, FileReader, IOExcep
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-
 import java.util
+
+import scala.io.Source
 
 object SnappyTestUtils {
 
@@ -384,28 +385,24 @@ object SnappyTestUtils {
     pw.println("Executing command : " + command)
     // get the missing rows in snappy
     executeProcess(pb, missingResultsFile, pw)
-    var unexpectedRsReader: BufferedReader = null
-    var missingRsReader: BufferedReader = null
+    var unexpectedRsReader: Iterator[String] = null
+    var missingRsReader: Iterator[String] = null
     try {
-      unexpectedRsReader = new BufferedReader(new FileReader(unexpectedResultsFile))
-      missingRsReader = new BufferedReader(new FileReader(missingResultsFile))
+      unexpectedRsReader = Source.fromFile(unexpectedResultsFile).getLines()
+      missingRsReader = Source.fromFile(missingResultsFile).getLines()
     } catch {
       case fe: FileNotFoundException =>
         pw.println("Could not find file to compare results.", fe)
         false
     }
-    var line: String = null
+    var line: String = ""
     val unexpected = new util.ArrayList[String]
     val missing = new util.ArrayList[String]
     try {
-      while ( {
-        (line = unexpectedRsReader.readLine) != null
-      }) unexpected.add("\n  " + line)
-      while ( {
-        (line = missingRsReader.readLine) != null
-      }) missing.add("\n  " + line)
-      unexpectedRsReader.close()
-      missingRsReader.close()
+      while (unexpectedRsReader.hasNext)
+        unexpected.add("\n  " + unexpectedRsReader.next())
+      while (missingRsReader.hasNext)
+        missing.add("\n  " + missingRsReader.next())
     } catch {
       case ie: IOException =>
         pw.println("Got exception while reading resultset files", ie)

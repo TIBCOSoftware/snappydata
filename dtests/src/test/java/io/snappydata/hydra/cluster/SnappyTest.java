@@ -61,8 +61,8 @@ public class SnappyTest implements Serializable {
   protected static SnappyTest snappyTest;
   protected static HostDescription hd = TestConfig.getInstance().getMasterDescription()
       .getVmDescription().getHostDescription();
-  protected static HostDescription localhd = TestConfig.getInstance().getClientDescription
-      (RemoteTestModule.getMyClientName()).getVmDescription().getHostDescription();
+  /*protected static HostDescription localhd = TestConfig.getInstance().getClientDescription
+      (RemoteTestModule.getMyClientName()).getVmDescription().getHostDescription();*/
   protected static char sep = hd.getFileSep();
   private static String gemfireHome = hd.getGemFireHome() + sep;
   protected static String productDir = gemfireHome + ".." + sep + "snappy" + sep;
