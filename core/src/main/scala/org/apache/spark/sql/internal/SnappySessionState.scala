@@ -423,7 +423,8 @@ class SnappySessionState(snappySession: SnappySession)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
-        case  (_: BypassRowLevelSecurity | _: Update | _: Delete | _: DeleteFromTable) => plan
+        case  (_: BypassRowLevelSecurity | _: Update | _: Delete |
+               _: DeleteFromTable | _: PutIntoTable) => plan
 
         // TODO: Asif: Bypass row level security filter apply if the command
         // is of type RunnableCommad. Later if it turns out any data operation
