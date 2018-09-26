@@ -98,7 +98,7 @@ object SparkJDBCDUnitTest extends SplitClusterDUnitTestObject
     // SparkSqlTestCode.txt file contains the commands executed on spark-shell
     val sparkSubmitCommand = productDir + "/bin/spark-submit  --master local[3]" +
       s""" --driver-java-options "-DlocatorPort=$locatorNetPort" """ +
-      " --class SparkJDBCTestJob.getClass.getName" +
+      " --class io.snappydata.cluster.SparkJDBCTestJob" +
       s" --jars $snappyDataClientJar $snappyTestClassJar"
 
     logInfo(s"About to invoke spark-submit with command: $sparkSubmitCommand")
