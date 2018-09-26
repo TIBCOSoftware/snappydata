@@ -283,11 +283,11 @@ class PolicyTest extends PolicyTestBase {
     this.tableWithPolicyJoinedToItself(colTableName)
   }
 
-  test("test policy not applied for update | delete on row table") {
+  test("test policy not applied for update | delete on row table - SNAP-2576") {
     this.updateOrDeleteOntableWithPolicy("row")
   }
 
-  test("test policy not applied for update | delete on column table") {
+  test("test policy not applied for update | delete on column table - SNAP-2576") {
     this.updateOrDeleteOntableWithPolicy("column")
   }
 
