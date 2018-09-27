@@ -1,6 +1,6 @@
 # SnappyData API Reference Guide
 
-This guides gives details of the APIs provided by SnappyData.
+This guide gives details of the APIs provided by SnappyData. The following APIs are included in SnappyData:
 
 
 | SnappySession APIs | DataFrameWriter APIs |SnappyStoreHiveCatalog APIs|
@@ -24,6 +24,20 @@ This guides gives details of the APIs provided by SnappyData.
 <a id= snappysessionscala> </a>
 ## SnappySession APIs
 The following APIs are available for SnappySession.
+
+*	[**sql**](#sqlapi)
+*	[**sqlUncached**](#sqluncachedapi)
+*	[**createTable**](#createtableapi)
+*	[**truncateTable**](#truncateapi)
+*	[**dropTable**](#droptableapi)
+*	[**createSampleTable**](#createsampletableapi)
+*	[**createApproxTSTopK**](#createaproxtstopkapi)
+*	[**setSchema**](#setschemaapi)
+*	[**getCurrentSchema**](#getcurrentschemaapi)
+*	[**insert**](#insertapi)
+*	[**put**](#putapi)
+*	[**delete**](#deleteapi)
+*	[**queryApproxTSTopK**](#queryapproxtstapi)
 
 <a id= sqlapi> </a>
 ### sql
@@ -113,7 +127,7 @@ snappySession.createTable(tableName, "column", dataDF.schema, props)
 <a id= createtable1> </a>
 ### createTable
 
-Creates a SnappyData managed JDBC table which takes a free format DDL string. The ddl string should adhere to syntax of underlying JDBC store.  SnappyData ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The option parameter can take connection details.
+Creates a SnappyData managed JDBC table which takes a free format DDL string. The DDL string should adhere to syntax of underlying JDBC store.  SnappyData ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The option parameter can take connection details.
 
 **Syntax**
 
@@ -445,14 +459,16 @@ snappySession.queryApproxTSTopK("topktable")
 ```
 
 ## DataFrameWriter APIs
-The following APIs are available for DataFrameWriter.
+The following APIs are available for DataFrameWriter:
+
+*	[**putInto**](#putintoapi)
+*	[**deleteFrom**](#deletefromapi)
 
 <a id= putintoapi> </a>
 ### putInto
 
-"Puts" the content of the [[DataFrame]] to the specified table. It
-requires that the schema of the [[DataFrame]] is the same as the schema of the table. If some rows are already present then they are updated.
-Also, the table on which putInto is being done should have defined key_columns if its a column table, or primary key if its a row table.
+Puts the content of the DataFrame into the specified table. It requires that the schema of the DataFrame is the same as the schema of the table. If some rows are already present in the table, then they are updated.
+Also, the table on which **putInto** is implemented should have defined key columns, if its a column table. If it is a row table, then it should have defined primary key.
 
 **Syntax**
 
@@ -476,7 +492,7 @@ import org.apache.spark.sql.snappy._df.write.putInto(“t1”)
 ```
 <a id= deletefromapi> </a>
 ### deleteFrom
-Deletes the content of the DataFrame from the specified table. 
+Deletes the content of the DataFrame from the specified table.
 
 
 **Syntax**
@@ -499,11 +515,14 @@ import org.apache.spark.sql.snappy._df.write.deleteFrom(“t1”)
 ```
 
 ## SnappyStoreHiveCatalog APIs
-The following APIs are available for SnappyStoreHiveCatalog.
+The following APIs are available for SnappyStoreHiveCatalog:
+
+*	[**getKeyColumns**](#getkeycolumapi)
+*	[**getTableType**](#gettabletypeapi) 
 
 <a id= getkeycolumapi> </a>
 ### getKeyColumns
-API to get primary key or Key Columns of a SnappyData table.
+Gets primary key or key columns of a SnappyData table.
 
 
 **Syntax**
@@ -526,7 +545,7 @@ snappySession.sessionCatalog.getKeyColumns("t1")
 ```
 <a id= gettabletypeapi> </a>
 ### getTableType
-Gets the table type ( row, column etc ) of a SnappyData table. 
+Gets the table type (row, column etc.) of a SnappyData table. 
 
 
 **Syntax**
