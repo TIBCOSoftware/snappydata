@@ -1692,8 +1692,11 @@ public class SnappyTest implements Serializable {
         String dataLocation = snappyTest.getDataLocation(location);
         String filePath = snappyTest.getScriptLocation(userScript);
         log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult_" +
-            RemoteTestModule.getCurrentThread().getThreadId() + ".log";
+        String dest = log.getCanonicalPath() + File.separator;
+        if(SnappyPrms.getLogFileName() == null)
+          dest += SnappyPrms.getLogFileName();
+        else
+          dest +=  "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();

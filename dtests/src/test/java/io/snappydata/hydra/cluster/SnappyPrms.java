@@ -867,6 +867,11 @@ public class SnappyPrms extends BasePrms {
     return snappyLogLevel;
   }
 
+  public static String getLogFileName() {
+    Long key = logFileName;
+    return tasktab().stringAt(key, null);
+  }
+
   public static Vector getSQLScriptNames() {
     Long key = sqlScriptNames;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
