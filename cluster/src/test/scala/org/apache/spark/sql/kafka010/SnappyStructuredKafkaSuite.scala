@@ -82,7 +82,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .queryName("simple")
       .outputMode("append")
       .trigger(ProcessingTime("1 seconds"))
-      .option("tablename", "APP.USERS").option("SINKID", "abc")
+      .option("tablename", "APP.USERS").option("streamqueryid", "abc")
       .option("checkpointLocation", "/tmp/snappyTable")
       .start
 
@@ -246,7 +246,6 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .writeStream
       .outputMode("append")
       .format("memory")
-      // .option("checkpointLocation", "/tmp/snappyResultTable")
       .queryName("snappyResultTable")
       .trigger(ProcessingTime("1 seconds"))
       .start
