@@ -248,7 +248,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       snappyTest.executeProcess(pb, logFile);
       Log.getLogWriter().info("Started Kafka topic: " + topic);
     }
-
   }
 
   public static void HydraTask_executeSnappyStreamingJob() {
@@ -280,8 +279,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         String appName = SnappyPrms.getUserAppName();
         Log.getLogWriter().info("APP PROPS :" + APP_PROPS);
         String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-            " --app-name " + appName+ " --class " + userJob + " --app-jar " + userJarPath + APP_PROPS
-            + " --stream ";
+            " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
+            APP_PROPS + " --stream ";
         String dest = getCurrentDirPath() + File.separator + logFileName;
         logFile = new File(dest);
         pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
@@ -309,6 +308,17 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     } catch (IOException e) {
       throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
     }
+  }
+
+  public static void HydraTask_restartLeadVMWithStreaming(){
+    HydraTask_cycleLeadVM();
+    HydraTask_executeSnappyStreamingJob();
+  }
+
+  public static void HydraTask_restartSnappyClusterForStreaming(){
+   HydraTask_stopSnappyCluster();
+   HydraTask_startSnappyCluster();
+   HydraTask_executeSnappyStreamingJob();
   }
 
   public boolean getJobStatus(String jobID){
