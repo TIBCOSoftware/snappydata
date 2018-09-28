@@ -28,7 +28,7 @@ THREADGROUP locatorThreads
 THREADGROUP snappyThreads
             totalThreads = 1
             totalVMs     = 1
-            clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${C}\",${${C}Hosts}, true)"  ncf;
+            clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${A}\",${${A}Hosts}, true)"  ncf;
 
 THREADGROUP leadThread
             totalThreads = 1

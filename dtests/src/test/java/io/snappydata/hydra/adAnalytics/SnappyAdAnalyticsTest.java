@@ -276,10 +276,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
             APP_PROPS = APP_PROPS + " --conf " + appProps[j];
         }
         brokerList = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
-        APP_PROPS = APP_PROPS + " --conf brokerList=" + brokerList;
+        APP_PROPS = APP_PROPS + " --conf brokerList=" + brokerList + " --conf tid=" + getMyTid();
+        String appName = SnappyPrms.getUserAppName();
         Log.getLogWriter().info("APP PROPS :" + APP_PROPS);
         String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-            " --app-name AdAnalytics --class " + userJob + " --app-jar " + userJarPath + APP_PROPS
+            " --app-name " + appName+ " --class " + userJob + " --app-jar " + userJarPath + APP_PROPS
             + " --stream ";
         String dest = getCurrentDirPath() + File.separator + logFileName;
         logFile = new File(dest);
@@ -357,7 +358,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     String brokerList = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
     APP_PROPS = APP_PROPS + " " + brokerList;
     for (int i = 0; i < generatorAndPublisher.size(); i++) {
-      String dest = kafkaLogDir + sep + "generatorAndPublisher" + i + ".log";
+      String dest = kafkaLogDir + sep + "generatorAndPublisher" + getMyTid() + "_" + i + ".log";
       File logFile = new File(dest);
       String processName= (String)generatorAndPublisher.elementAt(i);
       String command = "nohup java -cp .:" + userJarPath + ":" + productDir + "jars/* " +

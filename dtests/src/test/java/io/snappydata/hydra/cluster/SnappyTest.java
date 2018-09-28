@@ -1693,7 +1693,7 @@ public class SnappyTest implements Serializable {
         String filePath = snappyTest.getScriptLocation(userScript);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator;
-        if(SnappyPrms.getLogFileName() == null)
+        if(SnappyPrms.getLogFileName() != null)
           dest += SnappyPrms.getLogFileName();
         else
           dest +=  "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";

@@ -31,13 +31,13 @@ import org.apache.spark.streaming.SnappyStreamingContext
 class SnappyStreamingSinkJob extends SnappyStreamingJob {
 
   override def runSnappyJob(snsc: SnappyStreamingContext, jobConfig: Config): Any = {
-    val tid: Int = Thread.currentThread().getId.toInt
+    val tid: Int = jobConfig.getString("tid").toInt
     var brokerList: String = jobConfig.getString("brokerList")
     brokerList = brokerList.replace("--", ":")
     val kafkaTopic: String = jobConfig.getString("kafkaTopic")
     val tableName: String = "persoon"
     val checkpointDirectory: String = (new File(".")).getCanonicalPath +
-        File.separator + "checkpointDirectory"
+        File.separator + "checkpointDirectory_" + tid
     // Spark tip : Keep shuffle count low when data volume is low.
     snsc.sql("set spark.sql.shuffle.partitions=8")
     val outputFile = "KafkaStreamingJob_output" + tid + ".txt"
