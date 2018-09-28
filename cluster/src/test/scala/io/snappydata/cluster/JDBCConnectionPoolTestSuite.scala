@@ -33,6 +33,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc
     val serverHostPort = TestUtil.startNetServer()
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+    // scalastyle:off
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
     val properties = null
     for(i <- 1 to 3) {
       val conn = DriverManager.getConnection(url, properties)
@@ -52,6 +54,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     properties.setProperty("user", "pradeep")
     properties.setProperty("password", "pradeep")
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+    // scalastyle:off
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
     for(i <- 1 to 3){
       val conn = DriverManager.getConnection(url, properties)
       assert(null != conn)
@@ -62,6 +66,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
   test("Test JDBC connection pool with empty properties ") {
     val serverHostPort = TestUtil.startNetServer()
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+    // scalastyle:off
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
     val properties = new Properties
     properties.setProperty("pool-initialSize", "5")
     properties.setProperty("pool-maxIdle", "0")
@@ -82,6 +88,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     properties.setProperty("user", "pradeep")
     properties.setProperty("password", "pradeep")
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+    // scalastyle:off
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
     for(i <- 1 to 10){
       val conn = DriverManager.getConnection(url, properties)
       assert(null != conn)
@@ -92,6 +100,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
   test("Test connection pool without passing any property") {
     val serverHostPort = TestUtil.startNetServer()
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+    // scalastyle:off
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
     val conn = DriverManager.getConnection(url)
     assert(null != conn)
     conn.close()
@@ -101,6 +111,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc
     val serverHostPort = TestUtil.startNetServer()
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+    // scalastyle:off
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
     val properties = new Properties
     properties.setProperty("user", "user")
     properties.setProperty("password", "passwd")
@@ -140,6 +152,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc
     val serverHostPort = TestUtil.startNetServer()
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+    // scalastyle:off
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
     val properties = new Properties
     properties.setProperty("user", "user")
     properties.setProperty("password", "passwd")
@@ -166,7 +180,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
       properties.setProperty("pool-password", "pradeep")
 
       val url = s"jdbc:snappydata:pool://$serverHostPort"
-
+      // scalastyle:off
+      Class.forName("io.snappydata.jdbc.ClientPoolDriver")
       // max active is 3 and trying to use more than that
       for (i <- 1 to 5) {
         val conn = DriverManager.getConnection(url, properties)
