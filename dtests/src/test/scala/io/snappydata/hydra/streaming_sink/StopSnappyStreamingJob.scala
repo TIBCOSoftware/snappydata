@@ -15,15 +15,15 @@
  * LICENSE file.
  */
 
-package io.snappydata.hydra.adAnalytics
+package io.snappydata.hydra.streaming_sink
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
 
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySession, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 class StopSnappyStreamingJob extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
