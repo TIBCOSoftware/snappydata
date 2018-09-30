@@ -633,6 +633,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           Constant.JDBC_EMBEDDED_DRIVER());
       initCommonHiveMetaStoreProperties(metadataConf);
 
+      // wait for stats sampler initialization
+      Misc.waitForSamplerInitialization();
       final short numRetries = 40;
       short count = 0;
       while (true) {
