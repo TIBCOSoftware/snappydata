@@ -47,7 +47,7 @@ object StringMessageProducer {
     println("Sending Kafka messages of topic " + topic + " to brokers " + brokers)
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
-    val threads = new Array[Thread](eventCount)
+    val threads = new Array[Thread](numThreads)
     for (i <- 0 until numThreads) {
       val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer))
       thread.start()
@@ -74,6 +74,7 @@ extends Runnable {
       val data = new ProducerRecord[Long, String](topic, i, s"$i,name$i,$i,0")
       producer.send(data)
       })
+    println(s"Done producing records...")
   }
 
 }
