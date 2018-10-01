@@ -506,6 +506,12 @@ class RowTableTest
     println("Successful")
   }
 
+  test("SNAP-2467"){
+    snc.sql("create table music(id int)")
+    snc.sql("alter table music add column otherid int not null default 444;")
+    snc.sql("select otherid from music")
+  }
+
   test("Test the drop syntax SQL and SnappyContext ") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
