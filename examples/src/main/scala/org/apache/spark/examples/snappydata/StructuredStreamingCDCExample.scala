@@ -25,24 +25,31 @@ import scala.language.postfixOps
 import scala.reflect.io.Path
 
 /**
- * An example showing usage of structured streaming with SnappyData
+ * An example showing CDC usage with SnappyData structured streaming
  *
  * <p></p>
  * To run the example in local mode go to your SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
- * bin/run-example snappydata.StructuredStreamingExample
+ * bin/run-example snappydata.StructuredStreamingCDCExample
  * </pre>
  * <p></p>
  * To run this on your local machine, you need to first run a Netcat server
  * `$ nc -lk 9999`
  *
+ * Sample input data:
+ * {{{
+ * 1,user1,23,0
+ * 2,user2,45,0
+ * 1,user1,23,2
+ * 2,user2,46,1
+ * }}}
  * For more details on streaming with SnappyData refer to:
  * http://snappydatainc.github.io/snappydata/programming_guide
  * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
-object StructuredStreamingExample {
+object StructuredStreamingCDCExample{
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
@@ -50,9 +57,7 @@ object StructuredStreamingExample {
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     println("Initializing a SnappySesion")
-
-    val checkpointDirectory = "/tmp/StructuredStreamingExample"
-
+    val checkpointDirectory = "/tmp/StructuredStreamingCDCExample"
     val spark: SparkSession = SparkSession
         .builder()
         .appName(getClass.getSimpleName)
@@ -60,10 +65,10 @@ object StructuredStreamingExample {
         .getOrCreate()
 
     import spark.implicits._
-
     val snappy = new SnappySession(spark.sparkContext)
 
-    snappy.sql("create table devices (device varchar(30) , signal int)")
+
+    snappy.sql("create table users (id long , name varchar(40), age int) using column options(key_columns 'id')")
 
     // Create DataFrame representing the stream of input lines from connection to host:port
     val socketDF = snappy
@@ -73,33 +78,30 @@ object StructuredStreamingExample {
         .option("port", 9999)
         .load()
 
-    // Creating a typed DeviceData from raw string received on socket.
+    // Creating a typed User from raw string received on socket.
     val structDF = socketDF.as[String].map(s => {
       val fields = s.split(",")
-      DeviceData(fields(0), fields(1).toInt)
+      User(fields(0).toLong, fields(1), fields(2).toInt, fields(3).toInt)
     })
 
-    // A simple streaming query to filter signal value and load the output into devices table.
+    // A simple streaming query to filter users by their age and load the data in users table
     val streamingQuery = structDF
-        .filter(_.signal > 10)
+        .filter( _.age >= 12)
         .writeStream
         .format("snappysink")
         .outputMode("append")
-        .queryName("Devices")
+        .queryName("users")
         .trigger(ProcessingTime("1 seconds"))
-        .option("streamQueryId", "Devices")     // must be unique across a snappydata cluster
-        .option("tableName", "devices")
+        .option("streamQueryId", "users")     // must be unique across the snappydata cluster
+        .option("tableName", "users")
         .option("checkpointLocation", checkpointDirectory)
         .start()
 
     streamingQuery.awaitTermination(timeoutMs = 15000)
+    snappy.sql("select * from users").show()
 
+    snappy.sql("drop table users")
 
-    println("Data loaded in table: ")
-
-    snappy.sql("select * from devices").show()
-
-    snappy.sql("drop table devices")
     // CAUTION: recursively deleting directory
     Path(checkpointDirectory).deleteRecursively()
 
@@ -108,5 +110,5 @@ object StructuredStreamingExample {
   }
 }
 
-case class DeviceData(device: String, signal: Int)
+case class User(is: Long, name: String, age: Int, _eventType: Int)
 

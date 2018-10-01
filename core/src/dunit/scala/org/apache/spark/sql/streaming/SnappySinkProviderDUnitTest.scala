@@ -53,7 +53,7 @@ class SnappySinkProviderDUnitTest(s: String)
 
   if (Host.getHostCount > 0) {
     host = Host.getHost(0)
-    vm = host.getVM(3)
+    vm = host.getVM(0)
   }
 
 

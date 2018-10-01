@@ -29,7 +29,6 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
-import org.apache.spark.streaming.{Milliseconds, SnappyStreamingContext}
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     with BeforeAndAfter with BeforeAndAfterAll {
@@ -38,7 +37,6 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   import session.implicits._
 
   private var kafkaTestUtils: KafkaTestUtils = _
-  protected var ssnc: SnappyStreamingContext = _
 
   private val batchDurationMillis: Long = 1000
   private val testIdGenerator = new AtomicInteger(0)
@@ -59,20 +57,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     }
   }
 
-  private def creatingFunc() = new SnappyStreamingContext(sc, Milliseconds(batchDurationMillis))
-
-  before {
-    SnappyStreamingContext.getActive.foreach {
-      _.stop(stopSparkContext = false, stopGracefully = true)
-    }
-    ssnc = SnappyStreamingContext.getActiveOrCreate(creatingFunc)
-  }
-
   after {
     baseCleanup(false)
-    SnappyStreamingContext.getActive.foreach {
-      _.stop(stopSparkContext = false, stopGracefully = true)
-    }
 
     // CAUTION!! - recursively deleting checkpoint directory. handle with care.
     Path(checkpointDirectory).deleteRecursively()
@@ -271,9 +257,9 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sql = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
+    val sqlString = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
         s"where stream_query_id = '${streamQueryId(testId)}'"
-    val batchIdFromTable = snc.sql(sql).collect()
+    val batchIdFromTable = snc.sql(sqlString).collect()
 
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
       Thread.sleep(1000)
@@ -288,8 +274,11 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
   private def createTable(withKeyColumn: Boolean = true)(isRowTable: Boolean = false) = {
     snc.sql("drop table if exists users")
+
     def provider = if (isRowTable) "row" else "column"
+
     def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id')" else ""
+
     def primaryKey = if (isRowTable && withKeyColumn) "primary key" else ""
 
     val s = s"create table users (id long $primaryKey, name varchar(40), age int) " +
