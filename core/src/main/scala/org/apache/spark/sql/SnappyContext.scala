@@ -18,10 +18,13 @@ package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
@@ -1116,11 +1119,15 @@ object SnappyContext extends Logging {
   }
 
   private[sql] def sharedState(sc: SparkContext): SnappySharedState = {
-    val state = _sharedState
+    var state = _sharedState
     if ((state ne null) && (state.sparkContext eq sc)) state
     else contextLock.synchronized {
-      _sharedState = SnappySharedState.create(sc)
-      _sharedState
+      state = _sharedState
+      if ((state ne null) && (state.sparkContext eq sc)) state
+      else {
+        _sharedState = SnappySharedState.create(sc)
+        _sharedState
+      }
     }
   }
 
@@ -1151,11 +1158,14 @@ object SnappyContext extends Logging {
       SnappyTableStatsProviderService.stop()
 
       // clear current hive catalog connection
-      Hive.closeCurrent()
+      val closeHive = Future(Hive.closeCurrent())
+      // wait for a while else fail for connection to close else it is likely that
+      // there is some trouble in initialization itself so don't block shutdown
+      Await.ready(closeHive, Duration(10, TimeUnit.SECONDS))
       if (ExternalStoreUtils.isLocalMode(sc)) {
         val props = sc.conf.getOption(Constant.STORE_PROPERTY_PREFIX +
             Attribute.USERNAME_ATTR) match {
-          case Some(user) => val prps = new java.util.Properties();
+          case Some(user) => val prps = new java.util.Properties()
             val pass = sc.conf.get(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, "")
             prps.put(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, user)
             prps.put(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, pass)
@@ -1187,6 +1197,7 @@ object SnappyContext extends Logging {
 
   /** Cleanup static artifacts on this lead/executor. */
   def clearStaticArtifacts(): Unit = {
+    CachedDataFrame.clear()
     ConnectionPool.clear()
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()

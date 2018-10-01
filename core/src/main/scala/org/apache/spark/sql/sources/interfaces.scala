@@ -91,7 +91,7 @@ trait SingleRowInsertableRelation {
   /**
    * Execute a DML SQL and return the number of rows affected.
    */
-  def executeUpdate(sql: String): Int
+  def executeUpdate(sql: String, defaultSchema: String): Int
 }
 
 /**

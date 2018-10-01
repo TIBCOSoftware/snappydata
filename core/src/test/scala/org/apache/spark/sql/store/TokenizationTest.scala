@@ -277,7 +277,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("value2", "10") :: Nil)
 
-    assert(cacheMap.size() == 1)
+    assert(cacheMap.size() == 2)
 
     checkAnswer(snc.sql(
       """
@@ -290,7 +290,37 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("10") :: Nil)
 
-    assert(cacheMap.size() == 2)
+    assert(cacheMap.size() == 4)
+  }
+
+  test("SNAP-2566") {
+    snc.sql("CREATE TABLE employees " +
+        "(employee_number INT NOT NULL, last_name VARCHAR(50) NOT NULL, " +
+        "first_name VARCHAR(50) NOT NULL, salary INT, dept_id INT) using column")
+    snc.sql("create view v1 as SELECT dept_id, last_name, salary, " +
+        "LAG(salary) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("select * from v1")
+    snc.sql("drop table employees")
+  }
+
+  test("SNAP-2566-1") {
+    snc.sql("CREATE TABLE employees " +
+        "(employee_number INT NOT NULL, last_name VARCHAR(50) NOT NULL, " +
+        "first_name VARCHAR(50) NOT NULL, salary INT, dept_id INT) using column")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LAG(salary, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LAG(salary, 1, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LEAD(salary, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("SELECT dept_id, last_name, salary, " +
+        "LEAD(salary, 1, 1) OVER (PARTITION BY dept_id ORDER BY salary) " +
+        "AS lower_salary FROM employees")
+    snc.sql("drop table employees")
   }
 
   test("Test external tables no plan caching") {

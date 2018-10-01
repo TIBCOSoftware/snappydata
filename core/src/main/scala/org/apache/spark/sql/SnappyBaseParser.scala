@@ -19,8 +19,8 @@ package org.apache.spark.sql
 import java.util.concurrent.ConcurrentHashMap
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
-import io.snappydata.Constant
 import io.snappydata.collection.OpenHashSet
+import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -39,17 +39,46 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
-  protected def clearQueryHints(): Unit = queryHints.clear()
+  @volatile private final var _planHints: java.util.Stack[(String, String)] = _
+
+  /**
+   * Tracks the hints that need to be applied at current plan level and will be
+   * wrapped by LogicalPlanWithHints
+   */
+  private[sql] final def planHints: java.util.Stack[(String, String)] = {
+    val hints = _planHints
+    if (hints ne null) hints
+    else synchronized {
+      if (_planHints eq null) _planHints = new java.util.Stack[(String, String)]
+      _planHints
+    }
+  }
+
+  private[sql] final def hasPlanHints: Boolean = _planHints ne null
+
+  protected def clearQueryHints(): Unit = {
+    if (!queryHints.isEmpty) queryHints.clear()
+    if (_planHints ne null) _planHints = null
+  }
 
   protected final def commentBody: Rule0 = rule {
     "*/" | ANY ~ commentBody
+  }
+
+  /**
+   * Handle query hints including plan-level like joinType that are marked to be handled later.
+   */
+  protected def handleQueryHint(hint: String, hintValue: String): Unit = {
+    // check for a plan-level hint
+    if (Consts.allowedPlanHints.contains(hint)) planHints.push(hint -> hintValue)
+    queryHints.put(hint, hintValue)
   }
 
   protected final def commentBodyOrHint: Rule0 = rule {
     '+' ~ (Consts.whitespace.* ~ capture(CharPredicate.Alpha ~
         Consts.identifier.*) ~ Consts.whitespace.* ~
         '(' ~ capture(noneOf(Consts.hintValueEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints.put(k, v.trim): Unit)). + ~
+        ((k: String, v: String) => handleQueryHint(k, v.trim))). + ~
         commentBody |
     commentBody
   }
@@ -58,7 +87,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     '+' ~ (Consts.space.* ~ capture(CharPredicate.Alpha ~
         Consts.identifier.*) ~ Consts.space.* ~
         '(' ~ capture(noneOf(Consts.lineHintEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints.put(k, v.trim): Unit)). + ~
+        ((k: String, v: String) => handleQueryHint(k, v.trim))). + ~
         noneOf(Consts.lineCommentEnd).* |
     noneOf(Consts.lineCommentEnd).*
   }
@@ -309,6 +338,12 @@ object SnappyParserConsts {
 
   final val optimizableLikePattern: java.util.regex.Pattern =
     java.util.regex.Pattern.compile("(%?[^_%]*[^_%\\\\]%?)|([^_%]*[^_%\\\\]%[^_%]*)")
+
+  /**
+   * Define the hints that need to be applied at plan-level and will be
+   * wrapped by LogicalPlanWithHints
+   */
+  final val allowedPlanHints: List[String] = List(QueryHint.JoinType.toString)
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,

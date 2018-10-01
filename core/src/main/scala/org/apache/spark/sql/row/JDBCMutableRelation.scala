@@ -323,16 +323,24 @@ case class JDBCMutableRelation(
     }
   }
 
-  override def executeUpdate(sql: String): Int = {
+  override def executeUpdate(sql: String, defaultSchema: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
       connProperties.hikariCP)
+    var currentSchema: String = null
     try {
+      if (defaultSchema ne null) {
+        currentSchema = connection.getSchema
+        if (defaultSchema != currentSchema) {
+          connection.setSchema(defaultSchema)
+        }
+      }
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()
       stmt.close()
       result
     } finally {
+      if (currentSchema ne null) connection.setSchema(currentSchema)
       connection.commit()
       connection.close()
     }

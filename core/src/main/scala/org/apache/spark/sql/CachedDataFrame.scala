@@ -173,7 +173,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def getChildren(parent: RDD[_]): Seq[RDD[_]] = {
     parent match {
       case rdd: DelegateRDD[_] =>
-        (rdd.baseRdd +: (rdd.dependencies.map(_.rdd) ++ rdd.otherRDDs)).toSet.toSeq
+        (rdd.baseRdd +: (rdd.dependencies.map(_.rdd) ++ rdd.otherRDDs)).distinct
       case _ => parent.dependencies.map(_.rdd)
     }
   }
@@ -443,6 +443,9 @@ object CachedDataFrame
     extends ((TaskContext, Iterator[InternalRow]) => PartitionResult)
     with Serializable with KryoSerializable with Logging {
 
+  @transient @volatile var sparkConf: SparkConf = _
+  @transient @volatile var compressionCodec: String = _
+
   override def write(kryo: Kryo, output: Output): Unit = {}
 
   override def read(kryo: Kryo, input: Input): Unit = {}
@@ -459,6 +462,25 @@ object CachedDataFrame
       output.write(compressedBytes, 0, len)
       bufferOutput.clear()
     }
+  }
+
+  private def getCompressionCodec: CompressionCodec = {
+    var conf = sparkConf
+    var codecName = compressionCodec
+    if ((conf eq null) || (codecName eq null)) synchronized {
+      conf = sparkConf
+      codecName = compressionCodec
+      if ((conf eq null) || (codecName eq null)) {
+        SparkEnv.get match {
+          case null => conf = new SparkConf()
+          case env => conf = env.conf
+        }
+        codecName = CompressionCodec.getCodecName(conf)
+        sparkConf = conf
+        compressionCodec = codecName
+      }
+    }
+    CompressionCodec.createCodec(conf, codecName)
   }
 
   override def apply(context: TaskContext,
@@ -480,7 +502,7 @@ object CachedDataFrame
         null,
         DirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
 
-      val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
+      val codec = getCompressionCodec
       while (iter.hasNext) {
         val row = iter.next().asInstanceOf[UnsafeRow]
         val numBytes = row.getSizeInBytes
@@ -672,7 +694,7 @@ object CachedDataFrame
       data: Array[Byte], offset: Int, dataLen: Int): Iterator[UnsafeRow] = {
     if (dataLen == 0) return Iterator.empty
 
-    val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
+    val codec = getCompressionCodec
     val input = new ByteArrayDataInput
     input.initialize(data, offset, dataLen, null)
     val dataLimit = offset + dataLen
@@ -794,6 +816,11 @@ object CachedDataFrame
         case r if (r ne null) && r._1 != null => r._1
       }
     }
+  }
+
+  private[sql] def clear(): Unit = synchronized {
+    sparkConf = null
+    compressionCodec = null
   }
 
   override def toString(): String =

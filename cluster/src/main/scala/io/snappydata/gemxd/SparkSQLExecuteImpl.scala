@@ -115,7 +115,7 @@ class SparkSQLExecuteImpl(val sql: String,
         CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
       hdos.clearForReuse()
       SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, getColumnNames,
-        getColumnTypes, getColumnDataTypes)
+        colTypes, getColumnDataTypes)
 
       var id = 0
       for (block <- partitionBlocks) {
