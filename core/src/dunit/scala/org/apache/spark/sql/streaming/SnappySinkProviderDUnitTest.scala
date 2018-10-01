@@ -33,13 +33,13 @@ import io.snappydata.{Constant, StreamingConstants}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Row, SnappyContext, ThinClientConnectorMode}
+import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 class SnappySinkProviderDUnitTest(s: String)
     extends DistributedTestBase(s)
-    with Logging
-    with Serializable {
+        with Logging
+        with Serializable {
 
   // reduce minimum compression size so that it happens for all the values for testing
   private def compressionMinSize = "128"
@@ -65,8 +65,6 @@ class SnappySinkProviderDUnitTest(s: String)
     val netPort = SnappySinkProviderDUnitTest.locatorNetPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
-
-    logInfo(s"port: $port, netPort: $netPort,netPort2: $netPort2,netPort3: $netPort3")
 
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
 
@@ -112,6 +110,11 @@ class SnappySinkProviderDUnitTest(s: String)
 
   def testIdempotency(): Unit = {
     vm.invoke(getClass, "doTestIdempotency",
+      Int.box(SnappySinkProviderDUnitTest.locatorNetPort))
+  }
+
+  def testCustomCallback(): Unit = {
+    vm.invoke(getClass, "doTestCustomCallback",
       Int.box(SnappySinkProviderDUnitTest.locatorNetPort))
   }
 
@@ -162,7 +165,13 @@ object SnappySinkProviderDUnitTest extends Logging {
   private def setup(locatorClientPort: Int): Unit = {
     kafkaTestUtils.setup()
     snc = getSnappyContextForConnector(locatorClientPort)
-    createTable(snc)
+    createTable()
+  }
+
+  private def teardown() = {
+    Path(checkpointDirectory).deleteRecursively()
+
+    kafkaTestUtils.teardown()
   }
 
   def getEnvironmentVariable(env: String): String = {
@@ -187,49 +196,43 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   def doTestStructuredStreaming(locatorClientPort: Int): Unit = {
     setup(locatorClientPort)
+    val testId = "TEST1"
     try {
-      val topic = "test_topic"
 
-      kafkaTestUtils.createTopic(topic, partitions = 3)
+      kafkaTestUtils.createTopic(testId, partitions = 3)
 
-      val dataBatch1 = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
-      kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
+      val dataBatch1 = Seq(Seq(1, "name1", 20, 2), Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+      kafkaTestUtils.sendMessages(testId, dataBatch1.map(r => r.mkString(",")).toArray)
 
-      val streamingQuery: StreamingQuery = createAndStartStreamingQuery(snc, topic,
-        kafkaTestUtils.brokerAddress)
-      waitTillTheBatchIsPickedForProcessing(snc, 0)
+      val streamingQuery: StreamingQuery = createAndStartStreamingQuery(testId)
+      snc.sql(s"select * from ${StreamingConstants.SINK_STATE_TABLE}").show()
+      waitTillTheBatchIsPickedForProcessing(0, testId)
 
       val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
-      kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
+      kafkaTestUtils.sendMessages(testId, dataBatch2.map(r => r.mkString(",")).toArray)
       streamingQuery.processAllAvailable()
 
-      assertData(snc, Array(Row(1, "name11", 30), Row(3, "name3", 30)))
+      assertData(Array(Row(1, "name11", 30), Row(3, "name3", 30)))
+
     } finally {
       teardown()
     }
   }
 
-  private def teardown() = {
-    Path(checkpointDirectory).deleteRecursively()
-    kafkaTestUtils.teardown()
-  }
-
   def doTestIdempotency(locatorClientPort: Int): Unit = {
     setup(locatorClientPort)
+    val testId = "TEST2"
     try {
-      val topic = "topic"
-      kafkaTestUtils.createTopic(topic, partitions = 3)
+      kafkaTestUtils.createTopic(testId, partitions = 3)
 
-      kafkaTestUtils.sendMessages(topic, (0 to 10).map(i => s"$i,name$i,$i,0").toArray)
+      kafkaTestUtils.sendMessages(testId, (0 to 10).map(i => s"$i,name$i,$i,0").toArray)
 
-      val streamingQuery: StreamingQuery = createAndStartStreamingQuery(snc, topic,
-        kafkaTestUtils.brokerAddress)
-      waitTillTheBatchIsPickedForProcessing(snc, 0)
+      val streamingQuery: StreamingQuery = createAndStartStreamingQuery(testId)
+      waitTillTheBatchIsPickedForProcessing(0, testId)
       streamingQuery.stop()
 
-      val streamingQuery1 = createAndStartStreamingQuery(snc, topic, kafkaTestUtils.brokerAddress,
-        true, true)
-      kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,0").toArray)
+      val streamingQuery1 = createAndStartStreamingQuery(testId, true, true)
+      kafkaTestUtils.sendMessages(testId, (11 to 20).map(i => s"$i,name$i,$i,0").toArray)
       try {
         streamingQuery1.processAllAvailable()
       } catch {
@@ -237,25 +240,47 @@ object SnappySinkProviderDUnitTest extends Logging {
           streamingQuery1.stop()
       }
 
-      val streamingQuery2 = createAndStartStreamingQuery(snc, topic, kafkaTestUtils.brokerAddress)
+      val streamingQuery2 = createAndStartStreamingQuery(testId)
 
-      kafkaTestUtils.sendMessages(topic, (21 to 30).map(i => s"$i,name$i,$i,0").toArray)
-      waitTillTheBatchIsPickedForProcessing(snc, 1)
+      kafkaTestUtils.sendMessages(testId, (21 to 30).map(i => s"$i,name$i,$i,0").toArray)
+      waitTillTheBatchIsPickedForProcessing(1, testId)
       streamingQuery2.processAllAvailable()
 
-      assertData(snc, (0 to 30).map(i => Row(i, s"name$i", i)).toArray)
+      assertData((0 to 30).map(i => Row(i, s"name$i", i)).toArray)
     } finally {
       teardown()
     }
   }
 
-  private def createAndStartStreamingQuery(snc: SnappyContext, topic: String, brokerAddress: String,
-      withEventTypeColumn: Boolean = true, failBatch: Boolean = false) = {
+
+  def doTestCustomCallback(locatorClientPort: Int): Unit = {
+    setup(locatorClientPort)
+    val testId = "TEST3"
+    try {
+      kafkaTestUtils.createTopic(testId, partitions = 3)
+
+      val dataBatch = Seq(Seq(1, "name1", 20, 0), Seq(1, "name2", 10, 0))
+      kafkaTestUtils.sendMessages(testId, dataBatch.map(_.mkString(",")).toArray)
+
+      val streamingQuery = createAndStartStreamingQuery(testId,
+        withEventTypeColumn = false, withCustomCallback = true)
+      waitTillTheBatchIsPickedForProcessing(0, testId)
+
+      streamingQuery.processAllAvailable()
+      assertData(Array(Row(1, "name1", 20), Row(1, "name2", 10)))
+    } finally {
+      teardown()
+    }
+  }
+
+  private def createAndStartStreamingQuery(testId: String,
+      withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
+      withCustomCallback: Boolean = false) = {
     val streamingDF = snc
         .readStream
         .format("kafka")
-        .option("kafka.bootstrap.servers", brokerAddress)
-        .option("subscribe", topic)
+        .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
+        .option("subscribe", testId)
         .option("startingOffsets", "earliest")
         .load()
 
@@ -288,45 +313,46 @@ object SnappySinkProviderDUnitTest extends Logging {
         })
         .writeStream
         .format("snappysink")
-        .queryName("users")
+        .queryName(testId)
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", tableName)
-        .option("streamQueryId", streamQueryId)
+        .option("streamQueryId", testId)
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
       streamWriter.option("internal___failBatch", "true").start()
-    }
-    else {
+    } else if (withCustomCallback) {
+      streamWriter.option("sinkCallback", classOf[TestSinkCallback].getName).start()
+    } else {
       streamWriter.start()
     }
   }
 
-  private def createTable(snc: SnappyContext) = {
+  private def createTable() = {
     snc.sql(s"drop table if exists $tableName")
     snc.sql(
       s"""create table $tableName (id long , name varchar(40), age int)
         using column options(key_columns 'id')""")
   }
 
-  private def assertData(snc: SnappyContext, expectedData: Array[Row]) = {
-    val actualData = snc.sql(s"select * from $tableName order by id").collect()
+  private def assertData(expectedData: Array[Row]) = {
+    val actualData = snc.sql(s"select * from $tableName order by id, name, age").collect()
 
     assert(expectedData sameElements actualData, "actual data:" +
         actualData.map(a => a.toString()).mkString(","))
   }
 
-  private def waitTillTheBatchIsPickedForProcessing(snc: SnappyContext, batchId: Int,
+  private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: String,
       retries: Int = 15): Unit = {
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
     val sql = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
-        s"where stream_query_id = '$streamQueryId'"
+        s"where stream_query_id = '$testId'"
     val batchIdFromTable = snc.sql(sql).collect()
 
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
       Thread.sleep(1000)
-      waitTillTheBatchIsPickedForProcessing(snc, batchId, retries - 1)
+      waitTillTheBatchIsPickedForProcessing(batchId, testId, retries - 1)
     }
   }
 
@@ -356,4 +382,12 @@ object SnappySinkProviderDUnitTest extends Logging {
     }
     snc
   }
+
+  class TestSinkCallback extends SnappySinkCallback {
+    override def process(snappySession: SnappySession, sinkProps: Map[String, String],
+        batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean): Unit = {
+      df.write.insertInto(tableName)
+    }
+  }
+
 }

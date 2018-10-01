@@ -38,7 +38,6 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
   private var kafkaTestUtils: KafkaTestUtils = _
 
-  private val batchDurationMillis: Long = 1000
   private val testIdGenerator = new AtomicInteger(0)
   private val tableName = "APP.USERS"
   private val checkpointDirectory = "/tmp/SnappyStoreSinkProviderSuite"
