@@ -310,8 +310,16 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     }
   }
 
+  public static void HydraTask_restartStreaming() {
+    HydraTask_stopStreamingJob();
+    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
+    HydraTask_executeSnappyStreamingJob();
+    try { Thread.sleep(30000); } catch (InterruptedException ie) {}
+  }
+
   public static void HydraTask_restartLeadVMWithStreaming(){
     HydraTask_cycleLeadVM();
+    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
     HydraTask_executeSnappyStreamingJob();
   }
 
@@ -427,7 +435,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static void HydraTask_stopStreamingJob() {
-    snappyAdAnalyticsTest.stopSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames());
+    Vector jobClassNames = SnappyPrms.getSnappyJobClassNames();
+    if(jobClassNames == null){
+      jobClassNames = SnappyPrms.getSnappyStreamingJobClassNames();
+    }
+    snappyAdAnalyticsTest.stopSnappyStreamingJob(jobClassNames);
   }
 
   protected void stopSnappyStreamingJob(Vector jobClassNames) {
@@ -442,7 +454,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     String userJob = (String)jobClassNames.elementAt(0);
     String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
         " --app-name AdAnalytics --class " + userJob + " --app-jar " + userJarPath;
-
+    Log.getLogWriter().info("Executing cmd :" + snappyJobCommand);
     String dest = getCurrentDirPath() + File.separator + "stopSnappyStreamingJobTaskResult.log";
     logFile = new File(dest);
     pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);

@@ -40,7 +40,7 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
         File.separator + "checkpointDirectory_" + tid
     // Spark tip : Keep shuffle count low when data volume is low.
     snsc.sql("set spark.sql.shuffle.partitions=8")
-    val outputFile = "KafkaStreamingJob_output" + tid + ".txt"
+    val outputFile = "KafkaStreamingJob_output" + tid + "_" + System.currentTimeMillis() + ".txt"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     // scalastyle:off println
     pw.println("Starting stream query...")

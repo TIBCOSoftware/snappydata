@@ -35,8 +35,12 @@ class CreateTableInSnappyJob extends SnappySQLJob{
     pw.println("dropped tables. now creating table in snappy...")
     pw.flush()
     def provider = if (isRowTable) "row" else "column"
-    def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id')" else ""
-    def primaryKey = if (isRowTable && withKeyColumn) "primary key" else ""
+    def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id', redundancy '1'," +
+        "PERSISTENT 'sync')"
+    else ""
+    def primaryKey = if (isRowTable && withKeyColumn) "options(primary_key 'id', redundancy '1', " +
+        "PERSISTENT 'sync')"
+    else ""
     val s = s"create table persoon (id long $primaryKey, name varchar(40), age int) using " +
         s" $provider $options"
     pw.println(s"Creating table $s")
