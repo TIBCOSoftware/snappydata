@@ -8,3 +8,4 @@ TASK  taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMe
     maxTimesToRun = 1;
 
 io.snappydata.hydra.cluster.SnappyPrms-forceStart = true;
+hydra.Prms-maxResultWaitSec = 450;

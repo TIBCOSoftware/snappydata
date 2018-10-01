@@ -25,3 +25,5 @@ TASK       taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest t
 
 CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLeadConfigData
            threadGroups = snappyThreads;
+
+hydra.Prms-maxResultWaitSec = 360;
