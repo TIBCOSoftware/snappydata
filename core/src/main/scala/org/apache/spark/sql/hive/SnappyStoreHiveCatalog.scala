@@ -806,7 +806,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               case None =>
                 if (jdbcType == java.sql.Types.JAVA_OBJECT) {
                   // try to get class for the typeName else fallback to Object
-                  val userClass = try {
+                  val userClass: Class[_] = try {
                     SparkUtils.classForName(typeName)
                   } catch {
                     case _: Throwable => classOf[Object]
