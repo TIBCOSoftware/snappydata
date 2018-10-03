@@ -31,17 +31,18 @@ case class Account(accountName: String)
 class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   with BeforeAndAfter with BeforeAndAfterAll {
 
-  val session = snc.sparkSession
-  import session.implicits._
+  private lazy val session = snc.sparkSession
 
   private var kafkaTestUtils: KafkaTestUtils = _
 
   override def beforeAll() {
+    super.beforeAll()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
   }
 
   override def afterAll() {
+    super.afterAll()
     if (kafkaTestUtils != null) {
       kafkaTestUtils.teardown()
       kafkaTestUtils = null
@@ -55,6 +56,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   private def newTopic(): String = s"topic-${topicId.getAndIncrement()}"
 
   test("SnappyData Structured Streaming with Kafka") {
+    import session.implicits._
 
     snc.sql("drop table if exists users")
     snc.sql("create table users (id int) using column options(key_columns 'id')")
@@ -92,6 +94,8 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
 
 
   test("ETL Job") {
+    import session.implicits._
+
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -133,6 +137,8 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   }
 
   test("infinite streaming aggregation") {
+    import session.implicits._
+
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -160,7 +166,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .as[(String, String)]
       .writeStream
       .format("memory")
-      .option("checkpointLocation", "/tmp/infinite-"+System.currentTimeMillis())
+      .option("checkpointLocation", "/tmp/infinite-" + System.currentTimeMillis())
       .queryName("snappyAggrTable")
       .outputMode("complete")
       .trigger(ProcessingTime("1 seconds"))
@@ -177,6 +183,8 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   }
 
   test("sliding window aggregation") {
+    import session.implicits._
+
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -222,6 +230,8 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
   }
 
   test("streaming DataFrame join to static DataFrame") {
+    import session.implicits._
+
     val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
     val dfBlackList = snc.createDataFrame(rdd)
     // create a SnappyData table

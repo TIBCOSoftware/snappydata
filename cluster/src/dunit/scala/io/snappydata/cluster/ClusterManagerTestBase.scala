@@ -68,6 +68,7 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("spark.memory.manager",
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "95")
+  bootProps.setProperty("max-lock-wait", "60000")
 
   // reduce startup time
   // sysProps.setProperty("p2p.discoveryTimeout", "1000")
