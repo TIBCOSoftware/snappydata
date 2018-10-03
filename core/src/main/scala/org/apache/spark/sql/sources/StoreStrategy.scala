@@ -76,8 +76,8 @@ object StoreStrategy extends Strategy {
     case TruncateManagedTable(ifExists, tableIdent) =>
       ExecutedCommandExec(TruncateManagedTableCommand(ifExists, tableIdent)) :: Nil
 
-    case AlterTableAddColumn(tableIdent, addColumn) =>
-      ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn)) :: Nil
+    case AlterTableAddColumn(tableIdent, addColumn, defaultValue) =>
+      ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn, defaultValue)) :: Nil
 
     case AlterTableToggleRowLevelSecurity(tableIdent, enableRls) =>
       ExecutedCommandExec(AlterTableToggleRowLevelSecurityCommand(tableIdent, enableRls)) :: Nil

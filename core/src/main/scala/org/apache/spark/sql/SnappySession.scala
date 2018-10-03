@@ -1428,14 +1428,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def alterTable(tableName: String, isAddColumn: Boolean,
-      column: StructField): Unit = {
+      column: StructField, defaultValue: String): Unit = {
     val qualifiedTable = sessionCatalog.newQualifiedTableName(tableName)
     if (sessionCatalog.caseSensitiveAnalysis) {
-      alterTable(qualifiedTable, isAddColumn, column)
+      alterTable(qualifiedTable, isAddColumn, column, defaultValue)
     } else {
       val colName = Utils.fieldName(column)
       alterTable(qualifiedTable, isAddColumn,
-        if (Utils.hasLowerCase(colName)) sessionCatalog.normalizeField(column, colName) else column)
+        if (Utils.hasLowerCase(colName)) sessionCatalog.normalizeField(column, colName) else column,
+        defaultValue)
     }
   }
 
@@ -1470,7 +1471,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
-      column: StructField): Unit = {
+      column: StructField, defaultValue: String): Unit = {
     val plan = try {
       sessionCatalog.lookupRelation(tableIdent)
     } catch {

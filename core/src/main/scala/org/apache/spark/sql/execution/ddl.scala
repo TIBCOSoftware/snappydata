@@ -127,12 +127,13 @@ private[sql] case class TruncateManagedTableCommand(ifExists: Boolean,
 }
 
 private[sql] case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
-    addColumn: StructField) extends RunnableCommand {
+    addColumn: StructField, defaultValue: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     val catalog = snc.sessionState.catalog
-    snc.alterTable(catalog.newQualifiedTableName(tableIdent), isAddColumn = true, addColumn)
+    snc.alterTable(catalog.newQualifiedTableName(tableIdent),
+      isAddColumn = true, addColumn, defaultValue)
     Nil
   }
 }
@@ -167,7 +168,7 @@ private[sql] case class AlterTableDropColumnCommand(
         case Some(field) => field
       }
     val table = catalog.newQualifiedTableName(tableIdent)
-    snc.alterTable(table, isAddColumn = false, structField)
+    snc.alterTable(table, isAddColumn = false, structField, "")
     Nil
   }
 }

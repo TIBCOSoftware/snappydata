@@ -519,6 +519,7 @@ object SnappyParserConsts {
   final val LDAPGROUP: Keyword = nonReservedKeyword("ldapgroup")
   final val CURRENT_USER: Keyword = nonReservedKeyword("current_user")
   final val POLICY: Keyword = nonReservedKeyword("policy")
+  final val DEFAULT: Keyword = nonReservedKeyword("default")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")

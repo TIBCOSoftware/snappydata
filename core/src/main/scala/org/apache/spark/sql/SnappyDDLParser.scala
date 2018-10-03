@@ -191,6 +191,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def LDAPGROUP: Rule0 = rule { keyword(Consts.LDAPGROUP) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
+  final def DEFAULT: Rule0 = rule { keyword(Consts.DEFAULT) }
+
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -305,6 +307,14 @@ abstract class SnappyDDLParser(session: SparkSession)
           }
       }
     }
+  }
+
+  protected final def defaultVal: Rule1[String] = rule {
+    (DEFAULT).? ~> ((defVal: Any) =>
+      defVal match {
+        case Some(v) => v.asInstanceOf[String].trim
+        case None => SnappyParserConsts.SELECT.upper
+      })
   }
 
   protected final def policyFor: Rule1[String] = rule {
@@ -493,7 +503,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
-        ADD ~ COLUMN.? ~ column ~ EOI ~> AlterTableAddColumn |
+        ADD ~ COLUMN.? ~ column ~ DEFAULT.? ~ defaultVal ~ EOI ~> AlterTableAddColumn |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumn |
         ANY. + ~ EOI ~> ((r: TableIdentifier) =>
           DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
@@ -849,8 +859,8 @@ case class DropPolicy(ifExists: Boolean,
 
 case class TruncateManagedTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
 
-case class AlterTableAddColumn(tableIdent: TableIdentifier, addColumn: StructField)
-    extends Command
+case class AlterTableAddColumn(tableIdent: TableIdentifier,
+                               addColumn: StructField, defaultValue: String) extends Command
 
 case class AlterTableToggleRowLevelSecurity(tableIdent: TableIdentifier, enable: Boolean)
     extends Command
