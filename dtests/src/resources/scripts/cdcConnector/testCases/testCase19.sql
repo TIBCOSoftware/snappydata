@@ -1,0 +1,1 @@
+delete from [testdatabase].[dbo].[ADJUSTMENT] where adj_id = 95000010093;
