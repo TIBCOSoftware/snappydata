@@ -10,7 +10,7 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = b
 TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleStoreVms
            startInterval = 60
            threadGroups = leadThread
-           io.snappydata.hydra.cluster.SnappyPrms.sleepTimeSecsBeforeRestart = 60
+           io.snappydata.hydra.cluster.SnappyPrms-sleepTimeSecsBeforeRestart = 60
            maxTimesToRun = 1;
 
 CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreServerConfigData
