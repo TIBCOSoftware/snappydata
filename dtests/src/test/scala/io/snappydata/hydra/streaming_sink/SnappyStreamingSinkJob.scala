@@ -57,14 +57,26 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
           .readStream
           .format("kafka")
           .option("kafka.bootstrap.servers", brokerList)
+//          .option("kafka.value.deserializer", "")
           .option("subscribe", topic)
           .option("startingOffsets", "earliest")
           .load()
 
       def structFields() = {
         StructField("id", LongType, nullable = false) ::
-            StructField("name", StringType, nullable = true) ::
+            StructField("firstName", StringType, nullable = true) ::
+            StructField("middleName", StringType, nullable = true) ::
+            StructField("lastName", StringType, nullable = true) ::
+            StructField("title", StringType, nullable = true) ::
+            StructField("address", StringType, nullable = true) ::
+            StructField("country", StringType, nullable = true) ::
+            StructField("phone", StringType, nullable = true) ::
+            StructField("dateOfBirth", StringType, nullable = true) ::
             StructField("age", IntegerType, nullable = true) ::
+            StructField("status", StringType, nullable = true) ::
+            StructField("email", StringType, nullable = true) ::
+            StructField("education", StringType, nullable = true) ::
+            StructField("occupation", StringType, nullable = true) ::
             (if (withEventTypeColumn) {
               StructField("_eventType", IntegerType, nullable = false) :: Nil
             }
@@ -75,14 +87,17 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
 
       val schema = StructType(structFields())
       implicit val encoder = RowEncoder(schema)
+      structFields().length
       streamingDF.selectExpr("CAST(value AS STRING)")
           .as[String]
           .map(_.split(","))
           .map(r => {
-            if (r.length == 4) {
-              Row(r(0).toLong, r(1), r(2).toInt, r(3).toInt)
+            if (r.length == 15) {
+              Row(r(0).toLong, r(1), r(2), r(3), r(4), r(5), r(6), r(7), r(8), r(9).toInt, r(10),
+                r(11), r(12), r(13), r(14).toInt)
             } else {
-              Row(r(0).toLong, r(1), r(2).toInt)
+              Row(r(0).toLong, r(1), r(2), r(3), r(4), r(5), r(6), r(7), r(8), r(9).toInt, r(10),
+                r(11), r(12), r(13))
             }
           })
           .writeStream
