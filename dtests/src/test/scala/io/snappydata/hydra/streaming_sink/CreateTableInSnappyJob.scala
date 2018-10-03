@@ -41,8 +41,22 @@ class CreateTableInSnappyJob extends SnappySQLJob{
     def primaryKey = if (isRowTable && withKeyColumn) "options(primary_key 'id', redundancy '1', " +
         "PERSISTENT 'sync')"
     else ""
-    val s = s"create table persoon (id long $primaryKey, name varchar(40), age int) using " +
-        s" $provider $options"
+    val s = s"create table persoon (" +
+        s"id long, " +
+        s"firstName varchar(30), " +
+        s"middleName varchar(30), " +
+        s"lastName varchar(30), " +
+        s"title varchar(5), " +
+        s"address varchar(40), " +
+        s"country varchar(10), " +
+        s"phone varchar(12), " +
+        s"dateOfBirth varchar(15), " +
+        s"age int, " +
+        s"status varchar(10), " +
+        s"email varchar(30), " +
+        s"education varchar(20), " +
+        s"occupation varchar(15) " +
+        s") using $provider $options"
     pw.println(s"Creating table $s")
     snc.sql(s)
     pw.println("created table.")
