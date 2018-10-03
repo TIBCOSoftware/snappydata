@@ -3077,7 +3077,7 @@ public class SnappyTest implements Serializable {
         stopMode.equalsIgnoreCase("NICE_KILL"))) {
       killVM(vmDir, clientName, vmName);
       try {
-        Thread.sleep(180000);
+        Thread.sleep(SnappyPrms.getSleepTimeSecsBeforRestart() * 1000);
       } catch (InterruptedException e) {
         String s = "Exception occurred while waiting for the kill " + clientName + "process " +
             "execution..";
