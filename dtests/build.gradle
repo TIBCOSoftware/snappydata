@@ -44,6 +44,10 @@ ext {
 dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
     compile 'org.scala-lang:scala-reflect:' + scalaVersion
+    // https://mvnrepository.com/artifact/com.microsoft.sqlserver/sqljdbc4
+    testCompile group: 'com.microsoft.sqlserver', name: 'sqljdbc4', version: '4.0'
+
+
 
     compile (project(':snappy-core_' + scalaBinaryVersion)) {
        exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
