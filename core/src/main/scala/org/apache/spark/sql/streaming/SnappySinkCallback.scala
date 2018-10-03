@@ -29,8 +29,24 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.util.Utils
 
+/**
+ * Should be implemented by clients who wants to override default behavior provided by
+ * [[DefaultSnappySinkCallback]].
+ * <p>
+ * In order to override the default callback behavior the qualified name of the implementing
+ * class needs to be passed against `sinkCallback` option while defining stream query.
+ *
+ */
 trait SnappySinkCallback {
 
+  /**
+   * This method is called for each streaming batch after checking the possibility of batch
+   * duplication which is indicated by `possibleDuplicate` flag.
+   * <p>
+   * A duplicate batch might be picked up for processing in case of failure. In case of batch
+   * duplication, this method should handle batch in idempotent manner in order to avoid
+   * data inconsistency.
+   */
   def process(snappySession: SnappySession, sinkProps: Map[String, String],
               batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean = false): Unit
 }
@@ -164,9 +180,5 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         && parameters("internal___failBatch") == "true") {
       throw new RuntimeException("dummy failure for test")
     }
-  }
-
-  private def dropEventTypeColumn(df: Dataset[Row]) = {
-    df.drop(EVENT_TYPE_COLUMN).select("*")
   }
 }
