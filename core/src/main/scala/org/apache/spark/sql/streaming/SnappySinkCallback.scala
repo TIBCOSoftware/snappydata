@@ -25,6 +25,7 @@ import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
+import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.TEST_FAILBATCH_OPTION
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.util.Utils
@@ -103,7 +104,6 @@ case class SnappyStoreSink(snappySession: SnappySession,
       }
       catch {
         case e: SQLException if e.getSQLState.equals("23505") => posDup = true
-        case exception: Throwable => throw exception
       }
     }
 
@@ -128,6 +128,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
 
 object DefaultSnappySinkCallback {
   private val log = Logger.getLogger(classOf[DefaultSnappySinkCallback].getName)
+  private val TEST_FAILBATCH_OPTION = "internal___failBatch"
 }
 
 import org.apache.spark.sql.snappy._
@@ -135,13 +136,12 @@ import org.apache.spark.sql.snappy._
 class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, parameters: Map[String, String],
               batchId: Long, df: Dataset[Row], posDup: Boolean) {
-
-    df.cache()
+    df.cache().count()
     val snappyTable = parameters(TABLE_NAME).toUpperCase
     DefaultSnappySinkCallback.log.debug(s"Processing for $snappyTable and batchId $batchId")
 
     val tableName = parameters(TABLE_NAME).toUpperCase
-    val keyColumnsDefined = !snappySession.sessionCatalog.getKeyColumns(tableName).head(1).isEmpty
+    val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumnsSeq(tableName).nonEmpty
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
     if (keyColumnsDefined) {
       if (eventTypeColumnAvailable) {
@@ -176,8 +176,8 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       }
     }
     // test hook for validating idempotency
-    if (parameters.contains("internal___failBatch")
-        && parameters("internal___failBatch") == "true") {
+    if (parameters.contains(TEST_FAILBATCH_OPTION)
+        && parameters(TEST_FAILBATCH_OPTION) == "true") {
       throw new RuntimeException("dummy failure for test")
     }
   }

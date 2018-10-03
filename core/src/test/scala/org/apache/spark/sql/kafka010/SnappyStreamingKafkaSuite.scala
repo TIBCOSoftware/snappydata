@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql.kafka010
 
+import java.util
 import java.util.Arrays
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
@@ -24,21 +25,21 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters._
 import io.snappydata.SnappyFunSuite
 import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.kafka.common.serialization._
+
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.streaming.StreamToRowsConverter
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
 import org.apache.spark.streaming.{Duration, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.concurrent.Eventually
-
 import scala.util.Random
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class SnappyStreamingKafkaSuite  extends SnappyFunSuite with Eventually
-  with BeforeAndAfter with BeforeAndAfterAll {
+class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
+    with BeforeAndAfter with BeforeAndAfterAll {
 
   val session = snc.sparkSession
 
@@ -123,7 +124,7 @@ class SnappyStreamingKafkaSuite  extends SnappyFunSuite with Eventually
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(allReceived.size === expectedTotal,
         "didn't get expected number of messages, messages:\n" +
-          allReceived.asScala.mkString("\n"))
+            allReceived.asScala.mkString("\n"))
     }
   }
 
@@ -143,23 +144,23 @@ class SnappyStreamingKafkaSuite  extends SnappyFunSuite with Eventually
     val startingOffsets = JsonUtils.partitionOffsets(partitions)
 
     ssnc.sql("create stream table kafkaStream (" +
-      " publisher string)" +
-      " using kafka_stream options(" +
-      " rowConverter 'org.apache.spark.sql.kafka010.RowsConverter' ," +
-      s" kafkaParams 'bootstrap.servers->$add;" +
-      "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
-      "value.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
-      s"group.id->$groupId;auto.offset.reset->earliest'," +
-      s"startingOffsets '$startingOffsets', " +
-      s" subscribe '$topic')")
+        " publisher string)" +
+        " using kafka_stream options(" +
+        " rowConverter 'org.apache.spark.sql.kafka010.RowsConverter' ," +
+        s" kafkaParams 'bootstrap.servers->$add;" +
+        "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        "value.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        s"group.id->$groupId;auto.offset.reset->earliest'," +
+        s"startingOffsets '$startingOffsets', " +
+        s" subscribe '$topic')")
 
     snc.dropTable("snappyTable", ifExists = true)
     snc.createTable("snappyTable", "column",
       StructType(Seq(StructField("pubisher", StringType, nullable = false))),
       Map.empty[String, String])
     ssnc.registerCQ("select * from kafkaStream" +
-      " window (duration 1 seconds, slide 1 seconds)")
-      .foreachDataFrame(_.write.insertInto("snappyTable"))
+        " window (duration 1 seconds, slide 1 seconds)")
+        .foreachDataFrame(_.write.insertInto("snappyTable"))
     ssnc.start
     ssnc.awaitTerminationOrTimeout(20 * 1000)
 
@@ -170,13 +171,83 @@ class SnappyStreamingKafkaSuite  extends SnappyFunSuite with Eventually
       assert(113 == session.sql("select * from snappyTable").count)
     }
   }
+
+
+  test("Snappy kafka streaming with custom deserializer") {
+    val topic = newTopic()
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+
+    val groupId = s"test-consumer-" + Random.nextInt(10000)
+    val add = kafkaTestUtils.brokerAddress
+
+    val partitions = Map(
+      new TopicPartition(topic, 0) -> 0L,
+      new TopicPartition(topic, 1) -> 0L,
+      new TopicPartition(topic, 2) -> 0L
+    )
+
+    val startingOffsets = JsonUtils.partitionOffsets(partitions)
+    kafkaTestUtils.sendMessages(topic,
+      (100 to 200).map(i => s"$i,name$i,$i").toArray)
+    ssnc.sql("create stream table kafkaStream (" +
+        " id Long, name String, age int)" +
+        " using kafka_stream options(" +
+        " rowConverter 'org.apache.spark.sql.kafka010.UserRowsConverter' ," +
+        s" kafkaParams 'bootstrap.servers->$add;" +
+        "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        "value.deserializer->org.apache.spark.sql.kafka010.UserDeserializer;" +
+        s"group.id->$groupId;auto.offset.reset->earliest'," +
+        s"startingOffsets '$startingOffsets', " +
+        s" subscribe '$topic')")
+
+    snc.dropTable("snappyTable", ifExists = true)
+    snc.createTable("snappyTable", "column",
+      StructType(Seq(StructField("id", LongType, nullable = false)
+        , StructField("name", StringType, nullable = false)
+        , StructField("age", IntegerType, nullable = false))),
+      Map.empty[String, String])
+    ssnc.registerCQ("select * from kafkaStream" +
+        " window (duration 1 seconds, slide 1 seconds)")
+        .foreachDataFrame(_.write.insertInto("snappyTable"))
+    ssnc.start
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
+
+    eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
+      assert(101 == session.sql("select * from snappyTable").count)
+    }
+  }
 }
+
+case class User(id: Long, name: String, age: Integer)
+
+class UserDeserializer extends Deserializer[User] {
+
+  def deserialize(topic: String, data: Array[Byte]): User = {
+    val s = new String(data)
+    val split = s.split(",")
+    User(split(0).toLong, split(1), split(2).toInt)
+  }
+
+  def close() {}
+
+  override def configure(configs: util.Map[String, _], isKey: Boolean): Unit = {}
+}
+
 
 class RowsConverter extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[Row] = {
     val log = message.asInstanceOf[String]
     val rows = Seq(Row.fromSeq(log.split(",")))
+    rows
+  }
+}
+
+class UserRowsConverter extends StreamToRowsConverter with Serializable {
+
+  override def toRows(message: Any): Seq[Row] = {
+    val user = message.asInstanceOf[User]
+    val rows = Seq(Row(user.id, user.name, user.age))
     rows
   }
 }

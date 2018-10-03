@@ -35,16 +35,16 @@ class DirectKafkaStreamSource extends StreamPlanProvider with DataSourceRegister
   override def shortName(): String = SnappyContext.KAFKA_STREAM_SOURCE
 
   override def createRelation(sqlContext: SQLContext,
-                              options: Map[String, String],
-                              schema: StructType): BaseRelation = {
+      options: Map[String, String],
+      schema: StructType): BaseRelation = {
     new DirectKafkaStreamRelation(sqlContext, options, schema)
   }
 }
 
 final class DirectKafkaStreamRelation(
-                                       @transient override val sqlContext: SQLContext,
-                                       opts: Map[String, String],
-                                       override val schema: StructType)
+    @transient override val sqlContext: SQLContext,
+    opts: Map[String, String],
+    override val schema: StructType)
   extends StreamBaseRelation(opts)
     with Logging with Serializable {
 
@@ -61,11 +61,10 @@ final class DirectKafkaStreamRelation(
 
   override protected def createRowStream(): DStream[InternalRow] = {
     val consumerStrategies = ConsumerStrategies
-      .Subscribe[String, String](topics, kafkaParams, startingOffsets)
+      .Subscribe[Any, Any](topics, kafkaParams, startingOffsets)
 
-    val stream = KafkaUtils.createDirectStream[String, String](context,
-      preferredHosts, consumerStrategies)
-      .mapPartitions { iter =>
+    val stream = KafkaUtils.createDirectStream[Any, Any](context,
+      preferredHosts, consumerStrategies).mapPartitions{ iter =>
         val encoder = RowEncoder(schema)
         iter.flatMap(p => {
           rowConverter.toRows(p.value()).iterator.map(
