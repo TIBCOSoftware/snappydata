@@ -181,8 +181,4 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       throw new RuntimeException("dummy failure for test")
     }
   }
-
-  private def dropEventTypeColumn(df: Dataset[Row]) = {
-    df.drop(EVENT_TYPE_COLUMN).select("*")
-  }
 }
