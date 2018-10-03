@@ -27,7 +27,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
@@ -53,6 +52,223 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+/**
+ * <p>
+ *     <b>SnappyTest.java</b> is base class for SnappyCluster Test cases. It contains below utility methods :<br/>
+ *     <br><i> 1. public static synchronized void HydraTask_initializeSnappyTest() </i>: Initializes the Locators, Leaders, Servers, Spark Configuration.</br>
+ *     <br><i> 2. public static void initSnappyArtifacts() </i>: Initialize the artifacts used for testing.</br>
+ *     <br><i> 3. public static void HydraTask_stopSnappy() </i>: Stops the SnappyContext / SparkContext if activated.</br>
+ *     <br><i> 4. public static synchronized void HydraTask_generateSnappyLocatorConfig() </i>: Generates the configuration data required to start the snappy Locators.</br>
+ *     <br><i> 5. public static synchronized void HydraTask_generateSnappyServerConfig() </i>: Generates the configuration data required to start the snappy Servers.</br>
+ *     <br><i> 6. public static synchronized void HydraTask_generateSnappyLeadConfig() </i>: Generates the configuration data required to start the snappy Leaders.</br>
+ *     <br><i> 7. public static synchronized void HydraTask_generateSparkWorkerConfig() </i>: Generates the configuration data required to start the snappy Leaders.</br>
+ *     <br><i> 8. public static void HydraTask_writeLocatorConfigData() </i>: Write the locator configuration data required to start the snappy locator/s in locators file under
+ *             conf directory at snappy build location.</br>
+ *     <br><i> 9. public static void HydraTask_writeServerConfigData() </i>: Write the server configuration data required to start the snappy server/s in servers file under
+ *             conf directory at snappy build location.</br>
+ *     <br><i> 10. public static void HydraTask_writeLeadConfigData() </i>: Write the leader configuration data required to start the snappy server/s in servers file under
+ *              conf directory at snappy build location.</br>
+ *     <br><i> 11. protected String getStoreTestsJar() </i> : Get the tests lib and jar files for hydra tests.</br>
+ *     <br><i> 12. protected String getSnappyTestsJar() </i> : Get the tests lib and jar files for hydra tests.</br>
+ *     <br><i> 13. protected String getClusterTestsJar() </i> : Get the tests lib and jar files for hydra tests.</br>
+ *     <br><i> 14. public void getClientHostDescription() </i> : Get the client description.</br>
+ *     <br><i> 15. protected static String getUserAppJarLocation(final String,String) </i> : Get the application jar location.</br>
+ *     <br><i> 16. public String getDataLocation(String)</i> : Get the test data.</br>
+ *     <br><i> 17. public String getScriptLocation(String scriptName) </i> : Get the script location.</br>
+ *     <br><i> 18. protected void generateNodeConfig(String,boolean)</i> : Generate the required node configuration for Hydra framework.</br>
+ *     <br><i> 19. protected static Set<String> getFileContents(String,Set<String>)</i> : Get the file contents.</br>
+ *     <br><i> 20. protected String getTempDir(String)</i> : Get the absolute path of Temp. directory.</br>
+ *     <br><i> 21. protected static ArrayList<String> getWorkerFileContents(String,ArrayList<String>)</i> : Get the worker file contents as arraylist</br>
+ *     <br><i> 22. protected static Set<File> getDirList(String)</i> : Get the directory list.</br>
+ *     <br><i> 23. protected static String getLocatorsList(String)</i> : Get the locator list for long running test.</br>
+ *     <br><i> 24. protected static String getLocatorList(String)</i> : Get the locator list.</br>
+ *     <br><i> 25. public static void HydraTask_writeLocatorConfigData()</i> : Write the configuration data required to start the snappy locator/s in locators file under
+ *                 conf directory at snappy build location.</br>
+ *     <br><i> 26. public static void HydraTask_writeServerConfigData()</i> : Write the configuration data required to start the snappy server/s in servers file under
+ *                 conf directory at snappy build location.</br>
+ *     <br><i> 27. public static void HydraTask_writeLeadConfigData()</i> : Write the configuration data required to start the snappy lead/s in leads file under conf
+ *                 directory at snappy build location.</br>
+ *     <br><i> 28. public static void HydraTask_writeLeadHostPortInfo()</i> : Write the primary lead host,port info into the file(leadHost) under conf directory at
+ *                 snappy build location. This is required for long running test scenarios where in  cluster will be started  in first test and then rest all tests
+ *                 will use the same cluster.</br>
+ *     <br><i> 29. public static void HydraTask_writeMasterConnInfo()</i> : Write the spark master host info into the file(masterHost) under conf directory at
+ *                 snappy build location. This is required for long running test scenarios where in cluster will be started in first test and then rest all tests will
+ *                 use the same cluster.</br>
+ *     <br><i> 30. public static void HydraTask_writePrimaryLocatorHostPortInfo()</i> : Write the primary locator host,port info into the file under conf directory at
+ *                 snappy build location. This is required for long running test scenarios where in cluster will be started in first test and then rest all tests will
+ *                 use the same cluster.</br>
+ *     <br><i> 31. public static void HydraTask_writeLocatorInfo()</i> : Write the locator list containing host:port information for all locators in the snappy cluster into
+ *                 the file(locatorList) under conf directory at snappy build location.This is required for long running test scenarios where in cluster will be started in
+ *                 first test and then rest all tests will use the same cluster.</br>
+ *     <br><i> 32. public static void HydraTask_writeWorkerConfigData()</i> : Write the configuration data required to start the spark worker/s in slaves file and the
+ *                 log directory locations in spark-env.sh file under conf directory at snappy build location.</br>
+ *     <br><i> 33. protected void writeConfigData(String,String)</i> : Write configuration Data to file.</br>
+ *     <br><i> 34. protected void writeLocatorConfigData(String,String)</i> : Write the locator configuration data to a file.</br>
+ *     <br><i> 35. protected void writeNodeConfigData(String,String,boolean)</i> : Write the Node configuration data to a file.</br>
+ *     <br><i> 36. protected void writeWorkerConfigData(String,String)</i> : Write worker configuration data to a file.</br>
+ *     <br><i> 37. public static List getNetworkLocatorEndpoints()</i> : Returns all network server endpoints from the {@link SnappyNetworkServerBB} map, a possibly empty list.
+ *                 This includes all network servers that have ever started, regardless of their distributed system or current active status.</br>
+ *     <br><i> 38. public static List getNetworkServerEndpoints()</i> : Returns all network server endpoints from the {@link SnappyNetworkServerBB} map, a possibly empty list.
+ *                 This includes all network servers that have ever started, regardless of their distributed system or current active status.</br>
+ *     <br><i> 39. protected HashMap getclientHostPort()</i> : Get the client port number.</br>
+ *     <br><i> 40. private static synchronized List<String> getEndpoints(String)</i> : Returns all endpoints of the given type.</br>
+ *     <br><i> 41. private static synchronized Set<String> getPidList()</i> : Returns PIDs (process ids) for all the processes started in the test, e.g. locator,server,lead.</br>
+ *     <br><i> 42. protected static synchronized String getPidHost(String)</i> : Returns hostname of the process.</br>
+ *     <br><i> 43. private static synchronized String getPrimaryLeadPort(String)</i> : Returns primary lead port.</br>
+ *     <br><i> 44. protected void initHydraThreadLocals()</i> : Initialize the Hydra framework ThreadLocals.</br>
+ *     <br><i> 45. protected Connection getConnection()</i> : Get the connection string of Cluster.</br>
+ *     <br><i> 46. protected void setConnection(Connection)</i> : Set the connection with cluster.</br>
+ *     <br><i> 47. protected void updateHydraThreadLocals()</i> : Update the Hydra framework ThreadLocal.</br>
+ *     <br><i> 48. public static void HydraTask_getClientConnection_Snappy()</i> : Get Hydra task client connection.</br>
+ *     <br><i> 49. private void connectThinClient()</i> : Get thin client connection i.e. Locator.</br>
+ *     <br><i> 50. public static Connection getClientConnection()</i> : Get the client connection of initHydraThreadLocals.</br>
+ *     <br><i> 51. public static void HydraTask_getClientConnection()</i> : Get Hydra task client connection.</br>
+ *     <br><i> 52. public static synchronized void backUpLocatorConfigData()</i> : Mandatory to use this method in case of HA test. As per current implementation,
+ *                 for starting the locator snappy-locators.sh script is used, which starts the locators based on the data in locators conf file. In HA test, the framework deletes
+ *                 the old locators file and creates the new one with the config data specific to locator which is getting recycled.So, we need to backup the original locators
+ *                 conf file. This will be required at the end of the test for stopping all locators which have been started in the test.</br>
+ *     <br><i> 53. public static synchronized void backUpServerConfigData()</i> : Mandatory to use this method in case of HA test.As per current implementation,
+ *                 for starting the server snappy-servers.sh script is used, which starts the servers based on the data in servers conf file. In HA test, the framework deletes
+ *                 the old servers file and creates the new one with the config data specific to server which is getting recycled.So, we need to backup the original servers conf file.
+ *                 This will be required at the end of the test for stopping all servers which have been started in the test.</br>
+ *     <br><i> 54. public static synchronized void restoreLocatorConfigData()</i> : Mandatory to use this method in case of HA test.As per current implementation, for starting the
+ *                 locator snappy-locators.sh script is used,which starts the locators based on the data in locators conf file. In HA test, the framework deletes the old locators
+ *                 file and creates the new one with the config data specific to locator which is getting recycled.So, we need to restore the original locators conf file. This will be
+ *                 required at the end of the test for stopping all locators which have been started in the test.</br>
+ *     <br><i> 55. public static synchronized void restoreServerConfigData()</i> : Mandatory to use this method in case of HA test. As per current implementation, for starting the
+ *                 server snappy-servers.sh script is used, which starts the servers based on the data in servers conf file. In HA test, the framework deletes the old servers file and
+ *                 creates the new one with the config data specific to server which is getting recycled.So, we need to restore the original servers conf file. This will be required at
+ *                 the end of the test for stopping all servers which have been started in the test.</br>
+ *     <br><i> 56. public static synchronized void restoreLeadConfigData()</i> : Mandatory to use this method in case of HA test.As per current implementation, for starting the
+ *                 lead members, snappy-leads.sh script is used, which starts the lead members based on the data in leads conf file. In HA test, the framework deletes the old leads
+ *                 file and creates the new one with the config data specific to lead member which is getting recycled. So, we need to restore the original leads conf file. This will be
+ *                 required at the end of the test for stopping all leads which have been started in the test.</br>
+ *     <br><i> 57. public static synchronized void backUpLeadConfigData()</i> : Mandatory to use this method in case of HA test. As per current implementation, for starting the
+ *                 lead members, snappy-leads.sh script is used, which starts the lead members based on the data in leads conf file. In HA test, the framework deletes the old leads
+ *                 file and creates the new one with the config data specific to lead member which is getting recycled.So, we need to backup the original leads conf file. This will be
+ *                 required at the end of the test for stopping all leads which have been started in the test.</br>
+ *     <br><i> 58. protected void copyConfigData(String)</i> : Copy the configuration data to a file.</br>
+ *     <br><i> 59. protected void restoreConfigData(String)</i> : Restore the configuration Data to a file.</br>
+ *     <br><i> 60. public static synchronized void HydraTask_copyDiskFiles()</i> : Copy the HydraTask Disk Files to a file.</br>
+ *     <br><i> 61. public static synchronized void HydraTask_copyDiskFiles_gemToSnappyCluster()</i> : Copy the HydraTask Disk Files from Gem to Snappy Cluster.</br>
+ *     <br><i> 62. protected void doDMLOp(Connection conn)</i> : Perform the DML operation.</br>
+ *     <br><i> 63. protected void doDMLOp()</i> : Perform the HydraTask DML operation.</br>
+ *     <br><i> 64. protected void doDMLOp(Connection conn)</i> : Perform the DML operation.</br>
+ *     <br><i> 65. protected static void writeLocatorConnectionInfo()</i> : Writes the locator host:port information to the locatorConnInfo file under conf directory.</br>
+ *     <br><i> 66. protected static void writeLocatorInfo()</i> : Writes the comma seperated host:port list of all locators started in a cluster to the
+ *                 locatorList file under conf directory.</br>
+ *     <br><i> 67. protected static void writeLeadHostPortInfo()</i> : Writes the lead host information to the leadHost file under conf directory.</br>
+ *     <br><i> 68. protected static void writeSparkMasterConnInfo()</i> : Writes the master host information to the masterHost file under conf directory.</br>
+ *     <br><i> 69. protected static void writePrimaryLocatorHostPortInfo()</i> : Write PrimaryLocatorHostPortInfo to a file.</br>
+ *     <br><i> 70. protected static String getDataFromFile(String)</i> : Retrive the data from the file.</br>
+ *     <br><i> 71. protected static BufferedReader readDataFromFile(File)</i> : Read the data from the file.</br>
+ *     <br><i> 72. protected static File getLogFile(String)</i> : Retrive the log file.</br>
+ *     <br><i> 73. protected static List<String> getLocatorEndpointFromFile()</i> : Get the locator endpoints from the file.</br>
+ *     <br><i> 74. public static List<String> validateLocatorEndpointData()</i> : Validate the Locator Endpoints in Data.</br>
+ *     <br><i> 75. protected static List<String> validateServerEndpointData()</i> : Validates the Server Endpoints in Data.</br>
+ *     <br><i> 76. public static synchronized void setConnPoolType()</i> : Create the connection pool type.</br>
+ *     <br><i> 77. public static Connection getLocatorConnection()</i> : Gets Client connection.</br>
+ *     <br><i> 78. public static Connection getLocatorConnectionUsingProps()</i> : Description Unknown.</br>
+ *     <br><i> 79. public static Connection getServerConnection()</i> : Get the server connection.</br>
+ *     <br><i> 80. private static Connection getConnection(String,String)</i> : Get the connection with JDBC driver.</br>
+ *     <br><i> 81. private static Connection getConnection(String,String,Properties)</i> : Get the connection with JDBC driver with user specified property.</br>
+ *     <br><i> 82. public static void closeConnection(Connection)</i> : Close the connection.</br>
+ *     <br><i> 83. public void commit(Connection)</i> : Commiting the operations.</br>
+ *     <br><i> 84. public static void loadDriver(String driver)</i> : The JDBC driver is loaded by loading its class.  If you are using JDBC 4.0
+ *                 (Java SE 6) or newer, JDBC drivers may be automatically loaded, making this code optional.In an embedded environment, any static Derby system properties
+ *                 must be set before loading the driver to take effect.</br>
+ *     <br><i> 85. public static void runQuery() throws SQLException</i> : Execute the Query & close the JDBC connection.</br>
+ *     <br><i> 86. public static void HydraTask_writeCountQueryResultsToSnappyBB()</i> : This method calls the writeCountQueryResultsToBB() method.</br>
+ *     <br><i> 87. public static void HydraTask_writeUpdatedCountQueryResultsToSnappyBB()</i> : This method calls the writeUpdatedCountQueryResultsToBB() method.</br>
+ *     <br><i> 88. public static void HydraTask_verifyUpdateOpOnSnappyCluster()</i> : This method calls the  updateQuery() method.</br>
+ *     <br><i> 89. public static void HydraTask_verifyDeleteOpOnSnappyCluster()</i> : This method calls the deleteQuery() method.</br>
+ *     <br><i> 90. protected void deleteQuery()</i> : Execute the deleteQuery() method and do the validation.</br>
+ *     <br><i> 91. protected void updateQuery()</i> : Execute the updateQuery and validate the result.</br>
+ *     <br><i> 92. protected static Long runSelectQuery(Connection,String)</i> : Execute runSelectQuery and get the rowCount.</br>
+ *     <br><i> 93. protected static void writeCountQueryResultsToBB()</i> : Write count query result to Hydra BlackBoard.</br>
+ *     <br><i> 94. protected static void writeUpdatedCountQueryResultsToBB()</i> : Write updated count query result to Hydra BlackBoard.</br>
+ *     <br><i> 95. protected static void getCountQueryResult(Connection,String,String)</i> : Get the count query result.</br>
+ *     <br><i> 96. public static void HydraTask_verifyCountQueryResults()</i> : Verify the count query result.</br>
+ *     <br><i> 97. public static void HydraTask_verifyInsertOpOnSnappyCluster()</i> : Call the insertQuery() method.</br>
+ *     <br><i> 98. public static String getCurrentTimeStamp()</i> : Get the current timestamp in 'yyyy-MM-dd HH:mm:ss.SSS format.</br>
+ *     <br><i> 99. protected void insertQuery()</i> : Execute the insert statement and validate the count before and after insert.</br>
+ *     <br><i> 100. protected void writeToFile(String,File,boolean)</i> : Write the log directory to a file.</br>
+ *     <br><i> 101. public static synchronized void HydraTask_executeSQLScripts()</i> : Executes user SQL scripts.</br>
+ *     <br><i> 102. protected static String getPrimaryLocatorHost()</i> : Get the name of the primary locator host.</br>
+ *     <br><i> 103. protected static String getPrimaryLocatorPort()</i> : Get the port of the primary locator port.</br>
+ *     <br><i> 104. public void executeProcess(ProcessBuilder,File)</i> : Execute the process.</br>
+ *     <br><i> 105. protected synchronized void recordSnappyProcessIDinNukeRun(String pName)</i> : Recored the Snappy process ID in Nuke Run.</br>
+ *     <br><i> 106. public static void HydraTask_cleanUpSnappyProcessesOnFailure()</i> : Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.</br>
+ *     <br><i> 107. public static void HydraTask_executeSnappyStreamingJob()</i> : Executes snappy Streaming Jobs.This method calls the executeSnappyStreamingJob() method.</br>
+ *     <br><i> 108. public static synchronized void HydraTask_executeSnappyJob()</i> : Executes Snappy Jobs. This method calls the executeSnappyJob() method.</br>
+ *     <br><i> 109. public static void HydraTask_executeSnappyStreamingJob_benchmarking()</i> : Executes snappy Streaming Jobs. Task is specifically written for benchmarking.
+ *                 This method call the  executeSnappyStreamingJob() method.</br>
+ *     <br><i> 110. public static void HydraTask_executeSparkJob()</i> : Executes Spark Jobs in Task.This method call the executeSparkJob() method.</br>
+ *     <br><i> 111. public static void HydraTask_executeSnappyStreamingJobWithFileStream()</i> : Executes snappy Streaming Jobs in Task.</br>
+ *     <br><i> 112. protected void executeSnappyStreamingJob(Vector,String)</i> : Executes the Snappy Streaming Jobs.</br>
+ *     <br><i> 113. protected void executeSnappyStreamingJobUsingJobScript(Vector,String)</i> : Executes Snappy Streaming Jobs using job scripts.</br>
+ *     <br><i> 114. public String getLeadHost()</i> : Get the lead host name.</br>
+ *     <br><i> 115. public String getLeadPort()</i> : Get the lead port number.</br>
+ *     <br><i> 116. protected String getPrimaryLeadHost()</i> : Get the primary lead host.</br>
+ *     <br><i> 117. protected void verifyDataForJobExecution(Vector,String)</i> : Verify the data for job execution.</br>
+ *     <br><i> 118. public void executeSnappyJob(Vector,String,String,String,String)</i> : Execute the Snappy Jobs.</br>
+ *     <br><i> 119. public void executeSparkJob(Vector jobClassNames, String logFileName)</i> : Executes the spark job.</br>
+ *     <br><i> 120. public static void HydraTask_InitializeBB()</i> : Initialize the Hydra Black Board.</br>
+ *     <br><i> 121. protected static String getAbsoluteJarLocation(String,final String)</i> : Get the absolute jar location.</br>
+ *     <br><i> 122. public static void HydraTask_getSnappyJobOutputCollectivelyForCloseTask()</i> : Returns the output file containing collective output for all threads executing Snappy job in CLOSETASK.</br>
+ *     <br><i> 123. public static void HydraTask_getSnappyJobOutputCollectivelyForTask()</i> : Returns the output file containing collective output for all threads executing Snappy job in TASK.</br>
+ *     <br><i> 124. protected void getSnappyJobOutputCollectively(String logFilekey, String fileName)</i> : Get the Snappy Job Output collectively.</br>
+ *     <br><i> 125. protected void simulateStream()</i> : Simulate the Stream.</br>
+ *     <br><i> 126. public boolean getSnappyJobsStatus(String snappyJobScript, File logFile, String leadPort)</i> : Get the Snappy Job Stauts - Execution successful or not).</br>
+ *     <br><i> 127. public synchronized void retrievePrimaryLeadHost()</i> : Retrieve primary lead host.</br>
+ *     <br><i> 128. private synchronized String getLogDir()</i> : Returns the log file name.Autogenerates the directory name at runtime using the same path as the master.
+ *                  The directory is created if needed.</br>
+ *     <br><i> 129. private String generateLogDirName()</i> : Get the Log directory name.</br>
+ *     <br><i> 130. public synchronized void generateConfig(String)</i> : Generate the configuration.</br>
+ *     <br><i> 131. public static void HydraTask_deleteSnappyConfig()</i> : Deletes the snappy config generated specific to test run after successful test execution.</br>
+ *     <br><i> 132. public int getMyTid()</i> : Get the Thread ID.</br>
+ *     <br><i> 133. public static synchronized void HydraTask_startSnappyCluster()</i> : This method calls the startSnappyCluster() method.</br>
+ *     <br><i> 134. protected static void startSnappyCluster()</i> : Start snappy cluster using snappy-start-all.sh script.</br>
+ *     <br><i> 135. public static synchronized void HydraTask_recordProcessIDWithHost()</i> : Record the Hydra task proceess id with Host.</br>
+ *     <br><i> 136. public static synchronized void HydraTask_createAndStartSnappyLocator()</i> : Create and start snappy locator using snappy-locators.sh script.This method call the startSnappyLocator().</br>
+ *     <br><i> 137. public static synchronized void HydraTask_createAndStartSnappyServers()</i> : Create and start snappy server.This method call the startSnappyServer().</br>
+ *     <br><i> 138. public static synchronized void HydraTask_createAndStartSnappyLeader()</i> : Creates and start snappy lead.This method call the startSnappyLead().</br>
+ *     <br><i> 139. public static synchronized void HydraTask_startSparkCluster()</i> : Starts Spark Cluster with the specified number of workers.</br>
+ *     <br><i> 140. public static synchronized void HydraTask_stopSparkCluster()</i> : Stops Spark Cluster.</br>
+ *     <br><i> 141. public static synchronized void HydraTask_stopSnappyLeader()</i> : Stops snappy lead.</br>
+ *     <br><i> 142. public static synchronized void HydraTask_stopSnappyServers()</i> : Stops snappy server/servers.</br>
+ *     <br><i> 143. public static synchronized void HydraTask_stopSnappyLocator()</i> : Stops a snappy locator.</br>
+ *     <br><i> 144. public static synchronized void HydraTask_stopSnappyCluster()</i> : Stops the Snappy Cluster by using script 'snappy-stop-all.sh'.</br>
+ *     <br><i> 145. public static void HydraTask_deployJarUsingJDBC_LocalCache()</i> : This method call the executeDeployJar() method.</br>
+ *     <br><i> 146. public void executeDeployJar()</i> : Executes the deployed jar.</br>
+ *     <br><i> 147. public static void HydraTask_cycleStoreVms()</i> : Concurrently stops a List of snappy store VMs, then restarts them.  Waits for the restart to complete before returning.</br>
+ *     <br><i> 148. public static void HydraTask_cycleLocatorVms()</i> : Concurrently stops a List of snappy locator VMs, then restarts them.  Waits for the restart to complete before returning.</br>
+ *     <br><i> 149. public static synchronized void HydraTask_cycleLeadVM()</i> : Stops snappy primary lead member, then restarts it.  Waits for the restart to complete before returning.</br>
+ *     <br><i> 150. </i>  </br>
+ *     <br><i> 151. </i>  </br>
+ *     <br><i> 152. </i>  </br>
+ *     <br><i> 153. </i>  </br>
+ *     <br><i> 154. </i>  </br>
+ *     <br><i> 155. </i>  </br>
+ *     <br><i> 156. </i>  </br>
+ *     <br><i> 157. </i>  </br>
+ *     <br><i> 158. </i>  </br>
+ *     <br><i> 159. </i>  </br>
+ *     <br><i> 160. </i>  </br>
+ *     <br><i> 161. </i>  </br>
+ *     <br><i> 162. </i>  </br>
+ *     <br><i> 163. </i>  </br>
+ *     <br><i> 164. </i>  </br>
+ *     <br><i> 165. </i>  </br>
+ *     <br><i> 166. </i>  </br>
+ *     <br><i> 167. </i>  </br>
+ *     <br><i> 168. </i>  </br>
+ *     <br><i> 169. </i>  </br>
+ *     <br><i> 170. </i>  </br>
+ *
+ * </p>
+ */
 
 public class SnappyTest implements Serializable {
 
@@ -152,18 +368,29 @@ public class SnappyTest implements Serializable {
     this.snappyNode = snappyNode;
   }
 
+  /**
+   * Stops the SnappyContext / SparkContext if activated.
+   * @since 0.5
+   */
   public static void HydraTask_stopSnappy() {
     SparkContext sc = SnappyContext.globalSparkContext();
     if (sc != null) sc.stop();
     Log.getLogWriter().info("SnappyContext stopped successfully");
   }
 
-  public static synchronized void HydraTask_initializeSnappyTest() {
-    if (snappyTest == null) {
+  /**
+   * Initializes the Locators, Leaders, Servers, Spark Configuration.
+   * @since 0.5
+   */
+  public static synchronized void HydraTask_initializeSnappyTest()
+  {
+    if (snappyTest == null)
+    {
       snappyTest = new SnappyTest();
       snappyTest.getClientHostDescription();
       int tid = RemoteTestModule.getCurrentThread().getThreadId();
-      if (tid == 0) {
+      if (tid == 0)
+      {
         snappyTest.generateConfig("locators");
         snappyTest.generateConfig("servers");
         snappyTest.generateConfig("leads");
@@ -179,14 +406,15 @@ public class SnappyTest implements Serializable {
           snappyTest.generateConfig("primaryLocatorHost");
           snappyTest.generateConfig("primaryLocatorPort");
         }
-
-
       }
     }
   }
 
-
-  public static void initSnappyArtifacts() {
+  /**
+   * Initialize the artifacts used for testing.
+   * @since 0.5
+   */
+   public static void initSnappyArtifacts() {
     snappyTest = new SnappyTest();
     HostDescription hd = TestConfig.getInstance().getMasterDescription()
         .getVmDescription().getHostDescription();
@@ -207,6 +435,11 @@ public class SnappyTest implements Serializable {
     String quickstartDataLocation = productDir + "quickstart" + sep + "data" + sep;
   }
 
+  /**
+   * Get the tests lib and jar files for hydra tests
+   * @return Jar Names
+   * @since 0.5
+   */
   protected String getStoreTestsJar() {
     String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
         hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
@@ -215,6 +448,11 @@ public class SnappyTest implements Serializable {
     return storeTestsJar;
   }
 
+  /**
+   * Get the tests lib and jar files for hydra tests
+   * @return Jar Names
+   * @since 0.5
+   */
   protected String getSnappyTestsJar() {
     String snappyTestsJar = getUserAppJarLocation("snappydata-store-scala-tests*.jar",
         hd.getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
@@ -222,6 +460,11 @@ public class SnappyTest implements Serializable {
     return snappyTestsJar;
   }
 
+  /**
+   * Get the tests lib and jar files for hydra tests
+   * @return Jar Names
+   * @since 0.5
+   */
   protected String getClusterTestsJar() {
     String clusterTestsJar = getUserAppJarLocation("snappydata-cluster*tests.jar", hd
         .getGemFireHome() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
@@ -229,12 +472,24 @@ public class SnappyTest implements Serializable {
     return clusterTestsJar;
   }
 
+  /**
+   * Get the client description
+   * @since 0.5
+   */
   public void getClientHostDescription() {
     hd = TestConfig.getInstance()
         .getClientDescription(RemoteTestModule.getMyClientName())
         .getVmDescription().getHostDescription();
   }
 
+  /**
+   * Get the application jar location
+   * @param jarName
+   * @param jarPath
+   * @return jarPath
+   * @throws FileNotFoundException (i.e. jar not found at location)
+   * @since 0.5
+   */
   protected static String getUserAppJarLocation(final String jarName, String jarPath) {
     String userAppJarPath = null;
     if (new File(jarName).exists()) {
@@ -256,6 +511,13 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Get the test data
+   * @param paramName
+   * @return paramName
+   * @throws  TestException (Data doesn't exists at any expected location)
+   * @since 0.5
+   */
   public String getDataLocation(String paramName) {
     if (paramName.equals(" ")) return paramName;
     String scriptPath = null;
@@ -273,6 +535,13 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Get the script location
+   * @param scriptName
+   * @return scriptLocation
+   * @throws TestException (Unable to find the script at any expected location).
+   * @since 0.5
+   */
   public String getScriptLocation(String scriptName) {
     String scriptPath = null;
     if (new File(scriptName).exists()) return scriptName;
@@ -295,7 +564,10 @@ public class SnappyTest implements Serializable {
   }
 
   /**
-   * Generates the configuration data required to start the snappy locator.
+   * Instantiate the Snappy Node as a locator.
+   * Generates the configuration data for locator such as
+   * IP address, Port no, End point etc.
+   * @since 0.5
    */
   public static synchronized void HydraTask_generateSnappyLocatorConfig() {
     SnappyTest locator = new SnappyTest(SnappyNode.LOCATOR);
@@ -303,7 +575,10 @@ public class SnappyTest implements Serializable {
   }
 
   /**
-   * Generates the configuration data required to start the snappy Server.
+   * Instantiate the Snappy Node as a server.
+   * Generates the configuration data for locator such as
+   * Set the log level, Heap memory data, IP address, port no etc.
+   * @since 0.5
    */
   public static synchronized void HydraTask_generateSnappyServerConfig() {
     SnappyTest server = new SnappyTest(SnappyNode.SERVER);
@@ -311,7 +586,10 @@ public class SnappyTest implements Serializable {
   }
 
   /**
-   * Generates the configuration data required to start the snappy Server.
+   * Instantiate the Snappy Node as a lead.
+   * Generates the configuration data for locator such as
+   * Set the log level, Heap memory data, IP address, port no etc.
+   * @since 0.5
    */
   public static synchronized void HydraTask_generateSnappyLeadConfig() {
     SnappyTest lead = new SnappyTest(SnappyNode.LEAD);
@@ -320,12 +598,20 @@ public class SnappyTest implements Serializable {
 
   /**
    * Generates the configuration data required to start the snappy Server.
+   * @since 0.5
    */
   public static synchronized void HydraTask_generateSparkWorkerConfig() {
     SnappyTest worker = new SnappyTest(SnappyNode.WORKER);
     worker.generateNodeConfig("workerLogDir", false);
   }
 
+  /**
+   * Generate the respective node configuration (locator / leader / server / worker) for Hydra framework.
+   * @param logDir
+   * @param returnNodeLogDir
+   * @throws UnknownHostException / HydraRunTimeException (Lead host not found...)
+   * @since 0.5
+   */
   protected void generateNodeConfig(String logDir, boolean returnNodeLogDir) {
     if (logDirExists) return;
     String addr = HostHelper.getHostAddress();
@@ -463,6 +749,13 @@ public class SnappyTest implements Serializable {
     logDirExists = true;
   }
 
+  /**
+   * Get the file contents
+   * @param userKey
+   * @param fileContents
+   * @return fileContents
+   * @since 0.5
+   */
   protected static Set<String> getFileContents(String userKey, Set<String> fileContents) {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
@@ -474,6 +767,12 @@ public class SnappyTest implements Serializable {
     return fileContents;
   }
 
+  /**
+   * Get the absolute path of Temp. directory
+   * @param dirName
+   * @return AbsoultePath of Temp. directory
+   * @since 0.5
+   */
   protected String getTempDir(String dirName) {
     File log = new File(".");
     String dest = null;
@@ -489,6 +788,13 @@ public class SnappyTest implements Serializable {
     return tempDir.getAbsolutePath();
   }
 
+  /**
+   * Get the worker file contents as arraylist
+   * @param userKey
+   * @param fileContents
+   * @return list of files
+   * @since 0.5
+   */
   protected static ArrayList<String> getWorkerFileContents(String userKey, ArrayList<String>
       fileContents) {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
@@ -502,6 +808,12 @@ public class SnappyTest implements Serializable {
     return fileContents;
   }
 
+  /**
+   * Get the directory list
+   * @param userKey
+   * @return directory list in Set Structure
+   * @since 0.5
+   */
   protected static Set<File> getDirList(String userKey) {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
@@ -513,6 +825,12 @@ public class SnappyTest implements Serializable {
     return dirList;
   }
 
+  /**
+   * Get the locator list for long running test
+   * @param userKey
+   * @return locator list
+   * @since 0.5
+   */
   protected static String getLocatorsList(String userKey) {
     String locatorsList = null;
     if (isLongRunningTest) {
@@ -527,6 +845,12 @@ public class SnappyTest implements Serializable {
     return locatorsList;
   }
 
+  /**
+   * Get the locator list
+   * @param userKey
+   * @return locator list
+   * @since 0.5
+   */
   protected static String getLocatorList(String userKey) {
     String locatorsList = null;
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
@@ -545,8 +869,9 @@ public class SnappyTest implements Serializable {
   }
 
   /**
-   * Write the configuration data required to start the snappy locator/s in locators file under
+   * Write the locator configuration data required to start the snappy locator/s in locatorLogDir file under
    * conf directory at snappy build location.
+   * @since 0.5
    */
   public static void HydraTask_writeLocatorConfigData() {
     snappyTest.writeLocatorConfigData("locators", "locatorLogDir");
@@ -554,16 +879,18 @@ public class SnappyTest implements Serializable {
   }
 
   /**
-   * Write the configuration data required to start the snappy server/s in servers file under
+   * Write the configuration data required to start the snappy server/s in serverLogDir file under
    * conf directory at snappy build location.
+   * @since 0.5
    */
   public static void HydraTask_writeServerConfigData() {
     snappyTest.writeConfigData("servers", "serverLogDir");
   }
 
   /**
-   * Write the configuration data required to start the snappy lead/s in leads file under conf
+   * Write the configuration data required to start the snappy lead/s in leadLogDir file under conf
    * directory at snappy build location.
+   * @since 0.5
    */
   public static void HydraTask_writeLeadConfigData() {
     snappyTest.writeConfigData("leads", "leadLogDir");
@@ -574,6 +901,7 @@ public class SnappyTest implements Serializable {
    * Write the primary lead host,port info into the file(leadHost) under conf directory at
    * snappy build location. This is required for long running test scenarios where in  cluster
    * will be started  in first test and then rest all tests will use the same cluster
+   * @since 0.5
    */
   public static void HydraTask_writeLeadHostPortInfo() {
     writeLeadHostPortInfo();
@@ -583,6 +911,7 @@ public class SnappyTest implements Serializable {
    * Write the spark master host info into the file(masterHost) under conf directory at
    * snappy build location. This is required for long running test scenarios where in cluster
    * will be started in first test and then rest all tests will use the same cluster
+   * @since 0.5
    */
   public static void HydraTask_writeMasterConnInfo() {
     writeSparkMasterConnInfo();
@@ -592,6 +921,7 @@ public class SnappyTest implements Serializable {
    * Write the primary locator host,port info into the file under conf directory at
    * snappy build location. This is required for long running test scenarios where in cluster
    * will be started in first test and then rest all tests will use the same cluster
+   * @since 0.5
    */
   public static void HydraTask_writePrimaryLocatorHostPortInfo() {
     writePrimaryLocatorHostPortInfo();
@@ -602,6 +932,7 @@ public class SnappyTest implements Serializable {
    * cluster into the file(locatorList) under conf directory at snappy build location.
    * This is required for long running test scenarios where in cluster
    * will be started in first test and then rest all tests will use the same cluster
+   * @since 0.5
    */
   public static void HydraTask_writeLocatorInfo() {
     writeLocatorInfo();
@@ -610,6 +941,7 @@ public class SnappyTest implements Serializable {
   /**
    * Write the configuration data required to start the spark worker/s in slaves file and the
    * log directory locations in spark-env.sh file under conf directory at snappy build location.
+   * @since 0.5
    */
   public static void HydraTask_writeWorkerConfigData() {
     snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
@@ -618,6 +950,13 @@ public class SnappyTest implements Serializable {
     //snappyTest.writeConfigData("spark-env.sh", "sparkMasterHost");
   }
 
+  /**
+   * Write configuration Data to file
+   * @param fileName
+   * @param logDir
+   * @throws  TestException (No data found for writing to file under conf directory)
+   * @since 0.5
+   */
   protected void writeConfigData(String fileName, String logDir) {
     String filePath = productConfDirPath + fileName;
     File file = new File(filePath);
@@ -633,6 +972,13 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Write the locator configuration data to a file
+   * @param fileName
+   * @param logDir
+   * @throws  TestException (No data found for writing to file under conf directory)
+   * @since 0.5
+   */
   protected void writeLocatorConfigData(String fileName, String logDir) {
     String filePath = productConfDirPath + fileName;
     File file = new File(filePath);
@@ -666,12 +1012,26 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Write the Node configuration data to a file
+   * @param fileName
+   * @param nodeLogDir
+   * @param append
+   * @since 0.5
+   */
   protected void writeNodeConfigData(String fileName, String nodeLogDir, boolean append) {
     String filePath = productConfDirPath + fileName;
     File file = new File(filePath);
     snappyTest.writeToFile(nodeLogDir, file, append);
   }
 
+  /**
+   * Write worker configuration data to a file
+   * @param fileName
+   * @param logDir
+   * @throws TestException (No data found for writing to file under conf directory)
+   * @since 0.5
+   */
   protected void writeWorkerConfigData(String fileName, String logDir) {
     String filePath = productConfDirPath + fileName;
     File file = new File(filePath);
@@ -691,6 +1051,8 @@ public class SnappyTest implements Serializable {
    * SnappyNetworkServerBB} map, a possibly empty list.  This includes all
    * network servers that have ever started, regardless of their distributed
    * system or current active status.
+   * @return locators endpoints list
+   * @since 0.5
    */
   public static List getNetworkLocatorEndpoints() {
     return getEndpoints("locator");
@@ -701,11 +1063,18 @@ public class SnappyTest implements Serializable {
    * SnappyNetworkServerBB} map, a possibly empty list.  This includes all
    * network servers that have ever started, regardless of their distributed
    * system or current active status.
+   * @return NetworkServers endpoints list
+   * @since 0.5
    */
   public static List getNetworkServerEndpoints() {
     return getEndpoints("server");
   }
 
+  /**
+   * Get the client port number
+   * @return client port number in HashMap structure
+   * @since 0.5
+   */
   protected HashMap getclientHostPort() {
     HashMap<String, Integer> hostPort = new HashMap<String, Integer>();
     String endpoint = null;
@@ -727,6 +1096,9 @@ public class SnappyTest implements Serializable {
 
   /**
    * Returns all endpoints of the given type.
+   * @param type
+   * @return List of all the endpoints of given type
+   * @since 0.5
    */
   private static synchronized List<String> getEndpoints(String type) {
     List<String> endpoints = new ArrayList();
@@ -744,6 +1116,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Returns PIDs for all the processes started in the test, e.g. locator, server, lead .
+   * @return process id's list
+   * @since 0.5
    */
   private static synchronized Set<String> getPidList() {
     Set<String> pidList = new HashSet<>();
@@ -761,6 +1135,9 @@ public class SnappyTest implements Serializable {
 
   /**
    * Returns hostname of the process
+   * @param  pid(processid)
+   * @return Host Name of process id
+   * @since 0.5
    */
   protected static synchronized String getPidHost(String pid) {
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
@@ -776,7 +1153,10 @@ public class SnappyTest implements Serializable {
 
 
   /**
-   * Returns primary lead port .
+   * Returns primary lead port.
+   * @param clientName
+   * @return primary lead port number
+   * @since 0.5
    */
   private static synchronized String getPrimaryLeadPort(String clientName) {
     List<String> portList = new ArrayList();
@@ -791,40 +1171,77 @@ public class SnappyTest implements Serializable {
     return port;
   }
 
-
+  /**
+   * Initialize the Hydra framework ThreadLocals
+   * @since 0.5
+   */
   protected void initHydraThreadLocals() {
     this.connection = getConnection();
   }
 
+  /**
+   * Get the connection string of Cluster
+   * @return connection to JDBC / ODBC
+   * @since 0.5
+   */
   protected Connection getConnection() {
     Connection connection = (Connection) localconnection.get();
     return connection;
   }
 
+  /**
+   * Set the connection with cluster
+   * @param connection
+   * @since 0.5
+   */
   protected void setConnection(Connection connection) {
     localconnection.set(connection);
   }
 
+  /**
+   * Update the Hydra framework ThreadLocal
+   * @since 0.5
+   */
   protected void updateHydraThreadLocals() {
     setConnection(this.connection);
   }
 
+  /**
+   * Get Hydra task client connection
+   * @throws SQLException
+   * @since 0.5
+   */
   public static void HydraTask_getClientConnection_Snappy() throws SQLException {
     SnappyTest st = new SnappyTest();
     st.connectThinClient();
     st.updateHydraThreadLocals();
   }
 
+  /**
+   * Get thin client connection i.e. Locator
+   * @throws SQLException
+   * @since 0.5
+   */
   private void connectThinClient() throws SQLException {
     connection = getLocatorConnection();
   }
 
+  /**
+   * Get the client connection of initHydraThreadLocals
+   * @return connection of initHydraThreadLocals
+   * @since 0.5
+   */
   public static Connection getClientConnection() {
     SnappyTest st = new SnappyTest();
     st.initHydraThreadLocals();
     return st.getConnection();
   }
 
+  /**
+   * Get Hydra task client connection
+   * @throws SQLException
+   * @since 0.5
+   */
   public static void HydraTask_getClientConnection() throws SQLException {
     getLocatorConnection();
   }
@@ -837,7 +1254,8 @@ public class SnappyTest implements Serializable {
    * config data specific to locator which is getting recycled.
    * So, we need to backup the original locators conf file. This will be required at the end of the
    * test for stopping all locators which have been started in the test.
-   **/
+   * @since 0.5
+   */
   public static synchronized void backUpLocatorConfigData() {
     snappyTest.copyConfigData("locators");
   }
@@ -850,7 +1268,8 @@ public class SnappyTest implements Serializable {
    * to server which is getting recycled.
    * So, we need to backup the original servers conf file. This will be required at the end of the test for stopping all servers
    * which have been started in the test.
-   **/
+   * @since 0.5
+   */
   public static synchronized void backUpServerConfigData() {
     snappyTest.copyConfigData("servers");
   }
@@ -863,7 +1282,8 @@ public class SnappyTest implements Serializable {
    * config data specific to locator which is getting recycled.
    * So, we need to restore the original locators conf file. This will be required at the end of
    * the test for stopping all locators which have been started in the test.
-   **/
+   * @since 0.5
+   */
   public static synchronized void restoreLocatorConfigData() {
     snappyTest.restoreConfigData("locators");
   }
@@ -876,7 +1296,8 @@ public class SnappyTest implements Serializable {
    * to server which is getting recycled.
    * So, we need to restore the original servers conf file. This will be required at the end of the test for stopping all servers
    * which have been started in the test.
-   **/
+   * @since 0.5
+   */
   public static synchronized void restoreServerConfigData() {
     snappyTest.restoreConfigData("servers");
   }
@@ -889,7 +1310,8 @@ public class SnappyTest implements Serializable {
    * to lead member which is getting recycled.
    * So, we need to restore the original leads conf file. This will be required at the end of the test for stopping all leads
    * which have been started in the test.
-   **/
+   * @since 0.5
+   */
   public static synchronized void restoreLeadConfigData() {
     snappyTest.restoreConfigData("leads");
   }
@@ -902,11 +1324,18 @@ public class SnappyTest implements Serializable {
    * to lead member which is getting recycled.
    * So, we need to backup the original leads conf file. This will be required at the end of the test for stopping all leads
    * which have been started in the test.
-   **/
+   * @since 0.5
+   */
   public static synchronized void backUpLeadConfigData() {
     snappyTest.copyConfigData("leads");
   }
 
+  /**
+   * Copy the configuration data to a file
+   * @param fileName
+   * @throws IOException (TestException)
+   * @since 0.5
+   */
   protected void copyConfigData(String fileName) {
     if (doneCopying && !forceCopy) return;
     String filePath = productConfDirPath + fileName;
@@ -921,6 +1350,12 @@ public class SnappyTest implements Serializable {
     doneCopying = true;
   }
 
+  /**
+   * Restore the configuration Data to a file
+   * @param fileName
+   * @throws IOException (TestException)
+   * @since 0.5
+   */
   protected void restoreConfigData(String fileName) {
     if (doneRestore) return;
     String filePath = productConfDirPath + fileName;
@@ -975,7 +1410,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
-
+  /**
+   * Copy the HydraTask Disk Files to a file
+   * @throws IOException(TestException)
+   * @since 0.5
+   */
   public static synchronized void HydraTask_copyDiskFiles() {
     if (diskDirExists) return;
     else {
@@ -1000,6 +1439,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Copy the HydraTask Disk Files from Gem to Snappy Cluster
+   * @throws IOException(TestException)
+   * @since 0.5
+   */
   public static synchronized void HydraTask_copyDiskFiles_gemToSnappyCluster() {
     Set<File> myDirList = getDirList("dirName_");
     if (diskDirExists) return;
@@ -1040,10 +1484,19 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Perform the HydraTask DML operation
+   * @since 0.5
+   */
   public static void HydraTask_doDMLOp() {
     snappyTest.doDMLOp();
   }
 
+  /**
+   * Perform the HydraTask DML operation
+   * @throws SQLException (TestException - Not able to connect)
+   * @since 0.5
+   */
   protected void doDMLOp() {
     runGemXDQuery = true;
     try {
@@ -1055,6 +1508,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Perform the DML operation
+   * @param conn(connection)
+   * @throws TestException (Unknown entry operation)
+   */
   protected void doDMLOp(Connection conn) {
     //No derby connection required for snappyTest. So providign the bull connection to existing methods
     Connection dConn = null;
@@ -1103,6 +1561,7 @@ public class SnappyTest implements Serializable {
 
   /**
    * Writes the locator host:port information to the locatorConnInfo file under conf directory.
+   * @since 0.5
    */
   protected static void writeLocatorConnectionInfo() {
     List<String> endpoints = validateLocatorEndpointData();
@@ -1112,6 +1571,7 @@ public class SnappyTest implements Serializable {
   /**
    * Writes the comma seperated host:port list of all locators started in a cluster to the
    * locatorList file under conf directory.
+   * @since 0.5
    */
   protected static void writeLocatorInfo() {
     String locatorList = getLocatorsList("locators");
@@ -1120,6 +1580,7 @@ public class SnappyTest implements Serializable {
 
   /**
    * Writes the lead host information to the leadHost file under conf directory.
+   * @since 0.5
    */
   protected static void writeLeadHostPortInfo() {
     leadHost = snappyTest.getLeadHost();
@@ -1130,6 +1591,7 @@ public class SnappyTest implements Serializable {
 
   /**
    * Writes the master host information to the masterHost file under conf directory.
+   * @since 0.5
    */
   protected static void writeSparkMasterConnInfo() {
     String masterHost = getSparkMasterHost();
@@ -1137,6 +1599,10 @@ public class SnappyTest implements Serializable {
     snappyTest.writeNodeConfigData("masterHost", masterHost, false);
   }
 
+  /**
+   * Write PrimaryLocatorHostPortInfo to a file
+   * @since 0.5
+   */
   protected static void writePrimaryLocatorHostPortInfo() {
     String primaryLocatorHost = getPrimaryLocatorHost();
     String primaryLocatorPort = getPrimaryLocatorPort();
@@ -1144,6 +1610,13 @@ public class SnappyTest implements Serializable {
     snappyTest.writeNodeConfigData("primaryLocatorPort", primaryLocatorPort, false);
   }
 
+  /**
+   * Retrive the data from the file
+   * @param fileName
+   * @return data from the file
+   * @throws IOException (TestException - Problem while reading the file)
+   * @since 0.5
+   */
   protected static String getDataFromFile(String fileName) {
     File logFile = getLogFile(fileName);
     String data = null;
@@ -1161,6 +1634,13 @@ public class SnappyTest implements Serializable {
     return data;
   }
 
+  /**
+   * Read the data from the file
+   * @param filename
+   * @return BufferReader to read the data from it
+   * @throws FileNotFoundException
+   * @since 0.5
+   */
   protected static BufferedReader readDataFromFile(File filename) {
     BufferedReader br = null;
     try {
@@ -1173,6 +1653,12 @@ public class SnappyTest implements Serializable {
     return br;
   }
 
+  /**
+   * Retrive the log file
+   * @param filename
+   * @return Logfile
+   * @throws IOException (TestException - Unable to create the file)
+   */
   protected static File getLogFile(String filename) {
     String dest = productConfDirPath + filename;
     File logFile = new File(dest);
@@ -1185,6 +1671,12 @@ public class SnappyTest implements Serializable {
     return logFile;
   }
 
+  /**
+   * Get the locator endpoints from the file
+   * @return locator endpoints from the file
+   * @throws IOException (Problem while reading the file)
+   * @since 0.5
+   */
   protected static List<String> getLocatorEndpointFromFile() {
     List<String> endpoints = new ArrayList<String>();
     File logFile = getLogFile("locatorConnInfo");
@@ -1202,6 +1694,12 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
+  /**
+   * Validate the Locator Endpoints in Data
+   * @return validated locator endpoints
+   * @throws TestException (No network locator endpoints found)
+   * @since 0.5
+   */
   public static List<String> validateLocatorEndpointData() {
     List<String> endpoints = getNetworkLocatorEndpoints();
     if (endpoints.size() == 0) {
@@ -1220,6 +1718,12 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
+  /**
+   * Validates the Server Endpoints in Data
+   * @return Validated server endpoints
+   * @throws TestException (No network server endpoints found)
+   * @since 0.5
+   */
   protected static List<String> validateServerEndpointData() {
     List<String> endpoints = getNetworkServerEndpoints();
     /*if (endpoints.size() == 0) {
@@ -1234,6 +1738,10 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
+  /**
+   * Create the connection pool type
+   * @since 0.5
+   */
   public static synchronized void setConnPoolType() {
     if (!SnappyBB.getBB().getSharedMap().containsKey("connPoolType"))
       SnappyBB.getBB().getSharedMap().put("connPoolType", SnappyConnectionPoolPrms
@@ -1243,6 +1751,9 @@ public class SnappyTest implements Serializable {
 
   /**
    * Gets Client connection.
+   * @return connection to locator
+   * @throws SQLException
+   * @since 0.5
    */
   public static Connection getLocatorConnection() throws SQLException {
     Connection conn = null;
@@ -1272,6 +1783,11 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  /**
+   * Description Unknown
+   * @return locator connection
+   * @throws SQLException
+   */
   public static Connection getLocatorConnectionUsingProps() throws
       SQLException {
     List<String> endpoints = validateLocatorEndpointData();
@@ -1289,6 +1805,11 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  /**
+   * Get the server connection
+   * @return Server connection
+   * @throws SQLException
+   */
   public static Connection getServerConnection() throws SQLException {
     List<String> endpoints = validateServerEndpointData();
     Connection conn = null;
@@ -1304,6 +1825,14 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  /**
+   * Get the connection with JDBC driver
+   * @param protocol
+   * @param driver
+   * @return coonection with JDBC driver with protocol
+   * @throws SQLException
+   * @since 0.5
+   */
   private static Connection getConnection(String protocol, String driver) throws SQLException {
     Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol);
     loadDriver(driver);
@@ -1311,6 +1840,15 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  /**
+   * Get the connection with JDBC driver with user specified property.
+   * @param protocol
+   * @param driver
+   * @param props
+   * @return Connection with JDBC driver with specific protocal and user specified property
+   * @throws SQLException
+   * @since 0.5
+   */
   private static Connection getConnection(String protocol, String driver, Properties props)
       throws
       SQLException {
@@ -1321,6 +1859,12 @@ public class SnappyTest implements Serializable {
     return conn;
   }
 
+  /**
+   * Close the connection
+   * @param conn (established connection)
+   * @since 0.5
+   * @throws  SQLException (Not able to release the connection)
+   */
   public static void closeConnection(Connection conn) {
     try {
       conn.close();
@@ -1330,6 +1874,12 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Commiting the operations.
+   * @param conn (JDBC connection)
+   * @throws SQLException
+   * @since 0.5
+   */
   public void commit(Connection conn) {
     if (conn == null) return;
     try {
@@ -1347,6 +1897,9 @@ public class SnappyTest implements Serializable {
    * <p/>
    * In an embedded environment, any static Derby system properties
    * must be set before loading the driver to take effect.
+   * @param  driver (JDBC / ODBC driver)
+   * @throws ClassNotFoundException / InstantiationException / IllegalAccessException)
+   * @since 0.5
    */
   public static void loadDriver(String driver) {
     try {
@@ -1363,6 +1916,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Execute the Query & close the JDBC connection
+   * @throws SQLException
+   * @since 0.5
+   */
   public static void runQuery() throws SQLException {
     Connection conn = getLocatorConnection();
     String query1 = "SELECT count(*) FROM airline";
@@ -1373,22 +1931,45 @@ public class SnappyTest implements Serializable {
     closeConnection(conn);
   }
 
+  /**
+   * This method calls the writeCountQueryResultsToBB() method
+   * @since 0.5
+   */
   public static void HydraTask_writeCountQueryResultsToSnappyBB() {
     snappyTest.writeCountQueryResultsToBB();
   }
 
+  /**
+   * This method calls the writeUpdatedCountQueryResultsToBB() method
+   * @since 0.5
+   */
   public static void HydraTask_writeUpdatedCountQueryResultsToSnappyBB() {
     snappyTest.writeUpdatedCountQueryResultsToBB();
   }
 
+  /**
+   * This method calls the  updateQuery() method
+   * @since 0.5
+   */
   public static void HydraTask_verifyUpdateOpOnSnappyCluster() {
     snappyTest.updateQuery();
   }
 
+  /**
+   * This method calls the deleteQuery() method
+   * @since 0.5
+   */
   public static void HydraTask_verifyDeleteOpOnSnappyCluster() {
     snappyTest.deleteQuery();
   }
 
+  /**
+   * Execute the deleteQuery() method and do the validation
+   * @throws SQLException (TestException - Not able to get connection)
+   * @throws TestException (Test Validation failed due to mismatch in countQuery results for table trade.txhistory. countQueryResults after performing delete ops should be XYZ)
+   * @throws TestException (Test Validation failed due to wrong row count value for table trade.txhistory.Expected row count value is 0, but found XYZ)
+   * @since 0.5
+   */
   protected void deleteQuery() {
     runGemXDQuery = true;
     try {
@@ -1423,6 +2004,13 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Execute the updateQuery and validate the result
+   * @throws SQLException (Not able to get connection)
+   * @throws TestException (Test Validation failed due to mismatch in countQuery results for table trade.customers. countQueryResults after performing update ops should be XYZ)
+   * @throws TestException (Test Validation failed due to mismatch in row count value for table trade.customers)
+   * @since 0.5
+   */
   protected void updateQuery() {
     runGemXDQuery = true;
     try {
@@ -1462,6 +2050,14 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Execute runSelectQuery and get the rowCount
+   * @param conn (JDBC/ODBC)
+   * @param query
+   * @return rowCount
+   * @throws SQLException (Not able to get connection)
+   * @since 0.5
+   */
   protected static Long runSelectQuery(Connection conn, String query) {
     long rowCount = 0;
     try {
@@ -1476,6 +2072,11 @@ public class SnappyTest implements Serializable {
     return rowCount;
   }
 
+  /**
+   * Write count query result to Hydra Black Board
+   * @throws SQLException (Not able to get connection)
+   * @since 0.5
+   */
   protected static void writeCountQueryResultsToBB() {
     runGemXDQuery = true;
     try {
@@ -1493,6 +2094,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Write updated count query result to Hydra BlackBoard
+   * @throws SQLException (Not able to get connection)
+   * @since 0.5
+   */
   protected static void writeUpdatedCountQueryResultsToBB() {
     runGemXDQuery = true;
     try {
@@ -1510,6 +2116,15 @@ public class SnappyTest implements Serializable {
     }
   }
 
+
+  /**
+   * Get the count query result
+   * @param conn (JDBC)
+   * @param query
+   * @param tableName
+   * @throws SQLException
+   * @since 0.5
+   */
   protected static void getCountQueryResult(Connection conn, String query, String tableName) {
     try {
       ResultSet rs = conn.createStatement().executeQuery(query);
@@ -1522,6 +2137,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Verify the count query result
+   * @throws TestException
+   * @since 0.5
+   */
   public static void HydraTask_verifyCountQueryResults() {
     ArrayList<String[]> tables = (ArrayList<String[]>) SQLBB.getBB().getSharedMap().get("tableNames");
     for (String[] table1 : tables) {
@@ -1538,10 +2158,18 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Call the insertQuery() method
+   * @since 0.5
+   */
   public static void HydraTask_verifyInsertOpOnSnappyCluster() {
     snappyTest.insertQuery();
   }
 
+  /**
+   * Get the current timestamp in 'yyyy-MM-dd HH:mm:ss.SSS format
+   * @return Current timestamp in yyyy-MM-dd HH:mm:ss.SSS format
+   */
   public static String getCurrentTimeStamp() {
     SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     Date now = new Date();
@@ -1549,6 +2177,11 @@ public class SnappyTest implements Serializable {
     return strDate;
   }
 
+  /**
+   * Execute the insert statement and validate the count before and after insert
+   * @throws SQLException / TestException
+   * @since 0.5
+   */
   protected void insertQuery() {
     runGemXDQuery = true;
     try {
@@ -1586,6 +2219,14 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Write the log directory to a file
+   * @param logDir
+   * @param file
+   * @param append
+   * @throws IOException (Error occurred while writing to a file)
+   * @since 0.5
+   */
   protected void writeToFile(String logDir, File file, boolean append) {
     try {
       FileWriter fw = new FileWriter(file.getAbsoluteFile(), append);
@@ -1601,6 +2242,9 @@ public class SnappyTest implements Serializable {
 
   /**
    * Executes user SQL scripts.
+   * @throws TestException (No Script names provided for executing in the Hydra TASK)
+   * @throws IOException (IOException occurred while retriving destination logFile)
+   * @since 0.5
    */
   public static synchronized void HydraTask_executeSQLScripts() {
     Vector scriptNames, dataLocationList = null, persistenceModeList = null,
@@ -1714,6 +2358,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Get the name of the primary locator host
+   * @return Name of the primary locator host
+   * @since 0.5
+   */
   protected static String getPrimaryLocatorHost() {
     String primaryLocatorHost = null;
     if (isLongRunningTest) {
@@ -1731,6 +2380,11 @@ public class SnappyTest implements Serializable {
     return primaryLocatorHost;
   }
 
+  /**
+   * Get the port of the primary locator port
+   * @return Port number of primary locator
+   * @since 0.5
+   */
   protected static String getPrimaryLocatorPort() {
     String primaryLocatorPort = null;
     if (isLongRunningTest) {
@@ -1747,6 +2401,14 @@ public class SnappyTest implements Serializable {
     return primaryLocatorPort;
   }
 
+  /**
+   * Start the process, either in single machine or in different machine.
+   * Start the leader, locator and server process.
+   * @param pb (processbuilder)
+   * @param logFile
+   * @throws IOException (Exception occurred while starting the process or Exception occurred while waiting for the process execution)
+   * @since 0.5
+   */
   public void executeProcess(ProcessBuilder pb, File logFile) {
     Process p = null;
     try {
@@ -1776,6 +2438,13 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Recored the Snappy process ID in Nuke Run
+   * @param pName (process name)
+   * @throws IOException (Problem while starting the process)
+   * @throws InterruptedException (Exception occurred while waiting for the process execution)
+   * @since 0.5
+   */
   protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
@@ -1864,6 +2533,10 @@ public class SnappyTest implements Serializable {
 
   /**
    * Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.
+   * @throws IOException (IOException occurred while retriving logFile path)
+   * @throws InterruptedException (Exception occurred while waiting for the process execution)
+   * @throws RemoteException (Failed to remove PID from nukerun script)
+   * @since 0.5
    */
   public static void HydraTask_cleanUpSnappyProcessesOnFailure() {
     Process pr = null;
@@ -1915,7 +2588,8 @@ public class SnappyTest implements Serializable {
   }
 
   /**
-   * Executes snappy Streaming Jobs.
+   * Executes snappy Streaming Jobs. This method calls the executeSnappyStreamingJob() method.
+   * @since 0.5
    */
   public static void HydraTask_executeSnappyStreamingJob() {
     snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames(),
@@ -1923,7 +2597,7 @@ public class SnappyTest implements Serializable {
   }
 
   /**
-   * Executes Snappy Jobs.
+   * Executes Snappy Jobs. This method calls the executeSnappyJob() method.
    */
   public static synchronized void HydraTask_executeSnappyJob() {
     int count = 0;
@@ -1937,6 +2611,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Executes snappy Streaming Jobs. Task is specifically written for benchmarking.
+   * This method call the  executeSnappyStreamingJob() method.
+   * @since 0.5
    */
   public static void HydraTask_executeSnappyStreamingJob_benchmarking() {
     snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames(),
@@ -1945,6 +2621,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Executes Spark Jobs in Task.
+   * This method call the executeSparkJob() method.
+   * @since 0.5
    */
   public static void HydraTask_executeSparkJob() {
     int currentThread = snappyTest.getMyTid();
@@ -1954,6 +2632,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Executes snappy Streaming Jobs in Task.
+   * @throws InterruptedException (Exception occurred while waiting for the snappy streaming job process execution).
+   * @since 0.5
    */
   public static void HydraTask_executeSnappyStreamingJobWithFileStream() {
     Runnable fileStreaming = new Runnable() {
@@ -1981,6 +2661,13 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Executes the Snappy Streaming Jobs.
+   * @param jobClassNames
+   * @param logFileName
+   * @throws IOException (IOException occurred while retriving destination logFile path).
+   * @since 0.5
+   */
   protected void executeSnappyStreamingJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     String curlCommand1 = null, curlCommand2 = null, curlCommand3 = null, contextName = null, APP_PROPS = null;
@@ -2020,6 +2707,13 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Executes Snappy Streaming Jobs using job scripts.
+   * @param jobClassNames
+   * @param logFileName
+   * @throws IOException (IOException occurred while retriving destination logFile path).
+   * @since 0.5
+   */
   protected void executeSnappyStreamingJobUsingJobScript(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     ProcessBuilder pb = null;
@@ -2050,6 +2744,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Get the lead host name.
+   * @return lead host name
+   * @since 0.5
+   */
   public String getLeadHost() {
     if (isLongRunningTest) {
       leadHost = getDataFromFile("leadHost");
@@ -2065,6 +2764,11 @@ public class SnappyTest implements Serializable {
     return leadHost;
   }
 
+  /**
+   * Get the lead port number.
+   * @return lead port number
+   * @since 0.5
+   */
   public String getLeadPort() {
     String leadPort = null;
     if (isLongRunningTest) {
@@ -2081,6 +2785,11 @@ public class SnappyTest implements Serializable {
     return leadPort;
   }
 
+  /**
+   * Get the primary lead host.
+   * @return primary lead host
+   * @since 0.5
+   */
   protected String getPrimaryLeadHost() {
     leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
     if (leadHost == null) {
@@ -2091,6 +2800,13 @@ public class SnappyTest implements Serializable {
     return leadHost;
   }
 
+  /**
+   * Verify the data for job execution.
+   * @param jobClassNames
+   * @param userAppJar
+   * @throws TestException (Missing userAppJar parameter)
+   * @since 0.5
+   */
   protected void verifyDataForJobExecution(Vector jobClassNames, String userAppJar) {
     if (userAppJar == null) {
       String s = "Missing userAppJar parameter.";
@@ -2102,6 +2818,17 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Exeucte the Snappy Jobs.
+   * @param jobClassNames
+   * @param logFileName
+   * @param userAppJar
+   * @param jarPath
+   * @param appName
+   * @throws IOException (IOException occurred while retriving destination logFile path)
+   * @throws InterruptedException (Exception occurred while waiting for the snappy streaming job)
+   * @since 0.5
+   */
   public void executeSnappyJob(Vector jobClassNames, String logFileName, String
       userAppJar, String jarPath, String appName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
@@ -2163,6 +2890,14 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Executes the spark job.
+   * @param jobClassNames
+   * @param logFileName
+   * @throws IOException
+   * @throws InterruptedException
+   * @since 0.5
+   */
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
     boolean isCDCStream = SnappyCDCPrms.getIsCDCStream();
@@ -2274,8 +3009,14 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_InitializeBB() {
-    try {
+
+  /**
+   * Initialize the Hydra Black Board.
+   * @throws Exception
+   * @since 0.5
+   */
+  public static void HydraTask_InitializeBB(){
+    try{
       Log.getLogWriter().info("InsideHydraTask_InitializeBB ");
       int startR = SnappyCDCPrms.getInitStartRange();
       int endR = SnappyCDCPrms.getInitEndRange();
@@ -2289,6 +3030,12 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Get the absolute jar location.
+   * @param jarPath
+   * @param jarName
+   * @return Absolute Path of Jar file
+   */
   protected static String getAbsoluteJarLocation(String jarPath, final String jarName) {
     String absoluteJarPath = null;
     File baseDir = new File(jarPath);
@@ -2308,6 +3055,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Returns the output file containing collective output for all threads executing Snappy job in CLOSETASK.
+   * This method call the getSnappyJobOutputCollectively.
+   * @since 0.5
    */
   public static void HydraTask_getSnappyJobOutputCollectivelyForCloseTask() {
     snappyTest.getSnappyJobOutputCollectively("logFilesForJobs_",
@@ -2316,12 +3065,22 @@ public class SnappyTest implements Serializable {
 
   /**
    * Returns the output file containing collective output for all threads executing Snappy job in TASK.
+   * This method call the getSnappyJobOutputCollectively.
+   * @since 0.5
    */
   public static void HydraTask_getSnappyJobOutputCollectivelyForTask() {
     snappyTest.getSnappyJobOutputCollectively("logFilesForJobs_",
         "snappyJobCollectiveOutputForTask.log");
   }
 
+  /**
+   * Get the Snappy Job Output collectively.
+   * @param logFilekey
+   * @param fileName
+   * @throws FileNotFoundException
+   * @throws IOException
+   * @since 0.5
+   */
   protected void getSnappyJobOutputCollectively(String logFilekey, String fileName) {
     Set<String> snappyJobLogFiles = new LinkedHashSet<String>();
     File fin = null;
@@ -2370,6 +3129,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Simulate the Stream.
+   * @throws IOException (problem occurred while retriving destination logFile path)
+   * @since 0.5
+   */
   protected void simulateStream() {
     File logFile = null;
     File log = new File(".");
@@ -2385,6 +3149,16 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Get the Snappy Job Stauts - Execution successful or not).
+   * @param snappyJobScript
+   * @param logFile
+   * @param leadPort
+   * @return Snappy Job Status (Execution successful or not)
+   * @throws FileNotFoundException
+   * @throws IOException
+   * @since 0.5
+   */
   public boolean getSnappyJobsStatus(String snappyJobScript, File logFile, String leadPort) {
     boolean found = false;
     try {
@@ -2438,6 +3212,10 @@ public class SnappyTest implements Serializable {
     return found;
   }
 
+  /**
+   * Retrieve primary lead host.
+   * @since 0.5
+   */
   public synchronized void retrievePrimaryLeadHost() {
     Object[] tmpArr = null;
     String leadPort = null;
@@ -2463,11 +3241,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  /*
+  /**
   * Returns the log file name.  Autogenerates the directory name at runtime
   * using the same path as the master.  The directory is created if needed.
-  *
   * @throws HydraRuntimeException if the directory cannot be created.
+  * @since 0.5
   */
   private synchronized String getLogDir() {
     if (this.logFile == null) {
@@ -2504,6 +3282,11 @@ public class SnappyTest implements Serializable {
     return this.logFile;
   }
 
+  /**
+   * Get the Log directory name.
+   * @return log directory name
+   * @since 0.5
+   */
   private String generateLogDirName() {
     String dirname = hd.getUserDir() + File.separator
         + "vm_" + RemoteTestModule.getMyVmid()
@@ -2513,17 +3296,28 @@ public class SnappyTest implements Serializable {
     return dirname;
   }
 
-  public synchronized void generateConfig(String fileName) {
+  /**
+   * Generate the configuration from Product configuration for leader, locators and servers.
+   * @param fileName
+   * @throws IOException
+   * @since 0.5
+   */
+  public synchronized void generateConfig(String fileName)
+  {
     File file = null;
-    try {
+    try
+    {
       String path = productConfDirPath + sep + fileName;
       log().info("File Path is ::" + path);
       file = new File(path);
 
       // if file doesnt exists, then create it
-      if (!file.exists()) {
+      if (!file.exists())
+      {
         file.createNewFile();
-      } else if (file.exists()) {
+      }
+      else if (file.exists())
+      {
         if (isStopMode) return;
         file.setWritable(true);
         //file.delete();
@@ -2531,14 +3325,18 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info(fileName + " file deleted");
         file.createNewFile();
       }
-    } catch (IOException e) {
+    }
+    catch (IOException e)
+    {
       String s = "Problem while creating the file : " + file;
       throw new TestException(s, e);
     }
   }
 
   /**
-   * Deletes the snappy config generated spcific to test run after successful test execution.
+   * Deletes the snappy config generated specific to test run after successful test execution.
+   * @throws IOException
+   * @since 0.5
    */
   public static void HydraTask_deleteSnappyConfig() throws IOException {
     String locatorConf = productConfDirPath + sep + "locators";
@@ -2590,6 +3388,11 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Get the Thread ID.
+   * @return Thread id
+   * @since 0.5
+   */
   public int getMyTid() {
     int myTid = RemoteTestModule.getCurrentThread().getThreadId();
     return myTid;
@@ -2597,7 +3400,8 @@ public class SnappyTest implements Serializable {
 
 
   /**
-   * Start snappy cluster using snappy-start-all.sh script.
+   * This method calls the startSnappyCluster() method.
+   * @since 0.5
    */
   public static synchronized void HydraTask_startSnappyCluster() {
     if (forceStart) {
@@ -2610,6 +3414,12 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Start snappy cluster by executing the script snappy-start-all.sh.
+   * Start the leader, locator and Server process by calling the method executeProcess().
+   * Create then file called snappySystem.log
+   * @since 0.5
+   */
   protected static void startSnappyCluster() {
     File log = null;
     ProcessBuilder pb = null;
@@ -2625,6 +3435,10 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Record the Hydra task proceess id with Host.
+   * @since 0.5
+   */
   public static synchronized void HydraTask_recordProcessIDWithHost() {
     if (useRowStore) {
       snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator");
@@ -2662,6 +3476,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Create and start snappy locator using snappy-locators.sh script.
+   * This method call the startSnappyLocator().
+   * @since 0.5
    */
   public static synchronized void HydraTask_createAndStartSnappyLocator() {
     int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.locatorsStarted);
@@ -2673,6 +3489,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Create and start snappy server.
+   * This method call the startSnappyServer().
+   * @since 0.5
    */
   public static synchronized void HydraTask_createAndStartSnappyServers() {
     int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.serversStarted);
@@ -2684,6 +3502,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Creates and start snappy lead.
+   * This method call the startSnappyLead().
+   * @since 0.5
    */
   public static synchronized void HydraTask_createAndStartSnappyLeader() {
     int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.leadsStarted);
@@ -2695,6 +3515,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Starts Spark Cluster with the specified number of workers.
+   * @throws IOException
+   * @since 0.5
    */
   public static synchronized void HydraTask_startSparkCluster() {
     File log = null;
@@ -2705,6 +3527,7 @@ public class SnappyTest implements Serializable {
         ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"));
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
+        System.out.println("Script Path : " + log.getCanonicalPath());
         File logFile = new File(dest);
         snappyTest.executeProcess(pb, logFile);
       }
@@ -2716,6 +3539,8 @@ public class SnappyTest implements Serializable {
 
   /**
    * Stops Spark Cluster.
+   * @throws IOException
+   * @since 0.5
    */
   public static synchronized void HydraTask_stopSparkCluster() {
     File log = null;
@@ -2735,6 +3560,9 @@ public class SnappyTest implements Serializable {
 
   /**
    * Stops snappy lead.
+   * @throws IOException
+   * @throws Exception
+   * @since 0.5
    */
   public static synchronized void HydraTask_stopSnappyLeader() {
     File log = null;
@@ -2757,6 +3585,9 @@ public class SnappyTest implements Serializable {
 
   /**
    * Stops snappy server/servers.
+   * @throws IOException
+   * @throws Exception
+   * @since 0.5
    */
   public static synchronized void HydraTask_stopSnappyServers() {
     File log = null;
@@ -2778,6 +3609,9 @@ public class SnappyTest implements Serializable {
 
   /**
    * Stops a snappy locator.
+   * @throws IOException
+   * @throws Exception
+   * @since 0.5
    */
   public static synchronized void HydraTask_stopSnappyLocator() {
     File log = null;
@@ -2798,6 +3632,12 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Stops the Snappy Cluster by using script 'snappy-stop-all.sh'.
+   * @throws IOException
+   * @throws InterruptedException
+   * @since 0.5
+   */
   public static synchronized void HydraTask_stopSnappyCluster() {
     File log = null;
     try {
@@ -2825,33 +3665,47 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_deployJarUsingJDBC() {
-    snappyTest.executeDeployJar();
-  }
 
-  public void executeDeployJar() {
-    Connection conn = null;
-    try {
-      conn = getLocatorConnection();
-    } catch (SQLException se) {
-      throw new TestException("Got exception while getting connection", se);
-    }
-    String userJarPath = snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
-    String deployCmd = "";
-    String jarName = SnappyPrms.getJarIdentifier();
-    try {
-      deployCmd = "deploy jar " + jarName + " '" + userJarPath + "'";
-      Log.getLogWriter().info("Executing deploy jar cmd : " + deployCmd);
-      conn.createStatement().execute(deployCmd);
-    } catch (SQLException se) {
-      throw new TestException("Got exception while executing deploy jar:" + deployCmd, se);
-    }
-    closeConnection(conn);
-  }
+  /**
+   * This method call the executeDeployJar() method.
+   * @since 0.5
+   */
+//  public static void HydraTask_deployJarUsingJDBC_LocalCache(){
+//    snappyTest.executeDeployJar();
+//  }
+
+
+  /**
+   * Executes the deployed jar.
+   * @throws SQLException
+   * @since 0.5
+   */
+//  public void executeDeployJar(){
+//    Connection conn = null;
+//    try {
+//      conn = getLocatorConnection();
+//    } catch (SQLException se) {
+//      throw new TestException("Got exception while getting connection", se);
+//    }
+//    String userJarPath = snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
+//    String deployCmd = "";
+//    String jarName = SnappyPrms.getJarIdentifier();
+//    try {
+//      deployCmd = "deploy jar " + jarName + " '" + userJarPath + "'";
+//      Log.getLogWriter().info("Executing deploy jar cmd : " + deployCmd);
+//      conn.createStatement().execute(deployCmd);
+//    } catch (SQLException se) {
+//      throw new TestException("Got exception while executing deploy jar:" + deployCmd, se);
+//    }
+//    closeConnection(conn);
+//  }
+
+
 
   /**
    * Concurrently stops a List of snappy store VMs, then restarts them.  Waits for the
    * restart to complete before returning.
+   * @since 0.5
    */
   public static void HydraTask_cycleStoreVms() {
     if (cycleVms) {
@@ -2866,6 +3720,7 @@ public class SnappyTest implements Serializable {
   /**
    * Concurrently stops a List of snappy locator VMs, then restarts them.  Waits for the
    * restart to complete before returning.
+   * @since 0.5
    */
   public static void HydraTask_cycleLocatorVms() {
     if (cycleVms) {
@@ -2881,6 +3736,7 @@ public class SnappyTest implements Serializable {
   /**
    * Stops snappy primary lead member, then restarts it.  Waits for the
    * restart to complete before returning.
+   * @since 0.5
    */
   public static synchronized void HydraTask_cycleLeadVM() {
     if (cycleVms) {
@@ -3084,6 +3940,12 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   *
+   * @param vmDir
+   * @param clientName
+   * @param vmName
+   */
   protected void killVM(String vmDir, String clientName, String vmName) {
     if (vmName.equalsIgnoreCase("lead")) {
       regenerateConfigData(vmDir, "leads", clientName, vmName);
@@ -3505,4 +4367,54 @@ public class SnappyTest implements Serializable {
     return Log.getLogWriter();
   }
 
+  /*
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Inherited
+  @Documented
+  public @interface Test_Description {
+     String value() default "";
+  }
+
+  @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Inherited
+  @Documented
+  public @interface Test_Focus {
+    String value() default "";
+  }
+
+  @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Inherited
+  @Documented
+  public @interface TestCase_Type {
+    String value() default "Good";
+  }
+
+
+  @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Inherited
+  @Documented
+  public @interface Test_Init{
+    String value() default "";
+  }
+
+  @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Inherited
+  @Documented
+  public @interface Test_Verification{
+    String value() default "";
+  }
+
+  @Target(ElementType.METHOD)
+  @Retention(RetentionPolicy.RUNTIME)
+  @Inherited
+  @Documented
+  public @interface Test_Cleanup{
+    String value() default "";
+  }
+  */
 }
