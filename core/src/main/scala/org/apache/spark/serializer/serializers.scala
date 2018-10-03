@@ -21,10 +21,9 @@ import java.sql.Types
 
 import com.esotericsoftware.kryo.io.{Input, KryoObjectInput, KryoObjectOutput, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoException, Serializer => KryoClassSerializer}
-
 import org.apache.spark.sql.PartitionResult
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect, SnappyDataClientPoolDialect}
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 
@@ -211,6 +210,7 @@ object ConnectionPropertiesSerializer
     connProps.dialect match {
       case GemFireXDDialect => output.writeByte(0)
       case GemFireXDClientDialect => output.writeByte(1)
+      case SnappyDataClientPoolDialect => output.writeByte(3)
       case d => output.writeByte(2)
         kryo.writeClassAndObject(output, d)
     }
@@ -248,6 +248,7 @@ object ConnectionPropertiesSerializer
     val dialect = input.readByte() match {
       case 0 => GemFireXDDialect
       case 1 => GemFireXDClientDialect
+      case 3 => SnappyDataClientPoolDialect
       case _ => kryo.readClassAndObject(input).asInstanceOf[JdbcDialect]
     }
     var numProps = input.readVarInt(true)

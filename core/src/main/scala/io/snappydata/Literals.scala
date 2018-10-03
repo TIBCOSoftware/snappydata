@@ -46,6 +46,8 @@ object Constant {
 
   val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
 
+  val JDBC_CLIENT_POOL_DRIVER = "io.snappydata.jdbc.ClientPoolDriver"
+
   val PROPERTY_PREFIX = "snappydata."
 
   val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
