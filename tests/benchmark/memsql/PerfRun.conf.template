@@ -26,4 +26,5 @@ WarmupRuns=2
 #Actual runs whose average will be taken and repordted as performance
 AverageRuns=3
 
-
+# number of stages to load data into tables - depending on the number of stages used in data generation with TPCH dbgen program
+numberOfDataLoadingStages=1
