@@ -209,9 +209,11 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
       assert(false)
 
     } catch {
-      case e: Exception => {
-        e.printStackTrace()
+      case e: org.apache.tomcat.jdbc.pool.PoolExhaustedException => {
         assert(true)
+      }
+      case e: Exception => {
+        assert(false)
       }
     }
   }
