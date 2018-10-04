@@ -4,11 +4,11 @@
 package io.snappydata.cluster
 
 import java.nio.file.{Files, Paths}
-import java.util.Properties
 
 import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.util.TestException
 import org.apache.spark.Logging
-import org.apache.spark.sql.{SnappyContext, SparkSession}
+import org.apache.spark.sql.SnappyContext
 
 import scala.sys.process._
 
@@ -17,21 +17,17 @@ import scala.sys.process._
   */
 class SparkJDBCDUnitTest(s: String)
   extends ClusterManagerTestBase(s)
-    with Serializable {
+    with Serializable with Logging  {
 
-  override val locatorNetPort: Int = testObject.locatorNetPort
+  override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
   override val stopNetServersInTearDown = false
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
 
-  protected val productDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+  protected val productDir: String = getEnvironmentVariable("APACHE_SPARK_HOME")
 
-  private val snappyProductDir =
-    testObject.getEnvironmentVariable("SNAPPY_HOME")
-
-  protected def testObject = SparkJDBCDUnitTest
+  private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
     super.beforeClass()
@@ -55,30 +51,23 @@ class SparkJDBCDUnitTest(s: String)
   def testSparkSubmit(): Unit = {
     val snContext = SnappyContext(sc)
     // Creating Snappy Table using snappy session
-    testObject.createAirlineTable(productDir, snContext)
+    createAirlineTable(productDir, snContext)
 
     // Executing spark driver application via spark-submit,
     // Which reads data from snappy table.
-    testObject.invokeSparkSubmitForJDBC(snappyProductDir, locatorClientPort)
+    invokeSparkSubmitForJDBC(snappyProductDir, locatorClientPort)
 
     // Creating Snappy Table using snappy session
-    testObject.dropAirlineTable(snContext)
+    dropAirlineTable(snContext)
   }
-}
 
-object SparkJDBCDUnitTest extends SplitClusterDUnitTestObject
-  with Logging {
-
-  val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
-  override def createTablesAndInsertData(tableType: String): Unit = {}
-
-  override def createComplexTablesAndInsertData(props: Map[String, String]): Unit = {}
-
-  override def verifySplitModeOperations(tableType: String, isComplex: Boolean,
-                                         props: Map[String, String]): Unit = {}
-
-  override def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {}
+  def getEnvironmentVariable(env: String): String = {
+    val value = scala.util.Properties.envOrElse(env, null)
+    if (env == null) {
+      throw new TestException(s"Environment variable $env is not defined")
+    }
+    value
+  }
 
   def invokeSparkSubmitForJDBC(productDir: String, locatorNetPort: Int): Unit = {
 
@@ -121,5 +110,9 @@ object SparkJDBCDUnitTest extends SplitClusterDUnitTestObject
 
   def dropAirlineTable(snContext: SnappyContext): Unit = {
     snContext.dropTable("AIRLINE", ifExists = true)
+    // drop table created using sparkJob.
+    snContext.dropTable("TEST_TABLE", ifExists = true)
   }
+
 }
+

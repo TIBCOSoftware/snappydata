@@ -26,17 +26,16 @@ object SparkJDBCTestJob {
 
   def main(args: Array[String]): Unit = {
 
-    val builder = SparkSession.builder.appName("JDBCClientPoolDriverAPITest").master("local[*]")
+    val builder = SparkSession.builder.appName("SparkJDBCTestJob").master("local[*]")
 
     val spark: SparkSession = builder.getOrCreate
-
     jdbcReadAPIUrlTableProperties(spark)
     jdbcReadWithQueryPushDown(spark)
     jdbcReadPlanWithAllColumns(spark)
     jdbcReadPlanWithSpecifiedColumns(spark)
     jdbcReadPlanWithPredicatePushDown(spark)
     jdbcReadPlanWithUpperAndLowerBoundries(spark)
-    // jdbcWriteWithPartitionColumn(spark)
+    jdbcWriteWithPartitionColumn(spark)
   }
 
   def jdbcReadAPIUrlTableProperties(spark: SparkSession): Unit = {
@@ -104,18 +103,17 @@ object SparkJDBCTestJob {
 
   def jdbcWriteWithPartitionColumn(spark: SparkSession): Unit = {
 
-    println(" =============== jdbcWriteWithPartitionColumn ============== \n")
-
-    val customerDF = spark.read.parquet(s"/home/pradeep/trunk/snappydata/examples/quickstart/data/airlineParquetData")
-    // props1 map specifies the properties for the table to be created
-    //   "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY)
-    val props1 = Map("PARTITION_BY" -> "Year")
+    val productDir = scala.util.Properties.envOrElse("SNAPPY_HOME", null)
+    val airlineDF = spark.read.parquet(s"$productDir/../../../examples/quickstart/data/airlineParquetData")
+    // "PARTITION_BY" attribute specifies partitioning key
     val properties = getProperties()
     properties.setProperty("PARTITION_BY", "Year")
     properties.setProperty("buckets", "16")
+
+    val yearDF = airlineDF.select("YEAR", "MONTH").where("MONTH=3 AND DAYOFMONTH=3")
+
     // Given the number of partitions above, you can reduce the partition value by calling coalesce()
     // or increase it by calling repartition() to manage the number of connections.
-    customerDF.write.saveAsTable("AIRLINE")
-
+    yearDF.write.jdbc(JDBC_URL, "TEST_TABLE", properties)
   }
 }
