@@ -49,17 +49,17 @@ trait SnappySinkCallback {
    * data inconsistency.
    */
   def process(snappySession: SnappySession, sinkProps: Map[String, String],
-              batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean = false): Unit
+      batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean = false): Unit
 }
 
 class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister {
 
   @Override
   def createSink(
-                  sqlContext: SQLContext,
-                  parameters: Map[String, String],
-                  partitionColumns: Seq[String],
-                  outputMode: OutputMode): Sink = {
+      sqlContext: SQLContext,
+      parameters: Map[String, String],
+      partitionColumns: Seq[String],
+      outputMode: OutputMode): Sink = {
     createSinkStateTableIfNotExist(sqlContext)
     val cc = try {
       Utils.classForName(parameters(SINK_CALLBACK)).newInstance()
@@ -73,10 +73,10 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 
   private def createSinkStateTableIfNotExist(sqlContext: SQLContext) = {
     sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
-      s" $SINK_STATE_TABLE (" +
-      " stream_query_id varchar(200)," +
-      " batch_id long, " +
-      " PRIMARY KEY (stream_query_id)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
+        s" $SINK_STATE_TABLE (" +
+        " stream_query_id varchar(200)," +
+        " batch_id long, " +
+        " PRIMARY KEY (stream_query_id)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
   }
 
   @Override
@@ -91,8 +91,8 @@ case class SnappyStoreSink(snappySession: SnappySession,
     val streamQueryId = parameters(STREAM_QUERY_ID).toUpperCase
 
     val updated = snappySession.sql(s"update $SINK_STATE_TABLE " +
-      s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
-      .collect()(0).getAs("count").asInstanceOf[Long]
+        s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
+        .collect()(0).getAs("count").asInstanceOf[Long]
 
     // TODO: use JDBC connection here
     var posDup = false
@@ -111,14 +111,14 @@ case class SnappyStoreSink(snappySession: SnappySession,
   }
 
   /**
-    * This conversion is necessary as Sink
-    * documentation disallows an operation on incoming dataframe.
-    * Otherwise it will break incremental planning of streaming dataframes.
-    * See http://apache-spark-developers-list.1001551.n3.nabble.com/
-    * Structured-Streaming-Sink-in-2-0-collect-foreach-restrictions-added-in-
-    * SPARK-16020-td18118.html
-    * for a detailed discussion.
-    */
+   * This conversion is necessary as Sink
+   * documentation disallows an operation on incoming dataframe.
+   * Otherwise it will break incremental planning of streaming dataframes.
+   * See http://apache-spark-developers-list.1001551.n3.nabble.com/
+   * Structured-Streaming-Sink-in-2-0-collect-foreach-restrictions-added-in-
+   * SPARK-16020-td18118.html
+   * for a detailed discussion.
+   */
   def convert(ds: DataFrame): DataFrame = {
     snappySession.internalCreateDataFrame(
       ds.queryExecution.toRdd,
@@ -135,7 +135,7 @@ import org.apache.spark.sql.snappy._
 
 class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, parameters: Map[String, String],
-              batchId: Long, df: Dataset[Row], posDup: Boolean) {
+      batchId: Long, df: Dataset[Row], posDup: Boolean) {
     df.cache().count()
     val snappyTable = parameters(TABLE_NAME).toUpperCase
     DefaultSnappySinkCallback.log.debug(s"Processing for $snappyTable and batchId $batchId")
@@ -148,7 +148,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         // TODO: handle scenario when a batch contain multiple records with
         // same key columns
         val deleteDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.DELETE)
-          .drop(EVENT_TYPE_COLUMN)
+            .drop(EVENT_TYPE_COLUMN)
         deleteDf.write.deleteFrom(tableName)
         if (posDup) {
           val upsertEventTypes = List(EventType.INSERT, EventType.UPDATE)
@@ -157,10 +157,10 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
           upsertDf.write.putInto(tableName)
         } else {
           val insertDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.INSERT)
-            .drop(EVENT_TYPE_COLUMN)
+              .drop(EVENT_TYPE_COLUMN)
           insertDf.write.insertInto(tableName)
           val updateDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.UPDATE)
-            .drop(EVENT_TYPE_COLUMN)
+              .drop(EVENT_TYPE_COLUMN)
           updateDf.write.putInto(tableName)
         }
       } else {
