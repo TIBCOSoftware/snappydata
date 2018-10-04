@@ -137,10 +137,9 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, parameters: Map[String, String],
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
     df.cache().count()
-    val snappyTable = parameters(TABLE_NAME).toUpperCase
-    DefaultSnappySinkCallback.log.debug(s"Processing for $snappyTable and batchId $batchId")
-
     val tableName = parameters(TABLE_NAME).toUpperCase
+
+    DefaultSnappySinkCallback.log.debug(s"Processing for $tableName and batchId $batchId")
     val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumnsSeq(tableName).nonEmpty
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
     if (keyColumnsDefined) {

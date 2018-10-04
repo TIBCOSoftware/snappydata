@@ -44,9 +44,6 @@ import scala.reflect.io.Path
  * 1,user1,23,2
  * 2,user2,46,1
  * }}}
- * For more details on streaming with SnappyData refer to:
- * http://snappydatainc.github.io/snappydata/programming_guide
- * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
 object StructuredStreamingCDCExample{

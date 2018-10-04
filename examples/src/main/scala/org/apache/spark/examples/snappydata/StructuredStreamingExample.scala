@@ -37,10 +37,6 @@ import scala.reflect.io.Path
  * To run this on your local machine, you need to first run a Netcat server
  * `$ nc -lk 9999`
  *
- * For more details on streaming with SnappyData refer to:
- * http://snappydatainc.github.io/snappydata/programming_guide
- * /stream_processing_using_sql/#stream-processing-using-sql
- *
  */
 object StructuredStreamingExample {
 
