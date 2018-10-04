@@ -179,11 +179,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   /** API to get primary key or Key Columns of a SnappyData table */
-  def getKeyColumns(table: String): Dataset[Column] = {
-    CatalogImpl.makeDataset(getKeyColumnsSeq(table), snappySession)
-  }
-
-  def getKeyColumnsSeq(table: String): Seq[Column] = {
+  def getKeyColumns(table: String): Seq[Column] = {
     val tableIdent = this.newQualifiedTableName(table)
     try {
       val relation: LogicalRelation = getCachedHiveTable(tableIdent)

@@ -39,6 +39,13 @@ class DirectKafkaStreamSource extends StreamPlanProvider with DataSourceRegister
   }
 }
 
+object DirectKafkaStreamRelation{
+  private val partitionOffsetMethod = {
+    val clazz = Utils.classForName("org.apache.spark.sql.kafka010.JsonUtils")
+    clazz.getMethod("partitionOffsets", classOf[String])
+  }
+}
+
 final class DirectKafkaStreamRelation(
     @transient override val sqlContext: SQLContext,
     opts: Map[String, String],
@@ -58,9 +65,7 @@ final class DirectKafkaStreamRelation(
   private val startingOffsets = getStartingOffsets
 
   private def getStartingOffsets = {
-    val clazz = Utils.classForName("org.apache.spark.sql.kafka010.JsonUtils")
-    clazz.getMethod("partitionOffsets", classOf[String])
-        .invoke(null, options("startingOffsets"))
+    DirectKafkaStreamRelation.partitionOffsetMethod.invoke(null, options("startingOffsets"))
         .asInstanceOf[Map[TopicPartition, Long]]
   }
 

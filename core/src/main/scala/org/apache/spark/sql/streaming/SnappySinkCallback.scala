@@ -140,7 +140,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     val tableName = parameters(TABLE_NAME).toUpperCase
 
     DefaultSnappySinkCallback.log.debug(s"Processing for $tableName and batchId $batchId")
-    val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumnsSeq(tableName).nonEmpty
+    val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumns(tableName).nonEmpty
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
     if (keyColumnsDefined) {
       if (eventTypeColumnAvailable) {
