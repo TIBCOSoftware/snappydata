@@ -9,4 +9,6 @@ $queries \
 $ResultCollection \
 $WarmupRuns \
 $AverageRuns \
-$isDynamic
+$isDynamic \
+$randomSeed
+

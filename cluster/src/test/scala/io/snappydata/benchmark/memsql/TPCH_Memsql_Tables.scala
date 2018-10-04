@@ -44,6 +44,7 @@ object TPCH_Memsql_Tables {
      stmt.execute("DROP DATABASE IF EXISTS " + dbName)
      stmt.execute("CREATE DATABASE IF NOT EXISTS " + dbName)
      stmt.execute("USE " + dbName)
+     println("---------------------------------------------------")
 
      TPCHReplicatedTable.createRegionTable_Memsql(stmt)
 
@@ -62,10 +63,13 @@ object TPCH_Memsql_Tables {
      TPCHColumnPartitionedTable.createLineItemTable_Memsql(stmt)
 
      var rs = stmt.executeQuery("SHOW TABLES")
-     println(System.lineSeparator() + "List of tables in TPC-H database:")
+     println("---------------------------------------------------")
+     println(System.lineSeparator() + "Tables in TPC-H database:")
+     println("---------------------------------------------------")
      while (rs.next()) {
        System.out.println(rs.getString(1));
      }
+     println("---------------------------------------------------")
 
      // Load data into TPC-H tables
 
