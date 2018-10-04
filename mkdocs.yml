@@ -54,6 +54,7 @@ pages:
     - 'How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)': 'howto/load_data_from_external_data_stores.md'
     - 'How to Perform a Colocated Join': 'howto/perform_a_colocated_join.md'
     - 'How to Connect using JDBC Driver': 'howto/connect_using_jdbc_driver.md'
+    - 'How to Connect using JDBC Client Pool Driver': 'howto/connect_jdbc_client_pool_driver.md'
     - 'How to Store and Query JSON Objects': 'howto/store_and_query_json_objects.md'
     - 'How to Store and Query Objects': 'howto/store_and_query_objects.md'
     - 'How to use Stream Processing with SnappyData': 'howto/use_stream_processing_with_snappydata.md'

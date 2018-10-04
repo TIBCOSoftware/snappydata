@@ -3,13 +3,14 @@
 
 You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.
 
-**To connect to the SnappyData cluster**: Using JDBC, use URL of the form `jdbc:snappydata://<locatorHostName>:<locatorClientPort>/`
+
+To connect to the SnappyData cluster using JDBC, use URL of the form `jdbc:snappydata://<locatorHostName>:<locatorClientPort>/`
 
 Where the `<locatorHostName>` is the hostname of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
 **Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData.
 
-**Example: Maven dependency:**
+**Example: Maven dependency**
 ```pre
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client -->
 <dependency>
@@ -19,7 +20,7 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 </dependency>
 ```
 
-**Example: SBT dependency:**
+**Example: SBT dependency**
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
 libraryDependencies += "io.snappydata" % "snappydata-store-client" % "1.6.2"
@@ -39,7 +40,7 @@ val workaround = {
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
 
-**Code Example:**
+**Code Example**
 
 **Connect to a SnappyData cluster using JDBC on default client port**
 
@@ -76,3 +77,8 @@ preparedStmt1.close()
 
 !!! Note 
 	If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.
+
+
+
+    
+
