@@ -88,7 +88,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .option("checkpointLocation", "/tmp/snappyTable")
       .start
 
-    streamingQuery.awaitTermination(timeoutMs = 15000)
+    streamingQuery.processAllAvailable()
     assert(113 == session.sql("select * from APP.USERS").count)
   }
 
@@ -132,7 +132,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
     kafkaTestUtils.sendMessages(topic, Array("1"), Some(2))
 
-    streamingQuery.awaitTermination(timeoutMs = 15000)
+    streamingQuery.processAllAvailable()
     assert(113 == session.sql("select * from snappyTable").count)
   }
 
@@ -176,7 +176,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     kafkaTestUtils.sendMessages(topic, (125 to 150).map(_.toString).toArray, Some(1))
     kafkaTestUtils.sendMessages(topic, (100 to 124).map(_.toString).toArray, Some(2))
 
-    streamingQuery.awaitTermination(timeoutMs = 40000)
+    streamingQuery.processAllAvailable()
 
     assert(51 == session.sql("select * from snappyAggrTable").count)
     assert(2.0 == session.sql("select avg(count) from snappyAggrTable").collect()(0).getDouble(0))
@@ -263,7 +263,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     kafkaTestUtils.sendMessages(topic, (10 to 18).map(_.toString).toArray, Some(1))
     kafkaTestUtils.sendMessages(topic, (20 to 30).map(_.toString).toArray, Some(2))
 
-    streamingQuery.awaitTermination(timeoutMs = 15000)
+    streamingQuery.processAllAvailable()
     assert(10 == session.sql("select * from snappyResultTable").count)
   }
 

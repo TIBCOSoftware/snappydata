@@ -41,16 +41,18 @@ import scala.language.postfixOps
 class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
     with BeforeAndAfter with BeforeAndAfterAll {
 
-  val session = snc.sparkSession
+  private lazy val session = snc.sparkSession
 
   private var kafkaTestUtils: KafkaTestUtils = _
 
   override def beforeAll() {
+    super.beforeAll()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
   }
 
   override def afterAll() {
+    super.afterAll()
     if (kafkaTestUtils != null) {
       kafkaTestUtils.teardown()
       kafkaTestUtils = null
@@ -88,6 +90,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
 
 
   test("basic kafka streaming pipeline") {
+    import session.implicits._
     val topics = List("pat1", "pat2", "pat3", "advanced3")
     // Should match 3 out of 4 topics
     val pat =
@@ -129,6 +132,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
   }
 
   test("Snappy kafka streaming") {
+    import session.implicits._
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -174,6 +178,8 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
 
 
   test("Snappy kafka streaming with custom deserializer") {
+    import session.implicits._
+
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
