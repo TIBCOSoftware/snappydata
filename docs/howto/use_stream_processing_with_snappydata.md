@@ -105,12 +105,68 @@ resultStream.foreachDataFrame(df => {
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
 ```
 
-## Spark's structured streaming with SnappyData 
+## Spark's Structured Streaming with SnappyData 
 
-Using SnappyData you can run streaming queries on IoT Device data received from a data server listening on a TCP socket.
+SnappyData provides default **Sink** implementation for structured streaming which makes it simple to ingest streaming data into SnappyData tables. This implementation is done using SnappyData's **Structured Streaming API**. This API uses SnappyData specific format to output data into the target applications. The output data source name for SnappyData is `snappysink` This format dictates the behaviour of the data in the target applications.
 
-**Code Example**:</br>
+A minimal code example for structured streaming with SnappyData is available [here](https://github.com/SnappyDataInc/snappydata/blob/streaming_sink/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingExample.scala).
 
-The complete source code of the example [StructuredStreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingExample.scala) shows the usage of structured streaming with SnappyData.
+The following code snippet, from the example, explains the usage of SnappyData's ** Structured Streaming API**:
 
+```pre
+    val streamingQuery = structDF
+        .filter(_.signal > 10)
+        .writeStream
+        .format("snappysink")
+        .queryName("Devices")
+        .trigger(ProcessingTime("1 seconds"))
+        .option("streamQueryId", "Devices")     // must be unique across a snappydata cluster
+        .option("tableName", "devices")
+        .option("checkpointLocation", checkpointDirectory)
+        .start()
+```
 
+The following SnappyData specific options should be mandatorily specified:
+
+| Options | Description |
+|--------|--------|
+|    `streamQueryId`    | This is internally used by SnappyData to track the progress of a stream query. The value of this option must be kept unique for each stream query across the SnappyData cluster.  The option is case-insensitive.|
+|`tableName`|Name of the SnappyData table where the streaming data is ingested.|
+
+### CDC with SnappyData Structured Streaming
+
+**SnappyData's Sink** implementation also supports CDC (change data capture) Connector use cases.
+
+An example explaining the same is available [here](https://github.com/SnappyDataInc/snappydata/blob/streaming_sink/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingCDCExample.scala).
+
+To support CDC, the source dataframe must have the following:
+
+*	`IntegerType` 
+*	Column with name `_eventType` or the table can be transformed to have `_eventType` column. The value in the `_eventType` column can be any of the following:
+  	-	**0** for insert events  
+	-	**1** for update events  
+	-	**2** for delete events  
+*	Columns with appropriate values. The SnappyData table should be provided with a table name.
+*	Option with key columns defined for a column table or primary key defined for a row table.
+
+!!!Note
+	Records which have `_eventType` value other than the above mentioned ones are skipped.<!---skipped of what --->
+
+If the `_eventType` column is not provided as part of source dataframe, then the following is observed:
+
+- In a target table with key columns/primary key defined, the **_ put into**
+operation will be applied for all events.
+- In a target table without key columns/primary key defined, the **insert** operation
+is applied for all the events.
+
+### SnappyData Sink Operation Default Behavior
+
+In CDC, the **SnappyData** **Sink** operation processes a streaming batch in the following order:
+
+  - All delete events (delete relevant records from target table) are processed.
+  - All insert events (inserts relevant records into target table) are processed
+  - All update events (i.e. apply put into operation) are processed.
+
+This implies that if a single streaming batch contains multiple events with same key columns/primary key then delete events for that key columns/primary key will be processed first followed by insert events and update events irrespective of their order of arrival.
+
+In order to override the default behavior, client codes should implement `SnappySinkCallback` trait and pass the qualified name of the implementing class against `sinkCallback` option while defining stream query.
