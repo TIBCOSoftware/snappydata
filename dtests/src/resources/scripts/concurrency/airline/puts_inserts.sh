@@ -17,8 +17,10 @@ props_path=$1
 its=`date '+%H_%M_%S'`
 input_path_ts="${input_path}_$its"
 
+
 if [ -d $input_path_ts ]
 then
+  echo "INFO: $input_path_ts already exists. deleting it"
   rm -r $input_path_ts
 fi
 
@@ -81,3 +83,9 @@ done
 echo "sleeping for 200 secs before stopping context: $context"
 sleep 200
 $snappy_home/snappy/bin/snappy-job.sh   stopcontext $context  --lead "$lead"
+
+if [ -d $input_path_ts ]
+then
+  echo "cleaning up $input_path_ts"
+  rm -r $input_path_ts
+fi
