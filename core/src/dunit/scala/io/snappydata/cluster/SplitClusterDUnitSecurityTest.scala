@@ -27,7 +27,6 @@ import scala.sys.process._
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
@@ -937,7 +936,7 @@ object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
       override def run(): Unit = {
         val store = Misc.getMemStoreBootingNoThrow
         if (store ne null) {
-          val authModule = FabricDatabase.getAuthenticationServiceBase
+          val authModule = store.getDatabase.getAuthenticationService
           if (authModule ne null) {
             val propNamesIter = props.stringPropertyNames().iterator()
             while (propNamesIter.hasNext) {
