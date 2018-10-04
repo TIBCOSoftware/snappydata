@@ -65,7 +65,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, ExternalTableType, HiveClientUtil, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableInsertOrPut, SnappySessionState}
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.SnappyDataDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types._
@@ -80,9 +80,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   self =>
 
-  // initialize GemFireXDDialect so that it gets registered
+  // initialize SnappyDataDialect so that it gets registered
 
-  GemFireXDDialect.init()
+  SnappyDataDialect.init()
 
   /* ----------------------- *
    |  Session-related state  |
@@ -1082,7 +1082,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       onlyBuiltIn = true) else provider
 
     val relation = schemaDDL match {
-      case Some(cols) => Some(JdbcExtendedUtils.externalResolvedDataSource(self,
+      case Some(cols) => Some(ExternalStoreUtils.externalResolvedDataSource(self,
         cols, source, mode, params))
 
       case None if resolveRelation =>
@@ -1203,7 +1203,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     } else None
 
     val relation = schemaDDL match {
-      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
+      case Some(cols) => ExternalStoreUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query))
 
       case None =>

@@ -37,7 +37,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
 import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.SnappyDataDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -479,7 +479,7 @@ object CodeGeneration extends Logging {
 
   def compileCode(name: String, schema: Array[StructField],
       genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass, Array[Any]) = {
-    codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
+    codeCache.get(new ExecuteKey(name, schema, SnappyDataDialect,
       forIndex = false, genCode = genCode)).asInstanceOf[(GeneratedClass, Array[Any])]
   }
 

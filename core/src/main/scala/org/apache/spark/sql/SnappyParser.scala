@@ -22,7 +22,7 @@ import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 import com.google.common.primitives.Ints
-import io.snappydata.{Constant, Property, QueryHint}
+import io.snappydata.{Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -843,7 +843,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
-      fnName: String): Seq[Expression] = Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
+      fnName: String): Seq[Expression] = Consts.FOLDABLE_FUNCTIONS.get(fnName) match {
       case null => exprs
       case args if args.length == 0 =>
         // disable plan caching for these functions

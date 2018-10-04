@@ -931,11 +931,11 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
-    def clientProject = project(':snappy-store:snappydata-store-client')
+    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
     copy {
-      from clientProject.shadowJar.destinationDir
+      from jdbcProject.shadowJar.destinationDir
       into "${snappyProductDir}/connectors"
-      include clientProject.shadowJar.archiveName
+      include jdbcProject.shadowJar.archiveName
     }
   }
 }
@@ -1053,27 +1053,26 @@ task distDeb {
 }
 
 task copyShadowJars {
-  dependsOn ':snappy-store:snappydata-store-client:shadowJar'
+  dependsOn ":snappy-jdbc_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
+    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
+    String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
     String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
-    // copy the snappy-core shadow jar into distributions
+    // copy the snappy-jdbc and snappy-core shadow jars into distributions
+    copy {
+      from jdbcProject.shadowJar.destinationDir
+      into "${rootProject.buildDir}/distributions"
+      include jdbcProject.shadowJar.archiveName
+      rename { filename -> jdbcName }
+    }
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
       include coreProject.shadowJar.archiveName
       rename { filename -> coreName }
-    }
-    if (new File(rootDir, 'store/build.gradle').exists()) {
-      // copy the JDBC client jar separately into distributions
-      def clientProject = project(':snappy-store:snappydata-store-client')
-      copy {
-        from clientProject.shadowJar.destinationDir
-        into "${rootProject.buildDir}/distributions"
-        include clientProject.shadowJar.archiveName
-      }
     }
   }
 }

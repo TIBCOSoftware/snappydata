@@ -24,10 +24,17 @@ import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
 
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
+import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
+import org.parboiled2._
+import shapeless.{::, HNil}
 
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
@@ -48,13 +55,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import org.parboiled2._
-import shapeless.{::, HNil}
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
-import scala.util.control.NonFatal
-
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -600,12 +600,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
     (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
-        (() => DMLExternalTable(TableIdentifier(SnappyStoreHiveCatalog.dummyTableName,
+        (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
           Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
             SaveMode.Ignore, Map((JdbcExtendedUtils.DBTABLE_PROPERTY,
-                s"${SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME }." +
-                    s"${SnappyStoreHiveCatalog.dummyTableName}")),
+                s"${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")),
             "", None)), input.sliceString(0, input.length)))
   }
 

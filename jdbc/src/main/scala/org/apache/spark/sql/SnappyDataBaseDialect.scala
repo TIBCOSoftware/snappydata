@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,96 +14,29 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.row
+package org.apache.spark.sql
 
 import java.sql.{Connection, Types}
-import java.util.Properties
-import java.util.regex.Pattern
 
 import io.snappydata.Constant
-import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
+
+import org.apache.spark.sql.jdbc.JdbcType
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SQLContext, SnappySession}
 
 /**
- * Default dialect for GemFireXD >= 1.4.0.
- * Contains specific type conversions to and from Spark SQL catalyst types.
+ * Base implementation of various dialect implementations for SnappyData.
  */
-@DeveloperApi
-case object GemFireXDDialect extends GemFireXDBaseDialect {
-
-  // register the dialect
-  JdbcDialects.registerDialect(GemFireXDDialect)
-
-  private val CLIENT_PATTERN = Pattern.compile("^jdbc:snappydata:\\w*:?//")
-
-  def canHandle(url: String): Boolean = {
-    (url.startsWith("jdbc:gemfirexd:") ||
-        url.startsWith("jdbc:snappydata:")) &&
-        !url.startsWith("jdbc:gemfirexd://") &&
-        !CLIENT_PATTERN.matcher(url).find()
-  }
-
-  override def addExtraDriverProperties(isLoner: Boolean,
-      props: Properties): Unit = {
-    if (!isLoner) {
-      props.setProperty("host-data", "false")
-      props.setProperty("queryHdfs", "")
-    }
-  }
-}
-
-/**
- * Default dialect for GemFireXD >= 1.4.0.
- * Contains specific type conversions to and from Spark SQL catalyst types.
- */
-@DeveloperApi
-case object GemFireXDClientDialect extends GemFireXDBaseDialect {
-
-  // register the dialect
-  JdbcDialects.registerDialect(GemFireXDClientDialect)
-
-  def canHandle(url: String): Boolean =
-    url.startsWith("jdbc:gemfirexd://") ||
-        url.startsWith("jdbc:snappydata://")
-}
-
-/**
- * Default dialect for SnappyData using pooled Driver.
- */
-@DeveloperApi
-case object SnappyDataClientPoolDialect extends GemFireXDBaseDialect {
-
-  // register the dialect
-  JdbcDialects.registerDialect(SnappyDataClientPoolDialect)
-
-  def canHandle(url: String): Boolean = url.startsWith("jdbc:snappydata:pool://")
-
-  override def getTableExistsQuery(table: String): String = {
-    s"SELECT 1 FROM $table FETCH FIRST ROW ONLY"
-  }
-
-  override def getSchemaQuery(table: String): String = {
-    s"SELECT * FROM $table FETCH FIRST ROW ONLY"
-  }
-}
-
-abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
-
-  def init(): Unit = {
-    // do nothing; just forces one-time invocation of various registerDialects
-    GemFireXDDialect.getClass
-    GemFireXDClientDialect.getClass
-    SnappyDataClientPoolDialect.getClass
-  }
+abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
 
   override def tableExists(table: String, conn: Connection,
       context: SQLContext): Boolean = {
-    val session = context.sparkSession.asInstanceOf[SnappySession]
-    session.sessionCatalog.tableExists(table) || table.equalsIgnoreCase("SYSIBM.SYSDUMMY1")
+    if (table.equalsIgnoreCase("SYSIBM.SYSDUMMY1")) return true
+    val session = context.sparkSession
+    val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
+      table, conn, Some(() => session))
+    session.catalog.tableExists(schemaName, tableName)
   }
 
   override def getCatalystType(sqlType: Int, typeName: String,

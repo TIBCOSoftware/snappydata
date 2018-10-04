@@ -21,7 +21,6 @@ import java.nio.ByteBuffer
 import java.sql.DriverManager
 import java.util.TimeZone
 
-import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
@@ -54,7 +53,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analy
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.CastLongTime
+import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
@@ -368,11 +367,7 @@ object Utils {
     }
   }
 
-  @tailrec
-  def getSQLDataType(dataType: DataType): DataType = dataType match {
-    case udt: UserDefinedType[_] => getSQLDataType(udt.sqlType)
-    case _ => dataType
-  }
+  def getSQLDataType(dataType: DataType): DataType = JdbcExtendedUtils.getSQLDataType(dataType)
 
   def getClientHostPort(netServer: String): String = {
     val addrIdx = netServer.indexOf('/')
@@ -409,9 +404,9 @@ object Utils {
     false
   }
 
-  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ENGLISH)
+  def toLowerCase(k: String): String = JdbcExtendedUtils.toLowerCase(k)
 
-  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ENGLISH)
+  def toUpperCase(k: String): String = JdbcExtendedUtils.toUpperCase(k)
 
   /**
    * Utility function to return a metadata for a StructField of StringType, to ensure that the

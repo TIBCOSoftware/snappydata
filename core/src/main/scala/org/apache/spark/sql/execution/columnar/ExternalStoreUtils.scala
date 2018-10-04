@@ -20,6 +20,9 @@ import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -31,29 +34,29 @@ import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.metastore.api.FieldSchema
 import org.apache.hadoop.hive.ql.metadata.Table
+
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
+import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.{GemFireXDBaseDialect, GemFireXDClientDialect, GemFireXDDialect, SnappyDataClientPoolDialect}
-import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.row.{SnappyDataClientDialect, SnappyDataDialect}
+import org.apache.spark.sql.sources.{BaseRelation, ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.util.{Utils => SparkUtils}
 import org.apache.spark.{SparkContext, SparkException}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 /**
  * Utility methods used by external storage layers.
@@ -152,9 +155,9 @@ object ExternalStoreUtils {
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case GemFireXDDialect => Constant.JDBC_EMBEDDED_DRIVER
-      case GemFireXDClientDialect => Constant.JDBC_CLIENT_DRIVER
-      case SnappyDataClientPoolDialect => Constant.JDBC_CLIENT_POOL_DRIVER
+      case SnappyDataDialect => Constant.JDBC_EMBEDDED_DRIVER
+      case SnappyDataClientDialect => Constant.JDBC_CLIENT_DRIVER
+      case SnappyDataPoolDialect => Constant.JDBC_CLIENT_POOL_DRIVER
       case _ => Utils.getDriverClassName(url)
     }
   }
@@ -294,11 +297,11 @@ object ExternalStoreUtils {
     connProps.setProperty("driver", driver)
     executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
-      case GemFireXDDialect =>
-        GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
+      case SnappyDataDialect =>
+        SnappyDataDialect.addExtraDriverProperties(isLoner, connProps)
         true
-      case GemFireXDClientDialect =>
-        GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
+      case SnappyDataClientDialect =>
+        SnappyDataClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
@@ -340,7 +343,7 @@ object ExternalStoreUtils {
     val (user, password) = getCredentials(session)
 
     val isSnappy = dialect match {
-      case _: GemFireXDBaseDialect => true
+      case _: SnappyDataBaseDialect => true
       case _ => false
     }
 
@@ -388,8 +391,8 @@ object ExternalStoreUtils {
 
   def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
     dialect match {
-      case GemFireXDDialect => ConnectionType.Embedded
-      case GemFireXDClientDialect => ConnectionType.Net
+      case SnappyDataDialect => ConnectionType.Embedded
+      case SnappyDataClientDialect => ConnectionType.Net
       case _ => ConnectionType.Unknown
     }
   }
@@ -414,6 +417,34 @@ object ExternalStoreUtils {
         case _ => throw new IllegalArgumentException(
           s"Can't translate to JDBC value for type $dataType")
       })
+  }
+
+  /**
+   * Create a [[DataSource]] for an external DataSource schema DDL
+   * string specification.
+   */
+  def externalResolvedDataSource(
+      snappySession: SnappySession,
+      schemaString: String,
+      provider: String,
+      mode: SaveMode,
+      options: Map[String, String],
+      data: Option[LogicalPlan] = None): BaseRelation = {
+    val dataSource = DataSource(snappySession, className = provider)
+    val clazz: Class[_] = dataSource.providingClass
+    val relation = clazz.newInstance() match {
+
+      case dataSource: ExternalSchemaRelationProvider =>
+        // add schemaString as separate property for Hive persistence
+        dataSource.createRelation(snappySession.snappyContext, mode,
+          new CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
+            schemaString, JdbcExtendedUtils.SCHEMADDL_PROPERTY, options).toMap),
+          schemaString, data)
+
+      case _ => throw new AnalysisException(
+        s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
+    }
+    relation
   }
 
   // This should match JDBCRDD.compileFilter for best performance
@@ -476,7 +507,7 @@ object ExternalStoreUtils {
       checkIndexedColumn(a, indexedCols).map(expressions.In(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
-      // Commenting out the below conditions for SNAP-2463. This needs to be fixed
+    // Commenting out the below conditions for SNAP-2463. This needs to be fixed
     /* case expressions.And(left, right) => handledFilter(left, indexedCols) match {
       case None => handledFilter(right, indexedCols)
       case lf@Some(l) => handledFilter(right, indexedCols) match {
@@ -704,7 +735,7 @@ object ExternalStoreUtils {
             Types.STRUCT, -1, -1)
       case d =>
         val scale = if (d.isInstanceOf[NumericType]) 0 else -1
-        GemFireXDDialect.getJDBCType(d).orElse(JdbcUtils.getCommonJDBCType(d)) match {
+        SnappyDataDialect.getJDBCType(d).orElse(JdbcUtils.getCommonJDBCType(d)) match {
           case Some(t) =>
             (d, typeName.getOrElse(t.databaseTypeDefinition), t.jdbcNullType, -1, scale)
           case None =>

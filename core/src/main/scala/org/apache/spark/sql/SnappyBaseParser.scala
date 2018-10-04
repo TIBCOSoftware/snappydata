@@ -19,7 +19,7 @@ package org.apache.spark.sql
 import java.util.concurrent.ConcurrentHashMap
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
-import io.snappydata.collection.OpenHashSet
+import io.snappydata.collection.{ObjectObjectHashMap, OpenHashSet}
 import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 
@@ -344,6 +344,32 @@ object SnappyParserConsts {
    * wrapped by LogicalPlanWithHints
    */
   final val allowedPlanHints: List[String] = List(QueryHint.JoinType.toString)
+
+  // -10 in sequence will mean all arguments, -1 will mean all odd argument and
+  // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.
+  // Empty argument array means plan caching has to be disabled.
+  final val FOLDABLE_FUNCTIONS: ObjectObjectHashMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
+    "ROUND" -> Array(1), "BROUND" -> Array(1), "PERCENTILE" -> Array(1), "STACK" -> Array(0),
+    "NTILE" -> Array(0), "STR_TO_MAP" -> Array(1, 2), "NAMED_STRUCT" -> Array(-1),
+    "REFLECT" -> Array(0, 1), "JAVA_METHOD" -> Array(0, 1), "XPATH" -> Array(1),
+    "XPATH_BOOLEAN" -> Array(1), "XPATH_DOUBLE" -> Array(1),
+    "XPATH_NUMBER" -> Array(1), "XPATH_FLOAT" -> Array(1),
+    "XPATH_INT" -> Array(1), "XPATH_LONG" -> Array(1),
+    "XPATH_SHORT" -> Array(1), "XPATH_STRING" -> Array(1),
+    "PERCENTILE_APPROX" -> Array(1, 2), "APPROX_PERCENTILE" -> Array(1, 2),
+    "TRANSLATE" -> Array(1, 2), "UNIX_TIMESTAMP" -> Array(1),
+    "TO_UNIX_TIMESTAMP" -> Array(1), "FROM_UNIX_TIMESTAMP" -> Array(1),
+    "TO_UTC_TIMESTAMP" -> Array(1), "FROM_UTC_TIMESTAMP" -> Array(1),
+    "FROM_UNIXTIME" -> Array(1), "TRUNC" -> Array(1), "NEXT_DAY" -> Array(1),
+    "GET_JSON_OBJECT" -> Array(1), "JSON_TUPLE" -> Array(-3, 0),
+    "FIRST" -> Array(1), "LAST" -> Array(1),
+    "WINDOW" -> Array(1, 2, 3), "RAND" -> Array(0), "RANDN" -> Array(0),
+    "PARSE_URL" -> Array(0, 1, 2),
+    "LAG" -> Array(1), "LEAD" -> Array(1),
+    // rand() plans are not to be cached since each run should use different seed
+    // and the Spark impls create the seed in constructor rather than in generated code
+    "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
+    "LIKE" -> Array(1), "RLIKE" -> Array(1), "APPROX_COUNT_DISTINCT" -> Array(1)))
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,

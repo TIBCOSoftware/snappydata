@@ -243,7 +243,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         } else None
         val relation = JdbcExtendedUtils.readSplitProperty(
           JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
-          case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
+          case Some(schema) => ExternalStoreUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 
           case None =>
@@ -788,7 +788,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
           if (user.nonEmpty && !(
               tableIdent.schemaName.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)
-                  && tableIdent.table.equalsIgnoreCase(SnappyStoreHiveCatalog.dummyTableName))) {
+                  && tableIdent.table.equalsIgnoreCase(JdbcExtendedUtils.DUMMY_TABLE_NAME))) {
             val currentUser = IdUtil.getUserAuthorizationId(user)
             callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
           }
@@ -1465,7 +1465,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 }
 
 object SnappyStoreHiveCatalog {
-  val dummyTableName = "SYSDUMMY1"
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
   val HIVE_METASTORE = SystemProperties.SNAPPY_HIVE_METASTORE

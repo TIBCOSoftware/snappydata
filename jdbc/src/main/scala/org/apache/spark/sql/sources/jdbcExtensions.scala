@@ -16,23 +16,27 @@
  */
 package org.apache.spark.sql.sources
 
-import java.sql.{Connection, ResultSet}
+import java.lang.reflect.Method
+import java.nio.ByteBuffer
+import java.sql.{Connection, ResultSet, ResultSetMetaData, Types}
 import java.util.Properties
 
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, OverwriteOptions}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.datasources.DataSource
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import io.snappydata.Constant
+
+import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode, SnappySession, SparkSession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, DataFrameReader, SQLContext, SnappyDataPoolDialect, SparkSession}
+import org.apache.spark.util.Utils
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -86,6 +90,9 @@ object JdbcExtendedUtils extends Logging {
   // internal properties will be stored as Hive table parameters
   val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
 
+  val DUMMY_TABLE_NAME: String = "SYSDUMMY1"
+  val DUMMY_TABLE_QUALIFIED_NAME: String = "SYSIBM." + DUMMY_TABLE_NAME
+
   def executeUpdate(sql: String, conn: Connection): Unit = {
     val stmt = conn.createStatement()
     try {
@@ -95,28 +102,33 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
+  @tailrec
+  def getSQLDataType(dataType: DataType): DataType = dataType match {
+    case udt: UserDefinedType[_] => getSQLDataType(udt.sqlType)
+    case _ => dataType
+  }
+
   /**
-   * Compute the schema string for this RDD.
+   * Get the SQL types for given schema.
    */
-  def schemaString(schema: StructType, dialect: JdbcDialect): String = {
+  def getSQLNamesAndTypes(schema: Seq[Attribute], dialect: JdbcDialect): Seq[(String, String)] = {
     val jdbcType: (DataType, Metadata) => Option[JdbcType] = dialect match {
       case ed: JdbcExtendedDialect => ed.getJDBCType
       case _ => (dataType, _) => dialect.getJDBCType(dataType)
     }
-    val sb = new StringBuilder()
-    schema.fields.foreach { field =>
-      val dataType = Utils.getSQLDataType(field.dataType)
+    schema.map { field =>
+      val dataType = getSQLDataType(field.dataType)
       val typeString: String =
         jdbcType(dataType, field.metadata).map(_.databaseTypeDefinition).getOrElse(
           dataType match {
             case IntegerType => "INTEGER"
             case LongType => "BIGINT"
-            case DoubleType => "DOUBLE PRECISION"
+            case DoubleType => "DOUBLE"
             case FloatType => "REAL"
-            case ShortType => "INTEGER"
-            case ByteType => "BYTE"
-            case BooleanType => "BIT(1)"
-            case StringType => "TEXT"
+            case ShortType => "SMALLINT"
+            case ByteType => "TINYINT"
+            case BooleanType => "BOOLEAN"
+            case StringType => "CLOB"
             case BinaryType => "BLOB"
             case TimestampType => "TIMESTAMP"
             case DateType => "DATE"
@@ -125,7 +137,20 @@ object JdbcExtendedUtils extends Logging {
             case _ => throw new IllegalArgumentException(
               s"Don't know how to save $field to JDBC")
           })
-      sb.append(s""", "${field.name}" $typeString""")
+      field.name -> typeString
+    }
+  }
+
+  /**
+   * Compute the schema string for this RDD.
+   */
+  def schemaString(schema: StructType, dialect: JdbcDialect): String = {
+    val namesAndTypes = getSQLNamesAndTypes(schema.toAttributes, dialect)
+    val sb = new StringBuilder()
+    schema.fields.indices.foreach { i =>
+      val field = schema.fields(i)
+      val nameAndType = namesAndTypes(i)
+      sb.append(s""", "${nameAndType._1}" ${nameAndType._2}""")
       if (!field.nullable) sb.append(" NOT NULL")
     }
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
@@ -167,26 +192,86 @@ object JdbcExtendedUtils extends Logging {
   }
 
   def getTableWithSchema(table: String, conn: Connection,
-      session: Option[() => SnappySession] = None): (String, String) = {
+      session: Option[() => SparkSession] = None): (String, String) = {
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
       table.substring(0, dotIndex)
-    } else {
+    } else session match {
+      case None => conn.getSchema
       // get the current schema
-      if (session.isDefined) session.get().getCurrentSchema else conn.getSchema
+      case Some(s) => s().catalog.currentDatabase
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     (schemaName, tableName)
   }
 
-  private def getTableMetadataResultSet (table: String, conn: Connection): ResultSet = {
+  private def getTableMetadataResultSet(table: String, conn: Connection): ResultSet = {
     val (schemaName, tableName) = getTableWithSchema(table, conn)
-      // using the JDBC meta-data API
+    // using the JDBC meta-data API
     conn.getMetaData.getTables(null, schemaName, tableName, null)
   }
 
-  def tableExistsInMetaData(table: String, conn: Connection,
-      dialect: JdbcDialect): Boolean = {
+  protected lazy val getCatalystTypeMethod: Method = {
+    val m = JdbcUtils.getClass.getDeclaredMethod(
+      "org$apache$spark$sql$execution$datasources$jdbc$JdbcUtils$$getCatalystType",
+      classOf[Int], classOf[Int], classOf[Int], classOf[Boolean])
+    m.setAccessible(true)
+    m
+  }
+
+  /**
+   * Is the given JDBC type (java.sql.Types) data type signed.
+   */
+  def isSigned(typeId: Int): Boolean = {
+    typeId == Types.INTEGER || typeId == Types.FLOAT || typeId == Types.DECIMAL ||
+        typeId == Types.SMALLINT || typeId == Types.BIGINT || typeId == Types.TINYINT ||
+        typeId == Types.NUMERIC || typeId == Types.REAL || typeId == Types.DOUBLE
+  }
+
+  def getTableSchema(schemaName: String, tableName: String, conn: Connection): Seq[StructField] = {
+    val rs = conn.getMetaData.getColumns(null, schemaName, tableName, null)
+    if (rs.next()) {
+      val cols = new mutable.ArrayBuffer[StructField]()
+      do {
+        // COLUMN_NAME
+        val columnName = rs.getString(4)
+        // DATA_TYPE
+        val jdbcType = rs.getInt(5)
+        // TYPE_NAME
+        val typeName = rs.getString(6)
+        // COLUMN_SIZE
+        val size = rs.getInt(7)
+        // DECIMAL_DIGITS
+        val scale = rs.getInt(9)
+        // NULLABLE
+        val nullable = rs.getInt(11) != ResultSetMetaData.columnNoNulls
+        val metadataBuilder = new MetadataBuilder()
+            .putString("name", columnName).putLong("scale", scale)
+        val columnType = SnappyDataPoolDialect.getCatalystType(jdbcType, typeName,
+          size, metadataBuilder) match {
+          case Some(t) => t
+          case None =>
+            if (jdbcType == java.sql.Types.JAVA_OBJECT) {
+              // try to get class for the typeName else fallback to Object
+              val userClass = try {
+                Utils.classForName(typeName).asInstanceOf[Class[AnyRef]]
+              } catch {
+                case _: Throwable => classOf[AnyRef]
+              }
+              new JavaObjectType(userClass)
+            } else {
+              getCatalystTypeMethod.invoke(JdbcUtils, Int.box(jdbcType),
+                Int.box(size), Int.box(scale),
+                Boolean.box(isSigned(jdbcType))).asInstanceOf[DataType]
+            }
+        }
+        cols += StructField(columnName, columnType, nullable, metadataBuilder.build())
+      } while (rs.next())
+      cols
+    } else Nil
+  }
+
+  def tableExistsInMetaData(table: String, conn: Connection): Boolean = {
     try {
       // using the JDBC meta-data API
       val rs = getTableMetadataResultSet(table, conn)
@@ -214,7 +299,7 @@ object JdbcExtendedUtils extends Logging {
 
       case _ =>
         try {
-          tableExistsInMetaData(table, conn, dialect)
+          tableExistsInMetaData(table, conn)
         } catch {
           case NonFatal(_) =>
             val stmt = conn.createStatement()
@@ -244,9 +329,9 @@ object JdbcExtendedUtils extends Logging {
   def isRowLevelSecurityEnabled(table: String, conn: Connection, dialect: JdbcDialect,
       context: SQLContext): Boolean = {
     val (schemaName, tableName) = getTableWithSchema(table, conn)
-      val q = s"select 1 from sys.systables s where s.tablename = '$tableName' and " +
-          s" s.tableschemaname = '$schemaName' and s.rowlevelsecurityenabled = true "
-      conn.createStatement().executeQuery(q).next()
+    val q = s"select 1 from sys.systables s where s.tablename = '$tableName' and " +
+        s" s.tableschemaname = '$schemaName' and s.rowlevelsecurityenabled = true "
+    conn.createStatement().executeQuery(q).next()
   }
 
   def dropTable(conn: Connection, tableName: String, dialect: JdbcDialect,
@@ -283,33 +368,9 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
-  /**
-   * Create a [[DataSource]] for an external DataSource schema DDL
-   * string specification.
-   */
-  def externalResolvedDataSource(
-      snappySession: SnappySession,
-      schemaString: String,
-      provider: String,
-      mode: SaveMode,
-      options: Map[String, String],
-      data: Option[LogicalPlan] = None): BaseRelation = {
-    val dataSource = DataSource(snappySession, className = provider)
-    val clazz: Class[_] = dataSource.providingClass
-    val relation = clazz.newInstance() match {
+  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ENGLISH)
 
-      case dataSource: ExternalSchemaRelationProvider =>
-        // add schemaString as separate property for Hive persistence
-        dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
-            schemaString, JdbcExtendedUtils.SCHEMADDL_PROPERTY, options).toMap),
-          schemaString, data)
-
-      case _ => throw new AnalysisException(
-        s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
-    }
-    relation
-  }
+  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ENGLISH)
 
   /**
    * Returns the SQL for prepare to insert or put rows into a table.
@@ -360,29 +421,67 @@ object JdbcExtendedUtils extends Logging {
       fieldsLeft -= 1
     }
   }
+}
 
-  def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
-      schema: StructType, resolvedName: String, putInto: Boolean): Int = {
-    val session = sparkSession.asInstanceOf[SnappySession]
-    val sessionState = session.sessionState
-    val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
-    val encoder = RowEncoder(schema)
-    val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
-      rows.map(encoder.toRow)), schema)
-    val plan = if (putInto) {
-      PutIntoTable(
-        table = UnresolvedRelation(tableIdent),
-        child = ds.logicalPlan)
-    } else {
-      new Insert(
-        table = UnresolvedRelation(tableIdent),
-        partition = Map.empty[String, Option[String]],
-        child = ds.logicalPlan,
-        overwrite = OverwriteOptions(enabled = false),
-        ifNotExists = false)
-    }
-    session.sessionState.executePlan(plan).executedPlan.executeCollect()
-        // always expect to create a TableInsertExec
-        .foldLeft(0)(_ + _.getInt(0))
+final class JavaObjectType(override val userClass: java.lang.Class[AnyRef])
+    extends UserDefinedType[AnyRef] {
+
+  override def typeName: String = userClass.getName
+
+  override def sqlType: DataType = BinaryType
+
+  override def serialize(obj: AnyRef): Any = {
+    val serializer = SparkEnv.get.serializer.newInstance()
+    ClientSharedUtils.toBytes(serializer.serialize(obj))
+  }
+
+  override def deserialize(datum: Any): AnyRef = {
+    val serializer = SparkEnv.get.serializer.newInstance()
+    serializer.deserialize(ByteBuffer.wrap(datum.asInstanceOf[Array[Byte]]))
+  }
+}
+
+case class JdbcReader(session: SparkSession) extends DataFrameReader(session) {
+
+  SnappyDataPoolDialect.register()
+  SparkSession.setActiveSession(session)
+
+  private def getURL(host: String, port: Int): String = port match {
+    case _ if port > 0 => s"${Constant.POOLED_THIN_CLIENT_URL}$host[$port]"
+    case _ =>
+      val conf = session.sparkContext.conf
+      val sparkProp = s"${Constant.SPARK_PREFIX}${Constant.CONNECTION_PROPERTY}"
+      val hostPort = conf.getOption(sparkProp) match {
+        case Some(c) => c
+        case None => conf.getOption(Constant.CONNECTION_PROPERTY) match {
+          case Some(c) => c
+          case None => throw new IllegalStateException(
+            s"Neither $sparkProp nor ${Constant.CONNECTION_PROPERTY} set for SnappyData connect")
+        }
+      }
+      s"${Constant.POOLED_THIN_CLIENT_URL}$hostPort"
+  }
+
+  def query(sql: String): DataFrame =
+    query(sql, host = null, port = -1, Map.empty[String, String])
+
+  def query(sql: String, host: String, port: Int): DataFrame =
+    query(sql, host, port, Map.empty[String, String])
+
+  def query(sql: String, user: String, password: String): DataFrame =
+    query(sql, host = null, port = -1, user, password)
+
+  def query(sql: String, host: String, port: Int, user: String, password: String): DataFrame =
+    query(sql, host, port, Map("user" -> user, "password" -> password))
+
+  def query(sql: String, host: String, port: Int, properties: Properties): DataFrame =
+    query(sql, host, port, properties.asScala)
+
+  def query(sql: String, host: String, port: Int, properties: SMap[String, String]): DataFrame = {
+    option(JDBCOptions.JDBC_URL, getURL(host, port))
+    option(JDBCOptions.JDBC_DRIVER_CLASS, Constant.JDBC_CLIENT_POOL_DRIVER)
+    option(JDBCOptions.JDBC_TABLE_NAME, s"($sql) queryTable")
+    if (properties.nonEmpty) options(properties)
+    format("jdbc").load()
   }
 }
