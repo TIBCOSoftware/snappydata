@@ -22,6 +22,7 @@ import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -36,6 +37,11 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkContext}
 
 trait TableStatsProviderService extends Logging {
+
+  protected val tableSchemaMap =
+    mutable.Map.empty[String, ArrayBuffer[java.util.Map[String, Object]]]
+  protected val externalTableSchemaMap =
+    mutable.Map.empty[String, ArrayBuffer[java.util.Map[String, Object]]]
 
   @volatile
   protected var tableSizeInfo = Map.empty[String, SnappyRegionStats]
