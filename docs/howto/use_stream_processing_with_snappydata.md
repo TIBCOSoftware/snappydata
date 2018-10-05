@@ -132,7 +132,7 @@ The following code snippet, from the example, explains the usage of SnappyData's
 |--------|--------|
 |    `streamQueryId`    | This is internally used by SnappyData to track the progress of a stream query. The value of this option must be kept unique for each stream query across the SnappyData cluster.  The option is case-insensitive and should be mandatorily specified.|
 |`tableName`|Name of the SnappyData table where the streaming data is ingested. This should be mandatorily specified.|
-|`sinkCallback`|This is an optional property which is used to override default **SnappyData Sink** behaviour.|
+|`sinkCallback`|This is an optional property which is used to override default **SnappyData Sink** behavior.|
 
 ### CDC with SnappyData Structured Streaming
 
@@ -153,10 +153,8 @@ To support CDC, the source dataframe must have the following:
 
 If the `_eventType` column is not provided as part of source dataframe, then the following is observed:
 
-- In a target table with key columns/primary key defined, the **_ put into**
-operation will be applied for all events.
-- In a target table without key columns/primary key defined, the **insert** operation
-is applied for all the events.
+- In a target table with key columns/primary key defined, the **_ put into** operation is applied to all events.
+- In a target table without key columns/primary key defined, the **insert** operation is applied to all the events.
 
 ### Default Sink Behavior
 
