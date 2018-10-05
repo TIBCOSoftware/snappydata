@@ -89,11 +89,13 @@ class TableSummary private[spark](
     val rowCount: Long,
     val sizeInMemory: Long,
     val totalSize: Long,
-    val bucketCount: Int
+    val bucketCount: Int,
+    val schemaDetails: java.util.List[java.util.Map[String, AnyRef]]
 )
 
 class ExternalTableSummary private[spark](
     val tableName: String,
     val provider: String,
-    val source: String
+    val source: String,
+    val schemaDetails: java.util.List[java.util.Map[String, AnyRef]]
 )
