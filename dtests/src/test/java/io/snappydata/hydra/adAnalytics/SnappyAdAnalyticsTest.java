@@ -389,8 +389,10 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String dest = kafkaLogDir + sep + "generatorAndPublisher" + getMyTid() + "_" + i + ".log";
       File logFile = new File(dest);
       String processName= (String)generatorAndPublisher.elementAt(i);
-      String command = "nohup java -cp .:" + userJarPath + ":" + productDir + "jars/* " +
-          processName + " " + APP_PROPS + " > " + logFile + " & ";
+      String command = "java -cp .:" + userJarPath + ":" + productDir + "jars/* " +
+          processName + " " + APP_PROPS + " > " + logFile;
+      if(SnappyPrms.executeInBackGround())
+        command = "nohup " + command + " & ";
       Log.getLogWriter().info("Executing cmd : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
