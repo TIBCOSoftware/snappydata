@@ -212,21 +212,33 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         // External Tables
         hiveTables.collect {
           case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
-            val schema = sessionCatalog.lookupRelation(
-              sessionCatalog.newQualifiedTableName(table.entityName)).schema
-            val tableSchema = ArrayBuffer.empty[java.util.Map[String, Object]]
-            if (schema != null) {
-              schema.map(sf => {
-                var fieldDetails = mutable.Map.empty[String, Object]
-                fieldDetails += ("name" -> sf.name)
-                fieldDetails += ("dataType" -> sf.dataType.typeName)
-                fieldDetails += ("isNullable" -> boolean2Boolean(sf.nullable))
-                tableSchema += fieldDetails.asJava
-              })
+            val tableSchema: java.util.List[java.util.Map[String, AnyRef]] = {
+              if (externalTableSchemaMap.contains(table.entityName)
+                 && !externalTableSchemaMap.get(table.entityName).get.isEmpty) {
+                // External Table Schema is present in map
+                externalTableSchemaMap.get(table.entityName).get.asJava
+              } else {
+                // External Table Schema is not present in map, obtain and add it to map
+                val schema = sessionCatalog.lookupRelation(
+                  sessionCatalog.newQualifiedTableName(table.entityName)).schema
+                val tblSchema = ArrayBuffer.empty[java.util.Map[String, Object]]
+                if (schema != null) {
+                  schema.map(sf => {
+                    val fieldDetails = mutable.Map.empty[String, Object]
+                    fieldDetails += ("name" -> sf.name)
+                    fieldDetails += ("dataType" -> sf.dataType.typeName)
+                    fieldDetails += ("isNullable" -> boolean2Boolean(sf.nullable))
+                    tblSchema += fieldDetails.asJava
+                    externalTableSchemaMap += (table.entityName -> tblSchema)
+                  })
+                }
+                tblSchema.asJava
+              }
             }
+
             val extTblStats = new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
               table.externalStore, table.dataSourcePath, table.driverClass)
-            extTblStats.setSchema(tableSchema.asJava)
+            extTblStats.setSchema(tableSchema)
 
             extTblStats
           }
@@ -259,19 +271,31 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           rs.setColumnTable(false)
         }
 
-        val schema = sessionCatalog.lookupRelation(
-          sessionCatalog.newQualifiedTableName(rs.getTableName)).schema
-        val tableSchema = ArrayBuffer.empty[java.util.Map[String, Object]]
-        if (schema != null) {
-          schema.map(sf => {
-            var fieldDetails = mutable.Map.empty[String, Object]
-            fieldDetails += ("name" -> sf.name)
-            fieldDetails += ("dataType" -> sf.dataType.typeName)
-            fieldDetails += ("isNullable" -> boolean2Boolean(sf.nullable))
-            tableSchema += fieldDetails.asJava
-          })
-          rs.setSchema(tableSchema.asJava)
+        val tableSchema: java.util.List[java.util.Map[String, AnyRef]] = {
+          if (tableSchemaMap.contains(rs.getTableName)
+              && !tableSchemaMap.get(rs.getTableName).get.isEmpty) {
+            // Table Schema is present in map
+            tableSchemaMap.get(rs.getTableName).get.asJava
+          } else {
+            // Table Schema is not present in map, obtain and add it to map
+            val schema = sessionCatalog.lookupRelation(
+              sessionCatalog.newQualifiedTableName(rs.getTableName)).schema
+            val tblSchema = ArrayBuffer.empty[java.util.Map[String, Object]]
+            if (schema != null) {
+              schema.map(sf => {
+                var fieldDetails = mutable.Map.empty[String, Object]
+                fieldDetails += ("name" -> sf.name)
+                fieldDetails += ("dataType" -> sf.dataType.typeName)
+                fieldDetails += ("isNullable" -> boolean2Boolean(sf.nullable))
+                tblSchema += fieldDetails.asJava
+                tableSchemaMap += (rs.getTableName -> tblSchema)
+              })
+            }
+            tblSchema.asJava
+          }
         }
+
+        rs.setSchema(tableSchema)
         rs
       })
 
