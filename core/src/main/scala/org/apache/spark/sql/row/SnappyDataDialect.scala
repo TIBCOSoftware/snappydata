@@ -19,6 +19,9 @@ package org.apache.spark.sql.row
 import java.util.Properties
 import java.util.regex.Pattern
 
+import com.pivotal.gemfirexd.Attribute
+import io.snappydata.Constant
+
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.{SnappyDataBaseDialect, SnappyDataPoolDialect}
@@ -33,7 +36,10 @@ case object SnappyDataDialect extends SnappyDataBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(SnappyDataDialect)
 
-  private val CLIENT_PATTERN = Pattern.compile("^jdbc:snappydata:\\w*:?//")
+  private val EMBEDDED_REGEX = s"^(${Constant.DEFAULT_EMBEDDED_URL}|${Attribute.PROTOCOL})"
+  private val EMBEDDED_PATTERN = Pattern.compile(EMBEDDED_REGEX, Pattern.CASE_INSENSITIVE)
+  private val CLIENT_PATTERN = Pattern.compile(EMBEDDED_REGEX + "\\w*:?//",
+    Pattern.CASE_INSENSITIVE)
 
   def init(): Unit = {
     // do nothing; just forces one-time invocation of various registerDialects
@@ -43,10 +49,7 @@ case object SnappyDataDialect extends SnappyDataBaseDialect {
   }
 
   def canHandle(url: String): Boolean = {
-    (url.startsWith("jdbc:gemfirexd:") ||
-        url.startsWith("jdbc:snappydata:")) &&
-        !url.startsWith("jdbc:gemfirexd://") &&
-        !CLIENT_PATTERN.matcher(url).find()
+    EMBEDDED_PATTERN.matcher(url).find() && !CLIENT_PATTERN.matcher(url).find()
   }
 
   override def addExtraDriverProperties(isLoner: Boolean,
@@ -68,7 +71,8 @@ case object SnappyDataClientDialect extends SnappyDataBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(SnappyDataClientDialect)
 
-  def canHandle(url: String): Boolean =
-    url.startsWith("jdbc:gemfirexd://") ||
-        url.startsWith("jdbc:snappydata://")
+  private val CLIENT_PATTERN = Pattern.compile(
+    s"^(${Constant.DEFAULT_THIN_CLIENT_URL}|${Attribute.DNC_PROTOCOL})", Pattern.CASE_INSENSITIVE)
+
+  def canHandle(url: String): Boolean = CLIENT_PATTERN.matcher(url).find()
 }

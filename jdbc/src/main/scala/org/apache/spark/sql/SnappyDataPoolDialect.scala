@@ -16,6 +16,9 @@
  */
 package org.apache.spark.sql
 
+import java.util.regex.Pattern
+
+import io.snappydata.Constant
 import io.snappydata.jdbc.ClientPoolDriver
 
 import org.apache.spark.Logging
@@ -37,11 +40,14 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
   // register the dialect
   JdbcDialects.registerDialect(SnappyDataPoolDialect)
 
+  private val URL_PATTERN = Pattern.compile("^" + Constant.POOLED_THIN_CLIENT_URL,
+    Pattern.CASE_INSENSITIVE)
+
   def register(): Unit = {
     // no-op, all registration is done in the object constructor
   }
 
-  def canHandle(url: String): Boolean = url.startsWith("jdbc:snappydata:pool://")
+  def canHandle(url: String): Boolean = URL_PATTERN.matcher(url).find()
 
   /**
    * Parse the table plan and check all unresolved relations using metadata from connection.
@@ -112,7 +118,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
           // ignoring nullability for now
           return namesAndTypes.indices.map { i =>
             val (name, typeName) = namesAndTypes(i)
-            s"""CAST (${defaultNonNullValue(schema(i))} AS $typeName) AS "$name""""
+            s"""CAST (${defaultDataTypeValue(schema(i))} AS $typeName) AS "$name""""
           }.mkString("SELECT ", ", ", s" FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")
         } catch {
           case ae: AnalysisException => throw ae
@@ -124,7 +130,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
     s"SELECT * FROM $query LIMIT 1"
   }
 
-  private def defaultNonNullValue(attribute: Attribute): String = attribute.dataType match {
+  private def defaultDataTypeValue(attribute: Attribute): String = attribute.dataType match {
     case _ if attribute.nullable => "NULL"
     case IntegerType | LongType | ShortType | FloatType | DoubleType | ByteType |
          BooleanType | _: DecimalType => "0"
@@ -132,6 +138,8 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
     case DateType => "'1976-01-01'"
     case TimestampType => "'1976-01-01 00:00:00.0'"
     case BinaryType => "X'00'"
+    // don't have non-null values for complex types that will run on store side
+    // so just mark as null which will cause negligible overhead for complex types
     case _ => "NULL"
   }
 }
