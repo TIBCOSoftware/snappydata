@@ -64,6 +64,8 @@ The following additional properties can be configured for JDBC client pool drive
 |pool.timeBetweenEvictionRunsMillis| Time period required to sleep between runs of the idle connection validation/cleaner thread. You should always set this value above one second. This time period determines how often we check for idle and abandoned connections and how often to validate the idle connections. The default value is 5000 (5 seconds).|
 |pool.minEvictableIdleTimeMillis|The minimum time period, in milliseconds, for which an object can be idle in the pool before it qualifies for eviction. The default value is 60000 (60 seconds).|
 |driver|`io.snappydata.jdbc.ClientPoolDriver`</br>This should be passed through Spark JDBC API for loading and using the driver.|
+|pool.testOnBorrow|Indicates if the objects are validated before being borrowed from the pool. If the object fails to validate, it will be dropped from the pool, and will attempt to borrow another. In order to have a more efficient validation, see `pool.validationInterval`. Default value is **true**.|
+|pool.validationInterval|Avoid excess validation, only run validation at most at this frequency - time in milliseconds. If a connection is due for validation, but has been validated previously within this interval, it will not be validated again. The default value is 10000 (10 seconds).|
 
 **Example Code Snippet:**
 
