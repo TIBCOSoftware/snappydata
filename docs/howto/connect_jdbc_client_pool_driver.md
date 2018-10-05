@@ -1,30 +1,85 @@
 # How to Connect with JDBC Client Pool Driver
-Using the JDBC client pool driver, you can connect to SnappyData and maintain an internal connection pool that provides performance improvement in point-lookup queries by reducing the cost of creating a connection again and again.
+
+JDBC client pool driver is a special implementation over normal [JDBC driver](/howto/connect_using_jdbc_driver.md). The benefit of using JDBC pool driver over a normal JDBC driver is that whenever the first connection request is made, a pool of connections gets created internally. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. This saves the cost of establishing a connection every time you run a point lookup query and thus improves performance.
+
+!!!Important
+	Internally, the JDBC client pool driver maintains a map, where the key is the property and the value is the connection pool. Therefore in a second request, if you pass a different property object, then internally it adds another record in the map.
 
 !!! Note
-	  We recommend you to use the JDBC client pool driver only in smart connector and for point-lookup queries. In other scenarios, we recommend you to use the JDBC client driver.
+	  We recommend you to use the JDBC client pool driver only for smart connector and for point-lookup queries.
 
-To connect to SnappyData Cluster using JDBC client pool driver, use the url of the form: </br> `jdbc:snappydata:pool://<host>:<port>`
+**To connect to SnappyData Cluster using JDBC client pool driver**, use the url of the form: </br> `jdbc:snappydata:pool://<host>:<port>`
 
 The client pool driver class name is **io.snappydata.jdbc.ClientPoolDriver**.
+
+Where the `<locatorHostName>` is the hostname of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
+
+
+/*Dependency section needs approval/discussion */
+**Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData. 
+
+**Example: Maven dependency**
+```pre
+<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client -->
+<dependency>
+    <groupId>io.snappydata</groupId>
+    <artifactId>snappydata-store-client</artifactId>
+    <version>1.6.2</version>
+</dependency>
+```
+
+**Example: SBT dependency**
+```pre
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
+libraryDependencies += "io.snappydata" % "snappydata-store-client" % "1.6.2"
+```
+
+!!! Note
+
+	If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
+
+```
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
+
 
 The following additional properties can be configured for JDBC client pool driver connection:
 
 | Property | Description |
 |--------|--------|
-|    pool-user    |   The username to be passed to the JDBC client pool driver to establish a connection.   |
-|pool-password|The password to be passed to the JDBC  client pool driver to establish a connection.|
-|pool-initialSize|The initial number of connections that are created when the pool is started. Default value is 10.|
-|pool-maxActive| The maximum number of active connections that can be allocated from this pool at a time. The default value is 100. |
-|pool-minIdle| The minimum number of established connections that should be maintained in the client pool. Default value is derived from **initialSize:10**.|
-|pool-maxIdle| The maximum number of connections that should be maintained in the client pool. Default value is maxActive:100. Idle connections are checked periodically, if enabled, and the connections that are idle for more than the time set in **minEvictableIdleTimeMillis** are released.|
-|pool-maxWait|(int) The maximum waiting period, in milliseconds, for establishing a connection after which an exception is thrown. Default value is 30000 (30 seconds).|
-|pool-removeAbandoned| Flag to remove the abandoned connections, in case they exceed the settings for **removeAbandonedTimeout**. If set to true a connection is considered abandoned and eligible for removal, if its no longer in use than the settings for **removeAbandonedTimeout**. Setting this to **true** can recover db connections from applications that fail to close a connection. The default value is **false**.|
-|pool-removeAbandonedTimeout| Timeout in seconds before an abandoned connection, that was in use, can be removed. The default value is 60 seconds. The value should be set to the time required for the longest running query in your applications.|
-|pool-timeBetweenEvictionRunsMillis| Time period required to sleep between runs of the idle connection validation/cleaner thread. You should always set this value above one second. This time period determines how often we check for idle and abandoned connections and how often to validate the idle connections. The default value is 5000 (5 seconds).|
-|pool-minEvictableIdleTimeMillis|The minimum time period, in milliseconds, for which an object can be idle in the pool before it qualifies for eviction. The default value is 60000 (60 seconds).|
+|    pool.user    |   The username to be passed to the JDBC client pool driver to establish a connection.   |
+|pool.password|The password to be passed to the JDBC  client pool driver to establish a connection.|
+|pool.initialSize|The initial number of connections that are created when the pool is started. Default value is `max(256, availableProcessors * 8)`.|
+|pool.maxActive| The maximum number of active connections that can be allocated from this pool at a time. The default value is `max(256, availableProcessors * 8)`. |
+|pool.minIdle| The minimum number of established connections that should be maintained in the client pool. Default value is derived from **initialSize:`max(256, availableProcessors * 8)`**.|
+|pool.maxIdle| The maximum number of connections that should be maintained in the client pool. Default value is **maxActive:`max(256, availableProcessors * 8)`**. Idle connections are checked periodically, if enabled, and the connections that are idle for more than the time set in **minEvictableIdleTimeMillis** are released.|
+|pool.maxWait|(int) The maximum waiting period, in milliseconds, for establishing a connection after which an exception is thrown. Default value is 30000 (30 seconds).|
+|pool.removeAbandoned| Flag to remove the abandoned connections, in case they exceed the settings for **removeAbandonedTimeout**. If set to true a connection is considered abandoned and eligible for removal, if its no longer in use than the settings for **removeAbandonedTimeout**. Setting this to **true** can recover db connections from applications that fail to close a connection. The default value is **false**.|
+|pool.removeAbandonedTimeout| Timeout in seconds before an abandoned connection, that was in use, can be removed. The default value is 60 seconds. The value should be set to the time required for the longest running query in your applications.|
+|pool.timeBetweenEvictionRunsMillis| Time period required to sleep between runs of the idle connection validation/cleaner thread. You should always set this value above one second. This time period determines how often we check for idle and abandoned connections and how often to validate the idle connections. The default value is 5000 (5 seconds).|
+|pool.minEvictableIdleTimeMillis|The minimum time period, in milliseconds, for which an object can be idle in the pool before it qualifies for eviction. The default value is 60000 (60 seconds).|
 |driver|`io.snappydata.jdbc.ClientPoolDriver`</br>This should be passed through Spark JDBC API for loading and using the driver.|
 
-The following code snippet, shows how additional properties can be configured for JDBC client pool driver connection:
+**Example Code Snippet:**
 
-![Additional Properties](../Images/code_snippet_property_pass.png)
+```pre
+val properties = new Properties()
+properties.setProperty("pool.user", "user")
+properties.setProperty("pool.password", "pass")
+properties.setProperty("driver", ““io.snappydata.jdbc.ClientPoolDriver””)
+
+val builder = SparkSession
+.builder.
+appName("app")
+.master("local[*]")
+
+val spark: SparkSession = builder.getOrCreate
+
+val df = spark.read.jdbc(“jdbc:snappydata:pool://localhost:1527”, "Table_X", properties)
+
+```
