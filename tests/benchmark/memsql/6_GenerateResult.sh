@@ -5,8 +5,8 @@ source PerfRun.conf
 directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")
 mkdir -p $directory
 
-mv *.out $directory/
-mv *.csv $directory 
+mv *.out *.csv $directory
+cp PerfRun.conf $directory
 
 latestProp=$directory/latestProp.props
 
