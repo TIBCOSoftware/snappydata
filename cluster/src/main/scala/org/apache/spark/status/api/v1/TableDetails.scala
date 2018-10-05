@@ -45,7 +45,7 @@ object TableDetails {
 
       new TableSummary(table.getTableName, storageModel, distributionType,
         table.isColumnTable, table.isReplicatedTable, table.getRowCount, table.getSizeInMemory,
-        table.getTotalSize, table.getBucketCount)
+        table.getTotalSize, table.getBucketCount, table.getSchema)
     }).values.toList
 
   }
@@ -56,8 +56,8 @@ object TableDetails {
       SnappyTableStatsProviderService.getService.getAllExternalTableStatsFromService
 
     externalTableBuff.mapValues(table => {
-      new ExternalTableSummary(table.getTableName, table.getProvider,
-        table.getDataSourcePath)
+      new ExternalTableSummary(table.getTableName, table.getProvider, table.getDataSourcePath,
+        table.getSchema)
     }).values.toList
   }
 }

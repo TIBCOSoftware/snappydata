@@ -24,6 +24,7 @@ import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -184,6 +185,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
     var resultObtained: Boolean = false
+    val sessionCatalog = SnappyContext(SnappyContext.globalSparkContext)
+          .snappySession.sessionCatalog
+
     try {
       if (dataServers != null && dataServers.size() > 0) {
         result = FunctionService.onMembers(dataServers)
@@ -208,8 +212,23 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         // External Tables
         hiveTables.collect {
           case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
-            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
+            val schema = sessionCatalog.lookupRelation(
+              sessionCatalog.newQualifiedTableName(table.entityName)).schema
+            val tableSchema = ArrayBuffer.empty[java.util.Map[String, Object]]
+            if (schema != null) {
+              schema.map(sf => {
+                var fieldDetails = mutable.Map.empty[String, Object]
+                fieldDetails += ("name" -> sf.name)
+                fieldDetails += ("dataType" -> sf.dataType.typeName)
+                fieldDetails += ("isNullable" -> boolean2Boolean(sf.nullable))
+                tableSchema += fieldDetails.asJava
+              })
+            }
+            val extTblStats = new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
               table.externalStore, table.dataSourcePath, table.driverClass)
+            extTblStats.setSchema(tableSchema.asJava)
+
+            extTblStats
           }
         }
       }
@@ -238,6 +257,20 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           rs.setColumnTable(true)
         } else {
           rs.setColumnTable(false)
+        }
+
+        val schema = sessionCatalog.lookupRelation(
+          sessionCatalog.newQualifiedTableName(rs.getTableName)).schema
+        val tableSchema = ArrayBuffer.empty[java.util.Map[String, Object]]
+        if (schema != null) {
+          schema.map(sf => {
+            var fieldDetails = mutable.Map.empty[String, Object]
+            fieldDetails += ("name" -> sf.name)
+            fieldDetails += ("dataType" -> sf.dataType.typeName)
+            fieldDetails += ("isNullable" -> boolean2Boolean(sf.nullable))
+            tableSchema += fieldDetails.asJava
+          })
+          rs.setSchema(tableSchema.asJava)
         }
         rs
       })
