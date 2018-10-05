@@ -265,7 +265,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     verifyDataForJobExecution(jobClassNames, userJarPath);
     leadHost = getLeadHost();
     String brokerList = null;
-    String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+    String leadPort = getLeadPort();
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String)jobClassNames.elementAt(i);
@@ -282,6 +282,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
             " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
             APP_PROPS + " --stream ";
         String dest = getCurrentDirPath() + File.separator + logFileName;
+        Log.getLogWriter().info("Executing cmd:" + snappyJobCommand);
         logFile = new File(dest);
         pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
         snappyTest.executeProcess(pb, logFile);
@@ -296,6 +297,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           }
         }
         inputFile.close();
+        if(jobID == null){
+          throw new TestException("Failed to start the streaming job. Please check the logs.");
+        }
         Log.getLogWriter().info("JobID is : " + jobID);
         for (int j = 0; j < 3; j++) {
           if(!getJobStatus(jobID)){
@@ -309,6 +313,12 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
     }
   }
+
+  public static void HydraTask_executeSQLScriptsWithSleep() {
+    try { Thread.sleep(30000); } catch (InterruptedException ie) {}
+    HydraTask_executeSQLScripts();
+  }
+
 
   public static void HydraTask_restartStreaming() {
     HydraTask_stopStreamingJob();
