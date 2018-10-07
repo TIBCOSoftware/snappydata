@@ -327,7 +327,7 @@ object ExternalStoreUtils {
       dialect: JdbcDialect, poolProps: Map[String, String], connProps: Properties,
       executorConnProps: Properties, hikariCP: Boolean): ConnectionProperties = {
     session match {
-      case Some(_) => getConnProps(session.get, url, driver, dialect, poolProps, connProps,
+      case Some(s) => getConnProps(s, url, driver, dialect, poolProps, connProps,
         executorConnProps, hikariCP)
       case None => ConnectionProperties(url, driver, dialect, poolProps, connProps,
         executorConnProps, hikariCP)

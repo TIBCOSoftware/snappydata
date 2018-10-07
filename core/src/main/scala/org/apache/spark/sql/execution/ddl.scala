@@ -87,7 +87,7 @@ private[sql] case class DropTableOrViewCommand(isView: Boolean, ifExists: Boolea
     // check for table/view
     val qualifiedName = catalog.newQualifiedTableName(tableIdent)
     if (isView) {
-      if (!catalog.isView(qualifiedName) && !catalog.isTemporaryTable(qualifiedName)) {
+      if (!catalog.isView(qualifiedName) && !catalog.isLocalTemporaryView(qualifiedName)) {
         throw new AnalysisException(
           s"Cannot drop a table with DROP VIEW. Please use DROP TABLE instead")
       }

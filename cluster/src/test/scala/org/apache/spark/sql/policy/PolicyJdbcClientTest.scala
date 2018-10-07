@@ -21,11 +21,9 @@ import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
+import org.junit.Assert.{assertEquals, assertFalse}
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{Row, SnappySession}
 
 class PolicyJdbcClientTest extends PolicyTestBase {
 
@@ -36,7 +34,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
   val numElements = 100
   val colTableName: String = s"$tableOwner.ColumnTable"
   val rowTableName: String = s"$tableOwner.RowTable"
-  var ownerContext: SnappyContext = _
+  var ownerSession: SnappySession = _
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -44,16 +42,16 @@ class PolicyJdbcClientTest extends PolicyTestBase {
       (s"name_$i", i)
     }
     val rdd = sc.parallelize(seq)
-    ownerContext = snc.newSession()
+    ownerSession = snc.snappySession.newSession()
     serverHostPort = TestUtil.startNetServer()
-    ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableOwner)
+    ownerSession.conf.set(Attribute.USERNAME_ATTR, tableOwner)
 
-    val dataDF = ownerContext.createDataFrame(rdd)
+    val dataDF = ownerSession.createDataFrame(rdd)
 
-    ownerContext.sql(s"CREATE TABLE $colTableName (name String, id Int) " +
+    ownerSession.sql(s"CREATE TABLE $colTableName (name String, id Int) " +
         s" USING column ")
 
-    ownerContext.sql(s"CREATE TABLE $rowTableName (name String, id Int) " +
+    ownerSession.sql(s"CREATE TABLE $rowTableName (name String, id Int) " +
         s" USING row ")
     dataDF.write.insertInto(colTableName)
     dataDF.write.insertInto(rowTableName)
@@ -69,8 +67,8 @@ class PolicyJdbcClientTest extends PolicyTestBase {
   }
 
   override def afterAll(): Unit = {
-    ownerContext.dropTable(colTableName, ifExists = true)
-    ownerContext.dropTable(rowTableName, ifExists = true)
+    ownerSession.dropTable(colTableName, ifExists = true)
+    ownerSession.dropTable(rowTableName, ifExists = true)
     TestUtil.stopNetServer()
     super.afterAll()
   }
@@ -203,13 +201,13 @@ class PolicyJdbcClientTest extends PolicyTestBase {
     val stmt = conn.createStatement()
     val conn1 = getConnection(Some("UserX"))
     val stmt1 = conn1.createStatement()
-    ownerContext.sql(s"CREATE TABLE temp (username String, id Int) " +
+    ownerSession.sql(s"CREATE TABLE temp (username String, id Int) " +
         s" USING $tableType ")
     val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
       "USERY" -> 8, "USERY" -> 9)
     val rdd = sc.parallelize(seq)
 
-    val dataDF = ownerContext.createDataFrame(rdd)
+    val dataDF = ownerSession.createDataFrame(rdd)
 
     dataDF.write.insertInto("temp")
 
@@ -231,7 +229,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
 
     rs = stmt.executeQuery(s"select * from temp where username = 'USERZ'")
     n = 0
-    while(rs.next()) {
+    while (rs.next()) {
       n += 1
     }
     assertEquals(3, n)
@@ -241,8 +239,8 @@ class PolicyJdbcClientTest extends PolicyTestBase {
     rs = stmt.executeQuery(s"select * from temp where username = 'USERZ'")
     assertFalse(rs.next())
 
-    ownerContext.sql("drop policy testPolicy1")
-    ownerContext.sql(s"drop table temp")
+    ownerSession.sql("drop policy testPolicy1")
+    ownerSession.sql(s"drop table temp")
   }
 
   test("test multiple policies application using snappy context on column table") {
@@ -428,15 +426,8 @@ class PolicyJdbcClientTest extends PolicyTestBase {
       stmt.execute(s"create policy testPolicy3 on  " +
           s"$rowTableName for select to current_user using id < 70")
 
-      val rs = stmt.executeQuery("select * from sys.syspolicies")
-      val rsmd = rs.getMetaData
-      val expectedColumns = Set("NAME", "TABLESCHEMANAME", "TABLENAME",
+      val expectedColumns = List("NAME", "SCHEMANAME", "TABLENAME",
         "POLICYFOR", "APPLYTO", "FILTER", "OWNER")
-      assertEquals(expectedColumns.size, rsmd.getColumnCount)
-      for (i <- 1 to rsmd.getColumnCount) {
-        assert(expectedColumns.contains(rsmd.getColumnName(i)))
-      }
-
       val expectedResults = Map("TESTPOLICY1" -> (tableOwner.toUpperCase,
           colTableName.toUpperCase.substring(colTableName.indexOf('.') + 1),
           "SELECT", "CURRENT_USER", "ID > 10",
@@ -450,12 +441,27 @@ class PolicyJdbcClientTest extends PolicyTestBase {
             "SELECT", "CURRENT_USER", "ID < 70",
             tableOwner.toUpperCase)
       )
+
+      // check using session
+      val ds = ownerSession.sql("select * from sys.syspolicies")
+      val rows = ds.collect()
+      assert(expectedColumns === ds.schema.map(_.name))
+      assert(expectedResults.toSeq.sortBy(_._1).map(p => Row(p._1, p._2._1, p._2._2,
+        p._2._3, p._2._4, p._2._5, p._2._6)) === rows.toSeq.sortBy(_.getString(0)))
+
+      val rs = stmt.executeQuery("select * from sys.syspolicies")
+      val rsmd = rs.getMetaData
+      assertEquals(expectedColumns.size, rsmd.getColumnCount)
+      for (i <- 1 to rsmd.getColumnCount) {
+        assert(expectedColumns.contains(rsmd.getColumnName(i)))
+      }
+
       var actualNumRows = 0
       while (rs.next()) {
         actualNumRows += 1
         assert(expectedResults.contains(rs.getString("NAME")))
         val expectedRow = expectedResults(rs.getString("NAME"))
-        assertEquals(expectedRow._1, rs.getString("TABLESCHEMANAME"))
+        assertEquals(expectedRow._1, rs.getString("SCHEMANAME"))
         assertEquals(expectedRow._2, rs.getString("TABLENAME"))
         assertEquals(expectedRow._3, rs.getString("POLICYFOR"))
         assertEquals(expectedRow._4, rs.getString("APPLYTO"))
@@ -497,9 +503,9 @@ class PolicyJdbcClientTest extends PolicyTestBase {
 
   private def testQueryPlanInvalidationOnRLSEnbaling(tableName: String): Unit = {
     // first disable RLS
-    ownerContext.sql(s"alter table $tableName disable row level security")
+    ownerSession.sql(s"alter table $tableName disable row level security")
     // now create a policy
-    ownerContext.sql(s"create policy testPolicy1 on  " +
+    ownerSession.sql(s"create policy testPolicy1 on  " +
         s"$tableName for select to current_user using id < 30")
     val conn = getConnection(Some(tableOwner))
 
@@ -547,7 +553,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
       numRows = 0
       while (rs.next()) numRows += 1
       assertEquals(0, numRows)
-      ownerContext.sql("drop policy testPolicy1")
+      ownerSession.sql("drop policy testPolicy1")
     } finally {
       conn1.close()
       conn.close()
@@ -561,17 +567,17 @@ class PolicyJdbcClientTest extends PolicyTestBase {
     }
     val rdd2 = sc.parallelize(seq2)
 
-    val dataDF2 = ownerContext.createDataFrame(rdd2)
+    val dataDF2 = ownerSession.createDataFrame(rdd2)
 
     val colTableName2: String = s"$tableOwner.ColumnTable2"
     val rowTableName2: String = s"$tableOwner.RowTable2"
     val colTableName3: String = s"$tableOwner.ColumnTable3"
 
-    ownerContext.sql(s"CREATE TABLE $colTableName2 (name String, id Int) " +
+    ownerSession.sql(s"CREATE TABLE $colTableName2 (name String, id Int) " +
         s" USING column ")
-    ownerContext.sql(s"CREATE TABLE $rowTableName2 (name String, id Int) " +
+    ownerSession.sql(s"CREATE TABLE $rowTableName2 (name String, id Int) " +
         s" USING row ")
-    ownerContext.sql(s"CREATE TABLE $colTableName3 (name String, id Int) " +
+    ownerSession.sql(s"CREATE TABLE $colTableName3 (name String, id Int) " +
         s" USING column ")
 
     dataDF2.write.insertInto(colTableName2)

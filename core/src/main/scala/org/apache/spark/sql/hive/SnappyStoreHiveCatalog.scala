@@ -56,7 +56,7 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, SubqueryAlias}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.catalyst.util.{CaseInsensitiveMap, StringUtils}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -145,13 +145,12 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ =>
         // Initialize default database if it doesn't already exist
         val defaultDbDefinition =
-          CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map())
+          CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map.empty)
         externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
         client.setCurrentDatabase(defaultName)
     }
     defaultName
   }
-
 
   override def setCurrentDatabase(db: String): Unit = {
     val dbName = formatDatabaseName(db)
@@ -185,7 +184,14 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def listDatabases(): Seq[String] = {
-    externalCatalog.listDatabases() :+ SYS_SCHEMA
+    externalCatalog.listDatabases().map(formatDatabaseName) :+ SYS_SCHEMA
+  }
+
+  override def listDatabases(pattern: String): Seq[String] = {
+    if (pattern eq null) return listDatabases()
+    // add SYS if it matches pattern
+    externalCatalog.listDatabases(pattern).map(formatDatabaseName) ++
+        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)
   }
 
   private def requireDbExists(db: String): Unit = {
@@ -533,10 +539,23 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   /**
-   * Return whether a table with the specified name is a temporary table.
+   * Return whether a table with the specified name is a local temporary view.
    */
-  def isTemporaryTable(tableIdent: QualifiedTableName): Boolean = synchronized {
-    tempTables.contains(tableIdent.table)
+  def isLocalTemporaryView(name: TableIdentifier): Boolean = synchronized {
+    val table = name match {
+      case q: QualifiedTableName => q.table
+      case t => formatTableName(t.table)
+    }
+    tempTables.contains(table)
+  }
+
+  override def isTemporaryTable(name: TableIdentifier): Boolean = synchronized {
+    val table = formatTableName(name.table)
+    name.database match {
+      case None => tempTables.contains(table)
+      case Some(d) => tempTables.contains(table) || (formatDatabaseName(d) ==
+          globalTempViewManager.database && globalTempViewManager.get(table).isDefined)
+    }
   }
 
   /**
@@ -696,7 +715,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           lazy val conn = ConnectionUtil.getPooledConnection(schema, new ConnectionConf(connProps))
           try {
             if (table == MEMBERS_VTI || JdbcExtendedUtils.tableExistsInMetaData(fullTableName,
-              conn, SysVTIs.DISTRIBUTED_VTI)) {
+              conn, SysVTIs.LOCAL_VTI)) {
               Some(LogicalRelation(new RowFormatRelation(connProps, fullTableName,
                 SnappyContext.SYSTABLE_SOURCE, preservePartitions = true, SaveMode.Ignore,
                 "", Array.empty, Map.empty, snappySession.sqlContext)))
@@ -751,7 +770,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           val fullTableName = tableName.toString
           val conn = snappySession.defaultPooledConnection(schema)
           try {
-            JdbcExtendedUtils.tableExistsInMetaData(fullTableName, conn, SysVTIs.DISTRIBUTED_VTI)
+            JdbcExtendedUtils.tableExistsInMetaData(fullTableName, conn, SysVTIs.LOCAL_VTI)
           } finally {
             conn.close()
           }
@@ -760,7 +779,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def getDatabaseMetadata(name: String): CatalogDatabase = {
-    formatName(name) match {
+    formatDatabaseName(name) match {
       case SYS_SCHEMA =>
         CatalogDatabase(name = SYS_SCHEMA, description = "System Schema",
           locationUri = "", properties = Map.empty)
@@ -772,13 +791,13 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     getTableMetadataOption(name) match {
       case Some(metadata) => metadata
       case None =>
-        val schema = formatName(name.database.getOrElse(currentSchema))
-        throw new NoSuchTableException(db = schema, table = formatName(name.table))
+        val schema = formatDatabaseName(name.database.getOrElse(currentSchema))
+        throw new NoSuchTableException(db = schema, table = formatTableName(name.table))
     }
   }
 
   override def getTableMetadataOption(name: TableIdentifier): Option[CatalogTable] = {
-    if (SYS_SCHEMA == formatName(name.database.getOrElse(currentSchema))) {
+    if (SYS_SCHEMA == formatDatabaseName(name.database.getOrElse(currentSchema))) {
       val table = formatTableName(name.table)
       val conn = snappySession.defaultPooledConnection(SYS_SCHEMA)
       try {
@@ -842,33 +861,53 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       } finally {
         conn.close()
       }
-    } else super.getTableMetadataOption(name)
+    } else super.getTableMetadataOption(name) match {
+      case None => None
+      case s@Some(table) => ExternalStoreUtils.getTableSchema(table.properties) match {
+        case None => s
+        case Some(schema) => Some(table.copy(schema = schema))
+      }
+    }
+  }
+
+  override def getTempViewOrPermanentTableMetadata(name: TableIdentifier): CatalogTable = {
+    if (name.database.isEmpty ||
+        formatDatabaseName(name.database.get) == globalTempViewManager.database) {
+      super.getTempViewOrPermanentTableMetadata(name)
+    } else if (isLocalTemporaryView(name)) {
+      super.getTempViewOrPermanentTableMetadata(TableIdentifier(name.table))
+    } else {
+      getTableMetadata(name)
+    }
   }
 
   override def listTables(schema: String, pattern: String): Seq[TableIdentifier] = {
-    val schemaName = formatName(schema)
+    val schemaName = formatDatabaseName(schema)
     if (schemaName == currentSchema && !databaseExists(schemaName)) Nil
     else if (schemaName == SYS_SCHEMA) {
       val conn = snappySession.defaultPooledConnection(schemaName)
       try {
-        val rs = conn.getMetaData.getTables(null, schemaName, pattern.replace('*', '%'), null)
-        val buffer = new mutable.ArrayBuffer[TableIdentifier]()
+        // hive compatible filter patterns are different from JDBC ones
+        // so get all tables in the schema and apply filter separately
+        val rs = conn.getMetaData.getTables(null, schemaName, "%", null)
+        val buffer = new mutable.ArrayBuffer[String]()
         // add special case SYS.MEMBERS which is a distributed VTI but used by
         // SnappyData layer as a replicated one
-        buffer += TableIdentifier(MEMBERS_VTI, Some(SYS_SCHEMA))
+        buffer += MEMBERS_VTI
         while (rs.next()) {
           // skip distributed VTIs
-          if (rs.getString(4) != SysVTIs.DISTRIBUTED_VTI) {
-            buffer += TableIdentifier(rs.getString(3), Some(rs.getString(2)))
+          if (rs.getString(4) != SysVTIs.LOCAL_VTI) {
+            buffer += rs.getString(3)
           }
         }
         rs.close()
-        buffer
+        if (pattern == "*") buffer.map(TableIdentifier(_, Some(SYS_SCHEMA)))
+        else StringUtils.filterPattern(buffer, pattern).map(TableIdentifier(_, Some(SYS_SCHEMA)))
       } finally {
         conn.close()
       }
     }
-    else super.listTables(schema, pattern)
+    else super.listTables(schema, pattern).map(newQualifiedTableName)
   }
 
   // TODO: SW: cleanup the tempTables handling to error for schema
@@ -1626,6 +1665,7 @@ object SnappyStoreHiveCatalog {
   val HIVE_METASTORE = SystemProperties.SNAPPY_HIVE_METASTORE
   val SYS_SCHEMA = "SYS"
   val MEMBERS_VTI = "MEMBERS"
+
   val cachedSampleTables: LoadingCache[QualifiedTableName,
       Seq[(LogicalPlan, String)]] = CacheBuilder.newBuilder().maximumSize(1).build(
     new CacheLoader[QualifiedTableName, Seq[(LogicalPlan, String)]]() {
