@@ -200,19 +200,36 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val columnCnt = resultMetaData.getColumnCount
         val snappyMetadata = snappyResultSet.getMetaData
         val snappyColCnt = snappyMetadata.getColumnCount
+        var sqlRowsCnt = 0
+        while(sqlResultSet.next()){
+            sqlRowsCnt = sqlRowsCnt + 1
+        }
+        var snappyRowsCnt = 0
+        while(snappyResultSet.next()){
+            snappyRowsCnt = snappyRowsCnt + 1
+        }
+        sqlResultSet.beforeFirst()
+        snappyResultSet.beforeFirst()
+        println("Row cnt of snappy and sql table is = " + snappyRowsCnt + " " + sqlRowsCnt)
         println("Column cnt of snappy and sql table is = " + snappyColCnt + " " + columnCnt)
-        while (sqlResultSet.next()) {
-            snappyResultSet.next()
-            for (i <- 1 to columnCnt) {
-                if (sqlResultSet.getObject(i).equals(snappyResultSet.getObject(i))) {
-                    println("match " + sqlResultSet.getObject(i) + " "
-                        + snappyResultSet.getObject(i))
-                }
-                else {
-                    println("not match" + sqlResultSet.getObject(i)
-                        + " " + snappyResultSet.getObject(i))
+        if (snappyRowsCnt.equals(sqlRowsCnt)) {
+            while (sqlResultSet.next()) {
+                snappyResultSet.next()
+                for (i <- 1 to columnCnt) {
+                    if (sqlResultSet.getObject(i).equals(snappyResultSet.getObject(i))) {
+                        println("match " + sqlResultSet.getObject(i) + " "
+                            + snappyResultSet.getObject(i))
+                    }
+                    else {
+                        println("not match" + sqlResultSet.getObject(i)
+                            + " " + snappyResultSet.getObject(i))
+                    }
                 }
             }
+        }
+        else {
+            println("Row cnt of snappy and sql table is = "
+                + snappyRowsCnt + " " + sqlRowsCnt + " not matching")
         }
     }
 
@@ -224,10 +241,13 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010061;")
-        val sqlResultSet = conn.createStatement().
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+                .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010061;")
         performValidation(sqlResultSet, snappyDF)
         
@@ -241,10 +261,13 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010062;")
-        val sqlResultSet = conn.createStatement().
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+                .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010062;")
         performValidation(sqlResultSet, snappyDF)
 
@@ -258,9 +281,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010063 and adj_id <= 95000010064 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id >= 95000010063 and adj_id <= 95000010064 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
@@ -275,10 +301,13 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010065;")
-        val sqlResultSet = conn.createStatement().
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+                .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010065;")
         performValidation(sqlResultSet, snappyDF)
 
@@ -292,9 +321,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010066 and adj_id <= 95000010067 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id >= 95000010066 and adj_id <= 95000010067 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
@@ -309,9 +341,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010068 and adj_id <= 95000010069 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id >= 95000010068 and adj_id <= 95000010069 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
@@ -326,9 +361,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY
+        ).executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010070;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010070;")
         performValidation(sqlResultSet, snappyDF)
@@ -343,9 +381,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010071;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010071;")
         performValidation(sqlResultSet, snappyDF)
@@ -376,9 +417,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010074;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010074;")
         performValidation(sqlResultSet, snappyDF)
@@ -393,9 +437,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010075;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010075;")
         performValidation(sqlResultSet, snappyDF)
@@ -410,9 +457,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010076;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010076;")
         performValidation(sqlResultSet, snappyDF)
@@ -427,9 +477,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010077 and adj_id <= 95000010080 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id >= 95000010077 and adj_id <= 95000010080 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
@@ -444,9 +497,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010081 and adj_id <= 95000010084 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id >= 95000010081 and adj_id <= 95000010084 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
@@ -461,9 +517,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010085 and adj_id <= 95000010088 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id >= 95000010085 and adj_id <= 95000010088 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
@@ -478,9 +537,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010089 and adj_id <= 95000010092 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id >= 95000010089 and adj_id <= 95000010092 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
@@ -495,9 +557,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010093;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010093;")
         performValidation(sqlResultSet, snappyDF)
@@ -512,9 +577,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010093;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010093;")
         performValidation(sqlResultSet, snappyDF)
@@ -529,7 +597,9 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 95000010093;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected for 95000010093")
@@ -544,7 +614,9 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010094 and adj_id <= 95000010097 order by adj_id;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected")
@@ -559,7 +631,9 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 95000010098 and adj_id <= 950000100100 order by adj_id;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected")
@@ -574,7 +648,9 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id >= 950000100101 and adj_id <= 950000100102 order by adj_id;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected")
@@ -593,9 +669,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
             "where adj_id = 950000100103;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected for 950000100103")
-        val snappyDF1 = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF1 = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100104;")
-        val sqlResultSet1 = conn.createStatement().
+        val sqlResultSet1 = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 950000100104;")
         performValidation(sqlResultSet1, snappyDF1)
@@ -631,13 +710,18 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100107;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected for 950000100107")
-        val snappyDF1 = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF1 = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100108;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 950000100108;")
         performValidation(sqlResultSet, snappyDF1)
@@ -652,9 +736,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100109;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 950000100109;")
         performValidation(sqlResultSet, snappyDF)
