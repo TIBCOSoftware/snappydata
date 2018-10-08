@@ -258,11 +258,15 @@ trait SplitClusterDUnitTestObject extends Logging {
 
     val session = getSnappyContextForConnector(locatorClientPort).snappySession
 
+    // clean any existing data
+    TestUtils.dropAllTables(session)
+    TestUtils.dropAllSchemas(session)
+
     // first check metadata queries using session and JDBC connection
     val locatorNetServer = s"localhost/127.0.0.1[$locatorClientPort]"
     // get member IDs using JDBC connection
-    val user1Conn = getConnection(locatorClientPort)
-    val stmt = user1Conn.createStatement()
+    val jdbcConn = getConnection(locatorClientPort)
+    var stmt = jdbcConn.createStatement()
 
     val rs = stmt.executeQuery("select id, kind, netServers from sys.members")
     var locatorId = ""
@@ -280,6 +284,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       }
     }
     rs.close()
+    stmt.close()
     assert(!locatorId.isEmpty)
     assert(!leadId.isEmpty)
     assert(servers.nonEmpty)
@@ -294,6 +299,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     MetadataTest.testDSIDWithSYSTables(session.sql,
       netServers, locatorId, locatorNetServer, servers, leadId)
     // next test metadata using JDBC connection
+    stmt = jdbcConn.createStatement()
     MetadataTest.testSYSTablesAndVTIs(MetadataTest.resultSetToDataset(session, stmt),
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
     MetadataTest.testDescribeAndShow(MetadataTest.resultSetToDataset(session, stmt))
@@ -301,7 +307,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       netServers, locatorId, locatorNetServer, servers, leadId)
 
     stmt.close()
-    user1Conn.close()
+    jdbcConn.close()
   }
 
   def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
