@@ -288,6 +288,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table id="extTableStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
+            <th></th>
             <th class="table-th-col-heading" style="width:300px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
