@@ -310,7 +310,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def defaultVal: Rule1[String] = rule {
-    (DEFAULT).? ~> ((defVal: Any) =>
+    capture(DEFAULT).? ~> ((defVal: Any) =>
       defVal match {
         case Some(v) => v.asInstanceOf[String].trim
         case None => SnappyParserConsts.SELECT.upper
@@ -503,7 +503,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
-        ADD ~ COLUMN.? ~ column ~ DEFAULT.? ~ defaultVal ~ EOI ~> AlterTableAddColumn |
+        ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumn |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumn |
         ANY. + ~ EOI ~> ((r: TableIdentifier) =>
           DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
