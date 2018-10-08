@@ -30,10 +30,16 @@ fi
 submit_res=`$snappy_home/snappy/bin/snappy-job.sh submit  --lead $lead --app-name "${table_name}_export_csv" --class io.snappydata.hydra.concurrency.ExportTable --app-jar $app_jar --conf output_path=$input_path_ts --conf input_table=$table_name --conf limit=$streaming_sample_size`
 job_id=`echo $submit_res | grep -o 'jobId":\s"[a-zA-Z0-9-]*' | sed 's/jobId":\s"//g'`
 context=`echo $submit_res | grep -o 'context": "[a-zA-Z0-9]*' | sed 's/context": "//g'`
-echo "submitted the job ${table_name}_export_csv. waiting for 60 seconds"
-sleep 60
-job_status=`$snappy_home/snappy/bin/snappy-job.sh status  --lead $lead --job-id $job_id`
-status=`echo $job_status | grep -o 'status": "[A-Z]*' | sed 's/status": "//g'`
+
+status="RUNNING"
+
+while [ "$status" == "RUNNING" ]
+do
+  job_status=`$snappy_home/snappy/bin/snappy-job.sh status  --lead $lead --job-id $job_id`
+  status=`echo $job_status | grep -o 'status": "[A-Z]*' | sed 's/status": "//g'`
+  sleep 2
+done
+
 if [ "$status" == "FINISHED" ]
 then
   echo "${table_name}_export_csv completed"
@@ -73,15 +79,12 @@ do
   job_status=`$snappy_home/snappy/bin/snappy-job.sh status  --lead $lead --job-id $job_id`
   status=`echo $job_status | grep -o 'status": "[A-Z]*' | sed 's/status": "//g'`
   echo "SLEEPING for $copy_freq secs and status is $status"
-  echo "$job_status"
   sleep $copy_freq
   dt=`date "+%H_%M_%S"`
-  echo "COPYING NEW FILT TO $input_path_ts/part_$dt"
+  echo "COPYING NEW FILE TO $input_path_ts/data_$dt"
   cp $input_path_ts/part-00000-* $input_path_ts/data_$dt
 done
 
-echo "sleeping for 200 secs before stopping context: $context"
-sleep 200
 $snappy_home/snappy/bin/snappy-job.sh   stopcontext $context  --lead "$lead"
 
 if [ -d $input_path_ts ]
