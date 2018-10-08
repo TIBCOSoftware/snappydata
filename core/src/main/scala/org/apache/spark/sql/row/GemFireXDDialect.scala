@@ -18,9 +18,9 @@ package org.apache.spark.sql.row
 
 import java.sql.{Connection, Types}
 import java.util.Properties
+import java.util.regex.Pattern
 
 import io.snappydata.Constant
-
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -38,11 +38,14 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(GemFireXDDialect)
 
-  def canHandle(url: String): Boolean =
+  private val CLIENT_PATTERN = Pattern.compile("^jdbc:snappydata:\\w*:?//")
+
+  def canHandle(url: String): Boolean = {
     (url.startsWith("jdbc:gemfirexd:") ||
         url.startsWith("jdbc:snappydata:")) &&
         !url.startsWith("jdbc:gemfirexd://") &&
-        !url.startsWith("jdbc:snappydata://")
+        !CLIENT_PATTERN.matcher(url).find()
+  }
 
   override def addExtraDriverProperties(isLoner: Boolean,
       props: Properties): Unit = {
@@ -68,12 +71,33 @@ case object GemFireXDClientDialect extends GemFireXDBaseDialect {
         url.startsWith("jdbc:snappydata://")
 }
 
+/**
+ * Default dialect for SnappyData using pooled Driver.
+ */
+@DeveloperApi
+case object SnappyDataClientPoolDialect extends GemFireXDBaseDialect {
+
+  // register the dialect
+  JdbcDialects.registerDialect(SnappyDataClientPoolDialect)
+
+  def canHandle(url: String): Boolean = url.startsWith("jdbc:snappydata:pool://")
+
+  override def getTableExistsQuery(table: String): String = {
+    s"SELECT 1 FROM $table FETCH FIRST ROW ONLY"
+  }
+
+  override def getSchemaQuery(table: String): String = {
+    s"SELECT * FROM $table FETCH FIRST ROW ONLY"
+  }
+}
+
 abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
 
   def init(): Unit = {
     // do nothing; just forces one-time invocation of various registerDialects
     GemFireXDDialect.getClass
     GemFireXDClientDialect.getClass
+    SnappyDataClientPoolDialect.getClass
   }
 
   override def tableExists(table: String, conn: Connection,
