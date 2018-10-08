@@ -101,6 +101,7 @@ object MetadataTest extends Assertions {
   private val expectedVTIs = Array("DISKSTOREIDS", "HIVETABLES", "INDEXES", "JARS", "MEMBERS",
     "SYSPOLICIES", "TABLESTATS", "VTIS")
   private val localVTIs = Array("MEMORYANALYTICS", "QUERYSTATS", "SESSIONS", "STATEMENTPLANS")
+
   private val sysSchemasColumns = List("SCHEMAID" -> 36, "SCHEMANAME" -> 128,
     "AUTHORIZATIONID" -> 128, "DEFAULTSERVERGROUPS" -> 32672)
   private val sysTablesColumns: List[(String, Long, String, Boolean)] = List(

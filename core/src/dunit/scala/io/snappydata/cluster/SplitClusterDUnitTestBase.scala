@@ -289,9 +289,6 @@ trait SplitClusterDUnitTestObject extends Logging {
     assert(!leadId.isEmpty)
     assert(servers.nonEmpty)
 
-    // clear all non-default schemas
-    TestUtils.dropAllSchemas(session)
-
     // first test metadata using session
     MetadataTest.testSYSTablesAndVTIs(session.sql,
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
