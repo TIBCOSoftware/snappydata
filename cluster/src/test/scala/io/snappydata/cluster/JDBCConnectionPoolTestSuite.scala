@@ -50,8 +50,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc
     val serverHostPort = TestUtil.startNetServer()
     val properties = new Properties
-    properties.setProperty("pool.maxActive", "5")
-    properties.setProperty("pool.initialSize", "5")
+    properties.setProperty("pool-maxActive", "5")
+    properties.setProperty("pool-initialSize", "5")
     properties.setProperty("user", "app")
     properties.setProperty("password", "app")
     val url = s"jdbc:snappydata:pool://$serverHostPort"
@@ -68,8 +68,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc
     val serverHostPort = TestUtil.startNetServer()
     val properties = new Properties
-    properties.setProperty("pool.maxActive", "5")
-    properties.setProperty("pool.initialSize", "5")
+    properties.setProperty("pool-maxActive", "5")
+    properties.setProperty("pool-initialSize", "5")
     properties.setProperty("user", "app")
     properties.setProperty("password", "app")
     val url = s"jdbc:snappydata:pool://$serverHostPort"
@@ -88,9 +88,9 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     // scalastyle:off
     Class.forName(driverName)
     val properties = new Properties
-    properties.setProperty("pool.initialSize", "5")
-    properties.setProperty("pool.maxIdle", "0")
-    properties.setProperty("pool.maxActive", "5")
+    properties.setProperty("pool-initialSize", "5")
+    properties.setProperty("pool-maxIdle", "0")
+    properties.setProperty("pool-maxActive", "5")
     val conn = DriverManager.getConnection(url, properties)
     val conn1 = DriverManager.getConnection(url, properties)
     assert(null != conn && null != conn1)
@@ -102,8 +102,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc
     val serverHostPort = TestUtil.startNetServer()
     val properties = new Properties
-    properties.setProperty("pool.maxActive", "5")
-    properties.setProperty("pool.initialSize", "5")
+    properties.setProperty("pool-maxActive", "5")
+    properties.setProperty("pool-initialSize", "5")
     properties.setProperty("user", "app")
     properties.setProperty("password", "app")
     val url = s"jdbc:snappydata:pool://$serverHostPort"
@@ -188,15 +188,15 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
       snc
       val serverHostPort = TestUtil.startNetServer()
       val properties = new Properties
-      properties.setProperty("pool.maxIdle", "1")
-      properties.setProperty("pool.maxWait", "5")
-      properties.setProperty("pool.removeAbandoned", "true")
-      properties.setProperty("pool.removeAbandonedTimeout", "15")
-      properties.setProperty("pool.minIdle", "1")
-      properties.setProperty("pool.maxActive", "3")
-      properties.setProperty("pool.initialSize", "1")
-      properties.setProperty("pool.user", "app")
-      properties.setProperty("pool.password", "app")
+      properties.setProperty("pool-maxIdle", "1")
+      properties.setProperty("pool-maxWait", "5")
+      properties.setProperty("pool-removeAbandoned", "true")
+      properties.setProperty("pool-removeAbandonedTimeout", "15")
+      properties.setProperty("pool-minIdle", "1")
+      properties.setProperty("pool-maxActive", "3")
+      properties.setProperty("pool-initialSize", "1")
+      properties.setProperty("pool-user", "app")
+      properties.setProperty("pool-password", "app")
 
       val url = s"jdbc:snappydata:pool://$serverHostPort"
       // scalastyle:off
