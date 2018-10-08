@@ -24,7 +24,7 @@ import io.snappydata.hydra.cluster.SnappyPrms;
 import java.util.Vector;
 
 
-public class SnappySecurityPrms extends SnappyPrms{
+public class SnappySecurityPrms extends SnappyPrms {
 
   public static Long queryList;
 
@@ -42,24 +42,33 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long isRevoke;
 
+  public static Long isAltTableRLS;
+
   public static Long isJoinQuery;
 
   public static Long isPublicAccess;
-
-  public static Long isGroupAccess;
 
   public static Long onSchema;
 
   public static Long dmlOperations;
 
-  public static Long isSecurity;
+  public static Long isRLS;
+
+  public static Long isDropPolicy;
+
+  public static Long numOfPolicy;
+
+  public static int getPolicyCnt() {
+    Long key = numOfPolicy;
+    return tasktab().intAt(key, tab().intAt(key, 1));
+  }
 
   public static Vector getDmlOps() {
     Long key = dmlOperations;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
-  public static String getDataLocation(){
+  public static String getDataLocation() {
     String dataLoc = tasktab().stringAt(dataLocation, tab().stringAt
         (dataLocation, null));
     if (dataLoc == null) return "";
@@ -71,8 +80,23 @@ public class SnappySecurityPrms extends SnappyPrms{
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
-    public static boolean getIsGrant() {
+  public static boolean getIsAltTableRLS() {
+    Long key = isAltTableRLS;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsDropPolicy() {
+    Long key = isDropPolicy;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsGrant() {
     Long key = isGrant;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsRLS() {
+    Long key = isRLS;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
@@ -86,14 +110,8 @@ public class SnappySecurityPrms extends SnappyPrms{
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
-
   public static boolean getIsPublic() {
     Long key = isPublicAccess;
-    return tasktab().booleanAt(key, tab().booleanAt(key, false));
-  }
-
-  public static boolean getIsGroup() {
-    Long key = isGroupAccess;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
