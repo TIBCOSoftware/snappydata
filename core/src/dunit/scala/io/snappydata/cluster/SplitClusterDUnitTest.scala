@@ -124,7 +124,8 @@ class SplitClusterDUnitTest(s: String)
 
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
-    testObject.invokeSparkShell(snappyProductDir, locatorClientPort)
+    // testObject.invokeSparkShell(snappyProductDir, locatorClientPort)
+    testObject.invokeSparkShell(productDir, locatorClientPort)
   }
 }
 
@@ -639,7 +640,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   def invokeSparkShell(productDir: String, locatorClientPort: Integer, props: Properties = new
           Properties()): Unit = {
     // perform some operation thru spark-shell
-    val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
+    val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../../build-artifacts/scala-2.11/distributions/"),
       "snappydata-core*.jar")
     var securityConf = ""
     if (props.containsKey(Attribute.USERNAME_ATTR)) {
@@ -661,6 +662,9 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     var output = sparkShellCommand.!!
     logInfo(output)
     output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
+    output = output.replaceAll("AQP classes in Enterprise edition:" +
+        " java.lang.ClassNotFoundException",
+      "AQP classes in Enterprise edition: java.lang.ClassNotFound")
     assert(!output.contains("Exception"),
       s"Some exception stacktrace seen on spark-shell console: $output")
 

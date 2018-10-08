@@ -40,4 +40,27 @@ val sparkTable = spark.range(1000000).selectExpr("id", "concat('sym', cast((id %
 sparkTable.createOrReplaceTempView("sparkTable")
 spark.sql("select sym, avg(id) from sparkTable group by sym").collect()
 
+// Client Pool Driver Test - Start
+val connectionProperties = new Properties()
+connectionProperties.setProperty("pool-maxTotal", "50")
+connectionProperties.setProperty("pool-maxIdle", "20")
+connectionProperties.setProperty("pool-initialSize", "50")
+connectionProperties.setProperty("pool-minActive", "50")
+connectionProperties.setProperty("pool-minIdleSize", "10")
+connectionProperties.setProperty("driver", "io.snappydata.jdbc.ClientPoolDriver")
+val df = spark.read.jdbc(JDBC_URL, "ROWTABLE", connectionProperties)
+val result = df.select("COL1").groupBy("COL2").avg("COL1")
+
+val df1 = spark.read.jdbc(JDBC_URL, "AIRLINE", getProperties).select("flightnum", "Year", "month").where("flightNum = '1'")
+df1.collect()
+val df2 = spark.read.jdbc(url = JDBC_URL,table = "COLTABLE",columnName = "COL1",lowerBound = 0, \
+      upperBound = 100,numPartitions = 16, \
+      connectionProperties = connectionProperties)
+df2.collect()
+// Client Pool Driver Test - End
+
+val pushdown_query = s"(select * from ROWTABLE where col1=2) emp_alias"
+val df1 = spark.read.jdbc(url = JDBC_URL, table = pushdown_query, properties = getProperties)
+df1.collect()
+
 System.exit(0)
