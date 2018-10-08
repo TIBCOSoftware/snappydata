@@ -1425,21 +1425,21 @@ class ColumnTableTest
         "OPTIONS(key_columns 'id2,id1,id3' ) ")
 
     val res1 = session.sessionCatalog.getKeyColumns("temp1")
-    assert(res1.collect().size == 1)
+    assert(res1.size == 1)
 
     val res2 = session.sessionCatalog.getKeyColumns("temp2")
-    assert(res2.collect().size == 2)
+    assert(res2.size == 2)
 
     val res3 = session.sessionCatalog.getKeyColumns("temp3")
-    assert(res3.collect().size == 0)
+    assert(res3.isEmpty)
 
     val res4 = session.sessionCatalog.getKeyColumns("temp4")
-    assert(res4.collect().size == 3)
+    assert(res4.size == 3)
 
     Try(session.sessionCatalog.getKeyColumns("temp5")) match {
-      case Success(df) => throw new AssertionError(
+      case Success(_) => throw new AssertionError(
         "Should not have succedded with incorrect options")
-      case Failure(error) => // Do nothing
+      case Failure(_) => // Do nothing
     }
   }
 

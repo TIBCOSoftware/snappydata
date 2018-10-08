@@ -46,6 +46,8 @@ object Constant {
 
   val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
 
+  val JDBC_CLIENT_POOL_DRIVER = "io.snappydata.jdbc.ClientPoolDriver"
+
   val PROPERTY_PREFIX = "snappydata."
 
   val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
@@ -177,6 +179,21 @@ object Constant {
     "LIKE" -> Array(1), "RLIKE" -> Array(1), "APPROX_COUNT_DISTINCT" -> Array(1)))
 
   val EXTERNAL_TABLE_RLS_ENABLE_KEY = "rls.enabled"
+}
+
+object StreamingConstants {
+  val EVENT_TYPE_COLUMN = "_eventType"
+  val SINK_STATE_TABLE = s"SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
+  val SNAPPY_SINK_NAME = "snappysink"
+  val TABLE_NAME = "tablename"
+  val STREAM_QUERY_ID = "streamqueryid"
+  val SINK_CALLBACK = "sinkcallback"
+
+  object EventType {
+    val INSERT = 0
+    val UPDATE = 1
+    val DELETE = 2
+  }
 }
 
 /**
