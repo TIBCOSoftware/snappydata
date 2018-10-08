@@ -21,25 +21,30 @@ The example starts an embedded Kafka instance on which a few messages are publis
 
 The SQL below shows how to declare a stream table using SQL. The rowConverter attribute specifies a class used to return Row objects from the received stream messages.
 ```pre
-snsc.sql(
-  "create stream table adImpressionStream (" +
-      " time_stamp timestamp," +
-      " publisher string," +
-      " advertiser string," +
-      " website string," +
-      " geo string," +
-     " bid double," +
-      " cookie string) " + " using directkafka_stream options(" +
-      " rowConverter 'org.apache.spark.examples.snappydata.RowsConverter'," +
-      s" kafkaParams 'metadata.broker.list->$address;auto.offset.reset->smallest'," +
-      s" topics 'kafka_topic')"
-)
+ snsc.sql(
+      "create stream table adImpressionStream (" +
+        " time_stamp timestamp," +
+        " publisher string," +
+        " advertiser string," +
+        " website string," +
+        " geo string," +
+        " bid double," +
+        " cookie string) " + " using kafka_stream options(" +
+        " rowConverter 'org.apache.spark.examples.snappydata.RowsConverter'," +
+        s" kafkaParams 'bootstrap.servers->$add;" +
+        "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        "value.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        s"group.id->$groupId;auto.offset.reset->earliest'," +
+        s" startingOffsets '$startingOffsets', " +
+        s" subscribe '$topic')"
+    )
 ```
 
 RowsConverter decodes a stream message consisting of comma-separated fields and forms a Row object from it.
 
 ```pre
 class RowsConverter extends StreamToRowsConverter with Serializable {
+
   override def toRows(message: Any): Seq[Row] = {
     val log = message.asInstanceOf[String]
     val fields = log.split(",")
@@ -51,9 +56,11 @@ class RowsConverter extends StreamToRowsConverter with Serializable {
       fields(5).toDouble,
       fields(6)
     )))
+
     rows
   }
 }
+
 ```
 
 **To create a row table that is updated based on the streaming data**:
