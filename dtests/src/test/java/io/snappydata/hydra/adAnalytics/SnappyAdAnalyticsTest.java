@@ -19,7 +19,9 @@ package io.snappydata.hydra.adAnalytics;
 
 
 import java.io.*;
-import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -398,6 +400,71 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun(processName);
     }
+  }
+
+  public static void HydraTask_calculateStreamingTime(){
+    List<String> tableName = SnappyPrms.getTableList();
+    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.calculateStreamingTime(tableName.get(0),expectedRows.get(0));
+  }
+
+  public void calculateStreamingTime(String tableName, int expectedRows){
+    Long startTime = System.currentTimeMillis();
+    Long endTime = 0L;
+    Connection conn = null;
+    boolean allConsumed = false;
+    int numRows = 0;
+    try {
+      conn = getLocatorConnection();
+    } catch(SQLException se) {
+      throw new TestException("Got exception while getting connection.",se);
+    }
+    try {
+      while (!allConsumed) {
+        ResultSet rs = conn.createStatement().executeQuery("select count(*) from " + tableName);
+        while (rs.next()) {
+          numRows = rs.getInt("1");
+        }
+        if (numRows == expectedRows) {
+          allConsumed = true;
+          endTime = System.currentTimeMillis();
+        }
+      }
+      Log.getLogWriter().info("Total time for consuming streaming data is :" + (endTime -
+          startTime)/1000);
+    } catch(SQLException se) {
+      throw new TestException("Got exception while quering the table.",se);
+    }
+
+  }
+  public static void HydraTask_assertStreaming(){
+    List<String> tableName = SnappyPrms.getTableList();
+    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.assertStreaming(tableName.get(0),expectedRows.get(0));
+  }
+
+  public void assertStreaming(String tableName, int expectedRows){
+    Connection conn = null;
+    int numRows = 0;
+    try {
+      conn = getLocatorConnection();
+    } catch(SQLException se) {
+      throw new TestException("Got exception while getting connection.",se);
+    }
+    try {
+      ResultSet rs= conn.createStatement().executeQuery("select count(*) from " + tableName);
+      while(rs.next()) {
+        numRows = rs.getInt("1");
+      }
+      if(numRows != expectedRows){
+        throw new TestException("Streaming app didnot consume all the data for " + tableName +
+            " from the stream. Expected " + expectedRows + " rows to be consumed, but got only "
+            + numRows + "rows.");
+      }
+    } catch(SQLException se) {
+      throw new TestException("Got exception while quering the table.",se);
+    }
+
   }
 
   /**
