@@ -29,7 +29,6 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import io.snappydata.Constant
 
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -53,8 +52,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
    * @param md       The metadata
    * @return The new JdbcType if there is an override for this DataType
    */
-  def getJDBCType(dataType: DataType, md: Metadata): Option[JdbcType] =
-    getJDBCType(dataType)
+  def getJDBCType(dataType: DataType, md: Metadata): Option[JdbcType]
 
   /** Create a new schema. */
   def createSchema(schemaName: String, conn: Connection): Unit
@@ -109,35 +107,19 @@ object JdbcExtendedUtils extends Logging {
   }
 
   /**
-   * Get the SQL types for given schema.
+   * Get [[JdbcType]] for given [[DataType]] and [[Metadata]].
    */
-  def getSQLNamesAndTypes(schema: Seq[Attribute], dialect: JdbcDialect): Seq[(String, String)] = {
-    val jdbcType: (DataType, Metadata) => Option[JdbcType] = dialect match {
-      case ed: JdbcExtendedDialect => ed.getJDBCType
-      case _ => (dataType, _) => dialect.getJDBCType(dataType)
-    }
-    schema.map { field =>
-      val dataType = getSQLDataType(field.dataType)
-      val typeString: String =
-        jdbcType(dataType, field.metadata).map(_.databaseTypeDefinition).getOrElse(
-          dataType match {
-            case IntegerType => "INTEGER"
-            case LongType => "BIGINT"
-            case DoubleType => "DOUBLE"
-            case FloatType => "REAL"
-            case ShortType => "SMALLINT"
-            case ByteType => "TINYINT"
-            case BooleanType => "BOOLEAN"
-            case StringType => "CLOB"
-            case BinaryType => "BLOB"
-            case TimestampType => "TIMESTAMP"
-            case DateType => "DATE"
-            case DecimalType.Fixed(precision, scale) =>
-              s"DECIMAL($precision,$scale)"
-            case _ => throw new IllegalArgumentException(
-              s"Don't know how to save $field to JDBC")
-          })
-      field.name -> typeString
+  def getJdbcType(dt: DataType, md: Metadata, dialect: JdbcDialect): JdbcType = {
+    (dialect match {
+      case d: JdbcExtendedDialect => d.getJDBCType(dt, md)
+      case _ => dialect.getJDBCType(dt)
+    }) match {
+      case Some(d) => d
+      case None => JdbcUtils.getCommonJDBCType(dt) match {
+        case Some(d) => d
+        case None =>
+          throw new IllegalArgumentException(s"Can't get JDBC type for ${dt.simpleString}")
+      }
     }
   }
 
@@ -145,12 +127,10 @@ object JdbcExtendedUtils extends Logging {
    * Compute the schema string for this RDD.
    */
   def schemaString(schema: StructType, dialect: JdbcDialect): String = {
-    val namesAndTypes = getSQLNamesAndTypes(schema.toAttributes, dialect)
     val sb = new StringBuilder()
-    schema.fields.indices.foreach { i =>
-      val field = schema.fields(i)
-      val nameAndType = namesAndTypes(i)
-      sb.append(s""", "${nameAndType._1}" ${nameAndType._2}""")
+    schema.foreach { field =>
+      val jdbcType = getJdbcType(field.dataType, field.metadata, dialect)
+      sb.append(s""", "${field.name}" ${jdbcType.databaseTypeDefinition}""")
       if (!field.nullable) sb.append(" NOT NULL")
     }
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
@@ -251,7 +231,7 @@ object JdbcExtendedUtils extends Logging {
           size, metadataBuilder) match {
           case Some(t) => t
           case None =>
-            if (jdbcType == java.sql.Types.JAVA_OBJECT) {
+            if (jdbcType == Types.JAVA_OBJECT) {
               // try to get class for the typeName else fallback to Object
               val userClass = try {
                 Utils.classForName(typeName).asInstanceOf[Class[AnyRef]]

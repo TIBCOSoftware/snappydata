@@ -378,10 +378,10 @@ abstract class BaseColumnFormatRelation(
         mode match {
           case SaveMode.Ignore =>
 //            dialect match {
-//              case SnappyDataDialect =>
-//                SnappyDataDialect.initializeTable(table,
+//              case SnappyStoreDialect =>
+//                SnappyStoreDialect.initializeTable(table,
 //                  sqlContext.conf.caseSensitiveAnalysis, conn)
-//                SnappyDataDialect.initializeTable(externalColumnTableName,
+//                SnappyStoreDialect.initializeTable(externalColumnTableName,
 //                  sqlContext.conf.caseSensitiveAnalysis, conn)
 //              case _ => // Do nothing
 //            }

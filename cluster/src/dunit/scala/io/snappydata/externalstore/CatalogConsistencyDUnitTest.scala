@@ -22,7 +22,7 @@ import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.row.SnappyDataClientDialect
+import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, TableNotFoundException}
 

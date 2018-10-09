@@ -31,10 +31,10 @@ import org.apache.spark.sql.{SnappyDataBaseDialect, SnappyDataPoolDialect}
  * Contains specific type conversions to and from Spark SQL catalyst types.
  */
 @DeveloperApi
-case object SnappyDataDialect extends SnappyDataBaseDialect {
+case object SnappyStoreDialect extends SnappyDataBaseDialect {
 
   // register the dialect
-  JdbcDialects.registerDialect(SnappyDataDialect)
+  JdbcDialects.registerDialect(SnappyStoreDialect)
 
   private val EMBEDDED_REGEX = s"^(${Constant.DEFAULT_EMBEDDED_URL}|${Attribute.PROTOCOL})"
   private val EMBEDDED_PATTERN = Pattern.compile(EMBEDDED_REGEX, Pattern.CASE_INSENSITIVE)
@@ -43,8 +43,8 @@ case object SnappyDataDialect extends SnappyDataBaseDialect {
 
   def init(): Unit = {
     // do nothing; just forces one-time invocation of various registerDialects
-    SnappyDataDialect.getClass
-    SnappyDataClientDialect.getClass
+    SnappyStoreDialect.getClass
+    SnappyStoreClientDialect.getClass
     SnappyDataPoolDialect.getClass
   }
 
@@ -66,10 +66,10 @@ case object SnappyDataDialect extends SnappyDataBaseDialect {
  * Contains specific type conversions to and from Spark SQL catalyst types.
  */
 @DeveloperApi
-case object SnappyDataClientDialect extends SnappyDataBaseDialect {
+case object SnappyStoreClientDialect extends SnappyDataBaseDialect {
 
   // register the dialect
-  JdbcDialects.registerDialect(SnappyDataClientDialect)
+  JdbcDialects.registerDialect(SnappyStoreClientDialect)
 
   private val CLIENT_PATTERN = Pattern.compile(
     s"^(${Constant.DEFAULT_THIN_CLIENT_URL}|${Attribute.DNC_PROTOCOL})", Pattern.CASE_INSENSITIVE)

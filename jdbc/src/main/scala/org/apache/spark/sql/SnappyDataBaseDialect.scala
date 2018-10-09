@@ -18,8 +18,10 @@ package org.apache.spark.sql
 
 import java.sql.{Connection, Types}
 
+import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
 import io.snappydata.Constant
 
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.JdbcType
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
@@ -40,65 +42,97 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
   }
 
   override def getCatalystType(sqlType: Int, typeName: String,
-      size: Int, md: MetadataBuilder): Option[DataType] = {
-    if (sqlType == Types.FLOAT && typeName.equalsIgnoreCase("float")) {
-      Some(DoubleType)
-    } else if (sqlType == Types.REAL && typeName.equalsIgnoreCase("real")) {
-      Some(FloatType)
-    } else if (sqlType == Types.TINYINT || sqlType == Types.SMALLINT) {
-      Some(ShortType)
-    } else if (sqlType == Types.VARCHAR && size > 0 &&
-        typeName.equalsIgnoreCase("varchar")) {
+      size: Int, md: MetadataBuilder): Option[DataType] = sqlType match {
+    case Types.FLOAT if typeName.equalsIgnoreCase("float") => Some(DoubleType)
+    case Types.REAL if typeName.equalsIgnoreCase("real") => Some(FloatType)
+    case Types.TINYINT | Types.SMALLINT => Some(ShortType)
+    case Types.VARCHAR if size > 0 =>
       md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
       md.putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
       Some(StringType)
-    } else if (sqlType == Types.CHAR && size > 0 &&
-        typeName.equalsIgnoreCase("char")) {
+    case Types.CHAR if size > 0 =>
       md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
       md.putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
       Some(StringType)
-    } else if (sqlType == Types.BIT && size > 1 &&
-        typeName.equalsIgnoreCase("bit")) {
-      Some(BinaryType)
-    } else None
-  }
-
-  override def getJDBCType(dt: DataType): Option[JdbcType] = dt match {
-    case StringType => Some(JdbcType("CLOB", java.sql.Types.CLOB))
-    case BinaryType => Some(JdbcType("BLOB", java.sql.Types.BLOB))
-    case BooleanType => Some(JdbcType("BOOLEAN", java.sql.Types.BOOLEAN))
-    case ByteType | ShortType => Some(JdbcType("SMALLINT", java.sql.Types.SMALLINT))
-    case d: DecimalType => Some(JdbcType(s"DECIMAL(${d.precision},${d.scale})",
-      java.sql.Types.DECIMAL))
-    case _: ArrayType | _: MapType | _: StructType =>
-      Some(JdbcType("BLOB", java.sql.Types.BLOB))
+    // complex types are sent back as JSON strings by default
+    case Types.ARRAY | Types.STRUCT | JDBC40Translation.MAP | JDBC40Translation.JSON =>
+      Some(StringType)
+    case Types.BIT if size > 1 => Some(BinaryType)
     case _ => None
   }
+
+  /**
+   * See SPARK-10101 issue for similar problem. If the PR raised is
+   * merged we can update VARCHAR handling here accordingly.
+   */
+  def getColumnMetadata(dt: DataType, md: Metadata,
+      forSchema: Boolean): (DataType, String, Int, Int, Int) = {
+    val (dataType, typeName) = dt match {
+      case u: UserDefinedType[_] =>
+        (JdbcExtendedUtils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
+      case t => (t, None)
+    }
+    def getTypeName(name: String): String = typeName match {
+      case Some(n) => n
+      case None => name
+    }
+    dataType match {
+      case StringType =>
+        if ((md ne null) && md.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
+            md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+          val size = math.min(md.getLong(Constant.CHAR_TYPE_SIZE_PROP), Int.MaxValue).toInt
+          md.getString(Constant.CHAR_TYPE_BASE_PROP) match {
+            case "CHAR" =>
+              (dataType, s"${getTypeName("CHAR")}($size)", Types.CHAR, size, -1)
+            case "VARCHAR" =>
+              (dataType, s"${getTypeName("VARCHAR")}($size)", Types.VARCHAR, size, -1)
+            case _ =>
+              (dataType, getTypeName("STRING"), Types.CLOB, Limits.DB2_LOB_MAXWIDTH, -1)
+          }
+        } else {
+          (dataType, getTypeName("STRING"), Types.CLOB, Limits.DB2_LOB_MAXWIDTH, -1)
+        }
+      case BooleanType => (dataType, getTypeName("BOOLEAN"), Types.BOOLEAN, 1, 0)
+      case ByteType | ShortType => (dataType, getTypeName("SMALLINT"), Types.SMALLINT, 5, 0)
+      case d: DecimalType =>
+        (dataType, s"${getTypeName("DECIMAL")}(${d.precision},${d.scale})", Types.DECIMAL,
+            d.precision, d.scale)
+      case BinaryType => (dataType, getTypeName("BLOB"), Types.BLOB, Limits.DB2_LOB_MAXWIDTH, -1)
+      case _: ArrayType | _: MapType | _: StructType if forSchema =>
+        (dataType, getTypeName("BLOB"), Types.BLOB, Limits.DB2_LOB_MAXWIDTH, -1)
+      case a: ArrayType =>
+        (a, s"${getTypeName("ARRAY")}<${getColumnMetadata(a.elementType, null, forSchema)._2}>",
+            Types.ARRAY, -1, -1)
+      case m: MapType =>
+        val keyTypeName = getColumnMetadata(m.keyType, null, forSchema)._2
+        val valueTypeName = getColumnMetadata(m.valueType, null, forSchema)._2
+        (m, s"${getTypeName("MAP")}<$keyTypeName,$valueTypeName>", JDBC40Translation.MAP, -1, -1)
+      case s: StructType =>
+        (s, getTypeName("STRUCT") + s.map(f => getColumnMetadata(f.dataType, md, forSchema)._2)
+            .mkString("<", ",", ">"), Types.STRUCT, -1, -1)
+      case NullType => (dataType, getTypeName("NULL"), Types.NULL, 0, -1)
+      case d =>
+        val scale = if (d.isInstanceOf[NumericType]) 0 else -1
+        JdbcUtils.getCommonJDBCType(d) match {
+          case Some(t) =>
+            (d, getTypeName(t.databaseTypeDefinition), t.jdbcNullType, -1, scale)
+          case None =>
+            (d, getTypeName(d.simpleString), Types.OTHER, -1, scale)
+        }
+    }
+  }
+
+  override def getJDBCType(dt: DataType): Option[JdbcType] = getJDBCType(dt, null)
 
   /**
    * Look SPARK-10101 issue for similar problem. If the PR raised is
    * ever merged we can remove this method here.
    */
-  override def getJDBCType(dt: DataType,
-      md: Metadata): Option[JdbcType] = dt match {
-    case StringType =>
-      if (md.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
-          md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
-        md.getString(Constant.CHAR_TYPE_BASE_PROP) match {
-          case "CHAR" =>
-            Some(JdbcType(s"CHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
-              java.sql.Types.CHAR))
-          case "VARCHAR" =>
-            Some(JdbcType(s"VARCHAR(${md.getLong(Constant.CHAR_TYPE_SIZE_PROP)})",
-              java.sql.Types.VARCHAR))
-          case _ =>
-            // STRING
-            Some(JdbcType("CLOB", java.sql.Types.CLOB))
-        }
-      } else {
-        Some(JdbcType("CLOB", java.sql.Types.CLOB))
-      }
-    case _ => getJDBCType(dt)
+  override def getJDBCType(dt: DataType, md: Metadata): Option[JdbcType] = {
+    getColumnMetadata(dt, md, forSchema = true) match {
+      case (_, _, Types.OTHER, _, _) => None
+      case (_, name, jdbcType, _, _) => Some(JdbcType(name, jdbcType))
+    }
   }
 
   override def getTableExistsQuery(table: String): String = {

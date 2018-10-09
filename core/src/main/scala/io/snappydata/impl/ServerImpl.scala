@@ -24,7 +24,7 @@ import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{ProtocolOverrides, Server}
 
-import org.apache.spark.sql.row.SnappyDataDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
 
 /**
   * This class ties up few things that is Snappy specific.
@@ -34,7 +34,7 @@ class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
   @throws(classOf[SQLException])
   override def start(bootProperties: Properties): Unit = {
-    SnappyDataDialect.init()
+    SnappyStoreDialect.init()
     start(bootProperties, ignoreIfStarted = false)
   }
 

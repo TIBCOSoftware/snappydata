@@ -34,10 +34,11 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ColumnWriter
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
-import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.SnappyDataDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -228,7 +229,7 @@ object CodeGeneration extends Logging {
       ev.code = ""
       c
     }
-    val jdbcType = ExternalStoreUtils.getJDBCType(dialect, NullType)
+    val jdbcType = JdbcExtendedUtils.getJdbcType(NullType, null, dialect).jdbcNullType
     s"""
        |${code}if (${ev.isNull}) {
        |  $stmt.setNull(${col + 1}, $jdbcType);
@@ -479,7 +480,7 @@ object CodeGeneration extends Logging {
 
   def compileCode(name: String, schema: Array[StructField],
       genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass, Array[Any]) = {
-    codeCache.get(new ExecuteKey(name, schema, SnappyDataDialect,
+    codeCache.get(new ExecuteKey(name, schema, SnappyStoreDialect,
       forIndex = false, genCode = genCode)).asInstanceOf[(GeneratedClass, Array[Any])]
   }
 

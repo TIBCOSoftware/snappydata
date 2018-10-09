@@ -65,7 +65,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, ExternalTableType, HiveClientUtil, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableInsertOrPut, SnappySessionState}
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.row.SnappyDataDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types._
@@ -80,9 +80,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   self =>
 
-  // initialize SnappyDataDialect so that it gets registered
+  // initialize SnappyStoreDialect so that it gets registered
 
-  SnappyDataDialect.init()
+  SnappyStoreDialect.init()
 
   /* ----------------------- *
    |  Session-related state  |

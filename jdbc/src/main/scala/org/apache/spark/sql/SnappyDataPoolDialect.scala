@@ -114,11 +114,11 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
           // at this point we know all tables in the sub-query exist so return a dummy query
           // with matching schema
           val schema = qe.analyzed.output
-          val namesAndTypes = JdbcExtendedUtils.getSQLNamesAndTypes(schema, this)
           // ignoring nullability for now
-          return namesAndTypes.indices.map { i =>
-            val (name, typeName) = namesAndTypes(i)
-            s"""CAST (${defaultDataTypeValue(schema(i))} AS $typeName) AS "$name""""
+          return schema.map { attr =>
+            val typeName = JdbcExtendedUtils.getJdbcType(attr.dataType, attr.metadata,
+              this).databaseTypeDefinition
+            s"""CAST (${defaultDataTypeValue(attr)} AS $typeName) AS "${attr.name}""""
           }.mkString("SELECT ", ", ", s" FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")
         } catch {
           case ae: AnalysisException => throw ae

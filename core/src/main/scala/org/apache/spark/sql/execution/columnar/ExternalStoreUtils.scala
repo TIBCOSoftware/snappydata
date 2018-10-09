@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
+import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -28,7 +29,6 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
-import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
@@ -46,12 +46,12 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.DataSource
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.{SnappyDataClientDialect, SnappyDataDialect}
+import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
 import org.apache.spark.sql.sources.{BaseRelation, ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -155,8 +155,8 @@ object ExternalStoreUtils {
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case SnappyDataDialect => Constant.JDBC_EMBEDDED_DRIVER
-      case SnappyDataClientDialect => Constant.JDBC_CLIENT_DRIVER
+      case SnappyStoreDialect => Constant.JDBC_EMBEDDED_DRIVER
+      case SnappyStoreClientDialect => Constant.JDBC_CLIENT_DRIVER
       case SnappyDataPoolDialect => Constant.JDBC_CLIENT_POOL_DRIVER
       case _ => Utils.getDriverClassName(url)
     }
@@ -297,11 +297,11 @@ object ExternalStoreUtils {
     connProps.setProperty("driver", driver)
     executorConnProps.setProperty("driver", driver)
     val isEmbedded = dialect match {
-      case SnappyDataDialect =>
-        SnappyDataDialect.addExtraDriverProperties(isLoner, connProps)
+      case SnappyStoreDialect =>
+        SnappyStoreDialect.addExtraDriverProperties(isLoner, connProps)
         true
-      case SnappyDataClientDialect =>
-        SnappyDataClientDialect.addExtraDriverProperties(isLoner, connProps)
+      case SnappyStoreClientDialect =>
+        SnappyStoreClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
@@ -391,32 +391,10 @@ object ExternalStoreUtils {
 
   def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
     dialect match {
-      case SnappyDataDialect => ConnectionType.Embedded
-      case SnappyDataClientDialect => ConnectionType.Net
+      case SnappyStoreDialect => ConnectionType.Embedded
+      case SnappyStoreClientDialect => ConnectionType.Net
       case _ => ConnectionType.Unknown
     }
-  }
-
-  def getJDBCType(dialect: JdbcDialect, dataType: DataType): Int = {
-    dialect.getJDBCType(dataType).map(_.jdbcNullType).getOrElse(
-      dataType match {
-        case IntegerType => Types.INTEGER
-        case LongType => Types.BIGINT
-        case DoubleType => Types.DOUBLE
-        case FloatType => Types.REAL
-        case ShortType => Types.INTEGER
-        case ByteType => Types.INTEGER
-        // need to keep below mapping to BIT instead of BOOLEAN for MySQL
-        case BooleanType => Types.BIT
-        case StringType => Types.CLOB
-        case BinaryType => Types.BLOB
-        case TimestampType => Types.TIMESTAMP
-        case DateType => Types.DATE
-        case _: DecimalType => Types.DECIMAL
-        case NullType => Types.NULL
-        case _ => throw new IllegalArgumentException(
-          s"Can't translate to JDBC value for type $dataType")
-      })
   }
 
   /**
@@ -709,52 +687,20 @@ object ExternalStoreUtils {
     JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
       tableProps).map(StructType.fromString)
 
-  private def getColumnMetadata(f: StructField, dt: DataType): (DataType, String, Int, Int, Int) = {
-    val (dataType, typeName) = dt match {
-      case u: UserDefinedType[_] =>
-        (Utils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
-      case t => (t, None)
-    }
-    dataType match {
-      case StringType =>
-        val name = typeName.getOrElse("VARCHAR")
-        val prec = if ((f ne null) && f.metadata.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
-          math.min(f.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP), Int.MaxValue).toInt
-        } else Limits.DB2_VARCHAR_MAXWIDTH
-        (dataType, name, Types.VARCHAR, prec, -1)
-      case d: DecimalType =>
-        (dataType, s"DECIMAL(${d.precision},${d.scale})", Types.DECIMAL, d.precision, d.scale)
-      case a: ArrayType =>
-        (a, s"ARRAY<${getColumnMetadata(null, a.elementType)._2}>", Types.ARRAY, -1, -1)
-      case m: MapType =>
-        val keyTypeName = getColumnMetadata(null, m.keyType)._2
-        val valueTypeName = getColumnMetadata(null, m.valueType)._2
-        (m, s"MAP<$keyTypeName, $valueTypeName>", JDBC40Translation.MAP, -1, -1)
-      case s: StructType =>
-        (s, s"STRUCT<${s.map(f => getColumnMetadata(f, f.dataType)._2).mkString(",")}>",
-            Types.STRUCT, -1, -1)
-      case d =>
-        val scale = if (d.isInstanceOf[NumericType]) 0 else -1
-        SnappyDataDialect.getJDBCType(d).orElse(JdbcUtils.getCommonJDBCType(d)) match {
-          case Some(t) =>
-            (d, typeName.getOrElse(t.databaseTypeDefinition), t.jdbcNullType, -1, scale)
-          case None =>
-            (d, typeName.getOrElse(d.simpleString), Types.OTHER, -1, scale)
-        }
-    }
-  }
+  private val TYPE_SIZE_PATTERN = Pattern.compile("\\s*\\(.*\\)\\s*")
 
   def getColumnMetadata(schema: StructType): java.util.List[ExternalTableMetaData.Column] = {
     schema.toList.map { f =>
-      val (dataType, typeName, jdbcType, prec, scale) = getColumnMetadata(f, f.dataType)
+      val (dataType, typeName, jdbcType, prec, scale) = SnappyStoreDialect.getColumnMetadata(
+        f.dataType, f.metadata, forSchema = false)
       val (precision, width) = if (prec == -1) {
         val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(jdbcType, f.nullable)
         if (dtd ne null) {
           (dtd.getPrecision, dtd.getMaximumWidth)
         } else (dataType.defaultSize, dataType.defaultSize)
       } else (prec, prec)
-      new ExternalTableMetaData.Column(f.name, jdbcType, typeName,
-        precision, scale, width, f.nullable)
+      new ExternalTableMetaData.Column(f.name, jdbcType,
+        TYPE_SIZE_PATTERN.matcher(typeName).replaceAll(""), precision, scale, width, f.nullable)
     }.asJava
   }
 
