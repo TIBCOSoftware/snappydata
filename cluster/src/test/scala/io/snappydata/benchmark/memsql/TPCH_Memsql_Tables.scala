@@ -73,8 +73,18 @@ object TPCH_Memsql_Tables {
 
      // Load data into TPC-H tables
 
-     val tableNames = List("REGION", "NATION", "SUPPLIER", "PART", "PARTSUPP", "CUSTOMER", "ORDERS", "LINEITEM")
-     for(table <- tableNames){
+     val replicatedTables = List("REGION", "NATION", "SUPPLIER")
+     val partitionedTables = List("PART", "PARTSUPP", "CUSTOMER", "ORDERS", "LINEITEM")
+
+     // replicated/ reference tables are small and are loaded from a single file (in a single stage)
+     for(table <- replicatedTables){
+       println(s"Loading data from '${dataDirectory}/${table.toLowerCase}.tbl' into table ${table}");
+       stmt.execute(s"LOAD DATA INFILE '${dataDirectory}/${table.toLowerCase}.tbl' INTO TABLE ${table} COLUMNS TERMINATED BY '|' LINES TERMINATED BY '|\n' ");
+       println(s"Finished loading data in ${table}")
+     }
+
+     // partitioned tables can be read in one or multiple stages - i.e. from one or multiple files/ chunks
+     for(table <- partitionedTables){
        val stages : Int = numberOfDataLoadingStages.toInt
 
        if(stages == 1){
@@ -83,7 +93,7 @@ object TPCH_Memsql_Tables {
        }
        else{
          for(stage <- 1 to numberOfDataLoadingStages.toInt){
-           println(s"Loading data from '${dataDirectory}/${table.toLowerCase}.tbl' into table ${table}");
+           println(s"Loading data from '${dataDirectory}/${table.toLowerCase}.tbl.${stage}' into table ${table}");
            stmt.execute(s"LOAD DATA INFILE '${dataDirectory}/${table.toLowerCase}.tbl.${stage}' INTO TABLE ${table} COLUMNS TERMINATED BY '|' LINES TERMINATED BY '|\n' ");
          }
        }
