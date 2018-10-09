@@ -19,7 +19,9 @@ package io.snappydata.hydra.adAnalytics;
 
 
 import java.io.*;
-import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -265,7 +267,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     verifyDataForJobExecution(jobClassNames, userJarPath);
     leadHost = getLeadHost();
     String brokerList = null;
-    String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+    String leadPort = getLeadPort();
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String)jobClassNames.elementAt(i);
@@ -282,6 +284,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
             " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
             APP_PROPS + " --stream ";
         String dest = getCurrentDirPath() + File.separator + logFileName;
+        Log.getLogWriter().info("Executing cmd:" + snappyJobCommand);
         logFile = new File(dest);
         pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
         snappyTest.executeProcess(pb, logFile);
@@ -296,6 +299,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           }
         }
         inputFile.close();
+        if(jobID == null){
+          throw new TestException("Failed to start the streaming job. Please check the logs.");
+        }
         Log.getLogWriter().info("JobID is : " + jobID);
         for (int j = 0; j < 3; j++) {
           if(!getJobStatus(jobID)){
@@ -309,6 +315,12 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
     }
   }
+
+  public static void HydraTask_executeSQLScriptsWithSleep() {
+    try { Thread.sleep(30000); } catch (InterruptedException ie) {}
+    HydraTask_executeSQLScripts();
+  }
+
 
   public static void HydraTask_restartStreaming() {
     HydraTask_stopStreamingJob();
@@ -379,13 +391,80 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String dest = kafkaLogDir + sep + "generatorAndPublisher" + getMyTid() + "_" + i + ".log";
       File logFile = new File(dest);
       String processName= (String)generatorAndPublisher.elementAt(i);
-      String command = "nohup java -cp .:" + userJarPath + ":" + productDir + "jars/* " +
-          processName + " " + APP_PROPS + " > " + logFile + " & ";
+      String command = "java -cp .:" + userJarPath + ":" + productDir + "jars/* " +
+          processName + " " + APP_PROPS + " > " + logFile;
+      if(SnappyPrms.executeInBackGround())
+        command = "nohup " + command + " & ";
       Log.getLogWriter().info("Executing cmd : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun(processName);
     }
+  }
+
+  public static void HydraTask_calculateStreamingTime(){
+    List<String> tableName = SnappyPrms.getTableList();
+    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.calculateStreamingTime(tableName.get(0),expectedRows.get(0));
+  }
+
+  public void calculateStreamingTime(String tableName, int expectedRows){
+    Long startTime = System.currentTimeMillis();
+    Long endTime = 0L;
+    Connection conn = null;
+    boolean allConsumed = false;
+    int numRows = 0;
+    try {
+      conn = getLocatorConnection();
+    } catch(SQLException se) {
+      throw new TestException("Got exception while getting connection.",se);
+    }
+    try {
+      while (!allConsumed) {
+        ResultSet rs = conn.createStatement().executeQuery("select count(*) from " + tableName);
+        while (rs.next()) {
+          numRows = rs.getInt("1");
+        }
+        if (numRows == expectedRows) {
+          allConsumed = true;
+          endTime = System.currentTimeMillis();
+        }
+      }
+      Log.getLogWriter().info("Total time for consuming streaming data is :" + (endTime -
+          startTime)/1000);
+    } catch(SQLException se) {
+      throw new TestException("Got exception while quering the table.",se);
+    }
+
+  }
+  public static void HydraTask_assertStreaming(){
+    List<String> tableName = SnappyPrms.getTableList();
+    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.assertStreaming(tableName.get(0),expectedRows.get(0));
+  }
+
+  public void assertStreaming(String tableName, int expectedRows){
+    Connection conn = null;
+    int numRows = 0;
+    try {
+      conn = getLocatorConnection();
+    } catch(SQLException se) {
+      throw new TestException("Got exception while getting connection.",se);
+    }
+    try {
+      ResultSet rs= conn.createStatement().executeQuery("select count(*) from " + tableName);
+      while(rs.next()) {
+        numRows = rs.getInt("1");
+      }
+      if(numRows != expectedRows){
+        throw new TestException("Streaming app didnot consume all the data for " + tableName +
+            " from the stream. Expected " + expectedRows + " rows to be consumed, but got only "
+            + numRows + "rows.");
+      }
+    } catch(SQLException se) {
+      throw new TestException("Got exception while quering the table.",se);
+    }
+
   }
 
   /**

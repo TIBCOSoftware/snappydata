@@ -117,7 +117,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
+    val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2),
+      Seq(3, "name3", 30, 0), Seq(4, "name4", 10, 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
 
@@ -196,7 +197,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
+    val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2),
+      Seq(3, "name3", 30, 0), Seq(4, "name4", 10, 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
 
