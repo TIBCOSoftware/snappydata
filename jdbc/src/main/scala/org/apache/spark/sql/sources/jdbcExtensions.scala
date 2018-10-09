@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,18 +22,16 @@ import java.sql.{Connection, ResultSet, ResultSetMetaData, Types}
 import java.util.Properties
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
-import io.snappydata.Constant
 
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, DataFrame, DataFrameReader, SQLContext, SnappyDataPoolDialect, SparkSession}
+import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyDataPoolDialect, SparkSession}
 import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkEnv}
 
@@ -418,50 +416,5 @@ final class JavaObjectType(override val userClass: java.lang.Class[AnyRef])
   override def deserialize(datum: Any): AnyRef = {
     val serializer = SparkEnv.get.serializer.newInstance()
     serializer.deserialize(ByteBuffer.wrap(datum.asInstanceOf[Array[Byte]]))
-  }
-}
-
-case class JdbcReader(session: SparkSession) extends DataFrameReader(session) {
-
-  SnappyDataPoolDialect.register()
-  SparkSession.setActiveSession(session)
-
-  private def getURL(host: String, port: Int): String = port match {
-    case _ if port > 0 => s"${Constant.POOLED_THIN_CLIENT_URL}$host[$port]"
-    case _ =>
-      val conf = session.sparkContext.conf
-      val sparkProp = s"${Constant.SPARK_PREFIX}${Constant.CONNECTION_PROPERTY}"
-      val hostPort = conf.getOption(sparkProp) match {
-        case Some(c) => c
-        case None => conf.getOption(Constant.CONNECTION_PROPERTY) match {
-          case Some(c) => c
-          case None => throw new IllegalStateException(
-            s"Neither $sparkProp nor ${Constant.CONNECTION_PROPERTY} set for SnappyData connect")
-        }
-      }
-      s"${Constant.POOLED_THIN_CLIENT_URL}$hostPort"
-  }
-
-  def query(sql: String): DataFrame =
-    query(sql, host = null, port = -1, Map.empty[String, String])
-
-  def query(sql: String, host: String, port: Int): DataFrame =
-    query(sql, host, port, Map.empty[String, String])
-
-  def query(sql: String, user: String, password: String): DataFrame =
-    query(sql, host = null, port = -1, user, password)
-
-  def query(sql: String, host: String, port: Int, user: String, password: String): DataFrame =
-    query(sql, host, port, Map("user" -> user, "password" -> password))
-
-  def query(sql: String, host: String, port: Int, properties: Properties): DataFrame =
-    query(sql, host, port, properties.asScala)
-
-  def query(sql: String, host: String, port: Int, properties: SMap[String, String]): DataFrame = {
-    option(JDBCOptions.JDBC_URL, getURL(host, port))
-    option(JDBCOptions.JDBC_DRIVER_CLASS, Constant.JDBC_CLIENT_POOL_DRIVER)
-    option(JDBCOptions.JDBC_TABLE_NAME, s"($sql) queryTable")
-    if (properties.nonEmpty) options(properties)
-    format("jdbc").load()
   }
 }
