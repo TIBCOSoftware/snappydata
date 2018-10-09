@@ -209,7 +209,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, locatorClientPort, props)
+    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, productDir,
+      locatorClientPort, props)
   }
 
   def testPreparedStatements(): Unit = {

@@ -16,6 +16,7 @@
  */
 package io.snappydata.cluster
 
+import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
@@ -124,7 +125,7 @@ class SplitClusterDUnitTest(s: String)
 
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
-    testObject.invokeSparkShell(snappyProductDir, locatorClientPort)
+    testObject.invokeSparkShell(snappyProductDir, productDir, locatorClientPort)
   }
 }
 
@@ -633,8 +634,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     (productDir + "/sbin/stop-all.sh") !!
   }
 
-  def invokeSparkShell(productDir: String, locatorClientPort: Integer, props: Properties = new
-          Properties()): Unit = {
+  def invokeSparkShell(productDir: String, sparkProductDir: String, locatorClientPort: Int,
+      props: Properties = new Properties()): Unit = {
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
       "snappydata-core*.jar")
@@ -647,22 +648,39 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
     // SparkSqlTestCode.txt file contains the commands executed on spark-shell
     val scriptFile: String = getClass.getResource("/SparkSqlTestCode.txt").getPath
-    val sparkShellCommand = productDir + "/bin/spark-shell  --master local[3]" +
+    val scriptFile2: String = getClass.getResource("/SnappySqlPoolTestCode.txt").getPath
+    val hostName = InetAddress.getLocalHost.getHostName
+    val sparkShellCommand = s"$sparkProductDir/bin/spark-shell --master spark://$hostName:7077" +
         " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
         s" --jars $snappyDataCoreJar" +
         securityConf +
-        s" -i $scriptFile"
+        s" -i $scriptFile -i $scriptFile2"
+
+    val conn = getConnection(locatorClientPort, props)
+    val stmt = conn.createStatement()
+
+    // create and populate the tables for the pool driver test
+    stmt.execute("create table testTable1 (id long, data string)")
+    stmt.execute("insert into testTable1 values (1, 'one'), (2, 'two')")
+
+    stmt.execute("create table testTable2 (id long, data1 varchar(40), " +
+        "data2 decimal(12, 4), data3 array<int>, data4 map<long, string>, " +
+        "data5 struct<id: int, s: varchar(20), dec: decimal(10, 4)>) using column")
+    stmt.execute("insert into testTable2 select 1, 'one', 1.2, array(3, 4), " +
+        "map(3, 'three', 5, 'five'), struct(6, 'six', 7.1)")
+    stmt.execute("insert into testTable2 select 2, 'two', 2.3, array(5, 6), " +
+        "map(6, 'six', 8, 'eight'), struct(9, 'nine', 8.2)")
 
     logInfo(s"About to invoke spark-shell with command: $sparkShellCommand")
 
     var output = sparkShellCommand.!!
     logInfo(output)
     output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
+    output = output.replaceAll("java.lang.ClassNotFoundException: " +
+        "org.apache.spark.sql.internal.SnappyAQPSessionState", "AQP missing")
     assert(!output.contains("Exception"),
       s"Some exception stacktrace seen on spark-shell console: $output")
-
-    val conn = getConnection(locatorClientPort, props)
-    val stmt = conn.createStatement()
+    assert(!output.contains("Error"), s"Some error seen on spark-shell console: $output")
 
     // accessing tables created thru spark-shell
     val rs1 = stmt.executeQuery("select count(*) from coltable")
@@ -672,6 +690,23 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val rs2 = stmt.executeQuery("select count(*) from rowtable")
     rs2.next()
     assert(rs2.getInt(1) == 5)
+
+    val rs3 = stmt.executeQuery("select count(*) from testTable1")
+    rs3.next()
+    assert(rs3.getInt(1) == 2)
+
+    val rs4 = stmt.executeQuery("select count(*) from testTable2")
+    rs4.next()
+    assert(rs4.getInt(1) == 2)
+
+    // drop the tables
+    stmt.execute("drop table testTable2")
+    stmt.execute("drop table testTable1")
+    stmt.execute("drop table rowtable")
+    stmt.execute("drop table coltable")
+
+    stmt.close()
+    conn.close()
   }
 }
 

@@ -39,5 +39,3 @@ assert(result2.length == 5)
 val sparkTable = spark.range(1000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
 sparkTable.createOrReplaceTempView("sparkTable")
 spark.sql("select sym, avg(id) from sparkTable group by sym").collect()
-
-System.exit(0)

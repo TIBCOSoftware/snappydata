@@ -1,0 +1,112 @@
+/*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+
+/*
+This is a script file used as in input to
+io.snappydata.cluster.SplitClusterDUnitTest.testSparkShell
+*/
+import java.math.BigDecimal
+import org.apache.spark.sql.Row
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils.toHexString
+import io.snappydata.implicits._
+
+println("Querying row and column tables")
+
+// simple row and column table scan queries
+val allRows1 = Seq(Row(1, "one"), Row(2, "two"))
+var rs = spark.snappySql("select * from testTable1").collect()
+assert(rs.length == 2)
+assert(rs.toSeq.sortBy(_.getLong(0)) == allRows1)
+rs = spark.snappySql("select id, data from testTable1").collect()
+assert(rs.length == 2)
+assert(rs.toSeq.sortBy(_.getLong(0)) == allRows1)
+
+// some group by queries
+rs = spark.snappySql("select id, last(data) data from testTable1 group by id").collect()
+assert(rs.length == allRows1.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == allRows1)
+// complex return type
+rs = spark.snappySql("select id, collect_list(data) dataList from testTable1 group by id").collect()
+assert(rs.length == allRows1.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == Seq(Row(1, """{"COL_0":["one"]}"""),
+                                            Row(2, """{"COL_0":["two"]}""")))
+
+// test table having complex types
+
+val allRows2 = Seq(
+  Row(1, "one", new BigDecimal("1.2"), """{"COL_0":[3,4]}""",
+      """{"COL_1":{"3":"three","5":"five"}}""", """{"COL_2":{"ID":6,"S":"six","DEC":7.1000}}"""),
+  Row(2, "two", new BigDecimal("2.3"), """{"COL_0":[5,6]}""",
+      """{"COL_1":{"6":"six","8":"eight"}}""", """{"COL_2":{"ID":9,"S":"nine","DEC":8.2000}}"""))
+
+rs = spark.snappySql("select * from testTable2").collect()
+assert(rs.length == allRows2.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2)
+rs = spark.snappySql("select id, data1, data2, data3, data4, data5 from testTable2").collect()
+assert(rs.length == allRows2.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2)
+
+// group by, array index access, map key access and struct field access
+// this tests scenarios where inner sub-queries need to resolve types as proper
+// complex types but top-level result projection will return complex types as JSON/binary
+
+// full projection using FIRST/LAST with group by
+rs = spark.snappySql("""select id, d2, d3, d4, d5 from (select id, last(data2) d2,
+       first(data3) d3, last(data4) d4, last(data5) d5 from testTable2 group by id)""").collect()
+assert(rs.length == allRows2.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2.map(r => Row(r.get(0), r.get(2), r.get(3),
+       r.get(4), r.get(5))))
+
+// aggregate values at an array index, collect strings with group by
+rs = spark.snappySql("""select id, collect_list(data1) d1, max(data3[0]) d3,
+       last(data4) d4, collect_list(data5.s) d5 from testTable2 group by id""").collect()
+val expected2_1 = Seq(
+  Row(1, """{"COL_0":["one"]}""", 3, """{"COL_1":{"3":"three","5":"five"}}""", """{"COL_2":["six"]}"""),
+  Row(2, """{"COL_0":["two"]}""", 5, """{"COL_1":{"6":"six","8":"eight"}}""", """{"COL_2":["nine"]}"""))
+assert(rs.length == expected2_1.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_1)
+
+// map key access, struct field access in projection
+rs = spark.snappySql("""select id, d1, d3[1], IfNull(d4[5], d4[6]), d5.dec from
+       (select id, collect_list(data1) d1, first(data3) d3, last(data4) d4,
+        first(data5) d5 from testTable2 group by id)""").collect()
+val expected2_2 = Seq(
+  Row(1, """{"COL_0":["one"]}""", 4, "five", new BigDecimal("7.1")),
+  Row(2, """{"COL_0":["two"]}""", 6, "six", new BigDecimal("8.2")))
+assert(rs.length == expected2_2.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_2)
+
+// test complexTypeAsJson(0) hint to return binary value
+rs = spark.snappySql("""select id, d2, d3, d4, d5.s from --+ complexTypeAsJson(0)
+       (select id, avg(data2) d2, last(data3[0]) d3, last(data4) d4,
+        first(data5) d5 from testTable2 group by id)""").collect()
+rs = rs.map { row =>
+  val b = row.get(3).asInstanceOf[Array[Byte]]
+  Row(row.get(0), row.get(1), row.get(2), toHexString(b, 0, b.length), row.get(4))
+}
+val expected2_3 = Seq(
+  Row(1, new BigDecimal("1.2"), 3,
+    "20000000000000000200000000000000000000000000000003000000000000000500000000000000020000000000000000000000000000000500000020000000040000002800000074687265650000006669766500000000",
+    "six"),
+  Row(2, new BigDecimal("2.3"), 5,
+    "20000000000000000200000000000000000000000000000006000000000000000800000000000000020000000000000000000000000000000300000020000000050000002800000073697800000000006569676874000000",
+    "nine"))
+assert(rs.length == expected2_3.length)
+assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_3)
+
+System.exit(0)
