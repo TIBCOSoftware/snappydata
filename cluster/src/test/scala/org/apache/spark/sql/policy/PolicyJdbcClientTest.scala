@@ -22,6 +22,8 @@ import java.util.Properties
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 
 import org.apache.spark.sql.SnappyContext
 
@@ -186,6 +188,61 @@ class PolicyJdbcClientTest extends PolicyTestBase {
       conn.close()
       conn1.close()
     }
+  }
+
+  test("test policy not applied for update | delete on row table - SNAP-2576") {
+    this.updateOrDeleteOntableWithPolicy("row")
+  }
+
+  test("test policy not applied for update | delete on column table - SNAP-2576") {
+    this.updateOrDeleteOntableWithPolicy("column")
+  }
+
+  private def updateOrDeleteOntableWithPolicy(tableType: String): Unit = {
+    val conn = getConnection(Some(tableOwner))
+    val stmt = conn.createStatement()
+    val conn1 = getConnection(Some("UserX"))
+    val stmt1 = conn1.createStatement()
+    ownerContext.sql(s"CREATE TABLE temp (username String, id Int) " +
+        s" USING $tableType ")
+    val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
+      "USERY" -> 8, "USERY" -> 9)
+    val rdd = sc.parallelize(seq)
+
+    val dataDF = ownerContext.createDataFrame(rdd)
+
+    dataDF.write.insertInto("temp")
+
+    stmt.execute(s"create policy testPolicy1 on  " +
+        s" temp for select to current_user using " +
+        s" id < 0")
+
+    stmt.execute("alter table temp enable row level security")
+
+
+    val q1 = s"select * from $tableOwner.temp"
+    var rs = stmt1.executeQuery(q1)
+    assertFalse(rs.next())
+
+    var n = stmt1.executeUpdate(s"update $tableOwner.temp set " +
+        s"username = 'USERZ' where username = 'USERX'")
+
+    assertEquals(3, n)
+
+    rs = stmt.executeQuery(s"select * from temp where username = 'USERZ'")
+    n = 0
+    while(rs.next()) {
+      n += 1
+    }
+    assertEquals(3, n)
+
+    n = stmt1.executeUpdate(s"delete from $tableOwner.temp  where username = 'USERZ'")
+    assertEquals(3, n)
+    rs = stmt.executeQuery(s"select * from temp where username = 'USERZ'")
+    assertFalse(rs.next())
+
+    ownerContext.sql("drop policy testPolicy1")
+    ownerContext.sql(s"drop table temp")
   }
 
   test("test multiple policies application using snappy context on column table") {

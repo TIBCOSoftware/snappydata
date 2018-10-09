@@ -20,16 +20,15 @@ import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
 import com.pivotal.gemfirexd.Attribute
 import com.zaxxer.hikari.util.PropertyElf
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
+import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 
-import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
@@ -140,7 +139,7 @@ object ConnectionPool {
     val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
     val conn = ds.getConnection
     dialect match {
-      case GemFireXDDialect | GemFireXDClientDialect =>
+      case _: GemFireXDBaseDialect =>
         conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
 
       case _ =>
