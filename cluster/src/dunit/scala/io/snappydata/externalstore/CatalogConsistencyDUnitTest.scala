@@ -151,7 +151,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     // make sure that the table exists in Hive metastore
     assert(JdbcExtendedUtils.tableExistsInMetaData("APP.COLUMN_TABLE1",
-      routeQueryDisabledConn, GemFireXDClientDialect))
+      routeQueryDisabledConn))
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
@@ -212,7 +212,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     // make sure that the table exists in Hive metastore
     assert(JdbcExtendedUtils.tableExistsInMetaData("APP.COLUMN_TABLE1",
-      routeQueryDisabledConn, GemFireXDClientDialect))
+      routeQueryDisabledConn))
 
     // stop spark
     val sparkContext = SnappyContext.globalSparkContext

@@ -715,7 +715,7 @@ class ExtendibleURLClassLoader(parent: ClassLoader)
 object LeadImpl {
 
   val SPARKUI_PORT = 5050
-  val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
+  val LEADER_SERVERGROUP = ServerGroupUtils.LEADER_SERVERGROUP
 
   def invokeLeadStart(conf: SparkConf): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
