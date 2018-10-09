@@ -20,9 +20,6 @@ import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -34,7 +31,6 @@ import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.metastore.api.FieldSchema
 import org.apache.hadoop.hive.ql.metadata.Table
-
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
@@ -49,12 +45,15 @@ import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.spark.sql.row.{GemFireXDBaseDialect, GemFireXDClientDialect, GemFireXDDialect, SnappyDataClientPoolDialect}
 import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.util.{Utils => SparkUtils}
 import org.apache.spark.{SparkContext, SparkException}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /**
  * Utility methods used by external storage layers.
@@ -155,6 +154,7 @@ object ExternalStoreUtils {
     dialect match {
       case GemFireXDDialect => Constant.JDBC_EMBEDDED_DRIVER
       case GemFireXDClientDialect => Constant.JDBC_CLIENT_DRIVER
+      case SnappyDataClientPoolDialect => Constant.JDBC_CLIENT_POOL_DRIVER
       case _ => Utils.getDriverClassName(url)
     }
   }
@@ -340,7 +340,7 @@ object ExternalStoreUtils {
     val (user, password) = getCredentials(session)
 
     val isSnappy = dialect match {
-      case GemFireXDDialect | GemFireXDClientDialect => true
+      case _: GemFireXDBaseDialect => true
       case _ => false
     }
 
