@@ -35,8 +35,8 @@ snappy> call sys.repair_catalog('false', 'false');
 In case of inconsistencies, the log will contain messages as shown in the following example:
 
 ```
-18/08/06 17:28:36.456 IST ThriftProcessor-3<tid=0x82> INFO snappystore: warning: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
-18/08/06 17:28:36.457 IST ThriftProcessor-3<tid=0x82> INFO snappystore: warning: Use system procedure SYS.REPAIR_CATALOG() to remove inconsistency
+18/08/06 17:28:36.456 IST ThriftProcessor-3<tid=0x82> WARN snappystore: CATALOG: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
+18/08/06 17:28:36.457 IST ThriftProcessor-3<tid=0x82> WARN snappystore: CATALOG: Use system procedure SYS.REPAIR_CATALOG() to remove inconsistency
 
 ```
 
@@ -49,6 +49,6 @@ snappy> call sys.repair_catalog('true', 'false');
 Later, you can examine the log to check which entries were removed. Following is a sample log for reference:
 
 ```
-18/08/06 17:34:26.548 IST ThriftProcessor-3<tid=0x82> INFO snappystore: warning: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
-18/08/06 17:34:26.548 IST ThriftProcessor-3<tid=0x82> INFO snappystore: warning: Removing table APP.T1 from Hive metastore
+18/08/06 17:34:26.548 IST ThriftProcessor-3<tid=0x82> WARN snappystore: CATALOG: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
+18/08/06 17:34:26.548 IST ThriftProcessor-3<tid=0x82> WARN snappystore: CATALOG: Removing table APP.T1 from Hive metastore
 ```

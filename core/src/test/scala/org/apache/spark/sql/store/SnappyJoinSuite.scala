@@ -22,7 +22,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
+import org.apache.spark.sql.execution.joins.{CartesianProductExec, HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{SaveMode, SnappyContext}
@@ -530,6 +530,16 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s"R.ORDERID = Q.OrderId AND R.ORDERREF = Q.OrderRef")
     checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
     assert(excatJoinKeys.count() === 500)
+
+    // check CROSS JOIN without requiring spark.sql.crossJoin.enabled property
+    val crossJoin = snc.sql("select P.ORDERREF, P.DESCRIPTION from " +
+        "PR_TABLE11 P INNER JOIN PR_TABLE12 R " +
+        "ON (P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef) " +
+        "CROSS JOIN PR_TABLE13 Q")
+    // expected cartesian product
+    val qe = new QueryExecution(snc.snappySession, crossJoin.logicalPlan)
+    assert(qe.executedPlan.find(_.isInstanceOf[CartesianProductExec]).isDefined)
+    assert(crossJoin.count() === 500000)
   }
 
   test("SnappyAggregation partitioning") {

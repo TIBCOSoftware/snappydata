@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.row
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
@@ -89,13 +89,20 @@ class RowFormatRelation(
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         cols ++= relInfo.indexCols
-
+      case _ if provider == SnappyContext.SYSTABLE_SOURCE => cols
       case _ =>
         val indexCols = new Array[String](1)
         GfxdSystemProcedures.getIndexColumns(indexCols, region)
         cols ++= indexCols(0).split(":")
         cols
     }
+  }
+
+  override def sizeInBytes: Long = provider match {
+    // fill in some small size for system tables/VTIs
+    case SnappyContext.SYSTABLE_SOURCE =>
+      math.max(102400, sqlContext.conf.autoBroadcastJoinThreshold / 10)
+    case _ => super.sizeInBytes
   }
 
   private[this] def pushdownPKColumns(filters: Seq[Expression]): Seq[String] = {
@@ -115,6 +122,7 @@ class RowFormatRelation(
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         if (relInfo.pkCols.forall(equalToColumns.contains)) return relInfo.pkCols
+      case _ if provider == SnappyContext.SYSTABLE_SOURCE =>
       case _ =>
         val cols = new Array[String](1)
         GfxdSystemProcedures.getPKColumns(cols, region)
@@ -139,16 +147,22 @@ class RowFormatRelation(
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
+        val region = provider match {
+          case SnappyContext.SYSTABLE_SOURCE => None
+          case _ => Some(Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion])
+        }
+        val pushProjections = !region.isInstanceOf[CacheDistributionAdvisee]
         new RowFormatScanRDD(
           session,
           resolvedName,
           isPartitioned,
           requiredColumns,
-          pushProjections = false,
-          useResultSet = false,
+          pushProjections = pushProjections,
+          useResultSet = pushProjections,
           connProperties,
           handledFilters,
-          commitTx = true, delayRollover = false, projection = null)
+          commitTx = true, delayRollover = false,
+          projection = Array.emptyIntArray, region = region)
 
       case _ =>
         new SmartConnectorRowRDD(
@@ -159,7 +173,7 @@ class RowFormatRelation(
           connProperties,
           handledFilters,
           _partEval = () => relInfo.partitions,
-          relInfo.embdClusterRelDestroyVersion,
+          relInfo.embedClusterRelDestroyVersion,
           _commitTx = true, _delayRollover = false)
     }
     (rdd, Nil)
@@ -179,6 +193,7 @@ class RowFormatRelation(
     clusterMode match {
       case ThinClientConnectorMode(_, _) =>
         (relInfo.numBuckets, relInfo.isPartitioned, relInfo.partitioningCols)
+      case _ if provider == SnappyContext.SYSTABLE_SOURCE => (1, false, Nil)
       case _ => region match {
         case pr: PartitionedRegion =>
           val resolver = pr.getPartitionResolver

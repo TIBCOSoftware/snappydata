@@ -55,7 +55,7 @@ class ViewTest extends SnappyFunSuite {
   test("temporary view") {
     val session = this.snc.snappySession
 
-    val tableMeta = Seq(Row("id", "int", null), Row("addr", "string", null))
+    val tableMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null))
 
     checkAnswer(session.sql(s"describe $columnTable"), tableMeta)
     checkAnswer(session.sql(s"describe $rowTable"), tableMeta)

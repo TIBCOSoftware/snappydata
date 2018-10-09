@@ -244,11 +244,18 @@ object JdbcExtendedUtils extends Logging {
     } else Nil
   }
 
-  def tableExistsInMetaData(table: String, conn: Connection): Boolean = {
+  def tableExistsInMetaData(table: String, conn: Connection, skipType: String = ""): Boolean = {
     try {
       // using the JDBC meta-data API
       val rs = getTableMetadataResultSet(table, conn)
-      rs.next()
+      if (skipType.isEmpty) {
+        rs.next()
+      } else {
+        while (rs.next()) {
+          if (rs.getString(4) != skipType) return true
+        }
+        false
+      }
     } catch {
       case _: java.sql.SQLException => false
     }

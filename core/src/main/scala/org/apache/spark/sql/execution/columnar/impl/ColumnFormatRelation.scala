@@ -20,7 +20,7 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -211,6 +211,7 @@ abstract class BaseColumnFormatRelation(
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
         new RowFormatScanRDD(
           session,
           resolvedName,
@@ -222,7 +223,7 @@ abstract class BaseColumnFormatRelation(
           Array.empty[Expression],
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          commitTx = false, delayRollover, projection)
+          commitTx = false, delayRollover, projection, Some(region))
       case _ =>
         new SmartConnectorRowRDD(
           session,
@@ -233,7 +234,7 @@ abstract class BaseColumnFormatRelation(
           filters,
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          relInfo.embdClusterRelDestroyVersion,
+          relInfo.embedClusterRelDestroyVersion,
           _commitTx = false, delayRollover)
     }
   }

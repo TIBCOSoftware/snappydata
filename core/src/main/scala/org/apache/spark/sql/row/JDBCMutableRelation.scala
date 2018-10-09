@@ -87,7 +87,7 @@ case class JDBCMutableRelation(
   override final lazy val schema: StructType = JDBCRDD.resolveTable(
     new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
 
-  private[sql] val resolvedName = table
+  override def resolvedName: String = table
 
   var tableExists: Boolean = _
 
