@@ -22,7 +22,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.internal.shared.Version
+import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -204,8 +204,8 @@ object SparkSQLExecuteImpl {
 
   def getJsonProperties(session: SnappySession): Boolean = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
-    case null => true
-    case v => Misc.parseBoolean(v)
+    case null => Constant.COMPLEX_TYPE_AS_JSON_DEFAULT
+    case v => ClientSharedUtils.parseBoolean(v)
   }
 
   def getClobProperties(session: SnappySession): (Boolean, Set[String]) =

@@ -765,9 +765,13 @@ abstract class SnappyDDLParser(session: SparkSession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharStringType(size, baseType) =>
+        case CharType(size) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+          (StringType, false)
+        case VarcharType(size) =>
+          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
           (StringType, false)
         case _ => (t, true)
       }

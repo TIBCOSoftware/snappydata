@@ -18,6 +18,7 @@ package org.apache.spark.sql
 
 import java.util.regex.Pattern
 
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import io.snappydata.Constant
 import io.snappydata.jdbc.ClientPoolDriver
 
@@ -25,7 +26,7 @@ import org.apache.spark.Logging
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.execution.QueryExecution
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.sources.JdbcExtendedUtils
@@ -42,6 +43,8 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
 
   private val URL_PATTERN = Pattern.compile("^" + Constant.POOLED_THIN_CLIENT_URL,
     Pattern.CASE_INSENSITIVE)
+  private val COMPLEX_TYPE_AS_JSON_HINT_PATTERN = Pattern.compile(
+    s"${Constant.COMPLEX_TYPE_AS_JSON_HINT}\\s*\\(([^)]*)\\)", Pattern.CASE_INSENSITIVE)
 
   def register(): Unit = {
     // no-op, all registration is done in the object constructor
@@ -70,11 +73,23 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
                 else JdbcExtendedUtils.toUpperCase(defaultSchema)
               case Some(s) => s
             }
-            val metadata = JdbcExtendedUtils.getTableSchema(schemaName, tableName, conn)
+            val metadata = JdbcExtendedUtils.getTableSchema(schemaName, tableName,
+              conn, Some(session))
             if (metadata.isEmpty) u
             else {
               val output = StructType(metadata).toAttributes
-              SubqueryAlias(tableName, LocalRelation(output), None)
+              // create SubqueryAlias by reflection to account for differences
+              // in Spark versions (2 arguments vs 3)
+              try {
+                val cons = classOf[SubqueryAlias].getConstructor(classOf[String],
+                  classOf[LogicalPlan], classOf[Option[_]])
+                cons.newInstance(tableName, LocalRelation(output), None)
+              } catch {
+                case _: Exception => // fallback to two argument constructor
+                  val cons = classOf[SubqueryAlias].getConstructor(classOf[String],
+                    classOf[LogicalPlan])
+                  cons.newInstance(tableName, LocalRelation(output))
+              }
             }
         }
     })
@@ -82,52 +97,66 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
 
   override def getTableExistsQuery(query: String): String = {
     // parse the query locally, resolve relations and look them up individually
-    SparkSession.getActiveSession match {
-      case None => // fallback to default
-      case Some(session) =>
-        try {
-          // parse the table plan and check all unresolved relations
-          val qe = parsePlanAndResolve(session, s"SELECT 1 FROM $query LIMIT 1")
-          qe.assertAnalyzed()
-          // at this point we know all tables in the sub-query exist so return a dummy
-          return s"SELECT 1 FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}"
-        } catch {
-          case ae: AnalysisException => throw ae
-          case t: Throwable =>
-            // fallback to full query on connection
-            logWarning(s"Unexpected exception in getTableExistsQuery: $t")
-        }
+    val session = SparkSession.builder().getOrCreate()
+    // parse the table plan and check all unresolved relations
+    try {
+      // Spark parser understands LIMIT
+      val qe = parsePlanAndResolve(session, s"SELECT 1 FROM $query LIMIT 1")
+      qe.assertAnalyzed()
+      // at this point we know all tables in the sub-query exist so return a dummy
+      s"SELECT 1 FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}"
+    } catch {
+      case ae: AnalysisException => throw ae
+      case t: Throwable =>
+        // fallback to full query on connection
+        logWarning(s"Unexpected exception in getTableExistsQuery: $t")
+        // snappy-store parser understand FETCH FIRST ROW ONLY
+        s"SELECT 1 FROM $query FETCH FIRST ROW ONLY"
     }
-    s"SELECT 1 FROM $query LIMIT 1"
   }
 
   override def getSchemaQuery(query: String): String = {
     // parse the query locally, resolve relations, find the final output schema
     // and return a dummy query with matching schema
-    SparkSession.getActiveSession match {
-      case None => // fallback to default
-      case Some(session) =>
-        // parse the table plan and check all unresolved relations
-        try {
-          val qe = parsePlanAndResolve(session, s"SELECT * FROM $query LIMIT 1")
-          qe.assertAnalyzed()
-          // at this point we know all tables in the sub-query exist so return a dummy query
-          // with matching schema
-          val schema = qe.analyzed.output
-          // ignoring nullability for now
-          return schema.map { attr =>
-            val typeName = JdbcExtendedUtils.getJdbcType(attr.dataType, attr.metadata,
-              this).databaseTypeDefinition
-            s"""CAST (${defaultDataTypeValue(attr)} AS $typeName) AS "${attr.name}""""
-          }.mkString("SELECT ", ", ", s" FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")
-        } catch {
-          case ae: AnalysisException => throw ae
-          case t: Throwable =>
-            // fallback to full query on connection
-            logWarning(s"Unexpected exception in getSchemaQuery: $t")
-        }
+    val session = SparkSession.builder().getOrCreate()
+    // parse the table plan and check all unresolved relations
+    try {
+      // Spark parser understands LIMIT
+      val qe = parsePlanAndResolve(session, s"SELECT * FROM $query LIMIT 1")
+      qe.assertAnalyzed()
+      // at this point we know all tables in the sub-query exist so return a dummy query
+      // with matching schema
+      val schema = qe.analyzed.output
+      // top-level complex types will be returned in JSON format by default
+      val hasComplexType = schema.exists(a => JdbcExtendedUtils.getSQLDataType(a.dataType) match {
+        case _: ArrayType | _: MapType | _: StructType => true
+        case _ => false
+      })
+      // check for complexTypeAsJson hint
+      val useJson = if (hasComplexType) {
+        val matcher = COMPLEX_TYPE_AS_JSON_HINT_PATTERN.matcher(query)
+        if (matcher.find()) {
+          ClientSharedUtils.parseBoolean(matcher.group(1))
+        } else Constant.COMPLEX_TYPE_AS_JSON_DEFAULT
+      } else true
+      // ignoring nullability for now
+      schema.map { attr =>
+        val dataType = if (hasComplexType) attr.dataType match {
+          case _: ArrayType | _: MapType | _: StructType => if (useJson) StringType else BinaryType
+          case d => d
+        } else attr.dataType
+        val typeName = JdbcExtendedUtils.getJdbcType(dataType, attr.metadata,
+          this).databaseTypeDefinition
+        s"""CAST (${defaultDataTypeValue(attr)} AS $typeName) AS "${attr.name}""""
+      }.mkString("SELECT ", ", ", s" FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")
+    } catch {
+      case ae: AnalysisException => throw ae
+      case t: Throwable =>
+        // fallback to full query on connection
+        logWarning(s"Unexpected exception in getSchemaQuery: $t")
+        // snappy-store parser understand FETCH FIRST ROW ONLY
+        s"SELECT * FROM $query FETCH FIRST ROW ONLY"
     }
-    s"SELECT * FROM $query LIMIT 1"
   }
 
   private def defaultDataTypeValue(attribute: Attribute): String = attribute.dataType match {

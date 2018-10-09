@@ -308,7 +308,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 --+ complexTypeAsJson(0)
    */
-  val ComplexTypeAsJson = Value("complexTypeAsJson")
+  val ComplexTypeAsJson = Value(Constant.COMPLEX_TYPE_AS_JSON_HINT)
 
   /**
    * Query hint followed by table to override optimizer choice of index per table.

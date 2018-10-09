@@ -19,8 +19,8 @@ package org.apache.spark.sql
 import java.util.concurrent.ConcurrentHashMap
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
+import io.snappydata.QueryHint
 import io.snappydata.collection.{ObjectObjectHashMap, OpenHashSet}
-import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -207,6 +207,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   final def LONG: Rule0 = newDataType(Consts.LONG)
   final def MAP: Rule0 = newDataType(Consts.MAP)
   final def NUMERIC: Rule0 = newDataType(Consts.NUMERIC)
+  final def PRECISION: Rule0 = keyword(Consts.PRECISION)
   final def REAL: Rule0 = newDataType(Consts.REAL)
   final def SHORT: Rule0 = newDataType(Consts.SHORT)
   final def SMALLINT: Rule0 = newDataType(Consts.SMALLINT)
@@ -229,7 +230,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     INT ~> (() => IntegerType) |
     BIGINT ~> (() => LongType) |
     LONG ~> (() => LongType) |
-    DOUBLE ~> (() => DoubleType) |
+    DOUBLE ~ PRECISION.? ~> (() => DoubleType) |
     fixedDecimalType |
     DECIMAL ~> (() => DecimalType.SYSTEM_DEFAULT) |
     NUMERIC ~> (() => DecimalType.SYSTEM_DEFAULT) |
@@ -278,11 +279,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def columnCharType: Rule1[DataType] = rule {
-    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharStringType(d.toInt, baseType = "VARCHAR")) |
-    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharStringType(d.toInt, baseType = "CHAR")) |
-    STRING ~> (() => CharStringType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING"))
+    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => VarcharType(d.toInt)) |
+    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => CharType(d.toInt)) |
+    STRING ~> (() => StringType)
   }
 
   final def columnDataType: Rule1[DataType] = rule {
@@ -594,6 +593,7 @@ object SnappyParserConsts {
   final val LONG: Keyword = nonReservedKeyword("long")
   final val MAP: Keyword = nonReservedKeyword("map")
   final val NUMERIC: Keyword = nonReservedKeyword("numeric")
+  final val PRECISION: Keyword = nonReservedKeyword("precision")
   final val REAL: Keyword = nonReservedKeyword("real")
   final val SHORT: Keyword = nonReservedKeyword("short")
   final val SMALLINT: Keyword = nonReservedKeyword("smallint")

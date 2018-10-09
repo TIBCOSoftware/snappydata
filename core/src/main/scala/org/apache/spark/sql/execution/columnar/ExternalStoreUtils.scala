@@ -19,7 +19,6 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
-import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -687,20 +686,18 @@ object ExternalStoreUtils {
     JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
       tableProps).map(StructType.fromString)
 
-  private val TYPE_SIZE_PATTERN = Pattern.compile("\\s*\\(.*\\)\\s*")
-
   def getColumnMetadata(schema: StructType): java.util.List[ExternalTableMetaData.Column] = {
     schema.toList.map { f =>
-      val (dataType, typeName, jdbcType, prec, scale) = SnappyStoreDialect.getColumnMetadata(
-        f.dataType, f.metadata, forSchema = false)
+      val (dataType, typeName, jdbcType, prec, scale) = SnappyStoreDialect.getJDBCMetadata(
+        f.dataType, f.metadata, forTableDefn = false)
       val (precision, width) = if (prec == -1) {
         val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(jdbcType, f.nullable)
         if (dtd ne null) {
           (dtd.getPrecision, dtd.getMaximumWidth)
         } else (dataType.defaultSize, dataType.defaultSize)
       } else (prec, prec)
-      new ExternalTableMetaData.Column(f.name, jdbcType,
-        TYPE_SIZE_PATTERN.matcher(typeName).replaceAll(""), precision, scale, width, f.nullable)
+      new ExternalTableMetaData.Column(f.name, jdbcType, typeName,
+        precision, scale, width, f.nullable)
     }.asJava
   }
 

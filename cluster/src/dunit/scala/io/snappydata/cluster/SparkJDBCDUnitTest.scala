@@ -75,7 +75,7 @@ class SparkJDBCDUnitTest(s: String)
 
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
-      "snappydata-client-*.jar")
+      "snappydata-jdbc_*.jar")
     val snappyDataClientJar = jars.iterator().next().toAbsolutePath.toString
 
     val exampleJar = Files.newDirectoryStream(

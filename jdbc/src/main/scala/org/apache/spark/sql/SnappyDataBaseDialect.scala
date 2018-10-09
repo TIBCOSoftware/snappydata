@@ -16,16 +16,22 @@
  */
 package org.apache.spark.sql
 
+import java.nio.ByteBuffer
 import java.sql.{Connection, Types}
 
-import com.pivotal.gemfirexd.internal.shared.common.reference.{JDBC40Translation, Limits}
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import com.pivotal.gemfirexd.internal.shared.common.reference.JDBC40Translation
+import com.pivotal.gemfirexd.internal.shared.common.reference.Limits.{DB2_LOB_MAXWIDTH => LOB_MAXWIDTH}
 import io.snappydata.Constant
 
+import org.apache.spark.SparkEnv
+import org.apache.spark.sql.catalyst.parser.AbstractSqlParser
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.JdbcType
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
+import org.apache.spark.util.Utils
 
 /**
  * Base implementation of various dialect implementations for SnappyData.
@@ -42,9 +48,16 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
   }
 
   override def getCatalystType(sqlType: Int, typeName: String,
-      size: Int, md: MetadataBuilder): Option[DataType] = sqlType match {
-    case Types.FLOAT if typeName.equalsIgnoreCase("float") => Some(DoubleType)
-    case Types.REAL if typeName.equalsIgnoreCase("real") => Some(FloatType)
+      size: Int, md: MetadataBuilder): Option[DataType] = {
+    getCatalystType(sqlType, typeName, size, md, None)
+  }
+
+  def getCatalystType(sqlType: Int, typeName: String, size: Int, md: MetadataBuilder,
+      session: Option[SparkSession]): Option[DataType] = sqlType match {
+    case Types.FLOAT =>
+      if ("float".equalsIgnoreCase(typeName)) Some(DoubleType) else Some(FloatType)
+    case Types.REAL =>
+      if ("real".equalsIgnoreCase(typeName)) Some(FloatType) else Some(DoubleType)
     case Types.TINYINT | Types.SMALLINT => Some(ShortType)
     case Types.VARCHAR if size > 0 =>
       md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
@@ -54,62 +67,92 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
       md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
       md.putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
       Some(StringType)
-    // complex types are sent back as JSON strings by default
-    case Types.ARRAY | Types.STRUCT | JDBC40Translation.MAP | JDBC40Translation.JSON =>
-      Some(StringType)
+    case Types.CLOB | JDBC40Translation.JSON => Some(StringType)
     case Types.BIT if size > 1 => Some(BinaryType)
+    // translate complex types by running the parser on the type string
+    case Types.ARRAY | JDBC40Translation.MAP | Types.STRUCT =>
+      val sparkSession = session match {
+        case Some(s) => s
+        case None => SparkSession.builder().getOrCreate()
+      }
+      Some(sparkSession.sessionState.sqlParser
+          .asInstanceOf[AbstractSqlParser].parseDataType(typeName))
+    case Types.JAVA_OBJECT => // used by some system tables and VTIs
+      // try to get class for the typeName else fallback to Object
+      val userClass = try {
+        Utils.classForName(typeName).asInstanceOf[Class[AnyRef]]
+      } catch {
+        case _: Throwable => classOf[AnyRef]
+      }
+      Some(new JavaObjectType(userClass))
     case _ => None
   }
 
   /**
+   * Get JDBC metadata for a catalyst column representation.
+   *
    * See SPARK-10101 issue for similar problem. If the PR raised is
    * merged we can update VARCHAR handling here accordingly.
+   * [UPDATE] related PRs have been merged and SPARK-10101 closed but
+   * it is only for passing through full types in CREATE TABLE and not
+   * when reading unlike what is reauired for SnappyData.
+   *
+   * @param dt           the DataType of the column
+   * @param md           any additional Metadata for the column
+   * @param forTableDefn if true then the type name string returned will be suitable for column
+   *                     definition in CREATE TABLE etc; the differences being that it will
+   *                     include size definitions for CHAR/VARCHAR and complex types will be
+   *                     mapped to underlying storage format rather than for display (i.e. BLOB)
    */
-  def getColumnMetadata(dt: DataType, md: Metadata,
-      forSchema: Boolean): (DataType, String, Int, Int, Int) = {
+  def getJDBCMetadata(dt: DataType, md: Metadata,
+      forTableDefn: Boolean): (DataType, String, Int, Int, Int) = {
     val (dataType, typeName) = dt match {
       case u: UserDefinedType[_] =>
         (JdbcExtendedUtils.getSQLDataType(u.sqlType), Some(u.userClass.getName))
       case t => (t, None)
     }
+
     def getTypeName(name: String): String = typeName match {
       case Some(n) => n
       case None => name
     }
+
     dataType match {
       case StringType =>
         if ((md ne null) && md.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
             md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
           val size = math.min(md.getLong(Constant.CHAR_TYPE_SIZE_PROP), Int.MaxValue).toInt
+          // skip size specification in the name when forTableDefn=false
+          lazy val sizeSuffix = if (forTableDefn) s"($size)" else ""
           md.getString(Constant.CHAR_TYPE_BASE_PROP) match {
             case "CHAR" =>
-              (dataType, s"${getTypeName("CHAR")}($size)", Types.CHAR, size, -1)
+              (dataType, s"${getTypeName("CHAR")}$sizeSuffix", Types.CHAR, size, -1)
             case "VARCHAR" =>
-              (dataType, s"${getTypeName("VARCHAR")}($size)", Types.VARCHAR, size, -1)
+              (dataType, s"${getTypeName("VARCHAR")}$sizeSuffix", Types.VARCHAR, size, -1)
             case _ =>
-              (dataType, getTypeName("STRING"), Types.CLOB, Limits.DB2_LOB_MAXWIDTH, -1)
+              (dataType, getTypeName("STRING"), Types.CLOB, LOB_MAXWIDTH, -1)
           }
         } else {
-          (dataType, getTypeName("STRING"), Types.CLOB, Limits.DB2_LOB_MAXWIDTH, -1)
+          (dataType, getTypeName("STRING"), Types.CLOB, LOB_MAXWIDTH, -1)
         }
       case BooleanType => (dataType, getTypeName("BOOLEAN"), Types.BOOLEAN, 1, 0)
       case ByteType | ShortType => (dataType, getTypeName("SMALLINT"), Types.SMALLINT, 5, 0)
       case d: DecimalType =>
         (dataType, s"${getTypeName("DECIMAL")}(${d.precision},${d.scale})", Types.DECIMAL,
             d.precision, d.scale)
-      case BinaryType => (dataType, getTypeName("BLOB"), Types.BLOB, Limits.DB2_LOB_MAXWIDTH, -1)
-      case _: ArrayType | _: MapType | _: StructType if forSchema =>
-        (dataType, getTypeName("BLOB"), Types.BLOB, Limits.DB2_LOB_MAXWIDTH, -1)
+      case BinaryType => (dataType, getTypeName("BLOB"), Types.BLOB, LOB_MAXWIDTH, -1)
+      case _: ArrayType | _: MapType | _: StructType if forTableDefn =>
+        (dataType, getTypeName("BLOB"), Types.BLOB, LOB_MAXWIDTH, -1)
       case a: ArrayType =>
-        (a, s"${getTypeName("ARRAY")}<${getColumnMetadata(a.elementType, null, forSchema)._2}>",
-            Types.ARRAY, -1, -1)
+        (a, s"${getTypeName("ARRAY")}<${getJDBCMetadata(a.elementType, null, forTableDefn)._2}>",
+            Types.ARRAY, LOB_MAXWIDTH, -1)
       case m: MapType =>
-        val keyTypeName = getColumnMetadata(m.keyType, null, forSchema)._2
-        val valueTypeName = getColumnMetadata(m.valueType, null, forSchema)._2
-        (m, s"${getTypeName("MAP")}<$keyTypeName,$valueTypeName>", JDBC40Translation.MAP, -1, -1)
+        val keyType = getJDBCMetadata(m.keyType, null, forTableDefn)._2
+        val valueType = getJDBCMetadata(m.valueType, null, forTableDefn)._2
+        (m, s"${getTypeName("MAP")}<$keyType,$valueType>", JDBC40Translation.MAP, LOB_MAXWIDTH, -1)
       case s: StructType =>
-        (s, getTypeName("STRUCT") + s.map(f => getColumnMetadata(f.dataType, md, forSchema)._2)
-            .mkString("<", ",", ">"), Types.STRUCT, -1, -1)
+        (s, getTypeName("STRUCT") + s.map(f => f.name + ':' + getJDBCMetadata(f.dataType,
+          md, forTableDefn)._2).mkString("<", ",", ">"), Types.STRUCT, LOB_MAXWIDTH, -1)
       case NullType => (dataType, getTypeName("NULL"), Types.NULL, 0, -1)
       case d =>
         val scale = if (d.isInstanceOf[NumericType]) 0 else -1
@@ -129,7 +172,7 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
    * ever merged we can remove this method here.
    */
   override def getJDBCType(dt: DataType, md: Metadata): Option[JdbcType] = {
-    getColumnMetadata(dt, md, forSchema = true) match {
+    getJDBCMetadata(dt, md, forTableDefn = true) match {
       case (_, _, Types.OTHER, _, _) => None
       case (_, name, jdbcType, _, _) => Some(JdbcType(name, jdbcType))
     }
@@ -180,4 +223,22 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
 
   override def getPartitionByClause(col: String): String =
     s"partition by column($col)"
+}
+
+final class JavaObjectType(override val userClass: java.lang.Class[AnyRef])
+    extends UserDefinedType[AnyRef] {
+
+  override def typeName: String = userClass.getName
+
+  override def sqlType: DataType = BinaryType
+
+  override def serialize(obj: AnyRef): Any = {
+    val serializer = SparkEnv.get.serializer.newInstance()
+    ClientSharedUtils.toBytes(serializer.serialize(obj))
+  }
+
+  override def deserialize(datum: Any): AnyRef = {
+    val serializer = SparkEnv.get.serializer.newInstance()
+    serializer.deserialize(ByteBuffer.wrap(datum.asInstanceOf[Array[Byte]]))
+  }
 }

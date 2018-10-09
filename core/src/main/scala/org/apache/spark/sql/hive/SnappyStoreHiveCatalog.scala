@@ -397,7 +397,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               "STRING").build()
           } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
               .equalsIgnoreCase("CLOB")) {
-            // Remove the CharStringType properties from metadata
+            // Remove the HiveStringType properties from metadata
             val builder = new MetadataBuilder
             builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
                 .remove(Constant.CHAR_TYPE_SIZE_PROP).build()

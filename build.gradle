@@ -721,6 +721,7 @@ task product(type: Zip) {
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
   dependsOn ':snappy-launcher:jar'
+  dependsOn ':jdbcJar'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
@@ -1052,22 +1053,29 @@ task distDeb {
   dependsOn buildDeb
 }
 
-task copyShadowJars {
+task jdbcJar {
   dependsOn ":snappy-jdbc_${scalaBinaryVersion}:shadowJar"
-  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
     def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
-    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
-    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
-    // copy the snappy-jdbc and snappy-core shadow jars into distributions
+    // copy the snappy-jdbc shadow jar into distributions
     copy {
       from jdbcProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
       include jdbcProject.shadowJar.archiveName
       rename { filename -> jdbcName }
     }
+  }
+}
+
+task copyShadowJars {
+  dependsOn jdbcJar
+  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
+
+  doLast {
+    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
+    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"

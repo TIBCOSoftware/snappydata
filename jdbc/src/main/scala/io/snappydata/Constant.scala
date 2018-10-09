@@ -146,4 +146,8 @@ object Constant {
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 
   val EXTERNAL_TABLE_RLS_ENABLE_KEY = "rls.enabled"
+
+  val COMPLEX_TYPE_AS_JSON_HINT = "complexTypeAsJson"
+
+  val COMPLEX_TYPE_AS_JSON_DEFAULT = true
 }

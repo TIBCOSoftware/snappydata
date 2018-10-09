@@ -17,7 +17,6 @@
 package org.apache.spark.sql.sources
 
 import java.lang.reflect.Method
-import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, ResultSetMetaData, Types}
 import java.util.Properties
 
@@ -25,15 +24,12 @@ import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.shared.ClientSharedUtils
-
+import org.apache.spark.Logging
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyDataPoolDialect, SparkSession}
-import org.apache.spark.util.Utils
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.sql.types.{DataType, Metadata, MetadataBuilder, StructField, StructType, UserDefinedType}
+import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyDataBaseDialect, SnappyDataPoolDialect, SparkSession}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -46,7 +42,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
   /**
    * Retrieve the jdbc / sql type for a given datatype.
    *
-   * @param dataType The datatype (e.g. [[StringType]])
+   * @param dataType The datatype (e.g. StringType)
    * @param md       The metadata
    * @return The new JdbcType if there is an override for this DataType
    */
@@ -121,6 +117,20 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
+  def getCatalystType(dialect: JdbcDialect, jdbcType: Int, typeName: String, size: Int,
+      scale: Int, md: MetadataBuilder, session: Option[SparkSession]): DataType = {
+    (dialect match {
+      case snappyDialect: SnappyDataBaseDialect =>
+        snappyDialect.getCatalystType(jdbcType, typeName, size, md, session)
+      case _ => dialect.getCatalystType(jdbcType, typeName, size, md)
+    }) match {
+      case Some(d) => d
+      case None => getCatalystTypeMethod.invoke(JdbcUtils, Int.box(jdbcType),
+        Int.box(size), Int.box(scale),
+        Boolean.box(isSigned(jdbcType))).asInstanceOf[DataType]
+    }
+  }
+
   /**
    * Compute the schema string for this RDD.
    */
@@ -189,7 +199,7 @@ object JdbcExtendedUtils extends Logging {
     conn.getMetaData.getTables(null, schemaName, tableName, null)
   }
 
-  protected lazy val getCatalystTypeMethod: Method = {
+  private lazy val getCatalystTypeMethod: Method = {
     val m = JdbcUtils.getClass.getDeclaredMethod(
       "org$apache$spark$sql$execution$datasources$jdbc$JdbcUtils$$getCatalystType",
       classOf[Int], classOf[Int], classOf[Int], classOf[Boolean])
@@ -206,7 +216,8 @@ object JdbcExtendedUtils extends Logging {
         typeId == Types.NUMERIC || typeId == Types.REAL || typeId == Types.DOUBLE
   }
 
-  def getTableSchema(schemaName: String, tableName: String, conn: Connection): Seq[StructField] = {
+  def getTableSchema(schemaName: String, tableName: String, conn: Connection,
+      session: Option[SparkSession]): Seq[StructField] = {
     val rs = conn.getMetaData.getColumns(null, schemaName, tableName, null)
     if (rs.next()) {
       val cols = new mutable.ArrayBuffer[StructField]()
@@ -225,24 +236,8 @@ object JdbcExtendedUtils extends Logging {
         val nullable = rs.getInt(11) != ResultSetMetaData.columnNoNulls
         val metadataBuilder = new MetadataBuilder()
             .putString("name", columnName).putLong("scale", scale)
-        val columnType = SnappyDataPoolDialect.getCatalystType(jdbcType, typeName,
-          size, metadataBuilder) match {
-          case Some(t) => t
-          case None =>
-            if (jdbcType == Types.JAVA_OBJECT) {
-              // try to get class for the typeName else fallback to Object
-              val userClass = try {
-                Utils.classForName(typeName).asInstanceOf[Class[AnyRef]]
-              } catch {
-                case _: Throwable => classOf[AnyRef]
-              }
-              new JavaObjectType(userClass)
-            } else {
-              getCatalystTypeMethod.invoke(JdbcUtils, Int.box(jdbcType),
-                Int.box(size), Int.box(scale),
-                Boolean.box(isSigned(jdbcType))).asInstanceOf[DataType]
-            }
-        }
+        val columnType = getCatalystType(SnappyDataPoolDialect, jdbcType, typeName,
+          size, scale, metadataBuilder, session)
         cols += StructField(columnName, columnType, nullable, metadataBuilder.build())
       } while (rs.next())
       cols
@@ -398,23 +393,5 @@ object JdbcExtendedUtils extends Logging {
       if (fieldsLeft > 1) sql.append(separator)
       fieldsLeft -= 1
     }
-  }
-}
-
-final class JavaObjectType(override val userClass: java.lang.Class[AnyRef])
-    extends UserDefinedType[AnyRef] {
-
-  override def typeName: String = userClass.getName
-
-  override def sqlType: DataType = BinaryType
-
-  override def serialize(obj: AnyRef): Any = {
-    val serializer = SparkEnv.get.serializer.newInstance()
-    ClientSharedUtils.toBytes(serializer.serialize(obj))
-  }
-
-  override def deserialize(datum: Any): AnyRef = {
-    val serializer = SparkEnv.get.serializer.newInstance()
-    serializer.deserialize(ByteBuffer.wrap(datum.asInstanceOf[Array[Byte]]))
   }
 }
