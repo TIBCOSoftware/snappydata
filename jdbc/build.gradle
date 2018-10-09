@@ -47,11 +47,6 @@ dependencies {
     compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-
-    testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
@@ -59,15 +54,6 @@ dependencies {
   } else {
     compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
   }
-
-  testCompile project(':dunit')
-  testCompile 'org.scala-lang:scala-actors:' + scalaVersion
-  testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
-
-  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
-  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
-
-  testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
@@ -150,6 +136,7 @@ task sparkPackagePom(dependsOn: shadowJar) { doLast {
     rename { filename -> "${sparkPackageName}.jar" }
   }
 } }
+
 task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
   archiveName "${sparkPackageName}.zip"
   destinationDir = file("${rootProject.buildDir}/distributions")

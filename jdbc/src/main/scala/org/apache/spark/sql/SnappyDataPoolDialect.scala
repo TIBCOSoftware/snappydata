@@ -58,7 +58,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
   private def parsePlanAndResolve(session: SparkSession, sqlText: String): QueryExecution = {
     val sessionState = session.sessionState
     val plan = sessionState.sqlParser.parsePlan(sqlText)
-    sessionState.executePlan(plan.resolveOperators {
+    sessionState.executePlan(plan.transformUp {
       case u: UnresolvedRelation =>
         // use the current connection, if any, to check in meta-data
         ClientPoolDriver.CURRENT_CONNECTION.get() match {
@@ -83,12 +83,14 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
               try {
                 val cons = classOf[SubqueryAlias].getConstructor(classOf[String],
                   classOf[LogicalPlan], classOf[Option[_]])
-                cons.newInstance(tableName, LocalRelation(output), None)
+                // use LocalRelation.apply to allow same code to work against newer Spark
+                // releases where LocalRelation class primary constructor has changed signature
+                cons.newInstance(tableName, LocalRelation.apply(output: _*), None)
               } catch {
                 case _: Exception => // fallback to two argument constructor
                   val cons = classOf[SubqueryAlias].getConstructor(classOf[String],
                     classOf[LogicalPlan])
-                  cons.newInstance(tableName, LocalRelation(output))
+                  cons.newInstance(tableName, LocalRelation.apply(output: _*))
               }
             }
         }
