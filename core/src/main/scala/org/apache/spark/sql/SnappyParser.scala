@@ -21,6 +21,7 @@ import java.util.function.BiConsumer
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.primitives.Ints
 import io.snappydata.{Constant, Property, QueryHint}
 import org.parboiled2._
@@ -33,6 +34,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.execution.command.{ShowColumnsCommand, ShowCreateTableCommand, ShowDatabasesCommand, ShowFunctionsCommand, ShowTablePropertiesCommand, ShowTablesCommand}
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
@@ -646,7 +648,8 @@ class SnappyParser(session: SnappySession)
     ) |
     RIGHT ~ OUTER.? ~> (() => RightOuter) |
     FULL ~ OUTER.? ~> (() => FullOuter) |
-    ANTI ~> (() => LeftAnti)
+    ANTI ~> (() => LeftAnti) |
+    CROSS ~> (() => Cross)
   }
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
@@ -1123,6 +1126,57 @@ class SnappyParser(session: SnappySession)
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
+  // It can be the following patterns:
+  // SHOW TABLES IN schema;
+  // SHOW DATABASES;
+  // SHOW COLUMNS IN table;
+  // SHOW TBLPROPERTIES table;
+  // SHOW FUNCTIONS;
+  // SHOW FUNCTIONS mydb.func1;
+  // SHOW FUNCTIONS func1;
+  // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
+  protected def show: Rule1[LogicalPlan] = rule {
+    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
+        ((ident: Any, pat: Any) =>
+          ShowTablesCommand(ident.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
+    SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
+      ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
+    SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
+        ((table: TableIdentifier, db: Any) =>
+          ShowColumnsCommand(db.asInstanceOf[Option[String]], table)) |
+    SHOW ~ TBLPROPERTIES ~ tableIdentifier ~ ('(' ~ ws ~ optionKey ~ ')' ~ ws).? ~>
+        ((table: TableIdentifier, propertyKey: Any) =>
+          ShowTablePropertiesCommand(table, propertyKey.asInstanceOf[Option[String]])) |
+    SHOW ~ MEMBERS ~> (() => {
+      val newParser = newInstance()
+      val servers = if (ClientSharedUtils.isThriftDefault) "THRIFTSERVERS" else "NETSERVERS"
+      newParser.parseSQL(
+        s"SELECT ID, HOST, KIND, STATUS, $servers, SERVERGROUPS FROM SYS.MEMBERS",
+        newParser.select.run())
+    }) |
+    SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ (LIKE.? ~
+        (functionIdentifier | stringLiteral)).? ~> { (id: Any, nameOrPat: Any) =>
+      val (user, system) = id.asInstanceOf[Option[String]]
+          .map(_.toLowerCase) match {
+        case None | Some("all") => (true, true)
+        case Some("system") => (false, true)
+        case Some("user") => (true, false)
+        case Some(x) =>
+          throw new ParseException(s"SHOW $x FUNCTIONS not supported")
+      }
+      nameOrPat match {
+        case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
+          name.database, Some(name.funcName), user, system)
+        case Some(pat: String) => ShowFunctionsCommand(
+          None, Some(pat), user, system)
+        case None => ShowFunctionsCommand(None, None, user, system)
+        case _ => throw new ParseException(
+          s"SHOW FUNCTIONS $nameOrPat unexpected")
+      }
+    } |
+    SHOW ~ CREATE ~ TABLE ~ tableIdentifier ~> ShowCreateTableCommand
+  }
+
   private var tokenize = false
 
   private var canTokenize = false
@@ -1145,7 +1199,7 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | reset | cache | uncache | desc |
+        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
             deployPackages))
   }
 

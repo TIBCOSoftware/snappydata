@@ -515,7 +515,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ThinClientConnectorMode(_, _) =>
             val catalog = snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
             val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
-            (relInfo.partitions, relInfo.embdClusterRelDestroyVersion)
+            (relInfo.partitions, relInfo.embedClusterRelDestroyVersion)
           case m => throw new UnsupportedOperationException(
             s"SnappyData table scan not supported in mode: $m")
         }
@@ -777,7 +777,7 @@ final class SmartConnectorColumnRDD(
     val partitionId = part.bucketId
     val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
       case "" => null
-      case id => id
+      case tx => tx
     }
     var itr: Iterator[ByteBuffer] = null
     try {
@@ -888,7 +888,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _commitTx, _delayRollover, null) {
+    _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
 
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
