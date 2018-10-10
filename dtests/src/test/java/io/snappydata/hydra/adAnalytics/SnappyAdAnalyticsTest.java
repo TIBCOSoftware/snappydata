@@ -404,8 +404,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_calculateStreamingTime(){
     List<String> tableName = SnappyPrms.getTableList();
-    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
-    snappyAdAnalyticsTest.calculateStreamingTime(tableName.get(0),expectedRows.get(0));
+    List<String> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.calculateStreamingTime(tableName.get(0),Integer.parseInt(expectedRows.get(0)));
   }
 
   public void calculateStreamingTime(String tableName, int expectedRows){
@@ -423,7 +423,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       while (!allConsumed) {
         ResultSet rs = conn.createStatement().executeQuery("select count(*) from " + tableName);
         while (rs.next()) {
-          numRows = rs.getInt("1");
+          numRows = rs.getInt(1);
         }
         if (numRows == expectedRows) {
           allConsumed = true;
@@ -439,8 +439,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
   public static void HydraTask_assertStreaming(){
     List<String> tableName = SnappyPrms.getTableList();
-    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
-    snappyAdAnalyticsTest.assertStreaming(tableName.get(0),expectedRows.get(0));
+    List<String> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.assertStreaming(tableName.get(0),Integer.parseInt(expectedRows.get(0)));
   }
 
   public void assertStreaming(String tableName, int expectedRows){
@@ -454,7 +454,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     try {
       ResultSet rs= conn.createStatement().executeQuery("select count(*) from " + tableName);
       while(rs.next()) {
-        numRows = rs.getInt("1");
+        numRows = rs.getInt(1);
       }
       if(numRows != expectedRows){
         throw new TestException("Streaming app didnot consume all the data for " + tableName +
