@@ -1612,6 +1612,14 @@ public class SnappyTest implements Serializable {
     if (scriptNames == null) {
       String s = "No Script names provided for executing in the Hydra TASK";
       throw new TestException(s);
+    } else {
+      File scriptName = new File((String) scriptNames.get(0));
+      if (scriptName.exists() && scriptName.isDirectory()) {
+        for (File sqlFile : scriptName.listFiles()) {
+          Log.getLogWriter().info("SS : sqlFile is: " + sqlFile);
+          scriptNames.add(sqlFile.getAbsolutePath());
+        }
+      }
     }
     try {
       dataLocationList = SnappyPrms.getDataLocationList();
@@ -1693,10 +1701,10 @@ public class SnappyTest implements Serializable {
         String filePath = snappyTest.getScriptLocation(userScript);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator;
-        if(SnappyPrms.getLogFileName() != null)
+        if (SnappyPrms.getLogFileName() != null)
           dest += SnappyPrms.getLogFileName();
         else
-          dest +=  "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
+          dest += "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
@@ -2988,7 +2996,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
-      boolean restart, boolean rebalance) {
+                                            boolean restart, boolean rebalance) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
       return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart, rebalance);
@@ -3064,7 +3072,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
-      boolean isDmlOp, boolean restart, boolean rebalance) {
+                           boolean isDmlOp, boolean restart, boolean rebalance) {
     if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {
