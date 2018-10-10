@@ -9,7 +9,7 @@ To create a job that can be submitted through the job server, the job must imple
 object SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-
+}
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
@@ -33,7 +33,7 @@ class SnappySampleJob extends SnappySQLJob {
 object SnappyStreamingSampleJob extends SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
-
+}
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
   override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }

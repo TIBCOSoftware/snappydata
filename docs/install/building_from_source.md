@@ -93,6 +93,7 @@ Useful build and test targets:
 ./gradlew precheckin -Pstore  -  cleanAll, buildAll, scalaStyle, build docs,
                            run full snappydata testsuite including quickstart
                            and also full SnappyData store testsuite
+./gradlew buildDtests   -  To build the Distributed tests
 ```
 
 The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is *store* project, where the default build directory is *_build-artifacts/<os>_*; where; *os* is *linux* on Linux systems, *osx* on Mac, *windows* on Windows.
