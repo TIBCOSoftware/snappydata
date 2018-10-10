@@ -35,7 +35,7 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
     var brokerList: String = jobConfig.getString("brokerList")
     brokerList = brokerList.replace("--", ":")
     val kafkaTopic: String = jobConfig.getString("kafkaTopic")
-    val tableName: String = "persoon"
+    val tableName: String = jobConfig.getString("tableName")
     val checkpointDirectory: String = (new File(".")).getCanonicalPath +
         File.separator + "checkpointDirectory_" + tid
     // Spark tip : Keep shuffle count low when data volume is low.
@@ -87,7 +87,7 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
 
       val schema = StructType(structFields())
       implicit val encoder = RowEncoder(schema)
-      structFields().length
+
       streamingDF.selectExpr("CAST(value AS STRING)")
           .as[String]
           .map(_.split(","))
