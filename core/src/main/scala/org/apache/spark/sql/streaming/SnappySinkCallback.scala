@@ -139,31 +139,37 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     df.cache().count()
     val tableName = parameters(TABLE_NAME).toUpperCase
 
+    val keyColumns = snappySession.sessionCatalog.getKeyColumns(tableName)
     DefaultSnappySinkCallback.log.debug(s"Processing for $tableName and batchId $batchId")
-    val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumns(tableName).nonEmpty
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
-    if (keyColumnsDefined) {
+    if (keyColumns.nonEmpty) {
+      import org.apache.spark.sql.functions._
+      val exprs = df.columns.filter(c => !keyColumns.map(_.name).contains(c.toUpperCase))
+          .map(c => last(c).alias(c)).toList
+      val conflatedDf = df.groupBy(keyColumns.map(_.name).mkString(","))
+          .agg(exprs.head, exprs.tail: _*)
+      conflatedDf.cache().count()
+
       if (eventTypeColumnAvailable) {
-        // TODO: handle scenario when a batch contain multiple records with
-        // same key columns
-        val deleteDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.DELETE)
+        val deleteDf = conflatedDf.filter(conflatedDf(EVENT_TYPE_COLUMN) === EventType.DELETE)
             .drop(EVENT_TYPE_COLUMN)
         deleteDf.write.deleteFrom(tableName)
         if (posDup) {
           val upsertEventTypes = List(EventType.INSERT, EventType.UPDATE)
-          val upsertDf = df.filter(df(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
+          val upsertDf = conflatedDf
+              .filter(conflatedDf(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
               .drop(EVENT_TYPE_COLUMN)
           upsertDf.write.putInto(tableName)
         } else {
-          val insertDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.INSERT)
+          val insertDf = conflatedDf.filter(conflatedDf(EVENT_TYPE_COLUMN) === EventType.INSERT)
               .drop(EVENT_TYPE_COLUMN)
           insertDf.write.insertInto(tableName)
-          val updateDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.UPDATE)
+          val updateDf = conflatedDf.filter(conflatedDf(EVENT_TYPE_COLUMN) === EventType.UPDATE)
               .drop(EVENT_TYPE_COLUMN)
           updateDf.write.putInto(tableName)
         }
       } else {
-        df.write.putInto(tableName)
+        conflatedDf.write.putInto(tableName)
       }
     }
     else {

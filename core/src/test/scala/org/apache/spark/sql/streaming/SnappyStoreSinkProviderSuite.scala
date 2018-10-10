@@ -253,6 +253,25 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assertData((0 to 30).map(i => Row(i, s"name$i", i)).toArray)
   }
 
+  test("test conflation") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 3)
+
+    // producing all records with same key `1` on partition 0.
+    kafkaTestUtils.sendMessages(topic, (0 to 999).map(i => s"1,name$i,$i,${i%3}").toArray, Some(0))
+
+    // producing records with keh `1` on multiple partitions. This may not lead to expected result
+    // kafkaTestUtils.sendMessages(topic, (0 to 999).map(i => s"1,name$i,$i,${i%3}").toArray)
+
+    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name999", 999)))
+  }
+
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
       retries: Int = 15): Unit = {
     if (retries == 0) {
