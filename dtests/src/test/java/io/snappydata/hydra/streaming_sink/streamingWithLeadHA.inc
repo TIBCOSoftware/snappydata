@@ -20,7 +20,7 @@ TASK       taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest t
            io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
            io.snappydata.hydra.cluster.SnappyPrms-sleepTimeSecsBeforeRestart = 60
            maxThreads = 1
-           startInterval = 60
+           startInterval = 120
            threadGroups = snappyThreads
            maxTimesToRun = 1;
 
