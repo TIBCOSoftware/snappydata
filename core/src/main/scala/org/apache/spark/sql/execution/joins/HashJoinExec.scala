@@ -110,7 +110,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
   override def requiredChildDistribution: Seq[Distribution] =
     if (replicatedTableJoin) {
-      UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
+      AllTuples :: AllTuples :: Nil	
+      //UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
     } else {
       // if left or right side is already distributed on a subset of keys
       // then use the same partitioning (for the larger side to reduce exchange)
