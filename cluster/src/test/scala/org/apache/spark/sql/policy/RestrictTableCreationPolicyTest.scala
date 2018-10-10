@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import org.junit.Assert.assertEquals
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.SnappySession
 
 class RestrictTableCreationPolicyTest extends PolicyTestBase {
 
@@ -41,7 +41,7 @@ class RestrictTableCreationPolicyTest extends PolicyTestBase {
   val numElements = 100
   val colTableName: String = s"$schema.ColumnTable"
   val rowTableName: String = s"$schema.RowTable"
-  var ownerContext: SnappyContext = _
+  var ownerSession: SnappySession = _
 
   var serverHostPort: String = _
 
@@ -52,31 +52,35 @@ class RestrictTableCreationPolicyTest extends PolicyTestBase {
       (s"name_$i", i)
     }
     val rdd = sc.parallelize(seq)
-    ownerContext = snc.newSession()
+    ownerSession = snc.snappySession.newSession()
     serverHostPort = TestUtil.startNetServer()
-    ownerContext.snappySession.conf.set(Attribute.USERNAME_ATTR, tableCreator)
-    ownerContext.snappySession.conf.set(Attribute.PASSWORD_ATTR, tableCreator)
-    val dataDF = ownerContext.createDataFrame(rdd)
-    val adminContext = snc.newSession()
-    adminContext.snappySession.conf.set(Attribute.USERNAME_ATTR, sysUser)
-    adminContext.snappySession.conf.set(Attribute.PASSWORD_ATTR, sysUser)
-    val adminConn = getConnection(Some(sysUser))
-    val adminStmt = adminConn.createStatement()
+    ownerSession.conf.set(Attribute.USERNAME_ATTR, tableCreator)
+    ownerSession.conf.set(Attribute.PASSWORD_ATTR, tableCreator)
+    val dataDF = ownerSession.createDataFrame(rdd)
+
+    // check failure in CREATE SCHEMA with authorization when using user session
     try {
-      adminStmt.execute(s"create schema $schema authorization ldapgroup:$ownerLdapGroup")
-    } finally {
-      adminConn.close()
+      ownerSession.sql(s"create schema $schema authorization ldapgroup:$ownerLdapGroup")
+      fail("Expected security failure")
+    } catch {
+      case se: SQLException if se.getSQLState == "42508" => // expected
     }
-    ownerContext.sql(s"CREATE TABLE $colTableName (name String, id Int) " +
+    // CREATE SCHEMA with authorization should work with admin privileges
+    val adminSession = snc.snappySession.newSession()
+    adminSession.conf.set(Attribute.USERNAME_ATTR, sysUser)
+    adminSession.conf.set(Attribute.PASSWORD_ATTR, sysUser)
+    adminSession.sql(s"create schema $schema authorization ldapgroup:$ownerLdapGroup")
+
+    ownerSession.sql(s"CREATE TABLE $colTableName (name String, id Int) " +
         s" USING column ")
 
-    ownerContext.sql(s"CREATE TABLE $rowTableName (name String, id Int) " +
+    ownerSession.sql(s"CREATE TABLE $rowTableName (name String, id Int) " +
         s" USING row ")
-    ownerContext.sql(s"grant select on table $colTableName to ldapgroup:$otherLdapGroup")
-    ownerContext.sql(s"grant select on table $rowTableName to ldapgroup:$otherLdapGroup")
+    ownerSession.sql(s"grant select on table $colTableName to ldapgroup:$otherLdapGroup")
+    ownerSession.sql(s"grant select on table $rowTableName to ldapgroup:$otherLdapGroup")
 
-    ownerContext.sql(s"alter table $colTableName enable row level security")
-    ownerContext.sql(s"alter table $rowTableName enable row level security")
+    ownerSession.sql(s"alter table $colTableName enable row level security")
+    ownerSession.sql(s"alter table $rowTableName enable row level security")
 
     dataDF.write.insertInto(colTableName)
     dataDF.write.insertInto(rowTableName)
@@ -87,8 +91,8 @@ class RestrictTableCreationPolicyTest extends PolicyTestBase {
   }
 
   override def afterAll(): Unit = {
-    ownerContext.dropTable(colTableName, ifExists = true)
-    ownerContext.dropTable(rowTableName, ifExists = true)
+    ownerSession.dropTable(colTableName, ifExists = true)
+    ownerSession.dropTable(rowTableName, ifExists = true)
     super.afterAll()
     System.clearProperty(Property.SNAPPY_RESTRICT_TABLE_CREATE)
   }
