@@ -330,6 +330,17 @@ public class SnappyPrms extends BasePrms {
   public static Long sleepTimeSecsForJobStatus;
 
   /**
+   * (int) how long (seconds) it should wait before restarting the VM
+   */
+  public static Long sleepTimeSecsBeforeRestart;
+
+  /**
+   * (boolean) should the process execute in background
+   */
+
+  public static Long executeInBackground;
+
+  /**
    * (int) how long (seconds) it should wait before retrieving server status
    */
   public static Long sleepTimeSecsForMemberStatus;
@@ -618,6 +629,16 @@ public class SnappyPrms extends BasePrms {
     return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
+  public static int getSleepTimeSecsBeforRestart() {
+    Long key = sleepTimeSecsBeforeRestart;
+    return tasktab().intAt(key, tab().intAt(key, 180));
+  }
+
+  public static boolean executeInBackGround() {
+    Long key = executeInBackground;
+    return tasktab().booleanAt(key, tab().booleanAt(key, true));
+  }
+
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
     return tasktab().intAt(key, tab().intAt(key, 120));
@@ -883,6 +904,11 @@ public class SnappyPrms extends BasePrms {
   public static String getLogLevel() {
     String snappyLogLevel = " -log-level=" + tab().stringAt(logLevel, "config");
     return snappyLogLevel;
+  }
+
+  public static String getLogFileName() {
+    Long key = logFileName;
+    return tasktab().stringAt(key, null);
   }
 
   public static Vector getSQLScriptNames() {

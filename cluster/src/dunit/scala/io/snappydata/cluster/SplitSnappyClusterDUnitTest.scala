@@ -675,7 +675,7 @@ object SplitSnappyClusterDUnitTest
     val count3 = snc.sql("select * from CUSTOMER_TEMP").count()
     assert(count3 == 750, s"Expected 750 rows. Actual rows = $count3")
     val catalog = snc.snappySession.sessionCatalog
-    assert(catalog.isTemporaryTable(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
+    assert(catalog.isLocalTemporaryView(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
     snc.sql("DROP TABLE CUSTOMER_TEMP")
   }
 

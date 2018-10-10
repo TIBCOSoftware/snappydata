@@ -160,11 +160,13 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val benchmark = new Benchmark("SNAP-2118 with random data", numElems1)
 
     var expectedResult: Array[Row] = null
-    benchmark.addCase("smj", numIters, () => snappy.sql("set snappydata.hashJoinSize=-1")) { i =>
+    benchmark.addCase("smj", numIters, () => snappy.sql("set snappydata.hashJoinSize=-1"),
+      () => {}) { i =>
       if (i == 1) expectedResult = snappy.sql(sql).collect()
       else snappy.sql(sql).collect()
     }
-    benchmark.addCase("hash", numIters, () => snappy.sql("set snappydata.hashJoinSize=1g")) { i =>
+    benchmark.addCase("hash", numIters, () => snappy.sql("set snappydata.hashJoinSize=1g"),
+      () => {}) { i =>
       if (i == 1) ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
       else snappy.sql(sql).collect()
     }

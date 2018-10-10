@@ -333,15 +333,16 @@ trait AlterableRelation {
 
 trait RowLevelSecurityRelation {
   def isRowLevelSecurityEnabled: Boolean
-  private[sql] val resolvedName: String
+  def resolvedName: String
   def enableOrDisableRowLevelSecurity(tableIdent: QualifiedTableName,
       enableRowLevelSecurity: Boolean)
 }
 
 @DeveloperApi
-trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation{
+trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation {
 
   protected val connFactory: () => Connection
+
   protected def dialect: JdbcDialect
 
   val sqlContext: SQLContext
