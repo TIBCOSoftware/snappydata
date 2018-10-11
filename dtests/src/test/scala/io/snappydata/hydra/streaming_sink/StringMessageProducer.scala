@@ -16,14 +16,16 @@
  */
 package io.snappydata.hydra.streaming_sink
 
+import java.sql.Connection
 import java.time.LocalDate
-import java.util.Properties
 import java.time.temporal.ChronoUnit.DAYS
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
-import org.apache.kafka.common.serialization.{LongSerializer, StringSerializer}
+import java.util.Properties
+
 import scala.util.Random
 
-import org.scalatest.time.Days
+import io.snappydata.hydra.testDMLOps.DerbyTestUtils
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import org.apache.kafka.common.serialization.{LongSerializer, StringSerializer}
 
 object StringMessageProducer {
 
@@ -64,6 +66,9 @@ object StringMessageProducer {
 final class RecordCreator(topic: String, eventCount: Int, startRange: Int,
     producer: KafkaProducer[Long, String], opType: Int)
 extends Runnable {
+
+  val schema = Array ("id", "firstName", "middleName", "lastName", "title", "address", "country",
+    "phone", "dateOfBirth", "age", "status", "email", "education", "occupation")
   val random = new Random()
   val range: Long = 9999999999L - 1000000000
   val statusArr = Array("Married", "Single")
@@ -71,6 +76,7 @@ extends Runnable {
   val occupationArr = Array("Employee", "Business")
   val educationArr = Array("Under Graduate", "Graduate", "PostGraduate")
   val countryArr = Array("US", "UK", "Canada", "India")
+  var derbyTestUtils = new DerbyTestUtils
 
   def run() {
     val title: String = titleArr(random.nextInt(titleArr.length))
@@ -84,14 +90,80 @@ extends Runnable {
     val email: String = randomAlphanumeric(10) + "@" + randomString(5) + "." + randomString(3)
     val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
     (startRange to (startRange + eventCount - 1)).foreach(i => {
-      // val currtime = System.currentTimeMillis()
-      // val r = scala.util.Random
-      // val id = r.nextInt(1000)
-      val data = new ProducerRecord[Long, String](topic, i, s"$i,fName$i,mName$i,lName$i,$title," +
-          s"$address,$country,$phone,$dob,$age,$status,$email,$education,$occupation,$opType")
+      val row: String = s"$i,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
+          s"$status,$email,$education,$occupation,$opType"
+      val conn: Connection = derbyTestUtils.getDerbyConnectionForScala
+      val data = new ProducerRecord[Long, String](topic, i, row)
+      performOpInDerby(conn, row, opType)
       producer.send(data)
       })
     println(s"Done producing records...")
+  }
+
+  def performOpInDerby(conn: Connection, row: String, eventType: Int): Unit = {
+    var stmt: String = ""
+    if (eventType == 0) { // insert
+      stmt = getInsertStmt(row)
+    } else if (eventType == 1) { // update
+      stmt = getUpdateStmt(row)
+    } else if (eventType == 2) { // delete
+      getDeleteStmt(row)
+    }
+    println(s" derby stmt is : $stmt")
+    val numRows: Int = conn.createStatement().executeUpdate(stmt)
+    if (numRows == 0 && eventType == 1) {
+      stmt = getInsertStmt(row)
+      conn.createStatement().executeUpdate(stmt)
+    }
+    // write to file
+  }
+
+  def getInsertStmt(row: String): String = {
+    var stmt: String = ""
+    val columnVal = row.split(",")
+    val id: Int = (columnVal {0}).toInt
+    stmt = "insert into persoon values("
+    for (i <- 0 to columnVal.length - 1) {
+      if (i == 0 || i == 9) {
+        stmt = stmt + columnVal {i}
+      } else {
+        stmt = stmt + "'" + columnVal {i} + "'"
+      }
+      if (i != (columnVal.length - 1)) {
+        stmt = stmt + ","
+      }
+    }
+    stmt = stmt + ")"
+    stmt
+  }
+
+  def getUpdateStmt(row: String): String = {
+    var stmt: String = ""
+    val columnVal = row.split(",")
+    val id: Int = (columnVal {0}).toInt
+    stmt = stmt + "update table persoon set "
+    for (i <- 0 to columnVal.length - 1) {
+      if (i == 0 ) {
+        // ignore id column
+      }
+      else if (i == 9) {
+        stmt = stmt + schema{i} + "=" + columnVal {i}
+      } else {
+        stmt = stmt + schema{i} + "='" + columnVal {i} + "'"
+      }
+      if (i != (columnVal.length - 1)) {
+        stmt = stmt + ","
+      }
+    }
+    stmt = stmt + " where ID = " + id
+    stmt
+  }
+
+  def getDeleteStmt(row: String): String = {
+    var stmt: String = ""
+    val id: Int = (row.split(",") {0}).toInt
+    stmt = stmt + "delete from persoon where ID = " + id
+    stmt
   }
 
   def randomAlphanumeric(length: Int): String = {
