@@ -45,13 +45,16 @@ object KafkaMessageProducer {
     println("Sending Kafka messages of topic " + topic + " to brokers " + brokers)
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
-    val thread = new Thread(new RecordCreator(topic, producer, fileName, columnIndexToBeModified))
-    thread.start()
+    while(true) {
+      val thread = new Thread(new RecordCreator(topic, producer, fileName, columnIndexToBeModified))
+      thread.start()
+      thread.join()
+      Thread.sleep(30*60*1000)
+    }
     println(s"Done sending events Kafka messages of topic $topic")
     producer.close()
     System.exit(0)
   }
-
 }
 
 final class RecordCreator(topic: String, producer: KafkaProducer[Long, String], fileName: String,
