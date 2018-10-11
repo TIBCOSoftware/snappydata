@@ -936,6 +936,9 @@ class SmartConnectorRowRDD(_session: SnappySession,
           clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
             new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
             tableName, true).setMetadataVersion(relDestroyVersion))
+        } else {
+          clientConn.setCommonStatementAttributes(
+            new StatementAttrs().setMetadataVersion(relDestroyVersion))
         }
         clientConn
       case _ => null
