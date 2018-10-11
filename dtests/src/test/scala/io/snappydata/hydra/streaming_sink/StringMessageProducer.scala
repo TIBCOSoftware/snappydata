@@ -89,14 +89,15 @@ extends Runnable {
     val address: String = randomAlphanumeric(20)
     val email: String = randomAlphanumeric(10) + "@" + randomString(5) + "." + randomString(3)
     val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
+    val conn: Connection = derbyTestUtils.getDerbyConnection
     (startRange to (startRange + eventCount - 1)).foreach(i => {
       val row: String = s"$i,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
           s"$status,$email,$education,$occupation,$opType"
-      val conn: Connection = derbyTestUtils.getDerbyConnectionForScala
       val data = new ProducerRecord[Long, String](topic, i, row)
       performOpInDerby(conn, row, opType)
       producer.send(data)
       })
+    derbyTestUtils.closeDiscConnection(conn, true)
     println(s"Done producing records...")
   }
 
