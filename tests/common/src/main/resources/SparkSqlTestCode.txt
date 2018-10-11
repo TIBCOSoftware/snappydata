@@ -49,18 +49,27 @@ connectionProperties.setProperty("pool-minActive", "50")
 connectionProperties.setProperty("pool-minIdleSize", "10")
 connectionProperties.setProperty("driver", "io.snappydata.jdbc.ClientPoolDriver")
 val df = spark.read.jdbc(JDBC_URL, "ROWTABLE", connectionProperties)
-val result = df.select("COL1").groupBy("COL2").avg("COL1")
+val result = df.select("COL1").groupBy("COL2").avg("COL1").collect()
+assert(result.length == 5) // expected rows
+assert(result.first().getAs("COL1") == 3) // expected result
 
-val df1 = spark.read.jdbc(JDBC_URL, "AIRLINE", getProperties).select("flightnum", "Year", "month").where("flightNum = '1'")
-df1.collect()
-val df2 = spark.read.jdbc(url = JDBC_URL,table = "COLTABLE",columnName = "COL1",lowerBound = 0, \
+val df1 = spark.read.jdbc(JDBC_URL, "AIRLINE", getProperties) \
+.select("COL1", "COL2", "COL3") \
+.where("COL1 = '2'").collect()
+assert(df1.length == 1) // expected rows
+assert(df1.first().getAs("COL2") == 2) // expected result
+
+val df2 = spark.read.jdbc(url = JDBC_URL,table = "COLTABLE",columnName = "COL1", \
+      lowerBound = 0, \
       upperBound = 100,numPartitions = 16, \
       connectionProperties = connectionProperties)
-df2.collect()
+assert(df2.length == 5) // expected rows
+assert(df2.first().getAs("COL1") == 1) // expected result
 // Client Pool Driver Test - End
 
 val pushdown_query = s"(select * from ROWTABLE where col1=2) emp_alias"
-val df1 = spark.read.jdbc(url = JDBC_URL, table = pushdown_query, properties = getProperties)
-df1.collect()
+val df3 = spark.read.jdbc(url = JDBC_URL, table = pushdown_query, properties = getProperties)
+assert(df3.length == 1) // expected rows
+assert(df3.first().getAs("COL1") == 1) // expected result
 
 System.exit(0)
