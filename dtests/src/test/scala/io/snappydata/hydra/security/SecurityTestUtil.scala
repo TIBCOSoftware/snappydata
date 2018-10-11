@@ -71,7 +71,7 @@ object SecurityTestUtil {
 
   def createPolicy(snc: SnappyContext, userSchema: Array[String],
       userName: Array[String]): Unit = {
-      println("Inside createPolicy() ")
+    println("Inside createPolicy() ")
     var filterCond, orderBy = ""
     var cnt = 1
     try {
@@ -123,7 +123,7 @@ object SecurityTestUtil {
     }
     catch {
       case ex: Exception => {
-        println("Caught exception in createPolicy " +  ex.printStackTrace())
+        println("Caught exception in createPolicy " + ex.printStackTrace())
       }
     }
     println("Successfully completed createPolicy task")
@@ -131,18 +131,18 @@ object SecurityTestUtil {
 
   def dropPolicy(snc: SnappyContext): Unit = {
     println("Inside dropPolicy()")
-    try{
+    try {
       val policyMap = policyUserMap
-      for((k, v) <- policyMap ){
+      for ((k, v) <- policyMap) {
         val policyNm = k
         val schemaOwner = v
         val dropPolicyStr = " DROP POLICY " + policyNm
-        println( "Dropping policy p " + policyNm + " with schemaOwner " + schemaOwner)
+        println("Dropping policy p " + policyNm + " with schemaOwner " + schemaOwner)
         snc.sql(dropPolicyStr)
       }
     }
     catch {
-      case ex : Exception => {
+      case ex: Exception => {
         println("Caught exception in dropPolicy() " + ex.printStackTrace())
       }
     }
@@ -165,7 +165,7 @@ object SecurityTestUtil {
       }
     }
     catch {
-      case ex : Exception => {
+      case ex: Exception => {
         println("Caught exception in enableRLS " + ex.printStackTrace())
       }
     }
@@ -196,18 +196,21 @@ object SecurityTestUtil {
             println("The select Query is " + selectQry);
             println("The Final select Query tobe executed by policy User is  " + finalSelectQ(0));
             val currDF = snc.sql(finalSelectQ(0))
+            val currFiltrDF = snc.sql(selectQry)
             val currDFSize = currDF.count()
             val prevDFSize = prevDF.count()
-            println("Current DF size = " + currDFSize + " Previous DF size = " + prevDFSize)
-            if (currDFSize == prevDFSize) {
+            val currFiltrDFSize = currFiltrDF.count()
+            println("Current DF size = " + currDFSize + " Previous DF size = " + prevDFSize +
+                " Current DF with filter size = " + currFiltrDFSize)
+            if ((currDFSize == prevDFSize) && (currFiltrDFSize == prevDFSize)) {
               println(" The number of rows returned are equal ")
             }
             else {
-              println(" The number of rows returned donot match Current DF size = "
-                  + currDFSize + " Previous DF size = " + prevDFSize)
+              println(" The number of rows returned donot match Current DF size = " + currDFSize
+                  + " Previous DF size = " + prevDFSize + " and CurrFiltrDF Size = " +
+                  currFiltrDFSize)
             }
           }
-          // queryMap = queryUserMap.
         }
 
     catch {

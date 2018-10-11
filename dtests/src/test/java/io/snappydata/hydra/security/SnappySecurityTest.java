@@ -273,6 +273,7 @@ public class SnappySecurityTest extends SnappyTest {
     ResultSetMetaData currRSMD;
     ResultSetMetaData prevRSMD;
     ResultSet currRS;
+    ResultSet currFiltrRS;
     try {
       for (Map.Entry<Map<String, ResultSet>, String> entry : queryUserMap.entrySet()) {
         Map<String, ResultSet> queryMap = entry.getKey();
@@ -287,11 +288,13 @@ public class SnappySecurityTest extends SnappyTest {
           conn = getSecuredLocatorConnection(policyUser, policyUser + "123");
           try {
             currRS = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(finalSelectQ[0]);
+            currFiltrRS = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(selectQry);
             int currRSSize = getRSCount(currRS);
             int prevRSSize = getRSCount(prevRS);
-            Log.getLogWriter().info("The currRSSize = " + currRSSize + " and prevRSSize = " + prevRSSize);
+            int currFiltrRSSize = getRSCount(currFiltrRS);
+            Log.getLogWriter().info("The currRSSize = " + currRSSize + " and prevRSSize = " + prevRSSize + " and  currFiltrRSSize = " + currFiltrRSSize);
             //Compare the prevRS and rs ,it should be same.
-            if (currRSSize == prevRSSize) {
+            if ((currRSSize == prevRSSize) && (currFiltrRSSize == prevRSSize)) {
               while (currRS.next() && prevRS.next()) {
                 currRSMD = currRS.getMetaData();
                 prevRSMD = prevRS.getMetaData();
@@ -312,7 +315,7 @@ public class SnappySecurityTest extends SnappyTest {
               }
               prevRS.beforeFirst();
             } else
-              Log.getLogWriter().info("Caught exception : currRSCnt = " + currRSSize + " is not equal to  prevRSSize = " + prevRSSize);
+              Log.getLogWriter().info("Caught exception : currRSCnt = " + currRSSize + " is not equal to  prevRSSize = " + prevRSSize + " and not equal to currFiltrRSSize = " + currFiltrRSSize);
           } catch (SQLException ex) {
             Log.getLogWriter().info("Got sql exception " + ex.getMessage());
           }
