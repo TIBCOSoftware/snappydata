@@ -23,7 +23,8 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = i
             threadGroups = snappyThreads, snappySingleThread;
 
 INITTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScripts
-           io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = /export/shared/QA_DATA/VAPOC/snappysql
+           io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = /export/shared/QA_DATA/VAPOC/csvSqlScripts
+           io.snappydata.hydra.cluster.SnappyPrms-dataLocation = /export/shared/QA_DATA/VAPOC/data
            threadGroups = snappySingleThread
            ;
 

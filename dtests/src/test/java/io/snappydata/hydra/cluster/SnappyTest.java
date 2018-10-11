@@ -1600,6 +1600,28 @@ public class SnappyTest implements Serializable {
   }
 
   /**
+   * List all files from a directory and its subdirectories
+   *
+   * @param directoryName to be listed
+   * @param scriptNames vector for adding sql script list to be executed
+   */
+  public static synchronized void listFilesAndFilesSubDirectories(String directoryName, Vector scriptNames) {
+    File directory = new File(directoryName);
+    //get all the files from a directory
+    File[] fList = directory.listFiles();
+    for (File file : fList) {
+      if (file.isFile()) {
+        if (file.getName().contains(".sql")) {
+          Log.getLogWriter().info("SS : sqlFile is: " + file);
+          scriptNames.add(file.getAbsolutePath());
+        }
+      } else if (file.isDirectory()) {
+        listFilesAndFilesSubDirectories(file.getAbsolutePath(), scriptNames);
+      }
+    }
+  }
+
+  /**
    * Executes user SQL scripts.
    */
   public static synchronized void HydraTask_executeSQLScripts() {
@@ -1620,10 +1642,7 @@ public class SnappyTest implements Serializable {
         throw new TestException("Specified path: " + scriptName + " does not exists.");
       if (scriptName.exists() && scriptName.isDirectory()) {
         scriptNames.remove(userDirName);
-        for (File sqlFile : scriptName.listFiles()) {
-          Log.getLogWriter().info("SS : sqlFile is: " + sqlFile);
-          scriptNames.add(sqlFile.getAbsolutePath());
-        }
+        listFilesAndFilesSubDirectories(scriptName.getAbsolutePath(), scriptNames);
       }
     }
     try {
@@ -1637,10 +1656,10 @@ public class SnappyTest implements Serializable {
       maxPartitionSizeList = SnappyPrms.getMaxPartitionSizeList();
       evictionByOptionList = SnappyPrms.getEvictionByOptionList();
       if (dataLocationList.size() != scriptNames.size()) {
-        Log.getLogWriter().info("Adding \" \" parameter in the dataLocationList for the  " +
+        Log.getLogWriter().info("Adding last element from the  dataLocationList vector in the dataLocationList for the  " +
             "scripts for which no dataLocation is specified.");
         while (dataLocationList.size() != scriptNames.size())
-          dataLocationList.add(" ");
+          dataLocationList.add(dataLocationList.lastElement());
       }
       if (persistenceModeList.size() != scriptNames.size()) {
         Log.getLogWriter().info("Adding \"sync\" parameter in the persistenceModeList for" +
