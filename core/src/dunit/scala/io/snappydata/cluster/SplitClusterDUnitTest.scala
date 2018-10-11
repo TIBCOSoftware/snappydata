@@ -17,7 +17,7 @@
 package io.snappydata.cluster
 
 import java.nio.file.{Files, Paths}
-import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, SQLException, Statement, Timestamp}
+import java.sql.{Blob, Clob, Connection, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -133,9 +133,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   private val locatorPort = AvailablePortHelper.getRandomAvailableTCPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
-  def getConnection(netPort: Int, props: Properties = new Properties()): Connection =
-    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort", props)
 
   override def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
   }

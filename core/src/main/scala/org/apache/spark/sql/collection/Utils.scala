@@ -791,6 +791,8 @@ object Utils {
     case Some(ui) => Some(ui.executorsListener)
     case _ => None
   }
+
+  def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
