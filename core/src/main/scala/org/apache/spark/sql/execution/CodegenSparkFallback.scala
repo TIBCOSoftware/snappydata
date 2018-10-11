@@ -28,7 +28,6 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.internal.CodeGenerationException
 
 /**
@@ -136,55 +135,6 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         } else {
           throw t
         }
-
-//        t match {
-//          case s: Throwable if isConnectorStaleCatalogException(t) =>
-//            logWarning(s"SmartConnector catalog is not upto date")
-//            val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-//            session.sessionCatalog.invalidateAll()
-////            SnappyStoreHiveCatalog.registerRelationDestroy()
-//            SnappySession.clearAllCache()
-//            throw s
-//
-////            session.removeContextObject(SnappySession.ExecutionKey)
-////            SnappySession.planCache.invalidate(session.currentKey)
-////            SnappySession.sqlPlan(session, session.currentKey.sqlText)
-////            val qe = session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey)
-////            val plan = qe.get().executedPlan
-////            val result = f(plan)
-////            // update child for future executions
-////            child = plan
-////            result
-//
-//          case c: Throwable if isCodeGenerationException(t) =>
-//            // fallback to Spark plan
-//            val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-//            session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
-//              case Some(exec) =>
-//                val msg = new StringBuilder
-//                var cause = t
-//                while (cause ne null) {
-//                  if (msg.nonEmpty) msg.append(" => ")
-//                  msg.append(cause)
-//                  cause = cause.getCause
-//                }
-//                logInfo(s"SnappyData code generation failed due to $msg." +
-//                    s" Falling back to Spark plans.")
-//                session.sessionState.disableStoreOptimizations = true
-//                try {
-//                  val plan = exec().executedPlan
-//                  val result = f(plan)
-//                  // update child for future executions
-//                  child = plan
-//                  result
-//                } finally {
-//                  session.sessionState.disableStoreOptimizations = false
-//                }
-//              case None => throw t
-//            }
-//
-//          case _: Throwable => throw t
-//        }
     }
   }
 
