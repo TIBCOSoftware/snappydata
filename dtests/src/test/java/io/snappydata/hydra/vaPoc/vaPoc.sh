@@ -40,6 +40,9 @@ shift
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1 -l  $SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main/io/snappydata/hydra/cluster/local.startEmbeddedModeClusterWithUserConfs.conf -d false io/snappydata/hydra/cluster/startEmbeddedModeClusterWithUserConfs.bt
 sleep 30;
 
+#$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1 -l  /export/shared/QA_DATA/snappyRegrScript/local.startEmbeddedModeClusterWithUserConfs.conf -d false io/snappydata/hydra/cluster/startEmbeddedModeClusterWithUserConfs.bt
+#sleep 30;
+
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/vaPoc/vaPoc.bt
 sleep 30;
 
