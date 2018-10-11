@@ -71,7 +71,7 @@ object SecurityTestUtil {
 
   def createPolicy(snc: SnappyContext, userSchema: Array[String],
       userName: Array[String]): Unit = {
-    println("Inside createPolicy() ")
+      println("Inside createPolicy() ")
     var filterCond, orderBy = ""
     var cnt = 1
     try {
@@ -86,6 +86,10 @@ object SecurityTestUtil {
             filterCond = "CATEGORYID = 4"
             orderBy = " ORDER BY CATEGORYID asc "
           }
+
+          val grantSql = " GRANT SELECT on " + userSchema(s) + " TO " + userName(i)
+          println("GRANT sql statement is " + grantSql)
+          snc.sql(grantSql)
 
           var policyName = "p" + 0;
           while (policyUserMap.contains(policyName)) {
@@ -127,7 +131,21 @@ object SecurityTestUtil {
 
   def dropPolicy(snc: SnappyContext): Unit = {
     println("Inside dropPolicy()")
-
+    try{
+      val policyMap = policyUserMap
+      for((k, v) <- policyMap ){
+        val policyNm = k
+        val schemaOwner = v
+        val dropPolicyStr = " DROP POLICY " + policyNm
+        println( "Dropping policy p " + policyNm + " with schemaOwner " + schemaOwner)
+        snc.sql(dropPolicyStr)
+      }
+    }
+    catch {
+      case ex : Exception => {
+        println("Caught exception in dropPolicy() " + ex.printStackTrace())
+      }
+    }
   }
 
   def enableRLS(snc: SnappyContext, userSchema: Array[String]): Unit = {
@@ -154,9 +172,9 @@ object SecurityTestUtil {
     println("Successfully completed enableRLS task")
   }
 
-  def validateRLS(snc: SnappyContext): Unit = {
-    val isAltrTableRLS = true
-    val isDropPolicy = false
+  def validateRLS(snc: SnappyContext, isDropPolicy: Boolean, isAltrTableRLS:
+  Boolean = true): Unit = {
+    println("Inside validateRLS")
     var queryUserMap: HashMap[Map[String, DataFrame], String] = HashMap()
     if (isDropPolicy || !isAltrTableRLS) {
       queryUserMap = policyFullSelectQueryMap; // this map contains rs fro select * from table query

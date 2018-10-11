@@ -20,8 +20,8 @@ import java.io.PrintWriter
 
 import scala.util.{Failure, Success, Try}
 
+import com.pivotal.gemfirexd.Attribute
 import com.typesafe.config.Config
-import io.snappydata.hydra.northwind.NWQueries
 import io.snappydata.hydra.security.SecurityTestUtil
 
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
@@ -43,20 +43,26 @@ object RLSSnappyJob extends SnappySQLJob {
     userNames(0) = user3;
     userNames(1) = user4;
 
+    val snc3 = snc.newSession()
+    snc3.snappySession.conf.set(Attribute.USERNAME_ATTR, "user3")
+    snc3.snappySession.conf.set(Attribute.PASSWORD_ATTR, "user3123")
+
+    val snc4 = snc.newSession()
+    snc4.snappySession.conf.set(Attribute.USERNAME_ATTR, "user4")
+    snc4.snappySession.conf.set(Attribute.PASSWORD_ATTR, "user4123")
+
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
     // scalastyle:off println
     val pw = new PrintWriter("RLSSnappyJob.out")
     Try {
-    //  snc.setConf("dataFilesLocation", dataFilesLocation)
-      NWQueries.snc = snc
-    //  NWQueries.dataFilesLocation = dataFilesLocation
-      // SecurityTestUtil.createColRowTables(snc)
       SecurityTestUtil.createPolicy(snc, userSchema, userNames)
       SecurityTestUtil.enableRLS(snc, userSchema)
-    /*  SecurityTestUtil.runQueries(snc, queryArray, expectedCntWithGrant,
-        unExpectedCntWithGrant, isGrant, userSchema, isSelect, pw)
-   */   runQuery()
+      SecurityTestUtil.validateRLS(snc3, false)
+      SecurityTestUtil.validateRLS(snc4, false)
+      SecurityTestUtil.dropPolicy(snc)
+      SecurityTestUtil.validateRLS(snc3, true)
+      SecurityTestUtil.validateRLS(snc4, true)
     }
     match {
       case Success(v) => pw.close()
@@ -66,7 +72,6 @@ object RLSSnappyJob extends SnappySQLJob {
     }
     def runQuery() : Unit = {
       println("Inside runQuery")
-
     }
   }
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
