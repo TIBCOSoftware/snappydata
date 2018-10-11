@@ -15,7 +15,7 @@ import util.TestHelper;
 
 public class DerbyTestUtils {
   protected static Connection discConn=null;
-  public static boolean hasDerbyServer = false;
+  public static boolean hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
   public static HydraThreadLocal derbyConnection = new HydraThreadLocal();
   public static HydraThreadLocal resetDerbyConnection = new HydraThreadLocal();
   //whether needs to reset the derby connection
@@ -26,7 +26,6 @@ public class DerbyTestUtils {
   public static void HydraTask_initialize() {
     if (testInstance == null)
       testInstance = new DerbyTestUtils();
-    hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
     snappyDMLObj = new SnappyDMLOpsUtil();
   }
 

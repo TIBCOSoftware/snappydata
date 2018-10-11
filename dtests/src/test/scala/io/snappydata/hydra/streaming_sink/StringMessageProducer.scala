@@ -23,7 +23,7 @@ import java.util.Properties
 
 import scala.util.Random
 
-import io.snappydata.hydra.testDMLOps.DerbyTestUtils
+import io.snappydata.hydra.testDMLOps.{DerbyTestUtils, SnappySchemaPrms}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.{LongSerializer, StringSerializer}
 
@@ -49,13 +49,9 @@ object StringMessageProducer {
     println("Sending Kafka messages of topic " + topic + " to brokers " + brokers)
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
-    val threads = new Array[Thread](numThreads)
-    for (i <- 0 until numThreads) {
-      val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType))
-      thread.start()
-      threads(i) = thread
-    }
-    threads.foreach(_.join())
+    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType))
+    thread.start()
+    thread.join()
     println(s"Done sending $eventCount Kafka messages of topic $topic")
     producer.close()
     System.exit(0)
@@ -94,7 +90,10 @@ extends Runnable {
       val row: String = s"$i,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
           s"$status,$email,$education,$occupation,$opType"
       val data = new ProducerRecord[Long, String](topic, i, row)
-      performOpInDerby(conn, row, opType)
+      if(DerbyTestUtils.hasDerbyServer) {
+        DerbyTestUtils.HydraTask_initialize
+        performOpInDerby(conn, row, opType)
+      }
       producer.send(data)
       })
     derbyTestUtils.closeDiscConnection(conn, true)
