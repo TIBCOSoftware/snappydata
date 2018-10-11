@@ -22,13 +22,10 @@ To restrict the permissions of a user at row level, [create a simple policy](#cr
 <a id= actrowlevel> </a>
 ## Activating Row Level Security
 For activating Row Level Security, a system property `-J-Dsnappydata.enable-rls=true` must be added to the configuration files of servers, leads, and locators when you [configure the cluster](/configuring_cluster/configuring_cluster.md). By default this is off.
-If this property is not added, you cannot enable the Row Level Security and an exception is given when you create policies.
+If this property is not added, you cannot enable the Row Level Security and an exception is given when you enable the policies for row level security.
 
 !!! Warning
-	When this property is set to **true**, the Smart Connector access to SnappyData can fail.
-
-We should also document that when this property is ON then Smart Connector access to SnappyData will fail.
-( I think we can skip the details about internally query routing happening for even point queries on row tables. )
+	When this property is set to **true**, the Smart Connector access to SnappyData can fail with `java.lang.IllegalStateException: Row level security (snappydata.enable-rls) does not allow smart connector mode` exception.
 
 <a id= createpolicy> </a>
 ## Creating a Policy
