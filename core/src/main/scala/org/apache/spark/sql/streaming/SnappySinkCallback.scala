@@ -29,7 +29,6 @@ import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.TEST_FAILBATCH_O
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.util.Utils
-
 /**
  * Should be implemented by clients who wants to override default behavior provided by
  * [[DefaultSnappySinkCallback]].
@@ -138,18 +137,17 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
     df.cache().count()
     val tableName = parameters(TABLE_NAME).toUpperCase
-
     val keyColumns = snappySession.sessionCatalog.getKeyColumns(tableName)
     DefaultSnappySinkCallback.log.debug(s"Processing for $tableName and batchId $batchId")
     val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumns(tableName).nonEmpty
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
     if (keyColumns.nonEmpty) {
       import org.apache.spark.sql.functions._
-      val columnNames = keyColumns.map(_.name)
-      val exprs = df.columns.filter(c => !columnNames.contains(c.toUpperCase))
+      val keyColumnNames = keyColumns.map(_.name)
+      val exprs = df.columns.filter(c => !keyColumnNames.contains(c.toUpperCase))
           .map(c => last(c).alias(c)).toList
-      val conflatedDf = df.groupBy(columnNames.head, columnNames.tail: _*)
-          .agg(exprs.head, exprs.tail: _*)
+      val conflatedDf = df.groupBy(keyColumnNames.head, keyColumnNames.tail: _*)
+          .agg(exprs.head, exprs.tail: _*).select(df.columns.head,df.columns.tail: _*)
       conflatedDf.cache().count()
 
       if (eventTypeColumnAvailable) {
