@@ -66,7 +66,7 @@ final class RecordCreator(topic: String, producer: KafkaProducer[Long, String], 
       println(line)
       val columnArr = line.split(",")
       columnArr{colIndex} = columnArr{colIndex} +  randomString(3)
-      val line1 = columnArr.mkString(",") + "," + 1
+      val line1 = columnArr.mkString(",") + ",1"
       val data = new ProducerRecord[Long, String](topic, id, line1)
       producer.send(data)
       id += 1
