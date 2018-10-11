@@ -24,7 +24,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import org.codehaus.commons.compiler.CompileException
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMode}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
@@ -66,7 +66,15 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
     false
   }
 
-  protected[sql] def isConnectorCatalogStaleException(t: Throwable): Boolean = {
+  protected def isConnectorCatalogStaleException(t: Throwable, session: SnappySession): Boolean = {
+
+    // error check needed in SmartConnector mode only
+    val isSmartConnectorMode = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
+    }
+    if (!isSmartConnectorMode) return false
+
     // search for any janino or code generation exception
     var cause = t
     do {
@@ -100,15 +108,19 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         // is still usable:
         SystemFailure.checkFailure()
 
-        if (isConnectorCatalogStaleException(t)) {
-          logWarning(s"SmartConnector catalog is not upto date")
-          val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+
+        if (isConnectorCatalogStaleException(t, session)) {
+          logWarning(s"SmartConnector catalog is not upto date. " +
+              s"Please reconstruct the dataframe and retry the operation")
           session.sessionCatalog.invalidateAll()
           SnappySession.clearAllCache()
-          throw t
+          throw new CatalogStaleException("Smart connector catalog is " +
+              "not upto date due to table schema " +
+              "change (DROP/CREATE/ALTER operation). " +
+              "Please reconstruct the dataframe and retry the operation", t)
         } else if (isCodeGenerationException(t)) {
           // fallback to Spark plan
-          val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
           session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
             case Some(exec) =>
               val msg = new StringBuilder
