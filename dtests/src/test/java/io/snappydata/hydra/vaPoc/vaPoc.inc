@@ -1,5 +1,5 @@
 INCLUDE $JTESTS/hydraconfig/hydraparams1.inc;
-INCLUDE $JTESTS/hydraconfig/topology_2.inc;
+INCLUDE $JTESTS/hydraconfig/topology_1.inc;
 
 hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
@@ -41,10 +41,6 @@ hydra.Prms-alwaysDoEndTasks = true;
 
 hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
                                   (\"-Xms512m -Xmx1g \", ${${A}Hosts}, true)"
-                             ncf
-                             ,
-                             fcn "hydra.TestConfigFcns.duplicate
-                                  (\"-Xms512m -Xmx1g \", ${${B}Hosts}, true)"
                              ncf;
 hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";
 

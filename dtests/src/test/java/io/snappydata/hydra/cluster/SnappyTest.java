@@ -1613,8 +1613,13 @@ public class SnappyTest implements Serializable {
       String s = "No Script names provided for executing in the Hydra TASK";
       throw new TestException(s);
     } else {
-      File scriptName = new File((String) scriptNames.get(0));
+      String userDirName = (String) scriptNames.elementAt(0);
+      Log.getLogWriter().info("SS - scriptName is : " + userDirName);
+      File scriptName = new File(userDirName);
+      if (!scriptName.exists())
+        throw new TestException("Specified path: " + scriptName + " does not exists.");
       if (scriptName.exists() && scriptName.isDirectory()) {
+        scriptNames.remove(userDirName);
         for (File sqlFile : scriptName.listFiles()) {
           Log.getLogWriter().info("SS : sqlFile is: " + sqlFile);
           scriptNames.add(sqlFile.getAbsolutePath());
@@ -1698,6 +1703,7 @@ public class SnappyTest implements Serializable {
         String maxPartitionSize = (String) maxPartitionSizeList.elementAt(i);
         String evictionByOption = (String) evictionByOptionList.elementAt(i);
         String dataLocation = snappyTest.getDataLocation(location);
+        Log.getLogWriter().info("SS - userScript is:" + userScript);
         String filePath = snappyTest.getScriptLocation(userScript);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator;
