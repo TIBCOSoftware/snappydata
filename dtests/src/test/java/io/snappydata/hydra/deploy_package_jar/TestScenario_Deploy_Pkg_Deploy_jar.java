@@ -6,7 +6,7 @@
  * Version 1.0  - 09/24/2018
  * </p>
  */
-package io.snappydata.hydra.deployThirdPartyConnectors;
+package io.snappydata.hydra.deploy_package_jar;
 
 import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
@@ -146,15 +146,24 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
     }
 
 
-    //FIXME :
+    /**
+     * This method use the undeploy command with
+     *
+     * @since 1.0.2
+     */
+    public static void HydraTask_undeloyAll() {
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
+        deploy_Pkg_Jars.undeloyAll();
+    }
+
+
+    //FIXME  -- It is Fixed (8th Oct,2018) :
     //In running cluster when we deployed the packages and jars and if we do not stop the cluster and if we try to deploy the packages again with ivy2 as local cache
     //below exception occurs :
     //snappy-sql> deploy package sparkavro_integration 'com.databricks:spark-avro_2.11:4.0.0' path '/home/cbhatt/TPC';
     //snappy-sql> deploy package sparkavro_integration 'com.databricks:spark-avro_2.11:4.0.0';
     //ERROR 38000: (SQLState=38000 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-0) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(8012)<v1>:22584, caused by java.lang.IllegalArgumentException: requirement failed: File com.databricks_spark-avro_2.11-4.0.0.jar was already registered with a different path (old path = /home/cbhatt/TPC/jars/com.databricks_spark-avro_2.11-4.0.0.jar, new path = /home/cbhatt/.ivy2/jars/com.databricks_spark-avro_2.11-4.0.0.jar' was thrown while evaluating an expression.
     //Hence at the starting we need to do the cleanup, stop the cluster and then executes the below test cases.
-    //TODO
-    //Right now, put the test cases on hold, need to discuss with Neeraj.
 
     /**
      * This method call the deployPackages() method and ivy2 is used to store the repository locally.
@@ -164,7 +173,6 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      */
     public static void HydraTask_deployPackageUsingJDBC_ivy2() {
         deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.clearAll();
         deploy_Pkg_Jars.deployPackages_ivy2();
     }
 
@@ -214,8 +222,10 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      */
     private void clearAll() {
         Log.getLogWriter().info("ClearAll()");
-        source_Alias_Coordinate.clear();
-        result_Alias_Coordinate.clear();
+        if(!source_Alias_Coordinate.isEmpty())
+            source_Alias_Coordinate.clear();
+        if(!result_Alias_Coordinate.isEmpty())
+            result_Alias_Coordinate.clear();
     }
 
     /**
@@ -283,7 +293,7 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
                 }
             }
         } catch (SQLException se) {
-            throw new TestException("Deploy Package Exception with local repository.....");
+            throw new TestException(se.getMessage() + ", Deploy Package Exception with local repository.....");
         } finally {
             closeConnection(conn);
         }
@@ -356,7 +366,7 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
         }
         catch (SQLException se)
         {
-            throw new TestException("Deploy Jar Exception with local repository.....");
+            throw new TestException(se.getMessage() + ", Deploy Jar Exception with local repository.....");
         }
         finally {
             closeConnection(conn);
@@ -499,7 +509,7 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
         }
         catch(SQLException se)
         {
-            throw new TestException("Exception in Comma Delimiter Package deployment.....");
+            throw new TestException(se.getMessage() + ", Exception in Comma Delimiter Package deployment.....");
         }
         finally
         {
@@ -563,19 +573,79 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
         }
     }
 
+    /**
+     * Establish the connection with Snappy Cluster using JDBC.
+     * Fire the deploy package, list package and then undeploy any two packages
+     * and again executes the list packages will list the remaining packages.
+     * In this method local cache (local repository path) is used.
+     *
+     * @since 1.0.2
+     */
+    private void undeloyAll() {
+        Connection conn = null;
+        final String list_Pkg_Cmd = "list packages;";
+        String undeploy_Pkg_Cmd = "";
+        Statement st = null;
+        ResultSet rs = null;
+
+        Log.getLogWriter().info(".....CLOSING TASK.....");
+
+        if(!deployPkg_AliasName_Repository.isEmpty())
+            deployPkg_AliasName_Repository.clear();
+        if(!deployJar_AliasName_JarName.isEmpty())
+            deployJar_AliasName_JarName.clear();
+
+        conn = getJDBCConnection();
+
+        try {
+            Log.getLogWriter().info("Executing list packages command : " + list_Pkg_Cmd);
+            st = conn.createStatement();
+            if (st.execute(list_Pkg_Cmd)) {
+                rs = st.getResultSet();
+                while (rs.next()) {
+                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                    result_Alias_Coordinate.put(rs.getString("alias").toLowerCase(), rs.getString("coordinate").toLowerCase());
+                }
+            }
+
+
+            st.clearBatch();
+
+            int count = 0;
+            for (Map.Entry<String, String> entry : result_Alias_Coordinate.entrySet()) {
+                undeploy_Pkg_Cmd = "undeploy " + entry.getKey() + ";";
+                Log.getLogWriter().info("Executing undeploy package command : " + undeploy_Pkg_Cmd);
+                conn.createStatement().execute(undeploy_Pkg_Cmd);
+                result_Alias_Coordinate.remove(entry.getKey());
+            }
+
+            Log.getLogWriter().info("Executing list packages command : " + list_Pkg_Cmd);
+            st = conn.createStatement();
+            if (st.execute(list_Pkg_Cmd)) {
+                rs = st.getResultSet();
+                Log.getLogWriter().info("Rest of the packages are after undeploy command execution : ");
+                while (!rs.next()) {
+                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                    Log.getLogWriter().info("No deploy package or deploy jar found.....");
+                }
+            }
+        } catch (SQLException se) {
+            throw new TestException(se.getMessage() + ", Exception in clean up .....");
+        } finally {
+            closeConnection(conn);
+            clearAll();
+        }
+    }
 
 
 
-
-    //FIXME :
+    //FIXME : -- Fixed (8th Oct, 2018)
     //In running cluster when we deployed the packages and jars and if we do not stop the cluster and if we try to deploy the packages again with ivy2 as local cache
     //below exception occurs :
     //snappy-sql> deploy package sparkavro_integration 'com.databricks:spark-avro_2.11:4.0.0' path '/home/cbhatt/TPC';
     //snappy-sql> deploy package sparkavro_integration 'com.databricks:spark-avro_2.11:4.0.0';
     //ERROR 38000: (SQLState=38000 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-0) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(8012)<v1>:22584, caused by java.lang.IllegalArgumentException: requirement failed: File com.databricks_spark-avro_2.11-4.0.0.jar was already registered with a different path (old path = /home/cbhatt/TPC/jars/com.databricks_spark-avro_2.11-4.0.0.jar, new path = /home/cbhatt/.ivy2/jars/com.databricks_spark-avro_2.11-4.0.0.jar' was thrown while evaluating an expression.
     //Hence at the starting we need to do the cleanup, stop the cluster and then executes the below test cases.
-    //TODO
-    //Right now, put the test cases on hold, need to discuss with Neeraj.
 
     /**
      * Establish the connection with Snappy Cluster using JDBC.
@@ -589,60 +659,35 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
         Connection conn = null;
         String deploy_Pkg_Cmd = "";
         final String list_Pkg_Cmd = "list packages;";
-        final String path = " path ";
-        final String local_repository_path = "/home/cbhatt/TPC";
         String undeploy_Pkg_Cmd = "";
         Statement st = null;
         ResultSet rs = null;
 
         conn = getJDBCConnection();
         try {
-            for (Map.Entry<String, String> entry : deployPkg_AliasName_Repository.entrySet()) {
-                deploy_Pkg_Cmd = "deploy package " + entry.getKey() + " '" + entry.getValue() + "';";
-                Log.getLogWriter().info("Executing deploy package command : " + deploy_Pkg_Cmd);
-                source_Alias_Coordinate.put(entry.getKey().toLowerCase(), entry.getValue().toLowerCase());
-                conn.createStatement().execute(deploy_Pkg_Cmd);
-            }
-
+            deploy_Pkg_Cmd = "deploy package pySpark 'TargetHolding:pyspark-cassandra:0.3.5,com.ryft:spark-ryft-connector_2.10:0.9.0';";
+            Log.getLogWriter().info("Executing deploy package command : " + deploy_Pkg_Cmd);
+            conn.createStatement().execute(deploy_Pkg_Cmd);
             Log.getLogWriter().info("Executing list packages command : " + list_Pkg_Cmd);
             st = conn.createStatement();
             if (st.execute(list_Pkg_Cmd)) {
                 rs = st.getResultSet();
                 while (rs.next()) {
                     Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
-                    result_Alias_Coordinate.put(rs.getString("alias").toLowerCase(), rs.getString("coordinate").toLowerCase());
+                    if(rs.getString("alias").equals("pySpark".toUpperCase()) && (rs.getString("coordinate").equals("TargetHolding:pyspark-cassandra:0.3.5,com.ryft:spark-ryft-connector_2.10:0.9.0")))
+                    {
+                        Log.getLogWriter().info("list packages match with deployed packages.");
+                    }
+                    else
+                        throw new TestException("list packages do not match with deployed packages using ivy2 cache.");
                 }
             }
-
-            validate_Deployed_Artifacts(result_Alias_Coordinate, source_Alias_Coordinate);
-
             st.clearBatch();
-
-            int count = 0;
-            for (Map.Entry<String, String> entry : source_Alias_Coordinate.entrySet()) {
-                undeploy_Pkg_Cmd = "undeploy " + entry.getKey() + ";";
-                Log.getLogWriter().info("Executing undeploy package command : " + undeploy_Pkg_Cmd);
-                conn.createStatement().execute(undeploy_Pkg_Cmd);
-                source_Alias_Coordinate.remove(entry.getKey());
-                result_Alias_Coordinate.remove(entry.getKey());
-                count++;
-                if (count >= 2)
-                    break;
-            }
-
-            st.clearBatch();
-
-            Log.getLogWriter().info("Executing list packages command : " + list_Pkg_Cmd);
-            st = conn.createStatement();
-            if (st.execute(list_Pkg_Cmd)) {
-                rs = st.getResultSet();
-                Log.getLogWriter().info("Rest of the packages are after undeploy command execution : ");
-                while (rs.next()) {
-                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
-                }
-            }
+            undeploy_Pkg_Cmd = "undeploy pySpark;";
+            Log.getLogWriter().info("Executing undeploy package command : " + undeploy_Pkg_Cmd);
+            conn.createStatement().execute(undeploy_Pkg_Cmd);
         } catch (SQLException se) {
-            throw new TestException("ivy2 - Deploy Package Exception with local repository");
+            throw new TestException(se.getMessage() + ", ivy2 - Deploy Package Exception with local repository");
         } finally {
             closeConnection(conn);
         }

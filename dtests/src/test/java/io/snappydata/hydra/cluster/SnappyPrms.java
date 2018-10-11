@@ -16,11 +16,10 @@
  */
 package io.snappydata.hydra.cluster;
 
-import java.util.List;
-import java.util.Vector;
-
 import hydra.BasePrms;
 import hydra.HydraVector;
+
+import java.util.Vector;
 
 public class SnappyPrms extends BasePrms {
 
@@ -583,6 +582,17 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long numRowsList;
 
+  /**
+   * Parameter to decide whether to deploy the package with Snappy Job.
+   * Default Value = false
+   */
+  public static Long isDeployPkg;
+
+
+  public static boolean isDeployPkg(){
+    Long key = isDeployPkg;
+    return BasePrms.tasktab().booleanAt(key,BasePrms.tab().booleanAt(key,false));
+  }
 
   public static String getCredentialFile() {
     Long key = credentialFile;
