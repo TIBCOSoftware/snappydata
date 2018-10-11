@@ -141,12 +141,14 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
 
     val keyColumns = snappySession.sessionCatalog.getKeyColumns(tableName)
     DefaultSnappySinkCallback.log.debug(s"Processing for $tableName and batchId $batchId")
+    val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumns(tableName).nonEmpty
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
     if (keyColumns.nonEmpty) {
       import org.apache.spark.sql.functions._
-      val exprs = df.columns.filter(c => !keyColumns.map(_.name).contains(c.toUpperCase))
+      val columnNames = keyColumns.map(_.name)
+      val exprs = df.columns.filter(c => !columnNames.contains(c.toUpperCase))
           .map(c => last(c).alias(c)).toList
-      val conflatedDf = df.groupBy(keyColumns.map(_.name).mkString(","))
+      val conflatedDf = df.groupBy(columnNames.head, columnNames.tail: _*)
           .agg(exprs.head, exprs.tail: _*)
       conflatedDf.cache().count()
 
