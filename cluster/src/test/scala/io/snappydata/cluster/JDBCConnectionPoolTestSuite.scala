@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.sql.{DriverManager, ResultSet}
+import java.sql.{Connection, DriverManager, ResultSet}
 import java.util
 import java.util.Properties
 
@@ -82,19 +82,34 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
-  test("Test JDBC connection pool with empty   ") {
+  test("Test connection reset settings autocommit,isolationlevel,readOnly state") {
+    snc
     val serverHostPort = TestUtil.startNetServer()
+    val properties = new Properties
+    properties.setProperty("user", "app")
+    properties.setProperty("password", "app")
+    properties.setProperty("pool.initialSize", "1")
+    properties.setProperty("pool.maxActive", "1")
+    properties.setProperty("pool.maxIdle", "1")
+    properties.setProperty("pool.minIdle", "1")
     val url = s"jdbc:snappydata:pool://$serverHostPort"
+
     // scalastyle:off
     Class.forName(driverName)
-    val properties = new Properties
-    properties.setProperty("pool.initialSize", "5")
-    properties.setProperty("pool.maxIdle", "0")
-    properties.setProperty("pool.maxActive", "5")
+
     val conn = DriverManager.getConnection(url, properties)
-    val conn1 = DriverManager.getConnection(url, properties)
-    assert(null != conn && null != conn1)
+    assert(null != conn)
+    conn.setAutoCommit(false)
+    conn.setCatalog("xyz")
+    conn.setReadOnly(true)
+    conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
     conn.close()
+
+    val conn1 = DriverManager.getConnection(url, properties)
+    assert(null != conn1)
+    assert(conn1.getAutoCommit, " auto commit should return true, which is a default value.")
+    assert(!conn1.isReadOnly, "auto commit should return false, which is a default value. ")
+    assert(conn1.getTransactionIsolation == Connection.TRANSACTION_NONE)
     conn1.close()
   }
 
@@ -102,7 +117,7 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc
     val serverHostPort = TestUtil.startNetServer()
     val properties = new Properties
-    properties.setProperty("pool.maxActive", "5")
+    properties.setProperty("pool.maxActive", "10")
     properties.setProperty("pool.initialSize", "5")
     properties.setProperty("user", "app")
     properties.setProperty("password", "app")
