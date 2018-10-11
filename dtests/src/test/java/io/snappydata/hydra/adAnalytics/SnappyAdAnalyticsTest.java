@@ -425,6 +425,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         while (rs.next()) {
           numRows = rs.getInt(1);
         }
+        Log.getLogWriter().info("Number of records returned are : " + numRows);
         if (numRows == expectedRows) {
           allConsumed = true;
           endTime = System.currentTimeMillis();
