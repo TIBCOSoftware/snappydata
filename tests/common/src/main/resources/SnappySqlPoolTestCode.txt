@@ -49,7 +49,7 @@ sparkConf.getOption("spark.snappydata.store.user") match {
 spark.snappyExecute("create table testTable1 (id long, data string)", userName, password)
 // check for JdbcWriter implicit
 val insertDf = spark.range(2).selectExpr("ID", "concat('col', cast(id as string)) as DATA")
-insertDf.write.snappyJdbc("testTable1")
+insertDf.write.snappy("testTable1")
 assert(spark.snappyQuery("select * from testTable1").collect().length == 2)
 
 spark.snappyExecute("create table testTable2 (id long, data1 varchar(40), " +

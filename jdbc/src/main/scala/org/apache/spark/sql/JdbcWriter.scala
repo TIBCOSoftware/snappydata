@@ -28,8 +28,9 @@ import org.apache.spark.sql.sources.JdbcExtendedUtils
  *
  * Instead of: spark.write.jdbc(url, table, properties) one can simply do
  * spark.write.snappy(table). This will also register dialects for proper type conversions,
- * use proper JDBC driver argument to avoid ClassNotFound errors. In addition this also provides
- * spark.write.snappyPut(table) to perform a PUT INTO (only for row tables for now).
+ * use proper JDBC driver argument to avoid ClassNotFound errors.
+ *
+ * In future this will also provide spark.write.snappyPut(table) to perform a PUT INTO.
  */
 class JdbcWriter(writer: DataFrameWriter[Row]) {
 
@@ -37,9 +38,12 @@ class JdbcWriter(writer: DataFrameWriter[Row]) {
 
   SnappyDataPoolDialect.register()
 
-  def snappyJdbc(table: String): Unit = snappyJdbc(table, Map.empty)
+  def snappy(table: String): Unit = snappy(table, Map.empty)
 
-  def snappyJdbc(table: String, connectionProperties: Map[String, String]): Unit = {
+  def snappy(table: String, connectionProperties: Map[String, String]): Unit =
+    snappy(table, connectionProperties, SaveMode.Append)
+
+  def snappy(table: String, connectionProperties: Map[String, String], mode: SaveMode): Unit = {
     val session = df.sparkSession
     val connProps = new Properties()
     connProps.setProperty(JDBCOptions.JDBC_DRIVER_CLASS, Constant.JDBC_CLIENT_POOL_DRIVER)
@@ -47,6 +51,6 @@ class JdbcWriter(writer: DataFrameWriter[Row]) {
     if (allProps.nonEmpty) {
       allProps.foreach(p => connProps.setProperty(p._1, p._2))
     }
-    writer.mode(SaveMode.Append).jdbc(JdbcExtendedUtils.defaultPoolURL(session), table, connProps)
+    writer.mode(mode).jdbc(JdbcExtendedUtils.defaultPoolURL(session), table, connProps)
   }
 }
