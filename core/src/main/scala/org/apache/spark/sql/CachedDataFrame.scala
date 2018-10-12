@@ -641,17 +641,6 @@ object CachedDataFrame
         val result = body
         endTime = System.currentTimeMillis()
         (result, endTime - startTime)
-      } catch {
-        case se: SparkException =>
-          val (isCatalogStale, sqlexception) = staleCatalogError(se)
-          if (isCatalogStale) {
-            snappySession.sessionCatalog.invalidateAll()
-            SnappySession.clearAllCache()
-            logInfo("Operation needs to be retried ", se)
-            throw sqlexception
-          } else {
-            throw se
-          }
       } finally {
         if (endTime == -1L) endTime = System.currentTimeMillis()
         // the total duration displayed will be completion time provided below
@@ -671,20 +660,6 @@ object CachedDataFrame
       throw new IllegalArgumentException(
         s"${SQLExecution.EXECUTION_ID_KEY} is already set")
     }
-  }
-
-  private def staleCatalogError(se: SparkException): (Boolean, SQLException) = {
-    var cause = se.getCause
-    while (cause != null) {
-      cause match {
-        case sqle: SQLException
-          if SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH.equals(sqle.getSQLState) =>
-          return (true, sqle)
-        case _ =>
-          cause = cause.getCause
-      }
-    }
-    (false, null)
   }
 
   /**
