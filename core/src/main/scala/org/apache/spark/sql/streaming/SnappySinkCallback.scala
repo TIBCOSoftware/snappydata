@@ -20,12 +20,13 @@ package org.apache.spark.sql.streaming
 import java.sql.SQLException
 import java.util.NoSuchElementException
 
+import io.snappydata.Property._
 import io.snappydata.StreamingConstants._
 import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
-import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.TEST_FAILBATCH_OPTION
+import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.util.Utils
@@ -107,7 +108,18 @@ case class SnappyStoreSink(snappySession: SnappySession,
       }
     }
 
-    sinkCallback.process(snappySession, parameters, batchId, convert(data), posDup)
+    val hashAggregateSizeChanged = HashAggregateSize.get(snappySession.sessionState.conf)
+        .equals(HashAggregateSize.defaultValue.get)
+    if (hashAggregateSizeChanged) {
+      HashAggregateSize.set(snappySession.sessionState.conf, "10m")
+    }
+    try {
+      sinkCallback.process(snappySession, parameters, batchId, convert(data), posDup)
+    } finally {
+      if (hashAggregateSizeChanged) {
+        HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
+      }
+    }
   }
 
   /**
@@ -137,33 +149,41 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, parameters: Map[String, String],
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
     df.cache().count()
+    log.debug(s"Processing batchId $batchId with parameters $parameters ...")
     val tableName = parameters(TABLE_NAME).toUpperCase
-
-    DefaultSnappySinkCallback.log.debug(s"Processing for $tableName and batchId $batchId")
-    val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumns(tableName).nonEmpty
+    val conflationEnabled = if (parameters.contains(CONFLATION)) {
+      parameters(CONFLATION).toBoolean
+    } else {
+      true
+    }
+    val keyColumns = snappySession.sessionCatalog.getKeyColumns(tableName)
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
-    if (keyColumnsDefined) {
+
+    log.debug(s"keycolumns: '${keyColumns.map(_.name).mkString(",")}'" +
+        s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
+
+    if (keyColumns.nonEmpty) {
+      val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df
       if (eventTypeColumnAvailable) {
-        // TODO: handle scenario when a batch contain multiple records with
-        // same key columns
-        val deleteDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.DELETE)
+        val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.DELETE)
             .drop(EVENT_TYPE_COLUMN)
         deleteDf.write.deleteFrom(tableName)
         if (posDup) {
           val upsertEventTypes = List(EventType.INSERT, EventType.UPDATE)
-          val upsertDf = df.filter(df(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
+          val upsertDf = dataFrame
+              .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
               .drop(EVENT_TYPE_COLUMN)
           upsertDf.write.putInto(tableName)
         } else {
-          val insertDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.INSERT)
+          val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.INSERT)
               .drop(EVENT_TYPE_COLUMN)
           insertDf.write.insertInto(tableName)
-          val updateDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.UPDATE)
+          val updateDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.UPDATE)
               .drop(EVENT_TYPE_COLUMN)
           updateDf.write.putInto(tableName)
         }
       } else {
-        df.write.putInto(tableName)
+        dataFrame.write.putInto(tableName)
       }
     }
     else {
@@ -178,6 +198,26 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     if (parameters.contains(TEST_FAILBATCH_OPTION)
         && parameters(TEST_FAILBATCH_OPTION) == "true") {
       throw new RuntimeException("dummy failure for test")
+    }
+
+    log.debug(s"Processing batchId $batchId with parameters $parameters ... Done.")
+
+
+    // We are grouping by key columns and getting the last record.
+    // Note that this approach will work as far as the incoming dataframe is partitioned
+    // by key columns and events are available in the correct order in the respective partition.
+    // If above conditions are not met in that case we will need separate ordering column(s) to
+    // order the events. A new optional parameter needs to be exposed as part of the snappysink
+    // API to accept the ordering column(s).
+    def getConflatedDf = {
+      import org.apache.spark.sql.functions._
+      val keyColumnNames = keyColumns.map(_.name)
+      val exprs = df.columns.filter(c => !keyColumnNames.contains(c.toUpperCase))
+          .map(c => last(c).alias(c)).toList
+      val conflatedDf = df.groupBy(keyColumnNames.head, keyColumnNames.tail: _*)
+          .agg(exprs.head, exprs.tail: _*)
+          .select(df.columns.head, df.columns.tail: _*)
+      conflatedDf.cache()
     }
   }
 }
