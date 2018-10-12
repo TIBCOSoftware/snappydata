@@ -20,7 +20,7 @@ package org.apache.spark.sql.streaming
 import java.sql.SQLException
 import java.util.NoSuchElementException
 
-import io.snappydata.Property
+import io.snappydata.Property._
 import io.snappydata.StreamingConstants._
 import org.apache.log4j.Logger
 
@@ -108,16 +108,16 @@ case class SnappyStoreSink(snappySession: SnappySession,
       }
     }
 
-    val hashAggregateSize = Property.HashAggregateSize.get(snappySession.sessionState.conf)
-    val hashAggregateSizeSetToDefault = hashAggregateSize.equals("0")
-    if (hashAggregateSizeSetToDefault) {
-      Property.HashAggregateSize.set(snappySession.sessionState.conf, "10m")
+    val hashAggregateSizeChanged = HashAggregateSize.get(snappySession.sessionState.conf)
+        .equals(HashAggregateSize.defaultValue.get)
+    if (hashAggregateSizeChanged) {
+      HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
       sinkCallback.process(snappySession, parameters, batchId, convert(data), posDup)
     } finally {
-      if (hashAggregateSizeSetToDefault) {
-        Property.HashAggregateSize.set(snappySession.sessionState.conf, "0")
+      if (hashAggregateSizeChanged) {
+        HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
       }
     }
   }
