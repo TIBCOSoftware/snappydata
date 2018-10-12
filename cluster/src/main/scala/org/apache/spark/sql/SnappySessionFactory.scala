@@ -55,10 +55,12 @@ object SnappySessionFactory {
         }
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, username)
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, password)
+        snc.sqlContext.setConf(Constant.STORE_PROPERTY_PREFIX
+            + com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "*****")
         // Clear admin user/password from jobConfig before passing it to user job.
         cleanJobConfig(jobConfig)
       } catch {
-        case m: ConfigException.Missing => jobConfig // Config not found
+        case _: ConfigException.Missing => jobConfig // Config not found
       }
     } else {
       jobConfig
@@ -66,12 +68,13 @@ object SnappySessionFactory {
   }
 
   def cleanJobConfig(c: Config): Config = {
-    // TODO Remove snappydata properties path when available
-    var sJobConfig = c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-        .Attribute.USERNAME_ATTR)
-    sJobConfig = sJobConfig.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal
-        .gemfirexd.Attribute.PASSWORD_ATTR)
-    sJobConfig
+    c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+        .withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+        .withoutPath(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+        .withoutPath(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+        .withoutPath("gemfire.sys.security-password")
+        .withoutPath("javax.jdo.option.ConnectionURL")
+    // Remove snappydata properties file path when available.
   }
 
   protected def newSession(): SnappySession with ContextLike =
