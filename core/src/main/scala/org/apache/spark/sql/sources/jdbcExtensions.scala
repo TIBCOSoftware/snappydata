@@ -185,12 +185,18 @@ object JdbcExtendedUtils extends Logging {
     conn.getMetaData.getTables(null, schemaName, tableName, null)
   }
 
-  def tableExistsInMetaData(table: String, conn: Connection,
-      dialect: JdbcDialect): Boolean = {
+  def tableExistsInMetaData(table: String, conn: Connection, skipType: String = ""): Boolean = {
     try {
       // using the JDBC meta-data API
       val rs = getTableMetadataResultSet(table, conn)
-      rs.next()
+      if (skipType.isEmpty) {
+        rs.next()
+      } else {
+        while (rs.next()) {
+          if (rs.getString(4) != skipType) return true
+        }
+        false
+      }
     } catch {
       case _: java.sql.SQLException => false
     }
@@ -214,7 +220,7 @@ object JdbcExtendedUtils extends Logging {
 
       case _ =>
         try {
-          tableExistsInMetaData(table, conn, dialect)
+          tableExistsInMetaData(table, conn)
         } catch {
           case NonFatal(_) =>
             val stmt = conn.createStatement()
