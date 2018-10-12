@@ -32,7 +32,6 @@ public class DerbyTestUtils {
     try {
       Log.getLogWriter();
     } catch (HydraRuntimeException e) {
-      // create the task log
       String logName = "derbyLog_" + ProcessMgr.getProcessId();
       log = Log.createLogWriter( logName, "info" );
     }
@@ -104,6 +103,12 @@ public class DerbyTestUtils {
 
 
   public Connection getDerbyConnection() {
+    try {
+      Log.getLogWriter();
+    } catch (HydraRuntimeException e) {
+      String logName = "derbyLog_" + ProcessMgr.getProcessId();
+      log = Log.createLogWriter( logName, "info" );
+    }
     Connection conn = null;
     try {
       conn = (Connection)derbyConnection.get();
@@ -133,6 +138,12 @@ public class DerbyTestUtils {
   }
 
   public void closeDiscConnection(Connection conn, boolean end) {
+    try {
+      Log.getLogWriter();
+    } catch (HydraRuntimeException e) {
+      String logName = "derbyLog_" + ProcessMgr.getProcessId();
+      log = Log.createLogWriter( logName, "info" );
+    }
     //close the connection at end of the test
     if (end) {
       try {
