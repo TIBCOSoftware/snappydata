@@ -29,6 +29,7 @@ import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.util.Utils
+
 /**
  * Should be implemented by clients who wants to override default behavior provided by
  * [[DefaultSnappySinkCallback]].
@@ -184,7 +185,13 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
 
     log.debug(s"Processing batchId $batchId with parameters $parameters ... Done.")
 
-    // group by key columns and get the last record
+
+    // We are grouping by key columns and getting the last record.
+    // Note that this approach will work as far as the incoming dataframe is partitioned
+    // by key columns and events are available in the correct order in the respective partition.
+    // If above conditions are not met in that case we will need separate ordering column(s) to
+    // order the events. A new optional parameter needs to be exposed as part of the snappysink
+    // API to accept the ordering column(s).
     def getConflatedDf = {
       import org.apache.spark.sql.functions._
       val keyColumnNames = keyColumns.map(_.name)
