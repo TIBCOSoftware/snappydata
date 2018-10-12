@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -380,9 +381,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   public static void HydraTask_generateAndPublishMethod() {
     String[] appProps = null;
     if (SnappyPrms.getCommaSepAPPProps() != null) {
-      appProps = SnappyPrms.getCommaSepAPPProps().split(",");
+      appProps = SnappyPrms.getCommaSepAPPProps().split(" ");
     }
-    StringMessageProducer.generateAndPublish(appProps);
+    String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 1);
+    appProps1[appProps.length] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
+    StringMessageProducer.generateAndPublish(appProps1);
   }
 
   protected void generateAndPublish(Vector generatorAndPublisher) {
