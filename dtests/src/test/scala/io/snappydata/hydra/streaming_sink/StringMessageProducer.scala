@@ -16,19 +16,23 @@
  */
 package io.snappydata.hydra.streaming_sink
 
-import java.sql.Connection
+import java.io.{File, FileOutputStream, PrintWriter}
+import java.sql.{Connection, Timestamp}
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit.DAYS
 import java.util.Properties
 
 import scala.util.Random
 
-import io.snappydata.hydra.cluster.SnappyTest
-import io.snappydata.hydra.testDMLOps.{DerbyTestUtils, SnappySchemaPrms}
+import io.snappydata.hydra.testDMLOps.DerbyTestUtils
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.{LongSerializer, StringSerializer}
 
-object StringMessageProducer extends SnappyTest{
+object StringMessageProducer {
+
+  var hasDerby: Boolean = false
+  val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File("generatorAndPublisher.out"),
+    true));
 
   def properties(brokers: String): Properties = {
     val props = new Properties()
@@ -36,6 +40,10 @@ object StringMessageProducer extends SnappyTest{
     props.put("value.serializer", classOf[StringSerializer].getName)
     props.put("key.serializer", classOf[LongSerializer].getName)
     props
+  }
+
+  def getCurrTimeAsString: String = {
+    "[" + new Timestamp(System.currentTimeMillis()).toString + "] "
   }
 
   def generateAndPublish(args: Array[String]) {
@@ -47,13 +55,15 @@ object StringMessageProducer extends SnappyTest{
     val startRange: Int = args {3}.toInt
     brokers = brokers.replace("--", ":")
     // scalastyle:off println
-    println("Sending Kafka messages of topic " + topic + " to brokers " + brokers)
+    pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
-    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType))
+    hasDerby = DerbyTestUtils.hasDerbyServer
+    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
+      hasDerby))
     thread.start()
     thread.join()
-    println(s"Done sending $eventCount Kafka messages of topic $topic")
+    pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
     producer.close()
     System.exit(0)
   }
@@ -66,14 +76,14 @@ object StringMessageProducer extends SnappyTest{
     var brokers: String = args {5}
     val startRange: Int = args {3}.toInt
     brokers = brokers.replace("--", ":")
-    // scalastyle:off println
-    println("Sending Kafka messages of topic " + topic + " to brokers " + brokers)
+    pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
-    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType))
+    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
+      hasDerby))
     thread.start()
     thread.join()
-    println(s"Done sending $eventCount Kafka messages of topic $topic")
+    pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
     producer.close()
     System.exit(0)
   }
@@ -81,7 +91,7 @@ object StringMessageProducer extends SnappyTest{
 }
 
 final class RecordCreator(topic: String, eventCount: Int, startRange: Int,
-    producer: KafkaProducer[Long, String], opType: Int)
+    producer: KafkaProducer[Long, String], opType: Int, hasDerby: Boolean)
 extends Runnable {
 
   val schema = Array ("id", "firstName", "middleName", "lastName", "title", "address", "country",
@@ -93,8 +103,8 @@ extends Runnable {
   val occupationArr = Array("Employee", "Business")
   val educationArr = Array("Under Graduate", "Graduate", "PostGraduate")
   val countryArr = Array("US", "UK", "Canada", "India")
-  var derbyTestUtils = new DerbyTestUtils
-
+  var conn: Connection = null
+  var derbyTestUtils: DerbyTestUtils = null
   def run() {
     val title: String = titleArr(random.nextInt(titleArr.length))
     val status: String = statusArr(random.nextInt(statusArr.length))
@@ -106,19 +116,25 @@ extends Runnable {
     val address: String = randomAlphanumeric(20)
     val email: String = randomAlphanumeric(10) + "@" + randomString(5) + "." + randomString(3)
     val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
-    val conn: Connection = derbyTestUtils.getDerbyConnection
+    if(hasDerby) {
+      derbyTestUtils = new DerbyTestUtils
+      conn = derbyTestUtils.getDerbyConnection
+    }
     (startRange to (startRange + eventCount - 1)).foreach(i => {
       val row: String = s"$i,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
           s"$status,$email,$education,$occupation,$opType"
       val data = new ProducerRecord[Long, String](topic, i, row)
-      if(DerbyTestUtils.hasDerbyServer) {
+      if(hasDerby) {
         DerbyTestUtils.HydraTask_initialize
         performOpInDerby(conn, row, opType)
       }
       producer.send(data)
       })
-    derbyTestUtils.closeDiscConnection(conn, true)
-    println(s"Done producing records...")
+    if(hasDerby) {
+      derbyTestUtils.closeDiscConnection(conn, true)
+    }
+    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Done producing " +
+        "records...")
   }
 
   def performOpInDerby(conn: Connection, row: String, eventType: Int): Unit = {
@@ -130,7 +146,8 @@ extends Runnable {
     } else if (eventType == 2) { // delete
       getDeleteStmt(row)
     }
-    println(s" derby stmt is : $stmt")
+    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"derby stmt is " +
+        s": $stmt")
     val numRows: Int = conn.createStatement().executeUpdate(stmt)
     if (numRows == 0 && eventType == 1) {
       stmt = getInsertStmt(row)

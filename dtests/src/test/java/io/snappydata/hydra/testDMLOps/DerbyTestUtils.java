@@ -3,13 +3,10 @@ package io.snappydata.hydra.testDMLOps;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import com.gemstone.gemfire.LogWriter;
-import hydra.HydraRuntimeException;
 import hydra.HydraThreadLocal;
 import hydra.Log;
 import hydra.MasterController;
 import hydra.Prms;
-import hydra.ProcessMgr;
 import hydra.TestConfig;
 import sql.ClientDiscDBManager;
 import sql.SQLHelper;
@@ -18,7 +15,7 @@ import util.TestHelper;
 
 public class DerbyTestUtils {
   protected static Connection discConn=null;
-  public static boolean hasDerbyServer = false;
+  public static boolean hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);;
   public static HydraThreadLocal derbyConnection = new HydraThreadLocal();
   public static HydraThreadLocal resetDerbyConnection = new HydraThreadLocal();
   //whether needs to reset the derby connection
@@ -26,18 +23,9 @@ public class DerbyTestUtils {
   protected static DerbyTestUtils testInstance;
   public static SnappyDMLOpsUtil snappyDMLObj;
 
-  protected static LogWriter log = null;
-
   public static void HydraTask_initialize() {
-    try {
-      Log.getLogWriter();
-    } catch (HydraRuntimeException e) {
-      String logName = "derbyLog_" + ProcessMgr.getProcessId();
-      log = Log.createLogWriter( logName, "info" );
-    }
     if (testInstance == null)
       testInstance = new DerbyTestUtils();
-    hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
     snappyDMLObj = new SnappyDMLOpsUtil();
   }
 
@@ -103,12 +91,6 @@ public class DerbyTestUtils {
 
 
   public Connection getDerbyConnection() {
-    try {
-      Log.getLogWriter();
-    } catch (HydraRuntimeException e) {
-      String logName = "derbyLog_" + ProcessMgr.getProcessId();
-      log = Log.createLogWriter( logName, "info" );
-    }
     Connection conn = null;
     try {
       conn = (Connection)derbyConnection.get();
@@ -138,12 +120,6 @@ public class DerbyTestUtils {
   }
 
   public void closeDiscConnection(Connection conn, boolean end) {
-    try {
-      Log.getLogWriter();
-    } catch (HydraRuntimeException e) {
-      String logName = "derbyLog_" + ProcessMgr.getProcessId();
-      log = Log.createLogWriter( logName, "info" );
-    }
     //close the connection at end of the test
     if (end) {
       try {
