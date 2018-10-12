@@ -25,7 +25,7 @@ import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
-import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.TEST_FAILBATCH_OPTION
+import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.util.Utils
@@ -137,19 +137,15 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
     df.cache().count()
     val tableName = parameters(TABLE_NAME).toUpperCase
+    log.debug(s"Processing batchId $batchId with parameters $parameters ...")
     val keyColumns = snappySession.sessionCatalog.getKeyColumns(tableName)
-    DefaultSnappySinkCallback.log.debug(s"Processing for $tableName and batchId $batchId")
-    val keyColumnsDefined = snappySession.sessionCatalog.getKeyColumns(tableName).nonEmpty
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
-    if (keyColumns.nonEmpty) {
-      import org.apache.spark.sql.functions._
-      val keyColumnNames = keyColumns.map(_.name)
-      val exprs = df.columns.filter(c => !keyColumnNames.contains(c.toUpperCase))
-          .map(c => last(c).alias(c)).toList
-      val conflatedDf = df.groupBy(keyColumnNames.head, keyColumnNames.tail: _*)
-          .agg(exprs.head, exprs.tail: _*).select(df.columns.head,df.columns.tail: _*)
-      conflatedDf.cache().count()
 
+    log.debug(s"keycolumns: '${keyColumns.map(_.name).mkString(",")}'" +
+        s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
+
+    if (keyColumns.nonEmpty) {
+      val conflatedDf: DataFrame = getConflatedDf
       if (eventTypeColumnAvailable) {
         val deleteDf = conflatedDf.filter(conflatedDf(EVENT_TYPE_COLUMN) === EventType.DELETE)
             .drop(EVENT_TYPE_COLUMN)
@@ -184,6 +180,20 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     if (parameters.contains(TEST_FAILBATCH_OPTION)
         && parameters(TEST_FAILBATCH_OPTION) == "true") {
       throw new RuntimeException("dummy failure for test")
+    }
+
+    log.debug(s"Processing batchId $batchId with parameters $parameters ... Done.")
+
+    // group by key columns and get the last record
+    def getConflatedDf = {
+      import org.apache.spark.sql.functions._
+      val keyColumnNames = keyColumns.map(_.name)
+      val exprs = df.columns.filter(c => !keyColumnNames.contains(c.toUpperCase))
+          .map(c => last(c).alias(c)).toList
+      val conflatedDf = df.groupBy(keyColumnNames.head, keyColumnNames.tail: _*)
+          .agg(exprs.head, exprs.tail: _*)
+          .select(df.columns.head, df.columns.tail: _*)
+      conflatedDf.cache()
     }
   }
 }
