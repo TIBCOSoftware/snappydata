@@ -23,11 +23,12 @@ import java.util.Properties
 
 import scala.util.Random
 
+import io.snappydata.hydra.cluster.SnappyTest
 import io.snappydata.hydra.testDMLOps.{DerbyTestUtils, SnappySchemaPrms}
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.{LongSerializer, StringSerializer}
 
-object StringMessageProducer {
+object StringMessageProducer extends SnappyTest{
 
   def properties(brokers: String): Properties = {
     val props = new Properties()
@@ -35,6 +36,26 @@ object StringMessageProducer {
     props.put("value.serializer", classOf[StringSerializer].getName)
     props.put("key.serializer", classOf[LongSerializer].getName)
     props
+  }
+
+  def generateAndPublish(args: Array[String]) {
+    val eventCount: Int = args {0}.toInt
+    val topic: String = args {1}
+    val numThreads: Int = args{2}.toInt
+    val opType: Int = args{4}.toInt
+    var brokers: String = args {5}
+    val startRange: Int = args {3}.toInt
+    brokers = brokers.replace("--", ":")
+    // scalastyle:off println
+    println("Sending Kafka messages of topic " + topic + " to brokers " + brokers)
+    val producer = new KafkaProducer[Long, String](properties(brokers))
+    val noOfPartitions = producer.partitionsFor(topic).size()
+    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType))
+    thread.start()
+    thread.join()
+    println(s"Done sending $eventCount Kafka messages of topic $topic")
+    producer.close()
+    System.exit(0)
   }
 
   def main(args: Array[String]) {
