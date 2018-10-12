@@ -281,7 +281,8 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   protected final def columnCharType: Rule1[DataType] = rule {
     VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => VarcharType(d.toInt)) |
     CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => CharType(d.toInt)) |
-    STRING ~> (() => StringType)
+    STRING ~> (() => StringType) |
+    CLOB ~> (() => VarcharType(Int.MaxValue))
   }
 
   final def columnDataType: Rule1[DataType] = rule {

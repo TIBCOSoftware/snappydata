@@ -68,7 +68,7 @@ object MetadataTest extends Assertions {
       builder.putString("base", typeName)
       builder.putLong("scale", scale)
       builder.build()
-    case "LONGVARCHAR" | "CLOB" | "BOOLEAN" =>
+    case "LONGVARCHAR" | "CLOB" | "STRING" | "BOOLEAN" =>
       val builder = new MetadataBuilder
       builder.putString("name", name)
       builder.putLong("scale", scale)

@@ -67,7 +67,13 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
       md.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
       md.putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
       Some(StringType)
-    case Types.CLOB | JDBC40Translation.JSON => Some(StringType)
+    case Types.CLOB | JDBC40Translation.JSON =>
+      val base = JdbcExtendedUtils.toUpperCase(typeName) match {
+        case "CLOB" | "JSON" => "CLOB"
+        case _ => "STRING"
+      }
+      md.putString(Constant.CHAR_TYPE_BASE_PROP, base)
+      Some(StringType)
     case Types.BIT if size > 1 => Some(BinaryType)
     // translate complex types by running the parser on the type string
     case Types.ARRAY | JDBC40Translation.MAP | Types.STRUCT =>
@@ -119,9 +125,10 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
 
     dataType match {
       case StringType =>
-        if ((md ne null) && md.contains(Constant.CHAR_TYPE_SIZE_PROP) &&
-            md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
-          val size = math.min(md.getLong(Constant.CHAR_TYPE_SIZE_PROP), Int.MaxValue).toInt
+        if ((md ne null) && md.contains(Constant.CHAR_TYPE_BASE_PROP)) {
+          val size = if (md.contains(Constant.CHAR_TYPE_SIZE_PROP)) {
+            math.min(md.getLong(Constant.CHAR_TYPE_SIZE_PROP), Int.MaxValue).toInt
+          } else LOB_MAXWIDTH
           // skip size specification in the name when forTableDefn=false
           lazy val sizeSuffix = if (forTableDefn) s"($size)" else ""
           md.getString(Constant.CHAR_TYPE_BASE_PROP) match {
@@ -129,6 +136,8 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
               (dataType, s"${getTypeName("CHAR")}$sizeSuffix", Types.CHAR, size, -1)
             case "VARCHAR" =>
               (dataType, s"${getTypeName("VARCHAR")}$sizeSuffix", Types.VARCHAR, size, -1)
+            case "CLOB" =>
+              (dataType, getTypeName("CLOB"), Types.CLOB, LOB_MAXWIDTH, -1)
             case _ =>
               (dataType, getTypeName("STRING"), Types.CLOB, LOB_MAXWIDTH, -1)
           }

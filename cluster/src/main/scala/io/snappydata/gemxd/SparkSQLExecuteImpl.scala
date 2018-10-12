@@ -54,7 +54,7 @@ class SparkSQLExecuteImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version,
-    pvs: Option[ParameterValueSet]) extends SparkSQLExecute with Logging {
+    pvs: Option[ParameterValueSet]) extends SparkSQLExecute {
 
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
@@ -130,7 +130,7 @@ class SparkSQLExecuteImpl(val sql: String,
             bm.removeBlock(p, tellMaster = false)
             hdos.write(partitionData)
         }
-        logTrace(s"Writing data for partition ID = $id: $block")
+        SparkSQLExecuteImpl.logTrace(s"Writing data for partition ID = $id: $block")
         val dosSize = hdos.size()
         if (dosSize > GemFireXDUtils.DML_MAX_CHUNK_SIZE) {
           if (isLocalExecution) {
@@ -159,7 +159,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // clear the metadata flag for subsequent chunks
             srh.clearHasMetadata()
           }
-          logTrace(s"Sent one batch for result, current partition ID = $id")
+          SparkSQLExecuteImpl.logTrace(s"Sent one batch for result, current partition ID = $id")
           hdos.clearForReuse()
           // 0/1 indicator is now written in serializeRows itself to allow
           // ByteBuffer to be passed as is in the chunks list of
@@ -193,14 +193,16 @@ class SparkSQLExecuteImpl(val sql: String,
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    querySchema.map(f => SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-      Some(f.metadata), Some(f.name), Some(allAsClob), Some(columnsAsClob))).toArray
+    querySchema.map(f => {
+      SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
+        f.metadata, f.name, allAsClob, columnsAsClob)
+    }).toArray
 
   private def getColumnDataTypes: Array[DataType] =
     querySchema.map(_.dataType).toArray
 }
 
-object SparkSQLExecuteImpl {
+object SparkSQLExecuteImpl extends Logging {
 
   def getJsonProperties(session: SnappySession): Boolean = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
@@ -215,44 +217,46 @@ object SparkSQLExecuteImpl {
   }
 
   def getSQLType(dataType: DataType, complexTypeAsJson: Boolean,
-      metaData: Option[Metadata] = None, metaName: Option[String] = None,
-      allAsClob: Option[Boolean] = None, columnsAsClob: Option[Set[String]] = None): (Int,
-      Int, Int) = {
+      metaData: Metadata = Metadata.empty, metaName: String = "",
+      allAsClob: Boolean = false, columnsAsClob: Set[String] = Set.empty): (Int, Int, Int) = {
     dataType match {
       case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
-      case StringType if metaData.isDefined =>
-        TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP,
-          metaData.get) match {
-          case Some(base) if base != "CLOB" =>
+      case StringType =>
+        TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP, metaData) match {
+          case Some(base) =>
             lazy val size = TypeUtilities.getMetadata[Long](
-              Constant.CHAR_TYPE_SIZE_PROP, metaData.get)
-            lazy val varcharSize = size.getOrElse(
-              Constant.MAX_VARCHAR_SIZE.toLong).toInt
-            lazy val charSize = size.getOrElse(
-              Constant.MAX_CHAR_SIZE.toLong).toInt
-            if (allAsClob.get ||
-                (columnsAsClob.get.nonEmpty && columnsAsClob.get.contains(metaName.get))) {
-              if (base != "STRING") {
-                if (base == "VARCHAR") {
-                  (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
-                } else {
-                  // CHAR
-                  (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
+              Constant.CHAR_TYPE_SIZE_PROP, metaData)
+            base match {
+              case "CHAR" =>
+                val charSize = size match {
+                  case Some(s) => s.toInt
+                  case None => Constant.MAX_CHAR_SIZE
                 }
-              } else {
+                (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
+              case "STRING" if allAsClob ||
+                  (columnsAsClob.nonEmpty && columnsAsClob.contains(metaName)) =>
                 (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-              }
-            } else if (base == "CHAR") {
-              (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
-            } else if (base == "VARCHAR" || !SparkSQLExecuteImpl.STRING_AS_CLOB) {
-              (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
-            } else {
-              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+              case "CLOB" => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+              case _ =>
+                val varcharSize = size match {
+                  case Some(s) => s.toInt
+                  case None => Constant.MAX_VARCHAR_SIZE
+                }
+                (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
             }
-
-          case _ => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
+          case None => if (allAsClob ||
+              (columnsAsClob.nonEmpty && columnsAsClob.contains(metaName))) {
+            (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+          } else {
+            // check if size is specified
+            val size = TypeUtilities.getMetadata[Long](
+              Constant.CHAR_TYPE_SIZE_PROP, metaData) match {
+              case Some(s) => s.toInt
+              case None => Constant.MAX_VARCHAR_SIZE
+            }
+            (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+          }
         }
-      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
       case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
       case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
       case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)

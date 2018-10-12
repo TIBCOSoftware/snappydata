@@ -27,6 +27,14 @@ import io.snappydata.implicits._
 
 println("Querying row and column tables")
 
+// set default schema to current user if any
+val sparkConf = sc.getConf
+sparkConf.getOption("spark.snappydata.store.user") match {
+  case None =>
+  case Some(user) =>
+    spark.sql(s"create database if not exists $user")
+    spark.sql(s"use $user").collect()
+}
 // simple row and column table scan queries
 val allRows1 = Seq(Row(1, "one"), Row(2, "two"))
 var rs = spark.snappySql("select * from testTable1").collect()

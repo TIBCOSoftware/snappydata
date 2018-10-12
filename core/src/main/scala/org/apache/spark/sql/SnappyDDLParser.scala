@@ -579,7 +579,11 @@ abstract class SnappyDDLParser(session: SparkSession)
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
           funcResources.foreach(checkExists)
-          val classNameWithType = className + "__" + t.catalogString
+          val catalogString = t match {
+            case VarcharType(Int.MaxValue) => "string"
+            case _ => t.catalogString
+          }
+          val classNameWithType = className + "__" + catalogString
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,
@@ -763,9 +767,15 @@ abstract class SnappyDDLParser(session: SparkSession)
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
               .putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
           (StringType, false)
+        case VarcharType(Int.MaxValue) => // indicates CLOB type
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+          (StringType, false)
         case VarcharType(size) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
               .putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+          (StringType, false)
+        case StringType =>
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "STRING")
           (StringType, false)
         case _ => (t, true)
       }

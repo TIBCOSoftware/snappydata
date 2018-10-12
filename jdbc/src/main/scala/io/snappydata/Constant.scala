@@ -138,8 +138,8 @@ object Constant {
   val DEFAULT_CODEC = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
 
   // System property to tell the system whether the String type columns
-  // should be considered as clob or not
-  val STRING_AS_CLOB_PROP = "spark-string-as-clob"
+  // should be considered as clob or not in JDBC/ODBC SQL queries
+  val STRING_AS_CLOB_PROP = "spark.sql.stringAsClob"
 
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
