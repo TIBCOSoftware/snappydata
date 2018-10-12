@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.sources
 
-import java.lang.reflect.Method
+import java.lang.reflect.{Field, Method}
 import java.sql.{Connection, ResultSet, ResultSetMetaData, Types}
 import java.util.Properties
 
@@ -24,12 +24,15 @@ import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
+import com.pivotal.gemfirexd.Attribute
+import io.snappydata.Constant
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types.{DataType, Metadata, MetadataBuilder, StructField, StructType, UserDefinedType}
-import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyDataBaseDialect, SnappyDataPoolDialect, SparkSession}
+import org.apache.spark.sql.{AnalysisException, DataFrameWriter, SQLContext, SnappyDataBaseDialect, SnappyDataPoolDialect, SparkSession}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -400,5 +403,56 @@ object JdbcExtendedUtils extends Logging {
       if (fieldsLeft > 1) sql.append(separator)
       fieldsLeft -= 1
     }
+  }
+
+  def defaultPoolURL(session: SparkSession): String = {
+    val sparkProp = s"${Constant.SPARK_PREFIX}${Constant.CONNECTION_PROPERTY}"
+    val conf = session.sparkContext.conf
+    val hostPort = conf.getOption(sparkProp) match {
+      case Some(c) => c
+      case None => conf.getOption(Constant.CONNECTION_PROPERTY) match {
+        case Some(c) => c
+        case None => throw new IllegalStateException(
+          s"Neither $sparkProp nor ${Constant.CONNECTION_PROPERTY} set for SnappyData connect")
+      }
+    }
+    s"${Constant.POOLED_THIN_CLIENT_URL}$hostPort"
+  }
+
+  /** set the user/password in the property bag if not present */
+  private[sql] def fillUserPassword(properties: SMap[String, String],
+      session: SparkSession): SMap[String, String] = {
+    var props = properties
+    val conf = session.conf
+    var prefix = Constant.STORE_PROPERTY_PREFIX
+    (conf.getOption(prefix + Attribute.USERNAME_ATTR) match {
+      case None =>
+        prefix = Constant.SPARK_STORE_PREFIX
+        conf.getOption(prefix + Attribute.USERNAME_ATTR)
+      case s => s
+    }) match {
+      case None =>
+      case Some(user) =>
+        if (!props.contains(Attribute.USERNAME_ATTR) &&
+            !props.contains(Attribute.USERNAME_ALT_ATTR)) {
+          props += (Attribute.USERNAME_ATTR -> user)
+          conf.getOption(prefix + Attribute.PASSWORD_ATTR) match {
+            case Some(password) => props += (Attribute.PASSWORD_ATTR -> password)
+            case None =>
+          }
+        }
+    }
+    props
+  }
+
+  private[sql] lazy val writerDfField: Field = {
+    val f = try {
+      classOf[DataFrameWriter[_]].getDeclaredField(
+        "org$apache$spark$sql$DataFrameWriter$$df")
+    } catch {
+      case _: Exception => classOf[DataFrameWriter[_]].getDeclaredField("df")
+    }
+    f.setAccessible(true)
+    f
   }
 }

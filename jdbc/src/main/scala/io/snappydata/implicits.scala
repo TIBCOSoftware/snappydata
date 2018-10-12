@@ -18,8 +18,7 @@ package io.snappydata
 
 import scala.language.implicitConversions
 
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.sources.JdbcReader
+import org.apache.spark.sql.{DataFrameWriter, JdbcExecute, JdbcWriter, Row, SparkSession}
 
 /**
  * Implicit utiilies for pooled JDBC driver.
@@ -28,5 +27,7 @@ import org.apache.spark.sql.sources.JdbcReader
 object implicits
 // scalastyle:on
 {
-  implicit def jdbcRead(session: SparkSession): JdbcReader = JdbcReader(session)
+  implicit def jdbcExecute(session: SparkSession): JdbcExecute = JdbcExecute(session)
+
+  implicit def jdbcWrite(writer: DataFrameWriter[Row]): JdbcWriter = new JdbcWriter(writer)
 }

@@ -149,7 +149,9 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
         } else attr.dataType
         val typeName = JdbcExtendedUtils.getJdbcType(dataType, attr.metadata,
           this).databaseTypeDefinition
-        s"""CAST (${defaultDataTypeValue(attr)} AS $typeName) AS "${attr.name}""""
+        val columnName = if (session.sessionState.conf.caseSensitiveAnalysis) attr.name
+        else JdbcExtendedUtils.toUpperCase(attr.name)
+        s"""CAST (${defaultDataTypeValue(attr)} AS $typeName) AS "$columnName""""
       }.mkString("SELECT ", ", ", s" FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")
     } catch {
       case ae: AnalysisException => throw ae

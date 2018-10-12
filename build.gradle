@@ -109,6 +109,8 @@ allprojects {
     sparkVersion = '2.1.1'
     snappySparkVersion = '2.1.1.3'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
+    sparkCurrentVersion = '2.3.2'
+    sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
@@ -142,6 +144,10 @@ allprojects {
     commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
     sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
     buildIdPrefix = System.env.USER + ' '
+
+    sparkDistDir = "${project.gradle.gradleUserHomeDir}/sparkDist"
+    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
   if (!buildRoot.isEmpty()) {
@@ -153,12 +159,15 @@ allprojects {
   if (rootProject.hasProperty('enablePublish')) {
     buildIdPrefix = "${vendorName} "
   }
+  if (rootProject.hasProperty('sparkDistDir')) {
+    sparkDistDir = rootProject.property('sparkDistDir')
+    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
+  }
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
     snappyProductDir = "${rootProject.buildDir}/snappy"
-    sparkDistDir = "${rootProject.projectDir}/dist"
-    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
   }
 }
 
@@ -237,6 +246,7 @@ task cleanDUnit { doLast {
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanSecurityDUnit { doLast {
   String workingDir = "${testResultsBase}/dunit-security"
@@ -245,6 +255,7 @@ task cleanSecurityDUnit { doLast {
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanAllReports { doLast {
   String workingDir = "${testResultsBase}/combined-reports"
@@ -509,6 +520,7 @@ subprojects {
 
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
+          'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)

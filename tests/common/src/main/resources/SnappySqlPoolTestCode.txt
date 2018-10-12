@@ -29,30 +29,56 @@ println("Querying row and column tables")
 
 // set default schema to current user if any
 val sparkConf = sc.getConf
+var userName = "app"
+var password = "app"
+val hostPort = sparkConf.get("spark.snappydata.connection").split(":")
+val host = hostPort(0)
+val port = hostPort(1).toInt
 sparkConf.getOption("spark.snappydata.store.user") match {
   case None =>
   case Some(user) =>
-    spark.sql(s"create database if not exists $user")
+    userName = user
+    password = sparkConf.get("spark.snappydata.store.password")
+    if (spark.sql(s"show databases like '$user'").collect().length == 0) {
+      spark.sql(s"create database if not exists $user")
+    }
     spark.sql(s"use $user").collect()
 }
+
+// create the tables and insert couple of rows
+spark.snappyExecute("create table testTable1 (id long, data string)", userName, password)
+// check for JdbcWriter implicit
+val insertDf = spark.range(2).selectExpr("ID", "concat('col', cast(id as string)) as DATA")
+insertDf.write.snappyJdbc("testTable1")
+assert(spark.snappyQuery("select * from testTable1").collect().length == 2)
+
+spark.snappyExecute("create table testTable2 (id long, data1 varchar(40), " +
+    "data2 decimal(12, 4), data3 array<int>, data4 map<long, string>, " +
+    "data5 struct<id: int, s: varchar(20), dec: decimal(10, 4)>) using column", host, port)
+assert(spark.snappyExecute("insert into testTable2 select 1, 'one', 1.2, array(3, 4), " +
+    "map(3, 'three', 5, 'five'), struct(6, 'six', 7.1)", host, port, userName, password) == 1)
+assert(spark.snappyExecute("insert into testTable2 select 2, 'two', 2.3, array(5, 6), " +
+    "map(6, 'six', 8, 'eight'), struct(9, 'nine', 8.2)") == 1)
+
 // simple row and column table scan queries
-val allRows1 = Seq(Row(1, "one"), Row(2, "two"))
-var rs = spark.snappySql("select * from testTable1").collect()
+val allRows1 = Seq(Row(0, "col0"), Row(1, "col1"))
+var rs = spark.snappyQuery("select * from testTable1").collect()
 assert(rs.length == 2)
 assert(rs.toSeq.sortBy(_.getLong(0)) == allRows1)
-rs = spark.snappySql("select id, data from testTable1").collect()
+// try with explicit user/password
+rs = spark.snappyQuery("select id, data from testTable1", userName, password).collect()
 assert(rs.length == 2)
 assert(rs.toSeq.sortBy(_.getLong(0)) == allRows1)
 
-// some group by queries
-rs = spark.snappySql("select id, last(data) data from testTable1 group by id").collect()
+// some group by queries (try with explicit host/port)
+rs = spark.snappyQuery("select id, last(data) data from testTable1 group by id", host, port).collect()
 assert(rs.length == allRows1.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == allRows1)
 // complex return type
-rs = spark.snappySql("select id, collect_list(data) dataList from testTable1 group by id").collect()
+rs = spark.snappyQuery("select id, collect_list(data) dataList from testTable1 group by id").collect()
 assert(rs.length == allRows1.length)
-assert(rs.toSeq.sortBy(_.getLong(0)) == Seq(Row(1, """{"COL_0":["one"]}"""),
-                                            Row(2, """{"COL_0":["two"]}""")))
+assert(rs.toSeq.sortBy(_.getLong(0)) == Seq(Row(0, """{"COL_0":["col0"]}"""),
+                                            Row(1, """{"COL_0":["col1"]}""")))
 
 // test table having complex types
 
@@ -62,10 +88,10 @@ val allRows2 = Seq(
   Row(2, "two", new BigDecimal("2.3"), """{"COL_0":[5,6]}""",
       """{"COL_1":{"6":"six","8":"eight"}}""", """{"COL_2":{"ID":9,"S":"nine","DEC":8.2000}}"""))
 
-rs = spark.snappySql("select * from testTable2").collect()
+rs = spark.snappyQuery("select * from testTable2").collect()
 assert(rs.length == allRows2.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2)
-rs = spark.snappySql("select id, data1, data2, data3, data4, data5 from testTable2").collect()
+rs = spark.snappyQuery("select id, data1, data2, data3, data4, data5 from testTable2").collect()
 assert(rs.length == allRows2.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2)
 
@@ -74,14 +100,14 @@ assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2)
 // complex types but top-level result projection will return complex types as JSON/binary
 
 // full projection using FIRST/LAST with group by
-rs = spark.snappySql("""select id, d2, d3, d4, d5 from (select id, last(data2) d2,
+rs = spark.snappyQuery("""select id, d2, d3, d4, d5 from (select id, last(data2) d2,
        first(data3) d3, last(data4) d4, last(data5) d5 from testTable2 group by id)""").collect()
 assert(rs.length == allRows2.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2.map(r => Row(r.get(0), r.get(2), r.get(3),
        r.get(4), r.get(5))))
 
 // aggregate values at an array index, collect strings with group by
-rs = spark.snappySql("""select id, collect_list(data1) d1, max(data3[0]) d3,
+rs = spark.snappyQuery("""select id, collect_list(data1) d1, max(data3[0]) d3,
        last(data4) d4, collect_list(data5.s) d5 from testTable2 group by id""").collect()
 val expected2_1 = Seq(
   Row(1, """{"COL_0":["one"]}""", 3, """{"COL_1":{"3":"three","5":"five"}}""", """{"COL_2":["six"]}"""),
@@ -89,10 +115,10 @@ val expected2_1 = Seq(
 assert(rs.length == expected2_1.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_1)
 
-// map key access, struct field access in projection
-rs = spark.snappySql("""select id, d1, d3[1], IfNull(d4[5], d4[6]), d5.dec from
+// map key access, struct field access in projection (try with explicit host/port and user/password)
+rs = spark.snappyQuery("""select id, d1, d3[1], IfNull(d4[5], d4[6]) d4, d5.dec from
        (select id, collect_list(data1) d1, first(data3) d3, last(data4) d4,
-        first(data5) d5 from testTable2 group by id)""").collect()
+        first(data5) d5 from testTable2 group by id)""", host, port, userName, password).collect()
 val expected2_2 = Seq(
   Row(1, """{"COL_0":["one"]}""", 4, "five", new BigDecimal("7.1")),
   Row(2, """{"COL_0":["two"]}""", 6, "six", new BigDecimal("8.2")))
@@ -100,7 +126,7 @@ assert(rs.length == expected2_2.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_2)
 
 // test complexTypeAsJson(0) hint to return binary value
-rs = spark.snappySql("""select id, d2, d3, d4, d5.s from --+ complexTypeAsJson(0)
+rs = spark.snappyQuery("""select id, d2, d3, d4, d5.s from --+ complexTypeAsJson(0)
        (select id, avg(data2) d2, last(data3[0]) d3, last(data4) d4,
         first(data5) d5 from testTable2 group by id)""").collect()
 rs = rs.map { row =>

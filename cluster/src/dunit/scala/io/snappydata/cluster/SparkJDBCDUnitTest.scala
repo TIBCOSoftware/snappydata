@@ -19,26 +19,26 @@ class SparkJDBCDUnitTest(s: String)
   extends ClusterManagerTestBase(s)
     with Serializable with Logging  {
 
-  override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
+  override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
 
   override val stopNetServersInTearDown = false
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
 
-  protected val productDir: String = getEnvironmentVariable("APACHE_SPARK_HOME")
+  protected val sparkProductDir: String = getEnvironmentVariable("APACHE_SPARK_HOME")
 
   private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
     super.beforeClass()
     startNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
   }
 
   override def afterClass(): Unit = {
     Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkProductDir)
     super.afterClass()
   }
 
@@ -51,7 +51,7 @@ class SparkJDBCDUnitTest(s: String)
   def testSparkSubmit(): Unit = {
     val snContext = SnappyContext(sc)
     // Creating Snappy Table using snappy session
-    createAirlineTable(productDir, snContext)
+    createAirlineTable(snappyProductDir, snContext)
 
     // Executing spark driver application via spark-submit,
     // Which reads data from snappy table.
@@ -101,7 +101,7 @@ class SparkJDBCDUnitTest(s: String)
 
   def createAirlineTable(productDir: String, snContext: SnappyContext): Unit = {
     val props = Map("PARTITION_BY" -> "YEAR", "buckets" -> "16")
-    val airlinefilePath = s"$productDir/../../examples/quickstart/data/airlineParquetData"
+    val airlinefilePath = s"$productDir/../../../examples/quickstart/data/airlineParquetData"
     val airlineDF = snContext.read.parquet(airlinefilePath)
     snContext.dropTable("AIRLINE", ifExists = true)
     snContext.createTable("AIRLINE", "column", airlineDF.schema, props)

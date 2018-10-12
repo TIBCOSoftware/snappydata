@@ -54,7 +54,7 @@ class SparkSQLExecuteImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version,
-    pvs: Option[ParameterValueSet]) extends SparkSQLExecute {
+    pvs: Option[ParameterValueSet]) extends SparkSQLExecute with Logging {
 
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
@@ -130,7 +130,7 @@ class SparkSQLExecuteImpl(val sql: String,
             bm.removeBlock(p, tellMaster = false)
             hdos.write(partitionData)
         }
-        SparkSQLExecuteImpl.logTrace(s"Writing data for partition ID = $id: $block")
+        logTrace(s"Writing data for partition ID = $id: $block")
         val dosSize = hdos.size()
         if (dosSize > GemFireXDUtils.DML_MAX_CHUNK_SIZE) {
           if (isLocalExecution) {
@@ -159,7 +159,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // clear the metadata flag for subsequent chunks
             srh.clearHasMetadata()
           }
-          SparkSQLExecuteImpl.logTrace(s"Sent one batch for result, current partition ID = $id")
+          logTrace(s"Sent one batch for result, current partition ID = $id")
           hdos.clearForReuse()
           // 0/1 indicator is now written in serializeRows itself to allow
           // ByteBuffer to be passed as is in the chunks list of
@@ -202,7 +202,7 @@ class SparkSQLExecuteImpl(val sql: String,
     querySchema.map(_.dataType).toArray
 }
 
-object SparkSQLExecuteImpl extends Logging {
+object SparkSQLExecuteImpl {
 
   def getJsonProperties(session: SnappySession): Boolean = session.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsJson.toString) match {
