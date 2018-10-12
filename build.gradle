@@ -895,6 +895,7 @@ task product(type: Zip) {
         copy {
           from jdbcConnectorProject.jar.destinationDir
           into "${snappyProductDir}/connectors"
+          include "*.jar"
         }
       }
       if (hasGemFireConnectorProject) {

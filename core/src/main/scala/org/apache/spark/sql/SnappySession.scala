@@ -1491,6 +1491,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
             .alterTable(tableIdent, isAddColumn, column)
+          SnappyStoreHiveCatalog.registerRelationDestroy()
           return
       case _ =>
     }
