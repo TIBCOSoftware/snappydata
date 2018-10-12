@@ -50,7 +50,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   private val getMetaDataStmtString = "call sys.GET_TABLE_METADATA(?, ?, ?, ?, ?, ?, ?, ?)"
   private val createUDFString = "call sys.CREATE_SNAPPY_UDF(?, ?, ?, ?)"
   private val dropUDFString = "call sys.DROP_SNAPPY_UDF(?, ?)"
-  private val alterTableStmtString = "call sys.ALTER_SNAPPY_TABLE(?, ?, ?, ?, ?)"
+  private val alterTableStmtString = "call sys.ALTER_SNAPPY_TABLE(?, ?, ?, ?, ?, ?)"
   private val getJarsStmtString = "call sys.GET_DEPLOYED_JARS(?)"
   private var getMetaDataStmt: CallableStatement = _
   private var createSnappyTblStmt: CallableStatement = _
@@ -167,19 +167,22 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
   }
 
   def alterTable(tableIdent: QualifiedTableName,
-                 isAddColumn: Boolean, column: StructField): Unit = {
-    runStmtWithExceptionHandling(executeAlterTableStmt(tableIdent, isAddColumn, column))
+      isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit = {
+    runStmtWithExceptionHandling(executeAlterTableStmt(tableIdent,
+      isAddColumn, column, defaultValue))
     SnappySession.clearAllCache()
   }
 
   private def executeAlterTableStmt(tableIdent: QualifiedTableName,
-                                    isAddColumn: Boolean,
-                                    column: StructField): Unit = {
+      isAddColumn: Boolean,
+      column: StructField,
+      defaultValue: Option[String]): Unit = {
     alterTableStmt.setString(1, tableIdent.table)
     alterTableStmt.setBoolean(2, isAddColumn)
     alterTableStmt.setString(3, column.name)
     alterTableStmt.setString(4, column.dataType.simpleString)
     alterTableStmt.setBoolean(5, column.nullable)
+    alterTableStmt.setString(6, defaultValue.orNull)
     alterTableStmt.execute()
   }
 

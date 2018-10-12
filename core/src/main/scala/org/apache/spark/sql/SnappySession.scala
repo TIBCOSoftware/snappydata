@@ -1428,7 +1428,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def alterTable(tableName: String, isAddColumn: Boolean,
-      column: StructField, defaultValue: String): Unit = {
+      column: StructField, defaultValue: Option[String]): Unit = {
     val qualifiedTable = sessionCatalog.newQualifiedTableName(tableName)
     if (sessionCatalog.caseSensitiveAnalysis) {
       alterTable(qualifiedTable, isAddColumn, column, defaultValue)
@@ -1471,7 +1471,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
-      column: StructField, defaultValue: String): Unit = {
+      column: StructField, defaultValue: Option[String]): Unit = {
     val plan = try {
       sessionCatalog.lookupRelation(tableIdent)
     } catch {
@@ -1491,7 +1491,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case ThinClientConnectorMode(_, _) =>
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
-            .alterTable(tableIdent, isAddColumn, column)
+            .alterTable(tableIdent, isAddColumn, column, defaultValue)
           SnappyStoreHiveCatalog.registerRelationDestroy()
           return
       case _ =>
@@ -1500,7 +1500,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     plan match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         sessionCatalog.invalidateTable(tableIdent)
-        ar.alterTable(tableIdent, isAddColumn, column)
+        ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
         SnappyStoreHiveCatalog.registerRelationDestroy()
         SnappySession.clearAllCache()
       case _ =>

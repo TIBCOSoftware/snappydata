@@ -34,7 +34,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
-import org.parboiled2._
+import org.parboiled2.{Rule1, _}
 import shapeless.{::, HNil}
 
 import org.apache.spark.deploy.SparkSubmitUtils
@@ -316,11 +316,11 @@ abstract class SnappyDDLParser(session: SparkSession)
     }
   }
 
-  protected final def defaultVal: Rule1[String] = rule {
+  protected final def defaultVal: Rule1[Option[String]] = rule {
     capture(DEFAULT).? ~> ((defVal: Any) =>
       defVal match {
-        case Some(v) => v.asInstanceOf[String].trim
-        case None => SnappyParserConsts.SELECT.upper
+        case Some(v) => defVal.asInstanceOf[Option[String]]
+        case None => None
       })
   }
 
@@ -525,10 +525,10 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumn |
-        DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumn |
-        ANY. + ~ EOI ~> ((r: TableIdentifier) =>
-          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
-    )
+            DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumn |
+            ANY.+ ~ EOI ~> ((r: TableIdentifier) =>
+              DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
+        )
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
@@ -931,7 +931,7 @@ case class DropPolicy(ifExists: Boolean,
 case class TruncateManagedTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
 
 case class AlterTableAddColumn(tableIdent: TableIdentifier,
-                               addColumn: StructField, defaultValue: String) extends Command
+    addColumn: StructField, defaultValue: Option[String]) extends Command
 
 case class AlterTableToggleRowLevelSecurity(tableIdent: TableIdentifier, enable: Boolean)
     extends Command

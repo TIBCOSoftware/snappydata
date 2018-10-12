@@ -487,16 +487,27 @@ case class JDBCMutableRelation(
     dataType
   }
 
-  override def alterTable(tableIdent: QualifiedTableName,
-        isAddColumn: Boolean, column: StructField): Unit = {
+  override def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
+      column: StructField, defaultValue: Option[String]): Unit = {
     val conn = connFactory()
     try {
       val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
         conn, dialect, sqlContext)
       val sql = if (isAddColumn) {
-      val nullable = if (column.nullable) "" else " NOT NULL"
-      s"""alter table ${quotedName(table)}
-            add column "${column.name}" ${getDataType(column)}$nullable"""
+        val defaultColumnValue = defaultValue match {
+          case Some(v) =>
+            val defaultString = column.dataType match {
+              case StringType => s" default '$v'"
+              case _ => s" default $v"
+            }
+            defaultString
+          case None => ""
+        }
+
+        val nullable = if (column.nullable) "" else " NOT NULL"
+        s"""alter table ${quotedName(table)}
+           | add column "${column.name}"
+           |  ${getDataType(column)}$nullable$defaultColumnValue""".stripMargin
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }

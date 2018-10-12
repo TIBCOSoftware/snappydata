@@ -520,9 +520,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         val columnName = context.getColumnName
         val columnDataType = context.getColumnDataType
         val columnNullable = context.getColumnNullable
+        val defaultValue = context.getDefaultValue
         logDebug(s"StoreCallbacksImpl.performConnectorOp alter table ")
         session.alterTable(tableName, addOrDropCol, StructField(columnName,
-          CatalystSqlParser.parseDataType(columnDataType), columnNullable), defaultValue = "")
+          CatalystSqlParser.parseDataType(columnDataType), columnNullable), Option(defaultValue))
         SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")

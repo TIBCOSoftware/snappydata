@@ -327,8 +327,8 @@ trait AlterableRelation {
     * @param isAddColumn
     * @param column
     */
-  def alterTable(tableIdent: QualifiedTableName,
-                 isAddColumn: Boolean, column: StructField): Unit
+  def alterTable(tableIdent: QualifiedTableName, isAddColumn: Boolean,
+      column: StructField, defaultValue: Option[String]): Unit
 }
 
 trait RowLevelSecurityRelation {
