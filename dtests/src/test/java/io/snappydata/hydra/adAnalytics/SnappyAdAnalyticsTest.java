@@ -33,6 +33,7 @@ import hydra.TestConfig;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
+import io.snappydata.hydra.streaming_sink.StringMessageProducer;
 import org.apache.commons.io.FileUtils;
 import util.TestException;
 
@@ -374,6 +375,14 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_generateAndPublish() {
     snappyAdAnalyticsTest.generateAndPublish(SnappyPrms.getSnappyStreamingJobClassNames());
+  }
+
+  public static void HydraTask_generateAndPublishMethod() {
+    String[] appProps = null;
+    if (SnappyPrms.getCommaSepAPPProps() != null) {
+      appProps = SnappyPrms.getCommaSepAPPProps().split(",");
+    }
+    StringMessageProducer.generateAndPublish(appProps);
   }
 
   protected void generateAndPublish(Vector generatorAndPublisher) {
