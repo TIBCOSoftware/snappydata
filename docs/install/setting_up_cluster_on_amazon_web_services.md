@@ -209,9 +209,9 @@ Here:
 Use `launch` action to create a new cluster while `stop` and `start` actions work on existing clusters.
 
 By default, the script starts one instance of a locator, lead, and server each.
-The script identifies each cluster by its unique cluster name (that you provide) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups - whose names are also derived from the cluster name.
+The script identifies each cluster by its unique cluster name that you provide and internally ties the members (locators, leads, and stores/servers) of the cluster with EC2 security groups, whose names are derived from the cluster name.
 
-When running the script you can also specify options like the number of stores in the cluster and region where the EC2 instances should be launched.
+When running the script, you can also specify options such as the number of stores in the cluster and the region where the EC2 instances should be launched.
 
 **Example**
 
@@ -219,14 +219,15 @@ When running the script you can also specify options like the number of stores i
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch my-cluster
 ```
 
-The above example will launch a SnappyData cluster named **my-cluster** with 2 stores (or servers). The locator will be associated with security group named **my-cluster-locator** and the servers will be associated with **my-cluster-store** security group.
+The above example launches a SnappyData cluster named **my-cluster** with 2 stores or servers.
+The locator is associated with security group named **my-cluster-locator** and the servers are associated with **my-cluster-store** security group.
 
-The cluster will be launched in the N. California (us-west-1) region on AWS and it'll also have an Apache Zeppelin server running on the instance where the lead is running.</br>
+The cluster is launched in the **N. California (us-west-1)** region on AWS and has an Apache Zeppelin server running on the instance where the lead is running.</br>
 
 The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
 !!! Note
-	By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region use option `--region`.
+	By default, the cluster is launched in the **N. Virginia (us-east-1)** region on AWS. To launch the cluster in a specific region use option `--region`.
 
 <a id="clusermanagementec2script"></a>
 ### Cluster Management
@@ -411,8 +412,11 @@ Options:
   --resume              Resume installation on a previously launched cluster
                         (for debugging)
   --root-ebs-vol-size=SIZE
-                        Size (in GB) of root EBS volume. SnappyData is
-                        installed on root volume.
+                        Size (in GB) of root EBS volume for servers and leads.
+                        SnappyData is installed on root volume.
+  --root-ebs-vol-size-locator=SIZE
+                        Size (in GB) of root EBS volume for locators.
+                        SnappyData is installed on root volume.
   --ebs-vol-size=SIZE   Size (in GB) of each additional EBS volume to be
                         attached.
   --ebs-vol-type=EBS_VOL_TYPE
