@@ -235,7 +235,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     waitTillTheBatchIsPickedForProcessing(0, testId)
     streamingQuery.stop()
 
-    val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId, true, true)
+    val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId
+      , failBatch = true)
     kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,lname$i,0").toArray)
     try {
       streamingQuery1.processAllAvailable()
@@ -257,7 +258,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
     val topic = getTopic(testId)
-    kafkaTestUtils.createTopic(topic, partitions = 3)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
 
     // producing all records with same key `1` on partition 0.
     kafkaTestUtils.sendMessages(topic, (0 to 999)
@@ -271,6 +272,25 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     streamingQuery.processAllAvailable()
 
     assertData(Array(Row(1, "name999", 999, "lname1")))
+  }
+
+
+  test("test conflation disabling") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val dataBatch = Seq(Seq(1, "name1", 1, "lname1", 0), Seq(1, "name1", 1, "lname1", 2))
+    kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray, Some(0))
+
+    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId,
+      conflation = false)
+
+    streamingQuery.processAllAvailable()
+    // The delete will be processed prior to insert event irrespective of their order or arrival.
+    // Hence when conflation is disabled, both the events are processed resulting into one record.
+    assertData(Array(Row(1, "name1", 1, "lname1")))
   }
 
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
@@ -297,8 +317,11 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     snc.sql("drop table if exists users")
 
     def provider = if (isRowTable) "row" else "column"
+
     def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id,last_name')" else ""
+
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id, last_name)" else ""
+
     val s = s"create table users (id long , first_name varchar(40), age int, " +
         s"last_name varchar(40) $primaryKey) using $provider $options "
     LogManager.getRootLogger.error(s)
@@ -306,7 +329,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
   private def createAndStartStreamingQuery(topic: String, testId: Int,
-      withEventTypeColumn: Boolean = true, failBatch: Boolean = false) = {
+      withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
+      conflation: Boolean = true) = {
     val streamingDF = session
         .readStream
         .format("kafka")
@@ -351,8 +375,9 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
       streamWriter.option("internal___failBatch", "true").start()
-    }
-    else {
+    } else if (!conflation) {
+      streamWriter.option("conflation", conflation).start()
+    } else {
       streamWriter.start()
     }
   }
