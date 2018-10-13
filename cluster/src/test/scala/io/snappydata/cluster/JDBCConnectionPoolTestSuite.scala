@@ -42,6 +42,24 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
+  test("Test JDBC connection pool URL case sensitivity properties") {
+    snc
+    val serverHostPort = TestUtil.startNetServer()
+
+    val url = s"JDBC:SNAPPYDATA:POOL://$serverHostPort"
+    // scalastyle:off
+    Class.forName(driverName)
+    val properties = null
+    val conn = DriverManager.getConnection(url, properties)
+    assert(null != conn)
+    conn.close()
+
+    val url1 = s"JDBC:SNAPPYDATA:Pool://$serverHostPort"
+    val conn1 = DriverManager.getConnection(url1, properties)
+    assert(null != conn1)
+    conn1.close()
+  }
+
   test("Test connection pool with pool and connection properties") {
     snc
     val serverHostPort = TestUtil.startNetServer()
@@ -93,15 +111,14 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     Class.forName(driverName)
     val conn = DriverManager.getConnection(url, properties)
     assert(null != conn)
-    conn.setAutoCommit(false)
-    conn.setCatalog("xyz")
+    conn.setAutoCommit(true)
     conn.setReadOnly(true)
     conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
     conn.close()
 
     val conn1 = DriverManager.getConnection(url, properties)
     assert(null != conn1)
-    assert(conn1.getAutoCommit, " auto commit should return true, which is a default value.")
+    assert(!conn1.getAutoCommit, " auto commit should return true, which is a default value.")
     assert(!conn1.isReadOnly, "auto commit should return false, which is a default value. ")
     assert(conn1.getTransactionIsolation == Connection.TRANSACTION_NONE)
     conn1.close()
