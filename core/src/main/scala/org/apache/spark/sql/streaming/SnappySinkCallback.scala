@@ -154,7 +154,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     val conflationEnabled = if (parameters.contains(CONFLATION)) {
       parameters(CONFLATION).toBoolean
     } else {
-      true
+      false
     }
     val keyColumns = snappySession.sessionCatalog.getKeyColumns(tableName)
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
