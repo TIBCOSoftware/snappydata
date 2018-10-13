@@ -254,7 +254,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assertData((0 to 30).map(i => Row(i, s"name$i", i, s"lname$i")).toArray)
   }
 
-  test("test conflation") {
+  test("test conflation enabled") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
     val topic = getTopic(testId)
@@ -267,7 +267,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     // producing records with keh `1` on multiple partitions. This may not lead to expected result
     // kafkaTestUtils.sendMessages(topic, (0 to 999).map(i => s"1,name$i,$i,${i%3}").toArray)
 
-    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true)
 
     streamingQuery.processAllAvailable()
 
@@ -275,7 +275,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
 
-  test("test conflation disabling") {
+  test("test conflation disabled") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
     val topic = getTopic(testId)
@@ -284,8 +284,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val dataBatch = Seq(Seq(1, "name1", 1, "lname1", 0), Seq(1, "name1", 1, "lname1", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray, Some(0))
 
-    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId,
-      conflation = false)
+    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
 
     streamingQuery.processAllAvailable()
     // The delete will be processed prior to insert event irrespective of their order or arrival.
@@ -330,7 +329,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
   private def createAndStartStreamingQuery(topic: String, testId: Int,
       withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
-      conflation: Boolean = true) = {
+      conflation: Boolean = false) = {
     val streamingDF = session
         .readStream
         .format("kafka")
@@ -375,7 +374,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
       streamWriter.option("internal___failBatch", "true").start()
-    } else if (!conflation) {
+    } else if (conflation) {
       streamWriter.option("conflation", conflation).start()
     } else {
       streamWriter.start()
