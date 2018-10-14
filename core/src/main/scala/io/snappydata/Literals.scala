@@ -188,6 +188,7 @@ object StreamingConstants {
   val TABLE_NAME = "tablename"
   val STREAM_QUERY_ID = "streamqueryid"
   val SINK_CALLBACK = "sinkcallback"
+  val CONFLATION = "conflation"
 
   object EventType {
     val INSERT = 0

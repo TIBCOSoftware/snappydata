@@ -1702,7 +1702,7 @@ object SnappyStoreHiveCatalog {
   }
 
   def setRelationDestroyVersionOnAllMembers(): Unit = {
-    SparkSession.getDefaultSession.foreach(session =>
+    SparkSession.getActiveSession.foreach(session =>
       SnappyContext.getClusterMode(session.sparkContext) match {
         case SnappyEmbeddedMode(_, _) =>
           val version = getRelationDestroyVersion
