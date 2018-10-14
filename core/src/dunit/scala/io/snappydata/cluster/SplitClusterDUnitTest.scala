@@ -716,11 +716,11 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   }
 
   def invokeSparkShellCurrent(productDir: String, sparkProductDir: String,
-      sparkCurrentProductDir: String, locatorClientPort: Int, props: Properties, vm3: VM): Unit = {
+      sparkCurrentProductDir: String, locatorClientPort: Int, props: Properties, vm: VM): Unit = {
     // stop existing spark cluster and start with current Spark version; stop on vm3 to also close
     // any existing SparkContext (subsequent tests will need to recreate the SparkContext)
-    if (vm3 eq null) stopSparkCluster(sparkProductDir)
-    else vm3.invoke(classOf[SplitClusterDUnitTest], "stopSparkCluster", sparkProductDir)
+    if (vm eq null) stopSparkCluster(sparkProductDir)
+    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSparkCluster", sparkProductDir)
     startSparkCluster(sparkCurrentProductDir)
     try {
       // perform some operations through spark-shell using JDBC pool driver API on current Spark

@@ -222,7 +222,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
     SplitClusterDUnitTest.invokeSparkShellCurrent(snappyProductDir, sparkProductDir,
-      currentProductDir, locatorClientPort, props, vm3 = null /* SparkContext in current VM */)
+      currentProductDir, locatorClientPort, props, vm = null /* SparkContext in current VM */)
   }
 
   def testPreparedStatements(): Unit = {
