@@ -89,7 +89,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
     parameters: Map[String, String], sinkCallback: SnappySinkCallback) extends Sink {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
-    val streamQueryId = parameters(STREAM_QUERY_ID).toUpperCase
+    val streamQueryId = snappySession.sessionCatalog.formatName(parameters(STREAM_QUERY_ID))
 
     val updated = snappySession.sql(s"update $SINK_STATE_TABLE " +
         s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
@@ -150,16 +150,16 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
     df.cache().count()
     log.debug(s"Processing batchId $batchId with parameters $parameters ...")
-    val tableName = parameters(TABLE_NAME).toUpperCase
+    val tableName = snappySession.sessionCatalog.formatName(parameters(TABLE_NAME))
     val conflationEnabled = if (parameters.contains(CONFLATION)) {
       parameters(CONFLATION).toBoolean
     } else {
       false
     }
-    val keyColumns = snappySession.sessionCatalog.getKeyColumns(tableName)
+    val keyColumns = snappySession.sessionCatalog.getKeyColumnsAndPositions(tableName)
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
 
-    log.debug(s"keycolumns: '${keyColumns.map(_.name).mkString(",")}'" +
+    log.debug(s"keycolumns: '${keyColumns.map(p => s"${p._1.name}(${p._2})").mkString(",")}'" +
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {
@@ -211,12 +211,20 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     // API to accept the ordering column(s).
     def getConflatedDf = {
       import org.apache.spark.sql.functions._
-      val keyColumnNames = keyColumns.map(_.name)
-      val exprs = df.columns.filter(c => !keyColumnNames.contains(c.toUpperCase))
-          .map(c => last(c).alias(c)).toList
-      val conflatedDf = df.groupBy(keyColumnNames.head, keyColumnNames.tail: _*)
-          .agg(exprs.head, exprs.tail: _*)
-          .select(df.columns.head, df.columns.tail: _*)
+      val keyColumnPositions = keyColumns.map(_._2)
+      var index = 0
+      val (keyCols, otherCols) = df.columns.toList.partition { _ =>
+        val contains = keyColumnPositions.contains(index)
+        index += 1
+        contains
+      }
+      val conflatedDf = if (otherCols.isEmpty) df.distinct()
+      else {
+        val exprs = otherCols.map(c => last(c).alias(c))
+        df.groupBy(keyCols.head, keyCols.tail: _*)
+            .agg(exprs.head, exprs.tail: _*)
+            .select(df.columns.head, df.columns.tail: _*)
+      }
       conflatedDf.cache()
     }
   }
