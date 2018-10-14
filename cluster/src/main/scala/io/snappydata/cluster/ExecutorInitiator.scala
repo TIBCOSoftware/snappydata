@@ -51,7 +51,7 @@ object ExecutorInitiator extends Logging {
 
   var executorThread: Thread = new Thread(executorRunnable)
 
-  @volatile var snappyExecBackend: SnappyCoarseGrainedExecutorBackend = null
+  @volatile var snappyExecBackend: SnappyCoarseGrainedExecutorBackend = _
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
