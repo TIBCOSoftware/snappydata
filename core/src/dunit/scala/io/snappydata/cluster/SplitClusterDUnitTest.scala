@@ -134,7 +134,7 @@ class SplitClusterDUnitTest(s: String)
   // test to make sure that stock spark-shell for latest Spark release works with JDBC pool jar
   def testSparkShellCurrent(): Unit = {
     testObject.invokeSparkShellCurrent(snappyProductDir, sparkProductDir, currentProductDir,
-      locatorClientPort, new Properties())
+      locatorClientPort, new Properties(), vm3)
   }
 }
 
@@ -633,14 +633,14 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   def startSparkCluster(productDir: String): Unit = {
     logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
+    logInfo((productDir + "/sbin/start-all.sh") !!)
   }
 
   def stopSparkCluster(productDir: String): Unit = {
     val sparkContext = SnappyContext.globalSparkContext
     logInfo(s"Stopping spark cluster in $productDir/work")
     if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
+    logInfo((productDir + "/sbin/stop-all.sh") !!)
   }
 
   private def runSparkShellSnappyPoolTest(stmt: Statement, sparkShellCommand: String): Unit = {
@@ -716,9 +716,11 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   }
 
   def invokeSparkShellCurrent(productDir: String, sparkProductDir: String,
-      sparkCurrentProductDir: String, locatorClientPort: Int, props: Properties): Unit = {
-    // stop existing spark cluster and start with current Spark version
-    stopSparkCluster(sparkProductDir)
+      sparkCurrentProductDir: String, locatorClientPort: Int, props: Properties, vm3: VM): Unit = {
+    // stop existing spark cluster and start with current Spark version; stop on vm3 to also close
+    // any existing SparkContext (subsequent tests will need to recreate the SparkContext)
+    if (vm3 eq null) stopSparkCluster(sparkProductDir)
+    else vm3.invoke(classOf[SplitClusterDUnitTest], "stopSparkCluster", sparkProductDir)
     startSparkCluster(sparkCurrentProductDir)
     try {
       // perform some operations through spark-shell using JDBC pool driver API on current Spark
@@ -726,10 +728,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
         "snappydata-jdbc_*.jar")
       var securityConf = ""
       if (props.containsKey(Attribute.USERNAME_ATTR)) {
-        securityConf = s" --conf spark.snappydata.store.user=${
-          props.getProperty(Attribute
-              .USERNAME_ATTR)
-        }" +
+        securityConf = s" --conf spark.snappydata.store.user=" +
+            props.getProperty(Attribute.USERNAME_ATTR) +
             s" --conf spark.snappydata.store.password=${props.getProperty(Attribute.PASSWORD_ATTR)}"
       }
       val snappyJdbcJar = jars.iterator().next().toAbsolutePath.toString

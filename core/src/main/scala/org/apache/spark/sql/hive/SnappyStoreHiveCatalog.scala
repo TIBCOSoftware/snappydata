@@ -35,7 +35,6 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import com.pivotal.gemfirexd.{Attribute, Constants}
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
@@ -158,7 +157,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
    */
   override def formatDatabaseName(name: String): String = formatName(name)
 
-  private[sql] def formatName(name: String): String = {
+  def formatName(name: String): String = {
     SnappyStoreHiveCatalog.processIdentifier(name, sqlConf)
   }
 
@@ -192,33 +191,38 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   /** API to get primary key or Key Columns of a SnappyData table */
-  def getKeyColumns(table: String): Seq[Column] = {
+  def getKeyColumns(table: String): Seq[Column] = getKeyColumnsAndPositions(table).map(_._1)
+
+  /** API to get primary key or Key Columns of a SnappyData table */
+  def getKeyColumnsAndPositions(table: String): Seq[(Column, Int)] = {
     val tableIdent = this.newQualifiedTableName(table)
     try {
       val relation: LogicalRelation = getCachedHiveTable(tableIdent)
       val keyColumns = relation match {
         case LogicalRelation(mutable: MutableRelation, _, _) =>
-          val keyCols = mutable.getPrimaryKeyColumns.map(_.toUpperCase())
+          val keyCols = mutable.getPrimaryKeyColumns
           if (keyCols.isEmpty) {
-            Seq.empty[Column]
+            Nil
           } else {
             val tableMetadata = this.getTempViewOrPermanentTableMetadata(tableIdent)
+            val tableSchema = tableMetadata.schema.zipWithIndex
             val fieldsInMetadata =
               keyCols.map(k =>
-                tableMetadata.schema.fields.find(f => f.name.equalsIgnoreCase(k))
+                tableSchema.find(p => p._1.name.equalsIgnoreCase(k))
                     .getOrElse(
                       throw new AnalysisException(s"Invalid key column name $k")))
-            fieldsInMetadata.map { c =>
+            fieldsInMetadata.map { p =>
+              val c = p._1
               new Column(
-                name = c.name.toUpperCase(),
+                name = Utils.toUpperCase(c.name),
                 description = c.getComment().orNull,
                 dataType = c.dataType.catalogString,
                 nullable = c.nullable,
                 isPartition = false, // Setting it to false for SD tables
-                isBucket = false)
+                isBucket = false) -> p._2
             }
           }
-        case _ => Seq.empty[Column]
+        case _ => Nil
       }
       keyColumns
     } catch {
@@ -1217,7 +1221,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     var hasCurrentDb = false
     // Why am I seeing lowercase as well as uppercase database?
     val databases = withHiveExceptionHandling(client.listDatabases("*")).iterator.
-        map(_.toUpperCase).toSet.iterator
+        map(Utils.toUpperCase).toSet.iterator
     while (databases.hasNext) {
       val db = databases.next()
       if (!hasCurrentDb && db == currentSchemaName) {
@@ -1576,7 +1580,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   private[sql] def refreshPolicies(ldapGroup: String): Unit = {
     val qualifiedLdapGroup = Constants.LDAP_GROUP_PREFIX + ldapGroup
     val databases = listDatabases().collect {
-      case d if !SYS_SCHEMA.equalsIgnoreCase(d) => SharedUtils.SQLToUpperCase(d)
+      case d if !SYS_SCHEMA.equalsIgnoreCase(d) => Utils.toUpperCase(d)
     }.toSet.iterator
     while (databases.hasNext) {
       val db = databases.next()

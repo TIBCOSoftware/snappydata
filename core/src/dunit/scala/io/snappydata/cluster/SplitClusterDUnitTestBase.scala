@@ -365,6 +365,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     val hostName = InetAddress.getLocalHost.getHostName
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
+      logInfo(s"Starting spark job using spark://$hostName:7077, connectionURL=$connectionURL")
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
