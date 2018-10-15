@@ -378,14 +378,12 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
       " On (HLVL06.nodeid = LeafLevel.parentnodeid)")
 
     // scalastyle:off
-    println(result.queryExecution.optimizedPlan)
-    println(result.queryExecution.executedPlan)
+    // println(result.queryExecution.optimizedPlan)
+    // println(result.queryExecution.executedPlan)
     // scalastyle:on
 
-    result.show()
+    // result.show()
     assert(result.count == 1)
-
-    //Thread.sleep(1200000)
   }
 
 
