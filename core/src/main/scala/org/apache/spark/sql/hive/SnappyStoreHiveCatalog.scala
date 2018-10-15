@@ -17,10 +17,7 @@
 package org.apache.spark.sql.hive
 
 import java.io.File
-import java.lang.reflect.Method
 import java.net.URL
-import java.nio.ByteBuffer
-import java.sql.ResultSetMetaData
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -29,7 +26,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
+import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -37,9 +34,7 @@ import com.pivotal.gemfirexd.internal.engine.diag.{HiveTablesVTI, SysVTIs}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
-import com.pivotal.gemfirexd.internal.iapi.types.{DataTypeDescriptor, DataTypeUtilities}
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import com.pivotal.gemfirexd.{Attribute, Constants}
 import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
@@ -47,6 +42,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
 
+import org.apache.spark.SparkConf
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
@@ -62,19 +58,17 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.{IndexColumnFormatRelation, DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{MutableRelation, _}
 import org.apache.spark.sql.streaming.{StreamBaseRelation, StreamPlan}
 import org.apache.spark.sql.types._
-import org.apache.spark.util.{MutableURLClassLoader, Utils => SparkUtils}
-import org.apache.spark.{SparkConf, SparkEnv}
+import org.apache.spark.util.MutableURLClassLoader
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -99,14 +93,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
   private var _client = metadataHive
-
-  protected lazy val getCatalystTypeMethod: Method = {
-    val m = JdbcUtils.getClass.getDeclaredMethod(
-      "org$apache$spark$sql$execution$datasources$jdbc$JdbcUtils$$getCatalystType",
-      classOf[Int], classOf[Int], classOf[Int], classOf[Boolean])
-    m.setAccessible(true)
-    m
-  }
 
   private[sql] def client = {
     // check initialized meta-store (including initial consistency check)
@@ -171,7 +157,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
    */
   override def formatDatabaseName(name: String): String = formatName(name)
 
-  private[sql] def formatName(name: String): String = {
+  def formatName(name: String): String = {
     SnappyStoreHiveCatalog.processIdentifier(name, sqlConf)
   }
 
@@ -205,33 +191,38 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   /** API to get primary key or Key Columns of a SnappyData table */
-  def getKeyColumns(table: String): Seq[Column] = {
+  def getKeyColumns(table: String): Seq[Column] = getKeyColumnsAndPositions(table).map(_._1)
+
+  /** API to get primary key or Key Columns of a SnappyData table */
+  def getKeyColumnsAndPositions(table: String): Seq[(Column, Int)] = {
     val tableIdent = this.newQualifiedTableName(table)
     try {
       val relation: LogicalRelation = getCachedHiveTable(tableIdent)
       val keyColumns = relation match {
         case LogicalRelation(mutable: MutableRelation, _, _) =>
-          val keyCols = mutable.getPrimaryKeyColumns.map(_.toUpperCase())
+          val keyCols = mutable.getPrimaryKeyColumns
           if (keyCols.isEmpty) {
-            Seq.empty[Column]
+            Nil
           } else {
             val tableMetadata = this.getTempViewOrPermanentTableMetadata(tableIdent)
+            val tableSchema = tableMetadata.schema.zipWithIndex
             val fieldsInMetadata =
               keyCols.map(k =>
-                tableMetadata.schema.fields.find(f => f.name.equalsIgnoreCase(k))
+                tableSchema.find(p => p._1.name.equalsIgnoreCase(k))
                     .getOrElse(
                       throw new AnalysisException(s"Invalid key column name $k")))
-            fieldsInMetadata.map { c =>
+            fieldsInMetadata.map { p =>
+              val c = p._1
               new Column(
-                name = c.name.toUpperCase(),
+                name = Utils.toUpperCase(c.name),
                 description = c.getComment().orNull,
                 dataType = c.dataType.catalogString,
                 nullable = c.nullable,
                 isPartition = false, // Setting it to false for SD tables
-                isBucket = false)
+                isBucket = false) -> p._2
             }
           }
-        case _ => Seq.empty[Column]
+        case _ => Nil
       }
       keyColumns
     } catch {
@@ -265,7 +256,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         } else None
         val relation = JdbcExtendedUtils.readSplitProperty(
           JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
-          case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
+          case Some(schema) => ExternalStoreUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 
           case None =>
@@ -421,12 +412,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
             val builder = new MetadataBuilder
             builder.withMetadata(f.metadata).putString(Constant.CHAR_TYPE_BASE_PROP,
               "STRING").build()
-          } else if (f.metadata.getString(Constant.CHAR_TYPE_BASE_PROP)
-              .equalsIgnoreCase("CLOB")) {
-            // Remove the CharStringType properties from metadata
-            val builder = new MetadataBuilder
-            builder.withMetadata(f.metadata).remove(Constant.CHAR_TYPE_BASE_PROP)
-                .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
           } else {
             f.metadata
           }
@@ -801,47 +786,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       val table = formatTableName(name.table)
       val conn = snappySession.defaultPooledConnection(SYS_SCHEMA)
       try {
-        val rs = conn.getMetaData.getColumns(null, SYS_SCHEMA, table, null)
-        if (rs.next()) {
-          val cols = new mutable.ArrayBuffer[StructField]()
-          do {
-            // COLUMN_NAME
-            val columnName = rs.getString(4)
-            // DATA_TYPE
-            val jdbcType = rs.getInt(5)
-            // TYPE_NAME
-            val typeName = rs.getString(6)
-            // COLUMN_SIZE
-            val size = rs.getInt(7)
-            // DECIMAL_DIGITS
-            val scale = rs.getInt(9)
-            // NULLABLE
-            val nullable = rs.getInt(11) != ResultSetMetaData.columnNoNulls
-            val metadataBuilder = new MetadataBuilder()
-                .putString("name", columnName).putLong("scale", scale)
-            val columnType = GemFireXDDialect.getCatalystType(jdbcType, typeName,
-              size, metadataBuilder) match {
-              case Some(t) => t
-              case None =>
-                if (jdbcType == java.sql.Types.JAVA_OBJECT) {
-                  // try to get class for the typeName else fallback to Object
-                  val userClass: Class[_] = try {
-                    SparkUtils.classForName(typeName)
-                  } catch {
-                    case _: Throwable => classOf[Object]
-                  }
-                  new JavaObjectType(userClass.asInstanceOf[Class[AnyRef]])
-                } else {
-                  val dtd = DataTypeDescriptor.getBuiltInDataTypeDescriptor(
-                    jdbcType, nullable, size)
-                  getCatalystTypeMethod.invoke(JdbcUtils, Int.box(jdbcType),
-                    Int.box(size), Int.box(scale),
-                    Boolean.box(if (dtd ne null) DataTypeUtilities.isSigned(dtd) else false))
-                      .asInstanceOf[DataType]
-                }
-            }
-            cols += StructField(columnName, columnType, nullable, metadataBuilder.build())
-          } while (rs.next())
+        val cols = JdbcExtendedUtils.getTableSchema(SYS_SCHEMA, table, conn, Some(snappySession))
+        if (cols.nonEmpty) {
           Some(CatalogTable(
             identifier = TableIdentifier(table, Option(SYS_SCHEMA)),
             tableType = CatalogTableType.EXTERNAL,
@@ -980,7 +926,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           val user = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
           if (user.nonEmpty && !(
               tableIdent.schemaName.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)
-                  && tableIdent.table.equalsIgnoreCase(SnappyStoreHiveCatalog.dummyTableName))) {
+                  && tableIdent.table.equalsIgnoreCase(JdbcExtendedUtils.DUMMY_TABLE_NAME))) {
             val currentUser = IdUtil.getUserAuthorizationId(user)
             callbacks.checkSchemaPermission(tableIdent.schemaName, currentUser)
           }
@@ -1275,7 +1221,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     var hasCurrentDb = false
     // Why am I seeing lowercase as well as uppercase database?
     val databases = withHiveExceptionHandling(client.listDatabases("*")).iterator.
-        map(_.toUpperCase).toSet.iterator
+        map(Utils.toUpperCase).toSet.iterator
     while (databases.hasNext) {
       val db = databases.next()
       if (!hasCurrentDb && db == currentSchemaName) {
@@ -1634,7 +1580,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   private[sql] def refreshPolicies(ldapGroup: String): Unit = {
     val qualifiedLdapGroup = Constants.LDAP_GROUP_PREFIX + ldapGroup
     val databases = listDatabases().collect {
-      case d if !SYS_SCHEMA.equalsIgnoreCase(d) => SharedUtils.SQLToUpperCase(d)
+      case d if !SYS_SCHEMA.equalsIgnoreCase(d) => Utils.toUpperCase(d)
     }.toSet.iterator
     while (databases.hasNext) {
       val db = databases.next()
@@ -1659,7 +1605,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 }
 
 object SnappyStoreHiveCatalog {
-  val dummyTableName = "SYSDUMMY1"
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
   val HIVE_METASTORE = SystemProperties.SNAPPY_HIVE_METASTORE
@@ -1702,7 +1647,7 @@ object SnappyStoreHiveCatalog {
   }
 
   def setRelationDestroyVersionOnAllMembers(): Unit = {
-    SparkSession.getDefaultSession.foreach(session =>
+    SparkSession.getActiveSession.foreach(session =>
       SnappyContext.getClusterMode(session.sparkContext) match {
         case SnappyEmbeddedMode(_, _) =>
           val version = getRelationDestroyVersion
@@ -1825,23 +1770,5 @@ object ExternalTableType {
         tableType.equalsIgnoreCase(ExternalTableType.Column.name) ||
         tableType.equalsIgnoreCase(ExternalTableType.Sample.name) ||
         tableType.equalsIgnoreCase(ExternalTableType.Index.name)
-  }
-}
-
-final class JavaObjectType(override val userClass: java.lang.Class[AnyRef])
-    extends UserDefinedType[AnyRef] {
-
-  override def typeName: String = userClass.getName
-
-  override def sqlType: DataType = BinaryType
-
-  override def serialize(obj: AnyRef): Any = {
-    val serializer = SparkEnv.get.serializer.newInstance()
-    ClientSharedUtils.toBytes(serializer.serialize(obj))
-  }
-
-  override def deserialize(datum: Any): AnyRef = {
-    val serializer = SparkEnv.get.serializer.newInstance()
-    serializer.deserialize(ByteBuffer.wrap(datum.asInstanceOf[Array[Byte]]))
   }
 }
