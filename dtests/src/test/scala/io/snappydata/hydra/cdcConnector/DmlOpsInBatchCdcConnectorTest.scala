@@ -16,77 +16,45 @@
  */
 package io.snappydata.hydra.cdcConnector
 
-import java.io.{BufferedReader, File, FileNotFoundException, FileReader, IOException, PrintWriter}
-import java.net.InetAddress
-import java.sql.{Connection, DriverManager}
-import java.util.Properties
+import java.io.{BufferedReader, File, FileNotFoundException, FileReader, IOException}
+import java.sql.{Connection, DriverManager, ResultSet}
+import java.util.ArrayList
 
 import scala.sys.process._
-
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
-import org.scalatest.BeforeAndAfterAll
-import java.util.ArrayList
-import java.sql.ResultSet
-
-import com.mysql.jdbc.Statement
-import io.snappydata.cluster.SplitSnappyClusterDUnitTest.{getEnvironmentVariable, logInfo}
-import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
-import io.snappydata.util.TestUtils
-
+import io.snappydata.hydra.SnappyHydraTestRunner
+import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.{DataFrame, ParseException, SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 
-class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
-    var homeDir = System.getProperty("user.home")
-
-    private val snappyProductDir = s"$homeDir/snappydata/build-artifacts/scala-2.11/snappy"
-    private val testDir = s"$homeDir/snappydata/dtests/src/resources/scripts/cdcConnector"
+class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
+    private var testDir = ""
+    private var appJar = ""
+    var homeDir = ""
 
     val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-    val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
-    val spark: SparkSession = SparkSession
-        .builder
-        .appName("DmlOpsInBatchTest")
-        .master("local[*]")
-        .getOrCreate
-
-    val snSession = new SnappySession(spark.sparkContext)
-    protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
-        /**
-         * Setting local[n] here actually supposed to affect number of reservoir created
-         * while sampling.
-         *
-         * Change of 'n' will influence results if they are dependent on weights - derived
-         * from hidden column in sample table.
-         */
-        new org.apache.spark.SparkConf().setAppName("PreparedQueryRoutingSingleNodeSuite")
-            .setMaster("local[4]")
-        // .set("spark.logConf", "true")
-        // .set("mcast-port", "4958")
-    }
 
     override def beforeAll(): Unit = {
-
-        // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
-        // System.setProperty("spark.testing", "true")
-        super.beforeAll()
-        // reducing DML chunk size size to force lead node to send
-        // results in multiple batches
-        setDMLMaxChunkSize(50L)
-
         // scalastyle:off println
+        snappyHome = System.getenv("SNAPPY_HOME")
+        if (snappyHome == null) {
+            throw new Exception("SNAPPY_HOME should be set as an environment variable")
+        }
+        // snappyHome = "/Users/smahajan/snappydata/build-artifacts/scala-2.11/snappy"
+        homeDir = System.getProperty("user.home")
+        testDir = s"$snappyHome/../../../dtests/src/resources/scripts/cdcConnector"
+        appJar = s"$snappyHome/../../../snappy-poc/cdc/target/cdc-test-0.0.1.jar"
+        println("Snappy home : " + snappyHome)
+        println("Home Dir : " + homeDir)
+        println("Test Config Dir : " + testDir)
+        println("App Jar location : " + appJar)
+
+        setDMLMaxChunkSize(50L)
         before()
 
     }
 
     override def afterAll(): Unit = {
-        // System.clearProperty("org.codehaus.janino.source_debugging.enable")
-        // System.clearProperty("spark.testing")
-        setDMLMaxChunkSize(default_chunk_size)
-        super.afterAll()
-        after()
+         after()
 
     }
 
@@ -94,33 +62,38 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
     }
     def before(): Unit = {
-        println("product dir" + snappyProductDir)
-        (snappyProductDir + "/sbin/snappy-start-all.sh").!!
+       (snappyHome + "/sbin/snappy-start-all.sh").!!
         println("Started snappy cluster")
+        var filePath = s"$testDir/testCases/createTable.sql"
+        var dataLocation = s"$snappyHome/../../../snappy-connectors/" +
+            s"jdbc-stream-connector/build-artifacts/scala-2.11/libs"
+        val dest = s"$snappyHome/../tests/snappy/scalatest/cdcTestLog"
+        var logFile = new File(dest)
+        val command = "/bin/snappy run -file=" + filePath +
+            " -param:dataLocation=" + dataLocation + " -param:homeDirLocation=" + homeDir +
+        " -client-port=1527" + " -client-bind-address=localhost"
+        (snappyHome + command).!!
 
-        (snappyProductDir + s"/bin/snappy run -file=$testDir/testCases/createTable.sql" +
-            s" -path=$testDir/testCases/ " +
-            s"-client-bind-address=localhost -client-port=1527").!!
         println("Table created and jar deployed")
-
-        (snappyProductDir + "/bin/snappy-job.sh submit " +
-            "--app-name JavaCdcStreamingApp " +
-            "--class io.snappydata.app.JavaCdcStreamingApp " +
+        println("appJar " + appJar)
+        val jobCommand = "/bin/snappy-job.sh submit " +
+            "--app-name JavaCdcStreamingAppSnappyJob " +
+            "--class io.snappydata.app.JavaCdcStreamingAppSnappyJob " +
             s"--conf configFile=$testDir/confFiles/" +
             "source_destination_tables.properties " +
             s"--conf configFile1=$testDir/confFiles/" +
             "cdc_source_connection.properties " +
-            s"--app-jar $testDir/cdcConnectorModifiedCode/cdc/target/" +
-            "original-cdc-test-0.0.1.jar " +
-            "--lead localhost:8090 ").!!
+            s"--app-jar $appJar " +
+            "--lead localhost:8090"
+        (snappyHome + jobCommand).!!
         println("Job started")
     }
     def after(): Unit = {
-        (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
+        (snappyHome + "/sbin/snappy-stop-all.sh").!!
         println("Stopped snappy cluster")
     }
 
-    def getConnection: Connection = {
+    def getSnappyConnection: Connection = {
 
             println("Getting connection")
             // scalastyle:off classforname Class.forName
@@ -140,9 +113,6 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
             var sb: StringBuffer = new StringBuffer()
 
             val fr: FileReader = new FileReader(new File(fileName))
-            // be sure to not have line starting with ""--"" or
-            // ""/*"" or any other non aplhabetical character
-
             var br: BufferedReader = new BufferedReader(fr)
             s = br.readLine()
 
@@ -151,9 +121,6 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
                 s = br.readLine()
             }
             br.close()
-
-            // here is our splitter ! We use "";"" as a delimiter for each request
-            // then we are sure to have well formed statements
             var splitData: Array[String] = sb.toString().split(";")
             for (i <- 0 to splitData.length-1) {
                 {
@@ -196,48 +163,56 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
         DriverManager.getConnection("jdbc:snappydata:thrift://localhost[1527]")
     }
     def performValidation(sqlResultSet: ResultSet, snappyResultSet: ResultSet): Unit = {
-        val resultMetaData = sqlResultSet.getMetaData
-        val columnCnt = resultMetaData.getColumnCount
-        val snappyMetadata = snappyResultSet.getMetaData
-        val snappyColCnt = snappyMetadata.getColumnCount
-        var sqlRowsCnt = 0
-        while(sqlResultSet.next()){
-            sqlRowsCnt = sqlRowsCnt + 1
-        }
-        var snappyRowsCnt = 0
-        while(snappyResultSet.next()){
-            snappyRowsCnt = snappyRowsCnt + 1
-        }
-        sqlResultSet.beforeFirst()
-        snappyResultSet.beforeFirst()
-        println("Row cnt of snappy and sql table is = " + snappyRowsCnt + " " + sqlRowsCnt)
-        println("Column cnt of snappy and sql table is = " + snappyColCnt + " " + columnCnt)
-        if (snappyRowsCnt.equals(sqlRowsCnt)) {
-            while (sqlResultSet.next()) {
-                snappyResultSet.next()
-                for (i <- 1 to columnCnt) {
-                    if (sqlResultSet.getObject(i).equals(snappyResultSet.getObject(i))) {
-                        println("match " + sqlResultSet.getObject(i) + " "
-                            + snappyResultSet.getObject(i))
-                    }
-                    else {
-                        println("not match" + sqlResultSet.getObject(i)
-                            + " " + snappyResultSet.getObject(i))
+        try {
+            val resultMetaData = sqlResultSet.getMetaData
+            val columnCnt = resultMetaData.getColumnCount
+            val snappyMetadata = snappyResultSet.getMetaData
+            val snappyColCnt = snappyMetadata.getColumnCount
+            var sqlRowsCnt = 0
+            while(sqlResultSet.next()){
+                sqlRowsCnt = sqlRowsCnt + 1
+            }
+            var snappyRowsCnt = 0
+            while(snappyResultSet.next()){
+                snappyRowsCnt = snappyRowsCnt + 1
+            }
+            sqlResultSet.beforeFirst()
+            snappyResultSet.beforeFirst()
+            println("Row cnt of snappy and sql table is = " + snappyRowsCnt + " " + sqlRowsCnt)
+            println("Column cnt of snappy and sql table is = " + snappyColCnt + " " + columnCnt)
+            if (snappyRowsCnt.equals(sqlRowsCnt)) {
+                while (sqlResultSet.next()) {
+                    snappyResultSet.next()
+                    for (i <- 1 to columnCnt) {
+                        if (sqlResultSet.getObject(i).equals(snappyResultSet.getObject(i))) {
+                            println("match " + sqlResultSet.getObject(i) + " "
+                                + snappyResultSet.getObject(i))
+                        }
+                        else {
+                            println("not match" + sqlResultSet.getObject(i)
+                                + " " + snappyResultSet.getObject(i))
+                        }
                     }
                 }
             }
+            else {
+                println("Row cnt of snappy and sql table is = "
+                    + snappyRowsCnt + " " + sqlRowsCnt + " not matching")
+            }
         }
-        else {
-            println("Row cnt of snappy and sql table is = "
-                + snappyRowsCnt + " " + sqlRowsCnt + " not matching")
+        catch {
+            case e: Exception => {
+                System.out.println("Caught exception " + e.getMessage)
+            }
         }
+
     }
 
     test("insert update delete insert on same key in one batch"){
-        
+
         val queryString = s"$testDir/testCases/testCase1.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -250,14 +225,13 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
                 .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 95000010061;")
         performValidation(sqlResultSet, snappyDF)
-        
     }
 
     test("insert delete insert on same key in one batch"){
         
         val queryString = s"$testDir/testCases/testCase2.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -277,7 +251,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase3.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -297,7 +271,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase4.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -317,7 +291,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase5.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -337,7 +311,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase6.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -357,7 +331,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase7.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -377,7 +351,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase8.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -397,15 +371,18 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase9.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
-        val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010072 adj_id <= 95000010073 order by adj_id;")
-        val sqlResultSet = conn.createStatement().
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
+            "where adj_id >= 95000010072 and adj_id <= 95000010073 order by adj_id;")
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010072 adj_id <= 95000010073 order by adj_id;")
+                "where adj_id >= 95000010072 and adj_id <= 95000010073 order by adj_id;")
         performValidation(sqlResultSet, snappyDF)
     }
 
@@ -413,7 +390,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase10.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -433,7 +410,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase11.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -453,7 +430,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase12.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -473,7 +450,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase13.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -493,7 +470,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase14.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -513,7 +490,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase15.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -533,7 +510,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase16.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -553,7 +530,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase17.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -573,7 +550,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase18.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -593,7 +570,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase19.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -610,7 +587,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase20.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -627,7 +604,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase21.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -644,7 +621,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase22.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -661,7 +638,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase23.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -685,7 +662,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase24.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -693,9 +670,12 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
             "where adj_id = 950000100105;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected for 950000100105")
-        val snappyDF1 = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
+        val snappyDF1 = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100106;")
-        val sqlResultSet = conn.createStatement().
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
             executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
                 "where adj_id = 950000100106;")
         performValidation(sqlResultSet, snappyDF1)
@@ -706,7 +686,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase25.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
@@ -732,7 +712,7 @@ class DmlOpsInBatchTest extends  SnappyFunSuite with BeforeAndAfterAll{
 
         val queryString = s"$testDir/testCases/testCase26.sql"
         val qArr = getQuery(queryString)
-        val conn = getConnection
+        val conn = getSnappyConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
         Thread.sleep(50000)
