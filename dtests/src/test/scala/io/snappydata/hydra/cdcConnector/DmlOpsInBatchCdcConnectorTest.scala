@@ -67,8 +67,6 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         var filePath = s"$testDir/testCases/createTable.sql"
         var dataLocation = s"$snappyHome/../../../snappy-connectors/" +
             s"jdbc-stream-connector/build-artifacts/scala-2.11/libs"
-        val dest = s"$snappyHome/../tests/snappy/scalatest/cdcTestLog"
-        var logFile = new File(dest)
         val command = "/bin/snappy run -file=" + filePath +
             " -param:dataLocation=" + dataLocation + " -param:homeDirLocation=" + homeDir +
         " -client-port=1527" + " -client-bind-address=localhost"
@@ -208,7 +206,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert update delete insert on same key in one batch"){
+    test("Test for insert,update,delete and insert happening " +
+        "sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase1.sql"
         val qArr = getQuery(queryString)
@@ -227,7 +226,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         performValidation(sqlResultSet, snappyDF)
     }
 
-    test("insert delete insert on same key in one batch"){
+    test("Test for insert,delete and insert happening sequentially on same key in one batch"){
         
         val queryString = s"$testDir/testCases/testCase2.sql"
         val qArr = getQuery(queryString)
@@ -247,7 +246,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert delete insert on two keys in one batch"){
+    test("Test for insert,delete and insert happening sequentially on two keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase3.sql"
         val qArr = getQuery(queryString)
@@ -267,7 +266,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert delete insert update on same key in one batch"){
+    test("Test for insert,delete,insert and update " +
+        "happening sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase4.sql"
         val qArr = getQuery(queryString)
@@ -287,7 +287,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts deletes inserts on keys in one batch"){
+    test("Test for multiple inserts,deletes and " +
+        "inserts happening sequentially on keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase5.sql"
         val qArr = getQuery(queryString)
@@ -307,7 +308,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts deletes inserts updates on keys in one batch"){
+    test("Test for multiple inserts,deletes,inserts " +
+        "and updates happening sequentially on keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase6.sql"
         val qArr = getQuery(queryString)
@@ -327,7 +329,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert delete insert update on same key having diff lsn in one batch"){
+    test("Test for insert,delete,insert and update " +
+        "happening sequentially on same key having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase7.sql"
         val qArr = getQuery(queryString)
@@ -347,7 +350,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert delete insert on same key having diff lsn in one batch"){
+    test("Test for insert,delete and insert happening " +
+        "sequentially on same key having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase8.sql"
         val qArr = getQuery(queryString)
@@ -367,7 +371,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts deletes inserts on keys having diff lsn in one batch"){
+    test("Test for multiple inserts,deletes and inserts " +
+        "happening sequentially on keys having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase9.sql"
         val qArr = getQuery(queryString)
@@ -386,7 +391,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         performValidation(sqlResultSet, snappyDF)
     }
 
-    test("insert update on same key in one batch"){
+    test("Test for insert and update happening sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase10.sql"
         val qArr = getQuery(queryString)
@@ -406,7 +411,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert update on same key having diff lsn in one batch"){
+    test("Test for insert and update happening sequentially" +
+        " on same key having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase11.sql"
         val qArr = getQuery(queryString)
@@ -426,7 +432,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert update delete insert update on same key in one batch"){
+    test("Test for insert update,delete,insert and " +
+        "update happening sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase12.sql"
         val qArr = getQuery(queryString)
@@ -446,7 +453,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts deletes inserts updates on diff keys in one batch"){
+    test("Test for multiple inserts,deletes,inserts and " +
+        "updates happening sequentially on diff keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase13.sql"
         val qArr = getQuery(queryString)
@@ -466,7 +474,8 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts updates deletes inserts updates in one batch"){
+    test("Test for multiple inserts,updates,deletes,inserts " +
+        "and updates happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase14.sql"
         val qArr = getQuery(queryString)
@@ -486,7 +495,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts updates in one batch"){
+    test("Test for multiple inserts and updates happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase15.sql"
         val qArr = getQuery(queryString)
@@ -506,7 +515,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts in one batch"){
+    test("Test for multiple inserts happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase16.sql"
         val qArr = getQuery(queryString)
@@ -526,7 +535,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("single insert in one batch"){
+    test("Test for single insert in one batch"){
 
         val queryString = s"$testDir/testCases/testCase17.sql"
         val qArr = getQuery(queryString)
@@ -546,7 +555,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("single update in one batch"){
+    test("Test for single update in one batch"){
 
         val queryString = s"$testDir/testCases/testCase18.sql"
         val qArr = getQuery(queryString)
@@ -566,7 +575,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("single delete in one batch"){
+    test("Test for single delete in one batch"){
 
         val queryString = s"$testDir/testCases/testCase19.sql"
         val qArr = getQuery(queryString)
@@ -583,7 +592,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts deletes in one batch"){
+    test("Test for multiple inserts and deletes happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase20.sql"
         val qArr = getQuery(queryString)
@@ -600,7 +609,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("multiple inserts updates deletes in one batch"){
+    test("Test for multiple inserts,updates and deletes happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase21.sql"
         val qArr = getQuery(queryString)
@@ -617,7 +626,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert update delete on two diff key in one batch"){
+    test("Test for insert,update and delete happening sequentially on two diff key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase22.sql"
         val qArr = getQuery(queryString)
@@ -634,7 +643,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert update delete on diff keys in one batch"){
+    test("Test for insert,update and delete happening sequentially on diff keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase23.sql"
         val qArr = getQuery(queryString)
@@ -658,7 +667,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("dml ops in one batch"){
+    test("Test for dml ops happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase24.sql"
         val qArr = getQuery(queryString)
@@ -682,7 +691,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("dml ops on diff keys in one batch"){
+    test("Test for dml ops happening sequentially on diff keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase25.sql"
         val qArr = getQuery(queryString)
@@ -708,7 +717,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
     }
 
-    test("insert and multiple updates on same key in one batch"){
+    test("Test for insert and multiple updates happening sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase26.sql"
         val qArr = getQuery(queryString)
