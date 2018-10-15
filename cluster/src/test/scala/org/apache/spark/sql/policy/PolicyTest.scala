@@ -283,6 +283,52 @@ class PolicyTest extends PolicyTestBase {
     this.tableWithPolicyJoinedToItself(colTableName)
   }
 
+  test("test policy not applied for update | delete on row table - SNAP-2576") {
+    this.updateOrDeleteOntableWithPolicy("row")
+  }
+
+  test("test policy not applied for update | delete on column table - SNAP-2576") {
+    this.updateOrDeleteOntableWithPolicy("column")
+  }
+
+  private def updateOrDeleteOntableWithPolicy(tableType: String): Unit = {
+
+    ownerContext.sql(s"CREATE TABLE temp (username String, id Int) " +
+        s" USING $tableType ")
+    val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
+      "USERY" -> 8, "USERY" -> 9)
+    val rdd = sc.parallelize(seq)
+
+    val dataDF = ownerContext.createDataFrame(rdd)
+
+    dataDF.write.insertInto("temp")
+
+    ownerContext.sql(s"create policy testPolicy1 on  " +
+        s" temp for select to current_user using " +
+        s" id < 0")
+
+    ownerContext.sql("alter table temp enable row level security")
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
+    val q1 = s"select * from $tableOwner.temp"
+    var rs = snc2.sql(q1).collect()
+    assertEquals(0, rs.length)
+
+    snc2.sql(s"update $tableOwner.temp set username = 'USERZ' where username = 'USERX'")
+
+    rs = ownerContext.sql(s"select * from temp where username = 'USERZ'").collect()
+    assertEquals(3, rs.length)
+
+    snc2.sql(s"delete from $tableOwner.temp  where username = 'USERZ'")
+
+    rs = ownerContext.sql(s"select * from temp where username = 'USERZ'").collect()
+    assertEquals(0, rs.length)
+
+    ownerContext.sql("drop policy testPolicy1")
+    ownerContext.sql(s"drop table temp")
+  }
+
   private def tableWithPolicyJoinedToItself(tableName: String): Unit = {
     val mappingTable = "mapping"
     ownerContext.sql(s"CREATE TABLE $mappingTable (username String, hisid Int) " +

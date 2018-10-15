@@ -19,8 +19,8 @@ package org.apache.spark.sql
 import java.util.concurrent.ConcurrentHashMap
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
-import io.snappydata.Constant
-import io.snappydata.collection.OpenHashSet
+import io.snappydata.QueryHint
+import io.snappydata.collection.{ObjectObjectHashMap, OpenHashSet}
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -39,17 +39,46 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
-  protected def clearQueryHints(): Unit = queryHints.clear()
+  @volatile private final var _planHints: java.util.Stack[(String, String)] = _
+
+  /**
+   * Tracks the hints that need to be applied at current plan level and will be
+   * wrapped by LogicalPlanWithHints
+   */
+  private[sql] final def planHints: java.util.Stack[(String, String)] = {
+    val hints = _planHints
+    if (hints ne null) hints
+    else synchronized {
+      if (_planHints eq null) _planHints = new java.util.Stack[(String, String)]
+      _planHints
+    }
+  }
+
+  private[sql] final def hasPlanHints: Boolean = _planHints ne null
+
+  protected def clearQueryHints(): Unit = {
+    if (!queryHints.isEmpty) queryHints.clear()
+    if (_planHints ne null) _planHints = null
+  }
 
   protected final def commentBody: Rule0 = rule {
     "*/" | ANY ~ commentBody
+  }
+
+  /**
+   * Handle query hints including plan-level like joinType that are marked to be handled later.
+   */
+  protected def handleQueryHint(hint: String, hintValue: String): Unit = {
+    // check for a plan-level hint
+    if (Consts.allowedPlanHints.contains(hint)) planHints.push(hint -> hintValue)
+    queryHints.put(hint, hintValue)
   }
 
   protected final def commentBodyOrHint: Rule0 = rule {
     '+' ~ (Consts.whitespace.* ~ capture(CharPredicate.Alpha ~
         Consts.identifier.*) ~ Consts.whitespace.* ~
         '(' ~ capture(noneOf(Consts.hintValueEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints.put(k, v.trim): Unit)). + ~
+        ((k: String, v: String) => handleQueryHint(k, v.trim))). + ~
         commentBody |
     commentBody
   }
@@ -58,7 +87,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     '+' ~ (Consts.space.* ~ capture(CharPredicate.Alpha ~
         Consts.identifier.*) ~ Consts.space.* ~
         '(' ~ capture(noneOf(Consts.lineHintEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints.put(k, v.trim): Unit)). + ~
+        ((k: String, v: String) => handleQueryHint(k, v.trim))). + ~
         noneOf(Consts.lineCommentEnd).* |
     noneOf(Consts.lineCommentEnd).*
   }
@@ -178,6 +207,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   final def LONG: Rule0 = newDataType(Consts.LONG)
   final def MAP: Rule0 = newDataType(Consts.MAP)
   final def NUMERIC: Rule0 = newDataType(Consts.NUMERIC)
+  final def PRECISION: Rule0 = keyword(Consts.PRECISION)
   final def REAL: Rule0 = newDataType(Consts.REAL)
   final def SHORT: Rule0 = newDataType(Consts.SHORT)
   final def SMALLINT: Rule0 = newDataType(Consts.SMALLINT)
@@ -200,7 +230,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     INT ~> (() => IntegerType) |
     BIGINT ~> (() => LongType) |
     LONG ~> (() => LongType) |
-    DOUBLE ~> (() => DoubleType) |
+    DOUBLE ~ PRECISION.? ~> (() => DoubleType) |
     fixedDecimalType |
     DECIMAL ~> (() => DecimalType.SYSTEM_DEFAULT) |
     NUMERIC ~> (() => DecimalType.SYSTEM_DEFAULT) |
@@ -249,11 +279,10 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def columnCharType: Rule1[DataType] = rule {
-    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharStringType(d.toInt, baseType = "VARCHAR")) |
-    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharStringType(d.toInt, baseType = "CHAR")) |
-    STRING ~> (() => CharStringType(Constant.MAX_VARCHAR_SIZE, baseType = "STRING"))
+    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => VarcharType(d.toInt)) |
+    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => CharType(d.toInt)) |
+    STRING ~> (() => StringType) |
+    CLOB ~> (() => VarcharType(Int.MaxValue))
   }
 
   final def columnDataType: Rule1[DataType] = rule {
@@ -309,6 +338,38 @@ object SnappyParserConsts {
 
   final val optimizableLikePattern: java.util.regex.Pattern =
     java.util.regex.Pattern.compile("(%?[^_%]*[^_%\\\\]%?)|([^_%]*[^_%\\\\]%[^_%]*)")
+
+  /**
+   * Define the hints that need to be applied at plan-level and will be
+   * wrapped by LogicalPlanWithHints
+   */
+  final val allowedPlanHints: List[String] = List(QueryHint.JoinType.toString)
+
+  // -10 in sequence will mean all arguments, -1 will mean all odd argument and
+  // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.
+  // Empty argument array means plan caching has to be disabled.
+  final val FOLDABLE_FUNCTIONS: ObjectObjectHashMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
+    "ROUND" -> Array(1), "BROUND" -> Array(1), "PERCENTILE" -> Array(1), "STACK" -> Array(0),
+    "NTILE" -> Array(0), "STR_TO_MAP" -> Array(1, 2), "NAMED_STRUCT" -> Array(-1),
+    "REFLECT" -> Array(0, 1), "JAVA_METHOD" -> Array(0, 1), "XPATH" -> Array(1),
+    "XPATH_BOOLEAN" -> Array(1), "XPATH_DOUBLE" -> Array(1),
+    "XPATH_NUMBER" -> Array(1), "XPATH_FLOAT" -> Array(1),
+    "XPATH_INT" -> Array(1), "XPATH_LONG" -> Array(1),
+    "XPATH_SHORT" -> Array(1), "XPATH_STRING" -> Array(1),
+    "PERCENTILE_APPROX" -> Array(1, 2), "APPROX_PERCENTILE" -> Array(1, 2),
+    "TRANSLATE" -> Array(1, 2), "UNIX_TIMESTAMP" -> Array(1),
+    "TO_UNIX_TIMESTAMP" -> Array(1), "FROM_UNIX_TIMESTAMP" -> Array(1),
+    "TO_UTC_TIMESTAMP" -> Array(1), "FROM_UTC_TIMESTAMP" -> Array(1),
+    "FROM_UNIXTIME" -> Array(1), "TRUNC" -> Array(1), "NEXT_DAY" -> Array(1),
+    "GET_JSON_OBJECT" -> Array(1), "JSON_TUPLE" -> Array(-3, 0),
+    "FIRST" -> Array(1), "LAST" -> Array(1),
+    "WINDOW" -> Array(1, 2, 3), "RAND" -> Array(0), "RANDN" -> Array(0),
+    "PARSE_URL" -> Array(0, 1, 2),
+    "LAG" -> Array(1), "LEAD" -> Array(1),
+    // rand() plans are not to be cached since each run should use different seed
+    // and the Spark impls create the seed in constructor rather than in generated code
+    "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
+    "LIKE" -> Array(1), "RLIKE" -> Array(1), "APPROX_COUNT_DISTINCT" -> Array(1)))
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
@@ -411,6 +472,7 @@ object SnappyParserConsts {
   final val ADD: Keyword = nonReservedKeyword("add")
   final val ALTER: Keyword = nonReservedKeyword("alter")
   final val ANTI: Keyword = nonReservedKeyword("anti")
+  final val AUTHORIZATION: Keyword = nonReservedKeyword("authorization")
   final val CACHE: Keyword = nonReservedKeyword("cache")
   final val CALL: Keyword = nonReservedKeyword("call")
   final val CLEAR: Keyword = nonReservedKeyword("clear")
@@ -471,6 +533,7 @@ object SnappyParserConsts {
   final val REVOKE: Keyword = nonReservedKeyword("revoke")
   final val REPOS: Keyword = nonReservedKeyword("repos")
   final val RESET: Keyword = nonReservedKeyword("reset")
+  final val RESTRICT: Keyword = nonReservedKeyword("restrict")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
   final val SCHEMAS: Keyword = nonReservedKeyword("schemas")
   final val SEMI: Keyword = nonReservedKeyword("semi")
@@ -541,6 +604,7 @@ object SnappyParserConsts {
   final val LONG: Keyword = nonReservedKeyword("long")
   final val MAP: Keyword = nonReservedKeyword("map")
   final val NUMERIC: Keyword = nonReservedKeyword("numeric")
+  final val PRECISION: Keyword = nonReservedKeyword("precision")
   final val REAL: Keyword = nonReservedKeyword("real")
   final val SHORT: Keyword = nonReservedKeyword("short")
   final val SMALLINT: Keyword = nonReservedKeyword("smallint")

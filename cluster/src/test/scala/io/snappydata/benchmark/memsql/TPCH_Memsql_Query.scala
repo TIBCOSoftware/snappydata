@@ -29,7 +29,9 @@ object TPCH_Memsql_Query {
      val user = "root"
      val password = ""
 
-     Class.forName("com.mysql.jdbc.Driver")
+     //Class.forName("com.mysql.jdbc.Driver")
+     // The new mysql Java connector 8.0 generates a warning if the old driver class name is used.
+     Class.forName("com.mysql.cj.jdbc.Driver")
      val dbAddress = "jdbc:mysql://" + host + ":" + port + "/"
      val conn = DriverManager.getConnection(dbAddress, user, password)
      val stmt = conn.createStatement
@@ -38,9 +40,11 @@ object TPCH_Memsql_Query {
      var warmup : Integer = args(4).toInt
      var runsForAverage : Integer = args(5).toInt
      var isDynamic : Boolean = args(6).toBoolean
+     val randomSeed = args(7).toInt
 
      stmt.execute("USE " + dbName)
 
+     TPCH_Memsql.setRandomSeed(randomSeed)
      for(query <- queries) {
        TPCH_Memsql.execute(query, isResultCollection, stmt, warmup, runsForAverage, isDynamic)
      }

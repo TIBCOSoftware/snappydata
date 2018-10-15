@@ -35,13 +35,12 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
-import com.pivotal.gemfirexd.{Attribute, FabricService, NetworkInterface}
+import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
@@ -87,7 +86,7 @@ class LeadImpl extends ServerImpl with Lead
 
     isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
     bootProperties.remove("isTest")
-    val authSpecified = Misc.checkAuthProvider(bootProperties)
+    val authSpecified = Misc.checkLDAPAuthProvider(bootProperties)
 
     // prefix all store properties with "snappydata.store" for SparkConf
 
@@ -420,7 +419,8 @@ class LeadImpl extends ServerImpl with Lead
     doCheck(props.getProperty(Attribute.SERVER_AUTH_PROVIDER))
 
     def doCheck(authP: String): Unit = {
-      if (authP != null && !"LDAP".equalsIgnoreCase(authP)) {
+      if (authP != null && !Constants.AUTHENTICATION_PROVIDER_LDAP.equalsIgnoreCase(authP) &&
+          !"NONE".equalsIgnoreCase(authP)) {
         throw new UnsupportedOperationException(
           "LDAP is the only supported auth-provider currently.")
       }
@@ -439,17 +439,19 @@ class LeadImpl extends ServerImpl with Lead
       SnappyContext.flushSampleTables()
     }
     */
-    internalStop(shutdownCredentials)
+    if (shutdownCredentials eq null) internalStop(null)
+    else internalStop(ServiceUtils.getStoreProperties(shutdownCredentials.asScala.toSeq))
   }
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
+    if (!servicesStarted && bootProperties.isEmpty) return
+
     try {
       Misc.getGemFireCache.getDistributionManager
           .removeMembershipListener(SnappyContext.membershipListener)
     } catch {
       case _: CacheClosedException =>
     }
-    bootProperties.clear()
     SnappyHiveThriftServer2.close()
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
@@ -481,6 +483,7 @@ class LeadImpl extends ServerImpl with Lead
         case _: CancelException => // ignore if already stopped
       }
     }
+    bootProperties.clear()
   }
 
   private[snappydata] def initStartupArgs(conf: SparkConf, sc: SparkContext = null) = {
@@ -559,8 +562,9 @@ class LeadImpl extends ServerImpl with Lead
                 val props = new Properties()
                 props.setProperty(Attribute.USERNAME_ATTR, u.user)
                 props.setProperty(Attribute.PASSWORD_ATTR, u.pass)
-                val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc
-                    .getMemStoreBooting.getDatabaseName, props)
+                val memStore = Misc.getMemStoreBooting
+                val result = memStore.getDatabase.getAuthenticationService.authenticate(
+                  memStore.getDatabaseName, props)
                 if (result != null) {
                   val msg = s"ACCESS DENIED, user [${u.user}]. $result"
                   if (GemFireXDUtils.TraceAuthentication) {
@@ -742,8 +746,8 @@ object LeadImpl {
     lead.internalStart(() => ServiceUtils.getStoreProperties(conf.getAll))
   }
 
-  def invokeLeadStop(shutdownCredentials: Properties): Unit = {
+  def invokeLeadStop(): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.internalStop(shutdownCredentials)
+    lead.internalStop(lead.bootProperties)
   }
 }

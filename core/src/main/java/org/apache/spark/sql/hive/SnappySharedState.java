@@ -21,6 +21,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.SparkException;
 import org.apache.spark.sql.ClusterMode;
 import org.apache.spark.sql.SnappyContext;
+import org.apache.spark.sql.SnappyEmbeddedMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
@@ -67,20 +68,20 @@ public final class SnappySharedState extends SharedState {
   /**
    * Create Snappy's SQL Listener instead of SQLListener
    */
-  private static SQLListener createListenerAndUI(SparkContext sc) {
+  private static void createListenerAndUI(SparkContext sc) {
     SQLListener initListener = ExternalStoreUtils.getSQLListener().get();
     if (initListener == null) {
       SnappySQLListener listener = new SnappySQLListener(sc.conf());
       if (ExternalStoreUtils.getSQLListener().compareAndSet(null, listener)) {
         sc.addSparkListener(listener);
         scala.Option<SparkUI> ui = sc.ui();
-        if (ui.isDefined() && Utils.isLoner(sc)) {
+        // embedded mode attaches SQLTab later via ToolsCallbackImpl that also
+        // takes care of injecting any authentication module if configured
+        if (ui.isDefined() &&
+            !(SnappyContext.getClusterMode(sc) instanceof SnappyEmbeddedMode)) {
           new SQLTab(listener, ui.get());
         }
       }
-      return ExternalStoreUtils.getSQLListener().get();
-    } else {
-      return initListener;
     }
   }
 

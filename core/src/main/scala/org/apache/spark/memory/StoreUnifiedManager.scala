@@ -211,8 +211,7 @@ object MemoryManagerCallback extends Logging {
   }
 
   /** release and accounting for byte buffer allocated by [[allocateExecutionMemory]] */
-  def releaseExecutionMemory(buffer: ByteBuffer, owner: String, releaseBuffer: Boolean): Unit = {
-    if (releaseBuffer) BufferAllocator.releaseBuffer(buffer)
+  def releaseExecutionMemory(buffer: ByteBuffer, owner: String): Unit = {
     if (buffer.hasArray) {
       StoreCallbacksImpl.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
     }

@@ -28,7 +28,7 @@ import org.apache.hadoop.hive.ql.metadata.Table
 
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.catalyst.parser.ParseException
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
@@ -98,7 +98,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
         }
         val relation = JdbcExtendedUtils.readSplitProperty(
           JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
-          case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
+          case Some(schema) => ExternalStoreUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 
           case None =>
@@ -230,6 +230,16 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
   override def unregisterDataSourceTable(tableIdent: QualifiedTableName,
       relation: Option[BaseRelation]): Unit = {
     // no op
+  }
+
+  override def createDatabase(dbDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit = {
+    // execution on JDBC connection will create in embedded database including hive metastore
+    // which is shared between embedded and connector clusters
+  }
+
+  override def dropDatabase(db: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit = {
+    // execution on JDBC connection will clean in embedded database including hive metastore
+    // which is shared between embedded and connector clusters
   }
 }
 

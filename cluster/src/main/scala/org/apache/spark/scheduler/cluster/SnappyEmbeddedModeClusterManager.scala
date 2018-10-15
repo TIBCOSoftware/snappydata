@@ -97,7 +97,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
   }
 
   def stopLead(): Unit = {
-    LeadImpl.invokeLeadStop(null)
+    LeadImpl.invokeLeadStop()
   }
 
 }

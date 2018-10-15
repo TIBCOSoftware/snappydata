@@ -21,6 +21,7 @@ package org.apache.spark.sql
 import java.io.File
 import java.lang
 import java.nio.file.{Files, Paths}
+import java.sql.SQLException
 import java.util.Map.Entry
 import java.util.function.Consumer
 
@@ -38,7 +39,7 @@ import shapeless.{::, HNil}
 
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -125,6 +126,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
+  final def AUTHORIZATION: Rule0 = rule { keyword(Consts.AUTHORIZATION) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
   final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
@@ -179,6 +181,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
   final def REPLACE: Rule0 = rule { keyword(Consts.REPLACE) }
   final def RESET: Rule0 = rule { keyword(Consts.RESET) }
+  final def RESTRICT: Rule0 = rule { keyword(Consts.RESTRICT) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
   final def SCHEMAS: Rule0 = rule { keyword(Consts.SCHEMAS) }
@@ -326,7 +329,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
         (capture(CURRENT_USER) |
-            (LDAPGROUP ~ ws ~ ':' ~ ws ~
+            (LDAPGROUP ~ ':' ~ ws ~
                 push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
                 identifier ~ ws ~> {(ldapOpt: Any, x) =>
               ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
@@ -488,6 +491,20 @@ abstract class SnappyDDLParser(session: SparkSession)
     DROP ~ (VIEW ~ push(true)) ~ ifExists ~ tableIdentifier ~> DropTableOrView
   }
 
+  protected def createSchema: Rule1[LogicalPlan] = rule {
+    CREATE ~ SCHEMA ~ ifNotExists ~ identifier ~ (
+        AUTHORIZATION ~ (
+            LDAPGROUP ~ ':' ~ ws ~ identifier ~> ((group: String) => group -> true) |
+            identifier ~> ((id: String) => id -> false)
+        )
+    ).? ~> ((notExists: Boolean, schemaName: String, authId: Any) =>
+      CreateSchema(notExists, schemaName, authId.asInstanceOf[Option[(String, Boolean)]]))
+  }
+
+  protected def dropSchema: Rule1[LogicalPlan] = rule {
+    DROP ~ SCHEMA ~ ifExists ~ identifier ~ RESTRICT.? ~> DropSchema
+  }
+
   protected def truncateTable: Rule1[LogicalPlan] = rule {
     TRUNCATE ~ TABLE ~ ifExists ~ tableIdentifier ~> TruncateManagedTable
   }
@@ -565,7 +582,11 @@ abstract class SnappyDDLParser(session: SparkSession)
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
           funcResources.foreach(checkExists)
-          val classNameWithType = className + "__" + t.catalogString
+          val catalogString = t match {
+            case VarcharType(Int.MaxValue) => "string"
+            case _ => t.catalogString
+          }
+          val classNameWithType = className + "__" + catalogString
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,
@@ -608,12 +629,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
     (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
-        (() => DMLExternalTable(TableIdentifier(SnappyStoreHiveCatalog.dummyTableName,
+        (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
           Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
             SaveMode.Ignore, Map((JdbcExtendedUtils.DBTABLE_PROPERTY,
-                s"${SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME }." +
-                    s"${SnappyStoreHiveCatalog.dummyTableName}")),
+                s"${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")),
             "", None)), input.sliceString(0, input.length)))
   }
 
@@ -747,9 +767,19 @@ abstract class SnappyDDLParser(session: SparkSession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharStringType(size, baseType) =>
+        case CharType(size) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+          (StringType, false)
+        case VarcharType(Int.MaxValue) => // indicates CLOB type
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+          (StringType, false)
+        case VarcharType(size) =>
+          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+          (StringType, false)
+        case StringType =>
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "STRING")
           (StringType, false)
         case _ => (t, true)
       }
@@ -787,7 +817,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describe | refreshTable | dropTable | truncateTable |
-    createView | createTempViewUsing | dropView |
+    createView | createTempViewUsing | dropView | createSchema | dropSchema |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTable | createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | grantRevoke
@@ -828,6 +858,80 @@ case class CreateTableUsingSelect(
 
 case class DropTableOrView(isView: Boolean, ifExists: Boolean,
     tableIdent: TableIdentifier) extends Command
+
+case class CreateSchema(ifNotExists: Boolean, schemaName: String,
+    authId: Option[(String, Boolean)]) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val catalog = session.sessionCatalog
+    val schema = catalog.formatDatabaseName(schemaName)
+
+    // create schema in catalog first
+    catalog.createDatabase(CatalogDatabase(schema, description = s"User schema $schema",
+      catalog.getDefaultDBPath(schema), Map.empty), ifNotExists)
+
+    // next in store if catalog was successful
+    val authClause = authId match {
+      case None => ""
+      case Some((id, false)) => s""" AUTHORIZATION "$id""""
+      case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
+    }
+    // for smart connector use a normal connection with route-query=true
+    val conn = session.defaultPooledOrConnectorConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
+      stmt.close()
+    } catch {
+      case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
+      case err: Error if SystemFailure.isJVMFailureError(err) =>
+        SystemFailure.initiateFailure(err)
+        // If this ever returns, rethrow the error. We're poisoned
+        // now, so don't let this thread continue.
+        throw err
+      case t: Throwable =>
+        // drop from catalog
+        catalog.dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
+        // Whenever you catch Error or Throwable, you must also
+        // check for fatal JVM error (see above).  However, there is
+        // _still_ a possibility that you are dealing with a cascading
+        // error condition, so you also need to check to see if the JVM
+        // is still usable:
+        SystemFailure.checkFailure()
+        throw t
+    } finally {
+      conn.close()
+    }
+    Nil
+  }
+}
+
+case class DropSchema(ifExists: Boolean, schemaName: String) extends RunnableCommand {
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val catalog = session.sessionCatalog
+    val schema = catalog.formatDatabaseName(schemaName)
+    if (schema == "DEFAULT") {
+      throw new AnalysisException(s"Can not drop default schema")
+    }
+    // drop schema in store first
+    val checkIfExists = if (ifExists) " IF EXISTS" else ""
+    // for smart connector use a normal connection with route-query=true
+    val conn = session.defaultPooledOrConnectorConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
+      stmt.close()
+    } finally {
+      conn.close()
+
+      // drop from catalog in finally block for force cleanup
+      catalog.dropDatabase(schema, ifExists, cascade = false)
+    }
+    Nil
+  }
+}
 
 case class DropPolicy(ifExists: Boolean,
     policyIdentifier: TableIdentifier) extends Command

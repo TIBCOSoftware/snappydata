@@ -38,6 +38,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, RelationInfo, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
@@ -237,7 +238,7 @@ class RowFormatRelation(
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert using put plan for large number of rows
     if (numRows > (batchSize * 4)) {
-      JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+      ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
         table, putInto = true)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,

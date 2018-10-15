@@ -18,10 +18,13 @@ package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.lang.reflect.Method
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
@@ -830,7 +833,6 @@ object SnappyContext extends Logging {
   private[sql] val SYSTABLE_SOURCE = "sys"
 
   val FILE_STREAM_SOURCE = "file_stream"
-  val DIRECT_KAFKA_STREAM_SOURCE = "directkafka_stream"
   val KAFKA_STREAM_SOURCE = "kafka_stream"
   val SOCKET_STREAM_SOURCE = "socket_stream"
   val RAW_SOCKET_STREAM_SOURCE = "raw_socket_stream"
@@ -850,8 +852,7 @@ object SnappyContext extends Logging {
     TOPK_SOURCE -> TOPK_SOURCE_CLASS,
     SOCKET_STREAM_SOURCE -> classOf[SocketStreamSource].getCanonicalName,
     FILE_STREAM_SOURCE -> classOf[FileStreamSource].getCanonicalName,
-    KAFKA_STREAM_SOURCE -> classOf[KafkaStreamSource].getCanonicalName,
-    DIRECT_KAFKA_STREAM_SOURCE -> classOf[DirectKafkaStreamSource].getCanonicalName,
+    KAFKA_STREAM_SOURCE -> classOf[DirectKafkaStreamSource].getCanonicalName,
     TWITTER_STREAM_SOURCE -> classOf[TwitterStreamSource].getCanonicalName,
     RAW_SOCKET_STREAM_SOURCE -> classOf[RawSocketStreamSource].getCanonicalName,
     TEXT_SOCKET_STREAM_SOURCE -> classOf[TextSocketStreamSource].getCanonicalName,
@@ -1116,11 +1117,15 @@ object SnappyContext extends Logging {
   }
 
   private[sql] def sharedState(sc: SparkContext): SnappySharedState = {
-    val state = _sharedState
+    var state = _sharedState
     if ((state ne null) && (state.sparkContext eq sc)) state
     else contextLock.synchronized {
-      _sharedState = SnappySharedState.create(sc)
-      _sharedState
+      state = _sharedState
+      if ((state ne null) && (state.sparkContext eq sc)) state
+      else {
+        _sharedState = SnappySharedState.create(sc)
+        _sharedState
+      }
     }
   }
 
@@ -1151,7 +1156,10 @@ object SnappyContext extends Logging {
       SnappyTableStatsProviderService.stop()
 
       // clear current hive catalog connection
-      Hive.closeCurrent()
+      val closeHive = Future(Hive.closeCurrent())
+      // wait for a while else fail for connection to close else it is likely that
+      // there is some trouble in initialization itself so don't block shutdown
+      Await.ready(closeHive, Duration(10, TimeUnit.SECONDS))
       if (ExternalStoreUtils.isLocalMode(sc)) {
         val props = sc.conf.getOption(Constant.STORE_PROPERTY_PREFIX +
             Attribute.USERNAME_ATTR) match {
@@ -1187,6 +1195,7 @@ object SnappyContext extends Logging {
 
   /** Cleanup static artifacts on this lead/executor. */
   def clearStaticArtifacts(): Unit = {
+    CachedDataFrame.clear()
     ConnectionPool.clear()
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()

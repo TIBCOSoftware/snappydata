@@ -49,19 +49,19 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
 
-  override protected val productDir: String =
+  override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
     super.beforeClass()
     startNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
   }
 
   override def afterClass(): Unit = {
     Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkProductDir)
     super.afterClass()
   }
 
@@ -675,7 +675,7 @@ object SplitSnappyClusterDUnitTest
     val count3 = snc.sql("select * from CUSTOMER_TEMP").count()
     assert(count3 == 750, s"Expected 750 rows. Actual rows = $count3")
     val catalog = snc.snappySession.sessionCatalog
-    assert(catalog.isTemporaryTable(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
+    assert(catalog.isLocalTemporaryView(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
     snc.sql("DROP TABLE CUSTOMER_TEMP")
   }
 

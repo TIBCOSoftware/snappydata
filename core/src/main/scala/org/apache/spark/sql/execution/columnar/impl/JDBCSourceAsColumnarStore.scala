@@ -468,7 +468,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
     connectionType match {
-      case ConnectionType.Embedded =>
+      case ConnectionType.Embedded if onExecutor =>
         val currentCM = ContextService.getFactory.getCurrentContextManager
         if (currentCM ne null) {
           val conn = EmbedConnectionContext.getEmbedConnection(currentCM)
@@ -936,6 +936,9 @@ class SmartConnectorRowRDD(_session: SnappySession,
           clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
             new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
             tableName, true).setMetadataVersion(relDestroyVersion))
+        } else {
+          clientConn.setCommonStatementAttributes(
+            new StatementAttrs().setMetadataVersion(relDestroyVersion))
         }
         clientConn
       case _ => null
