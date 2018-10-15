@@ -86,7 +86,7 @@ object StringMessageProducer {
     thread.start()
     thread.join()
     pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
-    pw.close()  
+    pw.close()
     producer.close()
     System.exit(0)
   }
@@ -123,10 +123,13 @@ extends Runnable {
       derbyTestUtils = new DerbyTestUtils
       conn = derbyTestUtils.getDerbyConnection
     }
+    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"start: " +
+        s"$startRange and end: {$startRange + $eventCount}");
     (startRange to (startRange + eventCount - 1)).foreach(i => {
       val row: String = s"$i,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
-          s"$status,$email,$education,$occupation,$opType"
-      val data = new ProducerRecord[Long, String](topic, i, row)
+          s"$status,$email,$education,$occupation"
+      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row : $row");
+      val data = new ProducerRecord[Long, String](topic, i, row + s",$opType")
       if(hasDerby) {
         DerbyTestUtils.HydraTask_initialize
         performOpInDerby(conn, row, opType)
