@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTa
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, execution}
 
@@ -68,7 +68,7 @@ object MetadataTest extends Assertions {
       builder.putString("base", typeName)
       builder.putLong("scale", scale)
       builder.build()
-    case "LONGVARCHAR" | "CLOB" | "BOOLEAN" =>
+    case "LONGVARCHAR" | "CLOB" | "STRING" | "BOOLEAN" =>
       val builder = new MetadataBuilder
       builder.putString("name", name)
       builder.putLong("scale", scale)
@@ -121,7 +121,7 @@ object MetadataTest extends Assertions {
       (sql: String): Dataset[Row] = {
     if (stmt.execute(sql)) {
       val rs = stmt.getResultSet
-      val schema = JdbcUtils.getSchema(rs, GemFireXDDialect)
+      val schema = JdbcUtils.getSchema(rs, SnappyStoreDialect)
       val dummyMetrics = new InputMetrics
       val rows = JdbcUtils.resultSetToSparkInternalRows(rs, schema, dummyMetrics)
           .map(_.copy()).toSeq
