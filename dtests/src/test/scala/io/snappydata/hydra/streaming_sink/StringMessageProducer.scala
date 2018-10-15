@@ -49,13 +49,14 @@ object StringMessageProducer {
   def generateAndPublish(args: Array[String]) {
     val eventCount: Int = args {0}.toInt
     val topic: String = args {1}
-    val numThreads: Int = args{2}.toInt
-    val opType: Int = args{4}.toInt
-    var brokers: String = args {5}
-    val startRange: Int = args {3}.toInt
+    val startRange: Int = args {2}.toInt
+    val opType: Int = args{3}.toInt
+    var brokers: String = args {4}
+    
     brokers = brokers.replace("--", ":")
     // scalastyle:off println
     pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
+    pw.flush()
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
     hasDerby = DerbyTestUtils.hasDerbyServer
@@ -64,8 +65,8 @@ object StringMessageProducer {
     thread.start()
     thread.join()
     pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
+    pw.close()
     producer.close()
-    System.exit(0)
   }
 
   def main(args: Array[String]) {
@@ -77,6 +78,7 @@ object StringMessageProducer {
     val startRange: Int = args {3}.toInt
     brokers = brokers.replace("--", ":")
     pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
+    pw.flush()
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
     val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
@@ -84,6 +86,7 @@ object StringMessageProducer {
     thread.start()
     thread.join()
     pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
+    pw.close()  
     producer.close()
     System.exit(0)
   }
@@ -135,6 +138,7 @@ extends Runnable {
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Done producing " +
         "records...")
+    StringMessageProducer.pw.flush()
   }
 
   def performOpInDerby(conn: Connection, row: String, eventType: Int): Unit = {
@@ -148,6 +152,7 @@ extends Runnable {
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"derby stmt is " +
         s": $stmt")
+    StringMessageProducer.pw.flush()
     val numRows: Int = conn.createStatement().executeUpdate(stmt)
     if (numRows == 0 && eventType == 1) {
       stmt = getInsertStmt(row)

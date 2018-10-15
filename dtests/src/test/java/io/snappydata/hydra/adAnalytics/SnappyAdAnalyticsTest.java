@@ -381,7 +381,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   public static void HydraTask_generateAndPublishMethod() {
     String[] appProps = null;
     if (SnappyPrms.getCommaSepAPPProps() != null) {
-      appProps = SnappyPrms.getCommaSepAPPProps().split(" ");
+      appProps = SnappyPrms.getCommaSepAPPProps().split(",");
     }
     String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 1);
     appProps1[appProps.length] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
