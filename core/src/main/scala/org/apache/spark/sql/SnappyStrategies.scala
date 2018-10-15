@@ -314,11 +314,10 @@ private[sql] object JoinStrategy {
     plan match {
       case PhysicalScan(_, _, child) => child match {
         case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
-        case Join(left, right, _, _) => allowsReplicatedJoin(left) && allowsReplicatedJoin(right)
         case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
-        //case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
-          //allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
-            //  (canBuildLeft(joinType) || canBuildRight(joinType))
+        case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
+          allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
+              (canBuildLeft(joinType) || canBuildRight(joinType))
         case _ => false
       }
       case _ => false
