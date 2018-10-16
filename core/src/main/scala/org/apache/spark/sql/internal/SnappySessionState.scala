@@ -292,7 +292,7 @@ class SnappySessionState(snappySession: SnappySession)
         case _ if Property.ForceLinkPartitionsToBuckets.get(conf) =>
           // always create one partition per bucket
           snappySession.linkPartitionsToBuckets(flag = true)
-        case j: Join if !JoinStrategy.isLocalJoin(j) =>
+        case j: Join if !JoinStrategy.isReplicatedJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
         case _: InsertIntoTable | _: TableMutationPlan |
