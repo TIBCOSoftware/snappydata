@@ -33,9 +33,16 @@ import scala.reflect.io.Path
  * <pre>
  * bin/run-example snappydata.StructuredStreamingWithSnappysink
  * </pre>
- * <p></p>
- * To run this on your local machine, you need to first run a Netcat server
+ * <p>
+ * To run this on your local machine, you need to first run a Netcat server <br>
  * `$ nc -lk 9999`
+ * <p>
+ * Sample input data:
+ * {{{
+ * device1,45
+ * device2,67
+ * device3,35
+ * }}}
  *
  */
 object StructuredStreamingWithSnappysink {
@@ -59,51 +66,56 @@ object StructuredStreamingWithSnappysink {
 
     val snappy = new SnappySession(spark.sparkContext)
 
-    snappy.sql("create table devices (device varchar(30) , signal int)")
+    try {
+      snappy.sql("create table devices (device varchar(30) , signal int)")
 
-    // Create DataFrame representing the stream of input lines from connection to host:port
-    val socketDF = snappy
-        .readStream
-        .format("socket")
-        .option("host", "localhost")
-        .option("port", 9999)
-        .load()
+      // Create DataFrame representing the stream of input lines from connection to host:port
+      val socketDF = snappy
+          .readStream
+          .format("socket")
+          .option("host", "localhost")
+          .option("port", 9999)
+          .load()
 
-    // Creating a typed DeviceData from raw string received on socket.
-    val structDF = socketDF.as[String].map(s => {
-      val fields = s.split(",")
-      DeviceData(fields(0), fields(1).toInt)
-    })
+      // Creating a typed DeviceData from raw string received on socket.
+      val structDF = socketDF.as[String].map(s => {
+        val fields = s.split(",")
+        DeviceData(fields(0), fields(1).toInt)
+      })
 
-    // A simple streaming query to filter signal value and load the output into devices table.
-    val streamingQuery = structDF
-        .filter(_.signal > 10)
-        .writeStream
-        .format("snappysink")
-        .outputMode("append")
-        .queryName("Devices")
-        .trigger(ProcessingTime("1 seconds"))
-        .option("streamQueryId", "Devices")     // must be unique across a snappydata cluster
-        .option("tableName", "devices")
-        .option("checkpointLocation", checkpointDirectory)
-        .start()
+      // A simple streaming query to filter signal value and load the output into devices table.
+      val streamingQuery = structDF
+          .filter(_.signal > 10)
+          .writeStream
+          .format("snappysink")
+          .outputMode("append")
+          .queryName("Devices")
+          .trigger(ProcessingTime("1 seconds"))
+          .option("streamQueryId", "Devices") // must be unique across a snappydata cluster
+          .option("tableName", "devices")
+          .option("checkpointLocation", checkpointDirectory)
+          .start()
 
-    streamingQuery.awaitTermination(timeoutMs = 15000)
+      streamingQuery.awaitTermination(timeoutMs = 15000)
 
 
-    println("Data loaded in table: ")
+      println("Data loaded in table: ")
 
-    snappy.sql("select * from devices").show()
+      snappy.sql("select * from devices").show()
 
-    snappy.sql("drop table devices")
-    // CAUTION: recursively deleting directory
-    Path(checkpointDirectory).deleteRecursively()
+    } finally {
+      snappy.sql("drop table if exists devices")
+
+      // CAUTION: recursively deleting directory
+      Path(checkpointDirectory).deleteRecursively()
+    }
 
     println("Exiting")
     System.exit(0)
   }
 
   case class DeviceData(device: String, signal: Int)
+
 }
 
 
