@@ -21,11 +21,12 @@ import java.sql.Types
 
 import com.esotericsoftware.kryo.io.{Input, KryoObjectInput, KryoObjectOutput, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoException, Serializer => KryoClassSerializer}
-import org.apache.spark.sql.PartitionResult
+
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect, SnappyDataClientPoolDialect}
+import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{PartitionResult, SnappyDataPoolDialect}
 
 
 private[spark] class ExternalizableOnlySerializer[T <: Externalizable]
@@ -208,9 +209,9 @@ object ConnectionPropertiesSerializer
     output.writeString(connProps.url)
     output.writeString(connProps.driver)
     connProps.dialect match {
-      case GemFireXDDialect => output.writeByte(0)
-      case GemFireXDClientDialect => output.writeByte(1)
-      case SnappyDataClientPoolDialect => output.writeByte(3)
+      case SnappyStoreDialect => output.writeByte(0)
+      case SnappyStoreClientDialect => output.writeByte(1)
+      case SnappyDataPoolDialect => output.writeByte(3)
       case d => output.writeByte(2)
         kryo.writeClassAndObject(output, d)
     }
@@ -246,9 +247,9 @@ object ConnectionPropertiesSerializer
     val url = input.readString()
     val driver = input.readString()
     val dialect = input.readByte() match {
-      case 0 => GemFireXDDialect
-      case 1 => GemFireXDClientDialect
-      case 3 => SnappyDataClientPoolDialect
+      case 0 => SnappyStoreDialect
+      case 1 => SnappyStoreClientDialect
+      case 3 => SnappyDataPoolDialect
       case _ => kryo.readClassAndObject(input).asInstanceOf[JdbcDialect]
     }
     var numProps = input.readVarInt(true)
