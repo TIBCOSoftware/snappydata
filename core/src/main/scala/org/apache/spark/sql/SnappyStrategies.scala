@@ -82,10 +82,10 @@ private[sql] trait SnappyStrategies {
       plan match {
         case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right) =>
           // check for hash join with replicated table first
-          if (canBuildRight(joinType) && canLocalJoin(right)) {
+          if (canBuildRight(joinType) && allowsReplicatedJoin(right)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildRight, replicatedTableJoin = true)
-          } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
+          } else if (canBuildLeft(joinType) && allowsReplicatedJoin(left)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildLeft, replicatedTableJoin = true)
           }
@@ -303,22 +303,22 @@ private[sql] object JoinStrategy {
     }
   }
 
-  def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
+  def isReplicatedJoin(plan: LogicalPlan): Boolean = plan match {
     case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
-      (canBuildRight(joinType) && canLocalJoin(right)) ||
-          (canBuildLeft(joinType) && canLocalJoin(left))
+      (canBuildRight(joinType) && allowsReplicatedJoin(right)) ||
+          (canBuildLeft(joinType) && allowsReplicatedJoin(left))
     case _ => false
   }
 
-  def canLocalJoin(plan: LogicalPlan): Boolean = {
+  def allowsReplicatedJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
         case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
-        case Join(left, right, _, _) =>
-          // If join is a result of join of replicated tables, this
-          // join result should also be a local join with any other table
-          canLocalJoin(left) && canLocalJoin(right)
-        case node => if (node.children.size == 1) canLocalJoin(node.children.head) else false
+        case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
+        case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
+          allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
+              (canBuildLeft(joinType) || canBuildRight(joinType))
+        case _ => false
       }
       case _ => false
     }
