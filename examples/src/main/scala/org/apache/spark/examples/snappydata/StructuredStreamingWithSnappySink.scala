@@ -31,7 +31,7 @@ import scala.reflect.io.Path
  * To run the example in local mode go to your SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
- * bin/run-example snappydata.StructuredStreamingWithSnappysink
+ * bin/run-example snappydata.StructuredStreamingWithSnappySink
  * </pre>
  * <p>
  * To run this on your local machine, you need to first run a Netcat server <br>
@@ -45,7 +45,7 @@ import scala.reflect.io.Path
  * }}}
  *
  */
-object StructuredStreamingWithSnappysink {
+object StructuredStreamingWithSnappySink {
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
@@ -54,8 +54,7 @@ object StructuredStreamingWithSnappysink {
 
     println("Initializing a SnappySesion")
 
-    val checkpointDirectory = "/tmp/StructuredStreamingWithSnappysink"
-
+    val checkpointDirectory = "/tmp/StructuredStreamingWithSnappySink"
     val spark: SparkSession = SparkSession
         .builder()
         .appName(getClass.getSimpleName)
@@ -63,7 +62,6 @@ object StructuredStreamingWithSnappysink {
         .getOrCreate()
 
     import spark.implicits._
-
     val snappy = new SnappySession(spark.sparkContext)
 
     try {
@@ -98,18 +96,14 @@ object StructuredStreamingWithSnappysink {
 
       streamingQuery.awaitTermination(timeoutMs = 15000)
 
-
       println("Data loaded in table: ")
-
       snappy.sql("select * from devices").show()
-
     } finally {
       snappy.sql("drop table if exists devices")
 
       // CAUTION: recursively deleting directory
       Path(checkpointDirectory).deleteRecursively()
     }
-
     println("Exiting")
     System.exit(0)
   }
