@@ -314,7 +314,7 @@ object SplitSnappyClusterDUnitTest
     extends SplitClusterDUnitTestObject with Logging {
 
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-  private lazy val thriftPort = AvailablePortHelper.getRandomAvailableTCPPort
+  private val thriftPort = locatorNetPort + 101
 
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc
