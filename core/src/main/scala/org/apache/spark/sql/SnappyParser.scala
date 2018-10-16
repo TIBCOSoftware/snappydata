@@ -402,10 +402,15 @@ class SnappyParser(session: SnappySession)
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
         invertibleExpression |
-        IS ~ (NOT ~ push(true)).? ~ NULL ~>
-            ((e: Expression, not: Any) =>
+        IS ~ (
+            (NOT ~ push(true)).? ~ NULL ~> ((e: Expression, not: Any) =>
               if (not.asInstanceOf[Option[Boolean]].isEmpty) IsNull(e)
               else IsNotNull(e)) |
+            (NOT ~ push(true)).? ~ DISTINCT ~ FROM ~
+                termExpression ~> ((e1: Expression, not: Any, e2: Expression) =>
+              if (not.asInstanceOf[Option[Boolean]].isDefined) EqualNullSafe(e1, e2)
+              else Not(EqualNullSafe(e1, e2)))
+        ) |
         NOT ~ invertibleExpression ~> Not |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )

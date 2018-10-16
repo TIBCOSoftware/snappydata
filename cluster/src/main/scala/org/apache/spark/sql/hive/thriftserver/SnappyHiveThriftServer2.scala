@@ -18,9 +18,9 @@
 package org.apache.spark.sql.hive.thriftserver
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.hive.HiveUtils
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2.HiveThriftServer2Listener
 import org.apache.spark.sql.hive.thriftserver.ui.ThriftServerTab
-import org.apache.spark.sql.hive.{HiveUtils, SnappySharedState}
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 /**
@@ -31,7 +31,10 @@ object SnappyHiveThriftServer2 extends Logging {
   def start(useHiveSession: Boolean): HiveThriftServer2 = {
     logInfo(s"Starting HiveServer2 using ${if (useHiveSession) "hive" else "snappy"} session")
 
-    val sc = SnappyContext.globalSparkContext
+    val sc = SnappyContext.globalSparkContext match {
+      case null => throw new IllegalStateException("No SparkContext available")
+      case context => context
+    }
     val conf = sc.conf
     val sparkSession = if (useHiveSession) {
       SparkSession.builder().config(conf).enableHiveSupport().getOrCreate()
@@ -40,13 +43,11 @@ object SnappyHiveThriftServer2 extends Logging {
     SparkSQLEnv.sparkContext = sc
     sparkSession.conf.set("spark.sql.hive.version", HiveUtils.hiveExecutionVersion)
 
-    val executionHive = if (useHiveSession) {
-      HiveUtils.newClientForExecution(
-        SparkSQLEnv.sqlContext.sparkContext.conf,
-        SparkSQLEnv.sqlContext.sessionState.newHadoopConf())
-    } else {
-      sparkSession.sharedState.asInstanceOf[SnappySharedState].metadataHive()
-    }
+    // executionHive is used only to get the Hive configuration. If it is to be used
+    // for actual querying in future, then SnappySharedState.metadataHive() should be used.
+    // Latter is not used here because it ignores any hive settings required for HiveServer2.
+    val executionHive = HiveUtils.newClientForExecution(conf,
+      sparkSession.sessionState.newHadoopConf())
 
     val server = new HiveThriftServer2(SparkSQLEnv.sqlContext)
     server.init(executionHive.conf)

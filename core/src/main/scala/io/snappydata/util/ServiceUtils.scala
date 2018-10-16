@@ -57,8 +57,7 @@ object ServiceUtils {
           Constant.SPARK_STORE_PREFIX, ""), v)
       case (k, v) if k.startsWith(Constant.SPARK_PREFIX) ||
           k.startsWith(Constant.PROPERTY_PREFIX) ||
-          k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
-          k.startsWith("hive.") => storeProps.setProperty(k, v)
+          k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
     setCommonBootDefaults(storeProps, forLocator = false)
