@@ -81,3 +81,9 @@ INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_startSnappyCluster
     runMode = always
     threadGroups = snappyThreads;
+
+INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_initialize
+	threadGroups = snappyThreads;
+
+INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
+INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/schema.inc;

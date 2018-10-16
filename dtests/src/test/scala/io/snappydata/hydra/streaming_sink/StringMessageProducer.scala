@@ -51,15 +51,15 @@ object StringMessageProducer {
     val topic: String = args {1}
     val startRange: Int = args {2}.toInt
     val opType: Int = args{3}.toInt
-    var brokers: String = args {4}
-    
+    hasDerby = args {args.length-2}.toBoolean
+    var brokers: String = args {args.length - 1}
     brokers = brokers.replace("--", ":")
     // scalastyle:off println
     pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
     pw.flush()
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
-    hasDerby = DerbyTestUtils.hasDerbyServer
+
     val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
       hasDerby))
     thread.start()
@@ -70,25 +70,7 @@ object StringMessageProducer {
   }
 
   def main(args: Array[String]) {
-    val eventCount: Int = args {0}.toInt
-    val topic: String = args {1}
-    val numThreads: Int = args{2}.toInt
-    val opType: Int = args{4}.toInt
-    var brokers: String = args {5}
-    val startRange: Int = args {3}.toInt
-    brokers = brokers.replace("--", ":")
-    pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
-    pw.flush()
-    val producer = new KafkaProducer[Long, String](properties(brokers))
-    val noOfPartitions = producer.partitionsFor(topic).size()
-    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
-      hasDerby))
-    thread.start()
-    thread.join()
-    pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
-    pw.close()
-    producer.close()
-    System.exit(0)
+    generateAndPublish(args)
   }
 
 }
@@ -96,7 +78,8 @@ object StringMessageProducer {
 final class RecordCreator(topic: String, eventCount: Int, startRange: Int,
     producer: KafkaProducer[Long, String], opType: Int, hasDerby: Boolean)
 extends Runnable {
-
+  StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"opType : $opType")
+  var eventType: Int = opType
   val schema = Array ("id", "firstName", "middleName", "lastName", "title", "address", "country",
     "phone", "dateOfBirth", "age", "status", "email", "education", "occupation")
   val random = new Random()
@@ -109,30 +92,36 @@ extends Runnable {
   var conn: Connection = null
   var derbyTestUtils: DerbyTestUtils = null
   def run() {
-    val title: String = titleArr(random.nextInt(titleArr.length))
-    val status: String = statusArr(random.nextInt(statusArr.length))
-    val phone: Long = (range * random.nextDouble()).toLong + 1000000000
-    val age: Int = random.nextInt(100) + 18
-    val education: String = educationArr(random.nextInt(educationArr.length))
-    val occupation: String = occupationArr(random.nextInt(occupationArr.length))
-    val country: String = countryArr(random.nextInt(countryArr.length))
-    val address: String = randomAlphanumeric(20)
-    val email: String = randomAlphanumeric(10) + "@" + randomString(5) + "." + randomString(3)
-    val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
-    if(hasDerby) {
+    if (hasDerby) {
       derbyTestUtils = new DerbyTestUtils
       conn = derbyTestUtils.getDerbyConnection
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
     (startRange to (startRange + eventCount - 1)).foreach(i => {
+      val title: String = titleArr(random.nextInt(titleArr.length))
+      val status: String = statusArr(random.nextInt(statusArr.length))
+      val phone: Long = (range * random.nextDouble()).toLong + 1000000000
+      val age: Int = random.nextInt(100) + 18
+      val education: String = educationArr(random.nextInt(educationArr.length))
+      val occupation: String = occupationArr(random.nextInt(occupationArr.length))
+      val country: String = countryArr(random.nextInt(countryArr.length))
+      val address: String = randomAlphanumeric(20)
+      val email: String = randomAlphanumeric(10) + "@" + randomAlphanumeric(5) + "." +
+          randomAlphanumeric(3)
+      val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
       val row: String = s"$i,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
           s"$status,$email,$education,$occupation"
-      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row : $row");
-      val data = new ProducerRecord[Long, String](topic, i, row + s",$opType")
+      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row : $row")
+      if (opType == 4) {
+        eventType = random.nextInt(3)
+      }
+      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"eventType : " +
+          s"$eventType")
+      val data = new ProducerRecord[Long, String](topic, i, row + s",$eventType")
       if(hasDerby) {
         DerbyTestUtils.HydraTask_initialize
-        performOpInDerby(conn, row, opType)
+        performOpInDerby(conn, row, eventType)
       }
       producer.send(data)
       })
@@ -147,11 +136,14 @@ extends Runnable {
   def performOpInDerby(conn: Connection, row: String, eventType: Int): Unit = {
     var stmt: String = ""
     if (eventType == 0) { // insert
+      StringMessageProducer.pw.println("In insert")
       stmt = getInsertStmt(row)
     } else if (eventType == 1) { // update
+      StringMessageProducer.pw.println("In update")
       stmt = getUpdateStmt(row)
     } else if (eventType == 2) { // delete
-      getDeleteStmt(row)
+      StringMessageProducer.pw.println("In delete")
+      stmt = getDeleteStmt(row)
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"derby stmt is " +
         s": $stmt")
@@ -187,7 +179,7 @@ extends Runnable {
     var stmt: String = ""
     val columnVal = row.split(",")
     val id: Int = (columnVal {0}).toInt
-    stmt = stmt + "update table persoon set "
+    stmt = stmt + "update persoon set "
     for (i <- 0 to columnVal.length - 1) {
       if (i == 0 ) {
         // ignore id column
@@ -197,7 +189,7 @@ extends Runnable {
       } else {
         stmt = stmt + schema{i} + "='" + columnVal {i} + "'"
       }
-      if (i != (columnVal.length - 1)) {
+      if (i != (columnVal.length - 1) && i != 0) {
         stmt = stmt + ","
       }
     }
@@ -208,7 +200,8 @@ extends Runnable {
   def getDeleteStmt(row: String): String = {
     var stmt: String = ""
     val id: Int = (row.split(",") {0}).toInt
-    stmt = stmt + "delete from persoon where ID = " + id
+    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"id : $id")
+    stmt = "delete from persoon where ID = " + id
     stmt
   }
 
