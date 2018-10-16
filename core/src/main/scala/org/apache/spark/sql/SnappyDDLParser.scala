@@ -33,7 +33,7 @@ import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import io.snappydata.Constant
+import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -143,6 +143,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
   final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXECUTE: Rule0 = rule { keyword(Consts.EXECUTE) }
   final def EXPLAIN: Rule0 = rule { keyword(Consts.EXPLAIN) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
@@ -615,7 +616,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   /**
-   * GRANT/REVOKE/CREATE DISKSTORE/CALL on a table (only for column and row tables).
+   * Commands like GRANT/REVOKE/CREATE DISKSTORE/CALL on a table that are passed through
+   * as is to the SnappyData store layer (only for column and row tables).
    *
    * Example:
    * {{{
@@ -626,8 +628,8 @@ abstract class SnappyDDLParser(session: SparkSession)
    *   CALL SYSCS_UTIL.SYSCS_SET_RUNTIMESTATISTICS(1)
    * }}}
    */
-  protected def grantRevoke: Rule1[LogicalPlan] = rule {
-    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
+  protected def passThrough: Rule1[LogicalPlan] = rule {
+    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ (CALL | EXECUTE))) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
         (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
           Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
@@ -677,9 +679,12 @@ abstract class SnappyDDLParser(session: SparkSession)
             ((extended: Any, name: String) =>
               DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined)) |
         (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
-            ((extended: Any, tableIdent: TableIdentifier) =>
+            ((extended: Any, tableIdent: TableIdentifier) => {
+              // ensure columns are sent back as CLOB for large results with EXTENDED
+              queryHints.put(QueryHint.ColumnsAsClob.toString, "data_type,comment")
               DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
+                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)
+            })
     )
   }
 
@@ -820,7 +825,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     createView | createTempViewUsing | dropView | createSchema | dropSchema |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevoke
+    createIndex | dropIndex | createFunction | dropFunction | passThrough
   }
 
   protected def query: Rule1[LogicalPlan]

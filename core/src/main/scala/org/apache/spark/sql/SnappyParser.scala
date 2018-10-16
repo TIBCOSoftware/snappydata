@@ -34,9 +34,9 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.execution.command.{ShowColumnsCommand, ShowCreateTableCommand, ShowDatabasesCommand, ShowFunctionsCommand, ShowTablePropertiesCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
-import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
+import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -1101,16 +1101,12 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def delete: Rule1[LogicalPlan] = rule {
-    DELETE ~ FROM ~ relationFactor ~
-        (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
-        ((t: Any, whereExpr: Any) => {
-          val base = t.asInstanceOf[LogicalPlan]
-          val child = whereExpr match {
-            case None => base
-            case Some(w) => Filter(w.asInstanceOf[Expression], base)
-          }
-          Delete(base, child, Nil)
-        })
+    DELETE ~ FROM ~ relationFactor ~ (
+        WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END ~>
+            ((base: LogicalPlan, expr: Expression) => Delete(base, Filter(expr, base), Nil)) |
+        query ~> DeleteFromTable |
+        MATCH ~> ((base: LogicalPlan) => Delete(base, base, Nil))
+    )
   }
 
   protected final def ctes: Rule1[LogicalPlan] = rule {
@@ -1183,6 +1179,8 @@ class SnappyParser(session: SnappySession)
       case _: DescribeTableCommand => ExplainCommand(OneRowRelation)
       case _ =>
         val flag = flagVal.asInstanceOf[Option[Boolean]]
+        // ensure plan is sent back as CLOB for large plans especially with CODEGEN
+        queryHints.put(QueryHint.ColumnsAsClob.toString, "*")
         ExplainCommand(plan, extended = flag.isDefined && flag.get,
           codegen = flag.isDefined && !flag.get)
     })

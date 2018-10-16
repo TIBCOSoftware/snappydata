@@ -490,6 +490,7 @@ object SnappyParserConsts {
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
   final val ENABLE: Keyword = nonReservedKeyword("enable")
   final val END: Keyword = nonReservedKeyword("end")
+  final val EXECUTE: Keyword = nonReservedKeyword("execute")
   final val EXPLAIN: Keyword = nonReservedKeyword("explain")
   final val EXTENDED: Keyword = nonReservedKeyword("extended")
   final val EXTERNAL: Keyword = nonReservedKeyword("external")
