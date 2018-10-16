@@ -46,6 +46,7 @@ import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROP
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars
 import org.apache.hive.service.cli.thrift.ThriftCLIService
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
@@ -135,6 +136,16 @@ class LeadImpl extends ServerImpl with Lead
     bootProperties.setProperty(serverGroupsProp, groups)
     bootProperties.setProperty(STORE_PREFIX + Attribute.GFXD_HOST_DATA, "false")
     bootProperties.setProperty(STORE_PREFIX + Attribute.GFXD_PERSIST_DD, "false")
+
+    // set hive thrift server host address to be same as hostname-for-clients by default
+    val hostForClients = bootProperties.getProperty(Attribute.HOSTNAME_FOR_CLIENTS) match {
+      case null => bootProperties.getProperty(STORE_PREFIX + Attribute.HOSTNAME_FOR_CLIENTS)
+      case h => h
+    }
+    if ((hostForClients ne null) && (System.getenv("HIVE_SERVER2_THRIFT_BIND_HOST") eq null) &&
+        (bootProperties.getProperty(ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST.varname) eq null)) {
+      bootProperties.setProperty(ConfVars.HIVE_SERVER2_THRIFT_BIND_HOST.varname, hostForClients)
+    }
 
     // copy store related properties into a separate properties bag
     // to be used by store boot while original will be used by SparkConf
