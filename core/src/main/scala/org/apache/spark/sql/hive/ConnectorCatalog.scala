@@ -98,7 +98,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
         }
         val relation = JdbcExtendedUtils.readSplitProperty(
           JdbcExtendedUtils.SCHEMADDL_PROPERTY, options) match {
-          case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
+          case Some(schema) => ExternalStoreUtils.externalResolvedDataSource(
             snappySession, schema, provider, SaveMode.Ignore, options)
 
           case None =>

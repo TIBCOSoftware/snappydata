@@ -579,7 +579,11 @@ abstract class SnappyDDLParser(session: SparkSession)
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
           funcResources.foreach(checkExists)
-          val classNameWithType = className + "__" + t.catalogString
+          val catalogString = t match {
+            case VarcharType(Int.MaxValue) => "string"
+            case _ => t.catalogString
+          }
+          val classNameWithType = className + "__" + catalogString
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,
@@ -622,12 +626,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def grantRevoke: Rule1[LogicalPlan] = rule {
     (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
-        (() => DMLExternalTable(TableIdentifier(SnappyStoreHiveCatalog.dummyTableName,
+        (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
           Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
             SaveMode.Ignore, Map((JdbcExtendedUtils.DBTABLE_PROPERTY,
-                s"${SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME }." +
-                    s"${SnappyStoreHiveCatalog.dummyTableName}")),
+                s"${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")),
             "", None)), input.sliceString(0, input.length)))
   }
 
@@ -760,9 +763,19 @@ abstract class SnappyDDLParser(session: SparkSession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharStringType(size, baseType) =>
+        case CharType(size) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+          (StringType, false)
+        case VarcharType(Int.MaxValue) => // indicates CLOB type
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+          (StringType, false)
+        case VarcharType(size) =>
+          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+          (StringType, false)
+        case StringType =>
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "STRING")
           (StringType, false)
         case _ => (t, true)
       }

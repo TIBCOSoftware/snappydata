@@ -22,12 +22,17 @@ io.snappydata.cluster.SplitClusterDUnitTest.testSparkShell
 */
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
+import rg.apache.spark.sql.Row
+
+println("spark context :: "+sc)
+sc.setLogLevel("TRACE")
+
 val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 import snappy.implicits._
 println("Creating a column table")
 snappy.sql("CREATE TABLE COLTABLE (COL1 INT, COL2 INT, COL3 STRING) USING COLUMN OPTIONS (PARTITION_BY 'COL1')")
 snappy.sql("INSERT INTO COLTABLE VALUES (1, 1, '1'), (2, 2, '2'), (3, 3, '3'), (4, 4, '4'), (5, 5, '5')")
-val result1 = snappy.sql("SELECT COL1 FROM COLTABLE ORDER BY COL1").collect
+val result1 = snappy.sql("SELECT COL1 FROM COLTABLE GROUP BY COL1 ORDER BY COL1").collect
 assert(result1.length == 5)
 println("Creating a row table")
 snappy.sql("CREATE TABLE ROWTABLE (COL1 INT, COL2 INT, COL3 STRING)")
@@ -39,37 +44,6 @@ assert(result2.length == 5)
 val sparkTable = spark.range(1000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
 sparkTable.createOrReplaceTempView("sparkTable")
 spark.sql("select sym, avg(id) from sparkTable group by sym").collect()
-
-// Client Pool Driver Test - Start
-val connectionProperties = new Properties()
-connectionProperties.setProperty("pool-maxTotal", "50")
-connectionProperties.setProperty("pool-maxIdle", "20")
-connectionProperties.setProperty("pool-initialSize", "50")
-connectionProperties.setProperty("pool-minActive", "50")
-connectionProperties.setProperty("pool-minIdleSize", "10")
-connectionProperties.setProperty("driver", "io.snappydata.jdbc.ClientPoolDriver")
-val df = spark.read.jdbc(JDBC_URL, "ROWTABLE", connectionProperties)
-val result = df.select("COL1").groupBy("COL2").avg("COL1").collect()
-assert(result.length == 5) // expected rows
-assert(result.first().getAs("COL1") == 3) // expected result
-
-val df1 = spark.read.jdbc(JDBC_URL, "AIRLINE", getProperties) \
-.select("COL1", "COL2", "COL3") \
-.where("COL1 = '2'").collect()
-assert(df1.length == 1) // expected rows
-assert(df1.first().getAs("COL2") == 2) // expected result
-
-val df2 = spark.read.jdbc(url = JDBC_URL,table = "COLTABLE",columnName = "COL1", \
-      lowerBound = 0, \
-      upperBound = 100,numPartitions = 16, \
-      connectionProperties = connectionProperties)
-assert(df2.length == 5) // expected rows
-assert(df2.first().getAs("COL1") == 1) // expected result
-// Client Pool Driver Test - End
-
-val pushdown_query = s"(select * from ROWTABLE where col1=2) emp_alias"
-val df3 = spark.read.jdbc(url = JDBC_URL, table = pushdown_query, properties = getProperties)
-assert(df3.length == 1) // expected rows
-assert(df3.first().getAs("COL1") == 1) // expected result
+// set default schema to current user if any
 
 System.exit(0)

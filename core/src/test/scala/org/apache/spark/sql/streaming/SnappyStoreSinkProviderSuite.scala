@@ -69,20 +69,20 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
-    val dataBatch1 = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-      Seq(3, "name3", 30))
+    val dataBatch1 = Seq(Seq(1, "name1", 30, "lname1"), Seq(2, "name2", 10, "lname2"),
+      Seq(3, "name3", 30, "lname3"))
     kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
 
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 40), Seq(4, "name4", 50))
+    val dataBatch2 = Seq(Seq(1, "name11", 40, "lname1"), Seq(4, "name4", 50, "lname4"))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
 
-    val rows = Array(Row(1, "name11", 40), Row(2, "name2", 10),
-      Row(3, "name3", 30), Row(4, "name4", 50))
+    val rows = Array(Row(1, "name11", 40, "lname1"), Row(2, "name2", 10, "lname2"),
+      Row(3, "name3", 30, "lname3"), Row(4, "name4", 50, "lname4"))
     assertData(rows)
   }
 
@@ -94,14 +94,14 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
 
-    val dataBatch = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-      Seq(3, "name3", 30), Seq(1, "name1", 30))
+    val dataBatch = Seq(Seq(1, "name1", 30, "lname1"), Seq(2, "name2", 10, "lname2"),
+      Seq(3, "name3", 30, "lname3"), Seq(1, "name1", 30, "lname1"))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
 
-    val rows = Array(Row(1, "name1", 30), Row(1, "name1", 30), Row(2, "name2", 10),
-      Row(3, "name3", 30))
+    val rows = Array(Row(1, "name1", 30, "lname1"), Row(1, "name1", 30, "lname1"),
+      Row(2, "name2", 10, "lname2"), Row(3, "name3", 30, "lname3"))
     assertData(rows)
   }
 
@@ -111,18 +111,18 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
-    val dataBatch1 = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+    val dataBatch1 = Seq(Seq(1, "name1", 20, "lname1", 0), Seq(2, "name2", 10, "lname2", 0))
     kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
 
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2),
-      Seq(3, "name3", 30, 0), Seq(4, "name4", 10, 2))
+    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 10, "lname2", 2),
+      Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
 
-    assertData(Array(Row(1, "name11", 30), Row(3, "name3", 30)))
+    assertData(Array(Row(1, "name11", 30, "lname1"), Row(3, "name3", 30, "lname3")))
   }
 
   test("_eventType column: present, key columns: undefined, table type: column") {
@@ -131,7 +131,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
-    val dataBatch = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+    val dataBatch = Seq(Seq(1, "name1", 20, "lname1", 0), Seq(2, "name2", 10, "lname2", 0))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
     val thrown = intercept[StreamingQueryException] {
@@ -149,20 +149,20 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
-    val dataBatch1 = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-      Seq(3, "name3", 30))
+    val dataBatch1 = Seq(Seq(1, "name1", 30, "lname1"), Seq(2, "name2", 10, "lname2"),
+      Seq(3, "name3", 30, "lname3"))
     kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
 
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 40), Seq(4, "name4", 50))
+    val dataBatch2 = Seq(Seq(1, "name11", 40, "lname1"), Seq(4, "name4", 50, "lname4"))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
 
-    val rows = Array(Row(1, "name11", 40), Row(2, "name2", 10),
-      Row(3, "name3", 30), Row(4, "name4", 50))
+    val rows = Array(Row(1, "name11", 40, "lname1"), Row(2, "name2", 10, "lname2"),
+      Row(3, "name3", 30, "lname3"), Row(4, "name4", 50, "lname4"))
     assertData(rows)
   }
 
@@ -174,14 +174,14 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     val streamingQuery = createAndStartStreamingQuery(topic, testId, withEventTypeColumn = false)
 
-    val dataBatch = Seq(Seq(1, "name1", 30), Seq(2, "name2", 10),
-      Seq(3, "name3", 30), Seq(1, "name1", 30))
+    val dataBatch = Seq(Seq(1, "name1", 30, "lname1"), Seq(2, "name2", 10, "lname2"),
+      Seq(3, "name3", 30, "lname3"), Seq(1, "name1", 30, "lname1"))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
 
-    val rows = Array(Row(1, "name1", 30), Row(1, "name1", 30), Row(2, "name2", 10),
-      Row(3, "name3", 30))
+    val rows = Array(Row(1, "name1", 30, "lname1"), Row(1, "name1", 30, "lname1"),
+      Row(2, "name2", 10, "lname2"), Row(3, "name3", 30, "lname3"))
     assertData(rows)
   }
 
@@ -191,18 +191,18 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
-    val dataBatch1 = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+    val dataBatch1 = Seq(Seq(1, "name1", 20, "lname1", 0), Seq(2, "name2", 10, "lname2", 0))
     kafkaTestUtils.sendMessages(topic, dataBatch1.map(r => r.mkString(",")).toArray)
 
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2),
-      Seq(3, "name3", 30, 0), Seq(4, "name4", 10, 2))
+    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 10, "lname2", 2),
+      Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
 
-    assertData(Array(Row(1, "name11", 30), Row(3, "name3", 30)))
+    assertData(Array(Row(1, "name11", 30, "lname1"), Row(3, "name3", 30, "lname3")))
   }
 
   test("_eventType column: present, key columns: undefined, table type: row") {
@@ -211,7 +211,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
-    val dataBatch = Seq(Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+    val dataBatch = Seq(Seq(1, "name1", 20, "lname1", 0), Seq(2, "name2", 10, "lname2", 0))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
     val thrown = intercept[StreamingQueryException] {
@@ -229,14 +229,15 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val topic = getTopic(testId)
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
-    kafkaTestUtils.sendMessages(topic, (0 to 10).map(i => s"$i,name$i,$i,0").toArray)
+    kafkaTestUtils.sendMessages(topic, (0 to 10).map(i => s"$i,name$i,$i,lname$i,0").toArray)
 
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
     streamingQuery.stop()
 
-    val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId, true, true)
-    kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,0").toArray)
+    val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId
+      , failBatch = true)
+    kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,lname$i,0").toArray)
     try {
       streamingQuery1.processAllAvailable()
     } catch {
@@ -246,11 +247,49 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     val streamingQuery2: StreamingQuery = createAndStartStreamingQuery(topic, testId)
 
-    kafkaTestUtils.sendMessages(topic, (21 to 30).map(i => s"$i,name$i,$i,0").toArray)
+    kafkaTestUtils.sendMessages(topic, (21 to 30).map(i => s"$i,name$i,$i,lname$i,0").toArray)
     waitTillTheBatchIsPickedForProcessing(1, testId)
     streamingQuery2.processAllAvailable()
 
-    assertData((0 to 30).map(i => Row(i, s"name$i", i)).toArray)
+    assertData((0 to 30).map(i => Row(i, s"name$i", i, s"lname$i")).toArray)
+  }
+
+  test("test conflation enabled") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    // producing all records with same key `1` on partition 0.
+    kafkaTestUtils.sendMessages(topic, (0 to 999)
+        .map(i => s"1,name$i,$i,lname1,${i % 3}").toArray, Some(0))
+
+    // producing records with keh `1` on multiple partitions. This may not lead to expected result
+    // kafkaTestUtils.sendMessages(topic, (0 to 999).map(i => s"1,name$i,$i,${i%3}").toArray)
+
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true)
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name999", 999, "lname1")))
+  }
+
+
+  test("test conflation disabled") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val dataBatch = Seq(Seq(1, "name1", 1, "lname1", 0), Seq(1, "name1", 1, "lname1", 2))
+    kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray, Some(0))
+
+    val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
+
+    streamingQuery.processAllAvailable()
+    // The delete will be processed prior to insert event irrespective of their order or arrival.
+    // Hence when conflation is disabled, both the events are processed resulting into one record.
+    assertData(Array(Row(1, "name1", 1, "lname1")))
   }
 
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
@@ -269,7 +308,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
   private def assertData(expectedData: Array[Row]) = {
-    val actualData = session.sql("select * from " + tableName + " order by id").collect()
+    val actualData = session.sql("select * from " + tableName + " order by id, last_name").collect()
     assertResult(expectedData)(actualData)
   }
 
@@ -278,18 +317,19 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def provider = if (isRowTable) "row" else "column"
 
-    def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id')" else ""
+    def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id,last_name')" else ""
 
-    def primaryKey = if (isRowTable && withKeyColumn) "primary key" else ""
+    def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id, last_name)" else ""
 
-    val s = s"create table users (id long $primaryKey, name varchar(40), age int) " +
-        s"using $provider $options"
+    val s = s"create table users (id long , first_name varchar(40), age int, " +
+        s"last_name varchar(40) $primaryKey) using $provider $options "
     LogManager.getRootLogger.error(s)
     snc.sql(s)
   }
 
   private def createAndStartStreamingQuery(topic: String, testId: Int,
-      withEventTypeColumn: Boolean = true, failBatch: Boolean = false) = {
+      withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
+      conflation: Boolean = false) = {
     val streamingDF = session
         .readStream
         .format("kafka")
@@ -300,8 +340,9 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def structFields() = {
       StructField("id", LongType, nullable = false) ::
-          StructField("name", StringType, nullable = true) ::
+          StructField("first_name", StringType, nullable = true) ::
           StructField("age", IntegerType, nullable = true) ::
+          StructField("last_name", StringType, nullable = true) ::
           (if (withEventTypeColumn) {
             StructField("_eventType", IntegerType, nullable = false) :: Nil
           }
@@ -318,10 +359,10 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
         .as[String]
         .map(_.split(","))
         .map(r => {
-          if (r.length == 4) {
-            Row(r(0).toLong, r(1), r(2).toInt, r(3).toInt)
+          if (r.length == 5) {
+            Row(r(0).toLong, r(1), r(2).toInt, r(3), r(4).toInt)
           } else {
-            Row(r(0).toLong, r(1), r(2).toInt)
+            Row(r(0).toLong, r(1), r(2).toInt, r(3))
           }
         })
         .writeStream
@@ -333,8 +374,9 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
       streamWriter.option("internal___failBatch", "true").start()
-    }
-    else {
+    } else if (conflation) {
+      streamWriter.option("conflation", conflation).start()
+    } else {
       streamWriter.start()
     }
   }
