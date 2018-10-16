@@ -18,10 +18,11 @@
 package org.apache.spark.examples.snappydata
 
 import org.apache.log4j.{Level, Logger}
+
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
-
 import scala.language.postfixOps
+import scala.reflect.io.Path
 
 /**
  * An example showing usage of structured streaming with SnappyData
@@ -30,9 +31,9 @@ import scala.language.postfixOps
  * To run the example in local mode go to your SnappyData product distribution
  * directory and type following command on the command prompt
  * <pre>
- * bin/run-example snappydata.StructuredStreamingExample
+ * bin/run-example snappydata.StructuredStreamingWithSnappySink
  * </pre>
- * <p></p>
+ * <p>
  * To run this on your local machine, you need to first run a Netcat server <br>
  * `$ nc -lk 9999`
  * <p>
@@ -42,12 +43,9 @@ import scala.language.postfixOps
  * device2,67
  * device3,35
  * }}}
- * For more details on streaming with SnappyData refer to:
- * http://snappydatainc.github.io/snappydata/programming_guide
- * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
-object StructuredStreamingExample {
+object StructuredStreamingWithSnappySink {
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
@@ -55,45 +53,64 @@ object StructuredStreamingExample {
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     println("Initializing a SnappySesion")
+
+    val checkpointDirectory = "/tmp/StructuredStreamingWithSnappySink"
     val spark: SparkSession = SparkSession
-        .builder
+        .builder()
         .appName(getClass.getSimpleName)
         .master("local[*]")
-        .getOrCreate
+        .getOrCreate()
 
     import spark.implicits._
-
     val snappy = new SnappySession(spark.sparkContext)
 
-    // Create DataFrame representing the stream of input lines from connection to host:port
-    val socketDF = snappy
-        .readStream
-        .format("socket")
-        .option("host", "localhost")
-        .option("port", 9999)
-        .load()
+    try {
+      snappy.sql("create table devices (device varchar(30) , signal int)")
 
-    // Creating a typed DeviceData from raw string received on socket.
-    val structDF = socketDF.as[String].map(s => {
-      val fields = s.split(",")
-      DeviceData(fields(0), fields(1).toInt)
-    })
+      // Create DataFrame representing the stream of input lines from connection to host:port
+      val socketDF = snappy
+          .readStream
+          .format("socket")
+          .option("host", "localhost")
+          .option("port", 9999)
+          .load()
 
-    // A simple streaming query to filter signal value and show the output on console.
-    val streamingQuery = structDF
-        .filter(_.signal > 10)
-        .writeStream
-        .format("console")
-        .outputMode("append")
-        .trigger(ProcessingTime("1 seconds"))
-        .start
+      // Creating a typed DeviceData from raw string received on socket.
+      val structDF = socketDF.as[String].map(s => {
+        val fields = s.split(",")
+        DeviceData(fields(0), fields(1).toInt)
+      })
 
-    streamingQuery.awaitTermination(timeoutMs = 15000)
+      // A simple streaming query to filter signal value and load the output into devices table.
+      val streamingQuery = structDF
+          .filter(_.signal > 10)
+          .writeStream
+          .format("snappysink")
+          .outputMode("append")
+          .queryName("Devices")
+          .trigger(ProcessingTime("1 seconds"))
+          .option("streamQueryId", "Devices") // must be unique across a snappydata cluster
+          .option("tableName", "devices")
+          .option("checkpointLocation", checkpointDirectory)
+          .start()
 
+      streamingQuery.awaitTermination(timeoutMs = 15000)
+
+      println("Data loaded in table: ")
+      snappy.sql("select * from devices").show()
+    } finally {
+      snappy.sql("drop table if exists devices")
+
+      // CAUTION: recursively deleting directory
+      Path(checkpointDirectory).deleteRecursively()
+    }
     println("Exiting")
     System.exit(0)
   }
 
   case class DeviceData(device: String, signal: Int)
+
 }
+
+
 
