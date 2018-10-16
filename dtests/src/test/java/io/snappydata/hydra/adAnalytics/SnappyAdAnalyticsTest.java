@@ -35,6 +35,7 @@ import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.streaming_sink.StringMessageProducer;
+import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import org.apache.commons.io.FileUtils;
 import util.TestException;
 
@@ -383,8 +384,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     if (SnappyPrms.getCommaSepAPPProps() != null) {
       appProps = SnappyPrms.getCommaSepAPPProps().split(",");
     }
-    String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 1);
-    appProps1[appProps.length] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
+    String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 2);
+    appProps1[appProps.length] = "" + DerbyTestUtils.hasDerbyServer;
+    appProps1[appProps.length + 1] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
     StringMessageProducer.generateAndPublish(appProps1);
   }
 
@@ -397,8 +399,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       for (int j = 0; j < appProps.length; j++)
         APP_PROPS = APP_PROPS + " " + appProps[j];
     }
+    boolean hasDerby = false;
     String brokerList = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
-    APP_PROPS = APP_PROPS + " " + brokerList;
+    APP_PROPS += " " + hasDerby + " " + brokerList;
     for (int i = 0; i < generatorAndPublisher.size(); i++) {
       String dest = kafkaLogDir + sep + "generatorAndPublisher" + getMyTid() + "_" + i + ".log";
       File logFile = new File(dest);
