@@ -6,13 +6,13 @@ port=3306
 
 dataSize=1GB
 
-#dataDir=/home/kishor/snappy/TPCH_APP/TPCH_Data/$dataSize
+#dataDir=/home/perfuser/snappy/TPCH_APP/TPCH_Data/$dataSize
 
-#outputLocation=/home/kishor/snappy/TPCH_APP/TPCH_OUTPUT/MEMSQL
+#outputLocation=/home/perfuser/snappy/TPCH_APP/TPCH_OUTPUT/MEMSQL
 
-TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-0.9-tests.jar
+TPCHJar=/home/perfuser/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.2-tests.jar
 
-mysqlConnectorJar=/home/kishor/SNAPPY/MEMSQL/mysql-connector-java-5.0.8/mysql-connector-java-5.0.8-bin.jar
+mysqlConnectorJar=/home/perfuser/SNAPPY/MEMSQL/mysql-connector-java-8.0.12/mysql-connector-java-8.0.12-bin.jar
 
 queryPlan=false
 
@@ -26,4 +26,9 @@ WarmupRuns=2
 #Actual runs whose average will be taken and repordted as performance
 AverageRuns=3
 
+# number of stages to load data into tables - depending on the number of stages used in data generation with TPCH dbgen program
+numberOfDataLoadingStages=1
+
+# seed value for random number used in generating query parameter data
+randomSeed=42
 

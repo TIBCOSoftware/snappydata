@@ -38,7 +38,6 @@ import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializ
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
 import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
-import io.snappydata.Constant
 
 import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, memoryManager, releaseExecutionMemory}
 import org.apache.spark.sql.collection.Utils
@@ -267,7 +266,9 @@ class ColumnFormatValue extends SerializedDiskBuffer
   @transient protected var columnBuffer = DiskEntry.Helper.NULL_BUFFER
 
   @volatile
-  @transient protected[columnar] var compressionCodecId: Byte = Constant.DEFAULT_CODECID.id.toByte
+  @transient protected[columnar] var compressionCodecId: Byte =
+    CompressionCodecId.DEFAULT.id.toByte
+
   /**
    * This keeps track of whether the buffer is compressed or not.
    * In addition it keeps a count of how many times compression was done on
@@ -843,7 +844,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       // if not compressed set the default codecId while the actual one will be
       // set when the value is placed in region (in setDiskLocation) that will
       // be used in further toData calls if required
-      setBuffer(buffer, if (isCompressed) codecId else Constant.DEFAULT_CODECID.id,
+      setBuffer(buffer, if (isCompressed) codecId else CompressionCodecId.DEFAULT.id,
         isCompressed, changeOwnerToStorage = false)
     } else {
       this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
