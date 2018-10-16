@@ -32,6 +32,7 @@ import java.util.Properties;
 import com.gemstone.gemfire.internal.cache.Status;
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
 import com.gemstone.gemfire.internal.shared.LauncherBase;
+import com.sun.jna.Platform;
 
 class QuickLauncher extends LauncherBase {
 
@@ -127,11 +128,12 @@ class QuickLauncher extends LauncherBase {
     // https://github.com/airlift/jvmkill is added to libgemfirexd.so
     // adding agentpath helps kill jvm in case of OOM. kill -9 is not
     // used as it fails in certain cases
-    String arch = System.getProperty("os.arch");
-    if(arch.contains("64") || arch.contains("s390x")){
-      commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd64.so");
-    }else{
-      commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd.so");
+    if (Platform.isLinux()) {
+      if (Platform.is64Bit()) {
+        commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd64.so");
+      } else {
+        commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd.so");
+      }
     }
     // get the startup options and command-line arguments (JVM arguments etc)
     HashMap<String, Object> options = getStartOptions(args, snappyHome, commandLine, env);
