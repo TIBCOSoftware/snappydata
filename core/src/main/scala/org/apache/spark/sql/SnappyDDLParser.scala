@@ -38,6 +38,7 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -320,10 +321,27 @@ abstract class SnappyDDLParser(session: SparkSession)
     }
   }
 
+  protected final def booleanLiteral: Rule1[Boolean] = rule {
+    TRUE ~> (() => true) | FALSE ~> (() => false)
+  }
+
+  protected final def numericLiteral: Rule1[String] = rule {
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
+        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
+        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => s)
+  }
+
+  protected final def defaultLiteral: Rule1[Option[String]] = rule {
+    stringLiteral ~> ((s: String) => Option(s)) |
+    numericLiteral ~> ((s: String) => Option(s)) |
+    booleanLiteral ~> ((b: Boolean) => Option(b.toString))
+//        NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
+  }
+
   protected final def defaultVal: Rule1[Option[String]] = rule {
-    capture(DEFAULT).? ~> ((defVal: Any) =>
-      defVal match {
-        case Some(v) => defVal.asInstanceOf[Option[String]]
+    DEFAULT ~ defaultLiteral ~ ws  ~> ((value: Any) =>
+      value match {
+        case Some(v) => value.asInstanceOf[Option[String]]
         case None => None
       })
   }
