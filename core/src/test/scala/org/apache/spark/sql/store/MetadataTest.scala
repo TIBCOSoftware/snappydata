@@ -17,6 +17,7 @@
 package org.apache.spark.sql.store
 
 import java.sql.{SQLException, Statement}
+import java.util.regex.Pattern
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -29,7 +30,7 @@ import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTa
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, execution}
 
@@ -43,9 +44,9 @@ class MetadataTest extends SnappyFunSuite {
     MetadataTest.testSYSTablesAndVTIs(session.sql)
   }
 
-  test("DESCRIBE and SHOW") {
+  test("DESCRIBE, SHOW and EXPLAIN") {
     val session = this.snc.snappySession
-    MetadataTest.testDescribeAndShow(session.sql)
+    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false)
   }
 
   test("DSID joins with SYS tables") {
@@ -68,10 +69,13 @@ object MetadataTest extends Assertions {
       builder.putString("base", typeName)
       builder.putLong("scale", scale)
       builder.build()
-    case "LONGVARCHAR" | "CLOB" | "BOOLEAN" =>
+    case "LONGVARCHAR" | "CLOB" | "STRING" | "BOOLEAN" =>
       val builder = new MetadataBuilder
       builder.putString("name", name)
       builder.putLong("scale", scale)
+      if (typeName == "CLOB") {
+        builder.putString("base", typeName)
+      }
       builder.build()
     case _ => Metadata.empty
   }
@@ -121,7 +125,7 @@ object MetadataTest extends Assertions {
       (sql: String): Dataset[Row] = {
     if (stmt.execute(sql)) {
       val rs = stmt.getResultSet
-      val schema = JdbcUtils.getSchema(rs, GemFireXDDialect)
+      val schema = JdbcUtils.getSchema(rs, SnappyStoreDialect)
       val dummyMetrics = new InputMetrics
       val rows = JdbcUtils.resultSetToSparkInternalRows(rs, schema, dummyMetrics)
           .map(_.copy()).toSeq
@@ -379,7 +383,12 @@ object MetadataTest extends Assertions {
     executeSQL("drop schema schema2")
   }
 
-  def testDescribeAndShow(executeSQL: String => Dataset[Row]): Unit = {
+  private def matches(str: String, pattern: String): Boolean = {
+    Pattern.compile(pattern, Pattern.DOTALL).matcher(str).matches()
+  }
+
+  def testDescribeShowAndExplain(executeSQL: String => Dataset[Row],
+      usingJDBC: Boolean): Unit = {
     var ds: Dataset[Row] = null
     var expectedColumns: List[String] = null
     var rs: Array[Row] = null
@@ -594,13 +603,128 @@ object MetadataTest extends Assertions {
     rs = executeSQL("show tblproperties columnTable2").collect()
     checkTableProperties(rs, isRowTable = false)
 
+    // ----- check EXPLAIN for row tables -----
+
+    var plan: String = null
+    ds = executeSQL("explain select * from rowTable1")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    // check schema of the returned Dataset which should be a single string column
+    // for JDBC it should be a CLOB column
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
+        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*"))
+
+    // a filter that should not use store execution plan with JDBC
+    ds = executeSQL("explain select * from rowTable1 where id > 10")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
+        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* > ParamLiteral:0,[0-9#]*,10.*"))
+
+    // ----- check EXPLAIN for row tables no routing -----
+
+    ds = executeSQL("explain select * from rowTable1 where id = 10")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = false,
+        getMetadata("plan", 0, "CLOB")))))
+      assert(plan.contains("stmt_id"))
+      assert(plan.contains("SQL_stmt select * from rowTable1 where id = 10"))
+      assert(plan.contains("REGION-GET"))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
+          ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* = ParamLiteral:0,[0-9#]*,10.*"))
+    }
+    // explain extended will route with JDBC since its not supported by store
+    ds = executeSQL("explain extended select * from rowTable1 where id = 10")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Parsed Logical Plan.*Filter.*ID = ParamLiteral:0,[0-9#]*,10" +
+        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,10" +
+        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,10" +
+        ".*RowFormatRelation\\[APP.ROWTABLE1\\].*Physical Plan.*Partitioned Scan" +
+        " RowFormatRelation\\[APP.ROWTABLE1\\].*numBuckets = 1 numPartitions = 1" +
+        ".*ID.* = ParamLiteral:0,[0-9#]*,10.*"))
+
+    // ----- check EXPLAIN for column tables -----
+
+    ds = executeSQL("explain select * from columnTable2 where id = 10")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
+        "\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
+        ".*ID#[0-9]*L = DynExpr\\(ParamLiteral:0,[0-9#]*,10\\).*"))
+
+    ds = executeSQL("explain extended select * from columnTable2 where id > 20")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Parsed Logical Plan.*Filter.*ID > ParamLiteral:0,[0-9#]*,20" +
+        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]*L > cast\\(ParamLiteral:0,[0-9#]*,20 as bigint" +
+        ".*Optimized Logical Plan.*Filter.*ID#[0-9]*L > DynExpr\\(ParamLiteral:0,[0-9#]*,20\\)" +
+        ".*ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*Physical Plan.*Partitioned Scan" +
+        " ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
+        ".*ID#[0-9]*L > DynExpr\\(ParamLiteral:0,[0-9#]*,20\\).*"))
+
+    // ----- check EXPLAIN for DDLs -----
+
+    ds = executeSQL("explain create table rowTable2 (id int primary key, id2 int)")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Physical Plan.*ExecutedCommand.*CreateMetastoreTableUsing" +
+        ".*ROWTABLE2.*\\(id int primary key, id2 int\\), row.*"))
+
     // create more tables and repeat the checks
 
     executeSQL("create schema schema1")
     executeSQL("create table schema1.columnTable1 (id int, data date, data2 string) " +
         "using column options (partition_by 'id')")
     executeSQL("create table schema2.rowTable2 (id int primary key, data string) " +
-        "using row options (partition_by 'id')")
+        "using row options (partition_by 'id', buckets '8')")
 
     // ----- check SHOW SCHEMAS for user tables -----
 
@@ -642,6 +766,92 @@ object MetadataTest extends Assertions {
     checkTableProperties(rs, isRowTable = false)
     rs = executeSQL("show tblproperties schema2.rowTable2").collect()
     checkTableProperties(rs, isRowTable = true)
+
+    // ----- check EXPLAIN for row tables -----
+
+    ds = executeSQL("explain select * from schema2.rowTable2")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    // check schema of the returned Dataset which should be a single string column
+    // for JDBC it should be a CLOB column
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[SCHEMA2" +
+        ".ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*.*"))
+
+    // a filter that should not use store execution plan with JDBC
+    ds = executeSQL("explain select * from schema2.rowTable2 where id > 10")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
+        "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
+        ".*ID.* > ParamLiteral:0,[0-9#]*,10.*"))
+
+    // ----- check EXPLAIN for row tables no routing -----
+
+    ds = executeSQL("explain select * from schema2.rowTable2 where id = 15")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = false,
+        getMetadata("plan", 0, "CLOB")))))
+      assert(plan.contains("stmt_id"))
+      assert(plan.contains("SQL_stmt select * from schema2.rowTable2 where id = 15"))
+      assert(plan.contains("REGION-GET"))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      // no pruning for row tables yet
+      assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
+          "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
+          ".*ID.* = ParamLiteral:0,[0-9#]*,15.*"))
+    }
+
+    // ----- check EXPLAIN for column tables -----
+
+    ds = executeSQL("explain select * from schema1.columnTable1 where id = 15")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
+        "\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
+        ".*ID#[0-9]* = ParamLiteral:0,[0-9#]*,15.*"))
+
+    ds = executeSQL("explain extended select * from schema1.columnTable1 where id = 20")
+    rs = ds.collect()
+    assert(rs.length === 1)
+    plan = rs(0).getString(0)
+    if (usingJDBC) {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+        getMetadata("plan", 0, "CLOB")))))
+    } else {
+      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+    }
+    // should prune to a single partition
+    assert(matches(plan, ".*Parsed Logical Plan.*Filter.*ID = ParamLiteral:0,[0-9#]*,20" +
+        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,20" +
+        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,20" +
+        ".*ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*Physical Plan.*Partitioned Scan" +
+        " ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
+        ".*ID#[0-9]* = ParamLiteral:0,[0-9#]*,20.*"))
 
     // ----- cleanup -----
 

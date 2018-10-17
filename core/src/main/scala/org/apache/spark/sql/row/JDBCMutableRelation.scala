@@ -35,6 +35,7 @@ import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpda
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
@@ -305,7 +306,7 @@ case class JDBCMutableRelation(
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert using insert plan for large number of rows
     if (numRows > (batchSize * 4)) {
-      JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+      ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
         table, putInto = false)
     } else {
       val connection = ConnectionPool.getPoolConnection(table, dialect,
