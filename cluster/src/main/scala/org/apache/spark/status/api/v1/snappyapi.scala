@@ -88,6 +88,7 @@ class TableSummary private[spark](
     val isReplicatedTable: Boolean,
     val rowCount: Long,
     val sizeInMemory: Long,
+    val sizeOnDisk: Long,
     val totalSize: Long,
     val bucketCount: Int
 )

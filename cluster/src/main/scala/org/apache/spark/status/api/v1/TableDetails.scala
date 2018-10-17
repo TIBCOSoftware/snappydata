@@ -45,7 +45,7 @@ object TableDetails {
 
       new TableSummary(table.getTableName, storageModel, distributionType,
         table.isColumnTable, table.isReplicatedTable, table.getRowCount, table.getSizeInMemory,
-        table.getTotalSize, table.getBucketCount)
+        table.getSizeOnDisk, table.getTotalSize, table.getBucketCount)
     }).values.toList
 
   }

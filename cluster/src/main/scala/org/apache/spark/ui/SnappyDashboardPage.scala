@@ -243,7 +243,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("distributionType")}
               </span>
             </th>
-            <th class="table-th-col-heading" style="width: 200px;">
+            <th class="table-th-col-heading" style="width: 150px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("rowCountTooltip")
@@ -251,7 +251,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("rowCount")}
               </span>
             </th>
-            <th class="table-th-col-heading" style="width: 200px;">
+            <th class="table-th-col-heading" style="width: 150px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("sizeInMemoryTooltip")
@@ -259,15 +259,23 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("sizeInMemory")}
               </span>
             </th>
-            <th class="table-th-col-heading" style="width: 200px;">
+            <th class="table-th-col-heading" style="width: 150px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
+                      SnappyDashboardPage.tableStatsColumn("sizeOnDiskTooltip")
+                    }>
+                {SnappyDashboardPage.tableStatsColumn("sizeOnDisk")}
+              </span>
+            </th>
+            <th class="table-th-col-heading" style="width: 150px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.tableStatsColumn("totalSizeTooltip")
                     }>
                 {SnappyDashboardPage.tableStatsColumn("totalSize")}
               </span>
             </th>
-            <th class="table-th-col-heading" style="width: 200px;">
+            <th class="table-th-col-heading" style="width: 100px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
                       SnappyDashboardPage.tableStatsColumn("bucketCountTooltip")
@@ -416,9 +424,11 @@ object SnappyDashboardPage {
   tableStatsColumn += ("rowCountTooltip" -> "Total Rows in Table")
   tableStatsColumn += ("sizeInMemory" -> "Memory Size")
   tableStatsColumn += ("sizeInMemoryTooltip" -> "Tables Size in Memory")
+  tableStatsColumn += ("sizeOnDisk" -> "Disk Size")
+  tableStatsColumn += ("sizeOnDiskTooltip" -> "Tables Size on Disk")
   tableStatsColumn += ("totalSize" -> "Total Size")
   tableStatsColumn += ("totalSizeTooltip" ->
-      "Tables Total Size (In Memory size + Disk Overflow Size)")
+      "Tables Total Size (In Memory size + Overflown To Disk Size)")
   tableStatsColumn += ("bucketCount" -> "Buckets")
   tableStatsColumn += ("bucketCountTooltip" -> "Number of Buckets in Table")
 
