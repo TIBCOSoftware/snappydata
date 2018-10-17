@@ -386,9 +386,26 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     assert(result.count == 1)
   }
 
+  test("IS DISTINCT, IS NOT DISTINCT and <=> expressions") {
+    val snappy = this.snc.snappySession
+    val df = snappy.sql("select (case when id & 1 = 0 then null else id end) as a, " +
+        "(case when id & 2 = 0 then null else id end) b from range(1000)")
+    val rs1 = df.selectExpr("a is not distinct from b").collect()
+    val rs2 = df.selectExpr(
+      "(a is not null AND b is not null AND a = b) OR (a is null AND b is null)").collect()
+    assert(rs1.length === 1000)
+    assert(rs2.length === 1000)
+    assert(rs1 === rs2)
+    assert(df.selectExpr("a is not distinct from b").collect() === df.selectExpr(
+      "a <=> b").collect())
 
+    assert(df.selectExpr("a is distinct from b").collect() === df.selectExpr(
+      "(a is not null AND b is not null AND a <> b) OR (a is null AND b is not null) OR " +
+          "(a is not null AND b is null)").collect())
+    assert(df.selectExpr("a IS DISTINCT FROM b").collect() === df.selectExpr(
+      "NOT (a <=> b)").collect())
+  }
 }
-
 
 
 case class LowerCaseData(n: Int, l: String)

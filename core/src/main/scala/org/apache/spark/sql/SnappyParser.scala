@@ -34,9 +34,9 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.execution.command.{ShowColumnsCommand, ShowCreateTableCommand, ShowDatabasesCommand, ShowFunctionsCommand, ShowTablePropertiesCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
-import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
+import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -402,10 +402,15 @@ class SnappyParser(session: SnappySession)
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
         invertibleExpression |
-        IS ~ (NOT ~ push(true)).? ~ NULL ~>
-            ((e: Expression, not: Any) =>
+        IS ~ (
+            (NOT ~ push(true)).? ~ NULL ~> ((e: Expression, not: Any) =>
               if (not.asInstanceOf[Option[Boolean]].isEmpty) IsNull(e)
               else IsNotNull(e)) |
+            (NOT ~ push(true)).? ~ DISTINCT ~ FROM ~
+                termExpression ~> ((e1: Expression, not: Any, e2: Expression) =>
+              if (not.asInstanceOf[Option[Boolean]].isDefined) EqualNullSafe(e1, e2)
+              else Not(EqualNullSafe(e1, e2)))
+        ) |
         NOT ~ invertibleExpression ~> Not |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
@@ -1101,16 +1106,12 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def delete: Rule1[LogicalPlan] = rule {
-    DELETE ~ FROM ~ relationFactor ~
-        (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
-        ((t: Any, whereExpr: Any) => {
-          val base = t.asInstanceOf[LogicalPlan]
-          val child = whereExpr match {
-            case None => base
-            case Some(w) => Filter(w.asInstanceOf[Expression], base)
-          }
-          Delete(base, child, Nil)
-        })
+    DELETE ~ FROM ~ relationFactor ~ (
+        WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END ~>
+            ((base: LogicalPlan, expr: Expression) => Delete(base, Filter(expr, base), Nil)) |
+        query ~> DeleteFromTable |
+        MATCH ~> ((base: LogicalPlan) => Delete(base, base, Nil))
+    )
   }
 
   protected final def ctes: Rule1[LogicalPlan] = rule {
@@ -1177,6 +1178,19 @@ class SnappyParser(session: SnappySession)
     SHOW ~ CREATE ~ TABLE ~ tableIdentifier ~> ShowCreateTableCommand
   }
 
+  protected final def explain: Rule1[LogicalPlan] = rule {
+    EXPLAIN ~ (EXTENDED ~ push(true) | CODEGEN ~ push(false)).? ~ start ~> ((flagVal: Any,
+        plan: LogicalPlan) => plan match {
+      case _: DescribeTableCommand => ExplainCommand(OneRowRelation)
+      case _ =>
+        val flag = flagVal.asInstanceOf[Option[Boolean]]
+        // ensure plan is sent back as CLOB for large plans especially with CODEGEN
+        queryHints.put(QueryHint.ColumnsAsClob.toString, "*")
+        ExplainCommand(plan, extended = flag.isDefined && flag.get,
+          codegen = flag.isDefined && !flag.get)
+    })
+  }
+
   private var tokenize = false
 
   private var canTokenize = false
@@ -1200,7 +1214,7 @@ class SnappyParser(session: SnappySession)
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
         (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
-            deployPackages))
+            deployPackages | explain))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],

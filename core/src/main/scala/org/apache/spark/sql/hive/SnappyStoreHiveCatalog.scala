@@ -131,7 +131,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       case _ =>
         // Initialize default database if it doesn't already exist
         val defaultDbDefinition =
-          CatalogDatabase(defaultName, "app database", sqlConf.warehousePath, Map.empty)
+          CatalogDatabase(defaultName, s"$defaultName database", sqlConf.warehousePath, Map.empty)
         externalCatalog.createDatabase(defaultDbDefinition, ignoreIfExists = true)
         client.setCurrentDatabase(defaultName)
     }
@@ -187,7 +187,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   override def getCurrentDatabase: String = synchronized {
-    formatTableName(currentSchema)
+    formatDatabaseName(currentSchema)
   }
 
   /** API to get primary key or Key Columns of a SnappyData table */
@@ -519,7 +519,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     } else false
   }
 
-  final def setSchema(schema: String): Unit = {
+  final def setSchema(schema: String): Unit = synchronized {
     this.currentSchema = schema
   }
 
