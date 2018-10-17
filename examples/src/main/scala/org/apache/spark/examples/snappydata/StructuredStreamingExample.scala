@@ -18,11 +18,10 @@
 package org.apache.spark.examples.snappydata
 
 import org.apache.log4j.{Level, Logger}
-
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
+
 import scala.language.postfixOps
-import scala.reflect.io.Path
 
 /**
  * An example showing usage of structured streaming with SnappyData
@@ -34,8 +33,18 @@ import scala.reflect.io.Path
  * bin/run-example snappydata.StructuredStreamingExample
  * </pre>
  * <p></p>
- * To run this on your local machine, you need to first run a Netcat server
+ * To run this on your local machine, you need to first run a Netcat server <br>
  * `$ nc -lk 9999`
+ * <p>
+ * Sample input data:
+ * {{{
+ * device1,45
+ * device2,67
+ * device3,35
+ * }}}
+ * For more details on streaming with SnappyData refer to:
+ * http://snappydatainc.github.io/snappydata/programming_guide
+ * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
 object StructuredStreamingExample {
@@ -46,20 +55,15 @@ object StructuredStreamingExample {
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     println("Initializing a SnappySesion")
-
-    val checkpointDirectory = "/tmp/StructuredStreamingExample"
-
     val spark: SparkSession = SparkSession
-        .builder()
+        .builder
         .appName(getClass.getSimpleName)
         .master("local[*]")
-        .getOrCreate()
+        .getOrCreate
 
     import spark.implicits._
 
     val snappy = new SnappySession(spark.sparkContext)
-
-    snappy.sql("create table devices (device varchar(30) , signal int)")
 
     // Create DataFrame representing the stream of input lines from connection to host:port
     val socketDF = snappy
@@ -75,34 +79,21 @@ object StructuredStreamingExample {
       DeviceData(fields(0), fields(1).toInt)
     })
 
-    // A simple streaming query to filter signal value and load the output into devices table.
+    // A simple streaming query to filter signal value and show the output on console.
     val streamingQuery = structDF
         .filter(_.signal > 10)
         .writeStream
-        .format("snappysink")
+        .format("console")
         .outputMode("append")
-        .queryName("Devices")
         .trigger(ProcessingTime("1 seconds"))
-        .option("streamQueryId", "Devices")     // must be unique across a snappydata cluster
-        .option("tableName", "devices")
-        .option("checkpointLocation", checkpointDirectory)
-        .start()
+        .start
 
     streamingQuery.awaitTermination(timeoutMs = 15000)
-
-
-    println("Data loaded in table: ")
-
-    snappy.sql("select * from devices").show()
-
-    snappy.sql("drop table devices")
-    // CAUTION: recursively deleting directory
-    Path(checkpointDirectory).deleteRecursively()
 
     println("Exiting")
     System.exit(0)
   }
-}
 
-case class DeviceData(device: String, signal: Int)
+  case class DeviceData(device: String, signal: Int)
+}
 

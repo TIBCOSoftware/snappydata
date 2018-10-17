@@ -68,7 +68,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def props: Map[String, String] = testObject.props
 
-  protected def productDir: String
+  protected def sparkProductDir: String
 
   protected def locatorClientPort: Int
 
@@ -292,14 +292,15 @@ trait SplitClusterDUnitTestObject extends Logging {
     // first test metadata using session
     MetadataTest.testSYSTablesAndVTIs(session.sql,
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
-    MetadataTest.testDescribeAndShow(session.sql)
+    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false)
     MetadataTest.testDSIDWithSYSTables(session.sql,
       netServers, locatorId, locatorNetServer, servers, leadId)
     // next test metadata using JDBC connection
     stmt = jdbcConn.createStatement()
     MetadataTest.testSYSTablesAndVTIs(MetadataTest.resultSetToDataset(session, stmt),
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
-    MetadataTest.testDescribeAndShow(MetadataTest.resultSetToDataset(session, stmt))
+    MetadataTest.testDescribeShowAndExplain(MetadataTest.resultSetToDataset(session, stmt),
+      usingJDBC = true)
     MetadataTest.testDSIDWithSYSTables(MetadataTest.resultSetToDataset(session, stmt),
       netServers, locatorId, locatorNetServer, servers, leadId)
 
@@ -365,6 +366,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     val hostName = InetAddress.getLocalHost.getHostName
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
+      logInfo(s"Starting spark job using spark://$hostName:7077, connectionURL=$connectionURL")
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
