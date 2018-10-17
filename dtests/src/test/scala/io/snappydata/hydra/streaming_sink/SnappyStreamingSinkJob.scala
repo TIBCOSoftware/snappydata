@@ -47,7 +47,8 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
     pw.flush()
     import snsc.snappySession.implicits._
 
-    createAndStartStreamingQuery(kafkaTopic, tid, withEventTypeColumn = false)
+    createAndStartStreamingQuery(kafkaTopic, tid, true)
+
     pw.println("started streaming query")
     pw.flush()
     def createAndStartStreamingQuery(topic: String, testId: Int,

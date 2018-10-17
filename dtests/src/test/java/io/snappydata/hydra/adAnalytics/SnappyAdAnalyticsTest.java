@@ -334,7 +334,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_restartLeadVMWithStreaming(){
     HydraTask_cycleLeadVM();
-    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
+    try { Thread.sleep(120000); } catch (InterruptedException ie) {}
     HydraTask_executeSnappyStreamingJob();
   }
 
