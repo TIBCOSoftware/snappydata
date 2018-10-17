@@ -80,6 +80,10 @@ class LeadImpl extends ServerImpl with Lead
 
   var urlclassloader: ExtendibleURLClassLoader = _
 
+  private def setPropertyIfAbsent(props: Properties, name: String, value: => String): Unit = {
+    if (!props.containsKey(name)) props.setProperty(name, value)
+  }
+
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
     _directApiInvoked = true
@@ -109,7 +113,7 @@ class LeadImpl extends ServerImpl with Lead
         bootProperties.remove(propName)
       }
     }
-    // next the system properties that can override above
+    // next the system properties that cannot override above
     val sysProps = System.getProperties
     val sysPropNames = sysProps.stringPropertyNames().iterator()
     while (sysPropNames.hasNext) {
@@ -117,20 +121,20 @@ class LeadImpl extends ServerImpl with Lead
       if (sysPropName.startsWith(SPARK_PREFIX)) {
         if (sysPropName.startsWith(SPARK_SNAPPY_PREFIX)) {
           // remove the "spark." prefix for uniformity (e.g. when looking up a property)
-          bootProperties.setProperty(sysPropName.substring(SPARK_PREFIX.length),
+          setPropertyIfAbsent(bootProperties, sysPropName.substring(SPARK_PREFIX.length),
             sysProps.getProperty(sysPropName))
         } else {
-          bootProperties.setProperty(sysPropName, sysProps.getProperty(sysPropName))
+          setPropertyIfAbsent(bootProperties, sysPropName, sysProps.getProperty(sysPropName))
         }
       } else if (sysPropName.startsWith(SNAPPY_PREFIX) ||
           sysPropName.startsWith(JOBSERVER_PREFIX) ||
           sysPropName.startsWith("zeppelin.") ||
           sysPropName.startsWith("hive.")) {
-        bootProperties.setProperty(sysPropName, sysProps.getProperty(sysPropName))
+        setPropertyIfAbsent(bootProperties, sysPropName, sysProps.getProperty(sysPropName))
       }
     }
 
-    // add default lead properties
+    // add default lead properties that cannot be overridden
     val serverGroupsProp = STORE_PREFIX + Attribute.SERVER_GROUPS
     val groups = bootProperties.getProperty(serverGroupsProp) match {
       case null => LeadImpl.LEADER_SERVERGROUP

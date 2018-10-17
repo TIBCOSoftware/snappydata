@@ -59,6 +59,11 @@ class SplitSnappyClusterDUnitTest(s: String)
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
+    // stop any existing SnappyContext to enable applying thrift-server properties
+    val sc = SnappyContext.globalSparkContext
+    if ((sc ne null) && !sc.isStopped) {
+      ClusterManagerTestBase.stopSpark()
+    }
     super.beforeClass()
     startNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
