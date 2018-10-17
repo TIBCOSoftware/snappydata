@@ -143,4 +143,38 @@ val expected2_3 = Seq(
 assert(rs.length == expected2_3.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_3)
 
+
+val JDBC_URL=s"jdbc:snappydata:pool://$host:$port"
+// Client Pool Driver Test - Start
+val connProps = new java.util.Properties()
+connProps.setProperty("pool-maxTotal", "50")
+connProps.setProperty("pool-maxIdle", "20")
+connProps.setProperty("pool-initialSize", "50")
+connProps.setProperty("pool-minActive", "50")
+connProps.setProperty("pool-minIdleSize", "10")
+connProps.setProperty("driver", "io.snappydata.jdbc.ClientPoolDriver")
+connProps.setProperty("pool-user", userName)
+connProps.setProperty("pool-password", password)
+
+val df = spark.read.jdbc(JDBC_URL, "testTable1", connProps)
+val result = df.select("id").groupBy("id").avg("id").orderBy("id").collect()
+assert(result.length == 2) // expected rows
+assert(result(0).getAs("id") == 0)// expected result
+
+val df1 = spark.read.jdbc(JDBC_URL, "testTable1", connProps).select("id", "data").where("id = '1'").collect()
+assert(df1.length == 1) // expected rows
+assert(df1(0).getAs("id") == 1) // expected result
+
+val df2 = spark.read.jdbc(url = JDBC_URL,table = "testTable2",columnName = "id",
+lowerBound = 0,upperBound = 100,numPartitions = 16, connectionProperties = connProps).collect()
+assert(df2.length == 2, "expected length is 2") // expected rows
+assert(df2.toSeq.sortBy(_.getLong(0)) == allRows2)
+
+val pushdown_query = s"(select * from testTable1 where id=0) test_alias"
+val df3 = spark.read.jdbc(url = JDBC_URL, table = pushdown_query, properties = connProps).collect()
+assert(df3.length == 1) // expected rows
+val row3 = Array(Row(0, "col0"))
+assert(df3(0).get(0) == 0 ) // expected result
+// Client Pool Driver Test - End
+
 System.exit(0)
