@@ -18,7 +18,7 @@
 
 /*
 This is a script file used as in input to
-io.snappydata.cluster.SplitClusterDUnitTest.testSparkShell
+io.snappydata.cluster.SplitClusterDUnitTest.testSparkShell and testSparkShellCurrent
 */
 import java.math.BigDecimal
 import org.apache.spark.sql.Row
@@ -44,6 +44,8 @@ sparkConf.getOption("spark.snappydata.store.user") match {
     }
     spark.sql(s"use $user").collect()
 }
+
+// test a mix of explicit user/password/host/port and nothing (where all are auto-resolved from SparkConf)
 
 // create the tables and insert couple of rows
 spark.snappyExecute("create table testTable1 (id long, data string)", userName, password)
@@ -144,17 +146,22 @@ assert(rs.length == expected2_3.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_3)
 
 
+// Tests using direct jdbc driver with pool URL rather than the implicits.
+// These will result in double executions with first being with LIMIT 1 to determine
+// schema which can be double the cost for some pushdown queries
+// (e.g. SELECT AVG(C) FROM T is same cost with LIMIT 1 at top-level)
+
 val JDBC_URL=s"jdbc:snappydata:pool://$host:$port"
 // Client Pool Driver Test - Start
 val connProps = new java.util.Properties()
-connProps.setProperty("pool-maxTotal", "50")
-connProps.setProperty("pool-maxIdle", "20")
-connProps.setProperty("pool-initialSize", "50")
-connProps.setProperty("pool-minActive", "50")
-connProps.setProperty("pool-minIdleSize", "10")
+connProps.setProperty("pool.maxTotal", "50")
+connProps.setProperty("pool.maxIdle", "20")
+connProps.setProperty("pool.initialSize", "50")
+connProps.setProperty("pool.minActive", "50")
+connProps.setProperty("pool.minIdleSize", "10")
 connProps.setProperty("driver", "io.snappydata.jdbc.ClientPoolDriver")
-connProps.setProperty("pool-user", userName)
-connProps.setProperty("pool-password", password)
+connProps.setProperty("pool.user", userName)
+connProps.setProperty("pool.password", password)
 
 val df = spark.read.jdbc(JDBC_URL, "testTable1", connProps)
 val result = df.select("id").groupBy("id").avg("id").orderBy("id").collect()

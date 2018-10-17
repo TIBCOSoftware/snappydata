@@ -40,7 +40,7 @@ import io.snappydata.Constant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hive.metastore.TableType
-import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException, Table}
+import org.apache.hadoop.hive.ql.metadata.{Hive, Table}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
@@ -1121,7 +1121,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     try {
       function
     } catch {
-      case he: HiveException if isDisconnectException(he) =>
+      case t: Throwable if isDisconnectException(t) =>
         // stale JDBC connection
         SnappyStoreHiveCatalog.closeHive(client)
         SnappyStoreHiveCatalog.suspendActiveSession {
