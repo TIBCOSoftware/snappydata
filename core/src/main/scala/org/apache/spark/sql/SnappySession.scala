@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import java.sql.SQLException
+import java.sql.{DriverManager, SQLException}
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -65,7 +65,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, ExternalTableType, HiveClientUtil, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableInsertOrPut, SnappySessionState}
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types._
@@ -80,9 +80,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   self =>
 
-  // initialize GemFireXDDialect so that it gets registered
+  // initialize SnappyStoreDialect so that it gets registered
 
-  GemFireXDDialect.init()
+  SnappyStoreDialect.init()
 
   /* ----------------------- *
    |  Session-related state  |
@@ -1082,7 +1082,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       onlyBuiltIn = true) else provider
 
     val relation = schemaDDL match {
-      case Some(cols) => Some(JdbcExtendedUtils.externalResolvedDataSource(self,
+      case Some(cols) => Some(ExternalStoreUtils.externalResolvedDataSource(self,
         cols, source, mode, params))
 
       case None if resolveRelation =>
@@ -1203,7 +1203,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     } else None
 
     val relation = schemaDDL match {
-      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
+      case Some(cols) => ExternalStoreUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query))
 
       case None =>
@@ -1341,11 +1341,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         if (ifExists) return else throw e
       case NonFatal(_) if !resolveRelation => None
     }
-    val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
+    val isLocalTempView = sessionCatalog.isLocalTemporaryView(tableIdent)
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        if (!isTempTable) {
+        if (!isLocalTempView) {
           // resolve whether table is external or not at source since the required
           // classes to resolve may not be available in embedded cluster
           val isExternal = planOpt match {
@@ -1375,7 +1375,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           case _ => // ignore
         }
         Dataset.ofRows(this, plan).unpersist(blocking = true)
-        if (isTempTable) {
+        if (isLocalTempView) {
           // This is due to temp table
           // can be made from a backing relation like Parquet or Hadoop
           sessionCatalog.unregisterTable(tableIdent)
@@ -1383,11 +1383,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
-          case _ => if (!isTempTable && !sessionCatalog.unregisterGlobalView(tableIdent)) {
+          case _ => if (!isLocalTempView && !sessionCatalog.unregisterGlobalView(tableIdent)) {
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           }
         }
-      case _ if isTempTable => // This is a temp table with no relation as source
+      case _ if isLocalTempView => // This is a temp table with no relation as source
         planOpt.foreach(Dataset.ofRows(this, _).unpersist(blocking = true))
         sessionCatalog.unregisterTable(tableIdent)
       case _ =>
@@ -1491,6 +1491,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
             .alterTable(tableIdent, isAddColumn, column)
+          SnappyStoreHiveCatalog.registerRelationDestroy()
           return
       case _ =>
     }
@@ -1655,7 +1656,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     if (indexIdent.database != tableIdent.database) {
       throw new AnalysisException(
-        s"Index and table have different databases " +
+        s"Index and table have different schemas " +
             s"specified ${indexIdent.database} and ${tableIdent.database}")
     }
     if (!sessionCatalog.tableExists(tableIdent)) {
@@ -1921,6 +1922,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
     ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
+
+  private[sql] def defaultPooledOrConnectorConnection(name: String): java.sql.Connection = {
+    // for smart connector use a normal connection with route-query=true
+    SnappyContext.getClusterMode(sparkContext) match {
+      case ThinClientConnectorMode(_, url) =>
+        DriverManager.getConnection(url + ";route-query=true", defaultConnectionProps.connProps)
+      case _ => defaultPooledConnection(name)
+    }
+  }
 
   /**
    * Fetch the topK entries in the Approx TopK synopsis for the specified

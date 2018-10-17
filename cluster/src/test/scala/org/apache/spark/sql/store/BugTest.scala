@@ -23,8 +23,6 @@ import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.sql.SaveMode
-
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
