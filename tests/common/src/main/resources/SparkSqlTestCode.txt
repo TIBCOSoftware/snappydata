@@ -22,17 +22,12 @@ io.snappydata.cluster.SplitClusterDUnitTest.testSparkShell
 */
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
-import rg.apache.spark.sql.Row
-
-println("spark context :: "+sc)
-sc.setLogLevel("TRACE")
-
 val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 import snappy.implicits._
 println("Creating a column table")
 snappy.sql("CREATE TABLE COLTABLE (COL1 INT, COL2 INT, COL3 STRING) USING COLUMN OPTIONS (PARTITION_BY 'COL1')")
 snappy.sql("INSERT INTO COLTABLE VALUES (1, 1, '1'), (2, 2, '2'), (3, 3, '3'), (4, 4, '4'), (5, 5, '5')")
-val result1 = snappy.sql("SELECT COL1 FROM COLTABLE GROUP BY COL1 ORDER BY COL1").collect
+val result1 = snappy.sql("SELECT COL1 FROM COLTABLE ORDER BY COL1").collect
 assert(result1.length == 5)
 println("Creating a row table")
 snappy.sql("CREATE TABLE ROWTABLE (COL1 INT, COL2 INT, COL3 STRING)")
@@ -44,6 +39,3 @@ assert(result2.length == 5)
 val sparkTable = spark.range(1000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
 sparkTable.createOrReplaceTempView("sparkTable")
 spark.sql("select sym, avg(id) from sparkTable group by sym").collect()
-// set default schema to current user if any
-
-System.exit(0)
