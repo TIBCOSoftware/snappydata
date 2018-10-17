@@ -209,8 +209,7 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     conn.close()
   }
 
-  ignore("Test connection pool to test pool exhaus") {
-
+  test("Test connection pool for pool exhaustion") {
     try {
       snc
       val serverHostPort = TestUtil.startNetServer()
@@ -229,20 +228,13 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
       // scalastyle:off
       Class.forName(driverName)
       // max active is 3 and trying to use more than that
-      for (i <- 1 to 6) {
+      for (_ <- 1 to 6) {
         val conn = DriverManager.getConnection(url, properties)
         // conn.close()
       }
-      assert(false)
-
+      fail("Expected PoolExhaustedException")
     } catch {
-      case e: org.apache.tomcat.jdbc.pool.PoolExhaustedException => {
-        assert(true)
-      }
-      case e: Exception => {
-        assert(false)
-      }
+      case _: org.apache.tomcat.jdbc.pool.PoolExhaustedException => // expected
     }
   }
-
 }
