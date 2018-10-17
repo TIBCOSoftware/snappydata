@@ -104,6 +104,15 @@ object Property extends Enumeration {
     "If true then cluster startup will wait for Spark jobserver to be fully initialized " +
         "before marking lead as 'RUNNING'. Default is false.", Some(false), prefix = null)
 
+  val HiveServerEnabled: SparkValue[Boolean] = Val(
+    s"${Constant.PROPERTY_PREFIX}hiveServer.enabled", "If true on a lead node, then an " +
+        "embedded HiveServer2 with thrift access will be started", Some(false), prefix = null)
+
+  val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
+    s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +
+        "created in embedded HiveServer2 will be a hive session else a SnappySession",
+    Some(false), prefix = null)
+
   val SnappyConnection: SparkValue[String] = Val[String](Constant.CONNECTION_PROPERTY,
      "Host and client port combination in the form [host:clientPort]. This " +
      "is used by smart connector to connect to SnappyData cluster using " +

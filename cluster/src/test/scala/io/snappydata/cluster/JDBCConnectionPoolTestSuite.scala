@@ -182,7 +182,7 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     assert(0 == stmt.executeUpdate(sql))
   }
 
-  test("Test connection pool to test pool exhaus") {
+  ignore("Test connection pool to test pool exhaus") {
 
     try {
       snc
