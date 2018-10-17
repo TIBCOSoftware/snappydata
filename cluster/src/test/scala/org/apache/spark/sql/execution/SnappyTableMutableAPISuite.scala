@@ -16,12 +16,16 @@
  */
 package org.apache.spark.sql.execution
 
+import java.sql.DriverManager
+
+import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.store.MetadataTest
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession}
 
@@ -61,9 +65,23 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
   val data6 = Seq(Seq(1, 22, "str1", 3L), Seq(7, 81, "str7", 9L), Seq(9, 23, "str9", 3L),
     Seq(4, 24, "str4", 3L), Seq(5, 6, "str5", 7L), Seq(88, 88, "str88", 88L))
 
+  private var netPort = 0
+
   after {
     snc.dropTable("col_table", ifExists = true)
     snc.dropTable("row_table", ifExists = true)
+  }
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    assert(this.snc !== null)
+    // start a local network server
+    netPort = TestUtil.startNetserverAndReturnPort()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    TestUtil.stopNetServer()
   }
 
   test("PutInto with sql") {
@@ -417,8 +435,6 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.length == 16)
     assert(resultdf.contains(Row(100, 100, 100)))
   }
-
-
 
   test("PutInto with different column names") {
     val snc = new SnappySession(sc)
@@ -880,6 +896,62 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
 
     assert(message.contains("requires that the query in the WHERE clause of " +
         "the DELETE FROM statement must have all the key column(s)"))
+  }
+
+  test("Delete From SQL using JDBC: row tables") {
+    val snc = this.snc
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table(pk1 int, col1 int, pk2 varchar(50), col2 int," +
+        " primary key(pk2,pk1))  using row")
+    df1.write.insertInto("row_table")
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
+    try {
+      df2.createGlobalTempView("delete_df")
+      val stmt = conn.createStatement()
+      stmt.execute("DELETE FROM row_table SELECT pk1, pk2 from delete_df")
+      stmt.close()
+    } finally {
+      snc.dropTable("delete_df")
+      conn.close()
+    }
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
+  }
+
+  test("Delete From SQL using JDBC: column tables") {
+    val snc = this.snc
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table col_table(pk1 int, col1 int, pk2 varchar(50), col2 int) " +
+        "using column options(key_columns 'pk2,pk1')")
+
+    df1.write.insertInto("col_table")
+
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
+    try {
+      df2.createGlobalTempView("delete_df")
+      val stmt = conn.createStatement()
+      stmt.execute("DELETE FROM col_table SELECT pk1, pk2 from delete_df")
+      stmt.close()
+    } finally {
+      conn.close()
+      snc.dropTable("delete_df")
+    }
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
   }
 
   private def bug2348Test(): Unit = {
