@@ -33,7 +33,7 @@ import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import io.snappydata.Constant
+import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -131,6 +131,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def CODEGEN: Rule0 = rule { keyword(Consts.CODEGEN) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
@@ -142,6 +143,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
   final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXECUTE: Rule0 = rule { keyword(Consts.EXECUTE) }
+  final def EXPLAIN: Rule0 = rule { keyword(Consts.EXPLAIN) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
   final def FETCH: Rule0 = rule { keyword(Consts.FETCH) }
@@ -196,6 +199,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
+  final def USE: Rule0 = rule { keyword(Consts.USE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
   final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
@@ -612,7 +616,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   /**
-   * GRANT/REVOKE/CREATE DISKSTORE/CALL on a table (only for column and row tables).
+   * Commands like GRANT/REVOKE/CREATE DISKSTORE/CALL on a table that are passed through
+   * as is to the SnappyData store layer (only for column and row tables).
    *
    * Example:
    * {{{
@@ -623,8 +628,8 @@ abstract class SnappyDDLParser(session: SparkSession)
    *   CALL SYSCS_UTIL.SYSCS_SET_RUNTIMESTATISTICS(1)
    * }}}
    */
-  protected def grantRevoke: Rule1[LogicalPlan] = rule {
-    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ CALL)) ~ ANY.* ~>
+  protected def passThrough: Rule1[LogicalPlan] = rule {
+    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ (CALL | EXECUTE))) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
         (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
           Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
@@ -674,9 +679,12 @@ abstract class SnappyDDLParser(session: SparkSession)
             ((extended: Any, name: String) =>
               DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined)) |
         (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
-            ((extended: Any, tableIdent: TableIdentifier) =>
+            ((extended: Any, tableIdent: TableIdentifier) => {
+              // ensure columns are sent back as CLOB for large results with EXTENDED
+              queryHints.put(QueryHint.ColumnsAsClob.toString, "data_type,comment")
               DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
+                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)
+            })
     )
   }
 
@@ -715,7 +723,8 @@ abstract class SnappyDDLParser(session: SparkSession)
             SetCommand(None)
           }
         }
-    )
+    ) |
+    USE ~ identifier ~> SetSchema
   }
 
   protected def reset: Rule1[LogicalPlan] = rule {
@@ -816,7 +825,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     createView | createTempViewUsing | dropView | createSchema | dropSchema |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevoke
+    createIndex | dropIndex | createFunction | dropFunction | passThrough
   }
 
   protected def query: Rule1[LogicalPlan]
