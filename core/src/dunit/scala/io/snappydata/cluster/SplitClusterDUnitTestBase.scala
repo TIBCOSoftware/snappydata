@@ -292,14 +292,15 @@ trait SplitClusterDUnitTestObject extends Logging {
     // first test metadata using session
     MetadataTest.testSYSTablesAndVTIs(session.sql,
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
-    MetadataTest.testDescribeAndShow(session.sql)
+    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false)
     MetadataTest.testDSIDWithSYSTables(session.sql,
       netServers, locatorId, locatorNetServer, servers, leadId)
     // next test metadata using JDBC connection
     stmt = jdbcConn.createStatement()
     MetadataTest.testSYSTablesAndVTIs(MetadataTest.resultSetToDataset(session, stmt),
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
-    MetadataTest.testDescribeAndShow(MetadataTest.resultSetToDataset(session, stmt))
+    MetadataTest.testDescribeShowAndExplain(MetadataTest.resultSetToDataset(session, stmt),
+      usingJDBC = true)
     MetadataTest.testDSIDWithSYSTables(MetadataTest.resultSetToDataset(session, stmt),
       netServers, locatorId, locatorNetServer, servers, leadId)
 

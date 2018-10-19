@@ -53,12 +53,13 @@ class SQLMetadataTest extends SnappyFunSuite {
     }
   }
 
-  test("DESCRIBE and SHOW") {
+  test("DESCRIBE, SHOW and EXPLAIN") {
     val session = this.snc.snappySession
     val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
     try {
       val stmt = conn.createStatement()
-      MetadataTest.testDescribeAndShow(MetadataTest.resultSetToDataset(session, stmt))
+      MetadataTest.testDescribeShowAndExplain(MetadataTest.resultSetToDataset(session, stmt),
+        usingJDBC = true)
       stmt.close()
     } finally {
       conn.close()

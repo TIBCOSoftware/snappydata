@@ -54,7 +54,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     }
   }
 
-  private[sql] final def hasPlanHints: Boolean = _planHints ne null
+  private[sql] final def hasPlanHints: Boolean = (_planHints ne null) && !_planHints.isEmpty
 
   protected def clearQueryHints(): Unit = {
     if (!queryHints.isEmpty) queryHints.clear()
@@ -477,6 +477,7 @@ object SnappyParserConsts {
   final val CALL: Keyword = nonReservedKeyword("call")
   final val CLEAR: Keyword = nonReservedKeyword("clear")
   final val CLUSTER: Keyword = nonReservedKeyword("cluster")
+  final val CODEGEN: Keyword = nonReservedKeyword("codegen")
   final val COLUMN: Keyword = nonReservedKeyword("column")
   final val COLUMNS: Keyword = nonReservedKeyword("columns")
   final val COMMENT: Keyword = nonReservedKeyword("comment")
@@ -489,6 +490,8 @@ object SnappyParserConsts {
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
   final val ENABLE: Keyword = nonReservedKeyword("enable")
   final val END: Keyword = nonReservedKeyword("end")
+  final val EXECUTE: Keyword = nonReservedKeyword("execute")
+  final val EXPLAIN: Keyword = nonReservedKeyword("explain")
   final val EXTENDED: Keyword = nonReservedKeyword("extended")
   final val EXTERNAL: Keyword = nonReservedKeyword("external")
   final val FETCH: Keyword = nonReservedKeyword("fetch")
@@ -547,6 +550,7 @@ object SnappyParserConsts {
   final val TRUNCATE: Keyword = nonReservedKeyword("truncate")
   final val UNDEPLOY: Keyword = nonReservedKeyword("undeploy")
   final val UNCACHE: Keyword = nonReservedKeyword("uncache")
+  final val USE: Keyword = nonReservedKeyword("use")
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
   final val VIEW: Keyword = nonReservedKeyword("view")

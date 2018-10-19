@@ -128,7 +128,7 @@ class SplitClusterDUnitTest(s: String)
 
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
-    testObject.invokeSparkShell(snappyProductDir, sparkProductDir, locatorClientPort)
+    testObject.invokeSparkShell(snappyProductDir, sparkProductDir, locatorClientPort, vm = vm3)
   }
 
   // test to make sure that stock spark-shell for latest Spark release works with JDBC pool jar
@@ -637,10 +637,15 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   }
 
   def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
+    stopSpark()
     logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
     logInfo((productDir + "/sbin/stop-all.sh") !!)
+  }
+
+  def stopSpark(): Unit = {
+    logInfo(s" Stopping spark ")
+    val sparkContext = SnappyContext.globalSparkContext
+    if (sparkContext != null) sparkContext.stop()
   }
 
   private def runSparkShellSnappyPoolTest(stmt: Statement, sparkShellCommand: String): Unit = {
@@ -671,7 +676,12 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   }
 
   def invokeSparkShell(productDir: String, sparkProductDir: String, locatorClientPort: Int,
-      props: Properties = new Properties()): Unit = {
+      props: Properties = new Properties(), vm: VM = null): Unit = {
+
+    // stop any existing SparkContext, to make sure cpu core available for this test
+    if (vm eq null) stopSpark()
+    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSpark")
+
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
       "snappydata-core*.jar")
