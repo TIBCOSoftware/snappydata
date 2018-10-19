@@ -371,23 +371,26 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     return true;
   }
 
-  /**
-   * Start generating and publishing logs to Kafka
-   */
-
-  public static void HydraTask_generateAndPublish() {
-    snappyAdAnalyticsTest.generateAndPublish(SnappyPrms.getSnappyStreamingJobClassNames());
-  }
-
+  /* Generator and Publisher for StringMessageProducer
+  */
   public static void HydraTask_generateAndPublishMethod() {
     String[] appProps = null;
     if (SnappyPrms.getCommaSepAPPProps() != null) {
       appProps = SnappyPrms.getCommaSepAPPProps().split(",");
     }
-    String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 2);
-    appProps1[appProps.length] = "" + DerbyTestUtils.hasDerbyServer;
-    appProps1[appProps.length + 1] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
+    String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 3);
+    appProps1[appProps.length] = "" + TestConfig.tab().booleanAt(SnappyPrms.isConflationTest,
+        false);
+    appProps1[appProps.length + 1] = "" + DerbyTestUtils.hasDerbyServer;
+    appProps1[appProps.length + 2] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
     StringMessageProducer.generateAndPublish(appProps1);
+  }
+
+  /**
+   * Start generating and publishing logs to Kafka
+   */
+  public static void HydraTask_generateAndPublish() {
+    snappyAdAnalyticsTest.generateAndPublish(SnappyPrms.getSnappyStreamingJobClassNames());
   }
 
   protected void generateAndPublish(Vector generatorAndPublisher) {

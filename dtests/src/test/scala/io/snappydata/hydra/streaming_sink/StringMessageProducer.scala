@@ -31,6 +31,7 @@ import org.apache.kafka.common.serialization.{LongSerializer, StringSerializer}
 object StringMessageProducer {
 
   var hasDerby: Boolean = false
+  var isConflationTest: Boolean = false
   val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File("generatorAndPublisher.out"),
     true));
 
@@ -51,6 +52,7 @@ object StringMessageProducer {
     val topic: String = args {1}
     val startRange: Int = args {2}.toInt
     val opType: Int = args{3}.toInt
+    isConflationTest = args {args.length-3}.toBoolean
     hasDerby = args {args.length-2}.toBoolean
     var brokers: String = args {args.length - 1}
     brokers = brokers.replace("--", ":")
@@ -99,6 +101,7 @@ extends Runnable {
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
     (startRange to (startRange + eventCount - 1)).foreach(i => {
+      var id: Int = i
       val title: String = titleArr(random.nextInt(titleArr.length))
       val status: String = statusArr(random.nextInt(statusArr.length))
       val phone: Long = (range * random.nextDouble()).toLong + 1000000000
@@ -110,12 +113,16 @@ extends Runnable {
       val email: String = randomAlphanumeric(10) + "@" + randomAlphanumeric(5) + "." +
           randomAlphanumeric(3)
       val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
-      val row: String = s"$i,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
+      if (StringMessageProducer.isConflationTest) {
+        id = random.nextInt(500)
+      }
+      val row: String = s"$id,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
           s"$status,$email,$education,$occupation"
       StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row : $row")
       if (opType == 4) {
         eventType = random.nextInt(3)
       }
+
       StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"eventType : " +
           s"$eventType")
       val data = new ProducerRecord[Long, String](topic, i, row + s",$eventType")

@@ -1,4 +1,4 @@
-io/snappydata/hydra/streaming_sink/streaming_sinkWithDerby.conf
+io/snappydata/hydra/streaming_sink/streaming_sinkWithRandomOps.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
