@@ -199,12 +199,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
-  def sqlCachedDF(sqlText: String): CachedDataFrame =
+  override  def sql(sqlText: String): CachedDataFrame =
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
 
-   // below sql method uses uncachedDF - so basically everywhere uncachedDf is being used
   @DeveloperApi
-override  def sql(sqlText: String): DataFrame = {
+  def sqlUncached(sqlText: String): DataFrame = {
     if (planCaching) {
       planCaching = false
       try {
