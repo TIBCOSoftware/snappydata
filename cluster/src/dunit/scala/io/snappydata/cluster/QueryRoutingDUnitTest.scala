@@ -494,7 +494,7 @@ class QueryRoutingDUnitTest(val s: String)
       val dbmd = conn.getMetaData
       val rSet = dbmd.getTables(null, "APP", null,
         Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-          "EXTERNAL TABLE", "STREAM TABLE"))
+          "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
       assert(rSet.next())
 
       s.execute(s"drop table $rowTable")
@@ -524,7 +524,7 @@ class QueryRoutingDUnitTest(val s: String)
 
       val tableMd = dbmd.getTables(null, "APP%", null,
         Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-          "EXTERNAL TABLE", "STREAM TABLE"))
+          "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
       while (tableMd.next()) {
         results += tableMd.getString(2) + '.' + tableMd.getString(3)
       }
@@ -634,7 +634,7 @@ class QueryRoutingDUnitTest(val s: String)
     // Simulates 'SHOW TABLES' of ij
     var rSet = dbmd.getTables(null, "APP", null,
       Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-        "EXTERNAL TABLE", "STREAM TABLE"))
+        "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
 
     var foundTable = false
     while (rSet.next()) {
@@ -647,7 +647,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     val rSet2 = dbmd.getTables(null, "APP", null,
       Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-        "EXTERNAL TABLE", "STREAM TABLE"))
+        "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
 
     foundTable = false
     while (rSet2.next()) {

@@ -21,8 +21,9 @@ import java.util.function.BiConsumer
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.primitives.Ints
-import io.snappydata.{Constant, Property, QueryHint}
+import io.snappydata.{Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -33,8 +34,9 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.internal.LikeEscapeSimplification
-import org.apache.spark.sql.sources.{Delete, Insert, PutIntoTable, Update}
+import org.apache.spark.sql.execution.command._
+import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
+import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
@@ -110,7 +112,7 @@ class SnappyParser(session: SnappySession)
           s.charAt(len - 2) match {
             case 'B' | 'b' => return toDecimalLiteral(s.substring(0, len - 2),
               checkExactNumeric = false)
-            case c if (Character.isDigit(c)) => return newTokenizedLiteral(
+            case c if Character.isDigit(c) => return newTokenizedLiteral(
               java.lang.Double.parseDouble(s.substring(0, len - 1)), DoubleType)
             case _ => throw new ParseException(s"Found non numeric token $s")
           }
@@ -163,8 +165,9 @@ class SnappyParser(session: SnappySession)
 
   }
 
-  private final def updatePerTableQueryHint(tableIdent: TableIdentifier,
-      optAlias: Option[String]) = {
+  private def updatePerTableQueryHint(tableIdent: TableIdentifier,
+      optAlias: Option[String]): Unit = {
+    if (queryHints.isEmpty) return
     val indexHint = queryHints.remove(QueryHint.Index.toString)
     if (indexHint ne null) {
       val table = optAlias match {
@@ -201,7 +204,7 @@ class SnappyParser(session: SnappySession)
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
     numericLiteral |
     booleanLiteral |
-    NULL ~> (() => newTokenizedLiteral(null, NullType))
+    NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
   protected final def paramLiteralQuestionMark: Rule1[Expression] = rule {
@@ -267,6 +270,10 @@ class SnappyParser(session: SnappySession)
 
   protected final def week: Rule1[Long] = rule {
     integral ~ WEEK ~> ((num: String) => num.toLong)
+  }
+
+  protected final def intervalType: Rule1[DataType] = rule {
+    INTERVAL ~> (() => CalendarIntervalType)
   }
 
   protected def intervalLiteral: Rule1[Expression] = rule {
@@ -395,10 +402,15 @@ class SnappyParser(session: SnappySession)
         '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
         invertibleExpression |
-        IS ~ (NOT ~ push(true)).? ~ NULL ~>
-            ((e: Expression, not: Any) =>
+        IS ~ (
+            (NOT ~ push(true)).? ~ NULL ~> ((e: Expression, not: Any) =>
               if (not.asInstanceOf[Option[Boolean]].isEmpty) IsNull(e)
               else IsNotNull(e)) |
+            (NOT ~ push(true)).? ~ DISTINCT ~ FROM ~
+                termExpression ~> ((e1: Expression, not: Any, e2: Expression) =>
+              if (not.asInstanceOf[Option[Boolean]].isDefined) EqualNullSafe(e1, e2)
+              else Not(EqualNullSafe(e1, e2)))
+        ) |
         NOT ~ invertibleExpression ~> Not |
         MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
@@ -632,21 +644,6 @@ class SnappyParser(session: SnappySession)
         })
   }
 
-  protected final def join: Rule1[JoinRuleType] = rule {
-    joinType.? ~ JOIN ~ relationWithExternal ~ (
-        ON ~ expression ~> ((t: Any, r: LogicalPlan, j: Expression) =>
-          (t.asInstanceOf[Option[JoinType]], r, Some(j))) |
-        USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
-            ((t: Any, r: LogicalPlan, ids: Any) =>
-              (Some(UsingJoin(t.asInstanceOf[Option[JoinType]]
-                  .getOrElse(Inner), ids.asInstanceOf[Seq[String]])), r, None)) |
-        MATCH ~> ((t: Option[JoinType], r: LogicalPlan) => (t, r, None))
-    ) |
-    NATURAL ~ joinType.? ~ JOIN ~ relationWithExternal ~> ((t: Any,
-        r: LogicalPlan) => (Some(NaturalJoin(t.asInstanceOf[Option[JoinType]]
-        .getOrElse(Inner))), r, None))
-  }
-
   protected final def joinType: Rule1[JoinType] = rule {
     INNER ~> (() => Inner) |
     LEFT ~ (
@@ -656,7 +653,8 @@ class SnappyParser(session: SnappySession)
     ) |
     RIGHT ~ OUTER.? ~> (() => RightOuter) |
     FULL ~ OUTER.? ~> (() => FullOuter) |
-    ANTI ~> (() => LeftAnti)
+    ANTI ~> (() => LeftAnti) |
+    CROSS ~> (() => Cross)
   }
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
@@ -792,14 +790,37 @@ class SnappyParser(session: SnappySession)
     })
   }
 
+  protected final def withHints(plan: LogicalPlan): LogicalPlan = {
+    if (hasPlanHints) {
+      var newPlan = plan
+      val planHints = this.planHints
+      while (planHints.size() > 0) {
+        newPlan match {
+          case l: LogicalPlanWithHints =>
+            newPlan = new LogicalPlanWithHints(l.child, l.hints + planHints.pop())
+          case _ => newPlan = new LogicalPlanWithHints(plan, Map(planHints.pop()))
+        }
+      }
+      newPlan
+    } else plan
+  }
+
   protected final def relation: Rule1[LogicalPlan] = rule {
-    relationWithExternal ~ (
-        join. + ~> ((r1: LogicalPlan, joins: Any) => joins.asInstanceOf[
-            Seq[JoinRuleType]].foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
-          Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
-        }) |
-        MATCH.asInstanceOf[Rule[LogicalPlan :: HNil, LogicalPlan :: HNil]]
-    )
+    relationWithExternal ~> ((plan) => withHints(plan)) ~ (
+        joinType.? ~ JOIN ~ relationWithExternal ~ (
+            ON ~ expression ~> ((l: LogicalPlan, t: Any, r: LogicalPlan, e: Expression) =>
+              withHints(Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e)))) |
+            USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
+                ((l: LogicalPlan, t: Any, r: LogicalPlan, ids: Any) =>
+                  withHints(Join(l, r, UsingJoin(t.asInstanceOf[Option[JoinType]]
+                      .getOrElse(Inner), ids.asInstanceOf[Seq[String]]), None))) |
+            MATCH ~> ((l: LogicalPlan, t: Option[JoinType], r: LogicalPlan) =>
+              withHints(Join(l, r, t.getOrElse(Inner), None)))
+        ) |
+        NATURAL ~ joinType.? ~ JOIN ~ relationWithExternal ~> ((l: LogicalPlan, t: Any,
+            r: LogicalPlan) => withHints(Join(l, r, NaturalJoin(t.asInstanceOf[Option[JoinType]]
+            .getOrElse(Inner)), None)))
+    ).*
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
@@ -830,7 +851,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
-      fnName: String): Seq[Expression] = Constant.FOLDABLE_FUNCTIONS.get(fnName) match {
+      fnName: String): Seq[Expression] = Consts.FOLDABLE_FUNCTIONS.get(fnName) match {
       case null => exprs
       case args if args.length == 0 =>
         // disable plan caching for these functions
@@ -838,11 +859,12 @@ class SnappyParser(session: SnappySession)
         exprs
       case args =>
         exprs.indices.map(index => exprs(index) match {
-          case l: TokenizedLiteral if Ints.contains(args, index) ||
+          case l: TokenizedLiteral if (args(0) == -3 && !Ints.contains(args, index)) ||
+              (args(0) != -3 && (Ints.contains(args, index) ||
               // all args          // all odd args
               (args(0) == -10) || (args(0) == -1 && (index & 0x1) == 1) ||
               // all even args
-              (args(0) == -2 && (index & 0x1) == 0) =>
+              (args(0) == -2 && (index & 0x1) == 0))) =>
             l match {
               case pl: ParamLiteral  if pl.tokenized && _isPreparePhase =>
                 throw new ParseException(s"function $fnName cannot have " +
@@ -916,7 +938,7 @@ class SnappyParser(session: SnappySession)
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
     } |
-    CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~> (Cast(_, _)) |
+    CAST ~ '(' ~ ws ~ expression ~ AS ~ (dataType | intervalType) ~ ')' ~ ws ~> (Cast(_, _)) |
     CASE ~ (
         whenThenElse ~> (s => CaseWhen(s._1, s._2)) |
         keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
@@ -1084,16 +1106,12 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def delete: Rule1[LogicalPlan] = rule {
-    DELETE ~ FROM ~ relationFactor ~
-        (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
-        ((t: Any, whereExpr: Any) => {
-          val base = t.asInstanceOf[LogicalPlan]
-          val child = whereExpr match {
-            case None => base
-            case Some(w) => Filter(w.asInstanceOf[Expression], base)
-          }
-          Delete(base, child, Nil)
-        })
+    DELETE ~ FROM ~ relationFactor ~ (
+        WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END ~>
+            ((base: LogicalPlan, expr: Expression) => Delete(base, Filter(expr, base), Nil)) |
+        query ~> DeleteFromTable |
+        MATCH ~> ((base: LogicalPlan) => Delete(base, base, Nil))
+    )
   }
 
   protected final def ctes: Rule1[LogicalPlan] = rule {
@@ -1107,6 +1125,70 @@ class SnappyParser(session: SnappySession)
     (INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
         ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
         UnresolvedRelation(r), input.sliceString(0, input.length)))
+  }
+
+  // It can be the following patterns:
+  // SHOW TABLES IN schema;
+  // SHOW DATABASES;
+  // SHOW COLUMNS IN table;
+  // SHOW TBLPROPERTIES table;
+  // SHOW FUNCTIONS;
+  // SHOW FUNCTIONS mydb.func1;
+  // SHOW FUNCTIONS func1;
+  // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
+  protected def show: Rule1[LogicalPlan] = rule {
+    SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
+        ((ident: Any, pat: Any) =>
+          ShowTablesCommand(ident.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
+    SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
+      ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
+    SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
+        ((table: TableIdentifier, db: Any) =>
+          ShowColumnsCommand(db.asInstanceOf[Option[String]], table)) |
+    SHOW ~ TBLPROPERTIES ~ tableIdentifier ~ ('(' ~ ws ~ optionKey ~ ')' ~ ws).? ~>
+        ((table: TableIdentifier, propertyKey: Any) =>
+          ShowTablePropertiesCommand(table, propertyKey.asInstanceOf[Option[String]])) |
+    SHOW ~ MEMBERS ~> (() => {
+      val newParser = newInstance()
+      val servers = if (ClientSharedUtils.isThriftDefault) "THRIFTSERVERS" else "NETSERVERS"
+      newParser.parseSQL(
+        s"SELECT ID, HOST, KIND, STATUS, $servers, SERVERGROUPS FROM SYS.MEMBERS",
+        newParser.select.run())
+    }) |
+    SHOW ~ strictIdentifier.? ~ FUNCTIONS ~ (LIKE.? ~
+        (functionIdentifier | stringLiteral)).? ~> { (id: Any, nameOrPat: Any) =>
+      val (user, system) = id.asInstanceOf[Option[String]]
+          .map(_.toLowerCase) match {
+        case None | Some("all") => (true, true)
+        case Some("system") => (false, true)
+        case Some("user") => (true, false)
+        case Some(x) =>
+          throw new ParseException(s"SHOW $x FUNCTIONS not supported")
+      }
+      nameOrPat match {
+        case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
+          name.database, Some(name.funcName), user, system)
+        case Some(pat: String) => ShowFunctionsCommand(
+          None, Some(pat), user, system)
+        case None => ShowFunctionsCommand(None, None, user, system)
+        case _ => throw new ParseException(
+          s"SHOW FUNCTIONS $nameOrPat unexpected")
+      }
+    } |
+    SHOW ~ CREATE ~ TABLE ~ tableIdentifier ~> ShowCreateTableCommand
+  }
+
+  protected final def explain: Rule1[LogicalPlan] = rule {
+    EXPLAIN ~ (EXTENDED ~ push(true) | CODEGEN ~ push(false)).? ~ start ~> ((flagVal: Any,
+        plan: LogicalPlan) => plan match {
+      case _: DescribeTableCommand => ExplainCommand(OneRowRelation)
+      case _ =>
+        val flag = flagVal.asInstanceOf[Option[Boolean]]
+        // ensure plan is sent back as CLOB for large plans especially with CODEGEN
+        queryHints.put(QueryHint.ColumnsAsClob.toString, "*")
+        ExplainCommand(plan, extended = flag.isDefined && flag.get,
+          codegen = flag.isDefined && !flag.get)
+    })
   }
 
   private var tokenize = false
@@ -1131,8 +1213,8 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | set | reset | cache | uncache | desc |
-            deployPackages))
+        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
+            deployPackages | explain))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],

@@ -1,11 +1,11 @@
 # Setting up Cluster on Kubernetes
-Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes. This feature is currently available on an experimental basis. We do NOT recommend deploying production SnappyData clusters on Kubernetes, yet. 
+Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes.
 
 The following sections are included in this topic:
 
 *	[Prerequisites](#prerequisites)
 
-*	[Deploying SnappyData Chart in Kubernetes](#deploykubernetes)
+*	[Deploying SnappyData Chart on Kubernetes](#deploykubernetes)
 
 *	[Interacting with SnappyData Cluster on Kubernetes](#interactkubernetes)
 

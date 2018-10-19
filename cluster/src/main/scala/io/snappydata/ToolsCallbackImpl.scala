@@ -32,6 +32,7 @@ import io.snappydata.impl.LeadImpl
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.ui.SQLTab
+import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext}
@@ -52,6 +53,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           if (!sc.isLocal) {
             new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
           }
+          SnappyHiveThriftServer2.attachUI()
           new SnappyDashboardTab(ui)
           // Set security handlers
           ui.getHandlers.foreach { h =>
@@ -67,11 +69,10 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           if (!sc.isLocal) {
             new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
           }
+          SnappyHiveThriftServer2.attachUI()
           new SnappyDashboardTab(ui)
       }
     })
-
-
   }
 
   override def removeAddedJar(sc: SparkContext, jarName: String): Unit =

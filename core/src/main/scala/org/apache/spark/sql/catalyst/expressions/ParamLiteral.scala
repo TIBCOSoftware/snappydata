@@ -20,8 +20,7 @@ package org.apache.spark.sql.catalyst.expressions
 import java.util.concurrent.ConcurrentHashMap
 import javax.xml.bind.DatatypeConverter
 
-import scala.collection.mutable.{Map, HashMap}
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
@@ -44,8 +43,7 @@ case class TermValues(literalValueRef : String, isNull : String, valueTerm : Str
 // A literal that can change across multiple query execution.
 trait DynamicReplacableConstant extends Expression {
 
-  @transient private lazy val termMap :
-    Map[CodegenContext, TermValues] = new HashMap[CodegenContext, TermValues]
+  @transient private lazy val termMap = new mutable.HashMap[CodegenContext, TermValues]
 
   def value: Any
 
@@ -342,8 +340,7 @@ object TokenLiteral {
 trait ParamLiteralHolder {
 
   @transient
-  private final val parameterizedConstants: ArrayBuffer[ParamLiteral] =
-    new ArrayBuffer[ParamLiteral](4)
+  private final val parameterizedConstants = new mutable.ArrayBuffer[ParamLiteral](4)
   @transient
   protected final var paramListId = 0
 

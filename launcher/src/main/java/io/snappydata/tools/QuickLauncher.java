@@ -32,6 +32,7 @@ import java.util.Properties;
 import com.gemstone.gemfire.internal.cache.Status;
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
 import com.gemstone.gemfire.internal.shared.LauncherBase;
+import com.sun.jna.Platform;
 
 class QuickLauncher extends LauncherBase {
 
@@ -124,6 +125,16 @@ class QuickLauncher extends LauncherBase {
     // add java path to command-line first
     commandLine.add(System.getProperty("java.home") + "/bin/java");
     commandLine.add("-server");
+    // https://github.com/airlift/jvmkill is added to libgemfirexd.so
+    // adding agentpath helps kill jvm in case of OOM. kill -9 is not
+    // used as it fails in certain cases
+    if (Platform.isLinux()) {
+      if (Platform.is64Bit()) {
+        commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd64.so");
+      } else {
+        commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd.so");
+      }
+    }
     // get the startup options and command-line arguments (JVM arguments etc)
     HashMap<String, Object> options = getStartOptions(args, snappyHome, commandLine, env);
 
@@ -297,7 +308,7 @@ class QuickLauncher extends LauncherBase {
     final int numArgs = args.length;
     final LinkedHashMap<String, Object> options = new LinkedHashMap<>(numArgs);
     final ArrayList<String> vmArgs = new ArrayList<>(2);
-    boolean hostData = true;
+    boolean hostData = !this.isLocator;
 
     // skip first two arguments for node type and action
     for (int i = 2; i < numArgs; i++) {

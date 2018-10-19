@@ -81,6 +81,7 @@ allprojects {
     options.compilerArgs << '-XDignore.symbol.file'
     options.fork = true
     options.forkOptions.javaHome = file(System.properties['java.home'])
+    options.forkOptions.jvmArgs = [ '-J-Xmx2g', '-J-Xms2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
   }
   tasks.withType(ScalaCompile) {
     // scalaCompileOptions.optimize = true
@@ -108,6 +109,8 @@ allprojects {
     sparkVersion = '2.1.1'
     snappySparkVersion = '2.1.1.3'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
+    sparkCurrentVersion = '2.3.2'
+    sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
@@ -141,6 +144,10 @@ allprojects {
     commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
     sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
     buildIdPrefix = System.env.USER + ' '
+
+    sparkDistDir = "${project.gradle.gradleUserHomeDir}/sparkDist"
+    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
   if (!buildRoot.isEmpty()) {
@@ -152,12 +159,15 @@ allprojects {
   if (rootProject.hasProperty('enablePublish')) {
     buildIdPrefix = "${vendorName} "
   }
+  if (rootProject.hasProperty('sparkDistDir')) {
+    sparkDistDir = rootProject.property('sparkDistDir')
+    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
+  }
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
     snappyProductDir = "${rootProject.buildDir}/snappy"
-    sparkDistDir = "${rootProject.projectDir}/dist"
-    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
   }
 }
 
@@ -236,6 +246,7 @@ task cleanDUnit { doLast {
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanSecurityDUnit { doLast {
   String workingDir = "${testResultsBase}/dunit-security"
@@ -244,6 +255,7 @@ task cleanSecurityDUnit { doLast {
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanAllReports { doLast {
   String workingDir = "${testResultsBase}/combined-reports"
@@ -268,7 +280,7 @@ subprojects {
       args = params.split(',') as List
     }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs '-Xmx2g'
+    jvmArgs '-Xmx2g', '-Xms2g'
   }
 
   task scalaTest(type: Test) {
@@ -508,6 +520,7 @@ subprojects {
 
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
+          'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
@@ -721,6 +734,7 @@ task product(type: Zip) {
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
   dependsOn ':snappy-launcher:jar'
+  dependsOn ':jdbcJar'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
@@ -881,6 +895,7 @@ task product(type: Zip) {
         copy {
           from jdbcConnectorProject.jar.destinationDir
           into "${snappyProductDir}/connectors"
+          include "*.jar"
         }
       }
       if (hasGemFireConnectorProject) {
@@ -931,11 +946,11 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
-    def clientProject = project(':snappy-store:snappydata-store-client')
+    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
     copy {
-      from clientProject.shadowJar.destinationDir
+      from jdbcProject.shadowJar.destinationDir
       into "${snappyProductDir}/connectors"
-      include clientProject.shadowJar.archiveName
+      include jdbcProject.shadowJar.archiveName
     }
   }
 }
@@ -1052,28 +1067,34 @@ task distDeb {
   dependsOn buildDeb
 }
 
+task jdbcJar {
+  dependsOn ":snappy-jdbc_${scalaBinaryVersion}:shadowJar"
+
+  doLast {
+    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
+    String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
+    // copy the snappy-jdbc shadow jar into distributions
+    copy {
+      from jdbcProject.shadowJar.destinationDir
+      into "${rootProject.buildDir}/distributions"
+      include jdbcProject.shadowJar.archiveName
+      rename { filename -> jdbcName }
+    }
+  }
+}
+
 task copyShadowJars {
-  dependsOn ':snappy-store:snappydata-store-client:shadowJar'
+  dependsOn jdbcJar
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
-    // copy the snappy-core shadow jar into distributions
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
       include coreProject.shadowJar.archiveName
       rename { filename -> coreName }
-    }
-    if (new File(rootDir, 'store/build.gradle').exists()) {
-      // copy the JDBC client jar separately into distributions
-      def clientProject = project(':snappy-store:snappydata-store-client')
-      copy {
-        from clientProject.shadowJar.destinationDir
-        into "${rootProject.buildDir}/distributions"
-        include clientProject.shadowJar.archiveName
-      }
     }
   }
 }

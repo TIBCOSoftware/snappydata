@@ -37,6 +37,10 @@ object QueryExecutor {
     planFileStream.close()
   }
 
+  def setRandomSeed(randomSeed : Integer): Unit ={
+    TPCH_Queries.setRandomSeed(randomSeed)
+  }
+
   def execute_statement(queryNumber: String, isResultCollection: Boolean, stmt: PreparedStatement,
       warmup: Integer, runsForAverage: Integer, avgPrintStream: PrintStream = null): Unit = {
 

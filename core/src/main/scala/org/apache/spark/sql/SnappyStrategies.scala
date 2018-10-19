@@ -18,14 +18,14 @@ package org.apache.spark.sql
 
 import scala.util.control.NonFatal
 
-import io.snappydata.Property
+import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -37,7 +37,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, SQLConf}
+import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, LogicalPlanWithHints, SQLConf}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -75,16 +75,17 @@ private[sql] trait SnappyStrategies {
   }
 
   object HashJoinStrategies extends Strategy with JoinQueryPlanning {
+
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled || session.disableHashJoin) {
       Nil
     } else {
       plan match {
         case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right) =>
           // check for hash join with replicated table first
-          if (canBuildRight(joinType) && canLocalJoin(right)) {
+          if (canBuildRight(joinType) && allowsReplicatedJoin(right)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildRight, replicatedTableJoin = true)
-          } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
+          } else if (canBuildLeft(joinType) && allowsReplicatedJoin(left)) {
             makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
               joinType, joins.BuildLeft, replicatedTableJoin = true)
           }
@@ -258,37 +259,66 @@ private[sql] object JoinStrategy {
   }
 
   /**
+   * Check for joinType query hint. A return value of Some(true) indicates that passed
+   * joinType was specified, Some(false) means some other joinType was specified and
+   * a value of None means that no joinType hint was found so fall-back to auto mode.
+   */
+  private def checkJoinHint(plan: LogicalPlan, joinType: String): Option[Boolean] = plan match {
+    case l: LogicalPlanWithHints => l.hints.get(QueryHint.JoinType.toString) match {
+      case Some(v) =>
+        val specifiedJoinType = v.toLowerCase()
+        if (Constant.ALLOWED_JOIN_TYPE_HINTS.contains(specifiedJoinType)) {
+          Some(specifiedJoinType == joinType)
+        } else {
+          throw new ParseException(s"Unknown joinType hint '$v'. " +
+              s"Expected one of ${Constant.ALLOWED_JOIN_TYPE_HINTS}")
+        }
+      case None => None
+    }
+    case _: BroadcastHint => Some(joinType eq Constant.JOIN_TYPE_BROADCAST)
+    case _: Filter | _: Project | _: LocalLimit =>
+      checkJoinHint(plan.asInstanceOf[UnaryNode].child, joinType)
+    case _ => None
+  }
+
+  /**
    * Matches a plan whose output should be small enough to be used in broadcast join.
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.isBroadcastable ||
-        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+    checkJoinHint(plan, Constant.JOIN_TYPE_BROADCAST) match {
+      case None => plan.statistics.isBroadcastable ||
+          plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+      case Some(v) => v
+    }
   }
 
   /**
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
-      Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
+    checkJoinHint(plan, Constant.JOIN_TYPE_HASH) match {
+      case None => plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
+        Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
+      case Some(v) => v
+    }
   }
 
-  def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
+  def isReplicatedJoin(plan: LogicalPlan): Boolean = plan match {
     case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
-      (canBuildRight(joinType) && canLocalJoin(right)) ||
-          (canBuildLeft(joinType) && canLocalJoin(left))
+      (canBuildRight(joinType) && allowsReplicatedJoin(right)) ||
+          (canBuildLeft(joinType) && allowsReplicatedJoin(left))
     case _ => false
   }
 
-  def canLocalJoin(plan: LogicalPlan): Boolean = {
+  def allowsReplicatedJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
         case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
-        case Join(left, right, _, _) =>
-          // If join is a result of join of replicated tables, this
-          // join result should also be a local join with any other table
-          canLocalJoin(left) && canLocalJoin(right)
-        case node => if (node.children.size == 1) canLocalJoin(node.children.head) else false
+        case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
+        case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
+          allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
+              (canBuildLeft(joinType) || canBuildRight(joinType))
+        case _ => false
       }
       case _ => false
     }
@@ -603,6 +633,16 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
     }
 
     finalAndCompleteAggregate :: Nil
+  }
+}
+
+/**
+ * Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
+ */
+object OptimizeSortPlans extends Rule[SparkPlan] {
+  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
+    case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
+      join.copy(right = SnappySortExec(sort, child))
   }
 }
 
