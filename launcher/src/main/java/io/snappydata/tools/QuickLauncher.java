@@ -134,6 +134,12 @@ class QuickLauncher extends LauncherBase {
       } else {
         commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd.so");
       }
+    }else if(Platform.isMac()){
+      if (Platform.is64Bit()) {
+        commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd64.dylib");
+      } else {
+        commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd.dylib");
+      }
     }
     // get the startup options and command-line arguments (JVM arguments etc)
     HashMap<String, Object> options = getStartOptions(args, snappyHome, commandLine, env);
