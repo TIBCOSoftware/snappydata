@@ -20,7 +20,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.typesafe.config.Config
 import org.apache.spark.sql._
 
-class deployPkgXMLJob extends SnappySQLJob{
+class DeployPkgXMLJob extends SnappySQLJob{
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
 
     val xmlFilePath: String = jobConfig.getString("xmlFileLocation")
