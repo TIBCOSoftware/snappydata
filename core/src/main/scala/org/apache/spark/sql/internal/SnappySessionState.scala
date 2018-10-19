@@ -1536,4 +1536,7 @@ class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
     case 0 => child
     case 1 => hints
   }
+
+  override def simpleString: String =
+    s"LogicalPlanWithHints[hints = $hints; child = ${child.simpleString}]"
 }
