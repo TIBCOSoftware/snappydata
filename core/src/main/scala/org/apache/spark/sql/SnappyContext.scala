@@ -657,7 +657,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * Run SQL string without any plan caching.
    */
   def sqlUncached(sqlText: String): DataFrame =
-    snappySession.sqlUncached(sqlText)
+    snappySession.sql(sqlText)
 
   /**
     * Insert one or more [[org.apache.spark.sql.Row]] into an existing table

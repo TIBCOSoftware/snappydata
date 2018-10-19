@@ -171,7 +171,7 @@ class SnappyStreamingContext protected[spark](
   }
 
   def sql(sqlText: String): DataFrame = {
-    snappySession.sqlUncached(sqlText)
+    snappySession.sql(sqlText)
   }
 
   /**
