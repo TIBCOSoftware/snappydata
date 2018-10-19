@@ -335,13 +335,11 @@ abstract class SnappyDDLParser(session: SparkSession)
     stringLiteral ~> ((s: String) => Option(s)) |
     numericLiteral ~> ((s: String) => Option(s)) |
     booleanLiteral ~> ((b: Boolean) => Option(b.toString))
-//        NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
   protected final def defaultVal: Rule1[Option[String]] = rule {
-    DEFAULT ~ defaultLiteral ~ ws  ~> ((value: Any) =>
-      value match {
-        case Some(v) => value.asInstanceOf[Option[String]]
+    (DEFAULT ~ defaultLiteral ~ ws).?  ~> ((value: Any) => value match {
+        case Some(v) => v.asInstanceOf[Option[String]]
         case None => None
       })
   }
