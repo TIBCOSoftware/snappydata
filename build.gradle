@@ -1120,7 +1120,7 @@ task distProduct {
 }
 
 def copyTestsCommonResources(def bdir) {
-  String outdir = "${bdir}/resources/test"
+  String outdir = "${bdir}/classes/test"
   file(outdir).mkdirs()
 
   copy {
