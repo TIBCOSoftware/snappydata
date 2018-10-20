@@ -153,7 +153,7 @@ allprojects {
   if (!buildRoot.isEmpty()) {
     buildDir = new File(buildRoot, 'scala-' + scalaBinaryVersion + '/' +  project.path.replace(':', '/'))
   } else {
-    // default output directory like in sbt/maven
+    // default output directory suffix like in sbt/maven
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
   }
   if (rootProject.hasProperty('enablePublish')) {
@@ -168,6 +168,14 @@ allprojects {
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
     snappyProductDir = "${rootProject.buildDir}/snappy"
+  }
+
+  // force same output directory for IDEA and gradle
+  idea {
+    module {
+      outputDir file("${project.buildDir}/classes/main")
+      testOutputDir file("${project.buildDir}/classes/test")
+    }
   }
 }
 
@@ -1107,8 +1115,7 @@ task distInstallers {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip
-  dependsOn distInstallers
+  dependsOn product, distTar, distZip dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
@@ -1133,6 +1140,24 @@ task copyResourcesAll { doLast {
 task generateSources {
   dependsOn ':snappy-spark:generateSources', ':snappy-store:generateSources'
   dependsOn copyResourcesAll
+  // copy all resource files into build classes path because new versions of IDEA
+  // do not include separate resources path in CLASSPATH if output path has been customized
+  getSubprojects().collect { proj ->
+    String resourcesDir = "${proj.projectDir}/src/main/resources"
+    if (file(resourcesDir).exists()) {
+      copy {
+        from resourcesDir
+        into "${proj.buildDir}/classes/main"
+      }
+    }
+    resourcesDir = "${proj.projectDir}/src/test/resources"
+    if (file(resourcesDir).exists()) {
+      copy {
+        from resourcesDir
+        into "${proj.buildDir}/classes/test"
+      }
+    }
+  }
 }
 
 task cleanAll {

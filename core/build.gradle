@@ -28,7 +28,7 @@ sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
                                   'src/dunit/java', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
-sourceSets.test.java.srcDirs = [ ]
+sourceSets.test.java.srcDirs = []
 
 def osName = org.gradle.internal.os.OperatingSystem.current()
 

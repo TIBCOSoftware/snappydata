@@ -141,7 +141,7 @@ dependencies {
 
 // Creates the version properties file and writes it to the resources dir
 task createVersionPropertiesFile(dependsOn: 'processResources') {
-  def propertiesDir = file("${buildDir}/resources/main/io/snappydata")
+  def propertiesDir = file("${buildDir}/classes/main/io/snappydata")
   outputs.file "${propertiesDir}/SnappyDataVersion.properties"
   inputs.dir compileJava.destinationDir
 
