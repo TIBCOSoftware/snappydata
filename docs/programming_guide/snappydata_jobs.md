@@ -145,7 +145,7 @@ compile('io.snappydata:snappydata-cluster_2.11:1.0.2') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-hive-thriftserver_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-streaming-kafka-0.8_2.11')
+        exclude(group: 'io.snappydata',module: 'snappy-spark-streaming-kafka-0.10_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-repl_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-sql_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-mllib_2.11')
