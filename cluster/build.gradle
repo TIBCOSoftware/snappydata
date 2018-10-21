@@ -136,6 +136,7 @@ dependencies {
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
     testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
   }
+  testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -174,10 +175,6 @@ if (rootProject.hasProperty('enablePublish')) {
   artifacts {
     archives packageScalaDocs, packageSources
   }
-}
-
-testClasses.doLast {
-  copyTestsCommonResources(buildDir)
 }
 
 def copyDirs(def srcDir, def destDir) {
