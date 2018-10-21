@@ -2196,9 +2196,7 @@ public class SnappyTest implements Serializable {
           userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
-<<<<<<< HEAD
             command = setCDCSparkAppCmds(userAppArgs,command,commonArgs,snappyJobScript,userJob,masterHost,masterPort,logFile);
-=======
           String appName = SnappyCDCPrms.getAppName();
           if (appName.equals("CDCIngestionApp2")) {
             int BBfinalStart2 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP2");
