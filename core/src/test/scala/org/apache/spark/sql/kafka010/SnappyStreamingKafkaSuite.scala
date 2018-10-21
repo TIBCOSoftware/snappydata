@@ -122,7 +122,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
       allReceived.addAll(Arrays.asList(rdd.map(r => (r.key, r.value)).collect(): _*))
     }
     ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(allReceived.size === expectedTotal,
@@ -166,7 +166,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
         " window (duration 1 seconds, slide 1 seconds)")
         .foreachDataFrame(_.write.insertInto("snappyTable"))
     ssnc.start
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
     kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
@@ -216,7 +216,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
         " window (duration 1 seconds, slide 1 seconds)")
         .foreachDataFrame(_.write.insertInto("snappyTable"))
     ssnc.start
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(101 == session.sql("select * from snappyTable").count)
