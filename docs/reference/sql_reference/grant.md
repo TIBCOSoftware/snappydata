@@ -26,7 +26,6 @@ The following types of permissions can be granted:
 -   Insert/Delete rows from a table.
 -   Select/Update data on a table or subset of columns in a table.
 -   Create a foreign key reference to the named table or to a subset of columns from a table.
--   Define trigger on a table.
 -   Run a specified function or procedure.
 
 <a id="privilege-type"></a>
@@ -52,7 +51,7 @@ table-privilege {, table-privilege }*
 
 ```pre
 ALTER | DELETE | INSERT | REFERENCES [column-list] | SELECT [column-list] |
-TRIGGER | UPDATE [ column-list ]
+ UPDATE [ column-list ]
 ```
 
 Use the [ALTER](alter-table.md) privilege to grant permission to the command on the specified table.
@@ -65,7 +64,6 @@ Use the [INSERT](insert.md) privilege type to grant permission to insert rows in
 
 Use the [SELECT](select.md) privilege type to grant permission to perform SELECT statements on a table or view. If a column list is specified with the SELECT privilege, the permission is valid on only those columns. If no column list is specified, then the privilege is valid on all of the columns in the table.
 
-<!--Use the TRIGGER privilege type to grant permission to create a trigger on the specified table.-->
 
 Use the [UPDATE](update.md) privilege type to grant permission to use the UPDATE statement on the specified table. If a column list is specified, the permission applies only to the specified columns. To update a row using a statement that includes a WHERE clause, you must have [SELECT](select.md) permission on the columns in the row that you want to update.
 
@@ -103,10 +101,10 @@ To grant the SELECT privilege on table "t" to the authorization IDs "sam" and "b
 GRANT SELECT ON TABLE t TO sam,bob;
 ```
 
-To grant the UPDATE and TRIGGER privileges on table "t" to the authorization IDs "john" and "smith:"
+To grant the UPDATE privileges on table "t" to the authorization IDs "john" and "smith:"
 
 ```pre
-GRANT UPDATE, TRIGGER ON TABLE t TO john,smith;
+GRANT UPDATE ON TABLE t TO john,smith;
 ```
 
 To grant ALTER TABLE privileges on table "t" to the authorization ID "adam:"

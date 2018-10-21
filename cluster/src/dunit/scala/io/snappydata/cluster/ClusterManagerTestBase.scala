@@ -68,6 +68,7 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("spark.memory.manager",
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "95")
+  bootProps.setProperty("gemfirexd.max-lock-wait", "60000")
 
   // reduce startup time
   // sysProps.setProperty("p2p.discoveryTimeout", "1000")
@@ -302,8 +303,8 @@ object ClusterManagerTestBase extends Logging {
     if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
-      TestUtils.dropAllTables(snc)
-      TestUtils.dropAllFunctions(snc)
+      TestUtils.dropAllTables(snc.snappySession)
+      TestUtils.dropAllFunctions(snc.snappySession)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
