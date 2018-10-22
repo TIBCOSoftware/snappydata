@@ -145,7 +145,6 @@ scalaTest {
 }
 
 testClasses.doLast {
-  copyTestsCommonResources(buildDir)
   if (new File(rootDir, 'store/build.gradle').exists()) {
     copy {
       from ("src/test/java") {
