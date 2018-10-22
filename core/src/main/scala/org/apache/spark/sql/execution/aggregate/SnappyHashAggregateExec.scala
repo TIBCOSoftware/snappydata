@@ -46,7 +46,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.{SnappySession, collection}
+import org.apache.spark.sql.{SnappySession, SparkInternals, SparkSupport, collection}
 import org.apache.spark.util.Utils
 
 /**
@@ -114,15 +114,6 @@ case class SnappyHashAggregateExec(
             .map(_.toAttribute)) ++
         AttributeSet(aggregateBufferAttributes)
 
-  private def getAliases(expressions: Seq[Expression],
-      existing: Seq[Seq[Attribute]]): Seq[Seq[Attribute]] = {
-    expressions.zipWithIndex.map { case (e, i) =>
-      resultExpressions.collect {
-        case a@Alias(c, _) if c.semanticEquals(e) => a.toAttribute
-      } ++ (if (existing.isEmpty) Nil else existing(i))
-    }
-  }
-
   override def outputPartitioning: Partitioning = {
     child.outputPartitioning
   }
@@ -145,29 +136,23 @@ case class SnappyHashAggregateExec(
     case g: GroupAggregate => g.aggBufferAttributesForGroup
     case sum: Sum if !sum.child.nullable =>
       val sumAttr = sum.aggBufferAttributes.head
-      sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier,
-        sumAttr.isGenerated) :: Nil
+      internals.copyAttribute(sumAttr)(nullable = false) :: Nil
     case avg: Average if !avg.child.nullable =>
       val sumAttr = avg.aggBufferAttributes.head
-      sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier,
-        sumAttr.isGenerated) :: avg.aggBufferAttributes(1) :: Nil
+      internals.copyAttribute(sumAttr)(nullable = false) :: avg.aggBufferAttributes(1) :: Nil
     case max: Max if !max.child.nullable =>
       val maxAttr = max.aggBufferAttributes.head
-      maxAttr.copy(nullable = false)(maxAttr.exprId, maxAttr.qualifier,
-        maxAttr.isGenerated) :: Nil
+      internals.copyAttribute(maxAttr)(nullable = false) :: Nil
     case min: Min if !min.child.nullable =>
       val minAttr = min.aggBufferAttributes.head
-      minAttr.copy(nullable = false)(minAttr.exprId, minAttr.qualifier,
-        minAttr.isGenerated) :: Nil
+      internals.copyAttribute(minAttr)(nullable = false) :: Nil
     case last: Last if !last.child.nullable =>
       val lastAttr = last.aggBufferAttributes.head
       val tail = if (last.aggBufferAttributes.length == 2) {
         val valueSetAttr = last.aggBufferAttributes(1)
-        valueSetAttr.copy(nullable = false)(valueSetAttr.exprId,
-          valueSetAttr.qualifier, valueSetAttr.isGenerated) :: Nil
+        internals.copyAttribute(valueSetAttr)(nullable = false) :: Nil
       } else Nil
-      lastAttr.copy(nullable = false)(lastAttr.exprId, lastAttr.qualifier,
-        lastAttr.isGenerated) :: tail
+      internals.copyAttribute(lastAttr)(nullable = false) :: tail
     case _ => aggregate.aggBufferAttributes
   }
 
@@ -275,18 +260,15 @@ case class SnappyHashAggregateExec(
   @transient private var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
+    val initAgg = internals.addClassField(ctx, "boolean", "initAgg", v => s"$v = false;")
 
     // generate variables for aggregation buffer
     val functions = aggregateExpressions.map(_.aggregateFunction
         .asInstanceOf[DeclarativeAggregate])
     val initExpr = functions.flatMap(f => f.initialValues)
     bufVars = initExpr.map { e =>
-      val isNull = ctx.freshName("bufIsNull")
-      val value = ctx.freshName("bufValue")
-      ctx.addMutableState("boolean", isNull, "")
-      ctx.addMutableState(ctx.javaType(e.dataType), value, "")
+      val isNull = internals.addClassField(ctx, "boolean", "bufIsNull")
+      val value = internals.addClassField(ctx, ctx.javaType(e.dataType), "bufValue")
       // The initial expression should not access any column
       val ev = e.genCode(ctx)
       val initVars =
@@ -478,22 +460,19 @@ case class SnappyHashAggregateExec(
   }
 
   private def doProduceWithKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
+    val initAgg = internals.addClassField(ctx, "boolean", "initAgg", v => s"$v = false;")
 
     // Create a name for iterator from HashMap
-    val iterTerm = ctx.freshName("mapIter")
     val iter = ctx.freshName("mapIter")
     val iterObj = ctx.freshName("iterObj")
     val iterClass = "java.util.Iterator"
-    ctx.addMutableState(iterClass, iterTerm, "")
+    val iterTerm = internals.addClassField(ctx, iterClass, "mapIter")
 
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
-    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
+    hashMapTerm = internals.addClassField(ctx, hashSetClassName, "hashMap")
 
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
@@ -535,7 +514,7 @@ case class SnappyHashAggregateExec(
 
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
-    ctx.copyResult = false
+    internals.resetCopyResult(ctx)
 
     val aggTime = metricTerm(ctx, "aggTime")
     val beforeAgg = ctx.freshName("beforeAgg")

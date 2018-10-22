@@ -387,10 +387,10 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   val TABLE_PARTITION_PROVIDER_FILESYSTEM: String = "filesystem"
 
   /**
-    * Returns the fully qualified name used in table properties for a particular column stat.
-    * For example, for column "mycol", and "min" stat, this should return
-    * "spark.sql.statistics.colStats.mycol.min".
-    */
+   * Returns the fully qualified name used in table properties for a particular column stat.
+   * For example, for column "mycol", and "min" stat, this should return
+   * "spark.sql.statistics.colStats.mycol.min".
+   */
   private def columnStatKeyPropName(columnName: String, statKey: String): String = {
     STATISTICS_COL_STATS_PREFIX + columnName + "." + statKey
   }
@@ -424,12 +424,12 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
   }
 
   /**
-    * Restores table metadata from the table properties if it's a datasouce table. This method is
-    * kind of a opposite version of [[createTable]].
-    *
-    * It reads table schema, provider, partition column names and bucket specification from table
-    * properties, and filter out these special entries from table properties.
-    */
+   * Restores table metadata from the table properties if it's a datasouce table. This method is
+   * kind of a opposite version of [[createTable]].
+   *
+   * It reads table schema, provider, partition column names and bucket specification from table
+   * properties, and filter out these special entries from table properties.
+   */
   private def restoreTableMetadata(inputTable: CatalogTable): CatalogTable = {
     var table = inputTable
     // construct Spark's statistics from information in Hive metastore

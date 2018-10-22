@@ -17,12 +17,12 @@
 package org.apache.spark.sql.aqp
 
 
-import io.snappydata.SnappyDataFunctions.usageStr
+import io.snappydata.DSID
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.ExpressionInfo
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow}
+import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
 import org.apache.spark.sql.policy.CurrentUser
@@ -30,7 +30,7 @@ import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 
-class SnappyContextFunctions {
+class SnappyContextFunctions extends SparkSupport {
 
   def clear(): Unit = {}
 
@@ -38,20 +38,29 @@ class SnappyContextFunctions {
 
   def postRelationCreation(relation: Option[BaseRelation], session: SnappySession): Unit = {}
 
+  protected def registerNArgFunction(session: SnappySession, numArgs: Int, name: String,
+      fnClass: Class[_], usage: String, function: Seq[Expression] => Expression): Unit = {
+    val info = new ExpressionInfo(fnClass.getCanonicalName, null, name, usage, "")
+    internals.registerFunction(session, FunctionIdentifier(name, None), info, exprs => {
+      if (exprs.length != numArgs) {
+        throw new AnalysisException(s"Incorrect number of argument(s) = ${exprs.length} " +
+            s"passed to function $name expecting $numArgs argument(s)")
+      }
+      function(exprs)
+    })
+  }
+
   def registerSnappyFunctions(session: SnappySession): Unit = {
-    val registry = session.sessionState.functionRegistry
-    val usageStr = "_FUNC_() - Returns the User's UserName who is executing the " +
+    var usageStr: String = null
+
+    usageStr = "_FUNC_() - Returns the unique distributed member" +
+        " ID of the server from which the current row was fetched."
+    registerNArgFunction(session, 0, "DSID", classOf[DSID], usageStr, _ => DSID())
+
+    usageStr = "_FUNC_() - Returns the authenticated UserName of the user executing the " +
         "current SQL statement."
-    val info = new ExpressionInfo(CurrentUser.getClass.getCanonicalName, null,
-      "CURRENT_USER", usageStr, "")
-    registry.registerFunction("CURRENT_USER", info,
-      e => {
-        if (! e.isEmpty) {
-          throw new AnalysisException("Argument(s)  passed for zero arg function " +
-              s"CURRENT_USER")
-        }
-        CurrentUser()
-      })
+    registerNArgFunction(session, 0, "CURRENT_USER", classOf[CurrentUser],
+      usageStr, _ => CurrentUser())
   }
 
   def createTopK(session: SnappySession, tableName: String,

@@ -21,31 +21,42 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 
-import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.LeafExpression
-import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
-import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.types.{DataType, StringType}
+import org.apache.spark.sql.{SnappySession, SparkSession, SparkSupport}
 import org.apache.spark.unsafe.types.UTF8String
 
-case class CurrentUser() extends LeafExpression with CodegenFallback {
+case class CurrentUser() extends LeafExpression with SparkSupport {
+
   override def foldable: Boolean = true
+
   override def nullable: Boolean = false
 
   override def dataType: DataType = StringType
 
-  override def eval(input: InternalRow): Any = {
-   val snappySession = SparkSession.getActiveSession.getOrElse(
-     throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
+  override def prettyName: String = "CURRENT_USER"
+
+  private val userName: UTF8String = {
+    val snappySession = SparkSession.getActiveSession.getOrElse(
+      throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
     var owner = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
 
     owner = IdUtil.getUserAuthorizationId(
-        if (owner.isEmpty) Constant.DEFAULT_SCHEMA
+      if (owner.isEmpty) Constant.DEFAULT_SCHEMA
       else snappySession.sessionState.catalog.formatDatabaseName(owner))
 
     UTF8String.fromString(owner)
   }
 
-  override def prettyName: String = "current_user"
+  override def eval(input: InternalRow): Any = userName
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val userVar = internals.addClassField(ctx, "UTF8String", "currentUser",
+      varName => s"$varName = UTF8String.fromString($userName);")
+    ev.copy(code = "", isNull = "false", value = userVar)
+  }
 }
+
+case class IsLDAPGroupMember()

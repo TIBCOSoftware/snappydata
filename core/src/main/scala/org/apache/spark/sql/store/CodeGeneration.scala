@@ -28,7 +28,6 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStrea
 import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.metrics.source.CodegenMetrics
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen._
@@ -40,6 +39,7 @@ import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SparkSupport}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.{Logging, SparkEnv}
@@ -52,7 +52,7 @@ import org.apache.spark.{Logging, SparkEnv}
  * generation of code string itself only if not found in cache
  * (and using some other lookup key than the code string)
  */
-object CodeGeneration extends Logging {
+object CodeGeneration extends Logging with SparkSupport {
 
   override def logInfo(msg: => String): Unit = super.logInfo(msg)
 
@@ -162,12 +162,11 @@ object CodeGeneration extends Logging {
       case _: DecimalType =>
         s"$stmt.setBigDecimal(${col + 1}, ${ev.value}.toJavaBigDecimal());"
       case a: ArrayType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val arr = ctx.freshName("arr")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+        val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();")
         s"""
            |final ArrayData $arr = ${ev.value};
            |if ($arr instanceof $serArrayClass) {
@@ -182,12 +181,11 @@ object CodeGeneration extends Logging {
            |}
         """.stripMargin
       case m: MapType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val map = ctx.freshName("mapValue")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+        val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();")
         s"""
            |final MapData $map = ${ev.value};
            |if ($map instanceof $serMapClass) {
@@ -201,12 +199,11 @@ object CodeGeneration extends Logging {
            |}
         """.stripMargin
       case s: StructType =>
-        val encoderVar = ctx.freshName("encoderObj")
         val struct = ctx.freshName("structValue")
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
-        ctx.addMutableState(encoderClass, encoderVar,
-          s"$encoderVar = new $encoderClass();")
+        val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
+          v => s"$v = new $encoderClass();")
         s"""
            |final InternalRow $struct = ${ev.value};
            |if ($struct instanceof $serRowClass) {

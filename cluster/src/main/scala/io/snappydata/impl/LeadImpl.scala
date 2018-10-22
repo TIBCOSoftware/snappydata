@@ -154,7 +154,7 @@ class LeadImpl extends ServerImpl with Lead
     val initServices = Future {
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
-      conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
+      conf.setMaster(s"${Constant.JDBC_URL_PREFIX}$locator").
           setAppName("SnappyData").
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").

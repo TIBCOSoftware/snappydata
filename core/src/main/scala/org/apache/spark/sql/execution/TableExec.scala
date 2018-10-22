@@ -29,12 +29,12 @@ import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
+import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, SparkSupport, ThinClientConnectorMode}
 
 /**
  * Base class for bulk insert/mutation operations for column and row tables.
  */
-trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
+trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor with SparkSupport {
 
   def partitionColumns: Seq[String]
 
@@ -99,7 +99,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 
   override protected def doExecute(): RDD[InternalRow] = {
     // don't expect code generation to fail
-    WholeStageCodegenExec(this).execute()
+    internals.newWholeStagePlan(this).execute()
   }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {

@@ -26,7 +26,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -67,6 +66,7 @@ case class JDBCMutableRelation(
     with IndexableRelation
     with AlterableRelation
     with NativeTableRowLevelSecurityRelation
+    with SparkSupport
     with Logging {
 
   override val needConversion: Boolean = false
@@ -288,11 +288,11 @@ case class JDBCMutableRelation(
     // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
     sqlContext.sessionState.executePlan(
-      new Insert(
+      internals.newInsertPlanWithCountOutput(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
-        OverwriteOptions(overwrite),
+        overwrite,
         ifNotExists = false)).toRdd
   }
 

@@ -23,29 +23,20 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, ExpressionInfo, LeafExpression, Nondeterministic}
+import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, LeafExpression, Nondeterministic}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.{DataType, StringType}
-import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
+import org.apache.spark.sql.{SnappyContext, SparkSupport, ThinClientConnectorMode}
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
- * This will contain all the functions specific to snappydata
+ * Helper functions for execution in embedded as well as smart connector mode.
  */
 object SnappyDataFunctions {
-
-  val usageStr: String = "_FUNC_() - Returns the unique distributed member" +
-      " ID of the server containing the row."
-
-  def registerSnappyFunctions(functionRegistry: FunctionRegistry): Unit = {
-    val info = new ExpressionInfo(DSID.getClass.getCanonicalName, null, "DSID", usageStr, "")
-    functionRegistry.registerFunction("DSID", info, _ => DSID())
-  }
 
   lazy val defaultConnectionProps: ConnectionProperties = SnappyContext.getClusterMode(
     SnappyContext.globalSparkContext) match {
@@ -79,7 +70,7 @@ object SnappyDataFunctions {
  */
 @ExpressionDescription(
   usage = "_FUNC_() - Returns the dsid of the server containing the row.")
-case class DSID() extends LeafExpression with Nondeterministic {
+case class DSID() extends LeafExpression with Nondeterministic with SparkSupport {
 
   override def nullable: Boolean = false
 
@@ -99,8 +90,9 @@ case class DSID() extends LeafExpression with Nondeterministic {
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val connPropsRef = ctx.addReferenceObj("connProps", connectionProps,
       classOf[ConnectionProperties].getName)
-    ctx.addMutableState("UTF8String", ev.value, s"${ev.value} = UTF8String" +
-        s".fromString(io.snappydata.SnappyDataFunctions.getDSID($connPropsRef));")
-    ev.copy(code = "", isNull = "false")
+    val dsidVar = internals.addClassField(ctx, "UTF8String", "dsid",
+      varName => s"$varName = UTF8String.fromString(" +
+          s"io.snappydata.SnappyDataFunctions.getDSID($connPropsRef));")
+    ev.copy(code = "", isNull = "false", value = dsidVar)
   }
 }

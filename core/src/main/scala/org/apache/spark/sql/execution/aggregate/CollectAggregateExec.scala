@@ -19,13 +19,13 @@ package org.apache.spark.sql.execution.aggregate
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.CachedDataFrame
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
-import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, PlanLater, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, PlanLater, SparkPlan, UnaryExecNode}
 import org.apache.spark.sql.internal.SnappySessionState
+import org.apache.spark.sql.{CachedDataFrame, SparkSupport}
 
 /**
  * Special plan to collect top-level aggregation on driver itself and avoid
@@ -34,7 +34,7 @@ import org.apache.spark.sql.internal.SnappySessionState
 case class CollectAggregateExec(
     @transient basePlan: SnappyHashAggregateExec,
     child: SparkPlan,
-    override val output: Seq[Attribute]) extends UnaryExecNode {
+    override val output: Seq[Attribute]) extends UnaryExecNode with SparkSupport {
 
   override def nodeName: String = "CollectAggregate"
 
@@ -47,7 +47,7 @@ case class CollectAggregateExec(
     // temporarily switch producer to an InputAdapter for rows as normal
     // Iterator[UnsafeRow] which will be set explicitly in executeCollect()
     basePlan.childProducer = InputAdapter(child)
-    val (ctx, cleanedSource) = WholeStageCodegenExec(basePlan).doCodeGen()
+    val (ctx, cleanedSource) = internals.newWholeStagePlan(basePlan).doCodeGen()
     basePlan.childProducer = child
     (cleanedSource, ctx.references.toArray)
   }

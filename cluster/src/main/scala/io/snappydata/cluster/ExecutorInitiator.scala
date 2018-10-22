@@ -100,7 +100,7 @@ object ExecutorInitiator extends Logging {
         dm: InternalDistributedMember): Unit = lock.synchronized {
       driverURL = url
       driverDM = dm
-      SnappyContext.clearStaticArtifacts()
+      SnappyContext.clearStaticArtifacts(SnappyContext.globalSparkContext)
       lock.notifyAll()
     }
 

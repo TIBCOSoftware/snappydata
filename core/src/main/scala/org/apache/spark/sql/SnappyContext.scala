@@ -44,7 +44,6 @@ import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -845,7 +844,7 @@ object SnappyContext extends Logging {
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
-  private val builtinSources = new CaseInsensitiveMap(Map(
+  private lazy val builtinSources = SparkSupport.internals().createCaseInsensitiveMap(Map(
     ParserConsts.COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ParserConsts.ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> SAMPLE_SOURCE_CLASS,
@@ -1172,9 +1171,8 @@ object SnappyContext extends Logging {
         }
         ServiceUtils.invokeStopFabricServer(sc, props)
       }
-
       // clear static objects on the driver
-      clearStaticArtifacts()
+      clearStaticArtifacts(sc)
 
       contextLock.synchronized {
         _sharedState = null
@@ -1184,6 +1182,8 @@ object SnappyContext extends Logging {
         }
       }
       MemoryManagerCallback.resetMemoryManager()
+    } else {
+      SparkSupport.clear(sc)
     }
     contextLock.synchronized {
       _clusterMode = null
@@ -1194,12 +1194,12 @@ object SnappyContext extends Logging {
   }
 
   /** Cleanup static artifacts on this lead/executor. */
-  def clearStaticArtifacts(): Unit = {
+  def clearStaticArtifacts(context: SparkContext): Unit = {
     CachedDataFrame.clear()
     ConnectionPool.clear()
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
-    SparkSession.sqlListener.set(null)
+    SparkSupport.clear(context)
     ServiceUtils.clearStaticArtifacts()
   }
 

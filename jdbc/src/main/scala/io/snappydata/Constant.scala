@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.shared.SystemProperties
  * Constant names suggested per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
  *
- * we decided to use upper case with underscore word separator.
+ * SnappyData uses upper case with underscore word separator.
  */
 object Constant {
 
@@ -31,8 +31,6 @@ object Constant {
   val DEFAULT_THIN_CLIENT_URL = "jdbc:snappydata://"
 
   val POOLED_THIN_CLIENT_URL = "jdbc:snappydata:pool://"
-
-  val SNAPPY_URL_PREFIX = "snappydata://"
 
   val JDBC_URL_PREFIX = "snappydata://"
 
@@ -44,7 +42,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
+  val STORE_PROPERTY_PREFIX: String = SystemProperties.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
@@ -54,6 +52,8 @@ object Constant {
 
   val SPLIT_VIEW_TEXT_PROPERTY = "snappydata.view.text"
   val SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY = "snappydata.view.originalText"
+
+  val HIVE_TYPE_STRING = "HIVE_TYPE_STRING"
 
   val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
@@ -116,13 +116,6 @@ object Constant {
 
   val MAX_CHAR_SIZE = 254
 
-  // allowed values for QueryHint.JoinType
-  val JOIN_TYPE_BROADCAST = "broadcast"
-  val JOIN_TYPE_HASH = "hash"
-  val JOIN_TYPE_SORT = "sort"
-  val ALLOWED_JOIN_TYPE_HINTS: List[String] =
-    List(JOIN_TYPE_BROADCAST, JOIN_TYPE_HASH, JOIN_TYPE_SORT)
-
   /**
    * Limit the maximum number of rows in a column batch (applied before
    * ColumnBatchSize property).
@@ -135,7 +128,7 @@ object Constant {
   // speed and compression ratio having higher compression ration than LZ4.
   // But the JNI version means no warmup time which helps for short jobs.
   // Also LZF has no direct ByteBuffer API so is quite a bit slower for off-heap.
-  val DEFAULT_CODEC = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
+  val DEFAULT_CODEC: String = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
 
   // System property to tell the system whether the String type columns
   // should be considered as clob or not in JDBC/ODBC SQL queries
