@@ -58,6 +58,7 @@ object StringMessageProducer {
     brokers = brokers.replace("--", ":")
     // scalastyle:off println
     pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
+    pw.println(getCurrTimeAsString + s"Conflation enabled $isConflationTest")
     pw.flush()
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
@@ -100,6 +101,8 @@ extends Runnable {
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
+    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"Conflation " +
+        s"enabled ${StringMessageProducer.isConflationTest}")
     (startRange to (startRange + eventCount - 1)).foreach(i => {
       var id: Int = i
       val title: String = titleArr(random.nextInt(titleArr.length))
@@ -118,13 +121,11 @@ extends Runnable {
       }
       val row: String = s"$id,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob,$age," +
           s"$status,$email,$education,$occupation"
-      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row : $row")
       if (opType == 4) {
         eventType = random.nextInt(3)
       }
-
-      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"eventType : " +
-          s"$eventType")
+      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row with id " +
+          s": $id and eventType : $eventType")
       val data = new ProducerRecord[Long, String](topic, i, row + s",$eventType")
       if(hasDerby) {
         DerbyTestUtils.HydraTask_initialize
@@ -143,13 +144,10 @@ extends Runnable {
   def performOpInDerby(conn: Connection, row: String, eventType: Int): Unit = {
     var stmt: String = ""
     if (eventType == 0) { // insert
-      StringMessageProducer.pw.println("In insert")
       stmt = getInsertStmt(row)
     } else if (eventType == 1) { // update
-      StringMessageProducer.pw.println("In update")
       stmt = getUpdateStmt(row)
     } else if (eventType == 2) { // delete
-      StringMessageProducer.pw.println("In delete")
       stmt = getDeleteStmt(row)
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"derby stmt is " +
@@ -207,7 +205,6 @@ extends Runnable {
   def getDeleteStmt(row: String): String = {
     var stmt: String = ""
     val id: Int = (row.split(",") {0}).toInt
-    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"id : $id")
     stmt = "delete from persoon where ID = " + id
     stmt
   }
