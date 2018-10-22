@@ -29,6 +29,7 @@ import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
@@ -41,7 +42,7 @@ import org.apache.spark.unsafe.types.UTF8String
 case class TermValues(literalValueRef : String, isNull : String, valueTerm : String)
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
-trait DynamicReplacableConstant extends Expression {
+trait DynamicReplacableConstant extends Expression with SparkSupport {
 
   @transient private lazy val termMap = new mutable.HashMap[CodegenContext, TermValues]
 
@@ -124,7 +125,7 @@ trait DynamicReplacableConstant extends Expression {
         val memoryManagerClass = classOf[TaskMemoryManager].getName
         val memoryModeClass = classOf[MemoryMode].getName
         val consumerClass = classOf[DirectStringConsumer].getName
-        ctx.addMutableState(javaType, valueTerm,
+        internals.addClassField(ctx, javaType, valueTerm, _ =>
           s"""
              |if (($isNull = $valueRef.value() == null)) {
              |  $valueTerm = ${ctx.defaultValue(dataType)};
@@ -140,18 +141,18 @@ trait DynamicReplacableConstant extends Expression {
              |    }
              |  }
              |}
-          """.stripMargin)
+          """.stripMargin, forceInline = true, useFreshName = false)
         // indicate that code for valueTerm has already been generated
         null.asInstanceOf[String]
       case _ => ""
     }
-    ctx.addMutableState("boolean", isNull, "")
+    internals.addClassField(ctx, "boolean", isNull, forceInline = true, useFreshName = false)
     if (unbox ne null) {
-      ctx.addMutableState(javaType, valueTerm,
+      internals.addClassField(ctx, javaType, valueTerm, _ =>
         s"""
            |$isNull = $valueRef.value() == null;
            |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
-        """.stripMargin)
+        """.stripMargin, forceInline = true, useFreshName = false)
     }
     ev.copy(initCode, isNullLocal, valueLocal)
   }
@@ -449,7 +450,7 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
 
   override def toString: String = {
     def removeCast(expr: Expression): Expression = expr match {
-      case Cast(child, _) => removeCast(child)
+      case c: Cast => removeCast(c.child)
       case _ => expr
     }
     "DynExpr(" + removeCast(expr) + ")"
@@ -484,7 +485,7 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
  * change dynamically in executions.
  */
 case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
-    extends UnaryExpression with Predicate {
+    extends UnaryExpression with Predicate with SparkSupport {
 
   require((hset ne null) && hset.nonEmpty, "hset cannot be null or empty")
   // all expressions must be constant types
@@ -525,12 +526,10 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     val exprClass = classOf[Expression].getName
     val elements = new Array[AnyRef](hset.length)
     val childGen = child.genCode(ctx)
-    val hsetTerm = ctx.freshName("hset")
     val elementsTerm = ctx.freshName("elements")
     val idxTerm = ctx.freshName("idx")
     val idx = ctx.references.length
     ctx.references += elements
-    val hasNullTerm = ctx.freshName("hasNull")
 
     for (i <- hset.indices) {
       val e = hset(i)
@@ -541,16 +540,16 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
       elements(i) = v
     }
 
-    ctx.addMutableState("boolean", hasNullTerm, "")
-    ctx.addMutableState(setName, hsetTerm,
+    val hasNullTerm = internals.addClassField(ctx, "boolean", "hasNull")
+    val hsetTerm = internals.addClassField(ctx, setName, "hset", hsetVar =>
       s"""
          |Object[] $elementsTerm = (Object[])references[$idx];
-         |$hsetTerm = new $setName($elementsTerm.length, 0.7f, 1);
+         |$hsetVar = new $setName($elementsTerm.length, 0.7f, 1);
          |for (int $idxTerm = 0; $idxTerm < $elementsTerm.length; $idxTerm++) {
          |  Object e = $elementsTerm[$idxTerm];
          |  if (e instanceof $exprClass) e = (($exprClass)e).eval(null);
          |  if (e != null) {
-         |    $hsetTerm.put(e, e);
+         |    $hsetVar.put(e, e);
          |  } else if (!$hasNullTerm) {
          |    $hasNullTerm = true;
          |  }

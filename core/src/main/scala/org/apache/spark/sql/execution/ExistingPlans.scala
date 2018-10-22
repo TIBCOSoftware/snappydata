@@ -36,7 +36,7 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetri
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
+import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession, SparkSupport}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
@@ -56,7 +56,7 @@ private[sql] abstract class PartitionedPhysicalScan(
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
-    extends DataSourceScanExec with CodegenSupportOnExecutor {
+    extends DataSourceScanExec with CodegenSupportOnExecutor with SparkSupport {
 
   def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
@@ -92,7 +92,7 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(this).execute()
+    internals.newWholeStagePlan(this).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
@@ -338,7 +338,7 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     basePartKeys: Seq[Expression],
     otherPlan: SparkPlan,
-    otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport {
+    otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport with SparkSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
@@ -358,8 +358,8 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
-    val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
+    val input = internals.addClassField(ctx, "scala.collection.Iterator", "input",
+      v => s"$v = inputs[1];")
 
     val row = ctx.freshName("row")
     val columnsInputEval = otherPlan.output.zipWithIndex.map { case (ref, ordinal) =>
@@ -399,7 +399,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   }
 
   override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(this).execute()
+    internals.newWholeStagePlan(this).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output

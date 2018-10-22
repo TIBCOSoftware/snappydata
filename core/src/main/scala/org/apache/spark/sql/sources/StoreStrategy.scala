@@ -18,7 +18,7 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
@@ -181,30 +181,6 @@ case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
           DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
             tableAttr.dataType)
       }
-}
-
-/**
- * Unlike Spark's InsertIntoTable this plan provides the count of rows
- * inserted as the output.
- */
-final class Insert(
-    table: LogicalPlan,
-    partition: Map[String, Option[String]],
-    child: LogicalPlan,
-    overwrite: OverwriteOptions,
-    ifNotExists: Boolean)
-    extends InsertIntoTable(table, partition, child, overwrite, ifNotExists) {
-
-  override def output: Seq[Attribute] = AttributeReference(
-    "count", LongType)() :: Nil
-
-  override def copy(table: LogicalPlan = table,
-      partition: Map[String, Option[String]] = partition,
-      child: LogicalPlan = child,
-      overwrite: OverwriteOptions = overwrite,
-      ifNotExists: Boolean = ifNotExists): Insert = {
-    new Insert(table, partition, child, overwrite, ifNotExists)
-  }
 }
 
 case class Update(table: LogicalPlan, child: LogicalPlan,

@@ -23,6 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import io.snappydata.Constant
 import org.apache.hadoop.hive.metastore.api.FieldSchema
 import org.apache.hadoop.hive.ql.metadata.Table
 
@@ -205,7 +206,7 @@ trait ConnectorCatalog extends SnappyStoreHiveCatalog {
     }
 
     // the key below should match the key used by HiveClientImpl in MetadataBuilder
-    val metadata = new MetadataBuilder().putString("HIVE_TYPE_STRING", hc.getType).build()
+    val metadata = new MetadataBuilder().putString(Constant.HIVE_TYPE_STRING, hc.getType).build()
     val field = StructField(
       name = hc.getName,
       dataType = columnType,

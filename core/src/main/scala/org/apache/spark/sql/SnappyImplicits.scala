@@ -62,7 +62,7 @@ object snappy extends Serializable {
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case SubqueryAlias(_, child, _) => unwrapSubquery(child)
+      case s: SubqueryAlias => unwrapSubquery(s.child)
       case _ => plan
     }
   }
@@ -172,7 +172,7 @@ object snappy extends Serializable {
   parColsMethod.setAccessible(true)
 
   implicit class DataFrameWriterExtensions(writer: DataFrameWriter[_])
-      extends Serializable {
+      extends Serializable with SparkSupport {
 
     /**
      * "Puts" the content of the [[DataFrame]] to the specified table. It
@@ -204,10 +204,9 @@ object snappy extends Serializable {
         session.sessionState.catalog.newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
 
-      session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
-          foreach { cachedPlan =>
-            session.sharedState.cacheManager.uncacheQuery(session, cachedPlan, blocking = true)
-          }
+      session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).foreach {
+        cached => internals.uncacheQuery(session, cached, blocking = true)
+      }
     }
 
     def deleteFrom(tableName: String): Unit = {

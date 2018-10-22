@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,6 +22,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
 object StreamingConstants {
+
   val EVENT_TYPE_COLUMN = "_eventType"
   val SINK_STATE_TABLE = s"SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
   val SNAPPY_SINK_NAME = "snappysink"
@@ -293,6 +294,51 @@ object SnappySparkSQLProperty {
     Property.getSnappyPropertyValue(property.name)
 }
 
+object HintName extends Enumeration {
+
+  case class Name(names: String*) extends HintName.Val(names.head) {
+
+    def contains(name: String): Boolean = {
+      if (names.length == 1) names.head.equalsIgnoreCase(name)
+      else names.exists(_.equalsIgnoreCase(name))
+    }
+
+    override def toString: String = if (names.length == 1) names.head else names.mkString(",")
+  }
+
+  type Type = Name
+
+  // hints for joinType
+  /** broadcast join */
+  val JoinType_Broadcast = Name("broadcast", "broadcastJoin", "mapJoin")
+  /** hash join (both colocated or after exchange) */
+  val JoinType_Hash = Name("hash", "hashJoin")
+  /** force sort-merge-join in case some other is being selected */
+  val JoinType_Sort = Name("sort", "sortMerge", "sortMergeJoin")
+
+  // hints for joinOrder
+  /**
+   * Continue to attempt optimization choices of index for colocated joins even if user have
+   * specified explicit index hints for some tables.
+   *
+   * `Note:` user specified index hint will be honored and optimizer will only attempt for
+   * other tables in the query.
+   */
+  val JoinOrder_ContinueOptimizations = Name("continueOpts")
+  /**
+   * By default if query have atleast one colocated join conditions mentioned between a pair of
+   * partitiioned tables, optimizer won't try to derive colocation possibilities with replicated
+   * tables in between. This switch tells the optimizer to include partition -> replicated ->
+   * partition like indirect colocation possibilities even if partition -> partition join
+   * conditions are mentioned.
+   */
+  val JoinOrder_IncludeGeneratedPaths = Name("includeGeneratedPaths")
+  /**
+   * Don't alter the join order provided by the user.
+   */
+  val JoinOrder_Fixed = Name("fixed")
+}
+
 /**
  * SQL query hints as interpreted by the SnappyData SQL parser. The format
  * mirrors closely the format used by Hive,Oracle query hints with a comment
@@ -302,11 +348,27 @@ object SnappySparkSQLProperty {
  */
 object QueryHint extends Enumeration {
 
-  type Type = Value
+  case class HintValue(name: String, values: Vector[HintName.Type]) extends QueryHint.Val(name) {
+
+    def get(hintValue: String): Option[HintName.Type] = values.find(_.contains(hintValue))
+
+    override def toString: String = if (values.isEmpty) name else s"$name=${values.mkString(",")}"
+  }
+
+  type Type = HintValue
 
   import scala.language.implicitConversions
 
   implicit def toStr(h: Type): String = h.toString
+
+  def get(hint: String, allowed: Array[HintValue]): Option[HintValue] = {
+    var i = 0
+    while (i < allowed.length) {
+      if (hint.equalsIgnoreCase(allowed(i).name)) return Some(allowed(i))
+      i += 1
+    }
+    None
+  }
 
   /**
    * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
@@ -318,7 +380,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 --+ complexTypeAsJson(0)
    */
-  val ComplexTypeAsJson = Value(Constant.COMPLEX_TYPE_AS_JSON_HINT)
+  val ComplexTypeAsJson = HintValue(Constant.COMPLEX_TYPE_AS_JSON_HINT, Vector.empty)
 
   /**
    * Query hint followed by table to override optimizer choice of index per table.
@@ -328,18 +390,19 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 /`*`+ index(xxx) *`/`, t2 --+ withIndex(yyy)
    */
-  val Index = Value("index")
+  val Index = HintValue("index", Vector.empty)
 
   /**
    * Query hint after FROM clause to indicate following tables have join order fixed and
    * optimizer shouldn't try to re-order joined tables.
    *
-   * Possible comma separated values are [[io.snappydata.JOS]].
+   * Possible comma separated values are listed in [[HintName]] starting with "JoinOrder_".
    *
    * Example:<br>
    * SELECT * FROM /`*`+ joinOrder(fixed) *`/` t1, t2
    */
-  val JoinOrder = Value("joinOrder")
+  val JoinOrder = HintValue("joinOrder", Vector(HintName.JoinOrder_Fixed,
+    HintName.JoinOrder_ContinueOptimizations, HintName.JoinOrder_IncludeGeneratedPaths))
 
   /**
    * Query hint to force a join type for the current join. This should appear after
@@ -347,13 +410,13 @@ object QueryHint extends Enumeration {
    * Note that this will enable the specific join type only if it is possible
    * for that table in the join and silently ignore otherwise.
    *
-   * Possible values are [[Constant.JOIN_TYPE_BROADCAST]], [[Constant.JOIN_TYPE_HASH]],
-   * [[Constant.JOIN_TYPE_SORT]].
+   * Possible values are listed in [[HintName]] starting with "JoinType_".
    *
    * Example:<br>
    * SELECT * FROM t1 /`*`+ joinType(broadcast) -- broadcast t1 *`/`, t2 where ...
    */
-  val JoinType: Value = Value("joinType")
+  val JoinType = HintValue("joinType", Vector(HintName.JoinType_Broadcast,
+    HintName.JoinType_Hash, HintName.JoinType_Sort))
 
   /**
    * Query hint for SQL queries to serialize STRING type as CLOB rather than
@@ -367,44 +430,5 @@ object QueryHint extends Enumeration {
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
    */
-  val ColumnsAsClob = Value("columnsAsClob")
-}
-
-/**
- * List of possible values for Join Order QueryHint.
- *
- * `Note:` Ordering is applicable only when index choice is left to the optimizer. By default,
- * if user specifies explicit index hint like "select * from t1 --+ index()", optimizer will just
- * honor the hint and skip everything mentioned in joinOrder. In other words, a blank index()
- * hint for any table disables choice of index and its associated following rules.
- */
-object JOS extends Enumeration {
-  type Type = Value
-
-  import scala.language.implicitConversions
-
-  implicit def toStr(h: Type): String = h.toString
-
-  /**
-   * Continue to attempt optimization choices of index for colocated joins even if user have
-   * specified explicit index hints for some tables.
-   *
-   * `Note:` user specified index hint will be honored and optimizer will only attempt for
-   * other tables in the query.
-   */
-  val ContinueOptimizations = Value("continueOpts")
-
-  /**
-   * By default if query have atleast one colocated join conditions mentioned between a pair of
-   * partitiioned tables, optimizer won't try to derive colocation possibilities with replicated
-   * tables in between. This switch tells the optimizer to include partition -> replicated ->
-   * partition like indirect colocation possibilities even if partition -> partition join
-   * conditions are mentioned.
-   */
-  val IncludeGeneratedPaths = Value("includeGeneratedPaths")
-
-  /**
-   * Don't alter the join order provided by the user.
-   */
-  val Fixed = Value("fixed")
+  val ColumnsAsClob = HintValue("columnsAsClob", Vector.empty)
 }

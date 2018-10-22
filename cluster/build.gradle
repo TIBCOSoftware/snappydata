@@ -85,6 +85,14 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
+  compile (project(":compatibility:spark${sparkVersion}_${scalaBinaryVersion}")) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+  }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
     testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')

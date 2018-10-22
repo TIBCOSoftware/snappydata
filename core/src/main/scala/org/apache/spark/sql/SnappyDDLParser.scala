@@ -22,12 +22,12 @@ import java.io.File
 import java.lang
 import java.nio.file.{Files, Paths}
 import java.sql.SQLException
+import java.util.Locale
 import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -37,13 +37,12 @@ import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, SQLBuilder, TableIdentifier}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
@@ -58,7 +57,7 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
 
 abstract class SnappyDDLParser(session: SparkSession)
-    extends SnappyBaseParser(session) {
+    extends SnappyBaseParser(session) with SparkSupport {
 
   final def ALL: Rule0 = rule { keyword(Consts.ALL) }
   final def AND: Rule0 = rule { keyword(Consts.AND) }
@@ -335,14 +334,13 @@ abstract class SnappyDDLParser(session: SparkSession)
                 identifier ~ ws ~> {(ldapOpt: Any, x) =>
               ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
         ). + (commaSep) ~> {
-        (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
-          }).? ~> { (toOpt: Any) =>
+        policyTo: Any => policyTo.asInstanceOf[Seq[String]].map(_.trim)
+          }).? ~> { toOpt: Any =>
       toOpt match {
         case Some(x) => x.asInstanceOf[Seq[String]]
         case _ => Seq(SnappyParserConsts.CURRENT_USER.upper)
       }
     }
-
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {
@@ -549,7 +547,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected final def resourceType: Rule1[FunctionResource] = rule {
     identifier ~ stringLiteral ~> { (rType: String, path: String) =>
-      val resourceType = rType.toLowerCase
+      val resourceType = rType.toLowerCase(Locale.ROOT)
       resourceType match {
         case "jar" =>
           FunctionResource(FunctionResourceType.fromString(resourceType), path)
@@ -560,6 +558,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   def checkExists(resource: FunctionResource): Unit = {
+    // TODO: SW: why only local "jar" type resources supported?
     if (!new File(resource.uri).exists()) {
       throw Utils.analysisException(s"No file named ${resource.uri} exists")
     }
@@ -575,25 +574,23 @@ abstract class SnappyDDLParser(session: SparkSession)
    * }}}
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {
-    CREATE ~ (TEMPORARY ~ push(true)).? ~ FUNCTION ~ functionIdentifier ~ AS ~
-        qualifiedName ~ RETURNS ~ columnDataType ~ USING ~ resourceType ~>
-        { (te: Any, functionIdent: FunctionIdentifier, className: String,
-            t: DataType, funcResource : FunctionResource) =>
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (TEMPORARY ~ push(true)).? ~ FUNCTION ~
+        ifNotExists ~ functionIdentifier ~ AS ~ qualifiedName ~ RETURNS ~ columnDataType ~
+        USING ~ (resourceType + commaSep) ~>
+        { (replace: Any, te: Any, ignoreIfExists: Boolean, functionIdent: FunctionIdentifier,
+            className: String, t: DataType, resources: Any) =>
 
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
-          val funcResources = Seq(funcResource)
+          val funcResources = resources.asInstanceOf[Seq[FunctionResource]]
           funcResources.foreach(checkExists)
           val catalogString = t match {
             case VarcharType(Int.MaxValue) => "string"
             case _ => t.catalogString
           }
           val classNameWithType = className + "__" + catalogString
-          CreateFunctionCommand(
-            functionIdent.database,
-            functionIdent.funcName,
-            classNameWithType,
-            funcResources,
-            isTemp)
+          internals.newCreateFunctionCommand(functionIdent.database,
+            functionIdent.funcName, classNameWithType, funcResources, isTemp,
+            ignoreIfExists, replace != None)
         }
   }
 
@@ -682,8 +679,7 @@ abstract class SnappyDDLParser(session: SparkSession)
             ((extended: Any, tableIdent: TableIdentifier) => {
               // ensure columns are sent back as CLOB for large results with EXTENDED
               queryHints.put(QueryHint.ColumnsAsClob.toString, "data_type,comment")
-              DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)
+              internals.newDescribeTableCommand(tableIdent, Map.empty, extended != None)
             })
     )
   }
@@ -704,14 +700,14 @@ abstract class SnappyDDLParser(session: SparkSession)
     UNCACHE ~ TABLE ~ ifExists ~ tableIdentifier ~>
         ((ifExists: Boolean, tableIdent: TableIdentifier) =>
           UncacheTableCommand(tableIdent, ifExists)) |
-    CLEAR ~ CACHE ~> (() => ClearCacheCommand)
+    CLEAR ~ CACHE ~> (() => internals.newClearCacheCommand())
   }
 
   protected def set: Rule1[LogicalPlan] = rule {
     SET ~ (
         CURRENT.? ~ SCHEMA ~ '='.? ~ ws ~ identifier ~>
             ((schemaName: String) => SetSchema(schemaName)) |
-        capture(ANY.*) ~> { (rest: String) =>
+        capture(ANY.*) ~> { rest: String =>
           val separatorIndex = rest.indexOf('=')
           if (separatorIndex >= 0) {
             val key = rest.substring(0, separatorIndex).trim
@@ -979,11 +975,11 @@ case class DeployCommand(
   alias: String,
   repos: Option[String],
   jarCache: Option[String],
-  restart: Boolean) extends RunnableCommand {
+  restart: Boolean) extends RunnableCommand with SparkSupport {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     try {
-      val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+      val jarsstr = internals.resolveMavenCoordinates(coordinates, repos, jarCache, Nil)
       if (jarsstr.nonEmpty) {
         val jars = jarsstr.split(",")
         val sc = sparkSession.sparkContext
@@ -1114,7 +1110,7 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
     allowExisting: Boolean,
     replace: Boolean,
     viewType: ViewType)
-    extends RunnableCommand {
+    extends RunnableCommand with SparkSupport {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (viewType != PersistedView) {
@@ -1147,16 +1143,7 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
 
     val actualSchemaJson = aliasedPlan.schema.json
 
-    val viewSQL: String = new SQLBuilder(aliasedPlan).toSQL
-
-    // Validate the view SQL - make sure we can parse it and analyze it.
-    // If we cannot analyze the generated query, there is probably a bug in SQL generation.
-    try {
-      sparkSession.sql(viewSQL).queryExecution.assertAnalyzed()
-    } catch {
-      case NonFatal(e) =>
-        throw new RuntimeException(s"Failed to analyze the canonicalized SQL: $viewSQL", e)
-    }
+    val viewSQL = internals.createViewSQL(sparkSession, aliasedPlan, originalText)
     var opts = JdbcExtendedUtils.addSplitProperty(viewSQL, Constant.SPLIT_VIEW_TEXT_PROPERTY,
       properties)
     opts = JdbcExtendedUtils.addSplitProperty(originalText.getOrElse(viewSQL),

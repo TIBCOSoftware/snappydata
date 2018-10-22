@@ -62,7 +62,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, SparkContext}
 
-object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
+object StoreCallbacksImpl extends StoreCallbacks with SparkSupport with Logging with Serializable {
 
   private val partitioner = new StoreHashFunction
 
@@ -216,8 +216,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val ctx = new CodegenContext
     val rowClass = classOf[UnsafeRow].getName
     // create the code snippet for applying the filters
-    val numRows = ctx.freshName("numRows")
-    ctx.addMutableState("int", numRows, "")
+    val numRows = internals.addClassField(ctx, "int", "numRows")
     val filterFunction = ColumnTableScan.generateStatPredicate(ctx, isColumnTable = true,
       schemaAttrs, batchFilterExprs, numRows, metricTerm = null, metricAdd = null)
     val filterPredicate = if (filterFunction.isEmpty) null
@@ -632,7 +631,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def refreshPolicies(ldapGroup: String): Unit = {
-    val session = new SnappySession(SparkContext.getActive.get)
+    val session = new SnappySession(SnappyContext.globalSparkContext)
     session.sessionCatalog.refreshPolicies(ldapGroup)
   }
 }

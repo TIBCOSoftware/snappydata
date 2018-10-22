@@ -58,9 +58,8 @@ private[sql] final case class RowTableScan(
     // a parent plan may set a custom input (e.g. HashJoinExec)
     // for that case no need to add the "shouldStop()" calls
     // PartitionedPhysicalRDD always has one input
-    val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator",
-      input, s"$input = inputs[0];")
+    val input = internals.addClassField(ctx, "scala.collection.Iterator", "input",
+      v => s"$v = inputs[0];")
     val numOutputRows = if (sqlContext eq null) null
     else metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null

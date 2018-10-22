@@ -29,15 +29,15 @@ import io.snappydata.Constant
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.thrift.internal.ClientPreparedStatement
 
-import org.apache.spark.Partition
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
+import org.apache.spark.sql.collection.SmartExecutorBucketPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.{Partition, SparkEnv}
 
 final class SmartConnectorRDDHelper {
 
@@ -121,6 +121,16 @@ object SmartConnectorRDDHelper {
   var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
   var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
 
+  private lazy val preferHostName: Boolean = SparkEnv.get match {
+    case null => false
+    case env =>
+      val executors = env.blockManager.master.getStorageStatus
+      if (executors.length > 0 && executors(0).blockManagerId.executorId != "driver") {
+        val host = executors(0).blockManagerId.host
+        host.indexOf('.') == -1 && host.indexOf("::") == -1
+      } else false
+  }
+
   def getPartitions(bucketToServerList: Array[ArrayBuffer[(String, String)]]): Array[Partition] = {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
@@ -138,29 +148,15 @@ object SmartConnectorRDDHelper {
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
     hostList.isEmpty
 
-  private def preferHostName(session: SnappySession): Boolean = {
-    // check if Spark executors are using IP addresses or host names
-    Utils.executorsListener(session.sparkContext) match {
-      case Some(l) =>
-        val preferHost = l.activeStorageStatusList.collectFirst {
-          case status if status.blockManagerId.executorId != "driver" =>
-            val host = status.blockManagerId.host
-            host.indexOf('.') == -1 && host.indexOf("::") == -1
-        }
-        preferHost.isDefined && preferHost.get
-      case _ => false
-    }
-  }
-
   def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
     if (bucketToServerMappingStr != null) {
       // check if Spark executors are using IP addresses or host names
-      val preferHost = preferHostName(session)
+      val preferHost = preferHostName
       val arr: Array[String] = bucketToServerMappingStr.split(":")
       var orphanBuckets: ArrayBuffer[Int] = null
       val noOfBuckets = arr(0).toInt
@@ -212,8 +208,8 @@ object SmartConnectorRDDHelper {
   def setReplicasToServerMappingInfo(replicaNodesStr: String,
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     // check if Spark executors are using IP addresses or host names
-    val preferHost = preferHostName(session)
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    val preferHost = preferHostName
+    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"

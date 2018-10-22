@@ -16,13 +16,14 @@
  */
 package org.apache.spark.sql.execution
 
+import scala.collection.AbstractIterator
+
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSet, SortOrder, UnsafeRow}
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning}
-import org.apache.spark.sql.catalyst.util.AbstractScalaRowIterator
 import org.apache.spark.sql.execution.metric.SQLMetric
 
 /**
@@ -55,9 +56,9 @@ case class SnappySortExec(sortPlan: SortExec, child: SparkPlan)
 
     child.execute().mapPartitionsPreserveInternal(itr =>
 
-      new AbstractScalaRowIterator[UnsafeRow] {
+      new AbstractIterator[UnsafeRow] {
 
-        private lazy val sortedIterator: AbstractScalaRowIterator[UnsafeRow] = {
+        private lazy val sortedIterator: Iterator[UnsafeRow] = {
           val sorter = sortPlan.createSorter()
           val metrics = TaskContext.get().taskMetrics()
           // Remember spill data size of this task before execute this operator so that we can
@@ -68,7 +69,7 @@ case class SnappySortExec(sortPlan: SortExec, child: SparkPlan)
           peakMemory += sorter.getPeakMemoryUsage
           spillSize += metrics.memoryBytesSpilled - spillSizeBefore
           metrics.incPeakExecutionMemory(sorter.getPeakMemoryUsage)
-          sortedIterator.asInstanceOf[AbstractScalaRowIterator[UnsafeRow]]
+          sortedIterator
         }
 
         override def hasNext: Boolean = sortedIterator.hasNext

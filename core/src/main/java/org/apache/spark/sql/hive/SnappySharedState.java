@@ -23,18 +23,14 @@ import org.apache.spark.sql.ClusterMode;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.SnappyEmbeddedMode;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SparkSupport$;
 import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
 import org.apache.spark.sql.catalyst.catalog.GlobalTempViewManager;
 import org.apache.spark.sql.collection.Utils;
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
-import org.apache.spark.sql.execution.ui.SQLListener;
-import org.apache.spark.sql.execution.ui.SQLTab;
-import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.client.HiveClientImpl;
 import org.apache.spark.sql.internal.SharedState;
 import org.apache.spark.sql.internal.StaticSQLConf;
-import org.apache.spark.ui.SparkUI;
 
 /**
  * Overrides Spark's SharedState to enable setting up own ExternalCatalog.
@@ -66,23 +62,17 @@ public final class SnappySharedState extends SharedState {
   private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
 
   /**
-   * Create Snappy's SQL Listener instead of SQLListener
+   * Create Snappy's SQL Listener instead of SQLListener (before SharedState creation).
    */
   private static void createListenerAndUI(SparkContext sc) {
-    SQLListener initListener = ExternalStoreUtils.getSQLListener().get();
-    if (initListener == null) {
-      SnappySQLListener listener = new SnappySQLListener(sc.conf());
-      if (ExternalStoreUtils.getSQLListener().compareAndSet(null, listener)) {
-        sc.addSparkListener(listener);
-        scala.Option<SparkUI> ui = sc.ui();
-        // embedded mode attaches SQLTab later via ToolsCallbackImpl that also
-        // takes care of injecting any authentication module if configured
-        if (ui.isDefined() &&
-            !(SnappyContext.getClusterMode(sc) instanceof SnappyEmbeddedMode)) {
-          new SQLTab(listener, ui.get());
-        }
-      }
-    }
+    SparkSupport$.MODULE$.internals(sc).createAndAttachSQLListener(sc);
+  }
+
+  /**
+   * Create Snappy's SQL Listener instead of SQLListener (post SharedState creation).
+   */
+  private void createListenerAndUI() {
+    SparkSupport$.MODULE$.internals(sparkContext()).createAndAttachSQLListener(this);
   }
 
   private SnappySharedState(SparkContext sparkContext) throws SparkException {
@@ -138,6 +128,8 @@ public final class SnappySharedState extends SharedState {
     createListenerAndUI(sparkContext);
 
     final SnappySharedState sharedState = new SnappySharedState(sparkContext);
+    // new Spark versions initialize the UI listener in constructor which is updated next
+    sharedState.createListenerAndUI();
 
     // reset the catalog implementation to original
     if (catalogImpl != null) {

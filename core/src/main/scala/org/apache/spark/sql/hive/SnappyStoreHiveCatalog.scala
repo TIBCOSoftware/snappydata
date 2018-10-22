@@ -735,7 +735,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       alias: Option[String]): LogicalPlan = {
     // If an alias was specified by the lookup, wrap the plan in a
     // sub-query so that attributes are properly qualified with this alias
-    SubqueryAlias(alias.getOrElse(tableIdent.table),
+    SubqueryAlias(alias.getOrElse(formatTableName(tableIdent.table)),
       lookupRelation(newQualifiedTableName(tableIdent)), None)
   }
 

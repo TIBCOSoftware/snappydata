@@ -39,13 +39,13 @@ import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, UnaryNode, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
-import org.apache.spark.sql.sources.{Filter, IsNotNull, PrunedUnsafeFilteredScan}
-import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
+import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, SparkSupport, Strategy, execution, sources}
 
 /**
  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
@@ -56,7 +56,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalScan(projects, filters, scan) => scan match {
-      case l@LogicalRelation(t: PartitionedDataSourceScan, _, _) =>
+      case l: LogicalRelation if l.relation.isInstanceOf[PartitionedDataSourceScan] =>
+        val t = l.relation.asInstanceOf[PartitionedDataSourceScan]
         pruneFilterProject(
           l,
           projects,
@@ -64,7 +65,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           t.numBuckets,
           t.partitionColumns,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
+      case l: LogicalRelation if l.relation.isInstanceOf[PrunedUnsafeFilteredScan] =>
+        val t = l.relation.asInstanceOf[PrunedUnsafeFilteredScan]
         pruneFilterProject(
           l,
           projects,
@@ -72,7 +74,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           0,
           Nil,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case LogicalRelation(_, _, _) => {
+      case _: LogicalRelation =>
         var foundParamLiteral = false
         val tp = plan.transformAllExpressions {
           case pl: ParamLiteral =>
@@ -86,7 +88,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         } else {
           Nil
         }
-      }
       case _ => Nil
     }
     case _ => Nil
@@ -338,7 +339,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
  * [[org.apache.spark.sql.catalyst.expressions.Alias Aliases]] are in-lined/substituted if
  * necessary.
  */
-object PhysicalScan extends PredicateHelper {
+object PhysicalScan extends PredicateHelper with SparkSupport {
+
   type ReturnType = (Seq[NamedExpression], Seq[Expression], LogicalPlan)
 
   def unapply(plan: LogicalPlan): Option[ReturnType] = {
@@ -373,7 +375,8 @@ object PhysicalScan extends PredicateHelper {
         val substitutedCondition = substitute(aliases)(condition)
         (fields, filters ++ splitConjunctivePredicates(substitutedCondition), other, aliases)
 
-      case BroadcastHint(child) => collectProjectsAndFilters(child)
+      case _ if internals.isHintPlan(plan) =>
+        collectProjectsAndFilters(plan.asInstanceOf[UnaryNode].child)
 
       case other => (None, Nil, other, Map.empty)
     }

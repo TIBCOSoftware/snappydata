@@ -24,17 +24,17 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
-import io.snappydata.Property
+import io.snappydata.{HintName, Property, QueryHint}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, Star, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
@@ -42,7 +42,6 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
@@ -59,8 +58,8 @@ import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
 
-class SnappySessionState(snappySession: SnappySession)
-    extends SessionState(snappySession) {
+class SnappySessionState(val snappySession: SnappySession)
+    extends SessionState(snappySession) with SparkSupport {
 
   self =>
 
@@ -108,7 +107,7 @@ class SnappySessionState(snappySession: SnappySession)
     new PreprocessTableInsertOrPut(conf) ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
-        ResolveRelationsExtended ::
+        // ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
         RowLevelSecurity ::
@@ -118,7 +117,7 @@ class SnappySessionState(snappySession: SnappySession)
 
 
   def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
-    Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
+    Seq(ConditionalPreWriteCheck(internals.newPreWriteCheck(self)), PrePutCheck)
   }
 
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
@@ -140,30 +139,7 @@ class SnappySessionState(snappySession: SnappySession)
       ResolveAggregationExpressions :: Nil: _*) :: Nil
   }
 
-  override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
-    override def batches: Seq[Batch] = {
-      implicit val ss = snappySession
-      var insertedSnappyOpts = 0
-      val modified = super.batches.map {
-        case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
-          insertedSnappyOpts += 1
-          val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
-          Batch(batch.name, batch.strategy, (left :+ ResolveIndex()) ++ right: _*)
-        case b => b
-      }
-
-      if (insertedSnappyOpts != 1) {
-        throw new AnalysisException("Snappy Optimizations not applied")
-      }
-
-      modified :+
-          Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
-          Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets) :+
-          Batch("TokenizedLiteral Folding Optimization", Once, TokenizedLiteralFolding) :+
-          Batch("Order join conditions ", Once, OrderJoinConditions)
-    }
-  }
-
+  override lazy val optimizer: Optimizer = internals.newSparkOptimizer(this)
 
   // copy of ConstantFolding that will turn a constant up/down cast into
   // a static value.
@@ -191,7 +167,7 @@ class SnappySessionState(snappySession: SnappySession)
           }
           p
         // also mark linking for scalar/predicate subqueries and disable plan caching
-        case s@(_: ScalarSubquery | _: PredicateSubquery) if foldable =>
+        case s: SubqueryExpression if foldable =>
           snappySession.linkPartitionsToBuckets(flag = true)
           snappySession.planCaching = false
           s
@@ -220,7 +196,8 @@ class SnappySessionState(snappySession: SnappySession)
         // transformDown for expression so that top-most node which is foldable gets
         // selected for wrapping by DynamicFoldableExpression and further sub-expressions
         // do not since foldExpression will reset inner ParamLiterals as non-foldable
-        case q: LogicalPlan => q.mapExpressions(expr => unmarkAll(mark(expr).transformDown {
+        case q: LogicalPlan => internals.mapExpressions(q, expr =>
+          unmarkAll(mark(expr).transformDown {
           // ignore leaf literals
           case l@(_: Literal | _: DynamicReplacableConstant) => l
           // Wrap expressions that are foldable.
@@ -264,15 +241,13 @@ class SnappySessionState(snappySession: SnappySession)
       plan transformDown {
         case win@WindowLogicalPlan(d, s, child, false) =>
           child match {
-            case LogicalRelation(_, _, _) |
-                 LogicalDStreamPlan(_, _) => win
+            case _: LogicalRelation | _: LogicalDStreamPlan => win
             case _ => duration = d
               slide = s
               transformed = true
               win.child
           }
-        case c@(LogicalRelation(_, _, _) |
-                LogicalDStreamPlan(_, _)) =>
+        case c@(_: LogicalRelation | _: LogicalDStreamPlan) =>
           if (transformed) {
             transformed = false
             WindowLogicalPlan(duration, slide, c, transformed = true)
@@ -286,7 +261,7 @@ class SnappySessionState(snappySession: SnappySession)
    * be created for tables to be the same as number of buckets. This will avoid
    * exchange on one side of a non-collocated join in many cases.
    */
-  final class LinkPartitionsToBuckets extends Rule[LogicalPlan] {
+  object LinkPartitionsToBuckets extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan.foreach {
         case _ if Property.ForceLinkPartitionsToBuckets.get(conf) =>
@@ -295,9 +270,11 @@ class SnappySessionState(snappySession: SnappySession)
         case j: Join if !JoinStrategy.isReplicatedJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
-        case _: InsertIntoTable | _: TableMutationPlan |
-             LogicalRelation(_: IndexColumnFormatRelation, _, _) =>
+        case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges and indexes to work correctly
+          snappySession.linkPartitionsToBuckets(flag = true)
+        case l: LogicalRelation if l.relation.isInstanceOf[IndexableRelation] =>
+          // disable for indexes
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
       }
@@ -317,6 +294,7 @@ class SnappySessionState(snappySession: SnappySession)
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
    */
+  /* SW: remove
   object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
     def getTable(u: UnresolvedRelation): LogicalPlan = {
       try {
@@ -334,6 +312,7 @@ class SnappySessionState(snappySession: SnappySession)
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
   }
+  */
 
   /**
    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
@@ -347,8 +326,9 @@ class SnappySessionState(snappySession: SnappySession)
     def getPartCols(plan: LogicalPlan): Seq[NamedExpression] = {
       plan match {
         case PhysicalScan(_, _, child) => child match {
-          case r@LogicalRelation(scan: PartitionedDataSourceScan, _, _) =>
+          case r: LogicalRelation if r.relation.isInstanceOf[PartitionedDataSourceScan] =>
             // send back numPartitions=1 for replicated table since collocated
+            val scan = r.relation.asInstanceOf[PartitionedDataSourceScan]
             if (!scan.isPartitioned) return Nil
             val partCols = scan.partitionColumns.map(colName =>
               r.resolveQuoted(colName, analysis.caseInsensitiveResolution)
@@ -431,16 +411,18 @@ class SnappySessionState(snappySession: SnappySession)
         // is happening via this command we need to handle it
         case _: RunnableCommand => plan
         case _ if !alreadyPolicyApplied(plan) => plan.transformUp {
-          case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) =>
+          case lr: LogicalRelation if lr.relation.isInstanceOf[RowLevelSecurityRelation] =>
             val policyFilter = snappySession.sessionState.catalog.
-                getCombinedPolicyFilterForNativeTable(rlsRelation, Some(lr))
+                getCombinedPolicyFilterForNativeTable(
+                  lr.relation.asInstanceOf[RowLevelSecurityRelation], Some(lr))
             policyFilter match {
               case Some(filter) => filter.copy(child = lr)
               case None => lr
             }
 
-          case SubqueryAlias(name, LogicalFilter(condition, child), ti) => LogicalFilter(condition,
-            SubqueryAlias(name, child, ti))
+          case a: SubqueryAlias if a.child.isInstanceOf[LogicalFilter] =>
+            LogicalFilter(a.child.asInstanceOf[LogicalFilter].condition,
+              internals.newSubqueryAlias(a.alias, a.child))
 
           case LogicalFilter(condition1, LogicalFilter(condition2, child)) =>
             if (rlsConditionChecker(conditionEvaluator)(condition1)) {
@@ -490,9 +472,9 @@ class SnappySessionState(snappySession: SnappySession)
       var externalRelation: ApplyLimitOnExternalRelation = null
       plan.foreachUp {
         {
-          case LogicalRelation(baseRelation: ApplyLimitOnExternalRelation, _, _) =>
+          case lr: LogicalRelation if lr.relation.isInstanceOf[ApplyLimitOnExternalRelation] =>
             boolsArray(extRelation_bool) = true
-            externalRelation = baseRelation
+            externalRelation = lr.relation.asInstanceOf[ApplyLimitOnExternalRelation]
 
           case _: MarkerForCreateTableAsSelect => boolsArray(create_tv_bool) = true
           case _: Aggregate => boolsArray(agg_func_bool) = true
@@ -530,7 +512,8 @@ class SnappySessionState(snappySession: SnappySession)
         plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
-        case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+        case lr: LogicalRelation if lr.relation.isInstanceOf[MutableRelation] =>
+          val mutable = lr.relation.asInstanceOf[MutableRelation]
           val ks = mutable.getKeyColumns
           if (ks.isEmpty) {
             val currentKey = snappySession.currentKey
@@ -551,8 +534,9 @@ class SnappySessionState(snappySession: SnappySession)
       // resolve key columns right away
       var mutablePlan: Option[LogicalRelation] = None
       val newChild = child.transformDown {
-        case lr@LogicalRelation(mutable: MutableRelation, _, _)
-          if mutable.table.equalsIgnoreCase(tableName) =>
+        case lr: LogicalRelation if lr.relation.isInstanceOf[MutableRelation] &&
+            lr.relation.asInstanceOf[MutableRelation].table.equalsIgnoreCase(tableName) =>
+          val mutable = lr.relation.asInstanceOf[MutableRelation]
           mutablePlan = Some(mutable.withKeyColumns(lr, keyColumns))
           mutablePlan.get
       }
@@ -675,7 +659,8 @@ class SnappySessionState(snappySession: SnappySession)
   override def planner: DefaultPlanner = new DefaultPlanner(snappySession, conf,
     experimentalMethods.extraStrategies)
 
-  protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
+  protected[sql] def queryPreparations(
+      topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq[Rule[SparkPlan]](
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
@@ -1108,17 +1093,47 @@ class DefaultPlanner(val session: SnappySession, conf: SQLConf,
         super.strategies
 }
 
+trait DefaultOptimizer extends SparkOptimizer {
+
+  def state: SnappySessionState
+
+  override def batches: Seq[Batch] = {
+    implicit val ss = state.snappySession
+    var insertedSnappyOpts = 0
+    val modified = super.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Operator Optimizations") ||
+          batch.name.startsWith("Operator Optimization after") =>
+        insertedSnappyOpts += 1
+        val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
+        Batch(batch.name, batch.strategy, (left :+ ResolveIndex()) ++ right: _*)
+      case b => b
+    }
+
+    if (insertedSnappyOpts != 1) {
+      throw new AnalysisException("Snappy Optimizations not applied")
+    }
+
+    modified :+
+        Batch("Streaming SQL Optimizers", Once, state.PushDownWindowLogicalPlan) :+
+        Batch("Link buckets to RDD partitions", Once, state.LinkPartitionsToBuckets) :+
+        Batch("TokenizedLiteral Folding Optimization", Once, state.TokenizedLiteralFolding) :+
+        Batch("Order join conditions ", Once, state.OrderJoinConditions)
+  }
+}
+
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
-    extends Rule[LogicalPlan] {
+    extends Rule[LogicalPlan] with SparkSupport {
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
     // Check for SchemaInsertableRelation first
-    case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
-    _, _), _, child, _, _) if l.resolved && child.resolved =>
+    case i@InsertIntoTable(l: LogicalRelation, _, child, _, _)
+      if l.relation.isInstanceOf[SchemaInsertableRelation] && l.resolved && child.resolved =>
+      val r = l.relation.asInstanceOf[SchemaInsertableRelation]
       r.insertableRelation(child.output) match {
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
-          val relation = LogicalRelation(br,
-            l.expectedOutputAttributes, l.catalogTable)
+          val relation = internals.newLogicalRelation(br,
+            l.expectedOutputAttributes.asInstanceOf[Option[Seq[AttributeReference]]],
+            l.catalogTable, isStreaming = false)
           castAndRenameChildOutputForPut(i.copy(table = relation),
             relation.output, br, null, child)
         case None =>
@@ -1133,7 +1148,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
+        case l: LogicalRelation if l.relation.isInstanceOf[RowInsertableRelation] =>
           // First, make sure the data to be inserted have the same number of
           // fields with the schema of the relation.
           val expectedOutput = l.output
@@ -1142,7 +1157,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
                 "SELECT clause of the PUT INTO statement " +
                 "generates the same number of columns as its schema.")
           }
-          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
+          castAndRenameChildOutputForPut(p, expectedOutput, l.relation, l, child)
 
         case _ => p
       }
@@ -1153,7 +1168,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(dr: DeletableRelation, _, _) =>
+        case l: LogicalRelation if l.relation.isInstanceOf[DeletableRelation] =>
           def comp(a: Attribute, targetCol: String): Boolean = a match {
             case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
           }
@@ -1175,9 +1190,9 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
               }
             case _ =>
           }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+          castAndRenameChildOutputForPut(d, expectedOutput, l.relation, l, child)
 
-        case l@LogicalRelation(dr: MutableRelation, _, _) =>
+        case l: LogicalRelation if l.relation.isInstanceOf[MutableRelation] =>
           val expectedOutput = l.output
           if (child.output.length != expectedOutput.length) {
             throw new AnalysisException(s"$l requires that the query in the " +
@@ -1185,7 +1200,7 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
                 "generates the same number of column(s) as in its schema but found " +
                 s"${child.output.mkString(",")} instead.")
           }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+          castAndRenameChildOutputForPut(d, expectedOutput, l.relation, l, child)
         case _ => d
       }
 
@@ -1196,12 +1211,15 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         val metadata = relation.catalogTable
         preProcess(i, relation = null, metadata.identifier.quotedString,
           metadata.partitionColumnNames)
-      case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
+      case l: LogicalRelation if l.relation.isInstanceOf[HadoopFsRelation] =>
+        val h = l.relation.asInstanceOf[HadoopFsRelation]
+        val identifier = l.catalogTable
         val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
         preProcess(i, h, tblName, h.partitionSchema.map(_.name))
-      case LogicalRelation(ir: InsertableRelation, _, identifier) =>
+      case l: LogicalRelation if l.relation.isInstanceOf[InsertableRelation] =>
+        val identifier = l.catalogTable
         val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preProcess(i, ir, tblName, Nil)
+        preProcess(i, l.relation, tblName, Nil)
       case _ => i
     }
   }
@@ -1333,12 +1351,12 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
 
   def apply(plan: LogicalPlan): Unit = {
     plan.foreach {
-      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query) =>
+      case PutIntoTable(l: LogicalRelation, query) if l.relation.isInstanceOf[RowPutRelation] =>
         // Get all input data source relations of the query.
         val srcRelations = query.collect {
-          case LogicalRelation(src: BaseRelation, _, _) => src
+          case l: LogicalRelation => l.relation
         }
-        if (srcRelations.contains(t)) {
+        if (srcRelations.contains(l.relation)) {
           throw Utils.analysisException(
             "Cannot put into table that is also being read from.")
         } else {
@@ -1351,7 +1369,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
   }
 }
 
-private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources.PreWriteCheck)
+private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: LogicalPlan => Unit)
     extends (LogicalPlan => Unit) {
   def apply(plan: LogicalPlan): Unit = {
     plan match {
@@ -1527,16 +1545,9 @@ case class BypassRowLevelSecurity(child: LogicalFilter) extends UnaryNode {
  * Wrap plan-specific query hints (like joinType). This extends Spark's BroadcastHint
  * so that filters/projections etc can be pushed below this by optimizer.
  */
-class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
-    extends BroadcastHint(_child) {
-
-  override def productArity: Int = 2
-
-  override def productElement(n: Int): Any = n match {
-    case 0 => child
-    case 1 => hints
-  }
+trait LogicalPlanWithHints extends UnaryNode {
+  def allHints: Map[QueryHint.Type, HintName.Type]
 
   override def simpleString: String =
-    s"LogicalPlanWithHints[hints = $hints; child = ${child.simpleString}]"
+    s"LogicalPlanWithHints[hints = $allHints; child = ${child.simpleString}]"
 }
