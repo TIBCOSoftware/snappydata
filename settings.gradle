@@ -19,6 +19,7 @@ def scalaBinaryVersion = '2.11'
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':v2-connector_' + scalaBinaryVersion
+include ':snappy-jdbc_' + scalaBinaryVersion
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
 include ':snappy-launcher'
@@ -27,6 +28,7 @@ include 'dunit'
 include ':snappy-dtests_' + scalaBinaryVersion
 include ':snappy-compatibility-tests_' + scalaBinaryVersion
 
+project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':v2-connector_' + scalaBinaryVersion).projectDir = "$rootDir/v2-connector" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
@@ -59,7 +61,6 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion
@@ -96,7 +97,6 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   project(':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/spark/assembly" as File
   project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume" as File
   project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume-sink" as File
-  project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-8" as File
   project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10" as File
   project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10-sql" as File
   project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/spark/examples" as File
@@ -179,7 +179,7 @@ if (new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists
   include ':gemfire-connector:connector_' + scalaBinaryVersion
   include ':gemfire-connector:gfeFunctions'
 
-  project(':gemfire-connector').projectDir ="$rootDir/snappy-connectors/gemfire-connector" as File
+  project(':gemfire-connector').projectDir = "$rootDir/snappy-connectors/gemfire-connector" as File
   project(':gemfire-connector:connector_' + scalaBinaryVersion).projectDir ="$rootDir/snappy-connectors/gemfire-connector/connector" as File
   project(':gemfire-connector:gfeFunctions').projectDir ="$rootDir/snappy-connectors/gemfire-connector/gfeFunctions" as File
 }

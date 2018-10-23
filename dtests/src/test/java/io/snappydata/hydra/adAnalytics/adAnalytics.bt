@@ -2,7 +2,7 @@ io/snappydata/hydra/adAnalytics/adAnalytics.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.8.2.1"
+  kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   snappyPocJarPath="/export/shared/QA_DATA/snappy-poc/snappy-poc-0.6.1-assembly.jar"
 
 
@@ -10,5 +10,5 @@ io/snappydata/hydra/adAnalytics/adAnalyticsRestartStreaming.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.8.2.1"
+  kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   snappyPocJarPath="/export/shared/QA_DATA/snappy-poc/snappy-poc-0.6.1-assembly.jar"

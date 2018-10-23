@@ -214,7 +214,7 @@ object snappy extends Serializable {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
-        case _ => sys.error("Expected a SnappyContext for putInto operation")
+        case _ => sys.error("Expected a SnappyContext for deleteFrom operation")
       }
       val normalizedParCols = parColsMethod.invoke(writer)
           .asInstanceOf[Option[Seq[String]]]

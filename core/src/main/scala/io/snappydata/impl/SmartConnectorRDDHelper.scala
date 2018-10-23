@@ -35,7 +35,7 @@ import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.row.GemFireXDClientDialect
+import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
 
@@ -101,7 +101,7 @@ final class SmartConnectorRDDHelper {
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
-      ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect, props,
+      ConnectionPool.getPoolConnection(jdbcUrl, SnappyStoreClientDialect, props,
         executorProps, connProperties.hikariCP)
     } catch {
       case sqle: SQLException => if (hostList.size == 1 || useLocatorURL) {

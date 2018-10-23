@@ -16,6 +16,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SnappyContext;
 import org.junit.Test;
 
 public class SnappyContextConcurrencySuite extends SnappyFunSuite {
@@ -26,14 +27,12 @@ public class SnappyContextConcurrencySuite extends SnappyFunSuite {
   public void testMultithreadedAccess() {
 
     final AtomicLong counter = new AtomicLong();
-    org.apache.spark.sql.SnappyContext snc = snc();//Intentionally sharing the SnappyContext with
-    // all the threads
 
     int poolSize = 5;
     List<SnappyQueryJob> tasks = new ArrayList<>();
     ExecutorService pool = Executors.newFixedThreadPool(poolSize);
     for (int i = 1; i <= poolSize; i++) {
-      tasks.add(new SnappyQueryJob(snc, i, counter));
+      tasks.add(new SnappyQueryJob(SnappyContext.apply(sc()), i, counter));
     }
 
     long l1 = System.currentTimeMillis();

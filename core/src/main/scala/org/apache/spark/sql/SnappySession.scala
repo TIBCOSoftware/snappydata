@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import java.sql.SQLException
+import java.sql.{DriverManager, SQLException, SQLWarning}
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -41,6 +41,7 @@ import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
+import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
@@ -64,7 +65,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{ConnectorCatalog, ExternalTableType, HiveClientUtil, QualifiedTableName, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableInsertOrPut, SnappySessionState}
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types._
@@ -79,9 +80,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   self =>
 
-  // initialize GemFireXDDialect so that it gets registered
+  // initialize SnappyStoreDialect so that it gets registered
 
-  GemFireXDDialect.init()
+  SnappyStoreDialect.init()
 
   /* ----------------------- *
    |  Session-related state  |
@@ -244,9 +245,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] val queryHints = new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
-  def getPreviousQueryHints: java.util.Map[String, String] =
-    java.util.Collections.unmodifiableMap(queryHints)
-
   @transient
   private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
 
@@ -262,6 +260,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] var disableHashJoin: Boolean = Property.DisableHashJoin.get(sessionState.conf)
 
+  @transient
+  private var sqlWarnings: SQLWarning = _
+
+  def getPreviousQueryHints: java.util.Map[String, String] =
+    java.util.Collections.unmodifiableMap(queryHints)
+
+  def getWarnings: SQLWarning = sqlWarnings
+
+  private[sql] def addWarning(warning: SQLWarning): Unit = {
+    val warnings = sqlWarnings
+    if (warnings eq null) sqlWarnings = warning
+    else warnings.setNextWarning(warning)
+  }
 
   /**
    * Get a previously registered context object using [[addContextObject]].
@@ -409,6 +420,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         }
     contextObjects.clear()
     planCaching = Property.PlanCaching.get(sessionState.conf)
+    sqlWarnings = null
   }
 
   private[sql] def clearQueryData(): Unit = synchronized {
@@ -569,6 +581,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, logicalPlan)
   }
 
+  override def internalCreateDataFrame(catalystRows: RDD[InternalRow],
+      schema: StructType): DataFrame = super.internalCreateDataFrame(catalystRows, schema)
 
   /**
    * Create a stratified sample table.
@@ -1079,7 +1093,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       onlyBuiltIn = true) else provider
 
     val relation = schemaDDL match {
-      case Some(cols) => Some(JdbcExtendedUtils.externalResolvedDataSource(self,
+      case Some(cols) => Some(ExternalStoreUtils.externalResolvedDataSource(self,
         cols, source, mode, params))
 
       case None if resolveRelation =>
@@ -1200,7 +1214,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     } else None
 
     val relation = schemaDDL match {
-      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
+      case Some(cols) => ExternalStoreUtils.externalResolvedDataSource(self,
         cols, source, mode, params, Some(query))
 
       case None =>
@@ -1338,11 +1352,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         if (ifExists) return else throw e
       case NonFatal(_) if !resolveRelation => None
     }
-    val isTempTable = sessionCatalog.isTemporaryTable(tableIdent)
+    val isLocalTempView = sessionCatalog.isLocalTemporaryView(tableIdent)
 
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) =>
-        if (!isTempTable) {
+        if (!isLocalTempView) {
           // resolve whether table is external or not at source since the required
           // classes to resolve may not be available in embedded cluster
           val isExternal = planOpt match {
@@ -1372,7 +1386,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           case _ => // ignore
         }
         Dataset.ofRows(this, plan).unpersist(blocking = true)
-        if (isTempTable) {
+        if (isLocalTempView) {
           // This is due to temp table
           // can be made from a backing relation like Parquet or Hadoop
           sessionCatalog.unregisterTable(tableIdent)
@@ -1380,11 +1394,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
-          case _ => if (!isTempTable && !sessionCatalog.unregisterGlobalView(tableIdent)) {
+          case _ => if (!isLocalTempView && !sessionCatalog.unregisterGlobalView(tableIdent)) {
             sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
           }
         }
-      case _ if isTempTable => // This is a temp table with no relation as source
+      case _ if isLocalTempView => // This is a temp table with no relation as source
         planOpt.foreach(Dataset.ofRows(this, _).unpersist(blocking = true))
         sessionCatalog.unregisterTable(tableIdent)
       case _ =>
@@ -1488,6 +1502,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
             .alterTable(tableIdent, isAddColumn, column)
+          SnappyStoreHiveCatalog.registerRelationDestroy()
           return
       case _ =>
     }
@@ -1652,7 +1667,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     if (indexIdent.database != tableIdent.database) {
       throw new AnalysisException(
-        s"Index and table have different databases " +
+        s"Index and table have different schemas " +
             s"specified ${indexIdent.database} and ${tableIdent.database}")
     }
     if (!sessionCatalog.tableExists(tableIdent)) {
@@ -1734,7 +1749,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(this), new mutable.HashMap[String, String])
+      Some(this), mutable.Map.empty[String, String])
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
@@ -1913,6 +1928,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     new GenericRow(rowAsArray)
   }
 
+  private[sql] def defaultConnectionProps: ConnectionProperties =
+    ExternalStoreUtils.validateAndGetAllProps(Some(this), mutable.Map.empty[String, String])
+
+  private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
+    ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
+
+  private[sql] def defaultPooledOrConnectorConnection(name: String): java.sql.Connection = {
+    // for smart connector use a normal connection with route-query=true
+    SnappyContext.getClusterMode(sparkContext) match {
+      case ThinClientConnectorMode(_, url) =>
+        DriverManager.getConnection(url + ";route-query=true", defaultConnectionProps.connProps)
+      case _ => defaultPooledConnection(name)
+    }
+  }
 
   /**
    * Fetch the topK entries in the Approx TopK synopsis for the specified

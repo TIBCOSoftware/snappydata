@@ -19,11 +19,13 @@ package org.apache.spark.sql.execution.columnar.impl
 import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
+
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
@@ -37,6 +39,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -208,6 +211,7 @@ abstract class BaseColumnFormatRelation(
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
         new RowFormatScanRDD(
           session,
           resolvedName,
@@ -219,7 +223,7 @@ abstract class BaseColumnFormatRelation(
           Array.empty[Expression],
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          commitTx = false, delayRollover, projection)
+          commitTx = false, delayRollover, projection, Some(region))
       case _ =>
         new SmartConnectorRowRDD(
           session,
@@ -230,7 +234,7 @@ abstract class BaseColumnFormatRelation(
           filters,
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          relInfo.embdClusterRelDestroyVersion,
+          relInfo.embedClusterRelDestroyVersion,
           _commitTx = false, delayRollover)
     }
   }
@@ -307,7 +311,7 @@ abstract class BaseColumnFormatRelation(
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert directly into column store for large number of rows
     if (numRows > (batchSize * numBuckets)) {
-      JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+      ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
         resolvedName, putInto = false)
     } else {
       // insert into the row buffer
@@ -375,10 +379,10 @@ abstract class BaseColumnFormatRelation(
         mode match {
           case SaveMode.Ignore =>
 //            dialect match {
-//              case GemFireXDDialect =>
-//                GemFireXDDialect.initializeTable(table,
+//              case SnappyStoreDialect =>
+//                SnappyStoreDialect.initializeTable(table,
 //                  sqlContext.conf.caseSensitiveAnalysis, conn)
-//                GemFireXDDialect.initializeTable(externalColumnTableName,
+//                SnappyStoreDialect.initializeTable(externalColumnTableName,
 //                  sqlContext.conf.caseSensitiveAnalysis, conn)
 //              case _ => // Do nothing
 //            }
@@ -483,16 +487,24 @@ abstract class BaseColumnFormatRelation(
   /**
    * Execute a DML SQL and return the number of rows affected.
    */
-  override def executeUpdate(sql: String): Int = {
+  override def executeUpdate(sql: String, defaultSchema: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
       connProperties.hikariCP)
+    var currentSchema: String = null
     try {
+      if (defaultSchema ne null) {
+        currentSchema = connection.getSchema
+        if (defaultSchema != currentSchema) {
+          connection.setSchema(defaultSchema)
+        }
+      }
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()
       stmt.close()
       result
     } finally {
+      if (currentSchema ne null) connection.setSchema(currentSchema)
       connection.commit()
       connection.close()
     }
