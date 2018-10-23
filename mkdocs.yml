@@ -160,7 +160,6 @@ pages:
         - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
-    - 'API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
         - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
@@ -292,6 +291,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Documentation': 'apidocsintro.md'
+    - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md'
