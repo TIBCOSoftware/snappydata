@@ -23,6 +23,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister}
+import org.apache.spark.sql.streaming.DirectKafkaStreamRelation.{STARTING_OFFSETS_PROP, partitionOffsetMethod}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
@@ -44,6 +45,8 @@ object DirectKafkaStreamRelation{
     val clazz = Utils.classForName("org.apache.spark.sql.kafka010.JsonUtils")
     clazz.getMethod("partitionOffsets", classOf[String])
   }
+
+  private val STARTING_OFFSETS_PROP = "startingOffsets"
 }
 
 final class DirectKafkaStreamRelation(
@@ -65,8 +68,13 @@ final class DirectKafkaStreamRelation(
   private val startingOffsets = getStartingOffsets
 
   private def getStartingOffsets = {
-    DirectKafkaStreamRelation.partitionOffsetMethod.invoke(null, options("startingOffsets"))
-        .asInstanceOf[Map[TopicPartition, Long]]
+
+    if (options.contains(STARTING_OFFSETS_PROP)) {
+      partitionOffsetMethod.invoke(null, options(STARTING_OFFSETS_PROP))
+          .asInstanceOf[Map[TopicPartition, Long]]
+    } else {
+      Map.empty[TopicPartition, Long]
+    }
   }
 
   override protected def createRowStream(): DStream[InternalRow] = {
