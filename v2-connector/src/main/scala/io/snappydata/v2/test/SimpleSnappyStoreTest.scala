@@ -38,9 +38,15 @@ object SimpleSnappyStoreTest {
 
     val df = dfReader.load()
       .select("YEAR_")
-      .filter("YEAR_=2015")
+      .filter("YEAR_>2015")
 
     df.show(10)
+
+    df.write.format("io.snappydata.v2.connector.dummy.snappystore")
+        .option("driver", "io.snappydata.jdbc.ClientDriver")
+        .option("url", "jdbc:snappydata://localhost:1527/")
+        .option("tableName", "AIRLINE_1").save()
+
 
   }
 
