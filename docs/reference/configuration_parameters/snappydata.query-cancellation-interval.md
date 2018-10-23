@@ -1,4 +1,4 @@
-# snappydata.query-cancellation-interval
+# gemfirexd.query-cancellation-interval
 
 ## Description
 
