@@ -1,6 +1,6 @@
-# SnappyData API Reference Guide
+# SnappyData Spark Extension API Reference Guide
 
-This guide gives details of the APIs provided by SnappyData. The following APIs are included in SnappyData:
+This guide gives details of Spark extension APIs that are provided by SnappyData. The following APIs are included:
 
 
 | SnappySession APIs | DataFrameWriter APIs |SnappyStoreHiveCatalog APIs|
