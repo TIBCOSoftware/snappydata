@@ -1,12 +1,19 @@
 <a id="howto-streams"></a>
 
-SnappyData supports both the older Spark Streaming model (based on DStreams) as well as the newer Structured streaming model. Unlike, Spark streaming DStreams model(based on RDDs), SnappyData supports Spark SQL in both models. 
+# How to use Stream Processing with SnappyData 
 
-# How to use Stream Processing with SnappyData (on top of DStreams) 
+SnappyData supports both the older [Spark Streaming model (based on DStreams)](#dstreams) as well as the newer [Structured Streaming model](#structuredstreaming). Unlike the Spark streaming DStreams model, that is based on RDDs, SnappyData supports Spark SQL in both models.
+
+<a id= dstreams> </a>
+## Spark Streaming DStreams Model
+
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to this [section](../programming_guide/stream_processing_using_sql.md).
 
-**Code Example**: </br>
-Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets below show how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
+### Code Sample
+
+Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets in the following section show how to declare a stream table, register continuous queries(CQ) and update SnappyData table using the stream data.
+
+### Using Stream Processing with SnappyData
 
 **First get a SnappySession and a SnappyStreamingContext**: </br>
 Here SnappyStreamingContext is initialized in a batch duration of one second.
@@ -114,17 +121,20 @@ resultStream.foreachDataFrame(df => {
 ```pre
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
 ```
-
-## Structured Streaming with SnappyData 
+<a id= structuredstreaming> </a>
+## Structured Streaming
 
 The SnappyData structured streaming programming model is the same as [Spark structured streaming](https://spark.apache.org/docs/2.1.1/structured-streaming-programming-guide.html). 
 
-The only difference is support for ingesting streaming dataframes into SnappyData tables through a built-in '**Sink**'. The **Sink** supports idempotent writes(ensuring consistency of data when failures occur) as well as support for all mutation operations - inserts, appends, updates, puts and deletes. 
+The only difference is support for ingesting streaming dataframes into SnappyData tables through a built-in '**Sink**'. The **Sink** supports idempotent writes, ensuring consistency of data when failures occur, as well as support for all mutation operations such as inserts, appends, updates, puts, and deletes. 
 
 The output data source name for SnappyData is `snappysink`.
 
-A minimal code example for structured streaming with SnappyData is available [here](https://github.com/SnappyDataInc/snappydata/blob/streaming_sink/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingExample.scala).
-## NOTE: (Jags) above link doesn't work.
+### Code Sample
+
+A minimal code example for structured streaming with snappysink is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingWithSnappySink.scala).
+
+### Using SnappyData Structured Streaming API
 
 The following code snippet, from the example, explains the usage of SnappyData's ** Structured Streaming API**:
 
@@ -140,24 +150,23 @@ The following code snippet, from the example, explains the usage of SnappyData's
         .option("checkpointLocation", checkpointDirectory)
         .start()
 ```
+#### SnappyData Specific options
 
-**SnappyData specific options**
+The following are SnappyData specific options which can be configured for Structured Streaming:
 
 | Options | Description |
 |--------|--------|
 |    `streamQueryId`    | This is internally used by SnappyData to track the progress of a stream query. The value of this property must be kept unique for each stream query across the SnappyData cluster.  The property is case-insensitive and is mandatory.|
 |`tableName`|Name of the SnappyData table where the streaming data is ingested. The property is case-insensitive and is mandatory.|
-|`sinkCallback`|This is an optional property which is used to override default **SnappyData Sink** behavior.|
+|`conflation`|This is an optional boolean property with the default value set to `false`. Conflation can be enabled by explicitly setting this property to `true`. When this is enabled the default SnappyData Sink conflates the events by grouping the key columns and selecting the last event for processing. For more information, see [here](#conflationpro). |
+|`sinkCallback`|This is an optional property which is used to override default **SnappyData Sink** behavior. To override the default behavior, client codes should implement `SnappySinkCallback` trait and pass the fully qualified name of the implementing class against this property value.|
 
-## NOTE: (Jags) where is this sinkCallback described? what is its purpose ?  
+### Handling Inserts, Updates and Deletes
 
-### Dealing with Inserts, Updates and Deletes
+A common use case for streaming is capturing writes into another store (Operational database such as RDB or NoSQL DB) and streaming the events through Kafka, applying Spark transformations, and ingesting into an analytics datastore such as SnappyData. This pattern is commonly referred to as **Change-Data-Capture (CDC)**. 
 
-A common use case for streaming is capturing writes into another store (e.g. a operational database like RDB or NoSQL DB) and streaming the events through Kafka, applying Spark transformations and ingesting into a Analytics datastore (e.g.SnappyData). This pattern is commonly referred to as Change-Data-Capture (CDC). 
-
-To support this use case, SnappyData's Sink supports events to signal if they are Inserts, updates or deletes. The application is required to inject a column called `_eventType` as described below. 
-An example explaining the same is available [here](https://github.com/SnappyDataInc/snappydata/blob/streaming_sink/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingCDCExample.scala).
-## NOTE: (Jags) link above doesn't work
+To support this use case, SnappyData's **Sink** supports events to signal if they are Inserts, Updates, or Deletes. The application is required to inject a column called `_eventType` as described below. 
+An example explaining the same is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingCDCExample.scala).
 
 To support CDC, the source dataframe must have the following:
 
@@ -166,30 +175,34 @@ To support CDC, the source dataframe must have the following:
 	-	`1` for update events  
 	-	`2` for delete events
 	
-	In case the input data is following a different convention for event types, then it must be transformed to match the above mentioned format.
+	In case the input data is following a different convention for event types, then it must be transformed to match the above-mentioned format.
     
     !!!Note
-    	Records which have `_eventType` value other than the above mentioned ones are skipped.
+    	Records which have `_eventType` value other than the above-mentioned ones are skipped.
     
 *	The target SnappyData table must have key columns defined for a column table or primary key defined for a row table.
 
-If the `_eventType` column is not provided as part of source dataframe, then the following is observed:
+!!!Important
+	If the `_eventType` column is not provided as part of source dataframe, then the following is observed:</br> -	In a target table with key columns/primary key defined, the **put into** operation is applied to all events.</br> -	In a target table without key columns/primary key defined, the **insert** operation is applied to all the events.
 
-- In a target table with key columns/primary key defined, the **_ put into** operation is applied to all events.
-- In a target table without key columns/primary key defined, the **insert** operation is applied to all the events.
-
-### Event ordering
+### Event Processing Order
 
 **SnappyData Sink** performs the operations on a streaming batch in the following order with **each partition**:
 
   - All delete events (deletes relevant records from target table) are processed.
-  - All insert events (inserts relevant records into target table) are processed
+  - All insert events (inserts relevant records into the target table) are processed
   - All update events (applies **put into** operation) are processed.
 
-#### Note
-It is important to note that this above ordering is done within each partition indepedent of others. This typically means that the input DataFrame should be partitioned on the key. So, all change records on the same key is processed by a single partition (task). If the input source is Kafka, it is advised to maintain this ordering within Kafka and avoiding the shuffle within your Spark app.
+<a id= conflationpro> </a>
+By default, the current ordering semantics only ensures consistency when incoming events in a batch are for unique keys.  For instance, an **Insert(k1)** followed by a **Delete(k1)** results in **k1** showing up in the target table. For such cases, you should enable the conflation by setting the `conflation` property to `true`.
+When conflation is enabled, the default sink conflates multiple records with the same key column values and processes only the last record with that key. 
 
-To override the default behavior, client codes should implement `SnappySinkCallback` trait and pass the fully qualified name of the implementing class against `sinkCallback` option while defining stream query.
+For instance, when a batch contains **Insert(k1)** event followed by a **Delete(k1)** event, then the default sink will conflate these two events into a single event by selecting the latest event which is** Delete(k1) **.
 
-#### Limitation
-The current ordering semantics only ensures consistency when incoming events in a batch are for unique keys. So, for instance, a Insert(k1) followed by a Delete(k1) will result in k1 showing up in the target table. For such cases, you should use the `SnappySinkCallback` to override this behavior. We will continue to evolve our semantics to preserve arrival order in the future. 
+!!!Important
+	Processing **Delete(k1)** without processing **Insert(k1)** does not result in a failure as Delete events are ignored, if corresponding records do not exist in the target table.
+
+!!!Note
+	It is important to note that the ordering is done within each partition that is independent of others. This implies that the input DataFrame should be partitioned on the key. So, all change records on the same key are processed by a single partition (task). </br>If the input source is Kafka, it is advised to maintain this ordering within Kafka and avoiding the shuffle within your Spark app.
+
+
