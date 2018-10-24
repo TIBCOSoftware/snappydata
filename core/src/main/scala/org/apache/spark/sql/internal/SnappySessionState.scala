@@ -1103,7 +1103,8 @@ class DefaultPlanner(val session: SnappySession, conf: SQLConf,
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,
-      StoreStrategy, StreamQueryStrategy) ++
+      StoreStrategy, StreamQueryStrategy,
+      StatefulAggregationStrategy, StreamingRelationStrategy) ++
         storeOptimizedRules ++
         super.strategies
 }
