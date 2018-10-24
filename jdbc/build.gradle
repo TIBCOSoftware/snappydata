@@ -66,10 +66,6 @@ if (rootProject.hasProperty('enablePublish')) {
   }
 }
 
-testClasses.doLast {
-  copyTestsCommonResources(buildDir)
-}
-
 scalaTest {
   dependsOn ':cleanScalaTest'
   doFirst {

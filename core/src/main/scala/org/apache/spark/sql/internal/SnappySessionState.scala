@@ -142,7 +142,7 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
-      implicit val ss = snappySession
+      implicit val ss: SnappySession = snappySession
       var insertedSnappyOpts = 0
       val modified = super.batches.map {
         case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
@@ -423,8 +423,8 @@ class SnappySessionState(snappySession: SnappySession)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
-        case  (_: BypassRowLevelSecurity | _: Update | _: Delete |
-               _: DeleteFromTable | _: PutIntoTable) => plan
+        case _: BypassRowLevelSecurity | _: Update | _: Delete |
+             _: DeleteFromTable | _: PutIntoTable => plan
 
         // TODO: Asif: Bypass row level security filter apply if the command
         // is of type RunnableCommad. Later if it turns out any data operation
@@ -504,7 +504,7 @@ class SnappySessionState(snappySession: SnappySession)
                   || (projs.length == 1 && projs.head.isInstanceOf[Star])))) {
             boolsArray(allProjectionBool) = false
           }
-          case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+          case _: GlobalLimit | _: LocalLimit => boolsArray(alreadyProcessed_bool) = true
           case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
             boolsArray(filter_bool) = true
           case _ =>

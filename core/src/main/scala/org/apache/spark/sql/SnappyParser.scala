@@ -178,7 +178,7 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String) = {
+  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String): Unit = {
     if (!queryHints.isEmpty) {
       val hintStr = hint.toString
       queryHints.forEach(new BiConsumer[String, String] {
@@ -806,20 +806,20 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relation: Rule1[LogicalPlan] = rule {
-    relationWithExternal ~> ((plan) => withHints(plan)) ~ (
-        joinType.? ~ JOIN ~ (relationWithExternal ~> ((plan) => withHints(plan))) ~ (
+    relationWithExternal ~> (plan => withHints(plan)) ~ (
+        joinType.? ~ JOIN ~ (relationWithExternal ~> (plan => withHints(plan))) ~ (
             ON ~ expression ~> ((l: LogicalPlan, t: Any, r: LogicalPlan, e: Expression) =>
-              Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e))) |
+              withHints(Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e)))) |
             USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
                 ((l: LogicalPlan, t: Any, r: LogicalPlan, ids: Any) =>
-                  Join(l, r, UsingJoin(t.asInstanceOf[Option[JoinType]]
-                      .getOrElse(Inner), ids.asInstanceOf[Seq[String]]), None)) |
+                  withHints(Join(l, r, UsingJoin(t.asInstanceOf[Option[JoinType]]
+                      .getOrElse(Inner), ids.asInstanceOf[Seq[String]]), None))) |
             MATCH ~> ((l: LogicalPlan, t: Option[JoinType], r: LogicalPlan) =>
-              Join(l, r, t.getOrElse(Inner), None))
+              withHints(Join(l, r, t.getOrElse(Inner), None)))
         ) |
-        NATURAL ~ joinType.? ~ JOIN ~ (relationWithExternal ~> ((plan) => withHints(plan))) ~>
-            ((l: LogicalPlan, t: Any, r: LogicalPlan) => Join(l, r,
-              NaturalJoin(t.asInstanceOf[Option[JoinType]].getOrElse(Inner)), None))
+        NATURAL ~ joinType.? ~ JOIN ~ (relationWithExternal ~> (plan => withHints(plan))) ~>
+            ((l: LogicalPlan, t: Any, r: LogicalPlan) => withHints(Join(l, r,
+              NaturalJoin(t.asInstanceOf[Option[JoinType]].getOrElse(Inner)), None)))
     ).*
   }
 
