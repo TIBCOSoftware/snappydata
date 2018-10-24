@@ -954,6 +954,35 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(8, 8, "str8", 8)))
   }
 
+  test("Delete From SQL with key column aliasing") {
+    val snc = this.snc
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table col_table(pk1 int, col1 int, pk3 varchar(50), col2 int) " +
+        "using column options(key_columns 'pk3,pk1')")
+
+    df1.write.insertInto("col_table")
+
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
+    try {
+      df2.createGlobalTempView("delete_df")
+      val stmt = conn.createStatement()
+      stmt.execute("DELETE FROM col_table SELECT pk1, pk2 as pk3 from delete_df")
+      stmt.close()
+    } finally {
+      conn.close()
+      snc.dropTable("delete_df")
+    }
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
+  }
+
   private def bug2348Test(): Unit = {
     var snc = new SnappySession(sc)
     snc.sql("create table t1(id long," +

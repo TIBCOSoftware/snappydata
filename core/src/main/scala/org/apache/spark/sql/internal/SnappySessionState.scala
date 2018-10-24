@@ -1158,22 +1158,24 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
             case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
           }
 
-          val childAttributes = child.output.map(ar => (ar.name.toUpperCase(), ar)).toMap
           val keyColumns = dr.getPrimaryKeyColumns
-
-          val childOutput = try {
-            keyColumns.map(_.toUpperCase)
-                .map(childAttributes(_))
-          } catch {
-            case _: NoSuchElementException =>
-              throw new AnalysisException(s"$l requires that the query in the " +
+          val childOutput = keyColumns.map(col =>
+            child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"$l requires that the query in the " +
                   "WHERE clause of the DELETE FROM statement " +
                   s"must have all the key column(s) ${keyColumns.mkString(",")} but found " +
                   s"${child.output.mkString(",")} instead.")
-          }
+            })
 
-          val relationAttributes = l.output.map(ar => (ar.name.toUpperCase(), ar)).toMap
-          val expectedOutput = keyColumns.map(_.toUpperCase).map(relationAttributes(_))
+          val expectedOutput = keyColumns.map(col =>
+            l.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"The target table must contain all the" +
+                  s" key column(s) ${keyColumns.mkString(",")}. " +
+                  s"Actual schema: ${l.output.mkString(",")}")
+            })
+
           castAndRenameChildOutputForPut(d, expectedOutput, dr, l, Project(childOutput, child))
 
         case _ => d
