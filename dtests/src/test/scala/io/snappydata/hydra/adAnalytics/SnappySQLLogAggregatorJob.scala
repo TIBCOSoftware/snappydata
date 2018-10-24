@@ -62,7 +62,7 @@ class SnappySQLLogAggregatorJob extends SnappyStreamingJob {
         " cookie string) " +
         " using kafka_stream options(" +
         " rowConverter 'io.snappydata.adanalytics.AdImpressionToRowsConverter' ," +
-        s" kafkaParams 'metadata.broker.list->$brokerList;auto.offset.reset->smallest'," +
+        s" kafkaParams 'bootstrap.servers->$brokerList;auto.offset.reset->smallest'," +
         s" subscribe '$kafkaTopic'," +
         " K 'java.lang.String'," +
         " V 'io.snappydata.adanalytics.AdImpressionLog', " +
