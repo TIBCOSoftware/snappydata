@@ -1154,9 +1154,6 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
-          def comp(a: Attribute, targetCol: String): Boolean = a match {
-            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
-          }
 
           val keyColumns = dr.getPrimaryKeyColumns
           val childOutput = keyColumns.map(col =>
