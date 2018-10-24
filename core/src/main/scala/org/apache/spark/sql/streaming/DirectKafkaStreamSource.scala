@@ -67,14 +67,10 @@ final class DirectKafkaStreamRelation(
   private val preferredHosts = LocationStrategies.PreferConsistent
   private val startingOffsets = getStartingOffsets
 
-  private def getStartingOffsets = {
-
-    if (options.contains(STARTING_OFFSETS_PROP)) {
-      partitionOffsetMethod.invoke(null, options(STARTING_OFFSETS_PROP))
-          .asInstanceOf[Map[TopicPartition, Long]]
-    } else {
-      Map.empty[TopicPartition, Long]
-    }
+  private def getStartingOffsets = options.get(STARTING_OFFSETS_PROP) match {
+    case Some(offsets) => partitionOffsetMethod.invoke(null, offsets)
+        .asInstanceOf[Map[TopicPartition, Long]]
+    case None => Map.empty[TopicPartition, Long]
   }
 
   override protected def createRowStream(): DStream[InternalRow] = {
