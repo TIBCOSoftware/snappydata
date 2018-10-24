@@ -178,7 +178,7 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String) = {
+  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String): Unit = {
     if (!queryHints.isEmpty) {
       val hintStr = hint.toString
       queryHints.forEach(new BiConsumer[String, String] {
@@ -806,8 +806,8 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relation: Rule1[LogicalPlan] = rule {
-    relationWithExternal ~> ((plan) => withHints(plan)) ~ (
-        joinType.? ~ JOIN ~ relationWithExternal ~ (
+    relationWithExternal ~> (plan => withHints(plan)) ~ (
+        joinType.? ~ JOIN ~ (relationWithExternal ~> (plan => withHints(plan))) ~ (
             ON ~ expression ~> ((l: LogicalPlan, t: Any, r: LogicalPlan, e: Expression) =>
               withHints(Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e)))) |
             USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
@@ -817,9 +817,9 @@ class SnappyParser(session: SnappySession)
             MATCH ~> ((l: LogicalPlan, t: Option[JoinType], r: LogicalPlan) =>
               withHints(Join(l, r, t.getOrElse(Inner), None)))
         ) |
-        NATURAL ~ joinType.? ~ JOIN ~ relationWithExternal ~> ((l: LogicalPlan, t: Any,
-            r: LogicalPlan) => withHints(Join(l, r, NaturalJoin(t.asInstanceOf[Option[JoinType]]
-            .getOrElse(Inner)), None)))
+        NATURAL ~ joinType.? ~ JOIN ~ (relationWithExternal ~> (plan => withHints(plan))) ~>
+            ((l: LogicalPlan, t: Any, r: LogicalPlan) => withHints(Join(l, r,
+              NaturalJoin(t.asInstanceOf[Option[JoinType]].getOrElse(Inner)), None)))
     ).*
   }
 

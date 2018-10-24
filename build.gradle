@@ -92,6 +92,8 @@ allprojects {
     options.encoding = 'UTF-8'
   }
 
+  jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
   javadoc.options.charSet = 'UTF-8'
 
   gradle.taskGraph.whenReady( { graph ->
@@ -153,7 +155,7 @@ allprojects {
   if (!buildRoot.isEmpty()) {
     buildDir = new File(buildRoot, 'scala-' + scalaBinaryVersion + '/' +  project.path.replace(':', '/'))
   } else {
-    // default output directory like in sbt/maven
+    // default output directory suffix like in sbt/maven
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
   }
   if (rootProject.hasProperty('enablePublish')) {
@@ -168,6 +170,14 @@ allprojects {
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
     snappyProductDir = "${rootProject.buildDir}/snappy"
+  }
+
+  // force same output directory for IDEA and gradle
+  idea {
+    module {
+      outputDir file("${project.buildDir}/classes/main")
+      testOutputDir file("${project.buildDir}/classes/test")
+    }
   }
 }
 
@@ -372,12 +382,16 @@ subprojects {
     minHeapSize '1536m'
     maxHeapSize '1536m'
 
+    // limit netty buffer arenas to avoid occasional OOMEs with 1.5g heap
+    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors())
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
-               '-XX:+CMSClassUnloadingEnabled', '-ea']
+               '-XX:+CMSClassUnloadingEnabled', '-ea',
+               "-Dio.netty.allocator.numHeapArenas=${numArenas}",
+               "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
 
-    def single = System.getProperty('dunit.single')
+    String single = System.getProperty('dunit.single')
     if (single == null || single.length() == 0) {
       single = rootProject.hasProperty('dunit.single') ?
           rootProject.property('dunit.single') : null
@@ -446,10 +460,14 @@ subprojects {
     minHeapSize '1536m'
     maxHeapSize '1536m'
 
+    // limit netty buffer arenas to avoid occasional OOMEs with 1.5g heap
+    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors())
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
-               '-XX:+CMSClassUnloadingEnabled', '-ea']
+               '-XX:+CMSClassUnloadingEnabled', '-ea',
+               "-Dio.netty.allocator.numHeapArenas=${numArenas}",
+               "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
 
     def single = rootProject.hasProperty('dunitSecurity.single') ?
         rootProject.property('dunitSecurity.single') : null
@@ -1107,32 +1125,30 @@ task distInstallers {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip
-  dependsOn distInstallers
+  dependsOn product, distTar, distZip dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
-def copyTestsCommonResources(def bdir) {
-  String outdir = "${bdir}/resources/test"
-  file(outdir).mkdirs()
-
-  copy {
-    from "${rootDir}/tests/common/src/main/resources"
-    into outdir
-  }
-}
-
-task copyResourcesAll { doLast {
-  copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
-  copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
-  if (isEnterpriseProduct && hasAqpProject) {
-    copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
-  }
-} }
-
 task generateSources {
   dependsOn ':snappy-spark:generateSources', ':snappy-store:generateSources'
-  dependsOn copyResourcesAll
+  // copy all resource files into build classes path because new versions of IDEA
+  // do not include separate resources path in CLASSPATH if output path has been customized
+  getSubprojects().collect { proj ->
+    String resourcesDir = "${proj.projectDir}/src/main/resources"
+    if (file(resourcesDir).exists()) {
+      copy {
+        from resourcesDir
+        into "${proj.buildDir}/classes/main"
+      }
+    }
+    resourcesDir = "${proj.projectDir}/src/test/resources"
+    if (file(resourcesDir).exists()) {
+      copy {
+        from resourcesDir
+        into "${proj.buildDir}/classes/test"
+      }
+    }
+  }
 }
 
 task cleanAll {
@@ -1302,6 +1318,9 @@ task deleteDocsDir(type: Delete) {
 
 task docs(type: ScalaDoc) {
   apply plugin: 'scala'
+
+  scalaDocOptions.additionalParameters = [ '-J-Xmx2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
+
   dependsOn deleteDocsDir
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
