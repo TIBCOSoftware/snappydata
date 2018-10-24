@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.Properties
+import java.util.{NoSuchElementException, Properties}
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
@@ -1153,39 +1153,28 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(dr: DeletableRelation, _, _) =>
-          def comp(a: Attribute, targetCol: String): Boolean = a match {
-            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
-          }
-
-          val expectedOutput = l.output
-          if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same column name(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          l match {
-            case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
-              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
-                comp(e, a.toUpperCase)))) {
-                throw new AnalysisException(s"${child.output.mkString(",")}" +
-                    s" columns in the WHERE clause of the DELETE FROM statement must " +
-                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
-              }
-            case _ =>
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
-
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
-          val expectedOutput = l.output
-          if (child.output.length != expectedOutput.length) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same number of column(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+
+          val keyColumns = dr.getPrimaryKeyColumns
+          val childOutput = keyColumns.map(col =>
+            child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"$l requires that the query in the " +
+                  "WHERE clause of the DELETE FROM statement " +
+                  s"must have all the key column(s) ${keyColumns.mkString(",")} but found " +
+                  s"${child.output.mkString(",")} instead.")
+            })
+
+          val expectedOutput = keyColumns.map(col =>
+            l.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"The target table must contain all the" +
+                  s" key column(s) ${keyColumns.mkString(",")}. " +
+                  s"Actual schema: ${l.output.mkString(",")}")
+            })
+
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, Project(childOutput, child))
+
         case _ => d
       }
 
