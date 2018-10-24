@@ -877,7 +877,7 @@ task product(type: Zip) {
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy snappy-store shared libraries for JNI calls
       def storeCoreProject = project(':snappy-store:snappydata-store-core')
-      if (osName.isLinux()) {
+      if (osName.isLinux() || osName.isMacOsX()) {
         copy {
           from "${storeCoreProject.projectDir}/lib"
           into "${snappyProductDir}/jars"
