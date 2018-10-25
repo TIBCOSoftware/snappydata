@@ -62,11 +62,18 @@ object StringMessageProducer {
     pw.flush()
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
-
-    val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
-      hasDerby))
-    thread.start()
-    thread.join()
+    var numThreads = 1;
+    if (!isConflationTest) { numThreads = 10 }
+    val threads = new Array[Thread](numThreads)
+    val eventsPerThread = eventCount / numThreads;
+    for (i <- 0 until numThreads) {
+      val thrStartRange = i * eventsPerThread
+      val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
+        hasDerby))
+      thread.start()
+      threads(i) = thread
+    }
+    threads.foreach(_.join())
     pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
     pw.close()
     producer.close()
