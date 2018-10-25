@@ -20,6 +20,7 @@ rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':v2-connector_' + scalaBinaryVersion
 include ':snappy-jdbc_' + scalaBinaryVersion
+include ':shared_' + scalaBinaryVersion
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
 include ':snappy-launcher'
@@ -30,6 +31,7 @@ include ':snappy-compatibility-tests_' + scalaBinaryVersion
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':v2-connector_' + scalaBinaryVersion).projectDir = "$rootDir/v2-connector" as File
+project(':shared_' + scalaBinaryVersion).projectDir = "$rootDir/shared" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
 project(':snappy-launcher').projectDir = "$rootDir/launcher" as File
