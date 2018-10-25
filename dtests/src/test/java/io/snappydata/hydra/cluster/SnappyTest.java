@@ -3044,15 +3044,26 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
+
                 //String xmlFileLocation = getScriptLocation("books.xml");
-                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + leadPort, "--app-name", "xmlProc", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--conf xmlFileLocation=/home/cbhatt/snappydata/dtests/src/resources/scripts/deploy_package_jar/books.xml", "--packages", SnappyPrms.getJarIdentifier());
+
+                String cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+                        " --app-name xmlProc --class " + userJob + " --app-jar " +
+                        snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " --conf xmlFileLocation=" + SnappyPrms.getCommaSepAPPProps() +  " --packages " + SnappyPrms.getJarIdentifier();
+
+//                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + leadPort, "--app-name", "xmlProc", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--conf", SnappyPrms.getCommaSepAPPProps(), "--packages", SnappyPrms.getJarIdentifier());
+
+                pb = new ProcessBuilder("/bin/bash", "-c", cmd);
                 Log.getLogWriter().info("Command is : " + pb.command());
-                java.util.Map<String, String> env = pb.environment();
-                if (SnappyPrms.getCommaSepAPPProps() == null) {
-                    env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
-                } else {
-                    env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
-                }
+
+//                java.util.Map<String, String> env = pb.environment();
+//                if (SnappyPrms.getCommaSepAPPProps() == null) {
+//                    env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
+//                } else {
+//                    env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
+//                }
+//                Log.getLogWriter().info("APP_PROPS : " + env.get("APP_PROPS"));
+
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
