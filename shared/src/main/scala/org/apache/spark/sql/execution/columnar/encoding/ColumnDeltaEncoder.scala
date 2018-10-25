@@ -25,6 +25,7 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -141,7 +142,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int = -1): Long = {
-    if (initSize < 4 || (initSize < ColumnDeltaConstant.INIT_SIZE && hierarchyDepth > 0)) {
+    if (initSize < 4 || (initSize < ColumnDelta.INIT_SIZE && hierarchyDepth > 0)) {
       throw new IllegalStateException(
         s"Batch size = $initSize too small for hierarchy depth = $hierarchyDepth")
     }
@@ -161,8 +162,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   def getMaxSizeForHierarchy(numColumnRows: Int): Int = {
     // max expected hierarchy depth of 3
-    val deltaRatio = numColumnRows.toDouble / ColumnDeltaConstant.INIT_SIZE.toDouble
-    lazy val hierarchyFactor = ColumnDeltaConstant.MAX_DEPTH match {
+    val deltaRatio = numColumnRows.toDouble / ColumnDelta.INIT_SIZE.toDouble
+    lazy val hierarchyFactor = ColumnDelta.MAX_DEPTH match {
       case 1 => deltaRatio
       case 2 => math.sqrt(deltaRatio)
       case 3 => math.cbrt(deltaRatio)
@@ -171,12 +172,12 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     }
     // calculate the maximum size at this hierarchy depth
     hierarchyDepth match {
-      case 0 => ColumnDeltaConstant.INIT_SIZE
-      case 1 => (ColumnDeltaConstant.INIT_SIZE * hierarchyFactor).toInt
-      case 2 => (ColumnDeltaConstant.INIT_SIZE * hierarchyFactor * hierarchyFactor).toInt
+      case 0 => ColumnDelta.INIT_SIZE
+      case 1 => (ColumnDelta.INIT_SIZE * hierarchyFactor).toInt
+      case 2 => (ColumnDelta.INIT_SIZE * hierarchyFactor * hierarchyFactor).toInt
       case -1 => Int.MaxValue
       case d => throw new IllegalStateException(
-        s"Configured hierarchy depth (0 based) = $d exceeds max = ${ColumnDeltaConstant.MAX_DEPTH}")
+        s"Configured hierarchy depth (0 based) = $d exceeds max = ${ColumnDelta.MAX_DEPTH}")
     }
   }
 
@@ -367,7 +368,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // so one copy of the encoded bytes has to be made. An alternative could be
     // to do one traversal to determine duplicates and get final size but that
     // would be overall slower than making one extra flat byte array copy.
-    var cursor = realEncoder.initialize(dataType, nullable, ColumnDeltaConstant.INIT_SIZE,
+    var cursor = realEncoder.initialize(dataType, nullable, ColumnDelta.INIT_SIZE,
       withHeader = false, allocator, newValueSize + existingValueSize)
 
     val writer = DeltaWriter(dataType)
