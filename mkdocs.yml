@@ -315,7 +315,9 @@ pages:
 - License: LICENSE.md
 
 theme: readthedocs
-theme_dir: 'docs/custom_theme'
+custom_dir: 'docs/custom_theme'
+
+requirements_file: requirements.txt
 
 extra_javascript:
     - 'custom_theme/js/menu.js'
