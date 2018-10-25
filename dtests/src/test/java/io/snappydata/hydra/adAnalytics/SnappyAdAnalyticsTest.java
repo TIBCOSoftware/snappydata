@@ -379,7 +379,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       appProps = SnappyPrms.getCommaSepAPPProps().split(",");
     }
     String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 3);
-    appProps1[appProps.length] = "" + TestConfig.tab().booleanAt(SnappyPrms.isConflationTest,
+    appProps1[appProps.length] = "" + TestConfig.tasktab().booleanAt(SnappyPrms.isConflationTest,
         false);
     appProps1[appProps.length + 1] = "" + DerbyTestUtils.hasDerbyServer;
     appProps1[appProps.length + 2] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
