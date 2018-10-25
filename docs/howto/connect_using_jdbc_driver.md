@@ -95,7 +95,7 @@ The client pool driver class name is **io.snappydata.jdbc.ClientPoolDriver**.
 
 Where the `<locatorHostName>` is the hostname of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
-The following additional properties can be configured for JDBC client pool driver connection:
+The following pool related properties can be used to tune the JDBC client pool driver:
 
 | Property | Description |
 |--------|--------|
@@ -103,8 +103,8 @@ The following additional properties can be configured for JDBC client pool drive
 |pool.password|The password to be passed to the JDBC  client pool driver to establish a connection.|
 |pool.initialSize|The initial number of connections that are created when the pool is started. Default value is `max(256, availableProcessors * 8)`.|
 |pool.maxActive| The maximum number of active connections that can be allocated from this pool at a time. The default value is `max(256, availableProcessors * 8)`. |
-|pool.minIdle| The minimum number of established connections that should be maintained in the client pool. Default value is derived from **initialSize:`max(256, availableProcessors * 8)`**.|
-|pool.maxIdle| The maximum number of connections that should be maintained in the client pool. Default value is **maxActive:`max(256, availableProcessors * 8)`**. Idle connections are checked periodically, if enabled, and the connections that are idle for more than the time set in **minEvictableIdleTimeMillis** are released.|
+|pool.minIdle| The minimum number of established connections that should be maintained in the client pool. Default value is **1**.|
+|pool.maxIdle| The maximum number of connections that should be maintained in the client pool. Default value is **maxActive:**`max(256, availableProcessors * 8)`. Idle connections are checked periodically, if enabled, and the connections that are idle for more than the time set in **minEvictableIdleTimeMillis** are released.|
 |pool.maxWait|(int) The maximum waiting period, in milliseconds, for establishing a connection after which an exception is thrown. Default value is 30000 (30 seconds).|
 |pool.removeAbandoned| Flag to remove the abandoned connections, in case they exceed the settings for **removeAbandonedTimeout**. If set to true a connection is considered abandoned and eligible for removal, if its no longer in use than the settings for **removeAbandonedTimeout**. Setting this to **true** can recover db connections from applications that fail to close a connection. The default value is **false**.|
 |pool.removeAbandonedTimeout| Timeout in seconds before an abandoned connection, that was in use, can be removed. The default value is 60 seconds. The value should be set to the time required for the longest running query in your applications.|
