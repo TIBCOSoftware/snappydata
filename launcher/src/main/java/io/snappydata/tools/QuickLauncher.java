@@ -134,7 +134,7 @@ class QuickLauncher extends LauncherBase {
       } else {
         commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd.so");
       }
-    }else if(Platform.isMac()){
+    } else if (Platform.isMac()) {
       if (Platform.is64Bit()) {
         commandLine.add("-agentpath:" + snappyHome + "/jars/libgemfirexd64.dylib");
       } else {
