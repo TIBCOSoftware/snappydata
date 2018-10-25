@@ -1,4 +1,4 @@
-# SnappyData in 15 Minutes
+# SnappyData Quick Start Guide
  
 In this section, you will get a quick tour to start a SnappyData cluster and try out the basic features and functionalities. The following items are covered in this guide:
 
