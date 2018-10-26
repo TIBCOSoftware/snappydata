@@ -819,7 +819,7 @@ class TokenizationTest
 
       val airlineDF = snContext.read.load(hfile)
       val airlineparquetTable = "airlineparquetTable"
-      airlineDF.registerTempTable(airlineparquetTable)
+      airlineDF.createOrReplaceTempView(airlineparquetTable)
 
       // val colTableName = "airlineColTable"
 

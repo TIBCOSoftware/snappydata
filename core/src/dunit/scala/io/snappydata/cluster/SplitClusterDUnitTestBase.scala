@@ -18,9 +18,10 @@ package io.snappydata.cluster
 
 import java.io.PrintWriter
 import java.net.InetAddress
-import java.sql.Timestamp
+import java.sql.{Connection, DriverManager, Timestamp}
 import java.util.Properties
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 import scala.util.Random
@@ -36,7 +37,7 @@ import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{MetadataTest, StoreUtils}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.util.collection.OpenHashSet
@@ -67,7 +68,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def props: Map[String, String] = testObject.props
 
-  protected def productDir: String
+  protected def sparkProductDir: String
 
   protected def locatorClientPort: Int
 
@@ -123,6 +124,9 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
   def doTestRowTableCreation(): Unit = {
+    // first check meta-data queries using connector and JDBC
+    vm3.invoke(getClass, "verifyMetadataQueries", Int.box(locatorClientPort))
+
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("row")
 
@@ -211,7 +215,7 @@ trait SplitClusterDUnitTestBase extends Logging {
           ColumnUpdateDeleteTests.testSNAP1925(session)
           ColumnUpdateDeleteTests.testSNAP1926(session)
           ColumnUpdateDeleteTests.testConcurrentOps(session)
-          ColumnUpdateDeleteTests.testSNAP2124(session, checkPruning = true)
+          ColumnUpdateDeleteTests.testSNAP2124(session)
         } finally {
           StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
         }
@@ -223,6 +227,9 @@ trait SplitClusterDUnitTestBase extends Logging {
 trait SplitClusterDUnitTestObject extends Logging {
 
   val props = Map.empty[String, String]
+
+  def getConnection(netPort: Int, props: Properties = new Properties()): Connection =
+    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort", props)
 
   def createTablesAndInsertData(tableType: String): Unit
 
@@ -245,6 +252,60 @@ trait SplitClusterDUnitTestObject extends Logging {
   def verifyTableFormInSplitMOde(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
+  }
+
+  def verifyMetadataQueries(locatorClientPort: Int): Unit = {
+
+    val session = getSnappyContextForConnector(locatorClientPort).snappySession
+
+    // clean any existing data
+    TestUtils.dropAllTables(session)
+    TestUtils.dropAllSchemas(session)
+
+    // first check metadata queries using session and JDBC connection
+    val locatorNetServer = s"localhost/127.0.0.1[$locatorClientPort]"
+    // get member IDs using JDBC connection
+    val jdbcConn = getConnection(locatorClientPort)
+    var stmt = jdbcConn.createStatement()
+
+    val rs = stmt.executeQuery("select id, kind, netServers from sys.members")
+    var locatorId = ""
+    var leadId = ""
+    val servers = new mutable.ArrayBuffer[String](2)
+    val netServers = new mutable.ArrayBuffer[String](2)
+    while (rs.next()) {
+      val id = rs.getString(1)
+      val thriftServers = rs.getString(3)
+      rs.getString(2) match {
+        case "locator" => assert(thriftServers == locatorNetServer); locatorId = id
+        case "primary lead" => assert(thriftServers.isEmpty); leadId = id
+        case "datastore" => servers += id; netServers += thriftServers
+        case kind => assert(assertion = false, s"unexpected node type = $kind")
+      }
+    }
+    rs.close()
+    stmt.close()
+    assert(!locatorId.isEmpty)
+    assert(!leadId.isEmpty)
+    assert(servers.nonEmpty)
+
+    // first test metadata using session
+    MetadataTest.testSYSTablesAndVTIs(session.sql,
+      hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
+    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false)
+    MetadataTest.testDSIDWithSYSTables(session.sql,
+      netServers, locatorId, locatorNetServer, servers, leadId)
+    // next test metadata using JDBC connection
+    stmt = jdbcConn.createStatement()
+    MetadataTest.testSYSTablesAndVTIs(MetadataTest.resultSetToDataset(session, stmt),
+      hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
+    MetadataTest.testDescribeShowAndExplain(MetadataTest.resultSetToDataset(session, stmt),
+      usingJDBC = true)
+    MetadataTest.testDSIDWithSYSTables(MetadataTest.resultSetToDataset(session, stmt),
+      netServers, locatorId, locatorNetServer, servers, leadId)
+
+    stmt.close()
+    jdbcConn.close()
   }
 
   def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
@@ -305,6 +366,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     val hostName = InetAddress.getLocalHost.getHostName
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
+      logInfo(s"Starting spark job using spark://$hostName:7077, connectionURL=$connectionURL")
       val conf = new SparkConf()
           .setAppName("test Application")
           .setMaster(s"spark://$hostName:7077")
