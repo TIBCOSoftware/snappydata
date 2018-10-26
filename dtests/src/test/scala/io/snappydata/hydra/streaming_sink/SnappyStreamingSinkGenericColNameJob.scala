@@ -64,7 +64,7 @@ class SnappyStreamingSinkGenericColNameJob extends SnappyStreamingJob {
           .load()
 
       def structFields() = {
-        StructField("col1", LongType, nullable = false) ::
+        StructField("id", LongType, nullable = false) ::
             StructField("col2", StringType, nullable = true) ::
             StructField("col3", StringType, nullable = true) ::
             StructField("col4", StringType, nullable = true) ::
