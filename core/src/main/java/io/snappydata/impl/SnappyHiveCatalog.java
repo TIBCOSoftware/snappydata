@@ -33,7 +33,6 @@ import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.gemstone.gemfire.internal.cache.GemfireCacheHelper;
 import com.gemstone.gemfire.internal.cache.PolicyTableData;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
-import com.gemstone.gemfire.internal.shared.SystemProperties;
 import com.pivotal.gemfirexd.Attribute;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
@@ -103,7 +102,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
    * Common connection properties set on metastore JDBC connections.
    */
   public static String getCommonJDBCSuffix() {
-    return ";disable-streaming=true;default-persistent=true;" +
+    return ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
+        ";disable-streaming=true;default-persistent=true;" +
         "sync-commits=true;internal-connection=true";
   }
 
@@ -372,7 +372,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           try {
             // downgrade dlock to a read lock if hive metastore has already
             // been initialized by some other server
-            if (dlockTaken && Misc.getRegionByPath("/" + SystemProperties
+            if (dlockTaken && Misc.getRegionByPath("/" + Misc
                 .SNAPPY_HIVE_METASTORE + "/FUNCS", false) != null) {
               lockService.unlock(hiveClientObject);
               dlockTaken = false;
@@ -435,8 +435,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               try {
                 Table table = hmc.getTable(schema, tableName);
                 Properties metadata = table.getMetadata();
-                String tblDataSourcePath = metadata.getProperty("path");
-                tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+                String tblDataSourcePath = getDataSourcePath(metadata);
                 String driverClass = metadata.getProperty("driver");
                 driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
                 String tableType = ExternalTableType.getTableType(table);
@@ -570,9 +569,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
-          String tblDataSourcePath = table.getMetadata().getProperty("path");
-          tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
-          String driverClass = table.getMetadata().getProperty("driver");
+          Properties metadata = table.getMetadata();
+          String tblDataSourcePath = getDataSourcePath(metadata);
+          String driverClass = metadata.getProperty("driver");
           driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
           return new ExternalTableMetaData(
               fullyQualifiedName,
@@ -607,17 +606,12 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       ExternalStoreUtils.registerBuiltinDrivers();
 
       SnappyHiveConf metadataConf = new SnappyHiveConf();
-      String urlSecure = "jdbc:snappydata:" +
-          ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
-          getCommonJDBCSuffix();
+      String urlSecure = Attribute.SNAPPY_PROTOCOL + getCommonJDBCSuffix();
       final Map<Object, Object> bootProperties = Misc.getMemStore().getBootProperties();
       if (bootProperties.containsKey(Attribute.USERNAME_ATTR) && bootProperties.containsKey
           (Attribute.PASSWORD_ATTR)) {
-        urlSecure = "jdbc:snappydata:" +
-            ";user=" + bootProperties.get(Attribute.USERNAME_ATTR) +
-            ";password=" + bootProperties.get(Attribute.PASSWORD_ATTR) +
-            ";default-schema=" + SnappyStoreHiveCatalog.HIVE_METASTORE() +
-            getCommonJDBCSuffix();
+        urlSecure = urlSecure + ";user=" + bootProperties.get(Attribute.USERNAME_ATTR) +
+            ";password=" + bootProperties.get(Attribute.PASSWORD_ATTR);
         /*
         metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
             bootProperties.get("user").toString());
@@ -625,6 +619,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
             bootProperties.get("password").toString());
         */
       } else {
+        urlSecure = urlSecure + ";user=" + SnappyStoreHiveCatalog.HIVE_METASTORE();
         metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
             Misc.SNAPPY_HIVE_METASTORE);
       }
@@ -689,6 +684,15 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         throw Util.generateCsSQLException(SQLState.TABLE_NOT_FOUND,
             tableName, he);
       }
+    }
+
+    private String getDataSourcePath(Properties metadata) {
+      String dataSourcePath = metadata.getProperty("path");
+      if (dataSourcePath == null || dataSourcePath.isEmpty()) {
+        // for external connectors like GemFire
+        dataSourcePath = metadata.getProperty("region.path");
+      }
+      return dataSourcePath != null ? dataSourcePath : "";
     }
 
     private String getType(Hive hmc) throws SQLException {

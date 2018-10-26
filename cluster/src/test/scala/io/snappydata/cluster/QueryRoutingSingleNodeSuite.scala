@@ -20,10 +20,12 @@ import java.sql.{DriverManager, ResultSet}
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import io.snappydata.gemxd.SnappySessionPerConnection
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.store.{ColumnTableBatchInsertTest, MetadataTest}
 
 class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -36,10 +38,18 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     // reducing DML chunk size size to force lead node to send
     // results in multiple batches
     setDMLMaxChunkSize(50L)
+    serverHostPort = TestUtil.startNetServer()
+    // scalastyle:off println
+    println("network server started")
+    // scalastyle:on println
   }
 
   override def afterAll(): Unit = {
     setDMLMaxChunkSize(default_chunk_size)
+    TestUtil.stopNetServer()
+    // scalastyle:off println
+    println("network server stopped")
+    // scalastyle:on println
     super.afterAll()
   }
 
@@ -102,13 +112,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("create table order_line_col (ol_w_id  integer,ol_d_id STRING) using column " +
         "options( partition_by 'ol_w_id, ol_d_id', buckets '8')")
 
-
-    serverHostPort = TestUtil.startNetServer()
-    // scalastyle:off println
-    println("network server started")
-    // scalastyle:on println
     insertRows(1000)
-
 
     (1 to 5).foreach(d => query())
   }
@@ -285,9 +289,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s" ol_2_int2_id  integer, ol_2_str_id STRING) using column " +
           "options( partition_by 'ol_2_int_id, ol_2_int2_id', buckets '2')")
 
-
-      val serverHostPort = TestUtil.startNetServer()
-      // println("network server started")
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
       query1(tableName1, tableName2, serverHostPort)
@@ -302,11 +303,8 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     val tName = "table1615"
     snc.sql(s"create table $tName (id int, price decimal(38,18), name varchar(10)) using column")
 
-    val sHostPort = TestUtil.startNetServer()
-    // scalastyle:off println
-    println("network server started")
-    // scalastyle:on println
-    val conn: java.sql.Connection = DriverManager.getConnection("jdbc:snappydata://" + sHostPort)
+    val conn: java.sql.Connection = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
     val stmt: java.sql.Statement = conn.createStatement()
     try {
       stmt.addBatch(s"insert into $tName values(1,10.4,'abc')")
@@ -324,7 +322,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       conn.close()
     }
 
-    (1 to 5).foreach(d => query1615(tName, sHostPort))
+    (1 to 5).foreach(_ => query1615(tName, serverHostPort))
   }
 
   def query1615(tName: String, sHostPort: String): Unit = {
@@ -415,10 +413,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("create table order_line_row_bool (ol_w_id  Boolean, ol_d_id Long) using row " +
         "options( partition_by 'ol_w_id, ol_d_id', buckets '8')")
 
-    serverHostPort = TestUtil.startNetServer()
-    // scalastyle:off println
-    println("network server started")
-    // scalastyle:on println
     insertBooleanRows(1000)
 
     (1 to 5).foreach(d => queryBooleanRows())
@@ -445,11 +439,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("CREATE INDEX app.ds_property_property_idx ON app.ds_property(property)")
     snc.sql("CREATE INDEX app.ds_property_dsnameprop_idx ON app.ds_property(ds_name, property)")
 
-    val conn = DriverManager.getConnection("jdbc:snappydata://" + TestUtil.startNetServer())
-    // scalastyle:off println
-    println("network server started")
-    // scalastyle:on println
-
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
     try {
       stmt.execute(s"insert into app.ds_property " +
@@ -631,8 +621,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s" ol_1_int2_id  integer, ol_1_str_id STRING) using row " +
           "options( partition_by 'ol_1_int2_id', buckets '2')")
 
-      serverHostPort = TestUtil.startNetServer()
-      // println("network server started")
       insertRows(tableName1, 1000)
       insertRows(tableName2, 1000)
       update_delete_query1(tableName1, 1)
@@ -723,8 +711,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       createTable(tableName2)
       createTable(tableName3)
 
-      serverHostPort = TestUtil.startNetServer()
-      // println("network server started")
       insertRows(tableName1, 10)
       insertInto(tableName3, tableName1, 10)
 
@@ -751,6 +737,33 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       assert(assertionNotFailed)
     } finally {
       SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    }
+  }
+
+  test("Spark caching using SQL") {
+    // first test using session
+    val sc = this.sc
+    val session = this.snc.snappySession
+    ColumnTableBatchInsertTest.testSparkCachingUsingSQL(sc, session.sql, session.catalog.isCached,
+      df => session.sharedState.cacheManager.lookupCachedData(df).isDefined)
+
+    // next using JDBC connection
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    try {
+      val stmt = conn.createStatement()
+      // dummy query to create session for connection
+      stmt.executeQuery("show tables")
+      val allSessions = SnappySessionPerConnection.getAllSessions
+      // only one connection session should be present
+      assert(allSessions.length === 1)
+      val connSession = allSessions.head
+      // skip the "isCached" checks with JDBC since session is different for JDBC connection
+      ColumnTableBatchInsertTest.testSparkCachingUsingSQL(sc,
+        MetadataTest.resultSetToDataset(connSession, stmt), connSession.catalog.isCached,
+        df => connSession.sharedState.cacheManager.lookupCachedData(df).isDefined)
+      stmt.close()
+    } finally {
+      conn.close()
     }
   }
 }

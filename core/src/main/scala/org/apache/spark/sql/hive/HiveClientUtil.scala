@@ -184,8 +184,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {
-      logURL = dbURL + ";default-schema=" + SystemProperties.SNAPPY_HIVE_METASTORE +
-          ";user=" + user.get
+      logURL = dbURL + ";user=" + user.get
       logURL + ";password=" + password.get + ";"
     } else {
       metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
@@ -290,7 +289,8 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
             SnappyHiveCatalog.getCommonJDBCSuffix + ";skip-constraint-checks=true",
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
-        (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
+        (url + SnappyHiveCatalog.getCommonJDBCSuffix +
+            ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
     }
   }
 }

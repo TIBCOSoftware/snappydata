@@ -572,7 +572,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(res.length === 0)
   }
 
-  def testSNAP2124(session: SnappySession, checkPruning: Boolean): Unit = {
+  def testSNAP2124(session: SnappySession): Unit = {
     val filePath = getClass.getResource("/sample_records.json").getPath
     session.sql("CREATE TABLE domaindata (cntno_l string,cntno_m string," +
         "day1 string,day2 string,day3 string,day4 string,day5 string," +
@@ -586,29 +586,16 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcinewsemail.com']", "[]")))
 
     ds = session.sql("UPDATE domaindata SET ds = '[''cbcin.com'']', dr = '[]' WHERE id = 40")
-    if (checkPruning) {
-      // below checks both the result and partition pruning (only one row)
-      SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
-    } else {
-      // check the result but expect no pruning (missing in smart connector)
-      SnappyFunSuite.checkAnswer(ds, Row(1) :: (1 until 40).map(_ => Row(0)).toList)
-    }
+    // below checks both the result and partition pruning (only one row)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
 
     ds = session.sql("select ds, dr from domaindata where id = 40")
-    // change when pruning is available in all modes (SNAP-2195)
-    if (checkPruning) {
-      assert(ds.rdd.getNumPartitions === 1)
-    } else {
-      assert(ds.rdd.getNumPartitions === 40)
-    }
+    // below checks both the result and partition pruning (only one row)
+    assert(ds.rdd.getNumPartitions === 1)
     SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcin.com']", "[]")))
 
     ds = session.sql("delete from domaindata where id = 40")
-    // change when pruning is available in all modes (SNAP-2195)
-    if (checkPruning) {
-      assert(ds.rdd.getNumPartitions === 1)
-    } else {
-      assert(ds.rdd.getNumPartitions === 40)
-    }
+    // below checks both the result and partition pruning (only one row)
+    assert(ds.rdd.getNumPartitions === 1)
   }
 }

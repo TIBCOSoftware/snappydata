@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
-import java.sql.SQLException
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -33,7 +32,6 @@ import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 
 import org.apache.spark._
@@ -262,17 +260,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
    */
-  private def withCallback[U](name: String)(action: CachedDataFrame => (U, Long)): U = {
+  private def withCallback[U](name: String)(action: DataFrame => (U, Long)): U = {
     var didPrepare = false
     try {
       didPrepare = prepareForCollect()
-      val (result, elapsed) = action(this)
-      snappySession.listenerManager.onSuccess(name, queryExecution, elapsed)
-      result
-    } catch {
-      case e: Exception =>
-        snappySession.listenerManager.onFailure(name, queryExecution, e)
-        throw e
+      CachedDataFrame.withCallback(snappySession, this, name)(action)
     } finally {
       endCollect(didPrepare)
     }
@@ -790,6 +782,23 @@ object CachedDataFrame
       results.iterator collect {
         case r if (r ne null) && r._1 != null => r._1
       }
+    }
+  }
+
+  /**
+   * Wrap a Dataset action to track the QueryExecution and time cost,
+   * then report to the user-registered callback functions.
+   */
+  def withCallback[U](session: SparkSession, df: DataFrame, name: String)
+      (action: DataFrame => (U, Long)): U = {
+    try {
+      val (result, elapsed) = action(df)
+      session.listenerManager.onSuccess(name, df.queryExecution, elapsed)
+      result
+    } catch {
+      case e: Exception =>
+        session.listenerManager.onFailure(name, df.queryExecution, e)
+        throw e
     }
   }
 

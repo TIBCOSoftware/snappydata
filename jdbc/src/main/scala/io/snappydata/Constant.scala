@@ -55,7 +55,7 @@ object Constant {
   val SPLIT_VIEW_TEXT_PROPERTY = "snappydata.view.text"
   val SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY = "snappydata.view.originalText"
 
-  private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
+  val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
   val CONNECTION_PROPERTY: String = s"${PROPERTY_PREFIX}connection"
 
