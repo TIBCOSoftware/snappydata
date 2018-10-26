@@ -17,7 +17,7 @@
 package io.snappydata.hydra.streaming_sink
 
 import java.io.{File, FileOutputStream, PrintWriter}
-import java.sql.{Connection, Timestamp}
+import java.sql.{Connection, Timestamp, SQLException}
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit.DAYS
 import java.util.Properties
@@ -63,13 +63,16 @@ object StringMessageProducer {
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
     var numThreads = 1;
-    if (!isConflationTest) { numThreads = 10 }
+    if (!isConflationTest) { numThreads = 4 }
     val threads = new Array[Thread](numThreads)
     val eventsPerThread = eventCount / numThreads;
+    if (hasDerby) {
+      DerbyTestUtils.HydraTask_initialize()
+    }
     for (i <- 0 until numThreads) {
       val thrStartRange = i * eventsPerThread
-      val thread = new Thread(new RecordCreator(topic, eventCount, startRange, producer, opType,
-        hasDerby))
+      val thread = new Thread(new RecordCreator(topic, eventsPerThread, thrStartRange, producer,
+        opType, hasDerby))
       thread.start()
       threads(i) = thread
     }
@@ -88,7 +91,6 @@ object StringMessageProducer {
 final class RecordCreator(topic: String, eventCount: Int, startRange: Int,
     producer: KafkaProducer[Long, String], opType: Int, hasDerby: Boolean)
 extends Runnable {
-  StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"opType : $opType")
   var eventType: Int = opType
   val schema = Array ("id", "firstName", "middleName", "lastName", "title", "address", "country",
     "phone", "dateOfBirth", "age", "status", "email", "education", "occupation")
@@ -108,8 +110,6 @@ extends Runnable {
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
-    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"Conflation " +
-        s"enabled ${StringMessageProducer.isConflationTest}")
     (startRange to (startRange + eventCount - 1)).foreach(i => {
       var id: Int = i
       val title: String = titleArr(random.nextInt(titleArr.length))
@@ -131,11 +131,10 @@ extends Runnable {
       if (opType == 4) {
         eventType = random.nextInt(3)
       }
-      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row with id " +
-          s": $id and eventType : $eventType")
+      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row id : $id" +
+          s" and eventType : $eventType")
       val data = new ProducerRecord[Long, String](topic, i, row + s",$eventType")
       if(hasDerby) {
-        DerbyTestUtils.HydraTask_initialize
         performOpInDerby(conn, row, eventType)
       }
       producer.send(data)
@@ -150,6 +149,7 @@ extends Runnable {
 
   def performOpInDerby(conn: Connection, row: String, eventType: Int): Unit = {
     var stmt: String = ""
+    var numRows: Int = 0
     if (eventType == 0) { // insert
       stmt = getInsertStmt(row)
     } else if (eventType == 1) { // update
@@ -157,10 +157,16 @@ extends Runnable {
     } else if (eventType == 2) { // delete
       stmt = getDeleteStmt(row)
     }
-    StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"derby stmt is " +
-        s": $stmt")
-    StringMessageProducer.pw.flush()
-    val numRows: Int = conn.createStatement().executeUpdate(stmt)
+    // StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"derby stmt " +
+    // s"is : $stmt")
+    // StringMessageProducer.pw.flush()
+    try {
+      numRows = conn.createStatement().executeUpdate(stmt)
+    } catch {
+      case se: SQLException => if (se.getSQLState.equalsIgnoreCase("23505")) {
+        // ignore
+      }
+    }
     if (numRows == 0 && eventType == 1) {
       stmt = getInsertStmt(row)
       conn.createStatement().executeUpdate(stmt)
