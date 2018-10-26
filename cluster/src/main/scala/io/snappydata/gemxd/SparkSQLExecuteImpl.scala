@@ -487,6 +487,8 @@ object SnappySessionPerConnection {
     }
   }
 
+  def getAllSessions: Seq[SnappySession] = connectionIdMap.values().asScala.toSeq
+
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
     connectionIdMap.remove(connectionID)
   }
