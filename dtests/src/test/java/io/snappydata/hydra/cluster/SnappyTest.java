@@ -1938,6 +1938,19 @@ public class SnappyTest implements Serializable {
     count++;
   }
 
+    /**
+     * //TODO Modification requires to make it more generic.
+     * Execute Snappy Job with Job Script
+     */
+    public static synchronized void HydraTask_executeSnappyJobUsingJobScript() {
+        int count = 0;
+        int currentThread = snappyTest.getMyTid();
+        String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
+        SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
+        SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
+        snappyTest.executeSnappyJobUsingJobScript(SnappyPrms.getSnappyJobClassNames(), logFile);
+    }
+
   /**
    * Executes snappy Streaming Jobs. Task is specifically written for benchmarking.
    */
@@ -2165,6 +2178,73 @@ public class SnappyTest implements Serializable {
           "process re-execution." + "\nError Message:" + e.getMessage());
     }
   }
+
+    /**
+     * TODO Modification is required to make the method more generic
+     * Executes Snappy Jobs using job scripts.
+     *
+     * @param jobClassNames
+     * @param logFileName
+     * @throws IOException (IOException occurred while retriving destination logFile path).
+     * @since 0.5
+     */
+    protected void executeSnappyJobUsingJobScript(Vector jobClassNames, String logFileName) {
+        String snappyJobScript = getScriptLocation("snappy-job.sh");
+        ProcessBuilder pb = null;
+        File log = null;
+        File logFile = null;
+        userAppJar = SnappyPrms.getUserAppJar();
+        snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
+        leadHost = getLeadHost();
+        String leadPort = getLeadPort();
+        try {
+            for (int i = 0; i < jobClassNames.size(); i++) {
+                String userJob = (String) jobClassNames.elementAt(i);
+
+                //String xmlFileLocation = getScriptLocation("books.xml");
+
+                String cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+                        " --app-name xmlProc --class " + userJob + " --app-jar " +
+                        snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " --conf xmlFileLocation=" + SnappyPrms.getCommaSepAPPProps() +  " --packages " + SnappyPrms.getJarIdentifier();
+
+//                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + leadPort, "--app-name", "xmlProc", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--conf", SnappyPrms.getCommaSepAPPProps(), "--packages", SnappyPrms.getJarIdentifier());
+
+                pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+                Log.getLogWriter().info("Command is : " + pb.command());
+
+//                java.util.Map<String, String> env = pb.environment();
+//                if (SnappyPrms.getCommaSepAPPProps() == null) {
+//                    env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
+//                } else {
+//                    env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
+//                }
+//                Log.getLogWriter().info("APP_PROPS : " + env.get("APP_PROPS"));
+
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + logFileName;
+                logFile = new File(dest);
+                snappyTest.executeProcess(pb, logFile);
+            }
+            boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
+            if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
+                jobSubmissionCount++;
+                Thread.sleep(180000);
+                Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
+                        " the job to new primary lead node.....");
+                retrievePrimaryLeadHost();
+                HydraTask_executeSnappyJob();
+            }
+        } catch (IOException e) {
+            throw new TestException("IOException occurred while retriving destination logFile path " +
+                    log + "\nError Message:" + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new TestException("Exception occurred while waiting for the snappy streaming job  " +
+                    "process re-execution." + "\nError Message:" + e.getMessage());
+        }
+        //    snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
+        //} catch (IOException e) {
+        //   throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
+    }
 
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
