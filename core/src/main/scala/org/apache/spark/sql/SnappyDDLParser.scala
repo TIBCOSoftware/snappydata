@@ -27,7 +27,6 @@ import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -43,12 +42,13 @@ import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, FunctionResource,
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, SQLBuilder, TableIdentifier}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.execution.{CreateSnappyViewCommand, SnappyCacheTableCommand}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
@@ -695,7 +695,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def cache: Rule1[LogicalPlan] = rule {
     CACHE ~ (LAZY ~ push(true)).? ~ TABLE ~ tableIdentifier ~
         (AS ~ query).? ~> ((isLazy: Any, tableIdent: TableIdentifier,
-        plan: Any) => CacheTableCommand(tableIdent,
+        plan: Any) => SnappyCacheTableCommand(tableIdent,
       plan.asInstanceOf[Option[LogicalPlan]],
       isLazy.asInstanceOf[Option[Boolean]].isDefined))
   }
@@ -1102,73 +1102,5 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     ToolsCallbackInit.toolsCallback.removePackage(alias)
     Seq.empty[Row]
-  }
-}
-
-case class CreateSnappyViewCommand(name: TableIdentifier,
-    userSpecifiedColumns: Seq[(String, Option[String])],
-    comment: Option[String],
-    properties: Map[String, String],
-    originalText: Option[String],
-    child: LogicalPlan,
-    allowExisting: Boolean,
-    replace: Boolean,
-    viewType: ViewType)
-    extends RunnableCommand {
-
-  override def run(sparkSession: SparkSession): Seq[Row] = {
-    if (viewType != PersistedView) {
-      return CreateViewCommand(name, userSpecifiedColumns, comment, properties, originalText,
-        child, allowExisting, replace, viewType).run(sparkSession)
-    }
-    // If the plan cannot be analyzed, throw an exception and don't proceed.
-    val qe = sparkSession.sessionState.executePlan(child)
-    qe.assertAnalyzed()
-    val analyzedPlan = qe.analyzed
-
-    if (userSpecifiedColumns.nonEmpty &&
-        userSpecifiedColumns.length != analyzedPlan.output.length) {
-      throw new AnalysisException(s"The number of columns produced by the SELECT clause " +
-          s"(num: `${analyzedPlan.output.length}`) does not match the number of column names " +
-          s"specified by CREATE VIEW (num: `${userSpecifiedColumns.length}`).")
-    }
-
-    val aliasedPlan = if (userSpecifiedColumns.isEmpty) {
-      analyzedPlan
-    } else {
-      val projectList = analyzedPlan.output.zip(userSpecifiedColumns).map {
-        case (attr, (colName, None)) => Alias(attr, colName)()
-        case (attr, (colName, Some(colComment))) =>
-          val meta = new MetadataBuilder().putString("comment", colComment).build()
-          Alias(attr, colName)(explicitMetadata = Some(meta))
-      }
-      sparkSession.sessionState.executePlan(Project(projectList, analyzedPlan)).analyzed
-    }
-
-    val actualSchemaJson = aliasedPlan.schema.json
-
-    val viewSQL: String = new SQLBuilder(aliasedPlan).toSQL
-
-    // Validate the view SQL - make sure we can parse it and analyze it.
-    // If we cannot analyze the generated query, there is probably a bug in SQL generation.
-    try {
-      sparkSession.sql(viewSQL).queryExecution.assertAnalyzed()
-    } catch {
-      case NonFatal(e) =>
-        throw new RuntimeException(s"Failed to analyze the canonicalized SQL: $viewSQL", e)
-    }
-    var opts = JdbcExtendedUtils.addSplitProperty(viewSQL, Constant.SPLIT_VIEW_TEXT_PROPERTY,
-      properties)
-    opts = JdbcExtendedUtils.addSplitProperty(originalText.getOrElse(viewSQL),
-      Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
-
-    opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
-      SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP, opts)
-
-    val dummyText = "select 1"
-    val dummyPlan = sparkSession.sessionState.sqlParser.parsePlan(dummyText)
-    val cmd = CreateViewCommand(name, Nil, comment, opts.toMap, Some(dummyText),
-      dummyPlan, allowExisting, replace, viewType)
-    cmd.run(sparkSession)
   }
 }
