@@ -81,8 +81,8 @@ preparedStmt1.close()
 
 ## Connecting with JDBC Client Pool Driver
 
-JDBC client pool driver provides a built-in connection pooling and relies on the non-pooled [JDBC driver](/howto/connect_using_jdbc_driver.md). The driver initializes the pool when the first connection is created by using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. 
-We recommend using the pooled driver for low latency operations such as point lookup query and for using the Spark JDBC data source API (see example below). When you access SnappyData from Java frameworks such as Spring, we recommend you to use pooling provided in the framework and switch to using the non-pooled driver. 
+JDBC client pool driver provides built-in connection pooling and relies on the non-pooled [JDBC driver](/howto/connect_using_jdbc_driver.md). The driver initializes the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. 
+We recommend using the pooled driver for low latency operations such as point lookups and when using the Spark JDBC data source API (see example below). When you access SnappyData from Java frameworks such as Spring, we recommend using pooling provided in the framework and switch to using the non-pooled driver. 
 
 !!! Important
 	The underlying pool is uniquely associated with the set of properties that are passed while creating the connection. If any of the properties change, a new pool is created.
