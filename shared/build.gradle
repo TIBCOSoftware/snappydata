@@ -14,7 +14,6 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
 plugins {
   id 'com.github.johnrengelman.shadow' version '2.0.4'
   id 'de.undercouch.download' version '3.4.3'
@@ -30,21 +29,10 @@ sourceSets.test.scala.srcDirs = ['src/test/java', 'src/test/scala',
 sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = []
 
-def osName = org.gradle.internal.os.OperatingSystem.current()
-
 dependencies {
 
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
-
-  compile 'org.slf4j:slf4j-api:' + slf4jVersion
-  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
-  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
-  compile group: 'org.codehaus.janino', name: 'janino', version: janinoVersion
-  compile("org.apache.thrift:libthrift:${thriftVersion}") {
-    exclude(group: 'org.slf4j', module: 'slf4j-api')
-  }
 
   compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersionShared}")
   compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersionShared}")
@@ -55,8 +43,6 @@ dependencies {
   compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersionShared}")
   compileOnly("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersionShared}")
 
-  compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-
   testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersionShared}")
   testCompile("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersionShared}")
   testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersionShared}")
@@ -66,43 +52,15 @@ dependencies {
   testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersionShared}")
   testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersionShared}")
 
-  testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-
-  compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
   compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
-  compile group: 'io.snappydata', name: 'snappydata-store-shared', version: snappyStoreVersion
-
-  testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
 
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
-
-  compile 'org.apache.tomcat:tomcat-jdbc:8.5.23'
-  compile 'com.zaxxer:HikariCP:2.7.1'
-  // compile 'org.spark-project:dstream-twitter_2.11:0.1.0'
-  compile 'org.twitter4j:twitter4j-stream:4.0.6'
-  compile 'org.objenesis:objenesis:2.6'
-  compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
-  compile "com.koloboke:koloboke-api-jdk8:${kolobokeVersion}"
-  compile "com.koloboke:koloboke-impl-common-jdk8:${kolobokeVersion}"
-
-  compileOnly 'com.rabbitmq:amqp-client:3.5.7'
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
-  testRuntime "org.pegdown:pegdown:${pegdownVersion}"
-}
-
-task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  classifier = 'javadoc'
-  from scaladoc
-}
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives packageScalaDocs, packageSources
-  }
 }
 
 scalaTest {
@@ -141,7 +99,7 @@ shadowJar {
     attributes(
         'Manifest-Version': '1.0',
         'Created-By': createdBy,
-        'Title': "snappydata-core_${scalaBinaryVersion}",
+        'Title': "snappydata-shared_${scalaBinaryVersion}",
         'Version': version,
         'Vendor': vendorName
     )
