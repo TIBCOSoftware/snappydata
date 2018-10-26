@@ -131,12 +131,12 @@ extends Runnable {
       if (opType == 4) {
         eventType = random.nextInt(3)
       }
+      if(hasDerby) {
+        eventType = performOpInDerby(conn, row, eventType)
+      }
       StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"row id : $id" +
           s" and eventType : $eventType")
-      val data = new ProducerRecord[Long, String](topic, i, row + s",$eventType")
-      if(hasDerby) {
-        performOpInDerby(conn, row, eventType)
-      }
+      val data = new ProducerRecord[Long, String](topic, id, row + s",$eventType")
       producer.send(data)
       })
     if(hasDerby) {
@@ -147,7 +147,8 @@ extends Runnable {
     StringMessageProducer.pw.flush()
   }
 
-  def performOpInDerby(conn: Connection, row: String, eventType: Int): Unit = {
+  def performOpInDerby(conn: Connection, row: String, eventType: Int): Int = {
+    var updateEventType: Int = eventType
     var stmt: String = ""
     var numRows: Int = 0
     if (eventType == 0) { // insert
@@ -163,14 +164,17 @@ extends Runnable {
     try {
       numRows = conn.createStatement().executeUpdate(stmt)
     } catch {
-      case se: SQLException => if (se.getSQLState.equalsIgnoreCase("23505")) {
-        // ignore
+      case se: SQLException => if (se.getSQLState.equalsIgnoreCase("23505") && eventType == 0 ) {
+        stmt = getUpdateStmt(row)
+        conn.createStatement().executeUpdate(stmt)
+        updateEventType = 1
       }
     }
     if (numRows == 0 && eventType == 1) {
       stmt = getInsertStmt(row)
       conn.createStatement().executeUpdate(stmt)
     }
+    updateEventType
     // write to file
   }
 
