@@ -21,11 +21,11 @@ import io.snappydata.core.{RefData, TestData2}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.exchange.Exchange
+import org.apache.spark.sql.execution.exchange.{BroadcastExchangeExec, Exchange}
 import org.apache.spark.sql.execution.joins.{CartesianProductExec, HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{DataFrame, Row, SaveMode, SnappyContext, SnappySession}
 
 case class TestDatak(key1: Int, value: String, ref: Int)
 
@@ -235,6 +235,18 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
           s"Did not expect RowDataSourceScanExec with PartitionedDataSourceScan")
         case _ => // do nothing, may be some other Exchange and not with scan
       })
+    }
+  }
+
+  def checkForBroadcast(df: DataFrame, session: SnappySession,
+      broadcastExpected: Boolean): Unit = {
+    val lj = df.queryExecution.executedPlan collect {
+      case ex: BroadcastExchangeExec => ex
+    }
+    if (broadcastExpected) {
+      if (lj.isEmpty) sys.error("Broadcast expected but was not found")
+    } else {
+      if (lj.nonEmpty) sys.error(s"Broadcast not expected but was found: $lj")
     }
   }
 
@@ -737,6 +749,46 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     summary = snc.sql("select sum(1) from randomTraining")
     val two = summary.collect()(0)(0).asInstanceOf[Long]
     assert(two < one)
+  }
+
+  test("SNAP-2656") {
+    val snc = this.snc
+    val session = snc.snappySession
+    session.sql("create table t1 (c1 int, c2 int) options (partition_by 'c1')")
+    session.sql("create table t2 (c1 int, c2 int) options (partition_by 'c1')")
+    session.sql("insert into t1 values (2, 10), (2, 20), (3, 30)")
+    session.sql("insert into t2 values (1, 10), (2, 20), (3, 30)")
+
+    val q1 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1)"
+    val q2 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1 and t1.c2 = t2.c2) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1)"
+    val q3 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1 and t1.c2 = t2.c2)"
+    val q4 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1 and t1.c2 = t2.c2) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1 and t1.c2 = t2.c2)"
+
+    // all four queries will result in broadcast plans due to small size
+    for (q <- Seq(q1, q2, q3, q4)) {
+      val df = session.sql(q)
+      checkForBroadcast(df, session, broadcastExpected = true)
+      val result = df.collect()
+      assert(result.sortBy(_.getInt(0)) === Array(Row(2, 20, 20), Row(3, 30, 30)))
+    }
+
+    // turning off broadcast should ensure it does not result in a shuffle in any of the queries
+    session.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+
+    for (q <- Seq(q1, q2, q3, q4)) {
+      val df = session.sql(q)
+      checkForBroadcast(df, session, broadcastExpected = false)
+      checkForShuffle(df.logicalPlan, snc, shuffleExpected = false)
+      val result = df.collect()
+      assert(result.sortBy(_.getInt(0)) === Array(Row(2, 20, 20), Row(3, 30, 30)))
+    }
+
+    session.sql("drop table t1")
+    session.sql("drop table t2")
   }
 
   def partitionToPartitionJoinAssertions(snc: SnappyContext,
