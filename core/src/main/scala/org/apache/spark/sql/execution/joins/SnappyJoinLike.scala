@@ -54,8 +54,19 @@ trait SnappyJoinLike extends SparkPlan {
       leftClustered :: rightClustered :: Nil
     } else {
       // try subsets of the keys on each side
-      val leftSubset = getSubsetAndIndices(leftPartitioning, leftKeys, left)
-      val rightSubset = getSubsetAndIndices(rightPartitioning, rightKeys, right)
+      val leftSubsets = getSubsetsAndIndices(leftPartitioning, leftKeys, left)
+      val rightSubsets = getSubsetsAndIndices(rightPartitioning, rightKeys, right)
+      // find the subsets with matching indices else pick the first ones from the two
+      var rightSubset = rightSubsets.headOption
+      val leftSubset =
+        if (leftSubsets.isEmpty) None
+        else if (rightSubsets.isEmpty) Some(leftSubsets.head)
+        else {
+          leftSubsets.find(p => rightSubsets.find(_._2 == p._2) match {
+            case None => false
+            case x => rightSubset = x; true
+          })
+        }
       leftSubset match {
         case Some((l, li)) => rightSubset match {
           case Some((r, ri)) =>
@@ -63,7 +74,7 @@ trait SnappyJoinLike extends SparkPlan {
             if (li == ri) {
               ClusteredDistribution(l) :: ClusteredDistribution(r) :: Nil
             } else {
-              // choose the bigger plan to match distribution and avoid shuffle
+              // choose the bigger plan to match distribution and reduce shuffle
               if (leftSizeInBytes > rightSizeInBytes) {
                 ClusteredDistribution(l) ::
                     ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
@@ -90,12 +101,12 @@ trait SnappyJoinLike extends SparkPlan {
    * join keys (in order). Also unwraps aliases in the keys for matching against
    * partitioning and returns a boolean indicating whether alias was unwrapped or not.
    */
-  protected def getSubsetAndIndices(partitioning: Partitioning,
-      keys: Seq[Expression], child: SparkPlan): Option[(Seq[Expression], Seq[Int])] = {
+  protected def getSubsetsAndIndices(partitioning: Partitioning,
+      keys: Seq[Expression], child: SparkPlan): Seq[(Seq[Expression], Seq[Int])] = {
     val numColumns = Utils.getNumColumns(partitioning)
     if (keys.length >= numColumns) {
       var combination: Seq[Expression] = null
-      keys.indices.combinations(numColumns).collectFirst {
+      keys.indices.combinations(numColumns).collect {
         case s if partitioning.satisfies(ClusteredDistribution {
           combination = s.map(keys.apply)
           combination
@@ -104,8 +115,8 @@ trait SnappyJoinLike extends SparkPlan {
           combination = unAlias(s.map(keys.apply), child)
           combination
         }) => (combination, s)
-      }
-    } else None
+      }.toSeq
+    } else Nil
   }
 
   /**
@@ -132,7 +143,6 @@ trait SnappyJoinLike extends SparkPlan {
           if (substitute ne outputExpressions(i)) {
             result(pos) = substitute
           }
-          return
         }
       }
     }
