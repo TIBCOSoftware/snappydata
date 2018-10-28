@@ -28,10 +28,12 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import com.gemstone.gemfire.cache.PartitionAttributes;
+import com.gemstone.gemfire.cache.Region;
 import com.gemstone.gemfire.internal.GFToSlf4jBridge;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData;
 import com.gemstone.gemfire.internal.cache.GemfireCacheHelper;
+import com.gemstone.gemfire.internal.cache.PartitionedRegion;
 import com.gemstone.gemfire.internal.cache.PolicyTableData;
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings;
 import com.google.common.cache.CacheBuilder;
@@ -288,12 +290,23 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     if (schemaName == null && tableName == null) {
       this.nonExistentTables.invalidateAll();
       this.tableCache.invalidateAll();
+      // also clear "needsBatching" for all regions
+      for (PartitionedRegion pr : PartitionedRegion.getAllPartitionedRegions()) {
+        pr.clearNeedsBatching();
+      }
     } else {
       // hive is case-insensitive
       AbstractMap.SimpleEntry<String, String> key = new AbstractMap.SimpleEntry<>(
           Utils.toUpperCase(schemaName), Utils.toUpperCase(tableName));
       this.nonExistentTables.invalidate(key);
       this.tableCache.invalidate(key);
+      // also clear "needsBatching" since it may have been cached incorrectly
+      // when column store was still being created
+      Region<?, ?> region = Misc.getRegion(Misc.getRegionPath(key.getKey(),
+          key.getValue(), null), false, true);
+      if (region instanceof PartitionedRegion) {
+        ((PartitionedRegion)region).clearNeedsBatching();
+      }
     }
   }
 
@@ -743,7 +756,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         // try with upper-case name
       }
       if (table == null) {
-        table = getTable(this.schemaName, Utils.toUpperCase(this.tableName));
+        table = getTable(Utils.toUpperCase(this.schemaName),
+            Utils.toUpperCase(this.tableName));
       }
       return table;
     }
