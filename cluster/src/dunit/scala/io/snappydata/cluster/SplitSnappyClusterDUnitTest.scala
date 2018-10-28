@@ -703,7 +703,6 @@ object SplitSnappyClusterDUnitTest
     snc.sql(s"CREATE TABLE CUSTOMER AS SELECT * FROM CUSTOMER_STAGING")
     val count = snc.sql("select * from customer").count()
     assert(count == 750, s"Expected 750 rows. Actual rows = $count")
-    snc.sql("DROP TABLE CUSTOMER")
 
     val customerWithHeadersFile: String = getClass.getResource("/customer_with_headers.csv").getPath
     val customer_csv_DF = snc.read.option("header", "true")
@@ -713,7 +712,6 @@ object SplitSnappyClusterDUnitTest
     customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER_2")
     val count2 = snc.sql("select * from customer_2").count()
     assert(count2 == 750, s"Expected 750 rows. Actual rows = $count2")
-    snc.sql("DROP TABLE CUSTOMER_2")
 
     // also test temp table
     snc.sql(s"CREATE TEMPORARY TABLE CUSTOMER_TEMP AS SELECT * FROM CUSTOMER_STAGING")
