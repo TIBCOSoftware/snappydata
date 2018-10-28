@@ -176,6 +176,10 @@ public class ProcessManager {
     String classPath = System.getProperty("java.class.path");
     //String tmpDir = System.getProperty("java.io.tmpdir");
     String agent = getAgentString();
+    // limit netty buffer arenas and sizes to avoid occasional OOMEs with 1g heap
+    int pageSize = 8192;
+    int maxOrder = 10; // total size of each chunk will be "pageSize << maxOrder" i.e. 8MB
+    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
     return new String[] {
       cmd, "-classpath", classPath,
       "-D" + DUnitLauncher.RMI_PORT_PARAM + "=" + namingPort,
@@ -200,9 +204,10 @@ public class ProcessManager {
       "-Dsun.rmi.dgc.client.gcInterval=600000 ",
       "-Dsun.rmi.dgc.server.gcInterval=600000",
       "-Dsun.rmi.transport.tcp.handshakeTimeout=3600000",
-      // limit netty buffer arenas to avoid occasional OOMEs with 1g heap
-      "-Dio.netty.allocator.numHeapArenas=4",
-      "-Dio.netty.allocator.numDirectArenas=4",
+      "-Dio.netty.allocator.pageSize=" + pageSize,
+      "-Dio.netty.allocator.maxOrder=" + maxOrder,
+      "-Dio.netty.allocator.numHeapArenas=" + numArenas,
+      "-Dio.netty.allocator.numDirectArenas=" + numArenas,
       "-ea",
       agent,
       ChildVM.class.getName()
