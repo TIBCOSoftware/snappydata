@@ -44,10 +44,10 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.{CreateSnappyViewCommand, SnappyCacheTableCommand}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.execution.{CreateSnappyViewCommand, RefreshMetadata, SnappyCacheTableCommand}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.policy.PolicyProperties
@@ -989,10 +989,7 @@ case class DeployCommand(
         val sc = sparkSession.sparkContext
         val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
         SnappySession.addJarURIs(uris)
-        Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-          ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-          Iterator.empty
-        })
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
         val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
         ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
       }
@@ -1048,10 +1045,7 @@ case class DeployJarCommand(
       val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
-      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-        Iterator.empty
-      })
+      RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
       ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
     }
     Seq.empty[Row]

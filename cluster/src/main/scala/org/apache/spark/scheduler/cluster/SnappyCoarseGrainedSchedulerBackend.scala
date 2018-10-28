@@ -21,7 +21,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.SparkContext
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, SparkListenerExecutorAdded, SparkListenerExecutorRemoved, TaskSchedulerImpl}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext, SnappySession}
 import org.apache.spark.storage.BlockManagerId
 
@@ -113,11 +113,8 @@ class BlockManagerIdListener(sc: SparkContext)
   override def onApplicationEnd(msg: SparkListenerApplicationEnd): Unit =
     SnappyContext.clearBlockIds()
 
-  private def handleNewExecutorJoin(bid: BlockManagerId) = {
+  private def handleNewExecutorJoin(bid: BlockManagerId): Unit = {
     val uris = SnappySession.getJarURIs
-    Utils.mapExecutors[Unit](sc, () => {
-      ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-      Iterator.empty
-    }, 30, Seq(bid))
+    RefreshMetadata.executeOnAllEmbedded(RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
   }
 }

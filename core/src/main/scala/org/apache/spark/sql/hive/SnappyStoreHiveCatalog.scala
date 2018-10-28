@@ -31,8 +31,6 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.diag.{HiveTablesVTI, SysVTIs}
-import com.pivotal.gemfirexd.internal.engine.distributed.GfxdDistributionAdvisor.GfxdProfile
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.{Attribute, Constants}
@@ -55,6 +53,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Subquer
 import org.apache.spark.sql.catalyst.util.{CaseInsensitiveMap, StringUtils}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.{IndexColumnFormatRelation, DefaultSource => ColumnSource}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
@@ -380,8 +379,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  protected def registerRelationDestroy(): Unit = {
-    val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
+  protected def registerRelationDestroy(relation: Option[QualifiedTableName]): Unit = {
+    val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy(relation)
     if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
     }
@@ -506,10 +505,10 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   def unregisterPolicy(policyIdent: QualifiedTableName, ct: CatalogTable): Unit = {
     policyIdent.invalidate()
     cachedDataSourceTables.invalidate(policyIdent)
-    registerRelationDestroy()
     val schemaName = policyIdent.schemaName
     withHiveExceptionHandling(externalCatalog.dropTable(schemaName,
       policyIdent.table, ignoreIfNotExists = false, purge = false))
+    registerRelationDestroy(Some(policyIdent))
   }
 
   def unregisterGlobalView(tableIdent: QualifiedTableName): Boolean = synchronized {
@@ -895,11 +894,11 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         tableIdent.invalidate()
         cachedDataSourceTables.invalidate(tableIdent)
 
-        registerRelationDestroy()
-
         val schemaName = tableIdent.schemaName
         withHiveExceptionHandling(externalCatalog.dropTable(schemaName,
           tableIdent.table, ignoreIfNotExists = false, purge = false))
+
+        registerRelationDestroy(Some(tableIdent))
       case None =>
     }
   }
@@ -1031,6 +1030,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         SnappySession.clearAllCache()
       case Some(_) =>  // Do nothing
     }
+    SnappyStoreHiveCatalog.setRelationDestroyVersionOnAllMembers(Some(tableIdent))
   }
 
   def registerPolicy(
@@ -1100,6 +1100,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
               s" already exists")
         }
     }
+    SnappyStoreHiveCatalog.setRelationDestroyVersionOnAllMembers(Some(policyName))
   }
 
   def toggleRLSForExternalRelation(tableIdent: QualifiedTableName,
@@ -1607,7 +1608,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 object SnappyStoreHiveCatalog {
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_PROP = "spark.sql.sources.schema"
-  val HIVE_METASTORE = SystemProperties.SNAPPY_HIVE_METASTORE
+  val HIVE_METASTORE: String = SystemProperties.SNAPPY_HIVE_METASTORE
   val SYS_SCHEMA = "SYS"
   val MEMBERS_VTI = "MEMBERS"
 
@@ -1627,40 +1628,50 @@ object SnappyStoreHiveCatalog {
     }
   }
 
-  private[this] var relationDestroyVersion = 0
+  @volatile private[this] var relationDestroyVersion = 0
   val relationDestroyLock = new ReentrantReadWriteLock()
   private val alterTableLock = new Object
 
   private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
 
-  private[sql] def registerRelationDestroy(): Int = {
+  private[sql] def registerRelationDestroy(relation: Option[QualifiedTableName]): Int = {
     val sync = relationDestroyLock.writeLock()
     sync.lock()
     try {
       val globalVersion = relationDestroyVersion
       relationDestroyVersion += 1
-      setRelationDestroyVersionOnAllMembers()
+      setRelationDestroyVersionOnAllMembers(relation)
       globalVersion
     } finally {
       sync.unlock()
     }
   }
 
-  def setRelationDestroyVersionOnAllMembers(): Unit = {
-    SparkSession.getActiveSession.foreach(session =>
-      SnappyContext.getClusterMode(session.sparkContext) match {
-        case SnappyEmbeddedMode(_, _) =>
-          val version = getRelationDestroyVersion
-          Utils.mapExecutors[Unit](session.sparkContext,
-            () => {
-              val profile: GfxdProfile =
-                GemFireXDUtils.getGfxdProfile(Misc.getGemFireCache.getMyId)
-              Option(profile).foreach(gp => gp.setRelationDestroyVersion(version))
-              Iterator.empty
-            })
-        case _ =>
+  private[sql] def clearCatalog(relation: Option[QualifiedTableName]): Unit = {
+    try {
+      val memStore = Misc.getMemStoreBootingNoThrow
+      if (memStore ne null) {
+        val catalog = memStore.getExternalCatalog
+        if (catalog ne null) {
+          relation match {
+            case None => catalog.clearCache(null, null) // indicates clear entire cache
+            case Some(name) => catalog.clearCache(name.schemaName, name.table)
+          }
+        }
       }
-    )
+    } catch {
+      case _: Exception => // ignore
+    }
+  }
+
+  def setRelationDestroyVersionOnAllMembers(relation: Option[QualifiedTableName]): Unit = {
+    SparkSession.getActiveSession match {
+      case None =>
+      case Some(session) =>
+        val version = getRelationDestroyVersion
+        RefreshMetadata.executeOnAll(session.sparkContext, RefreshMetadata.SET_RELATION_DESTROY,
+          version -> relation, executeInConnector = false)
+    }
   }
 
   def getSchemaStringFromHiveTable(table: Table): String =
