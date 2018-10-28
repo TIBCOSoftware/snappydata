@@ -65,7 +65,7 @@ trait SnappyJoinLike extends SparkPlan {
           leftSubsets.find(p => rightSubsets.find(_._2 == p._2) match {
             case None => false
             case x => rightSubset = x; true
-          })
+          }).orElse(leftSubsets.headOption)
         }
       leftSubset match {
         case Some((l, li)) => rightSubset match {
