@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.execution
 
-import java.util
-
 import com.gemstone.gemfire.cache.execute.FunctionContext
 import com.gemstone.gemfire.distributed.DistributedMember
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -117,7 +115,7 @@ object RefreshMetadata extends Enumeration
 
   override def isHA: Boolean = true
 
-  override def getMembers: util.Set[DistributedMember] = GfxdMessage.getAllGfxdServers
+  override def getMembers: java.util.Set[DistributedMember] = GfxdMessage.getAllGfxdServers
 
   override def getServerGroups: java.util.Set[String] = null
 
