@@ -251,18 +251,26 @@ This section covers the following:
 <a id="ec2custombuild"></a>
 #### Using custom build
 
-This script by default uses the SnappyData build available on the GitHub releases page to launch the cluster.
-To select a version of the build available on GitHub, use option `--snappydata-version`.
+This script by default uses the SnappyData OSS build available on the GitHub releases page to launch the cluster.
+To select a version of the OSS build available on GitHub, use option `--snappydata-version`.
 
-You can also provide your own SnappyData build to the script to launch the cluster.
-
+You can also provide your own SnappyData build to the script to launch the cluster, by using
+option `--snappydata-tarball` to the `launch` command.
 The build can be present either on a local filesystem or as a resource on the web.
-To provide the path or the URL of the build, use option `--snappydata-tarball` when you launch the cluster.
-The build file should be in **.tar.gz** format.
+
+For example, to use **SnappyData Enterprise** build to launch the cluster, download the build tarball from
+www.snappydata.io/download on your local machine and give its path as value to above option.
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.0.2-bin.tar.gz" 
 ```
+
+Alternatively, you can also put your build file on a public web server and provide its URL to this option.
+```pre
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.0.2-bin.tar.gz" 
+```
+
+The build file should be in **.tar.gz** format.
 
 <a id="ecsspecifyprop"></a>
 #### Specifying Properties
