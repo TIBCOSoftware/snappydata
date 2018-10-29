@@ -570,7 +570,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           hmc.dropTable(this.schemaName, this.tableName);
           return true;
         case GET_COL_TABLE:
-          Table table = getTableWithRetry();
+          Table table = getTable(this.schemaName, this.tableName);
           if (table == null) return null;
           String fullyQualifiedName = Utils.toUpperCase(table.getDbName()) +
               "." + Utils.toUpperCase(table.getTableName());
@@ -750,22 +750,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       return dataSourcePath != null ? dataSourcePath : "";
     }
 
-    private Table getTableWithRetry() throws SQLException {
-      Table table = null;
-      try {
-        table = getTable(this.schemaName, this.tableName);
-      } catch (SQLException sqle) {
-        // try with upper-case name
-      }
-      if (table == null) {
-        table = getTable(Utils.toUpperCase(this.schemaName),
-            Utils.toUpperCase(this.tableName));
-      }
-      return table;
-    }
-
     private String getSchema() throws SQLException {
-      Table table = getTableWithRetry();
+      Table table = getTable(this.schemaName, this.tableName);
       if (table != null) {
         return SnappyStoreHiveCatalog.getSchemaStringFromHiveTable(table);
       } else {
