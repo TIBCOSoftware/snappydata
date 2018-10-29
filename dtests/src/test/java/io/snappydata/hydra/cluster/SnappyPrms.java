@@ -623,6 +623,38 @@ public class SnappyPrms extends BasePrms {
   }
 
   /**
+   * Parameter used to get the List of expected exceptions in the test run.
+   * Array of values for expected exceptions
+   */
+  public static Long expectedExceptions;
+
+  public static String[] getExpectedExceptionList() {
+    Long key = expectedExceptions;
+    Vector statements = tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
+  }
+
+  /**
+   * Parameter used to get the List of expected exceptions in the test run in case of HA.
+   * Array of values for expected exceptions
+   */
+  public static Long expectedExceptionsForHA;
+
+  public static String[] getExpectedExceptionListForHA() {
+    Long key = expectedExceptionsForHA;
+    Vector statements = tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
+  }
+
+  /**
    * Sleep time in secs between 2 thread dumps.
    */
   public static Long sleepBtwnStackDump;
