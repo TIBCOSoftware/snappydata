@@ -23,8 +23,6 @@ import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.sql.SaveMode
-
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
@@ -382,6 +380,26 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     snc.sql(s"drop view $viewname")
     snc.sql("drop table airline")
+    conn.close()
+    TestUtil.stopNetServer()
+  }
+
+  test("Column table creation test - SNAP-2577") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val session = this.snc.snappySession
+    stmt.execute(s"CREATE TABLE temp (username String, id Int) " +
+        s" USING column ")
+    val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
+      "USERY" -> 8, "USERY" -> 9)
+    val rdd = sc.parallelize(seq)
+
+    val dataDF = session.createDataFrame(rdd)
+
+    dataDF.write.insertInto("temp")
+    snc.sql("drop table temp")
     conn.close()
     TestUtil.stopNetServer()
   }

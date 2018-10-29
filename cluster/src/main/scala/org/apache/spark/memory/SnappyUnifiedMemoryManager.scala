@@ -855,7 +855,7 @@ object SnappyUnifiedMemoryManager extends Logging {
           DistributionConfig.MEMORY_SIZE_NAME, "0b")
       if (size == 0) {
         // try with additional "spark." prefix
-        size = conf.getSizeAsBytes("spark." + Constant.STORE_PROPERTY_PREFIX +
+        size = conf.getSizeAsBytes(Constant.SPARK_STORE_PREFIX +
             DistributionConfig.MEMORY_SIZE_NAME, "0b")
       }
       if (size > 0) {

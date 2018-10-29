@@ -78,20 +78,24 @@ object CompressionUtils {
 
   def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
       result: ByteBuffer): ByteBuffer = {
-    val resultLen = codecId match {
+    val position = input.position()
+    val resultLen = try codecId match {
       case CompressionCodecId.LZ4_ID =>
         val compressor = LZ4Factory.fastestInstance().fastCompressor()
         val maxLength = compressor.maxCompressedLength(len)
-        compressor.compress(input, input.position(), len,
+        compressor.compress(input, position, len,
           result, COMPRESSION_HEADER_SIZE, maxLength)
       case CompressionCodecId.SNAPPY_ID =>
         if (input.isDirect) {
           result.position(COMPRESSION_HEADER_SIZE)
           Snappy.compress(input, result)
         } else {
-          Snappy.compress(input.array(), input.arrayOffset() + input.position(),
+          Snappy.compress(input.array(), input.arrayOffset() + position,
             len, result.array(), COMPRESSION_HEADER_SIZE)
         }
+    } finally {
+      // reset the position/limit of input buffer in case it was changed by compressor
+      input.position(position)
     }
     // check if there was some decent reduction else return uncompressed input itself
     if (resultLen.toDouble <= len * MIN_COMPRESSION_RATIO) {
@@ -142,22 +146,21 @@ object CompressionUtils {
 
   def codecDecompress(input: ByteBuffer, result: ByteBuffer, outputLen: Int,
       position: Int, codecId: Int): Unit = {
-    codecId match {
+    try codecId match {
       case CompressionCodecId.LZ4_ID =>
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
           position + 8, result, 0, outputLen)
       case CompressionCodecId.SNAPPY_ID =>
         input.position(position + 8)
-        try {
-          if (input.isDirect) {
-            Snappy.uncompress(input, result)
-          } else {
-            Snappy.uncompress(input.array(), input.arrayOffset() +
-                input.position(), input.remaining(), result.array(), 0)
-          }
-        } finally {
-          input.position(position)
+        if (input.isDirect) {
+          Snappy.uncompress(input, result)
+        } else {
+          Snappy.uncompress(input.array(), input.arrayOffset() +
+              input.position(), input.remaining(), result.array(), 0)
         }
+    } finally {
+      // reset the position/limit of input buffer in case it was changed by de-compressor
+      input.position(position)
     }
     result.rewind()
   }
