@@ -206,8 +206,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   @Override
   public boolean isColumnTable(Object hiveTable) {
-    return !ExternalTableType.getTableType((Table)hiveTable).equalsIgnoreCase(
-        ExternalTableType.Row().name());
+    String tableType = ExternalTableType.getTableType((Table)hiveTable);
+    return tableType.equalsIgnoreCase(ExternalTableType.Column().name())
+        || tableType.equalsIgnoreCase(ExternalTableType.Sample().name())
+        || tableType.equalsIgnoreCase(ExternalTableType.Index().name());
   }
 
   @Override
