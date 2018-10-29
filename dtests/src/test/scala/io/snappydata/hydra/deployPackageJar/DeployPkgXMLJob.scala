@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra.deploy_package_jar
+package io.snappydata.hydra.deployPackageJar
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.typesafe.config.Config
@@ -29,7 +29,7 @@ class DeployPkgXMLJob extends SnappySQLJob{
       .option("rowTag", "catalog")
       .load(s"${xmlFilePath}")
 
-    val schemaGeneration = xmlSchema.schema
+    AS
 
     val xmlData = snappySession.read.format("com.databricks.spark.xml")
       .option("rowTag", "catalog").schema(schemaGeneration)
@@ -40,7 +40,15 @@ class DeployPkgXMLJob extends SnappySQLJob{
     // TODO Below statement to be tested, on ROW TABLE AS SELECT has problem and It is know Issue.
     // snappySession.sql("CREATE TABLE Books AS SELECT * FROM tempXMLTbl using column options()")
 
+    snappySession.sql("DROP TABLE Books IF EXISTS")
+
     snappySession.sql("CREATE TABLE Books using column AS SELECT * FROM tempXMLTbl")
+
+
+
+
+
+
 
     val r = snappySession.sql("SELECT * FROM Books").collect()
 

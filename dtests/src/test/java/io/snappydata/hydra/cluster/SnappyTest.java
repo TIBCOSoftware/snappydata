@@ -27,7 +27,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
@@ -2205,7 +2204,7 @@ public class SnappyTest implements Serializable {
 
                 String cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
                         " --app-name xmlProc --class " + userJob + " --app-jar " +
-                        snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " --conf xmlFileLocation=" + SnappyPrms.getCommaSepAPPProps() +  " --packages " + SnappyPrms.getJarIdentifier();
+                        snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " --conf " + SnappyPrms.getCommaSepAPPProps() +  " --packages " + SnappyPrms.getJarIdentifier();
 
 //                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + leadPort, "--app-name", "xmlProc", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--conf", SnappyPrms.getCommaSepAPPProps(), "--packages", SnappyPrms.getJarIdentifier());
 
