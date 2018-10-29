@@ -42,7 +42,7 @@ import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 
 import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, memoryManager, releaseExecutionMemory}
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.UtilsShared
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
@@ -107,7 +107,8 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   def this() = this(-1L, -1, -1)
 
   override def getNumColumnsInTable(columnTableName: String): Int = {
-    // PS: Replaced, calling directly from GemFireContainer.getRowBufferTableName(..)
+    // PS: Refactored the method call, making a direct call
+    // GemFireContainer.getRowBufferTableName(..)  instead of
     // val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
     val bufferTable = GemFireContainer.getRowBufferTableName(columnTableName)
     GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
@@ -130,7 +131,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
             if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
                 columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
               val numColumns = ColumnStatsSchema.numStatsColumns(numColumnsInTable)
-              val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
+              val unsafeRow = UtilsShared.toUnsafeRow(buffer, numColumns)
               unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
             } else {
               val allocator = ColumnEncoding.getAllocator(buffer)

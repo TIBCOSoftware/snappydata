@@ -40,7 +40,7 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.UtilsShared
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, SnappySession, TPCHUtils}
@@ -824,7 +824,7 @@ class QueryRoutingDUnitTest(val s: String)
     def assertPrimaries(query: String): Unit = {
 
       def hostExecutorId(m: InternalDistributedMember): String =
-        Utils.getHostExecutorId(SnappyContext.getBlockId(m.canonicalString()).get.blockId)
+        UtilsShared.getHostExecutorId(SnappyContext.getBlockId(m.canonicalString()).get.blockId)
 
       val rdd = session.sql(query).queryExecution.executedPlan.execute()
       val region = Misc.getRegionForTable(s"APP.$table", true)

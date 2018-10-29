@@ -45,7 +45,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, UtilsShared}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.csv.CSVFileFormat
@@ -958,7 +958,7 @@ object SnappyContext extends Logging {
 
   private def initMemberBlockMap(sc: SparkContext): Unit = {
     val cache = Misc.getGemFireCacheNoThrow
-    if (cache != null && Utils.isLoner(sc)) {
+    if (cache != null && UtilsShared.isLoner(sc)) {
       val numCores = sc.schedulerBackend.defaultParallelism()
       val blockId = new BlockAndExecutorId(
         SparkEnv.get.blockManager.blockManagerId,
@@ -1079,7 +1079,7 @@ object SnappyContext extends Logging {
           val url = s"${Constant.DEFAULT_THIN_CLIENT_URL}$host[$clientPort]/"
           ThinClientConnectorMode(sc, url)
       }).getOrElse {
-        if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
+        if (UtilsShared.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else throw new SparkException(
           s"${Property.SnappyConnection.name} should be specified for smart connector")
       }

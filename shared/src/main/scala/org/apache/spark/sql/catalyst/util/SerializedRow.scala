@@ -329,7 +329,7 @@ trait SerializedRowData extends SpecializedGetters
   // PS: Commented this becoz in older spark InternalRow was not having anyNull implementation
   //  however in spark 2.3 contains implementation for the anyNull
   // TODO verify it PS:
- /* final def anyNull: Boolean = {
+  final def anyNull: Boolean = {
     if (skipBytes == 0) {
       BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes >> 3)
     } else {
@@ -353,7 +353,6 @@ trait SerializedRowData extends SpecializedGetters
       false
     }
   }
-  */
 
   override final def hashCode: Int = {
     // noinspection HashCodeUsesVar

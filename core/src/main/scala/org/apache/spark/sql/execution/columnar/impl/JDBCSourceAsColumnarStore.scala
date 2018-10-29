@@ -367,7 +367,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       // add the stats row
       val key = new ColumnFormatKey(batchId, partitionId, statRowIndex)
       val allocator = Misc.getGemFireCache.getBufferAllocator
-      val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
+      val statsBuffer = UtilsShared.createStatsBuffer(batch.statsData, allocator)
       val value = if (deltaUpdate) {
         new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
       } else new ColumnFormatValue(statsBuffer, compressionCodecId, isCompressed = false)
@@ -430,7 +430,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.setInt(2, partitionId)
           stmt.setInt(3, statRowIndex)
           val allocator = GemFireCacheImpl.getCurrentBufferAllocator
-          val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
+          val statsBuffer = UtilsShared.createStatsBuffer(batch.statsData, allocator)
           // wrap in ColumnFormatValue to compress transparently in socket write if required
           val value = if (deltaUpdate) {
             new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
@@ -684,7 +684,7 @@ final class ColumnarStorePartitionedRDD(
           val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
           val prefNodes = new ArrayBuffer[String](2)
           distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
-            case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+            case Some(b) => prefNodes += UtilsShared.getHostExecutorId(b.blockId)
             case _ =>
           })
           Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),

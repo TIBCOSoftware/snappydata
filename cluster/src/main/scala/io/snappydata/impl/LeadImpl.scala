@@ -52,7 +52,7 @@ import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, UtilsShared}
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
@@ -521,7 +521,7 @@ class LeadImpl extends ServerImpl with Lead
       s"Either ${Property.Locators} or ${Property.McastPort} " +
           s"must be defined for SnappyData cluster to start")
     // skip overriding host-data if loner VM.
-    if (sc != null && Utils.isLoner(sc)) {
+    if (sc != null && UtilsShared.isLoner(sc)) {
       changeOrAppend(STORE_PREFIX + Attribute.GFXD_HOST_DATA,
         "true", overwrite = true)
     } else {

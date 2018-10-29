@@ -111,6 +111,8 @@ dependencies {
   compileOnly 'com.rabbitmq:amqp-client:3.5.7'
 
   testCompile project(':dunit')
+  compile project(":shared_${scalaBinaryVersion}")
+
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 

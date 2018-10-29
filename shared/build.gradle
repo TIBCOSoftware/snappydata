@@ -34,23 +34,23 @@ dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersionShared}")
-  compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersionShared}")
-  compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersionShared}")
-  compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersionShared}")
-  compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersionShared}")
-  compileOnly("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersionShared}")
-  compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersionShared}")
-  compileOnly("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersionShared}")
+  compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkCurrentShared}")
+  compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkCurrentShared}")
+  compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkCurrentShared}")
+  compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkCurrentShared}")
+  compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkCurrentShared}")
+  compileOnly("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkCurrentShared}")
+  compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkCurrentShared}")
+  compileOnly("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkCurrentShared}")
 
-  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersionShared}")
-  testCompile("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersionShared}")
-  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersionShared}")
-  testCompile("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersionShared}")
-  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersionShared}")
-  testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersionShared}")
-  testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersionShared}")
-  testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersionShared}")
+  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkCurrentShared}")
+  testCompile("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkCurrentShared}")
+  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkCurrentShared}")
+  testCompile("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkCurrentShared}")
+  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkCurrentShared}")
+  testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkCurrentShared}")
+  testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkCurrentShared}")
+  testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkCurrentShared}")
 
   compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
 
@@ -77,15 +77,10 @@ scalaTest {
 
 test.dependsOn ':cleanJUnit'
 
-archivesBaseName = 'snappydata-shared_' + scalaBinaryVersion
+archivesBaseName = 'snappydata-shared1_' + scalaBinaryVersion
 shadowJar {
-  zip64 = true
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-  // relocate koloboke for possible conflicts with user dependencies
-  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
-  // relocate the guava's com.google packages
-  relocate 'com.google.common', 'io.snappydata.com.google.common'
 
   mergeServiceFiles()
   exclude 'log4j.properties'
@@ -97,11 +92,11 @@ shadowJar {
   }
   manifest {
     attributes(
-        'Manifest-Version': '1.0',
-        'Created-By': createdBy,
-        'Title': "snappydata-shared_${scalaBinaryVersion}",
-        'Version': version,
-        'Vendor': vendorName
+        'Manifest-Version'  : '1.0',
+        'Created-By'        : createdBy,
+        'Title'             : "snappydata-shared1_${scalaBinaryVersion}",
+        'Version'           : version,
+        'Vendor'            : vendorName
     )
   }
 }

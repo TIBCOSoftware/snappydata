@@ -42,7 +42,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, E
 import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{Utils, UtilsShared}
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
@@ -279,7 +279,7 @@ object ExternalStoreUtils {
 
     val isLoner = session match {
       case None => false
-      case Some(ss) => Utils.isLoner(ss.sparkContext)
+      case Some(ss) => UtilsShared.isLoner(ss.sparkContext)
     }
 
     // remaining parameters are passed as properties to getConnection

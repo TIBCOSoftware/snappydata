@@ -29,7 +29,7 @@ import io.snappydata.collection.ObjectObjectHashMap
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
-import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils, UtilsShared}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.JdbcExtendedUtils
@@ -132,7 +132,7 @@ object StoreUtils {
     if (forWrite) {
       val primary = region.getOrCreateNodeForBucketWrite(bucketId, null).canonicalString()
       SnappyContext.getBlockId(primary) match {
-        case Some(b) => Seq(Utils.getHostExecutorId(b.blockId))
+        case Some(b) => Seq(UtilsShared.getHostExecutorId(b.blockId))
         case None => Nil
       }
     } else {
@@ -150,13 +150,13 @@ object StoreUtils {
             if (prependPrimary && m.equals(primary)) {
               // add primary for "preferPrimaries" at the start
               if (members.isEmpty) {
-                members += Utils.getHostExecutorId(b.blockId)
+                members += UtilsShared.getHostExecutorId(b.blockId)
               } else {
-                Utils.getHostExecutorId(b.blockId) +=: members
+                UtilsShared.getHostExecutorId(b.blockId) +=: members
               }
               prependPrimary = false
             } else {
-              members += Utils.getHostExecutorId(b.blockId)
+              members += UtilsShared.getHostExecutorId(b.blockId)
             }
           case None =>
         }
@@ -204,14 +204,14 @@ object StoreUtils {
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
 
-    val regionMembers = if (Utils.isLoner(session.sparkContext)) {
+    val regionMembers = if (UtilsShared.isLoner(session.sparkContext)) {
       Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
     } else {
       region.getCacheDistributionAdvisor.adviseInitializedReplicates().asScala
     }
     val prefNodes = new mutable.ArrayBuffer[String](8)
     regionMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
-      case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+      case Some(b) => prefNodes += UtilsShared.getHostExecutorId(b.blockId)
       case _ =>
     })
     partitions(0) = new MultiBucketExecutorPartition(0, null, 0, prefNodes)
@@ -296,7 +296,7 @@ object StoreUtils {
         partitionStart = partitionEnd
         val preferredLocations = (blockId :: alternates.map(mbr =>
           SnappyContext.getBlockId(mbr.canonicalString())).toList).collect {
-          case Some(b) => Utils.getHostExecutorId(b.blockId)
+          case Some(b) => UtilsShared.getHostExecutorId(b.blockId)
         }
         partitionIndex += 1
         new MultiBucketExecutorPartition(partitionIndex, partBuckets,

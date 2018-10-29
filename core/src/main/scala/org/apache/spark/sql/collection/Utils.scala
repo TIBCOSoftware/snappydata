@@ -29,7 +29,6 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -41,8 +40,6 @@ import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.TaskLocation
-import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
@@ -82,6 +79,19 @@ object Utils {
     }
   }
 
+  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
+    if (buffer eq null) return null
+    val row = new UnsafeRow(numColumns)
+    if (buffer.isDirect) {
+      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
+          buffer.position(), buffer.remaining())
+    } else {
+      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
+          buffer.arrayOffset() + buffer.position(), buffer.remaining())
+    }
+    row
+  }
+  
   def analysisException(msg: String,
       cause: Option[Throwable] = None): AnalysisException =
     new AnalysisException(msg, None, None, None, cause)
@@ -113,16 +123,6 @@ object Utils {
         s"""Field "$columnName" does not exist in "$relationOutput".""")
     }
   }
-
-  def getAllExecutorsMemoryStatus(
-      sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
-    val memoryStatus = sc.env.blockManager.master.getMemoryStatus
-    // no filtering for local backend
-    if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
-  }
-
-  def getHostExecutorId(blockId: BlockManagerId): String =
-    TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
 
   def classForName(className: String): Class[_] =
     org.apache.spark.util.Utils.classForName(className)
@@ -381,9 +381,6 @@ object Utils {
       netServer.substring(addrIdx + 1, portEndIndex + 1)
     }
   }
-
-  final def isLoner(sc: SparkContext): Boolean =
-    (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
   def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
@@ -766,28 +763,6 @@ object Utils {
   def taskMemoryManager(context: TaskContext): TaskMemoryManager =
     context.taskMemoryManager()
 
-  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
-    if (buffer eq null) return null
-    val row = new UnsafeRow(numColumns)
-    if (buffer.isDirect) {
-      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), buffer.remaining())
-    } else {
-      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
-          buffer.arrayOffset() + buffer.position(), buffer.remaining())
-    }
-    row
-  }
-
-  def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
-    // need to create a copy since underlying Array[Byte] can be re-used
-    val statsLen = statsData.length
-    val statsBuffer = allocator.allocateForStorage(statsLen)
-    statsBuffer.put(statsData, 0, statsLen)
-    statsBuffer.rewind()
-    statsBuffer
-  }
-
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
     if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
@@ -819,7 +794,7 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[Bloc
     extends RDD[T](_sc, Nil) {
 
   override def getPartitions: Array[Partition] = {
-    var numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
+    var numberedPeers = UtilsShared.getAllExecutorsMemoryStatus(sparkContext).
         keySet.toList.zipWithIndex
 
     if (blockManagerIds.nonEmpty) {
@@ -886,7 +861,7 @@ class FixedPartitionRDD[T: ClassTag](_sc: SparkContext,
 class ExecutorLocalPartition(override val index: Int,
     val blockId: BlockManagerId) extends Partition {
 
-  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = UtilsShared.getHostExecutorId(blockId)
 
   override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
@@ -1017,7 +992,7 @@ private[spark] class CoGroupExecutorLocalPartition(
 
   override val index: Int = idx
 
-  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = UtilsShared.getHostExecutorId(blockId)
 
   override def toString: String =
     s"CoGroupExecutorLocalPartition($index, $blockId)"

@@ -19,14 +19,15 @@ package org.apache.spark.memory
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.SystemFailure
+import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.FreeMemory
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import org.slf4j.LoggerFactory
 
-// PS: Temporary commented the code
-// import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
+import org.apache.spark.sql.collection.UtilsShared
+
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.Utils
@@ -203,21 +204,19 @@ object MemoryManagerCallback extends Logging {
       }
     } else
     */
-    // PS: Temporary commented the code
-    /*
-    if (!allocator.isDirect && !StoreCallbacksImpl.acquireStorageMemory(
+    // PS: Refactored a acquireStorageMemory(..) into UtilsShared and calling it.
+    if (!allocator.isDirect && !UtilsShared.acquireStorageMemory(
       owner, size, buffer = null, offHeap = false, shouldEvict = true)) {
       throw LocalRegion.lowMemoryException(null, size)
     }
-    */
     allocator.allocate(size, owner).order(ByteOrder.LITTLE_ENDIAN)
   }
 
   /** release and accounting for byte buffer allocated by [[allocateExecutionMemory]] */
   def releaseExecutionMemory(buffer: ByteBuffer, owner: String): Unit = {
     if (buffer.hasArray) {
-      // PS: Temporary commented the code
-      // StoreCallbacksImpl.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
+      // PS: Refactored a releaseStorageMemory(..) into UtilsShared and calling it.
+      UtilsShared.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
     }
   }
 }
