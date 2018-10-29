@@ -290,9 +290,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     if (schemaName == null && tableName == null) {
       this.nonExistentTables.invalidateAll();
       this.tableCache.invalidateAll();
-      // also clear "needsBatching" for all regions
+      // also clear "isRowBuffer" for all regions
       for (PartitionedRegion pr : PartitionedRegion.getAllPartitionedRegions()) {
-        pr.clearNeedsBatching();
+        pr.clearIsRowBuffer();
       }
     } else {
       // hive is case-insensitive
@@ -300,12 +300,12 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           Utils.toUpperCase(schemaName), Utils.toUpperCase(tableName));
       this.nonExistentTables.invalidate(key);
       this.tableCache.invalidate(key);
-      // also clear "needsBatching" since it may have been cached incorrectly
+      // also clear "isRowBuffer" since it may have been cached incorrectly
       // when column store was still being created
       Region<?, ?> region = Misc.getRegion(Misc.getRegionPath(key.getKey(),
           key.getValue(), null), false, true);
       if (region instanceof PartitionedRegion) {
-        ((PartitionedRegion)region).clearNeedsBatching();
+        ((PartitionedRegion)region).clearIsRowBuffer();
       }
     }
   }

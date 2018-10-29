@@ -1665,12 +1665,10 @@ object SnappyStoreHiveCatalog {
   }
 
   def setRelationDestroyVersionOnAllMembers(relation: Option[QualifiedTableName]): Unit = {
-    SparkSession.getActiveSession match {
-      case None =>
-      case Some(session) =>
-        val version = getRelationDestroyVersion
-        RefreshMetadata.executeOnAll(session.sparkContext, RefreshMetadata.SET_RELATION_DESTROY,
-          version -> relation, executeInConnector = false)
+    SnappyContext.globalSparkContext match {
+      case null =>
+      case sc => RefreshMetadata.executeOnAll(sc, RefreshMetadata.SET_RELATION_DESTROY,
+        getRelationDestroyVersion -> relation, executeInConnector = false)
     }
   }
 
