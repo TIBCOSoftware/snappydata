@@ -1694,8 +1694,11 @@ public class SnappyTest implements Serializable {
         String dataLocation = snappyTest.getDataLocation(location);
         String filePath = snappyTest.getScriptLocation(userScript);
         log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + "sqlScriptsResult_" +
-            RemoteTestModule.getCurrentThread().getThreadId() + ".log";
+        String dest = log.getCanonicalPath() + File.separator;
+        if(SnappyPrms.getLogFileName() != null)
+          dest += SnappyPrms.getLogFileName();
+        else
+          dest +=  "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
@@ -3127,7 +3130,7 @@ public class SnappyTest implements Serializable {
         stopMode.equalsIgnoreCase("NICE_KILL"))) {
       killVM(vmDir, clientName, vmName);
       try {
-        Thread.sleep(180000);
+        Thread.sleep(SnappyPrms.getSleepTimeSecsBeforRestart() * 1000);
       } catch (InterruptedException e) {
         String s = "Exception occurred while waiting for the kill " + clientName + "process " +
             "execution..";

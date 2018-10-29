@@ -117,7 +117,7 @@ The policy details can be viewed from a virtual table named **SYS.SYSPOLICIES**.
 | **Column** | **Description** |
 |--------|--------|
 |  **NAME**      |  Name of the policy.      |
-|    **TABLESCHEMANAME**    |     Schema Name of the table on which policy is applied.   |
+|    **SCHEMANAME**    |     Schema Name of the table on which policy is applied.   |
 |    **TABLENAME**    |  Table on which policy is applied.      |
 |   **POLICYFOR**     | The operation for which the policy is intended. For example, SELECT, UPDATE, INSERT etc. For now it will be only “SELECT”  |
 |    **APPLYTO**    |  The comma separated string of User Names ( or CURRENT_USER) or LDAP group on which the policy applies.      |

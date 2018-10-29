@@ -17,7 +17,8 @@
 package org.apache.spark.scheduler.cluster
 
 import com.pivotal.gemfirexd.internal.engine.Misc
-import org.apache.spark.{Logging, SparkContext}
+
+import org.apache.spark.SparkContext
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, SparkListenerExecutorAdded, SparkListenerExecutorRemoved, TaskSchedulerImpl}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}

@@ -114,15 +114,6 @@ case class SnappyHashAggregateExec(
             .map(_.toAttribute)) ++
         AttributeSet(aggregateBufferAttributes)
 
-  private def getAliases(expressions: Seq[Expression],
-      existing: Seq[Seq[Attribute]]): Seq[Seq[Attribute]] = {
-    expressions.zipWithIndex.map { case (e, i) =>
-      resultExpressions.collect {
-        case a@Alias(c, _) if c.semanticEquals(e) => a.toAttribute
-      } ++ (if (existing.isEmpty) Nil else existing(i))
-    }
-  }
-
   override def outputPartitioning: Partitioning = {
     child.outputPartitioning
   }
