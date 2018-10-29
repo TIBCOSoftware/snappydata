@@ -17,13 +17,14 @@
 
 package io.snappydata.hydra
 
-import java.io.{BufferedReader, File, FileNotFoundException, FileReader, IOException, PrintWriter}
+import java.io.{File, FileNotFoundException, IOException, PrintWriter}
+import java.util
+import java.util.Collections
+
+import scala.io.Source
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import java.util
-
-import scala.io.Source
 
 object SnappyTestUtils {
 
@@ -246,27 +247,32 @@ object SnappyTestUtils {
    In case of round-off, there is a difference of .1 in snappy and spark results. We can ignore
    such differences
    */
-  def isIgnorable(actualLine: String, expectedLine: String): Boolean = {
-    var canBeIgnored = false
-    if ((actualLine != null && actualLine.size > 0) && (expectedLine != null && expectedLine.size
-     > 0)) {
-      val actualArray = actualLine.split(",")
-      val expectedArray = expectedLine.split(",")
+  def isIgnorable(actualRow: String, expectedRow: String): Boolean = {
+    var isIgnorable = false
+    if (actualRow != null && actualRow.size > 0 && expectedRow != null && expectedRow.size > 0) {
+      val actualArray = actualRow.split(",")
+      val expectedArray = expectedRow.split(",")
       var diff: Double = 0.0
-      if(actualArray.length != expectedArray.length){
-        canBeIgnored = false
-      } else {
+      if(actualArray.length == expectedArray.length){
         for (i <- 0 to actualArray.length) {
-          val value1 = actualArray(i).toDouble
-          val value2 = expectedArray(i).toDouble
-          if(value1 > value2) diff = value1.-(value2).doubleValue
-          else diff = value2.-(value1).doubleValue
-          println("diff is " + diff)
-          if (diff <= 0.01) canBeIgnored = true
+          val value1: String = actualArray(i)
+          val value2: String = expectedArray(i)
+          if (!value1.equals(value2)) {
+            try {
+              val val1: Double = value1.toDouble
+              val val2: Double = value2.toDouble
+              if (val1 > val2) diff = val1.-(val2).doubleValue
+              else diff = val2.-(val1).doubleValue
+              println("diff is " + diff)
+              if (diff <= 0.01) isIgnorable = true
+            } catch {
+              case nfe: NumberFormatException => return false
+            }
+          }
         }
       }
     }
-    return canBeIgnored
+    isIgnorable
   }
 
   def executeProcess(pb: ProcessBuilder, logFile: File, pw: PrintWriter): Int = {
@@ -313,8 +319,7 @@ object SnappyTestUtils {
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
 
     hasValidationFailed = compareFiles(getQueryResultDir("snappyQueryFiles"), actualFile.iterator
-        .next().getAbsolutePath, expectedFile.iterator.next().getAbsolutePath,
-      pw, queryNum, hasValidationFailed)
+        .next().getAbsolutePath, expectedFile.iterator.next().getAbsolutePath, pw, queryNum)
 
     /*
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
@@ -355,7 +360,7 @@ object SnappyTestUtils {
   }
 
   def compareFiles(dir: String, snappyResultsFile: String, sparkResultsFile: String,
-      pw: PrintWriter, queryNum: String, hasValidationFailed: Boolean): Boolean = {
+      pw: PrintWriter, queryNum: String): Boolean = {
     val aStr = new StringBuilder
     var pb: ProcessBuilder = null
     var command: String = null
@@ -393,9 +398,8 @@ object SnappyTestUtils {
     } catch {
       case fe: FileNotFoundException =>
         pw.println("Could not find file to compare results.", fe)
-        false
+        return true
     }
-    var line: String = ""
     val unexpected = new util.ArrayList[String]
     val missing = new util.ArrayList[String]
     try {
@@ -407,31 +411,45 @@ object SnappyTestUtils {
       case ie: IOException =>
         pw.println("Got exception while reading resultset files", ie)
     }
+
     if (missing.size > 0) {
       if (missing.size < 20) {
-        aStr.append("\nThe following " + missing.size + " rows are missing from snappy resultset:")
+        aStr.append(s"\nThe following ${missing.size} rows are missing from snappy resultset: \n")
         aStr.append(missing.toString)
       }
       else {
-        aStr.append("There are " + missing.size + " rows missing in snappy for " + queryNum + "." +
-            " " + "Please check " + missingFileName)
+        aStr.append(s"There are ${missing.size} rows missing from snappy for $queryNum. Please " +
+            s"check $missingFileName")
       }
       aStr.append("\n")
     }
     if (unexpected.size > 0) {
       if (unexpected.size < 20) {
-        aStr.append("\nThe following " + unexpected.size +
-            " rows from snappy resultset are unexpected: ")
+        aStr.append(s"\nThe following ${unexpected.size} rows are unexpected in snappy " +
+            s"resultset:\n")
         aStr.append(unexpected.toString)
       }
       else {
-        aStr.append("There are " + unexpected.size + " rows unexpected in snappy for " + queryNum +
-            ". Please check " + unexpectedFileName)
+        aStr.append(s"There are ${unexpected.size} rows unexpected in snappy for $queryNum. " +
+            s"Please check $unexpectedFileName")
       }
       aStr.append("\n")
     }
     pw.println(aStr.toString)
-    hasValidationFailed
+
+    if(missing.size() == unexpected.size()) {
+      Collections.sort(missing)
+      Collections.sort(unexpected)
+      for (i <- missing.size()) {
+        if (!isIgnorable(missing.get(i), unexpected.get(i))) true
+      }
+      aStr.setLength(0) // data mismatch can be ignored
+    }
+    if (aStr.length() > 0) {
+      true
+    } else {
+      false
+    }
   }
 
   /*
