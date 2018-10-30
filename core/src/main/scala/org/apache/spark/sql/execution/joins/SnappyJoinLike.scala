@@ -16,11 +16,12 @@
  */
 package org.apache.spark.sql.execution.joins
 
-import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.physical.{BroadcastDistribution, ClusteredDistribution, Distribution, Partitioning, UnknownPartitioning}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.aggregate.{HashAggregateExec, SnappyHashAggregateExec, SortAggregateExec}
+import org.apache.spark.sql.execution.{SparkPlan, UnaryExecNode}
 
 /**
  * Base trait for joins used in SnappyData. Currently this allows
@@ -53,8 +54,19 @@ trait SnappyJoinLike extends SparkPlan {
       leftClustered :: rightClustered :: Nil
     } else {
       // try subsets of the keys on each side
-      val leftSubset = getSubsetAndIndices(leftPartitioning, leftKeys)
-      val rightSubset = getSubsetAndIndices(rightPartitioning, rightKeys)
+      val leftSubsets = getSubsetsAndIndices(leftPartitioning, leftKeys, left)
+      val rightSubsets = getSubsetsAndIndices(rightPartitioning, rightKeys, right)
+      // find the subsets with matching indices else pick the first ones from the two
+      var rightSubset = rightSubsets.headOption
+      val leftSubset =
+        if (leftSubsets.isEmpty) None
+        else if (rightSubsets.isEmpty) Some(leftSubsets.head)
+        else {
+          leftSubsets.find(p => rightSubsets.find(_._2 == p._2) match {
+            case None => false
+            case x => rightSubset = x; true
+          }).orElse(leftSubsets.headOption)
+        }
       leftSubset match {
         case Some((l, li)) => rightSubset match {
           case Some((r, ri)) =>
@@ -62,7 +74,7 @@ trait SnappyJoinLike extends SparkPlan {
             if (li == ri) {
               ClusteredDistribution(l) :: ClusteredDistribution(r) :: Nil
             } else {
-              // choose the bigger plan
+              // choose the bigger plan to match distribution and reduce shuffle
               if (leftSizeInBytes > rightSizeInBytes) {
                 ClusteredDistribution(l) ::
                     ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
@@ -85,15 +97,73 @@ trait SnappyJoinLike extends SparkPlan {
 
   /**
    * Optionally return result if partitioning is a subset of given join keys,
-   * and if so then return the subset as well as the indices of subset keys
-   * in the join keys (in order).
+   * and if so then return the subset as well as the indices of subset keys in the
+   * join keys (in order). Also unwraps aliases in the keys for matching against
+   * partitioning and returns a boolean indicating whether alias was unwrapped or not.
    */
-  protected def getSubsetAndIndices(partitioning: Partitioning,
-      keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = {
+  protected def getSubsetsAndIndices(partitioning: Partitioning,
+      keys: Seq[Expression], child: SparkPlan): Seq[(Seq[Expression], Seq[Int])] = {
     val numColumns = Utils.getNumColumns(partitioning)
-    if (keys.length > numColumns) {
-      keys.indices.combinations(numColumns).map(s => s.map(keys.apply) -> s)
-          .find(p => partitioning.satisfies(ClusteredDistribution(p._1)))
-    } else None
+    if (keys.length >= numColumns) {
+      var combination: Seq[Expression] = null
+      keys.indices.combinations(numColumns).collect {
+        case s if partitioning.satisfies(ClusteredDistribution {
+          combination = s.map(keys.apply)
+          combination
+        }) => (combination, s)
+        case s if partitioning.satisfies(ClusteredDistribution {
+          combination = unAlias(s.map(keys.apply), child)
+          combination
+        }) => (combination, s)
+      }.toSeq
+    } else Nil
+  }
+
+  /**
+   * Remove the extra Aliases added by aggregates (e.g. k1 projection in
+   * "select k1, max(k2) from t1 group by k1") so partitioning can match against the base
+   * Attribute for such cases rather than the aliased one which will never match
+   * introducing an unnecessary shuffle.
+   *
+   * Since the aggregate plans generate a new Attribute for the projected grouping keys,
+   * hence this method has to go down to the resultExpressions of an aggregate and remove
+   * aliases at that level to get hold of the base Attribute.
+   */
+  private def unAlias(exprs: Seq[Expression], child: SparkPlan): Seq[Expression] = {
+    // all aggregate implementation will have output as outputExpressions.map(_.toAttribute)
+    // so search for matching attribute in output, go to the corresponding outputExpression
+    // and remove aliases from that to get the base Attribute
+    def matchAggregate(output: Seq[Attribute], outputExpressions: Seq[NamedExpression],
+        result: Array[Expression]): Unit = {
+      for (i <- output.indices) {
+        val pos = result.indexOf(output(i))
+        if (pos != -1) {
+          // only unwrap Attributes inside Aliases
+          val substitute = Utils.unAlias(outputExpressions(i), classOf[Attribute])
+          if (substitute ne outputExpressions(i)) {
+            result(pos) = substitute
+          }
+        }
+      }
+    }
+
+    def searchAggregate(plan: SparkPlan, result: Array[Expression]): Unit = plan match {
+      // resolve if possible in this aggregate and keep searching the tree afterwards
+      case a: SnappyHashAggregateExec => matchAggregate(a.output, a.resultExpressions, result)
+        searchAggregate(a.child, result)
+      case a: HashAggregateExec => matchAggregate(a.output, a.resultExpressions, result)
+        searchAggregate(a.child, result)
+      case a: SortAggregateExec => matchAggregate(a.output, a.resultExpressions, result)
+        searchAggregate(a.child, result)
+      case u: UnaryExecNode if u.outputPartitioning == u.child.outputPartitioning =>
+        searchAggregate(u.child, result)
+      case p if p.children.exists(_.outputPartitioning == p.outputPartitioning) =>
+        searchAggregate(p.children.find(_.outputPartitioning == p.outputPartitioning).get, result)
+      case _ =>
+    }
+
+    val result = exprs.toArray
+    searchAggregate(child, result)
+    result
   }
 }

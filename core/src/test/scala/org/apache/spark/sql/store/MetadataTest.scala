@@ -27,7 +27,7 @@ import org.scalatest.Assertions
 
 import org.apache.spark.executor.InputMetrics
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException}
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.row.SnappyStoreDialect
@@ -131,7 +131,7 @@ object MetadataTest extends Assertions {
           .map(_.copy()).toSeq
       session.internalCreateDataFrame(session.sparkContext.makeRDD(rows), schema)
     } else {
-      implicit val encoder = RowEncoder(StructType(Nil))
+      implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
       session.createDataset[Row](Nil)
     }
   }

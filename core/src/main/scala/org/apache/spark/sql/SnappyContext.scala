@@ -1050,13 +1050,13 @@ object SnappyContext extends Logging {
   }
 
   private def resolveClusterMode(sc: SparkContext): ClusterMode = {
-    val mode = if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+    val mode = if (sc.master.startsWith(Constant.SNAPPY_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
         throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
             " from SnappyData tools package")
       }
       SnappyEmbeddedMode(sc,
-        sc.master.substring(Constant.JDBC_URL_PREFIX.length))
+        sc.master.substring(Constant.SNAPPY_URL_PREFIX.length))
     } else {
       val conf = sc.conf
       Property.Locators.getOption(conf).collectFirst {
