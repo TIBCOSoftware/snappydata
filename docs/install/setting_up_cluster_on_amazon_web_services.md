@@ -291,8 +291,10 @@ Following is a sample configuration for all the three processes in a SnappyData 
 The utility also reads **snappy-env.sh**, if present in the directory where helper scripts are present.
 
 !!! Note
-  The earlier method of specifying the configuration properties by placing the actual configuration files in the directory,
-  where helper scripts are available, is discontinued.
+  * The earlier method of specifying the configuration properties by placing the actual
+  configuration files in the directory, where helper scripts are available, is discontinued.
+  * Ensure that the configuration properties specified are correct. Otherwise, launching the
+  SnappyData cluster may fail but the EC2 instances would still be running.
 
 <a id="ec2stopcluster"></a>
 #### Stopping the Cluster
