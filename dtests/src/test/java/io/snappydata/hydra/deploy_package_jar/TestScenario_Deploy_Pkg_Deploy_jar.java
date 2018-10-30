@@ -6,7 +6,7 @@
  * Version 1.0  - 09/24/2018
  * </p>
  */
-package io.snappydata.hydra.deployPackageJar;
+package io.snappydata.hydra.deploy_package_jar;
 
 import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <b>DeployPkgDeployjar</b> class, test the below commands.
+ * <b>TestScenario_Deploy_Pkg_Deploy_jar</b> class, test the below commands.
  * <p>
  * <br> 1. deploy package <unique-alias-name> [repos ‘repositories’] [path 'some path to cache resolved jars'].
  * <br> 2. list packages or list jars.
@@ -36,9 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 1.0.2
  *
  */
-public class DeployPkgDeployjar extends SnappyTest {
+public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
 
-    private static DeployPkgDeployjar deploy_Pkg_Jars;
+    private static TestScenario_Deploy_Pkg_Deploy_jar deploy_Pkg_Jars;
     //TODO Below Maps has hard coded value need to be replaced with Command Line Argument in future.
     private Map<String, String> deployPkg_AliasName_Repository = new LinkedHashMap<>();
     private Map<String, String> deployJar_AliasName_JarName = new LinkedHashMap<>();
@@ -54,7 +54,7 @@ public class DeployPkgDeployjar extends SnappyTest {
     String userHomeDir = null;
 
 
-    public DeployPkgDeployjar() {
+    public TestScenario_Deploy_Pkg_Deploy_jar() {
         if (deployPkg_AliasName_Repository.isEmpty()) {
             deployPkg_AliasName_Repository.put("sparkavro_integration", "com.databricks:spark-avro_2.11:4.0.0");
             deployPkg_AliasName_Repository.put("redshiftdatasource", "com.databricks:spark-redshift_2.10:3.0.0-preview1");
@@ -78,7 +78,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployPackageUsingJDBC_LocalCache() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deployPackages();
     }
 
@@ -89,7 +89,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployJarUsingJDBC_LocalCache() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deployJars();
     }
 
@@ -99,7 +99,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployPackage_InvalidName() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deployPackagesWithInvalidName();
         testInvalidCharacterPkg++;
     }
@@ -110,7 +110,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployJar_InvalidName() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deployJarWithInvalidName();
         testInvalidCharacterJar++;
     }
@@ -121,7 +121,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployCommaDelimitedPkgs_CommaDelimitedJars() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deployCommaDelimitedPkgs_CommaDelimitedJars();
     }
 
@@ -131,7 +131,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deploySpaceDelimitedPkgs() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deploySpaceDelimitedPkgs();
     }
 
@@ -141,7 +141,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deploySpaceDelimitedJars() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deploySpaceDelimitedJars();
     }
 
@@ -152,7 +152,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_undeloyAll() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.undeloyAll();
     }
 
@@ -172,7 +172,7 @@ public class DeployPkgDeployjar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployPackageUsingJDBC_ivy2() {
-        deploy_Pkg_Jars = new DeployPkgDeployjar();
+        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
         deploy_Pkg_Jars.deployPackages_ivy2();
     }
 

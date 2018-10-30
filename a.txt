@@ -1,5 +1,0 @@
-/home/cbhatt/snappydata/store/tests/core/src/main/java/bin/run-snappy-store-bt.sh --osbuild /home/cbhatt/snappydata/build-artifacts/scala-2.11/store /home/cbhatt/snappydata/hydraLogs -Dproduct=snappystore -DtestJVM=/usr/lib/jvm/java-8-oracle/bin/java -DEXTRA_JTESTS=/home/cbhatt/snappydata/store/tests/core/build-artifacts/linux/classes/main -Dbt.grepLogs=true -DremovePassedTest=false -DnumTimesToRun=1 -DlocalConf=/home/cbhatt/snappydata/store/tests/sql/build-artifacts/linux/classes/main/sql/snappy.local.conf io/snappydata/hydra/deployThirdPartyConnectors/deployTPC.bt
-ls: cannot access /home/cbhatt/snappydata/hydraLogs/deployTPC/*: No such file or directory
-Using java /usr/lib/jvm/java-8-oracle/bin/java with version 1.8.0_181
-/home/cbhatt/snappydata
---- Test completed ---
