@@ -98,11 +98,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <div id="AutoUpdateErrorMsg">
       </div>
     </div>
-    <div id="CPUCoresContainer" style="position: absolute; width: 100%;">
-      <div id="CPUCoresDetails">
-        <div id="TotalCoresHolder">
-          <span style="padding-left: 5px;"> Total CPU Cores: </span>
-          <span id="totalCores"> </span>
+    <div id="onoffswitch-Container" style="position: absolute; width: 100%;">
+      <div id="onoffswitch-holder">
+        <div class="onoffswitch">
+          <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox"
+                 id="myonoffswitch" checked="checked" />
+          <label class="onoffswitch-label" for="myonoffswitch">
+            <span class="onoffswitch-inner"></span>
+            <span class="onoffswitch-switch"></span>
+          </label>
         </div>
       </div>
     </div>
@@ -111,6 +115,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <h3 class="page-title-node-h3">
           {title}
         </h3>
+      </div>
+    </div>
+    <div id="CPUCoresContainer" style="position: absolute; width: 100%;">
+      <div id="CPUCoresDetails">
+        <div id="TotalCoresHolder">
+          <span style="padding-left: 5px;"> Total CPU Cores: </span>
+          <span id="totalCores"> </span>
+        </div>
       </div>
     </div>
   }
