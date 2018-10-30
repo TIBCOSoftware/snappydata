@@ -79,19 +79,9 @@ object Utils {
     }
   }
 
-  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
-    if (buffer eq null) return null
-    val row = new UnsafeRow(numColumns)
-    if (buffer.isDirect) {
-      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), buffer.remaining())
-    } else {
-      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
-          buffer.arrayOffset() + buffer.position(), buffer.remaining())
-    }
-    row
-  }
-  
+  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow =
+    UtilsShared.toUnsafeRow(buffer, numColumns)
+
   def analysisException(msg: String,
       cause: Option[Throwable] = None): AnalysisException =
     new AnalysisException(msg, None, None, None, cause)

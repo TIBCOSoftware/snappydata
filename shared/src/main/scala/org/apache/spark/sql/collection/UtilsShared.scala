@@ -44,8 +44,6 @@ object UtilsShared {
   def getHostExecutorId(blockId: BlockManagerId): String =
     TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
 
-
-
   def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
     // need to create a copy since underlying Array[Byte] can be re-used
     val statsLen = statsData.length
@@ -60,6 +58,7 @@ object UtilsShared {
 
   // Methods from the StoreCallbacksImpl added here just avoid migrating whole class into the
   // this shared project. 1. acquireStorageMemory, 2. releaseStorageMemory
+  // -Start
   def acquireStorageMemory(objectName: String, numBytes: Long,
       buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
     val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
@@ -79,10 +78,10 @@ object UtilsShared {
     MemoryManagerCallback.memoryManager.
         releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
-
+  // -End
 
   // Copied function from the package org.apache.spark.sql.collection.Utils
-  // Start
+  // -Start
   def taskMemoryManager(context: TaskContext): TaskMemoryManager = context.taskMemoryManager()
 
   def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
@@ -97,6 +96,6 @@ object UtilsShared {
     }
     row
   }
-  // end
+  // -End
 }
 

@@ -540,24 +540,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def acquireStorageMemory(objectName: String, numBytes: Long,
-      buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
-    val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
-    if (numBytes > 0) {
-      return MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
-        MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
-    } else if (numBytes < 0) {
-      MemoryManagerCallback.memoryManager.releaseStorageMemoryForObject(
-        objectName, -numBytes, mode)
-    }
-    true
-  }
+      buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean =
+    UtilsShared.acquireStorageMemory(objectName, numBytes, buffer, shouldEvict, offHeap)
 
   override def releaseStorageMemory(objectName: String, numBytes: Long,
-      offHeap: Boolean): Unit = {
-    val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
-    MemoryManagerCallback.memoryManager.
-        releaseStorageMemoryForObject(objectName, numBytes, mode)
-  }
+      offHeap: Boolean): Unit = UtilsShared.releaseStorageMemory(objectName, numBytes, offHeap)
 
   override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
     // off-heap will be cleared via ManagedDirectBufferAllocator
