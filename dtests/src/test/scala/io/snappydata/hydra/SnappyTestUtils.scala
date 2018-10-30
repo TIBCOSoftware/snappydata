@@ -440,7 +440,7 @@ object SnappyTestUtils {
     if(missing.size() == unexpected.size()) {
       Collections.sort(missing)
       Collections.sort(unexpected)
-      for (i <- missing.size()) {
+      for (i <- 0 to missing.size()) {
         if (!isIgnorable(missing.get(i), unexpected.get(i))) true
       }
       aStr.setLength(0) // data mismatch can be ignored

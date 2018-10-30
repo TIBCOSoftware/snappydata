@@ -655,7 +655,7 @@ public class SnappyPrms extends BasePrms {
   }
 
   /**
-   * Sleep time in secs between 2 thread dumps.
+   * (int)Sleep time in secs between 2 thread dumps.
    */
   public static Long sleepBtwnStackDump;
 
@@ -664,11 +664,20 @@ public class SnappyPrms extends BasePrms {
     return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
+  /**
+   * (boolean) Flag to notify on whether to keep the clusters running after hydra tasks are done.
+   */
+  public static Long keepClusterRunning;
+
+  public static boolean isKeepClusterRunning(){
+    Long key = keepClusterRunning;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static String getCredentialFile() {
     Long key = credentialFile;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
-
 
   public static boolean isSecurityOn() {
     Long key = isSecurity;
