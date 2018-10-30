@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+
 public class SnappyTest implements Serializable {
 
   private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
@@ -88,12 +89,10 @@ public class SnappyTest implements Serializable {
   public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
-  /*public static boolean useThinClientSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);*/  //default to false
+  /*public static boolean useThinClientSmartConnectorMode = TestConfig.TestConfig.tab().booleanAt(SnappyPrms.useThinClientSmartConnectorMode, false);*/  //default to false
   public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
-  public static boolean forceStart = TestConfig.tab().booleanAt(SnappyPrms.forceStart,
-      false);  //default to false
-  public static boolean forceCopy = TestConfig.tab().booleanAt(SnappyPrms.forceCopy,
-      false);  //default to false
+  public static boolean forceStart = TestConfig.tab().booleanAt(SnappyPrms.forceStart, false);  //default to false
+  public static boolean forceCopy = TestConfig.tab().booleanAt(SnappyPrms.forceCopy, false);  //default to false
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
@@ -1717,6 +1716,40 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  /**
+   * Executes user scripts.
+   */
+  public static synchronized void HydraTask_executeScripts() {
+    Vector scriptNames;
+    File log = null, logFile;
+    scriptNames = SnappyPrms.getScriptNames();
+    if (scriptNames == null) {
+      String s = "No Script names provided for executing in the Hydra TASK";
+      throw new TestException(s);
+    }
+    try {
+
+      for (int i = 0; i < scriptNames.size(); i++) {
+        String userScript = (String) scriptNames.elementAt(i);
+        Log.getLogWriter().info("SS - userScript: " + userScript);
+        String filePath = snappyTest.getScriptLocation(userScript);
+        Log.getLogWriter().info("SS - filePath: " + filePath);
+        log = new File(".");
+        String dest = log.getCanonicalPath() + File.separator + "scriptResult_" +
+            RemoteTestModule.getCurrentThread().getThreadId() + ".log";
+        logFile = new File(dest);
+        String comma_separated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
+        String command = filePath + " " + comma_separated_args_list;
+        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
+        Log.getLogWriter().info("SS - command is: " + pb.command());
+        snappyTest.executeProcess(pb, logFile);
+      }
+    } catch (IOException e) {
+      String s = "problem occurred while retriving destination logFile path " + log;
+      throw new TestException(s, e);
+    }
+  }
+
   protected static String getPrimaryLocatorHost() {
     String primaryLocatorHost = null;
     if (isLongRunningTest) {
@@ -1865,6 +1898,16 @@ public class SnappyTest implements Serializable {
     }
   }
 
+  public static String getCurrentDirPath() {
+    String currentDir;
+    try {
+      currentDir = new File(".").getCanonicalPath();
+    } catch (IOException e) {
+      String s = "Problem while accessing the current dir.";
+      throw new TestException(s, e);
+    }
+    return currentDir;
+  }
 
   /**
    * Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.
@@ -1983,6 +2026,26 @@ public class SnappyTest implements Serializable {
     } catch (InterruptedException e) {
       throw new TestException("Exception occurred while waiting for the snappy streaming job process execution." + "\nError Message:" + e.getMessage());
     }
+  }
+
+  public static synchronized void createCSVFromTable() {
+    int currentThread = snappyTest.getMyTid();
+    String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
+    SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
+    snappyTest.executeSparkJob(SnappyPrms.getSnappyStreamingJobClassNames(),
+        "snappyStreamingJobResult_" + System.currentTimeMillis() + ".log");
+  }
+
+  public static void streamingActivity() {
+    Runnable simulateStreamingActivity = new Runnable() {
+      public void run() {
+        snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames(),
+            "snappyStreamingJobResult_" + System.currentTimeMillis() + ".log");
+      }
+    };
+
+    ExecutorService es = Executors.newFixedThreadPool(1);
+    es.submit(simulateStreamingActivity);
   }
 
   protected void executeSnappyStreamingJob(Vector jobClassNames, String logFileName) {
@@ -2214,6 +2277,10 @@ public class SnappyTest implements Serializable {
             SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
             SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 100);
           } else if (appName.equals("CDCIngestionApp1")) {
+            userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
+            SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
+            SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
+          } else if (appName.equals("BulkDeleteApp")) {
             int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
             int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
             int finalStart1, finalEnd1;
@@ -2726,7 +2793,6 @@ public class SnappyTest implements Serializable {
       snappyTest.startSnappyLocator();
     }
   }
-
 
   /**
    * Create and start snappy server.
@@ -3496,6 +3562,35 @@ public class SnappyTest implements Serializable {
     }
     return masterHost;
   }
+
+
+  private String printStackTrace(Exception e) {
+    StringWriter error = new StringWriter();
+    e.printStackTrace(new PrintWriter(error));
+    return error.toString();
+  }
+
+  public List<String> getHostNameFromConf(String nodeName) {
+    List<String> hostNames = new ArrayList<>();
+    String confFile = snappyTest.getScriptLocation(productConfDirPath + File.separator + nodeName);
+    try {
+      File file = new File(confFile);
+      FileReader fileReader = new FileReader(file);
+      BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+      String line;
+      while ((line = bufferedReader.readLine()) != null) {
+        String[] data = line.trim().split(" ");
+        if (!hostNames.contains(data[0]))
+          hostNames.add(data[0]);
+      }
+      fileReader.close();
+    } catch (IOException e) {
+      Log.getLogWriter().info(printStackTrace(e));
+    }
+    return hostNames;
+  }
+
 
   protected void startSnappyLocator() {
     File log = null;
