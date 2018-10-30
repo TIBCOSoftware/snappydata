@@ -1916,6 +1916,9 @@ public class SnappyTest implements Serializable {
    * Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.
    */
   public static void HydraTask_cleanUpSnappyProcessesOnFailure() {
+    if(SnappyPrms.isKeepClusterRunning()) {
+      return;
+    }
     Process pr = null;
     ProcessBuilder pb = null;
     File logFile = null, log = null, nukeRunOutput = null;
@@ -2866,6 +2869,9 @@ public class SnappyTest implements Serializable {
    * Stops Spark Cluster.
    */
   public static synchronized void HydraTask_stopSparkCluster() {
+    if (SnappyPrms.isKeepClusterRunning()) {
+      return;
+    }
     File log = null;
     try {
       initSnappyArtifacts();
@@ -2879,6 +2885,7 @@ public class SnappyTest implements Serializable {
       String s = "problem occurred while retriving destination logFile path " + log;
       throw new TestException(s, e);
     }
+
   }
 
   /**
@@ -2947,6 +2954,9 @@ public class SnappyTest implements Serializable {
   }
 
   public static synchronized void HydraTask_stopSnappyCluster() {
+    if (SnappyPrms.isKeepClusterRunning()) {
+      return;
+    }
     File log = null;
     try {
       initSnappyArtifacts();
