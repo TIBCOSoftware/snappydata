@@ -498,7 +498,7 @@ case class JDBCMutableRelation(
         val defaultColumnValue = defaultValue match {
           case Some(v) =>
             val defaultString = column.dataType match {
-              case StringType => s" default '$v'"
+              case StringType | DateType | TimestampType => s" default '$v'"
               case _ => s" default $v"
             }
             defaultString

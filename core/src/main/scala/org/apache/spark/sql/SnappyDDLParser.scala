@@ -334,7 +334,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected final def defaultLiteral: Rule1[Option[String]] = rule {
     stringLiteral ~> ((s: String) => Option(s)) |
     numericLiteral ~> ((s: String) => Option(s)) |
-    booleanLiteral ~> ((b: Boolean) => Option(b.toString))
+    booleanLiteral ~> ((b: Boolean) => Option(b.toString)) |
+    NULL ~> (() => None)
   }
 
   protected final def defaultVal: Rule1[Option[String]] = rule {

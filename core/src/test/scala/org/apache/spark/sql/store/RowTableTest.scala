@@ -446,6 +446,49 @@ class RowTableTest
     assert(snc.sql("SELECT * FROM " + tableName).schema.fields.length == 3)
   }
 
+  test("Test alter table add column with default value") {
+    snc.sql("drop table if exists employees")
+    snc.sql("create table employees(name string, surname string)")
+    snc.sql("insert into employees values ('Joe', 'Lamb')")
+    var df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 2)
+    assert(df1.collect().length == 1)
+
+    snc.sql("alter table employees add column age int not null default 25")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 3)
+    var v = df1.select("age").collect()
+    assert(v(0).getInt(0) == 25)
+
+    snc.sql("alter table employees add column state string default 'CA'")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 4)
+    v = df1.select("state").collect()
+    assert(v(0).getString(0) == "CA")
+
+
+    snc.sql("alter table employees add column address string default NULL")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 5)
+    v = df1.select("address").collect()
+    assert(v(0).getString(0) == null)
+
+    snc.sql("alter table employees add column joiningDate date default '2000-08-03'")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 6)
+    v = df1.select("joiningDate").collect()
+    assert(v(0).getDate(0).toString == "2000-08-03")
+
+    snc.sql("alter table employees add column timestampColumn" +
+        " timestamp default '2000-08-03 12:20:30.0'")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 7)
+    v = df1.select("timestampColumn").collect()
+    assert(v(0).getTimestamp(0).toString == "2000-08-03 12:20:30.0")
+
+  }
+
+
   test("SNAP-1825") {
     snc.sql("create table tabOne(id int, name String, address String)" +
       " USING row OPTIONS(partition_by 'id')")
@@ -504,12 +547,6 @@ class RowTableTest
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
     println("Successful")
-  }
-
-  test("SNAP-2467") {
-    snc.sql("create table music(id int)")
-    snc.sql("alter table music add column otherid int not null default 444")
-    snc.sql("select otherid from music")
   }
 
   test("Test the drop syntax SQL and SnappyContext ") {
