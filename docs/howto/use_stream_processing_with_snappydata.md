@@ -168,9 +168,9 @@ A common use case for streaming is capturing writes into another store (Operatio
 <a id= eventypecolumn> </a>
 To support this use case, **SnappyData Sink** supports events to signal if these are Inserts, Updates, or Deletes. The application is required to inject a column called `_eventType` as described below. 
 
-To support **CDC**, the source dataframe must have the following:
+To support **CDC**, the source DataFrame must have the following:
 
-*	An `IntegerType` column with name `_eventType`.  The value in the `_eventType` column can be any of the following:
+*	An `IntegerType` column named `_eventType`.  The value in the `_eventType` column can be any of the following:
   	-	`0` for insert events
 	-	`1` for update events
 	-	`2` for delete events
@@ -193,7 +193,7 @@ If the `_eventType` column is not provided as part of source dataframe, then the
 <a id= event_order> </a>
 ### Event Processing Order
 
-Currently, the ordering of events across partitions is not supported. Event processing occurs independently in each partition. Hence, your application must ensure that all the events, that are associated with a key, are always delivered on the same partition (shard on the key).</br>If your incoming stream is not partitioned on the key column(s), the application should first repartition the dataframe on the key column(s). You can ignore this requirement, if your incoming streams are continuously appending (For example, time series) or when replacing data where ordering is irrelevant.
+Currently, the ordering of events across partitions is NOT supported. Event processing occurs independently in each partition. Hence, your application must ensure that all the events, that are associated with a key, are always delivered on the same partition (shard on the key).</br>If your incoming stream is not partitioned on the key column(s), the application should first repartition the dataframe on the key column(s). You can ignore this requirement, if your incoming streams are continuously appending (For example, time series) or when replacing data where ordering is irrelevant.
 
 <a id= conflationpro> </a>
 If `conflation` property is set to `true`, **SnappyData Sink** will first conflate the incoming batch independently by each partition. This results in a batch, where there is at most a single entry per key. </br>Then, the writes occur by grouping the events in the following manner (for performance optimization of the columnar store) and is only applicable when your DataFrame has an `_eventType` column:
@@ -204,9 +204,9 @@ If `conflation` property is set to `true`, **SnappyData Sink** will first confla
 	
 This above grouping semantics is followed even when the `conflation` property is set to `false`.  When `_eventType` column is not available, all records are merged into the target table using **PutInto** semantics.
 
-By default the `conflation` property is set to `false`. Therefore, the current ordering semantics only ensures consistency when incoming events in a batch are for unique key column(s).  For instance, an **Insert(key1)** followed by a **Delete(key1)** in the same batch, it results in **key1** showing up in the target table. For such cases, you should enable the Conflation by setting the `conflation` property to `true`.
+By default the `conflation` property is set to `false`. Therefore, the current ordering semantics only ensures consistency when incoming events in a batch are for unique key column(s).
 
-After enabling Conflation, if a batch contains **Insert(key1)** event followed by a **Delete(key1)** event, then the default **SnappyData Sink** conflates these two events into a single event by selecting the last event which is** Delete(key1) ** and only that event is processed for **key1**.</br>Processing **Delete(key1)** without processing **Insert(k1)** does not result in a failure as Delete events are ignored, if corresponding records do not exist in the target table.
+**For example:**</br>If an incoming batch contains an **Insert(key1)** event followed by a** Delete(key1)** event, the record for **key1** is shown in the target table after the batch is processed. This is because all the Delete events are processed before Insert events as per the event processing order explained [above](#conflationpro).</br>In such cases, you should enable the Conflation by setting the `conflation` property to `true`. Now, if a batch contains **Insert(key1)** event followed by a **Delete(key1)** event, then ** SnappyData Sink** conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.</br>Processing **Delete(key1)** event without processing **Insert(key1)** event do not result in a failure, as Delete events are ignored, if corresponding records do not exist in the target table.
 
 !!!Note 
 	Applications can override the default **SnappyData Sink** semantics by explicitly implementing the [**sinkCallback**](#snappycallback).
