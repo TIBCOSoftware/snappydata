@@ -6,7 +6,7 @@ Removes the jars that are directly installed and the jars that are associated wi
 ## Syntax 
 
 ```pre
-undeploy <jar-name>
+undeploy <unique-alias-name>;
 ```
 *	**jar-name** - Name of the jar that must be removed.  
 
@@ -23,7 +23,7 @@ The command removes the jars that are directly installed and the jars that are a
 
 	
 ```
-undeploy spark-daria_2.11.8-2.2.0_0.10.0.jar 
+undeploy spark_deep_learning_0_3_0; 
 ```
 
 

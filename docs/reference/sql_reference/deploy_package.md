@@ -36,11 +36,11 @@ For resolving the package, Maven Central and Spark packages, located at http://d
 *	Deploy packages from a default repository.
 	
 ```
-deploy package SparkDeepLearning spark_deep_learning_0_3_0 databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11 /home/snappydata/work
+deploy package spark_deep_learning_0_3_0 'databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11' path '/home/snappydata/work'
 ```
 
 ```pre
-deploy package SparkRedShift spark_redshift_300 com.databricks:spark-redshift_2.10:3.0.0-preview1 /home/snappydata/work
+deploy package spark_redshift_300 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/snappydata/work'
 ```
 
 Deploy packages from a non-default repository.
