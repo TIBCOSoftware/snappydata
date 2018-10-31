@@ -1193,6 +1193,9 @@ task checkAll {
   if (!rootProject.hasProperty('smoke.skip')) {
     dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:check"
   }
+  if (!rootProject.hasProperty('compatibility.skip')) {
+    dependsOn ":snappy-compatibility-tests_${scalaBinaryVersion}:check"
+  }
   mustRunAfter buildAll
 }
 task allReports(type: TestReport) {
