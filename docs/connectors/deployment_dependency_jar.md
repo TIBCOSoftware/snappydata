@@ -123,7 +123,7 @@ You can remove the deployed jars with the **undeploy** command. This command rem
 ### Syntax for Removing Deployed Jars
 
 ```pre
-undeploy <jar-name>
+undeploy <unique-alias-name>;
 ```
 
 !!!Note
@@ -132,7 +132,7 @@ undeploy <jar-name>
 ### Example 
 	
 ```pre
-undeploy RedshiftDataSource;
+undeploy spark_deep_learning_0_3_0;
 ```
 
 !!!Attention
