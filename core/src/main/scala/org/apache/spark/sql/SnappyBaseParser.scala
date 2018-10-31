@@ -54,7 +54,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     }
   }
 
-  private[sql] final def hasPlanHints: Boolean = _planHints ne null
+  private[sql] final def hasPlanHints: Boolean = (_planHints ne null) && !_planHints.isEmpty
 
   protected def clearQueryHints(): Unit = {
     if (!queryHints.isEmpty) queryHints.clear()

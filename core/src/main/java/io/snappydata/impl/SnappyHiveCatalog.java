@@ -435,8 +435,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
               try {
                 Table table = hmc.getTable(schema, tableName);
                 Properties metadata = table.getMetadata();
-                String tblDataSourcePath = metadata.getProperty("path");
-                tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
+                String tblDataSourcePath = getDataSourcePath(metadata);
                 String driverClass = metadata.getProperty("driver");
                 driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
                 String tableType = ExternalTableType.getTableType(table);
@@ -570,9 +569,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
           String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
-          String tblDataSourcePath = table.getMetadata().getProperty("path");
-          tblDataSourcePath = tblDataSourcePath == null ? "" : tblDataSourcePath;
-          String driverClass = table.getMetadata().getProperty("driver");
+          Properties metadata = table.getMetadata();
+          String tblDataSourcePath = getDataSourcePath(metadata);
+          String driverClass = metadata.getProperty("driver");
           driverClass = ((driverClass == null) || driverClass.isEmpty()) ? "" : driverClass;
           return new ExternalTableMetaData(
               fullyQualifiedName,
@@ -685,6 +684,15 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         throw Util.generateCsSQLException(SQLState.TABLE_NOT_FOUND,
             tableName, he);
       }
+    }
+
+    private String getDataSourcePath(Properties metadata) {
+      String dataSourcePath = metadata.getProperty("path");
+      if (dataSourcePath == null || dataSourcePath.isEmpty()) {
+        // for external connectors like GemFire
+        dataSourcePath = metadata.getProperty("region.path");
+      }
+      return dataSourcePath != null ? dataSourcePath : "";
     }
 
     private String getType(Hive hmc) throws SQLException {

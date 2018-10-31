@@ -17,16 +17,17 @@
 
 package org.apache.spark.sql.streaming
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import io.snappydata.SnappyFunSuite
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.{Row, SnappyContext}
+import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext}
 
 class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
   with BeforeAndAfter with BeforeAndAfterAll {
@@ -35,7 +36,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
 
   protected var ssnc: SnappyStreamingContext = _
 
-  val session = snc
+  private lazy val session: SnappyContext = snc
 
   def batchDuration: Duration = Seconds(1)
 
@@ -80,11 +81,11 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     snc.dropTable("slidingWin", ifExists = true)
     snc.createTable("slidingWin", "column", stream.schema, empty)
     ssnc.registerCQ(
-      "SELECT * from tweetStream window (duration 4 seconds, slide 2 seconds)")
+      "SELECT * from tweetStream window (duration 2 seconds, slide 1 seconds)")
       .foreachDataFrame(_.write.insertInto("slidingWin"))
 
     ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       val defaultCnt = ssnc.sql("select * from defaultWin").count
@@ -139,7 +140,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     streamToTable.foreachDataFrame(_.write.insertInto("tableJoinResult"))
 
     ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       var actual = ssnc.sql("select id from totalRows").collect() map (_.getInt(0))
       assert(actual.length === 30)
@@ -181,7 +182,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     }
 
     ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     val expected = Seq("Text7", "Text17", "Text27")
     eventually(timeout(5000 milliseconds), interval(200 milliseconds)) {
@@ -216,7 +217,7 @@ class SnappyStreamingAPISuite extends SnappyFunSuite with Eventually
     streamToBigTable.foreachDataFrame(_.write.insertInto("tableJoinResult"))
 
     ssnc.start
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     eventually(timeout(200000.milliseconds), interval(1000.milliseconds)) {
       val expected = Seq(5)

@@ -142,7 +142,7 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
-      implicit val ss = snappySession
+      implicit val ss: SnappySession = snappySession
       var insertedSnappyOpts = 0
       val modified = super.batches.map {
         case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
@@ -314,6 +314,10 @@ class SnappySessionState(snappySession: SnappySession)
   private[spark] val leaderPartitions = new ConcurrentHashMap[PartitionedRegion,
       Array[Partition]](16, 0.7f, 1)
 
+  @volatile private[sql] var enableExecutionCache: Boolean = _
+  protected final lazy val executionCache =
+    new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
+
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
    */
@@ -423,8 +427,8 @@ class SnappySessionState(snappySession: SnappySession)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
-        case  (_: BypassRowLevelSecurity | _: Update | _: Delete |
-               _: DeleteFromTable | _: PutIntoTable) => plan
+        case _: BypassRowLevelSecurity | _: Update | _: Delete |
+             _: DeleteFromTable | _: PutIntoTable => plan
 
         // TODO: Asif: Bypass row level security filter apply if the command
         // is of type RunnableCommad. Later if it turns out any data operation
@@ -504,7 +508,7 @@ class SnappySessionState(snappySession: SnappySession)
                   || (projs.length == 1 && projs.head.isInstanceOf[Star])))) {
             boolsArray(allProjectionBool) = false
           }
-          case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+          case _: GlobalLimit | _: LocalLimit => boolsArray(alreadyProcessed_bool) = true
           case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
             boolsArray(filter_bool) = true
           case _ =>
@@ -696,10 +700,20 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def executePlan(plan: LogicalPlan): QueryExecution = {
+  override final def executePlan(plan: LogicalPlan): QueryExecution = {
     clearExecutionData()
-    newQueryExecution(plan)
+    beforeExecutePlan(plan)
+    val qe = newQueryExecution(plan)
+    if (enableExecutionCache) executionCache.put(plan, qe)
+    qe
   }
+
+  protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
+  }
+
+  private[sql] def getExecution(plan: LogicalPlan): QueryExecution = executionCache.get(plan)
+
+  private[sql] def clearExecutionCache(): Unit = executionCache.clear()
 
   private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
     queryPreparations(topLevel = false).foldLeft(plan) {
@@ -1153,39 +1167,28 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(dr: DeletableRelation, _, _) =>
-          def comp(a: Attribute, targetCol: String): Boolean = a match {
-            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
-          }
-
-          val expectedOutput = l.output
-          if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same column name(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          l match {
-            case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
-              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
-                comp(e, a.toUpperCase)))) {
-                throw new AnalysisException(s"${child.output.mkString(",")}" +
-                    s" columns in the WHERE clause of the DELETE FROM statement must " +
-                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
-              }
-            case _ =>
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
-
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
-          val expectedOutput = l.output
-          if (child.output.length != expectedOutput.length) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same number of column(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+
+          val keyColumns = dr.getPrimaryKeyColumns
+          val childOutput = keyColumns.map(col =>
+            child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"$l requires that the query in the " +
+                  "WHERE clause of the DELETE FROM statement " +
+                  s"must have all the key column(s) ${keyColumns.mkString(",")} but found " +
+                  s"${child.output.mkString(",")} instead.")
+            })
+
+          val expectedOutput = keyColumns.map(col =>
+            l.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"The target table must contain all the" +
+                  s" key column(s) ${keyColumns.mkString(",")}. " +
+                  s"Actual schema: ${l.output.mkString(",")}")
+            })
+
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, Project(childOutput, child))
+
         case _ => d
       }
 
@@ -1536,4 +1539,7 @@ class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
     case 0 => child
     case 1 => hints
   }
+
+  override def simpleString: String =
+    s"LogicalPlanWithHints[hints = $hints; child = ${child.simpleString}]"
 }
