@@ -111,8 +111,7 @@ The data type representing `Boolean` values. This is equivalent to Java's `boole
 <a id="byte"></a>
 ## BYTE
 
-The data type representing `Byte` values. It's
-an 8-bit signed integer (equivalent to Java's `byte` primitive type).
+The data type representing `Byte` values. It is an 8-bit signed integer (equivalent to Java's `byte` primitive type).
 
 |                                      |                                              |
 |--------------------------------------|----------------------------------------------|
