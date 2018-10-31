@@ -2036,6 +2036,7 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
+  // TODO: SW: global property? should be only session one
   private[sql] var tokenize: Boolean = _
 
   lazy val isEnterpriseEdition: Boolean = {
