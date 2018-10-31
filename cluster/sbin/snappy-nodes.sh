@@ -321,21 +321,21 @@ if [ -n "$LEADHOSTLIST" -a -n "$isServerStart" ]; then
   done < "$LEADHOSTLIST"
 fi
 
-function getNumLeadsOnNode() {
+function getNumLeadsOnHost() {
   host="$1"
-  numLeadsOnNode=
+  numLeadsOnHost=
   if [ ${#leadCounts[@]} -gt 0 ]; then
     leadIndex=$(keyIndex "$host" "${leadHosts[@]}")
     if [ -n "$leadIndex" ]; then
-      numLeadsOnNode="${leadCounts[$leadIndex]}"
+      numLeadsOnHost="${leadCounts[$leadIndex]}"
     fi
   elif [ "$host" = "localhost" ]; then
-    numLeadsOnNode=1
+    numLeadsOnHost=1
   fi
-  if [ -z "$numLeadsOnNode" ]; then
-    numLeadsOnNode=0
+  if [ -z "$numLeadsOnHost" ]; then
+    numLeadsOnHost=0
   fi
-  echo $numLeadsOnNode
+  echo $numLeadsOnHost
 }
 
 if [ -n "${HOSTLIST}" ]; then
@@ -382,7 +382,7 @@ if [ -n "${HOSTLIST}" ]; then
           args="$args -memory-size=0"
         fi
         # check number of leads on the same node
-        args="$args -J-Dsnappydata.numLeadsOnNode=$(getNumLeadsOnNode "$host")"
+        args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
       fi
       execute "$@"
     fi
@@ -406,7 +406,7 @@ else
   host="localhost"
   args=""
   if [ -n "$isServerStart" ]; then
-    args="$args -J-Dsnappydata.numLeadsOnNode=$(getNumLeadsOnNode "$host")"
+    args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
   fi
   execute "$@"
 fi

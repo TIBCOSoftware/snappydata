@@ -20,7 +20,7 @@ function keyPutIndex() {
   shift
   keys=("$@")
 
-  index=$(keyIndex "$key" "${mapKeys[@]}")
+  index=$(keyIndex "$key" "${keys[@]}")
   if [ -z "$index" ]; then
     index=${#keys[@]}
   fi

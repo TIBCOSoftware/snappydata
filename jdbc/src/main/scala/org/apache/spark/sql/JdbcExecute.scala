@@ -21,6 +21,7 @@ import java.util.Properties
 import scala.collection.JavaConverters._
 import scala.collection.{Map => SMap}
 
+import com.pivotal.gemfirexd.Attribute
 import io.snappydata.Constant
 
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -56,8 +57,8 @@ case class JdbcExecute(session: SparkSession) extends DataFrameReader(session) {
 
   def snappyQuery(sql: String, host: String, port: Int,
       user: String, password: String): DataFrame = {
-    snappyQuery(sql, host, port, Map("user" -> user, "password" -> password),
-      initCredentials = false)
+    snappyQuery(sql, host, port, Map(Attribute.USERNAME_ATTR -> user,
+      Attribute.PASSWORD_ATTR -> password), initCredentials = false)
   }
 
   def snappyQuery(sql: String, host: String, port: Int, properties: Properties): DataFrame =
@@ -93,8 +94,8 @@ case class JdbcExecute(session: SparkSession) extends DataFrameReader(session) {
 
   def snappyExecute(sql: String, host: String, port: Int,
       user: String, password: String): Int = {
-    snappyExecute(sql, host, port, Map("user" -> user, "password" -> password),
-      initCredentials = false)
+    snappyExecute(sql, host, port, Map(Attribute.USERNAME_ATTR -> user,
+      Attribute.PASSWORD_ATTR -> password), initCredentials = false)
   }
 
   def snappyExecute(sql: String, host: String, port: Int, properties: Properties): Int =

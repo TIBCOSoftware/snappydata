@@ -1085,6 +1085,10 @@ distZip {
   }
 }
 
+// disable distZip by default
+assemble.dependsOn.clear()
+assemble.dependsOn product, distTar
+
 task distRpm {
   dependsOn product
   dependsOn buildRpm
