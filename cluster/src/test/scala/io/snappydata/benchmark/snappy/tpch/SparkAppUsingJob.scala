@@ -99,7 +99,8 @@ object SparkAppUsingJob  extends SnappySQLJob {
     QueryExecutor.setRandomSeed(randomSeed)
     for (query <- queries) {
       QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
-        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
+        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream,
+        metricsSinkEnabled = false, requestLatencies = null)
     }
     QueryExecutor.close
 

@@ -22,9 +22,12 @@ import java.io.{File, FileOutputStream, PrintStream}
 import scala.language.implicitConversions
 
 import com.typesafe.config.Config
+import io.prometheus.client.{CollectorRegistry, Histogram}
 
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
+//import io.prometheus.client.hotspot.DefaultExports;
+import io.prometheus.client.exporter.PushGateway
 
 object QueryExecutionJob extends SnappySQLJob {
 
@@ -39,8 +42,27 @@ object QueryExecutionJob extends SnappySQLJob {
   var traceEvents : Boolean = _
   var randomSeed : Integer = _
 
+  var metricsSinkEnabled : Boolean = _
+  var metricsSinkHost: String = _
+  var metricsSinkPort: String = _
+  var pg: PushGateway = _
+  var requestLatencies =  scala.collection.mutable.Map[String, Histogram]()
+  var registry : CollectorRegistry = _
+
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
+
+    if(metricsSinkEnabled){
+      println("pushgateway is running at " + s"${metricsSinkHost}:${metricsSinkPort}")
+      pg = new PushGateway(s"${metricsSinkHost}:${metricsSinkPort}")
+      registry = new CollectorRegistry
+      pg.pushAdd(registry, "tpch_snappydata")
+      for (query <- queries) {
+        requestLatencies(query) = Histogram.build()
+            .name(s"${query}_latency_milliseconds")
+            .help(s"Query ${query} latency in milliseconds.").register();
+      }
+    }
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
             new File(s"${threadNumber}_Snappy_AverageResponseTimes.csv"))
@@ -58,7 +80,8 @@ object QueryExecutionJob extends SnappySQLJob {
     QueryExecutor.setRandomSeed(randomSeed)
     for (query <- queries) {
       QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
-        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
+        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream,
+        metricsSinkEnabled, requestLatencies)
     }
     avgPrintStream.close()
     avgFileStream.close()
@@ -69,17 +92,21 @@ object QueryExecutionJob extends SnappySQLJob {
   def main(args: Array[String]): Unit = {
     val isResultCollection = false
     val isSnappy = true
+    queries = Array("3,4,10,16")
+    metricsSinkEnabled = true
+    randomSeed = 43
+    metricsSinkHost = "104.211.54.49"
+    metricsSinkPort = "9091"
 
     val conf = new SparkConf()
         .setAppName("TPCH")
         .setMaster("snappydata://localhost:10334")
         .set("jobserver.enabled", "false")
-    val sc = new SparkContext(conf)
-    val snc =
-      SnappyContext(sc)
-
-    queries = Array("16")
+    val   sc = new SparkContext(conf)
+    val snc = SnappyContext(sc)
     runJob(snc, null)
+    //val sns = SnappySession(sc)
+    //runSnappyJob(sns, null)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -94,7 +121,7 @@ object QueryExecutionJob extends SnappySQLJob {
     val tempQueries = if (config.hasPath("queries")) {
       config.getString("queries")
     } else {
-      return SnappyJobInvalid("Specify Query number to be executed")
+      return SnappyJobInvalid("Specify Queries to be executed")
     }
 
     // scalastyle:off println
@@ -104,13 +131,13 @@ object QueryExecutionJob extends SnappySQLJob {
     isDynamic = if (config.hasPath("isDynamic")) {
       config.getBoolean("isDynamic")
     } else {
-      return SnappyJobInvalid("Specify whether to use dynamic paramters")
+      return SnappyJobInvalid("Specify whether to use dynamic parameters")
     }
 
     isResultCollection = if (config.hasPath("resultCollection")) {
       config.getBoolean("resultCollection")
     } else {
-      return SnappyJobInvalid("Specify whether to to collect results")
+      return SnappyJobInvalid("Specify whether to collect results")
     }
 
     warmUp = if (config.hasPath("warmUpIterations")) {
@@ -141,6 +168,24 @@ object QueryExecutionJob extends SnappySQLJob {
       config.getInt("randomSeed")
     } else {
       42
+    }
+
+    metricsSinkEnabled = if (config.hasPath("metrics_sink_enabled")) {
+      config.getBoolean("metrics_sink_enabled")
+    } else {
+      false
+    }
+
+    metricsSinkHost = if (config.hasPath("metrics_sink_host")) {
+      config.getString("metrics_sink_host")
+    } else {
+      ""
+    }
+
+    metricsSinkPort = if (config.hasPath("metrics_sink_port")) {
+      config.getString("metrics_sink_port")
+    } else {
+      "9091"
     }
 
     SnappyJobValid()

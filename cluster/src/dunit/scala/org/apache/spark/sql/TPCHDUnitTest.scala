@@ -436,6 +436,7 @@ object TPCHUtils extends Logging {
 
     queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection,
       isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage,
-      avgTimePrintStream = System.out))
+      avgTimePrintStream = System.out,
+      metricsSinkEnabled = false, requestLatencies = null))
   }
 }

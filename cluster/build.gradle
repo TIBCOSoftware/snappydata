@@ -34,6 +34,11 @@ dependencies {
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
 
+  compile group: 'io.prometheus', name: 'simpleclient', version: '0.5.0'
+  compile group: 'io.prometheus', name: 'simpleclient_hotspot', version: '0.5.0'
+  compile group: 'io.prometheus', name: 'simpleclient_httpserver', version: '0.5.0'
+  compile group: 'io.prometheus', name: 'simpleclient_pushgateway', version: '0.5.0'
+
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)

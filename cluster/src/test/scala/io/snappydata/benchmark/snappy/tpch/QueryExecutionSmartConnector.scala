@@ -55,7 +55,8 @@ object QueryExecutionSmartConnector {
     for (i <- 1 to 1) {
       for (query <- queries) {
         QueryExecutor.execute(query, snSession.sqlContext, isResultCollection, false,
-          threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream)
+          threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream,
+          metricsSinkEnabled = false, requestLatencies = null)
       }
     }
     QueryExecutor.close

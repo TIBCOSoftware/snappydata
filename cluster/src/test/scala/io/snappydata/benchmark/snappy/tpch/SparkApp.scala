@@ -159,7 +159,8 @@ object SparkApp {
     for (query <- queries) {
       QueryExecutor.execute(query, sparkSession.sqlContext, isResultCollection,
         isSnappy = false,
-        threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream)
+        threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream,
+        metricsSinkEnabled = false, requestLatencies = null)
     }
 
     // cleanup

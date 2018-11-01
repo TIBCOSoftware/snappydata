@@ -20,7 +20,9 @@ package io.snappydata.benchmark.snappy.tpch
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{PreparedStatement, ResultSet}
 
+import io.prometheus.client.Histogram
 import io.snappydata.benchmark.TPCH_Queries
+import io.snappydata.benchmark.snappy.tpch.QueryExecutionJob.{metricsSinkEnabled, requestLatencies}
 
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
@@ -119,7 +121,8 @@ object QueryExecutor {
 
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
       isSnappy: Boolean, threadNumber: Int = 1, isDynamic: Boolean = false, warmup: Int = 0,
-      runsForAverage: Int = 1, avgTimePrintStream: PrintStream = null): Unit = {
+      runsForAverage: Int = 1, avgTimePrintStream: PrintStream = null,
+      metricsSinkEnabled: Boolean, requestLatencies: scala.collection.mutable.Map[String,Histogram]): Unit = {
 
     val planFileName = if (isSnappy) s"${threadNumber}_QueryPlans_Snappy.out"
             else s"${threadNumber}_QueryPlans_Spark.out"
@@ -168,6 +171,10 @@ object QueryExecutor {
         var totalTime: Long = 0
         for (i <- 1 to (warmup + runsForAverage)) {
           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
+          var hst: Histogram.Timer = null
+            if(metricsSinkEnabled){
+            hst = requestLatencies(queryNumber).startTimer()
+          }
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
           if (i == 1) { // collect plan only once during the first iteration
@@ -181,6 +188,9 @@ object QueryExecutor {
             // // or else check to see if iterating on each result row was intended
           }
           val endTime = System.currentTimeMillis()
+          if(metricsSinkEnabled){
+            hst.observeDuration()
+          }
           val iterationTime = endTime - startTime
           queryStatisticsPrintStream.println(s"$i,$iterationTime")
           if (i > warmup) {
