@@ -27,7 +27,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
@@ -2193,32 +2192,49 @@ public class SnappyTest implements Serializable {
         ProcessBuilder pb = null;
         File log = null;
         File logFile = null;
+        String Parameters;
+        String confString = "";
         userAppJar = SnappyPrms.getUserAppJar();
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
         String leadPort = getLeadPort();
+        if(SnappyPrms.getCommaSepAPPProps() != null) {
+          Parameters = SnappyPrms.getCommaSepAPPProps();
+          Log.getLogWriter().info("Parameters : " + Parameters);
+            String[] confParameter = Parameters.split(",");
+
+            for(int i = 0; i < confParameter.length;i++) {
+                Log.getLogWriter().info("ConfParameter : " + confParameter[i].toString());
+                confString = confString + " --conf " + confParameter[i].toString();
+            }
+            Log.getLogWriter().info("confString : " + confString.toString());
+        }
+
         try {
+            String cmd;
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
 
-                //String xmlFileLocation = getScriptLocation("books.xml");
+                cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+                        " --app-name " +  SnappyPrms.getUserAppName() + " --class " + userJob + " --app-jar " +
+                        snappyTest.getUserAppJarLocation(userAppJar, jarPath);
 
-                String cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-                        " --app-name xmlProc --class " + userJob + " --app-jar " +
-                        snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " --conf xmlFileLocation=" + SnappyPrms.getCommaSepAPPProps() +  " --packages " + SnappyPrms.getJarIdentifier();
+                if(!(SnappyPrms.getCommaSepAPPProps().isEmpty())) {
+                    cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+                            " --app-name " +  SnappyPrms.getUserAppName() + " --class " + userJob + " --app-jar " +
+                            snappyTest.getUserAppJarLocation(userAppJar, jarPath) + confString;
+                }
 
-//                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + leadPort, "--app-name", "xmlProc", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--conf", SnappyPrms.getCommaSepAPPProps(), "--packages", SnappyPrms.getJarIdentifier());
+                if(SnappyPrms.isDeployPkg()) {
+                    cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+                            " --app-name " +  SnappyPrms.getUserAppName() + " --class " + userJob + " --app-jar " +
+                            snappyTest.getUserAppJarLocation(userAppJar, jarPath) + confString +  " --packages " + SnappyPrms.getJarIdentifier();
+                }
+
 
                 pb = new ProcessBuilder("/bin/bash", "-c", cmd);
                 Log.getLogWriter().info("Command is : " + pb.command());
 
-//                java.util.Map<String, String> env = pb.environment();
-//                if (SnappyPrms.getCommaSepAPPProps() == null) {
-//                    env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
-//                } else {
-//                    env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
-//                }
-//                Log.getLogWriter().info("APP_PROPS : " + env.get("APP_PROPS"));
 
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;

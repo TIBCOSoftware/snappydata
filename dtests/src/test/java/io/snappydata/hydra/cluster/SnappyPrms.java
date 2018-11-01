@@ -755,7 +755,6 @@ public class SnappyPrms extends BasePrms {
   public static String getCommaSepAPPProps() {
     Long key = appPropsForJobServer;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
-    //return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "/home/cbhatt/snappydata/dtests/src/resources/scripts/deploy_package_jar/books.xml"));
   }
 
   public static Vector getPointLookUpQueryList() {

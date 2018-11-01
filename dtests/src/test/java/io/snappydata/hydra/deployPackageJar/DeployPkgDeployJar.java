@@ -1,12 +1,4 @@
-/**
- * <p>
- * Creation Date : 24th September, 2018
- * CopyRight : SnappyData Inc.
- * Revision History
- * Version 1.0  - 09/24/2018
- * </p>
- */
-package io.snappydata.hydra.deploy_package_jar;
+package io.snappydata.hydra.deployPackageJar;
 
 import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
@@ -21,7 +13,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <b>TestScenario_Deploy_Pkg_Deploy_jar</b> class, test the below commands.
+ * <p>
+ *   class : DeployPkgDeployJar.java
+ *   Creation Date : 24th September, 2018
+ *   CopyRight : SnappyData Inc.
+ *   Revision History
+ *   Version 1.0  - 09/24/2018
+ * </p>
+ * <b>DeployPkgDeployJar.java</b> class, test the below commands.
  * <p>
  * <br> 1. deploy package <unique-alias-name> [repos ‘repositories’] [path 'some path to cache resolved jars'].
  * <br> 2. list packages or list jars.
@@ -36,12 +35,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 1.0.2
  *
  */
-public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
+public class DeployPkgDeployJar extends SnappyTest {
 
-    private static TestScenario_Deploy_Pkg_Deploy_jar deploy_Pkg_Jars;
+    private static DeployPkgDeployJar deployPkgJars;
     //TODO Below Maps has hard coded value need to be replaced with Command Line Argument in future.
-    private Map<String, String> deployPkg_AliasName_Repository = new LinkedHashMap<>();
-    private Map<String, String> deployJar_AliasName_JarName = new LinkedHashMap<>();
+    private Map<String, String> deployPkgAliasNameRepository = new LinkedHashMap<>();
+    private Map<String, String> deployJarAliasNameJarName = new LinkedHashMap<>();
 
     //Below Map stores the Name and Coordinates which is used for deployment.
     static private Map<String, String> source_Alias_Coordinate = new ConcurrentHashMap<>();
@@ -49,22 +48,22 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
     //Below Map stores the result of 'list packages;' or 'list jars;' commands.
     static private Map<String, String> result_Alias_Coordinate = new ConcurrentHashMap<>();
 
-    static short testInvalidCharacterPkg = 0;
-    static short testInvalidCharacterJar = 0;
-    String userHomeDir = null;
+    static private short testInvalidCharacterPkg = 0;
+    static private short testInvalidCharacterJar = 0;
+    private String userHomeDir = null;
 
 
-    public TestScenario_Deploy_Pkg_Deploy_jar() {
-        if (deployPkg_AliasName_Repository.isEmpty()) {
-            deployPkg_AliasName_Repository.put("sparkavro_integration", "com.databricks:spark-avro_2.11:4.0.0");
-            deployPkg_AliasName_Repository.put("redshiftdatasource", "com.databricks:spark-redshift_2.10:3.0.0-preview1");
-            deployPkg_AliasName_Repository.put("mongodbdatasource", "com.stratio.datasource:spark-mongodb_2.11:0.12.0");
-            deployPkg_AliasName_Repository.put("spark_kafka_lowlevelintegration", "com.tresata:spark-kafka_2.10:0.6.0");
+    public DeployPkgDeployJar() {
+        if (deployPkgAliasNameRepository.isEmpty()) {
+            deployPkgAliasNameRepository.put("sparkavro_integration", "com.databricks:spark-avro_2.11:4.0.0");
+            deployPkgAliasNameRepository.put("redshiftdatasource", "com.databricks:spark-redshift_2.10:3.0.0-preview1");
+            deployPkgAliasNameRepository.put("mongodbdatasource", "com.stratio.datasource:spark-mongodb_2.11:0.12.0");
+            deployPkgAliasNameRepository.put("spark_kafka_lowlevelintegration", "com.tresata:spark-kafka_2.10:0.6.0");
         }
 
-        if (deployJar_AliasName_JarName.isEmpty()) {
-            deployJar_AliasName_JarName.put("sparkmongodb", "spark-mongodb_2.11-0.12.0.jar");
-            deployJar_AliasName_JarName.put("redshift", "spark-redshift-2.0.0.jar");
+        if (deployJarAliasNameJarName.isEmpty()) {
+            deployJarAliasNameJarName.put("sparkmongodb", "spark-mongodb_2.11-0.12.0.jar");
+            deployJarAliasNameJarName.put("redshift", "spark-redshift-2.0.0.jar");
         }
 
         if(userHomeDir == null)
@@ -78,8 +77,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployPackageUsingJDBC_LocalCache() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deployPackages();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPackages();
     }
 
     /**
@@ -89,8 +88,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployJarUsingJDBC_LocalCache() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deployJars();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployJars();
     }
 
     /**
@@ -99,8 +98,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployPackage_InvalidName() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deployPackagesWithInvalidName();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPackagesWithInvalidName();
         testInvalidCharacterPkg++;
     }
 
@@ -110,8 +109,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployJar_InvalidName() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deployJarWithInvalidName();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployJarWithInvalidName();
         testInvalidCharacterJar++;
     }
 
@@ -121,8 +120,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployCommaDelimitedPkgs_CommaDelimitedJars() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deployCommaDelimitedPkgs_CommaDelimitedJars();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployCommaDelimitedPkgs_CommaDelimitedJars();
     }
 
     /**
@@ -131,8 +130,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deploySpaceDelimitedPkgs() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deploySpaceDelimitedPkgs();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deploySpaceDelimitedPkgs();
     }
 
     /**
@@ -141,21 +140,20 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deploySpaceDelimitedJars() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deploySpaceDelimitedJars();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deploySpaceDelimitedJars();
     }
 
 
     /**
-     * This method use the undeploy command with
+     * This method use the undeloy command with
      *
      * @since 1.0.2
      */
     public static void HydraTask_undeloyAll() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.undeloyAll();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.undeloyAll();
     }
-
 
     //FIXME  -- It is Fixed (8th Oct,2018) :
     //In running cluster when we deployed the packages and jars and if we do not stop the cluster and if we try to deploy the packages again with ivy2 as local cache
@@ -172,17 +170,43 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     public static void HydraTask_deployPackageUsingJDBC_ivy2() {
-        deploy_Pkg_Jars = new TestScenario_Deploy_Pkg_Deploy_jar();
-        deploy_Pkg_Jars.deployPackages_ivy2();
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPackages_ivy2();
     }
+
+    /**
+     * This method test that, if user do not provide unique-alias name
+     * then Snappy should produce the error.
+     * unique-alias-name specified in context 'of deploying jars/packages' is not unique.
+     *
+     * @since 1.0.2
+     */
+    public static void HydraTask_deployPackageUniqueAliasName() {
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPackageUniqueAliasName();
+    }
+
+    /**
+     * This method test that, if user do not provide unique-alias name
+     * then Snappy should produce the error.
+     * unique-alias-name specified in context 'of deploying jars/packages' is not unique.
+     *
+     * @since 1.0.2
+     */
+    public static void HydraTask_deployJarUniqueAliasName() {
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployJarUniqueAliasName();
+    }
+
+
 
     /**
      * This method establish the connection with Snappy SQL via JDBC.
      *
-     * @throws SQLException
+     * @throws SQLException if did not get connection with Snappy Locator.
      */
     private Connection getJDBCConnection() {
-        Connection connection = null;
+        Connection connection;
         try {
             connection = getLocatorConnection();
         } catch (SQLException se) {
@@ -201,18 +225,6 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
             Log.getLogWriter().info("Result alias and coordinates are same as Source alias and coordinates.....");
         else
             Log.getLogWriter().info("Result alias and coordinates are not same as Source alias and coordinates.....");
-        //Log.getLogWriter().info("ResultMap");
-        //for(Map.Entry<String,String> entry : resultMap.entrySet())
-        //{
-        //    Log.getLogWriter().info("Name : " + entry.getKey() + ", Coordinate : " + entry.getValue());
-        //}
-
-        //Log.getLogWriter().info("SourceMap");
-        //for(Map.Entry<String,String> entry : sourceMap.entrySet())
-        //{
-        //Log.getLogWriter().info("Name : " + entry.getKey() + ", Coordinate : " + entry.getValue());
-        //}
-
     }
 
     /**
@@ -237,18 +249,18 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     private void deployPackages() {
-        Connection conn = null;
-        String deploy_Pkg_Cmd = "";
+        Connection conn;
+        String deploy_Pkg_Cmd;
         final String list_Pkg_Cmd = "list packages;";
         final String path = " path ";
         final String local_repository_path = userHomeDir + "/TPC";
-        String undeploy_Pkg_Cmd = "";
-        Statement st = null;
-        ResultSet rs = null;
+        String undeploy_Pkg_Cmd;
+        Statement st;
+        ResultSet rs;
 
         conn = getJDBCConnection();
         try {
-            for (Map.Entry<String, String> entry : deployPkg_AliasName_Repository.entrySet()) {
+            for (Map.Entry<String, String> entry : deployPkgAliasNameRepository.entrySet()) {
                 deploy_Pkg_Cmd = "deploy package " + entry.getKey() + " '" + entry.getValue() + "'" + path + "'" + local_repository_path + "';";
                 Log.getLogWriter().info("Executing deploy package command : " + deploy_Pkg_Cmd);
                 source_Alias_Coordinate.put(entry.getKey().toLowerCase(), entry.getValue().toLowerCase());
@@ -308,17 +320,17 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     private void deployJars() {
-        Connection conn = null;
-        String deploy_Jar_Cmd = "";
+        Connection conn;
+        String deploy_Jar_Cmd;
         final String list_Jar_Cmd = "list jars;";
         final String local_repository_path = userHomeDir + "/Downloads/Jars/";
-        String undeploy_Pkg_Cmd = "";
-        Statement st = null;
-        ResultSet rs = null;
+        String undeploy_Pkg_Cmd;
+        Statement st;
+        ResultSet rs;
 
         conn = getJDBCConnection();
         try {
-            for (Map.Entry<String, String> entry : deployJar_AliasName_JarName.entrySet()) {
+            for (Map.Entry<String, String> entry : deployJarAliasNameJarName.entrySet()) {
                 deploy_Jar_Cmd = "deploy jar " + entry.getKey() + " '" + local_repository_path + entry.getValue() + "';";
                 Log.getLogWriter().info("Executing deploy jar command : " + deploy_Jar_Cmd);
                 source_Alias_Coordinate.put(entry.getKey().toLowerCase(), entry.getValue().toLowerCase());
@@ -383,8 +395,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      */
     private void deployPackagesWithInvalidName()
     {
-        Connection conn = null;
-        String deploy_Pkg_Cmd = "";
+        Connection conn;
+        String deploy_Pkg_Cmd;
         final String path = " path ";
         final String local_repository_path = userHomeDir + "/TPC";
         String name = null;
@@ -435,8 +447,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      */
     private void deployJarWithInvalidName()
     {
-        Connection conn = null;
-        String deploy_jar_Cmd = "";
+        Connection conn;
+        String deploy_jar_Cmd;
         String name = null;
         String coordinate = null;
 
@@ -477,12 +489,12 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      */
     private void deployCommaDelimitedPkgs_CommaDelimitedJars()
     {
-        Connection conn = null;
-        String deploy_Pkg_Cmd = "";
-        String deploy_Jar_Cmd = "";
+        Connection conn;
+        String deploy_Pkg_Cmd;
+        String deploy_Jar_Cmd;
         final String list_Pkg_Cmd = "list packages;";
-        Statement st = null;
-        ResultSet rs = null;
+        Statement st;
+        ResultSet rs;
 
         conn = getJDBCConnection();
         try
@@ -525,8 +537,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      */
     private void deploySpaceDelimitedPkgs()
     {
-        Connection conn = null;
-        String deploy_Pkg_Cmd = "";
+        Connection conn;
+        String deploy_Pkg_Cmd;
 
         conn = getJDBCConnection();
         try
@@ -553,8 +565,8 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      */
     private void deploySpaceDelimitedJars()
     {
-        Connection conn = null;
-        String deploy_Jar_Cmd = "";
+        Connection conn;
+        String deploy_Jar_Cmd;
 
         conn = getJDBCConnection();
         try
@@ -582,18 +594,18 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     private void undeloyAll() {
-        Connection conn = null;
+        Connection conn;
         final String list_Pkg_Cmd = "list packages;";
-        String undeploy_Pkg_Cmd = "";
-        Statement st = null;
-        ResultSet rs = null;
+        String undeploy_Pkg_Cmd;
+        Statement st;
+        ResultSet rs;
 
         Log.getLogWriter().info(".....CLOSING TASK.....");
 
-        if(!deployPkg_AliasName_Repository.isEmpty())
-            deployPkg_AliasName_Repository.clear();
-        if(!deployJar_AliasName_JarName.isEmpty())
-            deployJar_AliasName_JarName.clear();
+        if(!deployPkgAliasNameRepository.isEmpty())
+            deployPkgAliasNameRepository.clear();
+        if(!deployJarAliasNameJarName.isEmpty())
+            deployJarAliasNameJarName.clear();
 
         conn = getJDBCConnection();
 
@@ -611,7 +623,6 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
 
             st.clearBatch();
 
-            int count = 0;
             for (Map.Entry<String, String> entry : result_Alias_Coordinate.entrySet()) {
                 undeploy_Pkg_Cmd = "undeploy " + entry.getKey() + ";";
                 Log.getLogWriter().info("Executing undeploy package command : " + undeploy_Pkg_Cmd);
@@ -656,18 +667,18 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
      * @since 1.0.2
      */
     private void deployPackages_ivy2() {
-        Connection conn = null;
-        String deploy_Pkg_Cmd = "";
+        Connection conn;
+        String deployPkgCmd;
         final String list_Pkg_Cmd = "list packages;";
-        String undeploy_Pkg_Cmd = "";
-        Statement st = null;
-        ResultSet rs = null;
+        String undeployPkgCmd;
+        Statement st;
+        ResultSet rs;
 
         conn = getJDBCConnection();
         try {
-            deploy_Pkg_Cmd = "deploy package pySpark 'TargetHolding:pyspark-cassandra:0.3.5,com.ryft:spark-ryft-connector_2.10:0.9.0';";
-            Log.getLogWriter().info("Executing deploy package command : " + deploy_Pkg_Cmd);
-            conn.createStatement().execute(deploy_Pkg_Cmd);
+            deployPkgCmd = "deploy package pySpark 'TargetHolding:pyspark-cassandra:0.3.5,com.ryft:spark-ryft-connector_2.10:0.9.0';";
+            Log.getLogWriter().info("Executing deploy package command : " + deployPkgCmd);
+            conn.createStatement().execute(deployPkgCmd);
             Log.getLogWriter().info("Executing list packages command : " + list_Pkg_Cmd);
             st = conn.createStatement();
             if (st.execute(list_Pkg_Cmd)) {
@@ -683,12 +694,99 @@ public class TestScenario_Deploy_Pkg_Deploy_jar extends SnappyTest {
                 }
             }
             st.clearBatch();
-            undeploy_Pkg_Cmd = "undeploy pySpark;";
-            Log.getLogWriter().info("Executing undeploy package command : " + undeploy_Pkg_Cmd);
-            conn.createStatement().execute(undeploy_Pkg_Cmd);
+            undeployPkgCmd = "undeploy pySpark;";
+            Log.getLogWriter().info("Executing undeploy package command : " + undeployPkgCmd);
+            conn.createStatement().execute(undeployPkgCmd);
         } catch (SQLException se) {
             throw new TestException(se.getMessage() + ", ivy2 - Deploy Package Exception with local repository");
         } finally {
+            closeConnection(conn);
+        }
+    }
+
+    /**
+     * This method test that, deploy package command must use unique-alias-name for Package.
+     * If not used then snappy should produce the error.
+     * This is the bad test case.
+     * @since 1.0.2
+     */
+    private void deployPackageUniqueAliasName() {
+        Connection conn;
+        String deployPkgCmd;
+        final String listPkgCmd = "list packages;";
+        final String path = " path ";
+        Statement st;
+        ResultSet rs;
+
+        conn = getJDBCConnection();
+        try {
+            Log.getLogWriter().info("Executing list packages command : " + listPkgCmd);
+            deployPkgCmd = "deploy package SparkXMLLib 'com.databricks:spark-xml_2.11:0.4.1'" +  path  +  "'"+ userHomeDir + "/TPC';";
+            Log.getLogWriter().info("Deploy Package with Unique Alias Name : " + deployPkgCmd);
+            conn.createStatement().execute(deployPkgCmd);
+            deployPkgCmd = "deploy package SparkXMLLib 'com.databricks:spark-avro_2.11:4.0.0'" +  path  +  "'"+ userHomeDir + "/TPC';";
+            Log.getLogWriter().info("Deploy Package with Unique Alias Name : " + deployPkgCmd);
+            conn.createStatement().execute(deployPkgCmd);
+        }
+        catch(Exception e) {
+            Log.getLogWriter().info("Exception in Unique Alias Name (deploy package) Module : " + e.getMessage());
+            try{
+                conn.createStatement().execute("undeploy SparkXMLLib;");
+                Log.getLogWriter().info("Executing list packages command again: " + listPkgCmd);
+                st = conn.createStatement();
+                if(st.execute(listPkgCmd)) {
+                    rs = st.getResultSet();
+                    if(rs.next())
+                        Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                }
+            }catch (SQLException se) {
+                Log.getLogWriter().info(se.getMessage());
+            }
+        }
+        finally {
+            closeConnection(conn);
+        }
+    }
+
+    /**
+     * This method test that, deploy jar command must use unique-alias-name for Jar.
+     * If not used then snappy should produce the error.
+     * This is the bad test case.
+     * @since 1.0.2
+     */
+    private void deployJarUniqueAliasName() {
+        Connection conn;
+        String deployJarCmd;
+        final String listPkgCmd = "list packages;";
+        Statement st;
+        ResultSet rs;
+
+        conn = getJDBCConnection();
+        try {
+            Log.getLogWriter().info("Executing list packages command : " + listPkgCmd);
+            deployJarCmd = "deploy jar XMLSerDe "  + "'" + userHomeDir + "/Downloads/Jars/hive-serde-0.8.0.jar';";
+            Log.getLogWriter().info("Deploy Jar with Unique Alias Name : " + deployJarCmd);
+            conn.createStatement().execute(deployJarCmd);
+            deployJarCmd = "deploy jar XMLSerDe " + "'" + userHomeDir + "/Downloads/Jars/hive-json-serde.jar';";
+            Log.getLogWriter().info("Deploy Jar with Unique Alias Name : " + deployJarCmd);
+            conn.createStatement().execute(deployJarCmd);
+        }
+        catch(Exception e) {
+            Log.getLogWriter().info("Exception in Unique Alias Name Module (deploy jar) : " + e.getMessage());
+            try{
+                conn.createStatement().execute("undeploy XMLSerDe;");
+                Log.getLogWriter().info("Executing list packages command again: " + listPkgCmd);
+                st = conn.createStatement();
+                if(st.execute(listPkgCmd)) {
+                    rs = st.getResultSet();
+                    if(rs.next())
+                        Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                }
+            }catch (SQLException se) {
+                Log.getLogWriter().info(se.getMessage());
+            }
+        }
+        finally {
             closeConnection(conn);
         }
     }
