@@ -1453,6 +1453,11 @@ object ObjectHashMapAccessor {
   }
 
   def cloneStringIfRequired(stringVar: String, colVar: String, doCopy: Boolean): String = {
+    // If UTF8String is just a wrapper around a byte array then the underlying
+    // bytes are immutable, so can use a reference copy. This is because all cases
+    // of underlying bytes being mutable are when the UTF8String is part of a larger
+    // structure like UnsafeRow or byte array using ColumnEncoding or from Parquet buffer
+    // and in all those cases the UTF8String will point to a portion of the full buffer.
     if (doCopy) {
       s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
             && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
