@@ -37,7 +37,7 @@ class AddDataUsingPutIntoCTTablesJob extends SnappySQLJob {
       pw.flush()
       CTTestUtil.addDataUsingPutInto(snc);
       println(s"AddDataUsingPutIntoCTTablesJob tables has completed successfully. " +
-          s"See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesJob.out")
+          s"See ${CTTestUtil.getCurrentDirectory}/AddDataUsingPutIntoCTTablesJob.out")
       pw.println(s"AddDataUsingPutIntoCTTablesJob has completed successfully")
       pw.close()
     } match {
