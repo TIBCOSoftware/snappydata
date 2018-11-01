@@ -262,9 +262,9 @@ case class SnappyHashAggregateExec(
   }
 
   // The variables used as aggregation buffer
-  @transient private var bufVars: Seq[ExprCode] = _
+  @transient protected var bufVars: Seq[ExprCode] = _
   // code to update buffer variables with current values
-  @transient private var bufVarUpdates: String = _
+  @transient protected var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
@@ -361,6 +361,20 @@ case class SnappyHashAggregateExec(
      """.stripMargin
   }
 
+  protected def genAssignCodeForWithoutKeys(ev: ExprCode, i: Int, doCopy: Boolean,
+      inputAttrs: Seq[Attribute]): String = {
+    if (doCopy) {
+      inputAttrs(i).dataType match {
+        case StringType =>
+          ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
+        case _: ArrayType | _: MapType | _: StructType =>
+          s"${bufVars(i).value} = ${ev.value}.copy();"
+        case _: BinaryType => s"${bufVars(i).value} = ${ev.value}.clone();"
+        case _ => s"${bufVars(i).value} = ${ev.value};"
+      }
+    } else s"${bufVars(i).value} = ${ev.value};"
+  }
+
   private def doConsumeWithoutKeys(ctx: CodegenContext,
       input: Seq[ExprCode]): String = {
     // only have DeclarativeAggregate
@@ -386,20 +400,10 @@ case class SnappyHashAggregateExec(
     // aggregate buffer should be updated atomic
     // make copy of results for types that can be wrappers and thus mutable
     val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
-    def genAssignCode(ev: ExprCode, i: Int): String = if (doCopy) {
-      inputAttrs(i).dataType match {
-        case StringType =>
-          ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
-        case _: ArrayType | _: MapType | _: StructType =>
-          s"${bufVars(i).value} = ${ev.value}.copy();"
-        case _: BinaryType => s"${bufVars(i).value} = ${ev.value}.clone();"
-        case _ => s"${bufVars(i).value} = ${ev.value};"
-      }
-    } else s"${bufVars(i).value} = ${ev.value};"
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
       s"""
          | ${bufVars(i).isNull} = ${ev.isNull};
-         | ${genAssignCode(ev, i)}
+         | ${genAssignCodeForWithoutKeys(ev, i, doCopy, inputAttrs)}
       """.stripMargin
     }
     s"""
