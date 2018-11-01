@@ -46,6 +46,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.types.{ArrayType, BinaryType, MapType, StringType, StructType}
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
@@ -383,10 +384,22 @@ case class SnappyHashAggregateExec(
       boundUpdateExpr.map(_.genCode(ctx))
     }
     // aggregate buffer should be updated atomic
+    // make copy of results for types that can be wrappers and thus mutable
+    val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
+    def genAssignCode(ev: ExprCode, i: Int): String = if (doCopy) {
+      inputAttrs(i).dataType match {
+        case StringType =>
+          ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
+        case _: ArrayType | _: MapType | _: StructType =>
+          s"${bufVars(i).value} = ${ev.value}.copy();"
+        case _: BinaryType => s"${bufVars(i).value} = ${ev.value}.clone();"
+        case _ => s"${bufVars(i).value} = ${ev.value};"
+      }
+    } else s"${bufVars(i).value} = ${ev.value};"
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
       s"""
          | ${bufVars(i).isNull} = ${ev.isNull};
-         | ${bufVars(i).value} = ${ev.value};
+         | ${genAssignCode(ev, i)}
       """.stripMargin
     }
     s"""

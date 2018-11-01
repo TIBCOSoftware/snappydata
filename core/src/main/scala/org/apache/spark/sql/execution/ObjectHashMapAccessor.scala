@@ -310,21 +310,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
     }.mkString("\n")
 
-    // For SnappyData row tables there is no need to make a copy of
-    // non-primitive values into the map since they are immutable.
-    // Also checks for other common plans known to provide immutable objects.
-    // Cannot do the same for column tables since it will end up holding
-    // the whole column buffer for a single value which can cause doom
-    // for eviction. For off-heap it will not work at all and can crash
-    // unless a reference to the original column ByteBuffer is retained.
-    // TODO: can be extended for more plans as per their behaviour.
-    def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
-      case _: RowTableScan | _: HashJoinExec => true
-      case FilterExec(_, c) => providesImmutableObjects(c)
-      case ProjectExec(_, c) => providesImmutableObjects(c)
-      case _ => false
-    }
-    val doCopy = !providesImmutableObjects(child)
+    val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
 
     val multiValuesUpdateCode = if (valueClassName.isEmpty) {
       s"""
@@ -1315,14 +1301,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // multimap holds a reference to UTF8String itself
     case StringType =>
       // copy just reference of the object if underlying byte[] is immutable
-      val stringVar = resultVar.value
-      s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
-            && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
-          $colVar = $stringVar;
-        } else {
-          $colVar = ${if (doCopy) stringVar + ".clone()" else stringVar};
-        }"""
-    case (_: ArrayType | _: MapType | _: StructType) if doCopy =>
+      ObjectHashMapAccessor.cloneStringIfRequired(resultVar.value, colVar, doCopy)
+    case _: ArrayType | _: MapType | _: StructType if doCopy =>
       s"$colVar = ${resultVar.value}.copy();"
     case _: BinaryType if doCopy =>
       s"$colVar = ${resultVar.value}.clone();"
@@ -1451,5 +1431,35 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"""($notNullCode ? ($otherNotNullCode && $equalsCode)
            : !$otherNotNullCode)"""
     }
+  }
+}
+
+object ObjectHashMapAccessor {
+
+  /** return true if the plan returns immutable objects so copy can be avoided */
+  def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
+    // For SnappyData row tables there is no need to make a copy of
+    // non-primitive values into the map since they are immutable.
+    // Also checks for other common plans known to provide immutable objects.
+    // Cannot do the same for column tables since it will end up holding
+    // the whole column buffer for a single value which can cause doom
+    // for eviction. For off-heap it will not work at all and can crash
+    // unless a reference to the original column ByteBuffer is retained.
+    // TODO: can be extended for more plans as per their behaviour.
+    case _: RowTableScan | _: HashJoinExec => true
+    case FilterExec(_, c) => providesImmutableObjects(c)
+    case ProjectExec(_, c) => providesImmutableObjects(c)
+    case _ => false
+  }
+
+  def cloneStringIfRequired(stringVar: String, colVar: String, doCopy: Boolean): String = {
+    if (doCopy) {
+      s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
+            && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
+          $colVar = $stringVar;
+        } else {
+          $colVar = $stringVar.clone();
+        }"""
+    } else s"$colVar = $stringVar;"
   }
 }
