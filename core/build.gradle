@@ -28,7 +28,7 @@ sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
                                   'src/dunit/java', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
-sourceSets.test.java.srcDirs = [ ]
+sourceSets.test.java.srcDirs = []
 
 def osName = org.gradle.internal.os.OperatingSystem.current()
 
@@ -120,6 +120,7 @@ dependencies {
   testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
 
+  testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -131,10 +132,6 @@ if (rootProject.hasProperty('enablePublish')) {
   artifacts {
     archives packageScalaDocs, packageSources
   }
-}
-
-testClasses.doLast {
-  copyTestsCommonResources(buildDir)
 }
 
 scalaTest {
@@ -195,6 +192,8 @@ task getApacheSparkDist {
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
+// SplitClusterDUnitSecurityTest.testSnappyStreamingJob needs cluster tests
+dunitSecurityTest.dependsOn ":snappy-cluster_${scalaBinaryVersion}:testClasses"
 check.dependsOn test, scalaTest, dunitTest
 if (rootProject.hasProperty('snappydata.enterprise')) {
   check.dependsOn dunitSecurityTest

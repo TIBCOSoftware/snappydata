@@ -19,6 +19,5 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyJoinSuite extends JoinSuite with SharedSnappySessionContext{
-
+class SnappyJoinSuite extends JoinSuite with SharedSnappySessionContext {
 }
