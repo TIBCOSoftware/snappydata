@@ -66,7 +66,7 @@ class LeadImpl extends ServerImpl with Lead
 
   private val bootProperties = new Properties()
 
-  private var notifyStatusChange: ((FabricService.State) => Unit) = _
+  private var notifyStatusChange: FabricService.State => Unit = _
 
   @volatile private var servicesStarted: Boolean = _
 
@@ -394,7 +394,7 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
-  private def markRunning() = {
+  private def markRunning(): Unit = {
     if (GemFireXDUtils.TraceFabricServiceBoot) {
       logInfo("Accepting RUNNING notification")
     }
@@ -536,7 +536,7 @@ class LeadImpl extends ServerImpl with Lead
     conf
   }
 
-  protected[snappydata] def notifyOnStatusChange(f: (FabricService.State) => Unit): Unit =
+  protected[snappydata] def notifyOnStatusChange(f: FabricService.State => Unit): Unit =
     this.notifyStatusChange = f
 
   @throws[Exception]
@@ -746,8 +746,8 @@ class ExtendibleURLClassLoader(parent: ClassLoader)
 
 object LeadImpl {
 
-  val SPARKUI_PORT = 5050
-  val LEADER_SERVERGROUP = ServerGroupUtils.LEADER_SERVERGROUP
+  val SPARKUI_PORT: Int = 5050
+  val LEADER_SERVERGROUP: String = ServerGroupUtils.LEADER_SERVERGROUP
 
   def invokeLeadStart(conf: SparkConf): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]

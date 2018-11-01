@@ -23,20 +23,21 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.Random
+
 import io.snappydata.SnappyFunSuite
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization._
+import org.scalatest.concurrent.Eventually
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.streaming.StreamToRowsConverter
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
-import org.apache.spark.streaming.{Duration, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import org.scalatest.concurrent.Eventually
-import scala.util.Random
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import org.apache.spark.streaming.{Duration, Milliseconds, SnappyStreamingContext}
 
 class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
     with BeforeAndAfter with BeforeAndAfterAll {
@@ -90,7 +91,6 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
 
 
   test("basic kafka streaming pipeline") {
-    import session.implicits._
     val topics = List("pat1", "pat2", "pat3", "advanced3")
     // Should match 3 out of 4 topics
     val pat =
@@ -122,7 +122,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
       allReceived.addAll(Arrays.asList(rdd.map(r => (r.key, r.value)).collect(): _*))
     }
     ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(allReceived.size === expectedTotal,
@@ -132,7 +132,6 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
   }
 
   test("Snappy kafka streaming") {
-    import session.implicits._
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
 
@@ -166,7 +165,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
         " window (duration 1 seconds, slide 1 seconds)")
         .foreachDataFrame(_.write.insertInto("snappyTable"))
     ssnc.start
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
     kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
@@ -178,7 +177,6 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
 
 
   test("Snappy kafka streaming with custom deserializer") {
-    import session.implicits._
 
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
@@ -192,7 +190,6 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
       new TopicPartition(topic, 2) -> 0L
     )
 
-    val startingOffsets = JsonUtils.partitionOffsets(partitions)
     kafkaTestUtils.sendMessages(topic,
       (100 to 200).map(i => s"$i,name$i,$i").toArray)
     ssnc.sql("create stream table kafkaStream (" +
@@ -203,7 +200,6 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
         "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
         "value.deserializer->org.apache.spark.sql.kafka010.UserDeserializer;" +
         s"group.id->$groupId;auto.offset.reset->earliest'," +
-        s"startingOffsets '$startingOffsets', " +
         s" subscribe '$topic')")
 
     snc.dropTable("snappyTable", ifExists = true)
@@ -216,7 +212,7 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
         " window (duration 1 seconds, slide 1 seconds)")
         .foreachDataFrame(_.write.insertInto("snappyTable"))
     ssnc.start
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(101 == session.sql("select * from snappyTable").count)

@@ -308,9 +308,8 @@ object StoreUtils {
     partitions
   }
 
-  def removeCachedObjects(sqlContext: SQLContext, table: String,
-      registerDestroy: Boolean = false): Unit = {
-    ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
+  def removeCachedObjects(sqlContext: SQLContext, table: String): Unit = {
+    ExternalStoreUtils.removeCachedObjects(sqlContext, table)
   }
 
   def appendClause(sb: mutable.StringBuilder,

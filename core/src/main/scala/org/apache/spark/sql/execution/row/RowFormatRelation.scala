@@ -351,6 +351,8 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
 
     StoreUtils.validateConnProps(parameters)
     var success = false
+    var registered = false
+    val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
     val relation = new RowFormatRelation(connProperties,
       tableName,
       getClass.getCanonicalName,
@@ -364,11 +366,11 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       logDebug(s"Trying to create table $tableName")
       relation.createTable(mode)
       logDebug(s"Successfully created the table $tableName")
-      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].sessionCatalog
       catalog.registerDataSourceTable(
         catalog.newQualifiedTableName(tableName), None, Array.empty[String],
         classOf[execution.row.DefaultSource].getCanonicalName,
         tableOptions, Some(relation))
+      registered = true
       logDebug(s"Registered the table $tableName in catalog")
       data match {
         case Some(plan) =>
@@ -380,6 +382,10 @@ final class DefaultSource extends MutableRelationProvider with DataSourceRegiste
       relation
     } finally {
       if (!success && relation.tableCreated) {
+        if (registered) {
+          catalog.unregisterDataSourceTable(catalog.newQualifiedTableName(tableName),
+            Some(relation))
+        }
         // destroy the relation
         logDebug(s"Failed in creating the table $tableName hence destroying")
         relation.destroy(ifExists = true)

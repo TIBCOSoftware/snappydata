@@ -138,7 +138,7 @@ object ServiceUtils {
           org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
         }).mkString(",")
 
-    "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
+    Constant.DEFAULT_THIN_CLIENT_URL + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
           "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl + "/")

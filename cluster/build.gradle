@@ -136,12 +136,13 @@ dependencies {
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
     testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
   }
+  testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
 // Creates the version properties file and writes it to the resources dir
 task createVersionPropertiesFile(dependsOn: 'processResources') {
-  def propertiesDir = file("${buildDir}/resources/main/io/snappydata")
+  def propertiesDir = file("${buildDir}/classes/main/io/snappydata")
   outputs.file "${propertiesDir}/SnappyDataVersion.properties"
   inputs.dir compileJava.destinationDir
 
@@ -174,10 +175,6 @@ if (rootProject.hasProperty('enablePublish')) {
   artifacts {
     archives packageScalaDocs, packageSources
   }
-}
-
-testClasses.doLast {
-  copyTestsCommonResources(buildDir)
 }
 
 def copyDirs(def srcDir, def destDir) {
