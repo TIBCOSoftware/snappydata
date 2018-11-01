@@ -66,7 +66,8 @@ case class SnappyHashAggregateExec(
     aggregateAttributes: Seq[Attribute],
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
-    hasDistinct: Boolean)
+    hasDistinct: Boolean,
+    doNotCopyInputBuffVar: Boolean = false)
     extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
   override def nodeName: String = "SnappyHashAggregate"
@@ -361,7 +362,7 @@ case class SnappyHashAggregateExec(
      """.stripMargin
   }
 
-  protected def genAssignCodeForWithoutKeys(ev: ExprCode, i: Int, doCopy: Boolean,
+  private def genAssignCodeForWithoutKeys(ev: ExprCode, i: Int, doCopy: Boolean,
       inputAttrs: Seq[Attribute]): String = {
     if (doCopy) {
       inputAttrs(i).dataType match {
@@ -399,7 +400,7 @@ case class SnappyHashAggregateExec(
     }
     // aggregate buffer should be updated atomic
     // make copy of results for types that can be wrappers and thus mutable
-    val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
+    val doCopy = !doNotCopyInputBuffVar && !ObjectHashMapAccessor.providesImmutableObjects(child)
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
       s"""
          | ${bufVars(i).isNull} = ${ev.isNull};

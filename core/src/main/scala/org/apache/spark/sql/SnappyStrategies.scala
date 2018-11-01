@@ -731,7 +731,7 @@ case class CollapseCollocatedPlans(session: SparkSession) extends Rule[SparkPlan
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
     // collapse aggregates including removal of exchange completely if possible
     case agg@SnappyHashAggregateExec(Some(groupingAttributes), _,
-    finalAggregateExpressions, _, resultExpressions, child, false)
+    finalAggregateExpressions, _, resultExpressions, child, false, _)
       if groupingAttributes.nonEmpty &&
           // not for child classes (like AQP extensions)
           agg.getClass == classOf[SnappyHashAggregateExec] &&
