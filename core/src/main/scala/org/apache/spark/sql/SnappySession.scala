@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import java.sql.{DriverManager, SQLException}
+import java.sql.{DriverManager, SQLException, SQLWarning}
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -67,7 +67,7 @@ import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableIns
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
@@ -99,7 +99,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * and a catalog that interacts with external systems.
    */
   @transient
-  override private[sql] lazy val sharedState: SnappySharedState = {
+  override lazy val sharedState: SnappySharedState = {
     val sharedState = SnappyContext.sharedState(sparkContext)
     // replay global sql commands
     SnappyContext.getClusterMode(sparkContext) match {
@@ -245,9 +245,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] val queryHints = new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
-  def getPreviousQueryHints: java.util.Map[String, String] =
-    java.util.Collections.unmodifiableMap(queryHints)
-
   @transient
   private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
 
@@ -263,6 +260,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private[sql] var disableHashJoin: Boolean = Property.DisableHashJoin.get(sessionState.conf)
 
+  @transient
+  private var sqlWarnings: SQLWarning = _
+
+  def getPreviousQueryHints: java.util.Map[String, String] =
+    java.util.Collections.unmodifiableMap(queryHints)
+
+  def getWarnings: SQLWarning = sqlWarnings
+
+  private[sql] def addWarning(warning: SQLWarning): Unit = {
+    val warnings = sqlWarnings
+    if (warnings eq null) sqlWarnings = warning
+    else warnings.setNextWarning(warning)
+  }
 
   /**
    * Get a previously registered context object using [[addContextObject]].
@@ -410,6 +420,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         }
     contextObjects.clear()
     planCaching = Property.PlanCaching.get(sessionState.conf)
+    sqlWarnings = null
   }
 
   private[sql] def clearQueryData(): Unit = synchronized {
@@ -1462,7 +1473,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
         sessionCatalog.invalidateAll()
         tableIdent.invalidate()
-        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
         SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("alter table not supported for external tables")
@@ -1491,7 +1502,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
             .alterTable(tableIdent, isAddColumn, column)
-          SnappyStoreHiveCatalog.registerRelationDestroy()
+          SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
           return
       case _ =>
     }
@@ -1500,7 +1511,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         sessionCatalog.invalidateTable(tableIdent)
         ar.alterTable(tableIdent, isAddColumn, column)
-        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
         SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("alter table not supported for external tables")
@@ -2336,11 +2347,7 @@ object SnappySession extends Logging {
         (sc ne null) && !sc.isStopped) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
-        CodeGeneration.clearAllCache()
-        Utils.mapExecutors[Unit](sc, () => {
-          CodeGeneration.clearAllCache()
-          Iterator.empty
-        })
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.CLEAR_CODEGEN_CACHE, args = null)
       }
     }
   }
