@@ -67,7 +67,7 @@ import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableIns
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
@@ -1473,7 +1473,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
         sessionCatalog.invalidateAll()
         tableIdent.invalidate()
-        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
         SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("alter table not supported for external tables")
@@ -1502,7 +1502,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
             .alterTable(tableIdent, isAddColumn, column)
-          SnappyStoreHiveCatalog.registerRelationDestroy()
+          SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
           return
       case _ =>
     }
@@ -1511,7 +1511,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         sessionCatalog.invalidateTable(tableIdent)
         ar.alterTable(tableIdent, isAddColumn, column)
-        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
         SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("alter table not supported for external tables")
@@ -2036,6 +2036,7 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
+  // TODO: SW: global property? should be only session one
   private[sql] var tokenize: Boolean = _
 
   lazy val isEnterpriseEdition: Boolean = {
@@ -2347,11 +2348,7 @@ object SnappySession extends Logging {
         (sc ne null) && !sc.isStopped) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
-        CodeGeneration.clearAllCache()
-        Utils.mapExecutors[Unit](sc, () => {
-          CodeGeneration.clearAllCache()
-          Iterator.empty
-        })
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.CLEAR_CODEGEN_CACHE, args = null)
       }
     }
   }

@@ -144,7 +144,7 @@ dependencies {
 task createVersionPropertiesFile(dependsOn: 'processResources') {
   def propertiesDir = file("${buildDir}/classes/main/io/snappydata")
   outputs.file "${propertiesDir}/SnappyDataVersion.properties"
-  inputs.dir compileJava.destinationDir
+  inputs.file "${rootProject.projectDir}/build.gradle"
 
   doLast {
 
