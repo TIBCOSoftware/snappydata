@@ -26,8 +26,8 @@ function absPath() {
 }
 FWDIR="$(dirname "$(absPath "$0")")"
 
-if [ -z "$SPARK_ENV_LOADED" ]; then
-  export SPARK_ENV_LOADED=1
+if [ -z "$SNAPPY_ENV_LOADED" ]; then
+  export SNAPPY_ENV_LOADED=1
 
   # Returns the parent of the directory this script lives in.
   parent_dir="`absPath "$FWDIR/.."`"

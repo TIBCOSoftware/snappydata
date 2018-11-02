@@ -18,7 +18,7 @@ sparkSqlProperties="\"\""
 
 #location of checkout
 SnappyData=<SnappyData-build-path>
-#SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata-0.7-bin
+#SnappyData=/home/perfuser/SNAPPY/CHECKOUT/snappydata-0.7-bin
 
 #number of buckets for order and lineitem tables
 buckets_Order_Lineitem=128
@@ -96,18 +96,21 @@ dataSize=1GB
 
 #Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
 dataDir=<data-directory-path>
-#dataDir=/home/kishor/SNAPPY/DATA/TPCH/$dataSize
+#dataDir=/home/perfuser/SNAPPY/DATA/TPCH/$dataSize
 
 #Location where final output will be collected
 outputLocation=<path-to-location-for-generating-results>
 
 #GoldenFile against which query results should be compared
 ExpectedResultsAvailableAt=<path-to-stock-spark-result>
-#ExpectedResultsAvailableAt=/home/kishor/SNAPPY/CURRENTWORK/volumeTesting/STOCK_SPARK_RESULT
+#ExpectedResultsAvailableAt=/home/perfuser/SNAPPY/CURRENTWORK/volumeTesting/STOCK_SPARK_RESULT
 
 #Location of query results files
 ActualResultsAvailableAt=<path-to-actual-results>
-#ActualResultsAvailableAt=/home/kishor/SNAPPY/CURRENTWORK/volumeTesting/23May_SNAPPY_RESULT
+#ActualResultsAvailableAt=/home/perfuser/SNAPPY/CURRENTWORK/volumeTesting/23May_SNAPPY_RESULT
 
 # Trace events to get granular timing info and report in loadPerfStream
 traceEvents=true
+
+# seed value for random number used in generating query parameter data
+randomSeed=42

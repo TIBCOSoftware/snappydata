@@ -77,7 +77,7 @@ abstract case class JDBCAppendableRelation(
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 
-  val resolvedName: String = table
+  override def resolvedName: String = table
 
   protected var delayRollover = false
 

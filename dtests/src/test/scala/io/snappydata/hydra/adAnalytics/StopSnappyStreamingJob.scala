@@ -31,8 +31,9 @@ class StopSnappyStreamingJob extends SnappySQLJob {
     val outputFile = "StopSnappyStreaming.log"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     Try {
+      // scalastyle:off println
       pw.println("Stopping Snappy Streaming Context...")
-      //SnappyStreamingContext.getActive.get.stop(false, true)
+      // SnappyStreamingContext.getActive.get.stop(false, true)
       snappySession.sql("streaming stop");
       pw.println("Snappy Streaming Context stopped successfully.")
       pw.close()

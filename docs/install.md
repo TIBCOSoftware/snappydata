@@ -7,6 +7,7 @@ The Enterprise Edition includes several additional capabilities that are closed 
 
 For more information on the capabilities of the Community and Enterprise editions see [Community Edition (Open Source)/Enterprise Edition Components](additional_files/open_source_components.md).
 
+<a id= download> </a>
 <heading2> Download SnappyData Community Edition</heading2>
 
 [Download the SnappyData 1.0.2 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
@@ -15,7 +16,8 @@ For more information on the capabilities of the Community and Enterprise edition
 
 * [**SnappyData 1.0.2 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2/snappydata-1.0.2-without-hadoop-bin.tar.gz) 
 
-<heading2> Download SnappyData Enterprise Edition</heading2>
+
+<heading2> Download SnappyData Enterprise Edition</heading2> 
 
 1. Go to the [SnappyData website](http://www.snappydata.io/download).
 
@@ -35,7 +37,8 @@ For more information on the capabilities of the Community and Enterprise edition
 
 	* ODBC INSTALLERS
 
-<heading2>Installation Options</heading2>
+<a id= provisioningsnappy> </a>
+<heading2>SnappyData Provisioning Options</heading2>
 
 <heading3>Prerequisites</heading3>
 

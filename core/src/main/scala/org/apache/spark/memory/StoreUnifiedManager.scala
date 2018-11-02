@@ -114,7 +114,7 @@ object MemoryManagerCallback extends Logging {
       // We don't need execution memory during GemXD boot. Hence passing num core as 1
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
+        logWarning("MemoryManagerCallback couldn't be INITIALIZED. " +
             "SnappyUnifiedMemoryManager won't be used.")
         new DefaultMemoryManager
     }
@@ -138,7 +138,7 @@ object MemoryManagerCallback extends Logging {
       true
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
+        logWarning("MemoryManagerCallback couldn't be INITIALIZED. " +
             "SnappyUnifiedMemoryManager won't be used.")
         false
     }
@@ -211,8 +211,7 @@ object MemoryManagerCallback extends Logging {
   }
 
   /** release and accounting for byte buffer allocated by [[allocateExecutionMemory]] */
-  def releaseExecutionMemory(buffer: ByteBuffer, owner: String, releaseBuffer: Boolean): Unit = {
-    if (releaseBuffer) BufferAllocator.releaseBuffer(buffer)
+  def releaseExecutionMemory(buffer: ByteBuffer, owner: String): Unit = {
     if (buffer.hasArray) {
       StoreCallbacksImpl.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
     }

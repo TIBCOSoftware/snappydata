@@ -130,9 +130,9 @@ class SnappyStorageEvictor extends Logging {
   protected def includePartitionedRegion(region: PartitionedRegion,
       offHeap: Boolean, hasOffHeap: Boolean, onlyRowBuffers: Boolean): Boolean = {
     var hasLRU = (region.getEvictionAttributes.getAlgorithm.isLRUHeap
-      && (region.getDataStore != null)
-      && !region.getAttributes.getEnableOffHeapMemory)
-    val isRowBuffer = region.needsBatching()
+        && (region.getDataStore != null)
+        && !region.getAttributes.getEnableOffHeapMemory)
+    val isRowBuffer = region.isRowBuffer
     if (onlyRowBuffers) return hasLRU && isRowBuffer
 
     hasLRU &&= !isRowBuffer
@@ -149,7 +149,7 @@ class SnappyStorageEvictor extends Logging {
 
   protected def includeLocalRegion(region: LocalRegion): Boolean = {
     (region.getEvictionAttributes.getAlgorithm.isLRUHeap
-      && !region.getAttributes.getEnableOffHeapMemory)
+        && !region.getAttributes.getEnableOffHeapMemory)
   }
 }
 

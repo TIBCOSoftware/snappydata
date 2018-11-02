@@ -139,7 +139,9 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(clearStoreToBlockMap: Boolean = true): Unit = {
     try {
-      TestUtils.dropAllTables(this.snc)
+      val session = this.snc.snappySession
+      TestUtils.dropAllTables(session)
+      TestUtils.dropAllSchemas(session)
     } finally {
       dirCleanup()
     }

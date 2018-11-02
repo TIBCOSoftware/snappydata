@@ -16,8 +16,12 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyUDFSuite extends UDFSuite  with SharedSnappySessionContext{
+class SnappyUDFSuite extends UDFSuite  with SharedSnappySessionContext with SnappySparkTestUtil {
 
+  override def ignored: Seq[String] = Seq(
+    "error reporting for undefined functions",
+    "SPARK-19338 Provide identical names for UDFs in the EXPLAIN output"
+  )
 }

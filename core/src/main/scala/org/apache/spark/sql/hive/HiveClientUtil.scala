@@ -27,11 +27,12 @@ import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
-import io.snappydata.impl.SnappyHiveCatalog
-import org.apache.hadoop.hive.conf.HiveConf
+import io.snappydata.impl.{SnappyHiveCatalog, SnappyHiveConf}
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars
 import org.apache.hadoop.util.VersionInfo
 import org.apache.log4j.LogManager
 
+import org.apache.spark.internal.config.ConfigEntry
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.SparkPlan
@@ -52,11 +53,11 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
   /** The version of hive used internally by Spark SQL. */
   private val hiveExecutionVersion = HiveUtils.hiveExecutionVersion
 
-  val HIVE_METASTORE_VERSION = HiveUtils.HIVE_METASTORE_VERSION
-  val HIVE_METASTORE_JARS = HiveUtils.HIVE_METASTORE_JARS
-  val HIVE_METASTORE_SHARED_PREFIXES =
+  val HIVE_METASTORE_VERSION: ConfigEntry[String] = HiveUtils.HIVE_METASTORE_VERSION
+  val HIVE_METASTORE_JARS: ConfigEntry[String] = HiveUtils.HIVE_METASTORE_JARS
+  val HIVE_METASTORE_SHARED_PREFIXES: ConfigEntry[Seq[String]] =
     HiveUtils.HIVE_METASTORE_SHARED_PREFIXES
-  val HIVE_METASTORE_BARRIER_PREFIXES =
+  val HIVE_METASTORE_BARRIER_PREFIXES: ConfigEntry[Seq[String]] =
     HiveUtils.HIVE_METASTORE_BARRIER_PREFIXES
 
   private val sparkConf = sparkContext.conf
@@ -135,7 +136,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
         val props = new Properties()
         props.setProperty("log4j.logger.DataNucleus.Datastore", "ERROR")
         props.setProperty("log4j.logger.DataNucleus.Query", "ERROR")
-        ClientSharedUtils.initLog4J(null, props, currentLevel)
+        ClientSharedUtils.initLog4j(null, props, currentLevel)
       })
       // wait for store hive client to initialize first
       val store = Misc.getMemStoreBootingNoThrow
@@ -155,7 +156,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     } finally {
       // reset log config
       ifSmartConn(() => {
-        ClientSharedUtils.initLog4J(null, currentLevel)
+        ClientSharedUtils.initLog4j(null, currentLevel)
       })
     }
   }
@@ -170,12 +171,10 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
   private def newClient(): HiveClient = SnappyHiveCatalog.hiveClientSync.synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
-    // We instantiate a HiveConf here to read in the hive-site.xml file and
-    // then pass the options into the isolated client loader
-    val metadataConf = new HiveConf()
+    val metadataConf = new SnappyHiveConf
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
-        metadataConf.setBoolVar(HiveConf.ConfVars.METASTORE_AUTO_CREATE_SCHEMA, false)
+        metadataConf.setBoolVar(ConfVars.METASTORE_AUTO_CREATE_SCHEMA, false)
         metadataConf.set("datanucleus.generateSchema.database.mode", "none")
       case _ =>
     }
@@ -189,17 +188,16 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {
-      logURL = dbURL + ";default-schema=" + SystemProperties.SNAPPY_HIVE_METASTORE +
-          ";user=" + user.get
+      logURL = dbURL + ";user=" + user.get
       logURL + ";password=" + password.get + ";"
     } else {
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+      metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
         SystemProperties.SNAPPY_HIVE_METASTORE)
       dbURL
     }
     logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, secureDbURL)
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
+    metadataConf.setVar(ConfVars.METASTORECONNECTURLKEY, secureDbURL)
+    metadataConf.setVar(ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
     val warehouse = SnappyHiveCatalog.initCommonHiveMetaStoreProperties(metadataConf)
     logInfo("Default warehouse location is " + warehouse)
@@ -295,7 +293,8 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
             SnappyHiveCatalog.getCommonJDBCSuffix + ";skip-constraint-checks=true",
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
-        (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
+        (url + SnappyHiveCatalog.getCommonJDBCSuffix +
+            ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
     }
   }
 }

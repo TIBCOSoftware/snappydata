@@ -121,7 +121,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
     assert(!conn.isClosed)
     tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) {
-      (conn: Connection) => {
+      conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
             val context = TXManagerImpl.currentTXContext()
@@ -206,7 +206,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   def rollbackTx(txId: String, conn: Option[Connection]): Unit = {
     // noinspection RedundantDefaultArgument
     tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
-      (conn: Connection) => {
+      conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
             Misc.getGemFireCache.getCacheTransactionManager.rollback()
@@ -403,9 +403,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    */
   private def doGFXDInsertOrPut(columnTableName: String, batch: ColumnBatch,
       batchId: Long, partitionId: Int, maxDeltaRows: Int,
-      compressionCodecId: Int): (Connection => Unit) = {
+      compressionCodecId: Int): Connection => Unit = {
     {
-      (connection: Connection) => {
+      connection: Connection => {
         val deltaUpdate = batch.deltaIndexes ne null
         // we are using the same connection on which tx was started.
         val rowInsertStr = getRowInsertOrPutStr(columnTableName, deltaUpdate)
@@ -474,7 +474,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
     connectionType match {
-      case ConnectionType.Embedded =>
+      case ConnectionType.Embedded if onExecutor =>
         val currentCM = ContextService.getFactory.getCurrentContextManager
         if (currentCM ne null) {
           val conn = EmbedConnectionContext.getEmbedConnection(currentCM)
@@ -521,7 +521,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ThinClientConnectorMode(_, _) =>
             val catalog = snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
             val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
-            (relInfo.partitions, relInfo.embdClusterRelDestroyVersion)
+            (relInfo.partitions, relInfo.embedClusterRelDestroyVersion)
           case m => throw new UnsupportedOperationException(
             s"SnappyData table scan not supported in mode: $m")
         }
@@ -565,8 +565,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   private def doRowBufferPut(batch: ColumnBatch,
-      partitionId: Int): (Connection => Unit) = {
-    (connection: Connection) => {
+      partitionId: Int): Connection => Unit = {
+    connection: Connection => {
       val gen = CodeGeneration.compileCode(
         tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
@@ -894,7 +894,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _commitTx, _delayRollover, null) {
+    _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
 
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
@@ -941,7 +941,10 @@ class SmartConnectorRowRDD(_session: SnappySession,
       thriftConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
         new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
         tableName, true).setMetadataVersion(relDestroyVersion).setLockOwner(updateOwner))
-    } else thriftConn.setCommonStatementAttributes(null)
+    } else {
+      thriftConn.setCommonStatementAttributes(
+        new StatementAttrs().setMetadataVersion(relDestroyVersion))
+    }
     try {
       executeQuery(thriftConn, conn)
     } finally if (isPartitioned) {

@@ -75,12 +75,12 @@ datanucleus-rdbms-3.2.9.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE
 derby-10.12.1.1.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 eigenbase-properties-1.1.5.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 flyway-core-3.2.1.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-core-1.6.0.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-jgroups-1.6.0.jar			LGPL2.1 	http://www.opensource.org/licenses/lgpl-2.1.php
-gemfire-joptsimple-1.6.0.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-json-1.6.0.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-shared-1.6.0.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-trove-1.6.0.jar				LGPL2.1 	http://www.opensource.org/licenses/lgpl-2.1.php
+gemfire-core-1.6.2.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+gemfire-jgroups-1.6.2.jar			LGPL2.1 	http://www.opensource.org/licenses/lgpl-2.1.php
+gemfire-joptsimple-1.6.2.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+gemfire-json-1.6.2.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+gemfire-shared-1.6.2.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+gemfire-trove-1.6.2.jar				LGPL2.1 	http://www.opensource.org/licenses/lgpl-2.1.php
 gson-2.2.4.jar					Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 guava-14.0.1.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 guice-3.0.jar					Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
@@ -248,31 +248,31 @@ slf4j-log4j12-1.7.21.jar			MIT 		http://www.opensource.org/licenses/mit-license.
 slick_2.11-2.1.0.jar				BSD		http://github.com/slick/slick/blob/master/LICENSE.txt
 snappy-0.2.jar					Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 snappy-java-1.1.2.6.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-catalyst_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-core_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-graphx_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-hive-thriftserver_2.11-2.1.1.1.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-hive_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-launcher_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-mllib-local_2.11-2.1.1.1.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-mllib_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-network-common_2.11-2.1.1.1.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-network-shuffle_2.11-2.1.1.1.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-repl_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-sketch_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-sql_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-streaming-kafka-0.8_2.11-2.1.1.1.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-streaming_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-tags_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-unsafe_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-yarn_2.11-2.1.1.1.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-catalyst_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-core_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-graphx_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-hive-thriftserver_2.11-2.1.1.3.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-hive_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-launcher_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-mllib-local_2.11-2.1.1.3.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-mllib_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-network-common_2.11-2.1.1.3.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-network-shuffle_2.11-2.1.1.3.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-repl_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-sketch_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-sql_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-streaming-kafka-0.10_2.11-2.1.1.3.jar	Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-streaming_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-tags_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-unsafe_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-yarn_2.11-2.1.1.3.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 snappydata-cluster_2.11-1.0.0.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 snappydata-core_2.11-1.0.0.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-client-1.6.0.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-core-1.6.0.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-hibernate-1.6.0.jar		LGPL2.1 	http://www.gnu.org/licenses/lgpl-2.1.html
-snappydata-store-shared-1.6.0.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-tools-1.6.0.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-client-1.6.2.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-core-1.6.2.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-hibernate-1.6.2.jar		LGPL2.1 	http://www.gnu.org/licenses/lgpl-2.1.html
+snappydata-store-shared-1.6.2.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-tools-1.6.2.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 spark-jobserver_2.11-0.6.2.6.jar		Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 spire-macros_2.11-0.7.4.jar			MIT		http://opensource.org/licenses/MIT
 spire_2.11-0.7.4.jar				MIT		http://opensource.org/licenses/MIT

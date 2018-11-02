@@ -17,8 +17,16 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.PlannerSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyPlannerSuite extends PlannerSuite with SharedSnappySessionContext{
+class SnappyPlannerSuite extends PlannerSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
+  override def ignored: Seq[String] = Seq(
+    "SPARK-11390 explain should print PushedFilters of PhysicalRDD",
+    "efficient terminal limit -> sort should use TakeOrderedAndProject",
+    "terminal limit -> project -> sort should use TakeOrderedAndProject",
+    "CollectLimit can appear in the middle of a plan when caching is used",
+    "InMemoryRelation statistics propagation"
+  )
 }

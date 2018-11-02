@@ -17,13 +17,12 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
-import java.sql.SQLException
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -33,7 +32,6 @@ import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 
 import org.apache.spark._
@@ -64,7 +62,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     shuffleCleanups: Array[Future[Unit]], val rddId: Int, noSideEffects: Boolean,
     val queryHints: java.util.Map[String, String], private[sql] var currentExecutionId: Long,
     private[sql] var planStartTime: Long, private[sql] var planEndTime: Long,
-    val linkPart : Boolean = false)
+    val linkPart: Boolean = false)
     extends Dataset[Row](snappySession, queryExecution, encoder) with Logging {
 
   private[sql] final def isCached: Boolean = cachedRDD ne null
@@ -85,8 +83,10 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
-  private def isLowLatencyQuery: Boolean =
-    isCached && cachedRDD.getNumPartitions <= 2 /* some small number */
+  private def isLowLatencyQuery: Boolean = {
+    // use a small value for number of RDD partitions
+    isCached && shuffleDependencies.length == 0 && cachedRDD.getNumPartitions <= 2
+  }
 
   @transient
   private var _rowConverter: UnsafeProjection = _
@@ -122,7 +122,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
           while (i < numShuffleDeps) {
             val shuffleDependency = shuffleDependencies(i)
             // Cleaning the  shuffle artifacts asynchronously
-            implicit val executionContext = Utils.executionContext(cache)
+            implicit val executionContext: ExecutionContext = Utils.executionContext(cache)
             shuffleCleanups(i) = Future {
               cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
             }
@@ -175,7 +175,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def getChildren(parent: RDD[_]): Seq[RDD[_]] = {
     parent match {
       case rdd: DelegateRDD[_] =>
-        (rdd.baseRdd +: (rdd.dependencies.map(_.rdd) ++ rdd.otherRDDs)).toSet.toSeq
+        (rdd.baseRdd +: (rdd.dependencies.map(_.rdd) ++ rdd.otherRDDs)).distinct
       case _ => parent.dependencies.map(_.rdd)
     }
   }
@@ -214,7 +214,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def setPoolForExecution(): Unit = {
     var pool = snappySession.sessionState.conf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
-    if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {
+    if (isLowLatencyQuery && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
         pool = Constant.LOW_LATENCY_POOL
       }
@@ -255,6 +255,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def endCollect(didPrepare: Boolean): Unit = {
     if (didPrepare) {
       prepared = false
+      // reset the pool
+      if (isLowLatencyQuery) {
+        val pool = snappySession.sessionState.conf.activeSchedulerPool
+        snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+      }
       // clear the shuffle dependencies asynchronously after the execution.
       startShuffleCleanups(snappySession.sparkContext)
     }
@@ -264,17 +269,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
    */
-  private def withCallback[U](name: String)(action: CachedDataFrame => (U, Long)): U = {
+  private def withCallback[U](name: String)(action: DataFrame => (U, Long)): U = {
     var didPrepare = false
     try {
       didPrepare = prepareForCollect()
-      val (result, elapsed) = action(this)
-      snappySession.listenerManager.onSuccess(name, queryExecution, elapsed)
-      result
-    } catch {
-      case e: Exception =>
-        snappySession.listenerManager.onFailure(name, queryExecution, e)
-        throw e
+      CachedDataFrame.withCallback(snappySession, this, name)(action)
     } finally {
       endCollect(didPrepare)
     }
@@ -445,6 +444,11 @@ object CachedDataFrame
     extends ((TaskContext, Iterator[InternalRow]) => PartitionResult)
     with Serializable with KryoSerializable with Logging {
 
+  @transient
+  @volatile var sparkConf: SparkConf = _
+  @transient
+  @volatile var compressionCodec: String = _
+
   override def write(kryo: Kryo, output: Output): Unit = {}
 
   override def read(kryo: Kryo, input: Input): Unit = {}
@@ -461,6 +465,25 @@ object CachedDataFrame
       output.write(compressedBytes, 0, len)
       bufferOutput.clear()
     }
+  }
+
+  private def getCompressionCodec: CompressionCodec = {
+    var conf = sparkConf
+    var codecName = compressionCodec
+    if ((conf eq null) || (codecName eq null)) synchronized {
+      conf = sparkConf
+      codecName = compressionCodec
+      if ((conf eq null) || (codecName eq null)) {
+        SparkEnv.get match {
+          case null => conf = new SparkConf()
+          case env => conf = env.conf
+        }
+        codecName = CompressionCodec.getCodecName(conf)
+        sparkConf = conf
+        compressionCodec = codecName
+      }
+    }
+    CompressionCodec.createCodec(conf, codecName)
   }
 
   override def apply(context: TaskContext,
@@ -482,7 +505,7 @@ object CachedDataFrame
         null,
         DirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
 
-      val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
+      val codec = getCompressionCodec
       while (iter.hasNext) {
         val row = iter.next().asInstanceOf[UnsafeRow]
         val numBytes = row.getSizeInBytes
@@ -621,17 +644,6 @@ object CachedDataFrame
         val result = body
         endTime = System.currentTimeMillis()
         (result, endTime - startTime)
-      } catch {
-        case se: SparkException =>
-          val (isCatalogStale, sqlexception) = staleCatalogError(se)
-          if (isCatalogStale) {
-            snappySession.sessionCatalog.invalidateAll()
-            SnappySession.clearAllCache()
-            logInfo("Operation needs to be retried ", se)
-            throw sqlexception
-          } else {
-            throw se
-          }
       } finally {
         if (endTime == -1L) endTime = System.currentTimeMillis()
         // the total duration displayed will be completion time provided below
@@ -653,20 +665,6 @@ object CachedDataFrame
     }
   }
 
-  private def staleCatalogError(se: SparkException): (Boolean, SQLException) = {
-    var cause = se.getCause
-    while (cause != null) {
-      cause match {
-        case sqle: SQLException
-          if SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH.equals(sqle.getSQLState) =>
-          return (true, sqle)
-        case _ =>
-          cause = cause.getCause
-      }
-    }
-    (false, null)
-  }
-
   /**
    * Decode the byte arrays back to UnsafeRows and put them into buffer.
    */
@@ -674,7 +672,7 @@ object CachedDataFrame
       data: Array[Byte], offset: Int, dataLen: Int): Iterator[UnsafeRow] = {
     if (dataLen == 0) return Iterator.empty
 
-    val codec = CompressionCodec.createCodec(SparkEnv.get.conf)
+    val codec = getCompressionCodec
     val input = new ByteArrayDataInput
     input.initialize(data, offset, dataLen, null)
     val dataLimit = offset + dataLen
@@ -796,6 +794,28 @@ object CachedDataFrame
         case r if (r ne null) && r._1 != null => r._1
       }
     }
+  }
+
+  /**
+   * Wrap a Dataset action to track the QueryExecution and time cost,
+   * then report to the user-registered callback functions.
+   */
+  def withCallback[U](session: SparkSession, df: DataFrame, name: String)
+      (action: DataFrame => (U, Long)): U = {
+    try {
+      val (result, elapsed) = action(df)
+      session.listenerManager.onSuccess(name, df.queryExecution, elapsed)
+      result
+    } catch {
+      case e: Exception =>
+        session.listenerManager.onFailure(name, df.queryExecution, e)
+        throw e
+    }
+  }
+
+  private[sql] def clear(): Unit = synchronized {
+    sparkConf = null
+    compressionCodec = null
   }
 
   override def toString(): String =

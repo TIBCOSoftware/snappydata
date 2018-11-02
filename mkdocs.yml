@@ -13,6 +13,7 @@ pages:
 # - Introduction: snappyIntroduction.md
 - 'Getting Started in 5 minutes or Less': 'quickstart.md'
 - 'Getting Started in 5 minutes or Less': 
+#    - 'SnappyData Quick Start': 'quickstart/snappydataquick_start.md'
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'Getting Started with SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
     - 'Getting Started with SnappyData on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
@@ -216,7 +217,8 @@ pages:
         - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
         - 'compact-all-disk-stores': 'reference/command_line_utilities/store-compact-all-disk-stores.md'
         - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
-#        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md' (to be confirmed later 1.0.2)
+        - 'validate-disk-store': 'reference/command_line_utilities/validate_diskstore.md' 
+        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md' 
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
         - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
@@ -292,15 +294,15 @@ pages:
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
-    - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
+- 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
-    - 'Member startup problems': 'troubleshooting/member_startup_problems.md'
+    - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
-    - 'Preventing disk full errors': 'troubleshooting/preventing_disk_full_errors.md'
-    - 'Recovering from disk full errors': 'troubleshooting/recovering_from_disk_full_errors.md'
+    - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
+    - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
     - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
-    - 'Collecting logs, stats and dumps using the collect-debug-artifacts script': 'troubleshooting/collect_debug_artifacts.md'
-    - 'Troubleshooting error messages': 'troubleshooting/troubleshooting_error_messages.md'  
+    - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
+    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
 #- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
