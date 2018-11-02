@@ -36,7 +36,7 @@ trait SnappySparkTestUtil extends SparkFunSuite {
 
   override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
     if (!excluded.contains(testName)) {
-      if (ignored.contains(testName)){
+      if (ignored.contains(testName)) {
         super.ignore(testName, testTags: _*)(testFun)
       } else {
         super.test(testName, testTags: _*)(testFun)
