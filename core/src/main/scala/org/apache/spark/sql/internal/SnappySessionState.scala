@@ -52,7 +52,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, SnappyStreamingQueryManager, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
@@ -68,6 +68,10 @@ class SnappySessionState(snappySession: SnappySession)
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
   protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
+
+  override lazy val streamingQueryManager: StreamingQueryManager = {
+    new SnappyStreamingQueryManager(snappySession)
+  }
 
   private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
 
@@ -1112,13 +1116,12 @@ class DefaultPlanner(val session: SnappySession, conf: SQLConf,
     case _ => Nil
   }
 
-  private val storeOptimizedRules: Seq[Strategy] =
+  protected val storeOptimizedRules: Seq[Strategy] =
     Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,
-      StoreStrategy, StreamQueryStrategy,
-      StatefulAggregationStrategy, StreamingRelationStrategy) ++
+      StoreStrategy, StreamQueryStrategy) ++
         storeOptimizedRules ++
         super.strategies
 }
