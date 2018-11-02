@@ -62,7 +62,7 @@ task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
 }
 if (rootProject.hasProperty('enablePublish')) {
   artifacts {
-    archives packageScalaDocs, packageSources
+    archives packageScalaDocs, packageSources, shadowJar
   }
 }
 
@@ -81,8 +81,10 @@ scalaTest {
 test.dependsOn ':cleanJUnit'
 check.dependsOn test, scalaTest, dunitTest
 
-archivesBaseName = 'snappydata-jdbc_' + scalaBinaryVersion
 shadowJar {
+  baseName = 'snappydata-jdbc_' + scalaBinaryVersion
+  classifier = null
+
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
 
