@@ -1291,9 +1291,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
       val bytes = ctx.freshName("stringBytes")
-      s"""byte[] $bytes;
-        if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
-            && ($bytes = (byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
+      s"""byte[] $bytes = null;
+        if ($stringVar == null || ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
+            && ($bytes = (byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes())) {
           $colVar = $bytes;
         } else {
           $colVar = $stringVar.getBytes();
@@ -1303,9 +1303,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // copy just reference of the object if underlying byte[] is immutable
       ObjectHashMapAccessor.cloneStringIfRequired(resultVar.value, colVar, doCopy)
     case _: ArrayType | _: MapType | _: StructType if doCopy =>
-      s"$colVar = ${resultVar.value}.copy();"
+      s"$colVar = ${resultVar.value} != null ? ${resultVar.value}.copy() : null;"
     case _: BinaryType if doCopy =>
-      s"$colVar = ${resultVar.value}.clone();"
+      s"$colVar = ${resultVar.value} != null ? ${resultVar.value}.clone() : null;"
     case _ =>
       s"$colVar = ${resultVar.value};"
   }
@@ -1459,8 +1459,8 @@ object ObjectHashMapAccessor {
     // structure like UnsafeRow or byte array using ColumnEncoding or from Parquet buffer
     // and in all those cases the UTF8String will point to a portion of the full buffer.
     if (doCopy) {
-      s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
-            && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
+      s"""if ($stringVar == null || ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
+            && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes())) {
           $colVar = $stringVar;
         } else {
           $colVar = $stringVar.clone();

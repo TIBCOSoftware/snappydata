@@ -368,8 +368,9 @@ case class SnappyHashAggregateExec(
         case StringType =>
           ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
         case _: ArrayType | _: MapType | _: StructType =>
-          s"${bufVars(i).value} = ${ev.value}.copy();"
-        case _: BinaryType => s"${bufVars(i).value} = ${ev.value}.clone();"
+          s"${bufVars(i).value} = ${ev.value} != null ? ${ev.value}.copy() : null;"
+        case _: BinaryType =>
+          s"${bufVars(i).value} = ${ev.value} != null ? ${ev.value}.clone() : null;"
         case _ => s"${bufVars(i).value} = ${ev.value};"
       }
     } else s"${bufVars(i).value} = ${ev.value};"
