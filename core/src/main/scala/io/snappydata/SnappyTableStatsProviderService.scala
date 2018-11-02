@@ -38,6 +38,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollecto
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
+import io.prometheus.client.Gauge
 import io.snappydata.Constant._
 import io.snappydata.collection.ObjectObjectHashMap
 
@@ -154,13 +155,50 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
         if (memberStats == null) {
           memberStats = new MemberStatistics(memMap)
+          // Initialize prometheus metrics for member
+          var shortDir = memMap.get("userDir").toString.substring(
+            memMap.get("userDir").toString.lastIndexOf(System.getProperty("file.separator")) + 1)
+          shortDir = shortDir.replaceAll("-", "_")
+          val cpuUsageGauge: Gauge = Gauge.build()
+              .name("snappydata_member_" + shortDir + "_cpu_usage")
+              //.name("snappydata_member_cpu_usage").labelNames("shortDir")
+              .help("SnappyData Member [" + shortDir + "] CPU usage")
+              .register(p_collectorRegistry)
+          val cpuUsageTimer: Gauge.Timer = cpuUsageGauge.startTimer()
+
           if (dssUUID != null) {
             members.put(dssUUID.toString, memberStats)
+            p_memberCpuUsageGaugeMap.put(dssUUID.toString, cpuUsageGauge)
+            p_memberCpuUsageTimerMap.put(dssUUID.toString, cpuUsageTimer)
+          }
+          // Set prometheus cpu metrics for member
+          try {
+            println("----------First-------- Adding value " + memMap.get("cpuActive").toString
+                + " to cpu gauge for member "+memMap.get("id"))
+            cpuUsageGauge.set(memMap.get("cpuActive").toString.toInt)
+          } catch {
+            case e: Exception => logInfo("Exception Occurred while setting CPU metrics for member: "
+                + memMap.get("id") + " : "+ e.getMessage)
+          } finally {
+            cpuUsageTimer.setDuration()
           }
         } else {
           memberStats.updateMemberStatistics(memMap)
           if (dssUUID != null) {
             members.put(dssUUID.toString, memberStats)
+            // Set prometheus cpu metrics for member
+            val cpuUsageGauge: Gauge = p_memberCpuUsageGaugeMap.get(dssUUID.toString).get
+            val cpuUsageTimer: Gauge.Timer = p_memberCpuUsageTimerMap.get(dssUUID.toString).get
+            try {
+              println("------------------ Adding value " + memMap.get("cpuActive").toString
+                  + " to cpu gauge for member "+memMap.get("id"))
+              cpuUsageGauge.set(memMap.get("cpuActive").toString.toInt)
+            } catch {
+              case e: Exception => logInfo("Exception Occurred while setting CPU metrics for member: "
+                  + memMap.get("id") + " : "+ e.getMessage)
+            } finally {
+              cpuUsageTimer.setDuration()
+            }
           }
         }
 
@@ -176,6 +214,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
     } catch {
       case NonFatal(e) => logWarning(e.getMessage, e)
+    } finally {
+      // push to job snappymetrics
+      p_pushGateway.push(p_collectorRegistry, "snappymetrics")
     }
   }
 

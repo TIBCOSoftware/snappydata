@@ -35,6 +35,11 @@ def osName = org.gradle.internal.os.OperatingSystem.current()
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
+  
+  compile 'io.prometheus:simpleclient:0.5.0'
+  compile 'io.prometheus:simpleclient_hotspot:0.5.0'
+  compile 'io.prometheus:simpleclient_httpserver:0.5.0'
+  compile 'io.prometheus:simpleclient_pushgateway:0.5.0'
 
   compile 'org.slf4j:slf4j-api:' + slf4jVersion
   compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion

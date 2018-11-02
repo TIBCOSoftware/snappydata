@@ -30,6 +30,8 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
+import io.prometheus.client.exporter.PushGateway
+import io.prometheus.client.{CollectorRegistry, Gauge}
 
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.Utils
@@ -37,6 +39,22 @@ import org.apache.spark.{Logging, SparkContext}
 
 trait TableStatsProviderService extends Logging {
 
+  // // Push Gateway details are hard coded for now
+  val p_pushGateway: PushGateway = new PushGateway("104.211.54.49:9091")
+  // Delete previous jab already if exists
+  p_pushGateway.delete("snappymetrics")
+
+  val p_collectorRegistry: CollectorRegistry = new CollectorRegistry();
+  val p_memberCpuUsageGaugeMap: mutable.Map[String, Gauge] =
+    new ConcurrentHashMap[String, Gauge](8, 0.7f, 1).asScala
+  val p_memberCpuUsageTimerMap: mutable.Map[String, Gauge.Timer] =
+    new ConcurrentHashMap[String, Gauge.Timer](8, 0.7f, 1).asScala
+
+/*
+  val p_cpuUsageGauge: Gauge = Gauge.build().name("snappydata_cluster_cpu_usage")
+      .help("SnappyData Cluster CPU usage").register(p_collectorRegistry)
+  val p_cpuUsageTimer: Gauge.Timer = p_cpuUsageGauge.startTimer()
+*/
   @volatile
   protected var tableSizeInfo = Map.empty[String, SnappyRegionStats]
   private var externalTableSizeInfo = Map.empty[String, SnappyExternalTableStats]
@@ -70,6 +88,9 @@ trait TableStatsProviderService extends Logging {
           // fillAggregatedMemberStatsOnDemand()
           val memInfo = getMembersStatsOnDemand
 
+          // call here
+          // prometheusExample()
+
         } finally {
           running = false
           notifyAll()
@@ -96,6 +117,22 @@ trait TableStatsProviderService extends Logging {
       }
     }
   }
+
+/*
+  def prometheusExample() : Unit = {
+
+    try {
+      val r = Math.random() * 100
+      println("------------------ cluster : Adding value " + r.toInt + "to cpu gauge")
+      p_cpuUsageGauge.set(r.toInt)
+    } catch {
+      case e: Exception => logInfo("Exception Occurred in prometheusExample : " + e.getMessage)
+    } finally {
+      p_cpuUsageTimer.setDuration()
+      p_pushGateway.push(p_collectorRegistry, "snappyjob")
+    }
+  }
+*/
 
   def fillAggregatedMemberStatsOnDemand(): Unit = {
   }
