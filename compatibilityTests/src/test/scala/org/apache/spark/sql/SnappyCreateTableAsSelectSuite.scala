@@ -33,10 +33,22 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.sources.CreateTableAsSelectSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyCreateTableAsSelectSuite
     extends CreateTableAsSelectSuite
-        with SharedSnappySessionContext {
+        with SharedSnappySessionContext with SnappySparkTestUtil{
 
+  override def ignored: Seq[String] = Seq(
+    "CREATE TABLE USING AS SELECT",
+    "CREATE TABLE USING AS SELECT based on the file without write permission",
+    "create a table, drop it and create another one with the same name",
+    "disallows CREATE TEMPORARY TABLE ... USING ... AS query",
+    "disallows CREATE EXTERNAL TABLE ... USING ... AS query",
+    "create table using as select - with partitioned by",
+    "create table using as select - with non-zero buckets",
+    "create table using as select - with zero buckets",
+    "SPARK-17409: CTAS of decimal calculation",
+    "specifying the column list for CTAS"
+  )
 }

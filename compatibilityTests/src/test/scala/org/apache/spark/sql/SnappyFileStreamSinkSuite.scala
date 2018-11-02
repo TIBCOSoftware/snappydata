@@ -17,8 +17,12 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.streaming.FileStreamSinkSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyFileStreamSinkSuite extends FileStreamSinkSuite with SharedSnappySessionContext {
+class SnappyFileStreamSinkSuite extends FileStreamSinkSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil{
 
+  override def ignored: Seq[String] = Seq(
+    "parquet"
+  )
 }

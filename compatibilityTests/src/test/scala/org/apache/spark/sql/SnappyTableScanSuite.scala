@@ -32,6 +32,10 @@ class SnappyTableScanSuite
     "SPARK-5196 schema field with comment"
   )
 
+  override def ignored: Seq[String] = Seq(
+    "Schema and all fields"
+  )
+
   // SimpleScanSource is external to snappy. changed 'TABLE' to 'EXTERNAL TABLE'
   test("SD:exceptions") {
     // Make sure we do throw correct exception when users use a relation provider that
