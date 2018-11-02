@@ -162,7 +162,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       isExternal: Boolean): Unit = {
     snappySession.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists, isExternal))
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
     SnappySession.clearAllCache()
   }
 
@@ -242,7 +242,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   def dropIndex(indexName: QualifiedTableName, ifExists: Boolean): Unit = {
     runStmtWithExceptionHandling(executeDropIndexStmt(indexName, ifExists))
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy(Some(indexName))
     SnappySession.clearAllCache()
   }
 

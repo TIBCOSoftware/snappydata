@@ -87,7 +87,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     if (!doRun) {
       this.synchronized {
         if (!doRun) {
-          val delay = sc.getConf.getLong(SPARK_SNAPPY_PREFIX +
+          val delay = sc.getConf.getLong(PROPERTY_PREFIX +
               "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
           Misc.getGemFireCache.getCCPTimer.schedule(

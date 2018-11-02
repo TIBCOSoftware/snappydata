@@ -126,7 +126,7 @@ class SnappyStorageEvictor extends Logging {
       offHeap: Boolean, hasOffHeap: Boolean): Boolean = {
     val hasLRU = (region.getEvictionAttributes.getAlgorithm.isLRUHeap
       && (region.getDataStore != null)
-      && !region.getAttributes.getEnableOffHeapMemory && !region.needsBatching())
+      && !region.getAttributes.getEnableOffHeapMemory && !region.isRowBuffer())
     if (hasOffHeap) {
       // when off-heap is enabled then all column tables use off-heap
       val regionPath = Misc.getFullTableNameFromRegionPath(region.getFullPath)
