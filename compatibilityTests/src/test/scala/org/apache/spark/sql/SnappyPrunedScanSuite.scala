@@ -17,8 +17,14 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.sources.PrunedScanSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyPrunedScanSuite extends PrunedScanSuite with SharedSnappySessionContext{
+class SnappyPrunedScanSuite extends PrunedScanSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
+  override def ignored: Seq[String] = Seq(
+    "Columns output b,a: SELECT b, a FROM oneToTenPruned",
+    "Columns output a: SELECT a FROM oneToTenPruned",
+    "Columns output b: SELECT b FROM oneToTenPruned"
+  )
 }

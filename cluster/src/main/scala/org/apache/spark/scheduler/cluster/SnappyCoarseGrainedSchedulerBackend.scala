@@ -113,7 +113,7 @@ class BlockManagerIdListener(sc: SparkContext)
   override def onApplicationEnd(msg: SparkListenerApplicationEnd): Unit =
     SnappyContext.clearBlockIds()
 
-  private def handleNewExecutorJoin(bid: BlockManagerId) = {
+  private def handleNewExecutorJoin(bid: BlockManagerId): Unit = {
     val uris = SnappySession.getJarURIs
     Utils.mapExecutors[Unit](sc, () => {
       ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)

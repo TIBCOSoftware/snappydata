@@ -140,7 +140,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     val rdd = sc.parallelize(
       (1 to 100000).map(i => TestData(i, i.toString)))
 
-    implicit val encoder = Encoders.product[TestData]
+    implicit val encoder: Encoder[TestData] = Encoders.product[TestData]
     val dataDF = snc.createDataset(rdd)
 
     dataDF.write.insertInto(tblBatchSizeSmall)
@@ -642,7 +642,7 @@ object SplitSnappyClusterDUnitTest
     val rdd = sc.parallelize(
       (1 to 100000).map(i => TestData(i, i.toString)))
 
-    implicit val encoder = Encoders.product[TestData]
+    implicit val encoder: Encoder[TestData] = Encoders.product[TestData]
     val dataDF = snc.createDataset(rdd)
 
     dataDF.write.insertInto(tblBatchSize200)

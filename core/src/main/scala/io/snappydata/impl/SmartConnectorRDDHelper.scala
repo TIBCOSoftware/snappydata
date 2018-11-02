@@ -154,7 +154,7 @@ object SmartConnectorRDDHelper {
 
   def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
@@ -213,7 +213,7 @@ object SmartConnectorRDDHelper {
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     // check if Spark executors are using IP addresses or host names
     val preferHost = preferHostName(session)
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
