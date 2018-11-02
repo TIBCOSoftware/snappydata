@@ -27,7 +27,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
@@ -1800,7 +1799,8 @@ public class SnappyTest implements Serializable {
         assert p.getInputStream().read() == -1;
       }
       int rc = p.waitFor();
-      if ((rc == 0) || (pb.command().contains("grep") && rc == 1)) {
+      String pbCmd = Arrays.toString(pb.command().toArray());
+      if ((rc == 0) || (pbCmd.contains("grep -v -F") && rc == 1)) {
         Log.getLogWriter().info("Executed successfully");
         return 0;
       } else {
