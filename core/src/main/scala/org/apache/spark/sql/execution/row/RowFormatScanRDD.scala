@@ -29,8 +29,6 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
-import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.access.GfxdTXStateProxy
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RawStoreResultSet, RegionEntryUtils}
@@ -65,7 +63,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
       Array.empty[Partition], protected var commitTx: Boolean,
-    protected var delayRollover: Boolean, protected var projection: Array[Int])
+    protected var delayRollover: Boolean, protected var projection: Array[Int],
+    @transient protected val region: Option[LocalRegion])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var updateOwner: String = _
@@ -351,9 +350,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       return parts
     }
 
-    Misc.getRegionForTable(tableName, true).asInstanceOf[CacheDistributionAdvisee] match {
-      case pr: PartitionedRegion => session.sessionState.getTablePartitions(pr)
-      case dr => session.sessionState.getTablePartitions(dr)
+    region match {
+      case Some(pr: PartitionedRegion) => session.sessionState.getTablePartitions(pr)
+      case Some(dr: CacheDistributionAdvisee) => session.sessionState.getTablePartitions(dr)
+      // system table/VTI is shown as a replicated table having a single partition
+      case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
     }
   }
 

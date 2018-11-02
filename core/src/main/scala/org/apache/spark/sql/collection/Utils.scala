@@ -35,6 +35,7 @@ import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, ToolsCallback}
@@ -48,7 +49,7 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Expression, GenericRow, UnsafeRow}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
@@ -57,7 +58,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analy
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.sources.CastLongTime
+import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
@@ -379,6 +380,12 @@ object Utils extends Logging {
     }
   }
 
+  @tailrec
+  def unAlias(e: Expression, childClass: Class[_] = null): Expression = e match {
+    case a: Alias if (childClass eq null) || childClass.isInstance(a.child) => unAlias(a.child)
+    case _ => e
+  }
+
   def getInternalType(dataType: DataType): Class[_] = {
     dataType match {
       case ByteType => classOf[Byte]
@@ -398,11 +405,7 @@ object Utils extends Logging {
     }
   }
 
-  @tailrec
-  def getSQLDataType(dataType: DataType): DataType = dataType match {
-    case udt: UserDefinedType[_] => getSQLDataType(udt.sqlType)
-    case _ => dataType
-  }
+  def getSQLDataType(dataType: DataType): DataType = JdbcExtendedUtils.getSQLDataType(dataType)
 
   def getClientHostPort(netServer: String): String = {
     val addrIdx = netServer.indexOf('/')
@@ -448,9 +451,9 @@ object Utils extends Logging {
     false
   }
 
-  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ENGLISH)
+  def toLowerCase(k: String): String = JdbcExtendedUtils.toLowerCase(k)
 
-  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ENGLISH)
+  def toUpperCase(k: String): String = JdbcExtendedUtils.toUpperCase(k)
 
   /**
    * Utility function to return a metadata for a StructField of StringType, to ensure that the
@@ -721,6 +724,31 @@ object Utils extends Logging {
   def newChunkedByteBuffer(chunks: Array[ByteBuffer]): ChunkedByteBuffer =
     new ChunkedByteBuffer(chunks)
 
+  def getInternalSparkConf(sc: SparkContext): SparkConf = sc.conf
+
+  def newClusterSparkConf(): SparkConf =
+    newClusterSparkConf(Misc.getMemStoreBooting.getBootProperties)
+
+  def newClusterSparkConf(props: java.util.Map[AnyRef, AnyRef]): SparkConf = {
+    val conf = new SparkConf
+    val propsIterator = props.entrySet().iterator()
+    while (propsIterator.hasNext) {
+      val entry = propsIterator.next()
+      val propName = entry.getKey.toString
+      if (propName.startsWith(Constant.SPARK_PREFIX) ||
+          propName.startsWith(Constant.PROPERTY_PREFIX) ||
+          propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
+          propName.startsWith("zeppelin.") ||
+          propName.startsWith("hive.")) {
+        entry.getValue match {
+          case v: String => conf.set(propName, v)
+          case _ =>
+        }
+      }
+    }
+    conf
+  }
+
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
     conf.getOption(name) match {
@@ -840,6 +868,8 @@ object Utils extends Logging {
     case Some(ui) => Some(ui.executorsListener)
     case _ => None
   }
+
+  def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -946,7 +976,7 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       case _ => false
     }
 
-    override def iterator() = new java.util.Iterator[Integer] {
+    override def iterator(): java.util.Iterator[Integer] = new java.util.Iterator[Integer] {
       private[this] var bucket = bucketSet.nextSetBit(0)
 
       override def hasNext: Boolean = bucket >= 0

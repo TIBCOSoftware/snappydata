@@ -33,8 +33,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
 
-import org.apache.spark.{Logging, TaskContext}
-import org.apache.spark.memory.MemoryManagerCallback
+import org.apache.spark.memory.MemoryManagerCallback.releaseExecutionMemory
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -42,6 +41,7 @@ import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.execution.{IteratorWithMetrics, SnappyMetrics}
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
+import org.apache.spark.{Logging, TaskContext}
 
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte], deltaIndexes: Array[Int])
@@ -434,8 +434,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
             // release from accounting if decompressed buffer
             if (!BufferAllocator.releaseBuffer(buffer) &&
                 (buffer.order() eq ByteOrder.LITTLE_ENDIAN)) {
-              MemoryManagerCallback.releaseExecutionMemory(buffer,
-                CompressionUtils.DECOMPRESSION_OWNER, releaseBuffer = false)
+              releaseExecutionMemory(buffer, CompressionUtils.DECOMPRESSION_OWNER)
             }
           }
           true

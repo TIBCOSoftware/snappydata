@@ -31,19 +31,19 @@ abstract class NonRecursivePlans extends SparkPlan {
    * Variable to disallow recursive generation so will mark the case of
    * non-codegenerated case and throw back exception to use CodegenSparkFallback.
    */
-  protected final var nonCodeGeneratedPlan: Boolean = _
+  protected final var nonCodeGeneratedPlanCalls: Int = _
 
   override protected def doExecute(): RDD[InternalRow] = {
-    if (nonCodeGeneratedPlan) {
+    if (nonCodeGeneratedPlanCalls > 4) {
       throw new CodeGenerationException("Code generation failed for some of the child plans")
     }
-    nonCodeGeneratedPlan = true
+    nonCodeGeneratedPlanCalls += 1
     WholeStageCodegenExec(this).execute()
   }
 
   override def makeCopy(newArgs: Array[AnyRef]): NonRecursivePlans = {
     val plan = super.makeCopy(newArgs).asInstanceOf[NonRecursivePlans]
-    plan.nonCodeGeneratedPlan = nonCodeGeneratedPlan
+    plan.nonCodeGeneratedPlanCalls = nonCodeGeneratedPlanCalls
     plan
   }
 }

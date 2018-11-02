@@ -79,7 +79,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
   }
 
   test("SNAP-2124 update missed") {
-    ColumnUpdateDeleteTests.testSNAP2124(this.snc.snappySession, checkPruning = true)
+    ColumnUpdateDeleteTests.testSNAP2124(this.snc.snappySession)
   }
 
   test("SNAP-1985: update delete on string type") {

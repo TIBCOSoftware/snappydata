@@ -33,9 +33,14 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.sources.FilteredScanSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyFilteredScanSuite extends FilteredScanSuite with SharedSnappySessionContext {
+class SnappyFilteredScanSuite extends FilteredScanSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
+
+  override def ignored: Seq[String] = Seq(
+    "PushDown Returns 3: SELECT a FROM oneToTenFiltered WHERE a + b > 9 AND b < 16 AND c IN ('bbbbbBBBBB', 'cccccCCCCC', 'dddddDDDDD', 'foo') "
+  )
 
   override def beforeAll() {
     super.beforeAll()

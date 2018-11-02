@@ -240,11 +240,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
             ${ctx.declareAddedFunctions()}
 
-            public boolean check($rowClass statsRow, boolean isLastStatsRow) {
+            public boolean check($rowClass statsRow, boolean isLastStatsRow, boolean isDelta) {
               // TODO: don't have the update count for delta row (only insert count)
               // so adding the delta "insert" count to full count read in previous call
               $numRows += statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
-              return $filterFunction(statsRow, $numRows, isLastStatsRow);
+              return $filterFunction(statsRow, $numRows, isLastStatsRow, isDelta);
             }
          }
       """
@@ -262,6 +262,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       fullScan = (batchFilters eq null) || batchFilters.isEmpty, context = null)
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(schemaAttrs.length)
 
+    // noinspection TypeAnnotation
     val entriesIter = new Iterator[ArrayBuffer[ColumnTableEntry]] {
       private var numColumns = (projection.length + 1) << 1
 
@@ -279,9 +280,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
               numColumnsInStatBlob)
             // check the delta stats after full stats (null columns will be treated as failure
             // which is what is required since it means that only full stats check should be done)
-            if (filterPredicate.check(statsRow, deltaStatsRow eq null) ||
-                ((deltaStatsRow ne null) &&
-                    filterPredicate.check(deltaStatsRow, isLastStatsRow = true))) {
+            if (filterPredicate.check(statsRow, deltaStatsRow eq null, isDelta = false) ||
+                ((deltaStatsRow ne null) && filterPredicate.check(deltaStatsRow,
+                  isLastStatsRow = true, isDelta = true))) {
               return
             }
             batchIterator.moveNext()
@@ -415,7 +416,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def registerRelationDestroyForHiveStore(): Unit = {
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy(None)
   }
 
   def getSnappyTableStats: AnyRef = {
@@ -650,5 +651,5 @@ trait StoreCallback extends Serializable {
  * an additional argument for the same to determine whether to update metrics or not.
  */
 trait StatsPredicate {
-  def check(row: UnsafeRow, isLastStatsRow: Boolean): Boolean
+  def check(row: UnsafeRow, isLastStatsRow: Boolean, isDelta: Boolean): Boolean
 }

@@ -154,7 +154,8 @@ Execute the following to deploy the **gemfire-function** jar:
 ```
 Deploy SnappyData GemFire Connector's gemfire-function jar (`gfeFunct
 ions-1.0.2.jar`):
-gfsh>deploy --jar=<SnappyData Product Home>/snappy-connectors/gemfire-connector/gfeFunctions/build-artifacts/scala-2.11/libs/gfeFunctions-1.0.2.jar
+gfsh>deploy --jar=<SnappyData Product Home>//connectors/gfeFunctions-0.9.2.jar
+
 
 ```
 
@@ -344,7 +345,7 @@ Following is a sample from the servers and leads file:
 
 ```
 localhost -locators=localhost:10334 -client-bind-address=localhost -client-port=1528 -heap-size=20g
--classpath=<SnappyData-Product-Home>/snappy-connectors/gemfire-connector/connector/build-artifacts/scala-2.11/libs/connector_2.11-1.0.2.jar:<path-to-jar>/person.jar
+-classpath=<SnappyData-Product-Home>//connectors/connector_2.11-0.9.2.jar:<path-to-jar>/person.jar
 -snappydata.connector.gemfire-grid.<uniqueIDForGrid>=localhost[55221]
 ```
 
@@ -499,11 +500,11 @@ At the time of table creation, an option with key = **column.selector** and valu
 
 | column | column |
 |--------|--------|
-|    **max.rows.restrict**    | This parameter is used to restrict the number of rows that are fetched from an external table, when a query of type **select * from external_table** is executed. This restriction, if specified,  is applied to queries without any filter, limit, aggregate function, and projection such that it tends to bring all the rows from the external region. Note that this restriction is not applied in case of DDL statement such as **create table X using row column as select * from external_table**       |
+|    **max.rows.restrict**    | This parameter is used to restrict the number of rows that are fetched from an external table, when a query of type **select * from external_table** is executed. This restriction, if specified,  is applied to queries without any filter, limit, aggregate function, and projection such that it tends to bring all the rows from the external region. Note that this restriction is not applied in case of DDL statement such as **create table X using row column as select * from external_table**. The default value for is 10,000.       |
 |   **column.selector**     |  This parameter is used to control the columns that must be included in the schema as described [here](#controlschemaofexternaltable).      |
-|    **max.buckets.per.partition**    |   This parameter is used to control the concurrency and number of tasks created to fetch data from an external region. This property is useful only for Partitioned Region. For more details, refer to [Controlling Task Concurrency in SnappyData When Accessing GemFire](#controllingtaskconcurrency).     |
+|    **max.buckets.per.partition**    |   This parameter is used to control the concurrency and number of tasks created to fetch data from an external region. This property is useful only for Partitioned Region. For more details, refer to [Controlling Task Concurrency in SnappyData When Accessing GemFire](#controllingtaskconcurrency).  The default value is 3.  |
 |    **security.username**  and **security.password**    |  By default the external table is created and queried using the credential of the current user. For example user X creates external table, and if user Y is querying, then credentials of user Y is fetched from data. But if the parameters **security.username**  and **security.password** are passed then those credentials are used to create external table and for querying the data irrespective of the current user.      |
-|     **pdxtype.maxscan**   |   This parameter determines the maximum number of entries from the region which is scanned to completely determine the schema of the external table from the Pdx instances that is stored in the region. The default value is 100     |
+|     **pdxtype.maxscan**   |   This parameter determines the maximum number of entries from the region which is scanned to completely determine the schema of the external table from the Pdx instances that is stored in the region. The default value is 100.     |
 
 <a id= controllingtaskconcurrency> </a>
 ### Controlling Task Concurrency in SnappyData When Accessing GemFire 

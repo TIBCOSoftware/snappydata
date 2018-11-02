@@ -35,7 +35,7 @@ import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.row.GemFireXDClientDialect
+import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
 
@@ -101,7 +101,7 @@ final class SmartConnectorRDDHelper {
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
-      ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect, props,
+      ConnectionPool.getPoolConnection(jdbcUrl, SnappyStoreClientDialect, props,
         executorProps, connProperties.hikariCP)
     } catch {
       case sqle: SQLException => if (hostList.size == 1 || useLocatorURL) {
@@ -154,7 +154,7 @@ object SmartConnectorRDDHelper {
 
   def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
@@ -221,7 +221,7 @@ object SmartConnectorRDDHelper {
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     // check if Spark executors are using IP addresses or host names
     val preferHost = preferHostName(session)
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
