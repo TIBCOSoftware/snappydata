@@ -483,7 +483,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     DistributedTestBase.invokeInEveryVM(avoidRollover)
     avoidRollover.run()
 
-    for (_ <- 1 to 10000) {
+    for (_ <- 1 to 3) {
       testConcurrentOpsIter(session)
 
       session.sql("truncate table updateTable")

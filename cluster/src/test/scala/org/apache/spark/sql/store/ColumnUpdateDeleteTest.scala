@@ -40,7 +40,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     stopAll()
   }
 
-  override protected def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+  override protected def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
     val conf = new SparkConf()
     conf.setIfMissing("spark.master", "local[*]")
         .setAppName(getClass.getName)
