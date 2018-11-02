@@ -198,6 +198,14 @@ public class DeployPkgDeployJar extends SnappyTest {
         deployPkgJars.deployJarUniqueAliasName();
     }
 
+    /**
+     * This method test the deploy package command with mupliple packages and multiple repositories.
+     * @since 1.0.2
+     */
+    public static void HydraTask_deployPkgWithRepos() {
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPkgWithRepos();
+    }
 
 
     /**
@@ -789,6 +797,62 @@ public class DeployPkgDeployJar extends SnappyTest {
         finally {
             closeConnection(conn);
         }
+    }
+
+    /**
+     * This method test the deploy package command where package is not available on Maven Central but at
+     * other repositories.
+     * This method uses the comma separated packages and respositories.
+     * @since 1.0.2
+     *
+     */
+    private void deployPkgWithRepos() {
+        Connection conn;
+        String deployPkgCmd;
+        final String listPkgCmd = "list packages;";
+        final String pkgCoordinates = "'com.microsoft.sqlserver:sqljdbc4:4.0,org.renjin.cran:waveslim:1.12-b12'";
+        final String repoPath = "'http://clojars.org/repo/,https://nexus.bedatadriven.com/content/repositories/public/'";
+        final String path = " path ";
+        final String alias = " SQLJDBC_Waveslim ";
+        Statement st;
+        ResultSet rs;
+
+        conn = getJDBCConnection();
+        try {
+            deployPkgCmd = "deploy package " + alias + pkgCoordinates + " repos " + repoPath + path + "'" + userHomeDir + "/TPC';";
+            Log.getLogWriter().info("Executing deploy package with Repos : " + deployPkgCmd);
+            conn.createStatement().execute(deployPkgCmd);
+            Log.getLogWriter().info("Executing list packages with Repos : ");
+            st = conn.createStatement();
+            if(st.execute(listPkgCmd)) {
+                rs = st.getResultSet();
+                while(rs.next()) {
+                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                    if((rs.getString("alias").equals(alias.trim().toUpperCase())) && (rs.getString("coordinate").equals( pkgCoordinates.substring(1,pkgCoordinates.length()-1)))) {
+                        Log.getLogWriter().info("Repos deploy pkg matched with deployed pkg...");
+                    }
+                }
+                conn.createStatement().execute("undeploy " + alias + ";");
+                st.clearBatch();
+                st = conn.createStatement();
+                if(st.execute(listPkgCmd)) {
+                    //Log.getLogWriter().info("List Package Execution : ");
+                    rs = st.getResultSet();
+                    if (rs.next())
+                        Log.getLogWriter().info("Repos testing not executed successful...");
+                    else
+                        Log.getLogWriter().info("Repos testing executed successful...");
+                }
+            }
+
+        }
+        catch (SQLException e) {
+            Log.getLogWriter().info(e.getMessage());
+        }
+        finally {
+            closeConnection(conn);
+        }
+
     }
 }
 
