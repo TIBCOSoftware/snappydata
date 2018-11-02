@@ -63,6 +63,8 @@ task productExamples(dependsOn: 'jar') { doLast {
   }
 } }
 
+archivesBaseName = 'snappydata-examples_' + scalaBinaryVersion
+
 scalaTest {
   dependsOn ':cleanScalaTest', ':product'
   doFirst {
