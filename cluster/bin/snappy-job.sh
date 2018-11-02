@@ -281,7 +281,8 @@ fi
 
 function addDependentJarsToProp () {
   if [[ $packages != "" ]]; then
-    jarclasspath=`echo jars/*.jar | tr -s ' ' ':'`
+    JAR_FOLDER=$SNAPPY_HOME/jars
+    jarclasspath=`echo $JAR_FOLDER/*.jar | tr -s ' ' ':'`
     depargs=
     if [ ! -z $repos ]; then
       depargs="-- repos $repos"
@@ -290,7 +291,7 @@ function addDependentJarsToProp () {
       depargs="$depargs --jarcache $jarcache"
     fi
     depargs="$depargs $packages"
-    depjars=`${SPARK_HOME}/bin/spark-class -cp $jarclasspath org.apache.spark.deploy.GetJarsAndDependencies $depargs 2>/dev/null`
+    depjars=`${SPARK_HOME}/bin/spark-class -cp $jarclasspath org.apache.spark.deploy.GetJarsAndDependencies $depargs`
     depjars=`echo $depjars | sed -e "s/,/|/g"`
     if [[ -z "$APP_PROPS" ]]; then
       APP_PROPS="dependent-jar-uris=$depjars"
