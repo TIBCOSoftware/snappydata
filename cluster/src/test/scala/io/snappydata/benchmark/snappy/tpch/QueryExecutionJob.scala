@@ -26,8 +26,18 @@ import io.prometheus.client.{CollectorRegistry, Histogram}
 
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
-//import io.prometheus.client.hotspot.DefaultExports;
+import io.prometheus.client.hotspot.DefaultExports;
 import io.prometheus.client.exporter.PushGateway
+
+class MetricsProperties {
+   var isSinkEnabled: Boolean = _
+   var sinkHost: String = _
+   var sinkPort: String = _
+   var pushGateway: PushGateway = _
+   var requestLatencies = scala.collection.mutable.Map[String, Histogram]()
+   var registry: CollectorRegistry = _
+   var jobName: String = _
+ }
 
 object QueryExecutionJob extends SnappySQLJob {
 
@@ -42,25 +52,26 @@ object QueryExecutionJob extends SnappySQLJob {
   var traceEvents : Boolean = _
   var randomSeed : Integer = _
 
-  var metricsSinkEnabled : Boolean = _
-  var metricsSinkHost: String = _
-  var metricsSinkPort: String = _
-  var pg: PushGateway = _
-  var requestLatencies =  scala.collection.mutable.Map[String, Histogram]()
-  var registry : CollectorRegistry = _
+  var metrics = new MetricsProperties
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
 
-    if(metricsSinkEnabled){
-      println("pushgateway is running at " + s"${metricsSinkHost}:${metricsSinkPort}")
-      pg = new PushGateway(s"${metricsSinkHost}:${metricsSinkPort}")
-      registry = new CollectorRegistry
-      pg.pushAdd(registry, "tpch_snappydata")
+    metrics.jobName = "TPCH_snappydata"
+    println(s"metricsSinkEnabled = ${metrics.isSinkEnabled}")
+    if(metrics.isSinkEnabled) {
+      println("Prometheus PushGateway is running at " + s"${metrics.sinkHost}:${metrics.sinkPort}")
+      metrics.pushGateway = new PushGateway(
+        s"${metrics.sinkHost}:${metrics.sinkPort}")
+      metrics.registry = CollectorRegistry.defaultRegistry
+      metrics.registry.clear()
       for (query <- queries) {
-        requestLatencies(query) = Histogram.build()
-            .name(s"${query}_latency_milliseconds")
-            .help(s"Query ${query} latency in milliseconds.").register();
+        val metricName = s"query_${query}_latency_milliseconds"
+        if (!metrics.requestLatencies.contains(query)) {
+          metrics.requestLatencies(query) = Histogram.build()
+              .name(metricName)
+              .help(s"Query ${query} latency in milliseconds.").register();
+        }
       }
     }
 
@@ -81,7 +92,7 @@ object QueryExecutionJob extends SnappySQLJob {
     for (query <- queries) {
       QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
         threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream,
-        metricsSinkEnabled, requestLatencies)
+        metrics)
     }
     avgPrintStream.close()
     avgFileStream.close()
@@ -93,10 +104,10 @@ object QueryExecutionJob extends SnappySQLJob {
     val isResultCollection = false
     val isSnappy = true
     queries = Array("3,4,10,16")
-    metricsSinkEnabled = true
     randomSeed = 43
-    metricsSinkHost = "104.211.54.49"
-    metricsSinkPort = "9091"
+    metrics.isSinkEnabled = true
+    metrics.sinkHost = "104.211.54.49"
+    metrics.sinkPort = "9091"
 
     val conf = new SparkConf()
         .setAppName("TPCH")
@@ -105,8 +116,7 @@ object QueryExecutionJob extends SnappySQLJob {
     val   sc = new SparkContext(conf)
     val snc = SnappyContext(sc)
     runJob(snc, null)
-    //val sns = SnappySession(sc)
-    //runSnappyJob(sns, null)
+
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -170,20 +180,20 @@ object QueryExecutionJob extends SnappySQLJob {
       42
     }
 
-    metricsSinkEnabled = if (config.hasPath("metrics_sink_enabled")) {
-      config.getBoolean("metrics_sink_enabled")
+    metrics.isSinkEnabled = if (config.hasPath("metricsSinkEnabled")) {
+      config.getBoolean("metricsSinkEnabled")
     } else {
       false
     }
 
-    metricsSinkHost = if (config.hasPath("metrics_sink_host")) {
-      config.getString("metrics_sink_host")
+    metrics.sinkHost = if (config.hasPath("metricsSinkHost")) {
+      config.getString("metricsSinkHost")
     } else {
       ""
     }
 
-    metricsSinkPort = if (config.hasPath("metrics_sink_port")) {
-      config.getString("metrics_sink_port")
+    metrics.sinkPort = if (config.hasPath("metricsSinkPort")) {
+      config.getString("metricsSinkPort")
     } else {
       "9091"
     }

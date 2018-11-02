@@ -21,7 +21,7 @@ import java.sql.PreparedStatement
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-import io.snappydata.benchmark.snappy.tpch.QueryExecutor
+import io.snappydata.benchmark.snappy.tpch.{MetricsProperties, QueryExecutor}
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -434,9 +434,20 @@ object TPCHUtils extends Logging {
       fileName: String = ""): Unit = {
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
-    queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection,
-      isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage,
+    var metricsProps: MetricsProperties = new MetricsProperties()
+    metricsProps.isSinkEnabled = false
+
+    queries.foreach(query => QueryExecutor.execute(
+      query,
+      snc,
+      isResultCollection,
+      isSnappy,
+      0,
+      isDynamic,
+      warmup,
+      runsForAverage,
       avgTimePrintStream = System.out,
-      metricsSinkEnabled = false, requestLatencies = null))
+      metricsProps)
+    )
   }
 }

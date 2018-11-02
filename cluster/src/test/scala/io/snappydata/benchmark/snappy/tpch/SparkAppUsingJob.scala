@@ -97,10 +97,12 @@ object SparkAppUsingJob  extends SnappySQLJob {
     }
 
     QueryExecutor.setRandomSeed(randomSeed)
+    var metricsProps: MetricsProperties = new MetricsProperties()
+    metricsProps.isSinkEnabled = false
     for (query <- queries) {
       QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
         threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream,
-        metricsSinkEnabled = false, requestLatencies = null)
+        metricsProps)
     }
     QueryExecutor.close
 

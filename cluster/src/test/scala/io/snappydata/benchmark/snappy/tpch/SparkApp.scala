@@ -156,11 +156,14 @@ object SparkApp {
     }
 
     QueryExecutor.setRandomSeed(randomSeed)
+    var metricsProps: MetricsProperties = new MetricsProperties()
+    metricsProps.isSinkEnabled = false
+
     for (query <- queries) {
       QueryExecutor.execute(query, sparkSession.sqlContext, isResultCollection,
         isSnappy = false,
         threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream,
-        metricsSinkEnabled = false, requestLatencies = null)
+        metricsProps)
     }
 
     // cleanup

@@ -22,7 +22,6 @@ import java.sql.{PreparedStatement, ResultSet}
 
 import io.prometheus.client.Histogram
 import io.snappydata.benchmark.TPCH_Queries
-import io.snappydata.benchmark.snappy.tpch.QueryExecutionJob.{metricsSinkEnabled, requestLatencies}
 
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
@@ -122,7 +121,7 @@ object QueryExecutor {
   def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
       isSnappy: Boolean, threadNumber: Int = 1, isDynamic: Boolean = false, warmup: Int = 0,
       runsForAverage: Int = 1, avgTimePrintStream: PrintStream = null,
-      metricsSinkEnabled: Boolean, requestLatencies: scala.collection.mutable.Map[String,Histogram]): Unit = {
+      metricsProperties: MetricsProperties): Unit = {
 
     val planFileName = if (isSnappy) s"${threadNumber}_QueryPlans_Snappy.out"
             else s"${threadNumber}_QueryPlans_Spark.out"
@@ -172,8 +171,8 @@ object QueryExecutor {
         for (i <- 1 to (warmup + runsForAverage)) {
           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
           var hst: Histogram.Timer = null
-            if(metricsSinkEnabled){
-            hst = requestLatencies(queryNumber).startTimer()
+          if(metricsProperties.isSinkEnabled) {
+            hst = metricsProperties.requestLatencies(queryNumber).startTimer()
           }
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
@@ -188,8 +187,9 @@ object QueryExecutor {
             // // or else check to see if iterating on each result row was intended
           }
           val endTime = System.currentTimeMillis()
-          if(metricsSinkEnabled){
+          if(metricsProperties.isSinkEnabled){
             hst.observeDuration()
+            metricsProperties.pushGateway.pushAdd(metricsProperties.registry, metricsProperties.jobName)
           }
           val iterationTime = endTime - startTime
           queryStatisticsPrintStream.println(s"$i,$iterationTime")

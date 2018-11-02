@@ -54,9 +54,11 @@ object QueryExecutionSmartConnector {
 
     for (i <- 1 to 1) {
       for (query <- queries) {
+        var metricsProps: MetricsProperties = new MetricsProperties()
+        metricsProps.isSinkEnabled = false
         QueryExecutor.execute(query, snSession.sqlContext, isResultCollection, false,
           threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream,
-          metricsSinkEnabled = false, requestLatencies = null)
+          metricsProps)
       }
     }
     QueryExecutor.close

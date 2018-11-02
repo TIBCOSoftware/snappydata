@@ -19,4 +19,7 @@ echo "******************start Executing Query******************"
 --conf actualRuns=$AverageRuns \
 --conf threadNumber=1 \
 --conf traceEvents=$traceEvents \
---conf randomSeed=$randomSeed
+--conf randomSeed=$randomSeed \
+--conf metricsSinkEnabled=$metrics_sink_enabled \
+--conf metricsSinkHost=$metrics_sink_host \
+--conf metricsSinkPort=$metrics_sink_port

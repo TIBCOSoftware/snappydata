@@ -44,6 +44,7 @@ Parquet=false
 NumberOfLoadStages=10
 
 #Machine Setup
+# For master, use hostname and not IP address.
 master=localhost
 slaves=(localhost)
 client=localhost
