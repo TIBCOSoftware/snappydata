@@ -17,8 +17,12 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.SQLWindowFunctionSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappySQLWindowFunctionSuite extends SQLWindowFunctionSuite with SharedSnappySessionContext{
+class SnappySQLWindowFunctionSuite extends SQLWindowFunctionSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
+  override def ignored: Seq[String] = Seq(
+    "window function: expressions in arguments of a window functions"
+  )
 }

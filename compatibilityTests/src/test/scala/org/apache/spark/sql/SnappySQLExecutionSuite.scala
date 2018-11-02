@@ -17,8 +17,12 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.SQLExecutionSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappySQLExecutionSuite extends SQLExecutionSuite with SharedSnappySessionContext{
+class SnappySQLExecutionSuite extends SQLExecutionSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
+  override def ignored: Seq[String] = Seq(
+    "concurrent query execution (SPARK-10548)"
+  )
 }
