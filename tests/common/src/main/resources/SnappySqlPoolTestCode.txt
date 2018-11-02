@@ -23,7 +23,7 @@ io.snappydata.cluster.SplitClusterDUnitTest.testSparkShell and testSparkShellCur
 import java.math.BigDecimal
 import org.apache.spark.sql.Row
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils.toHexString
-import io.snappydata.implicits._
+import io.snappydata.sql.implicits._
 
 println("Querying row and column tables")
 
