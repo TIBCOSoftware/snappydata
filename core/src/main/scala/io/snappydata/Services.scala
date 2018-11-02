@@ -32,11 +32,7 @@ trait Locator extends FabricLocator
 
 trait ProtocolOverrides extends FabricServiceImpl {
 
-  abstract override def getProtocol: java.lang.String = {
-    "jdbc:snappydata:"
-  }
+  abstract override def getProtocol: String = Constant.DEFAULT_EMBEDDED_URL
 
-  abstract override def getNetProtocol: String = {
-    "jdbc:snappydata://"
-  }
+  abstract override def getNetProtocol: String = Constant.DEFAULT_THIN_CLIENT_URL
 }

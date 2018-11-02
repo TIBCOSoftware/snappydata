@@ -69,6 +69,7 @@ abstract class ClusterManagerTestBase(s: String)
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "95")
   bootProps.setProperty("gemfirexd.max-lock-wait", "60000")
+  bootProps.setProperty("member-timeout", "5000")
 
   // reduce startup time
   // sysProps.setProperty("p2p.discoveryTimeout", "1000")

@@ -1693,10 +1693,10 @@ public class SnappyTest implements Serializable {
         String filePath = snappyTest.getScriptLocation(userScript);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator;
-        if(SnappyPrms.getLogFileName() != null)
+        if (SnappyPrms.getLogFileName() != null)
           dest += SnappyPrms.getLogFileName();
         else
-          dest +=  "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
+          dest += "sqlScriptsResult_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
@@ -2185,6 +2185,7 @@ public class SnappyTest implements Serializable {
     leadHost = getLeadHost();
     //String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
     String leadPort = getLeadPort();
+    Log.getLogWriter().info("primaryLead Host is : " + leadHost);
     Log.getLogWriter().info("primaryLead Port is : " + leadPort);
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
@@ -2541,7 +2542,7 @@ public class SnappyTest implements Serializable {
       for (String vmDir : myDirList) {
         if (vmDir.contains(clientName)) {
           String[] splitedNodeConfig = vmDir.split("_");
-          leadHost = splitedNodeConfig[splitedNodeConfig.length - 2];
+          leadHost = splitedNodeConfig[splitedNodeConfig.length - 1];
           Log.getLogWriter().info("New Primary leadHost is: " + leadHost);
           SnappyBB.getBB().getSharedMap().put("primaryLeadHost", leadHost);
           leadPort = getPrimaryLeadPort(clientName);
@@ -2597,8 +2598,7 @@ public class SnappyTest implements Serializable {
     String dirname = hd.getUserDir() + File.separator
         + "vm_" + RemoteTestModule.getMyVmid()
         + "_" + RemoteTestModule.getMyClientName()
-        + "_" + HostHelper.getLocalHost()
-        + "_" + RemoteTestModule.getMyPid();
+        + "_" + HostHelper.getLocalHost();
     return dirname;
   }
 
@@ -3143,7 +3143,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
-      boolean restart, boolean rebalance) {
+                                            boolean restart, boolean rebalance) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
       return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart, rebalance);
@@ -3219,7 +3219,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
-      boolean isDmlOp, boolean restart, boolean rebalance) {
+                           boolean isDmlOp, boolean restart, boolean rebalance) {
     if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {

@@ -16,8 +16,12 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyStringFunctionsSuite extends StringFunctionsSuite  with SharedSnappySessionContext{
+class SnappyStringFunctionsSuite extends StringFunctionsSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
+  override def ignored: Seq[String] = Seq(
+    "string translate"
+  )
 }
