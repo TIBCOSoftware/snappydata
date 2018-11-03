@@ -1254,11 +1254,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
               }
             }
           case None =>
+            val properties = if (isBuiltIn) params
+            else {
+              val storage = DataSource.buildStorageFormatFromOptions(params)
+              val tableLocation = storage.locationUri match {
+                case None => sessionState.catalog.defaultTablePath(tableIdent)
+                case Some(l) => l
+              }
+              storage.properties + ("path" -> tableLocation)
+            }
             val ds = DataSource(self,
               className = source,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
-              options = params)
+              options = properties)
             ds.write(mode, df)
             ds.copy(userSpecifiedSchema = Some(df.schema.asNullable)).resolveRelation()
         }
