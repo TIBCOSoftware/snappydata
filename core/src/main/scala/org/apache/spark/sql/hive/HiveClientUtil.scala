@@ -128,8 +128,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
    * meta-store that is configured in the hive-site.xml file.
    */
   private def newClientWithLogSetting(): HiveClient = {
-    val currentLevel = ClientSharedUtils.convertToJavaLogLevel(
-      LogManager.getRootLogger.getLevel)
+    val currentLevel = LogManager.getRootLogger.getLevel
     try {
       ifSmartConn(() => {
         val props = new Properties()
