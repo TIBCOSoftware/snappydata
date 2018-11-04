@@ -46,7 +46,6 @@ import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROP
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
-import org.apache.hive.service.cli.thrift.ThriftCLIService
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
@@ -276,16 +275,11 @@ class LeadImpl extends ServerImpl with Lead
       if (startHiveServer) {
         val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
-        val iter = hiveService.getServices.iterator()
-        while (iter.hasNext) {
-          iter.next() match {
-            case service: ThriftCLIService =>
-              val address = service.getServerIPAddress
-              val port = service.getPortNumber
-              val kind = if (useHiveSession) "hive" else "snappy"
-              addStartupMessage(s"Started hive thrift server (session=$kind) on: $address[$port]")
-            case _ =>
-          }
+        val sessionKind = if (useHiveSession) "session=hive" else "session=snappy"
+        SnappyHiveThriftServer2.getHostPort(hiveService) match {
+          case None => addStartupMessage(s"Started hive thrift server ($sessionKind)")
+          case Some((host, port)) =>
+            addStartupMessage(s"Started hive thrift server ($sessionKind) on: $host[$port]")
         }
       }
 
