@@ -55,11 +55,11 @@ class TokenizationTest
   }
 
   before {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
   }
 
   after {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     SnappySession.clearAllCache()
     snc.dropTable(s"$table", ifExists = true)
     snc.dropTable(s"$table2", ifExists = true)

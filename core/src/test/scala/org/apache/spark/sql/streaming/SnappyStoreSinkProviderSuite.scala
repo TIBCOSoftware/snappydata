@@ -45,11 +45,13 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   private def getTopic(id: Int) = s"topic-$id"
 
   override def beforeAll() {
+    super.beforeAll()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
   }
 
   override def afterAll() {
+    super.afterAll()
     if (kafkaTestUtils != null) {
       kafkaTestUtils.teardown()
       kafkaTestUtils = null

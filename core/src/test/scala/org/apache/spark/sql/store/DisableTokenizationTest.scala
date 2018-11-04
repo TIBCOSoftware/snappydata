@@ -45,13 +45,13 @@ class DisableTokenizationTest
   }
 
   after {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     SnappySession.clearAllCache()
     snc.dropTable(s"$table", ifExists = true)
   }
 
   test("test disable property") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     val numRows = 100
     createSimpleTableAndPoupulateData(numRows, s"$table", true)
 
@@ -65,7 +65,7 @@ class DisableTokenizationTest
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 11)
 
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     } finally {
       snc.sql(s"set snappydata.sql.tokenize = true")
     }

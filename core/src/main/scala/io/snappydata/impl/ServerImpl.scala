@@ -39,7 +39,7 @@ class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
     start(bootProperties, ignoreIfStarted = false)
   }
 
-  @throws[SQLException]
+  @throws(classOf[SQLException])
   override def start(bootProps: Properties, ignoreIfStarted: Boolean): Unit = {
     // all SnappyData distributed GemFire Functions should be registered below
     FunctionService.registerFunction(RefreshMetadata)
