@@ -407,7 +407,7 @@ object JdbcExtendedUtils extends Logging {
 
   def defaultPoolURL(session: SparkSession): String = {
     val sparkProp = s"${Constant.SPARK_PREFIX}${Constant.CONNECTION_PROPERTY}"
-    val conf = session.sparkContext.conf
+    val conf = session.conf
     val hostPort = conf.getOption(sparkProp) match {
       case Some(c) => c
       case None => conf.getOption(Constant.CONNECTION_PROPERTY) match {
@@ -419,7 +419,7 @@ object JdbcExtendedUtils extends Logging {
     s"${Constant.POOLED_THIN_CLIENT_URL}$hostPort"
   }
 
-  private[sql] val PREFIXES: Array[String] = Array(
+  val PREFIXES: Array[String] = Array(
     Constant.STORE_PROPERTY_PREFIX,
     Constant.SPARK_STORE_PREFIX,
     Constant.PROPERTY_PREFIX,
