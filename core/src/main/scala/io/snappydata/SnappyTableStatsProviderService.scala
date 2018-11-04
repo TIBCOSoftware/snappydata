@@ -78,7 +78,8 @@ object SnappyTableStatsProviderService {
     service
   }
 
-  var suspendCacheInvalidation = false
+  // only for testing
+  var TEST_SUSPEND_CACHE_INVALIDATION = false
 }
 
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {

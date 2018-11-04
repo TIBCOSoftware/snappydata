@@ -93,7 +93,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
 
   private var _client = metadataHive
 
-  private[sql] def client = {
+  private[sql] def client: HiveClient = {
     // check initialized meta-store (including initial consistency check)
     val memStore = Misc.getMemStoreBootingNoThrow
     if (memStore ne null) {
@@ -1027,7 +1027,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           properties = tableProperties.toMap)
 
         withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
-        SnappySession.clearAllCache()
       case Some(_) =>  // Do nothing
     }
     SnappyStoreHiveCatalog.setRelationDestroyVersionOnAllMembers(Some(tableIdent))
@@ -1080,7 +1079,6 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           properties = policyProperties.toMap)
 
         withHiveExceptionHandling(client.createTable(hiveTable, ignoreIfExists = true))
-        SnappySession.clearAllCache()
       case Some(catalogTable) =>
         // TODO: Ask Asif why two CREATE POLICY with same properties is allowed
         val policyProperties = new mutable.HashMap[String, String]
@@ -1664,11 +1662,21 @@ object SnappyStoreHiveCatalog {
     }
   }
 
+  def refreshSchemaOnAllMembers(table: CatalogTable): Unit = {
+    refreshSchemaOnAllMembers(table.database, table.identifier.table)
+  }
+
+  def refreshSchemaOnAllMembers(schema: String, table: String): Unit = {
+    val relation = new QualifiedTableName(schema, table)
+    setRelationDestroyVersionOnAllMembers(Some(relation))
+  }
+
   def setRelationDestroyVersionOnAllMembers(relation: Option[QualifiedTableName]): Unit = {
     SnappyContext.globalSparkContext match {
       case null =>
       case sc => RefreshMetadata.executeOnAll(sc, RefreshMetadata.SET_RELATION_DESTROY,
-        getRelationDestroyVersion -> relation, executeInConnector = false)
+        getRelationDestroyVersion -> relation, executeInConnector = false,
+        executeLocallyInConnector = true)
     }
   }
 
