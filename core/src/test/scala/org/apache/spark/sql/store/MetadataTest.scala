@@ -427,6 +427,19 @@ object MetadataTest extends Assertions {
     assert(rs.length === filtered.length)
     assert(rs.sortBy(_.getString(1)) === filtered.map(n => Row("SYS", n, false)))
 
+    // also check hive compatible output
+    executeSQL("set snappydata.sql.hiveCompatible=true")
+
+    rs = executeSQL("show tables from sys").collect()
+    assert(rs.length === allSYSTables.length)
+    assert(rs.sortBy(_.getString(0)) === allSYSTables.map(Row(_)))
+
+    rs = executeSQL("show tables in sys like '[m-s]*'").collect()
+    assert(rs.length === filtered.length)
+    assert(rs.sortBy(_.getString(0)) === filtered.map(Row(_)))
+
+    executeSQL("set snappydata.sql.hiveCompatible=false")
+
     // system schemas other than SYS should not be visible
     try {
       rs = executeSQL("show tables in sysibm").collect()
@@ -571,10 +584,30 @@ object MetadataTest extends Assertions {
 
     // ----- check SHOW TABLES for user tables -----
 
+    rs = executeSQL("show tables").collect()
+    assert(rs.length === 2)
+    assert(rs.sortBy(_.getString(1)) === Array(
+      Row("APP", "COLUMNTABLE2", false), Row("APP", "ROWTABLE1", false)))
+
     rs = executeSQL("show tables in App").collect()
     assert(rs.length === 2)
     assert(rs.sortBy(_.getString(1)) === Array(
       Row("APP", "COLUMNTABLE2", false), Row("APP", "ROWTABLE1", false)))
+
+    // also check hive compatible output
+    executeSQL("set snappydata.sql.hiveCompatible=true")
+
+    rs = executeSQL("show tables").collect()
+    assert(rs.length === 2)
+    assert(rs.sortBy(_.getString(0)) === Array(
+      Row("COLUMNTABLE2"), Row("ROWTABLE1")))
+
+    rs = executeSQL("show tables in App").collect()
+    assert(rs.length === 2)
+    assert(rs.sortBy(_.getString(0)) === Array(
+      Row("COLUMNTABLE2"), Row("ROWTABLE1")))
+
+    executeSQL("set snappydata.sql.hiveCompatible=false")
 
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 
@@ -739,6 +772,18 @@ object MetadataTest extends Assertions {
     rs = executeSQL("show tables in schema2").collect()
     assert(rs.length === 1)
     assert(rs(0) === Row("SCHEMA2", "ROWTABLE2", false))
+
+    // also check hive compatible output
+    executeSQL("set snappydata.sql.hiveCompatible=true")
+
+    rs = executeSQL("show tables in schema1").collect()
+    assert(rs.length === 1)
+    assert(rs(0) === Row("COLUMNTABLE1"))
+    rs = executeSQL("show tables in schema2").collect()
+    assert(rs.length === 1)
+    assert(rs(0) === Row("ROWTABLE2"))
+
+    executeSQL("set snappydata.sql.hiveCompatible=false")
 
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 
