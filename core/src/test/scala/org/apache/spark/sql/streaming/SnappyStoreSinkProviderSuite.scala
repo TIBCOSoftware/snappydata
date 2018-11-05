@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -45,11 +45,13 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   private def getTopic(id: Int) = s"topic-$id"
 
   override def beforeAll() {
+    super.beforeAll()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
   }
 
   override def afterAll() {
+    super.afterAll()
     if (kafkaTestUtils != null) {
       kafkaTestUtils.teardown()
       kafkaTestUtils = null
