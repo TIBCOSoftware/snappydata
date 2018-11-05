@@ -63,7 +63,7 @@ object StringMessageProducer {
     val producer = new KafkaProducer[Long, String](properties(brokers))
     val noOfPartitions = producer.partitionsFor(topic).size()
     var numThreads = 1;
-    if (!isConflationTest) { numThreads = 4 }
+    if (!isConflationTest) { numThreads = 7 }
     val threads = new Array[Thread](numThreads)
     val eventsPerThread = eventCount / numThreads;
     if (hasDerby) {
@@ -98,6 +98,8 @@ extends Runnable {
   val range: Long = 9999999999L - 1000000000
   val statusArr = Array("Married", "Single")
   val titleArr = Array("Mr.", "Mrs.", "Miss")
+  val genderArr = Array("Male", "Female", "TransGender")
+  val bloodGrpArr = Array("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
   val occupationArr = Array("Employee", "Business")
   val educationArr = Array("Under Graduate", "Graduate", "PostGraduate")
   val countryArr = Array("US", "UK", "Canada", "India")
@@ -117,6 +119,10 @@ extends Runnable {
       val phone: Long = (range * random.nextDouble()).toLong + 1000000000
       val age: Int = random.nextInt(100) + 18
       val education: String = educationArr(random.nextInt(educationArr.length))
+      val gender: String = genderArr(random.nextInt(genderArr.length))
+      val weight: Double = 40 + {60 * random.nextDouble()}
+      val height: Double = 4 + {2 * random.nextDouble()}
+      val bloodGrp: String = bloodGrpArr(random.nextInt(bloodGrpArr.length))
       val occupation: String = occupationArr(random.nextInt(occupationArr.length))
       val country: String = countryArr(random.nextInt(countryArr.length))
       val address: String = randomAlphanumeric(20)
@@ -163,16 +169,16 @@ extends Runnable {
     // StringMessageProducer.pw.flush()
     try {
       numRows = conn.createStatement().executeUpdate(stmt)
+      if (numRows == 0 && eventType == 1) {
+        stmt = getInsertStmt(row)
+        conn.createStatement().executeUpdate(stmt)
+      }
     } catch {
       case se: SQLException => if (se.getSQLState.equalsIgnoreCase("23505") && eventType == 0 ) {
         stmt = getUpdateStmt(row)
         conn.createStatement().executeUpdate(stmt)
         updateEventType = 1
       }
-    }
-    if (numRows == 0 && eventType == 1) {
-      stmt = getInsertStmt(row)
-      conn.createStatement().executeUpdate(stmt)
     }
     updateEventType
     // write to file
