@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -114,7 +114,7 @@ object MemoryManagerCallback extends Logging {
       // We don't need execution memory during GemXD boot. Hence passing num core as 1
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
+        logWarning("MemoryManagerCallback couldn't be INITIALIZED. " +
             "SnappyUnifiedMemoryManager won't be used.")
         new DefaultMemoryManager
     }
@@ -138,7 +138,7 @@ object MemoryManagerCallback extends Logging {
       true
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("MemoryManagerCallback couldn't be INITIALIZED." +
+        logWarning("MemoryManagerCallback couldn't be INITIALIZED. " +
             "SnappyUnifiedMemoryManager won't be used.")
         false
     }
