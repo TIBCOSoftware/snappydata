@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -128,8 +128,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
    * meta-store that is configured in the hive-site.xml file.
    */
   private def newClientWithLogSetting(): HiveClient = {
-    val currentLevel = ClientSharedUtils.convertToJavaLogLevel(
-      LogManager.getRootLogger.getLevel)
+    val currentLevel = LogManager.getRootLogger.getLevel
     try {
       ifSmartConn(() => {
         val props = new Properties()
