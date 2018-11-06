@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -46,7 +46,6 @@ import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROP
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
-import org.apache.hive.service.cli.thrift.ThriftCLIService
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
@@ -66,7 +65,7 @@ class LeadImpl extends ServerImpl with Lead
 
   private val bootProperties = new Properties()
 
-  private var notifyStatusChange: ((FabricService.State) => Unit) = _
+  private var notifyStatusChange: FabricService.State => Unit = _
 
   @volatile private var servicesStarted: Boolean = _
 
@@ -276,16 +275,11 @@ class LeadImpl extends ServerImpl with Lead
       if (startHiveServer) {
         val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
-        val iter = hiveService.getServices.iterator()
-        while (iter.hasNext) {
-          iter.next() match {
-            case service: ThriftCLIService =>
-              val address = service.getServerIPAddress
-              val port = service.getPortNumber
-              val kind = if (useHiveSession) "hive" else "snappy"
-              addStartupMessage(s"Started hive thrift server (session=$kind) on: $address[$port]")
-            case _ =>
-          }
+        val sessionKind = if (useHiveSession) "session=hive" else "session=snappy"
+        SnappyHiveThriftServer2.getHostPort(hiveService) match {
+          case None => addStartupMessage(s"Started hive thrift server ($sessionKind)")
+          case Some((host, port)) =>
+            addStartupMessage(s"Started hive thrift server ($sessionKind) on: $host[$port]")
         }
       }
 
@@ -394,7 +388,7 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
-  private def markRunning() = {
+  private def markRunning(): Unit = {
     if (GemFireXDUtils.TraceFabricServiceBoot) {
       logInfo("Accepting RUNNING notification")
     }
@@ -536,7 +530,7 @@ class LeadImpl extends ServerImpl with Lead
     conf
   }
 
-  protected[snappydata] def notifyOnStatusChange(f: (FabricService.State) => Unit): Unit =
+  protected[snappydata] def notifyOnStatusChange(f: FabricService.State => Unit): Unit =
     this.notifyStatusChange = f
 
   @throws[Exception]
@@ -746,8 +740,8 @@ class ExtendibleURLClassLoader(parent: ClassLoader)
 
 object LeadImpl {
 
-  val SPARKUI_PORT = 5050
-  val LEADER_SERVERGROUP = ServerGroupUtils.LEADER_SERVERGROUP
+  val SPARKUI_PORT: Int = 5050
+  val LEADER_SERVERGROUP: String = ServerGroupUtils.LEADER_SERVERGROUP
 
   def invokeLeadStart(conf: SparkConf): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]

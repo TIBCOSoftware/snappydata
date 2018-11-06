@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -126,7 +126,7 @@ class SnappyStorageEvictor extends Logging {
       offHeap: Boolean, hasOffHeap: Boolean): Boolean = {
     val hasLRU = (region.getEvictionAttributes.getAlgorithm.isLRUHeap
       && (region.getDataStore != null)
-      && !region.getAttributes.getEnableOffHeapMemory && !region.needsBatching())
+      && !region.getAttributes.getEnableOffHeapMemory && !region.isRowBuffer())
     if (hasOffHeap) {
       // when off-heap is enabled then all column tables use off-heap
       val regionPath = Misc.getFullTableNameFromRegionPath(region.getFullPath)

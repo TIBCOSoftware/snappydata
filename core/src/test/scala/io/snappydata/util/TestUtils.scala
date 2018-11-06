@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,13 +20,14 @@ import scala.collection.mutable
 
 import _root_.com.gemstone.gemfire.cache.Region
 import _root_.com.gemstone.gemfire.internal.cache.PartitionedRegion
+import _root_.com.gemstone.gemfire.internal.shared.SystemProperties
 import _root_.com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
-import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 
@@ -53,7 +54,7 @@ object TestUtils extends Logging {
         val allTables = ss.catalog.getTables(None)
 
         // allows to skip dropping any tables not required to be dropped
-        val skipPatterns = Seq("SYSIBM.", "SYS.", SnappyStoreHiveCatalog.HIVE_METASTORE)
+        val skipPatterns = Seq("SYSIBM.", "SYS.", SystemProperties.SNAPPY_HIVE_METASTORE)
 
         val tablesToBeDropped = allTables.filter(x => {
           val tableName = x._1

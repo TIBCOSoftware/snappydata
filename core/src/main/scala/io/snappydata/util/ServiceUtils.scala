@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -138,7 +138,7 @@ object ServiceUtils {
           org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
         }).mkString(",")
 
-    "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
+    Constant.DEFAULT_THIN_CLIENT_URL + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
           "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl + "/")

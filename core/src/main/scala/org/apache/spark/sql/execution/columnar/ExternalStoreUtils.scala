@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,7 +47,7 @@ import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.ui.SQLListener
-import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool}
+import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
@@ -580,21 +580,14 @@ object ExternalStoreUtils {
 
   }
 
-  def removeCachedObjects(sqlContext: SQLContext, table: String,
-      registerDestroy: Boolean = false): Unit = {
-    // clean up the connection pool and caches on executors first
-    Utils.mapExecutors[Unit](sqlContext.sparkContext, removeCachedObjects(table))
-    // then on the driver
-    removeCachedObjects(table)()
-    if (registerDestroy) {
-      SnappyStoreHiveCatalog.registerRelationDestroy()
-    }
+  def removeCachedObjects(sqlContext: SQLContext, table: String): Unit = {
+    RefreshMetadata.executeOnAll(sqlContext.sparkContext,
+      RefreshMetadata.REMOVE_CACHED_OBJECTS, table)
   }
 
-  def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
+  def removeCachedObjects(table: String): Unit = {
     ConnectionPool.removePoolReference(table)
     CodeGeneration.removeCache(table)
-    Iterator.empty
   }
 
   /**

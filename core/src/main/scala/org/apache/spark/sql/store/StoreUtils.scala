@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -308,9 +308,8 @@ object StoreUtils {
     partitions
   }
 
-  def removeCachedObjects(sqlContext: SQLContext, table: String,
-      registerDestroy: Boolean = false): Unit = {
-    ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
+  def removeCachedObjects(sqlContext: SQLContext, table: String): Unit = {
+    ExternalStoreUtils.removeCachedObjects(sqlContext, table)
   }
 
   def appendClause(sb: mutable.StringBuilder,

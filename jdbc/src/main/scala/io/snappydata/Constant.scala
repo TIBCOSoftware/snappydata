@@ -34,8 +34,6 @@ object Constant {
 
   val SNAPPY_URL_PREFIX = "snappydata://"
 
-  val JDBC_URL_PREFIX = "snappydata://"
-
   val JDBC_EMBEDDED_DRIVER = "io.snappydata.jdbc.EmbeddedDriver"
 
   val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
@@ -44,7 +42,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
+  val STORE_PROPERTY_PREFIX: String = SystemProperties.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
@@ -135,7 +133,7 @@ object Constant {
   // speed and compression ratio having higher compression ration than LZ4.
   // But the JNI version means no warmup time which helps for short jobs.
   // Also LZF has no direct ByteBuffer API so is quite a bit slower for off-heap.
-  val DEFAULT_CODEC = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
+  val DEFAULT_CODEC: String = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
 
   // System property to tell the system whether the String type columns
   // should be considered as clob or not in JDBC/ODBC SQL queries

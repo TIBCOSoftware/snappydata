@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.internal
 
-import java.util.{NoSuchElementException, Properties}
+import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
@@ -313,6 +313,10 @@ class SnappySessionState(snappySession: SnappySession)
    */
   private[spark] val leaderPartitions = new ConcurrentHashMap[PartitionedRegion,
       Array[Partition]](16, 0.7f, 1)
+
+  @volatile private[sql] var enableExecutionCache: Boolean = _
+  protected final lazy val executionCache =
+    new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
 
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
@@ -696,10 +700,20 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def executePlan(plan: LogicalPlan): QueryExecution = {
+  override final def executePlan(plan: LogicalPlan): QueryExecution = {
     clearExecutionData()
-    newQueryExecution(plan)
+    beforeExecutePlan(plan)
+    val qe = newQueryExecution(plan)
+    if (enableExecutionCache) executionCache.put(plan, qe)
+    qe
   }
+
+  protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
+  }
+
+  private[sql] def getExecution(plan: LogicalPlan): QueryExecution = executionCache.get(plan)
+
+  private[sql] def clearExecutionCache(): Unit = executionCache.clear()
 
   private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
     queryPreparations(topLevel = false).foldLeft(plan) {
