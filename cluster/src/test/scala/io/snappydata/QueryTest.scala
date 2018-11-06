@@ -27,38 +27,6 @@ import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySessio
 
 class QueryTest extends SnappyFunSuite {
 
-  test("Push down TPCH Q19") {
-    // check common sub-expression elimination in query leading to pushdown
-    // of filters should not be inhibited due to ParamLiterals
-    val session = this.snc.snappySession
-    session.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
-
-    session.sql("create table t1 (id long, data string) using column")
-    session.sql("create table t2 (id long, data string) using column")
-    session.sql("insert into t1 select id, 'data' || id from range(100000)")
-    session.sql("insert into t2 select id, 'data' || id from range(100000)")
-
-    val ds = session.sql("select t1.id, t2.data from t1 join t2 on (t1.id = t2.id) " +
-        "where (t1.id < 1000 and t2.data = 'data100') or (t1.id < 1000 and t1.data = 'data100')")
-    assert(ds.collect() === Array(Row(100L, "data100")))
-
-    // check filter push down in the plan
-    val filters = ds.queryExecution.executedPlan.collect {
-      case f: FilterExec => assert(f.child.nodeName === "ColumnTableScan"); f
-    }
-    assert(filters.length === 2)
-    // check pushed down filters should not be in HashJoin
-    val joins = ds.queryExecution.executedPlan.collect {
-      case j: HashJoinExec => j
-    }
-    assert(joins.length === 1)
-    assert(joins.head.condition.isDefined)
-    val condString = joins.head.condition.get.toString()
-    assert(condString.contains("DATA#"))
-    assert(!condString.contains("ID#"))
-    session.sql(s"set spark.sql.autoBroadcastJoinThreshold=${10L * 1024 * 1024}")
-  }
-
   test("Test exists in select") {
     val snContext = SnappyContext(sc)
 
@@ -354,5 +322,37 @@ class QueryTest extends SnappyFunSuite {
     assert (1 === r.length)
     assert (2 === r.head.get(0))
     snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
+  }
+
+  test("Push down TPCH Q19") {
+    // check common sub-expression elimination in query leading to pushdown
+    // of filters should not be inhibited due to ParamLiterals
+    val session = this.snc.snappySession
+    session.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+
+    session.sql("create table ct1 (id long, data string) using column")
+    session.sql("create table ct2 (id long, data string) using column")
+    session.sql("insert into ct1 select id, 'data' || id from range(100000)")
+    session.sql("insert into ct2 select id, 'data' || id from range(100000)")
+
+    val ds = session.sql("select ct1.id, ct2.data from ct1 join ct2 on (ct1.id = ct2.id) where " +
+        "(ct1.id < 1000 and ct2.data = 'data100') or (ct1.id < 1000 and ct1.data = 'data100')")
+    assert(ds.collect() === Array(Row(100L, "data100")))
+
+    // check filter push down in the plan
+    val filters = ds.queryExecution.executedPlan.collect {
+      case f: FilterExec => assert(f.child.nodeName === "ColumnTableScan"); f
+    }
+    assert(filters.length === 2)
+    // check pushed down filters should not be in HashJoin
+    val joins = ds.queryExecution.executedPlan.collect {
+      case j: HashJoinExec => j
+    }
+    assert(joins.length === 1)
+    assert(joins.head.condition.isDefined)
+    val condString = joins.head.condition.get.toString()
+    assert(condString.contains("DATA#"))
+    assert(!condString.contains("ID#"))
+    session.sql(s"set spark.sql.autoBroadcastJoinThreshold=${10L * 1024 * 1024}")
   }
 }
