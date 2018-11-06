@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -228,7 +228,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   test("test Prepared Statement via JDBC") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     val tableName = "order_line_col"
     try {
       snc.sql(s"create table $tableName (ol_int_id  integer," +
@@ -242,14 +242,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query0(tableName, serverHostPort)
     } finally {
       snc.sql(s"drop table $tableName")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
   test("test Metadata for Prepared Statement via JDBC") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     val tableName = "order_line_col"
     try {
       snc.sql(s"create table $tableName (ol_int_id  integer," +
@@ -268,7 +268,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query12(tableName, serverHostPort)
     } finally {
       snc.sql(s"drop table $tableName")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
@@ -752,7 +752,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   test("test Join, SubQuery and Aggragtes") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col"
       val tableName2 = "order_line_2_col"
@@ -775,7 +775,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query4(tableName1, tableName2, serverHostPort)
       query5(tableName1, tableName2, serverHostPort)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
@@ -794,6 +794,15 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("SNAP-1994 Test functions and expressions") {
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
+    try {
+      testSNAP1994()
+    } finally {
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
+    }
+  }
+
+  private def testSNAP1994(): Unit = {
     snc.sql(s"Drop Table if exists double_tab")
     snc.sql(s"Create Table double_tab (a INT, d Double, s String) " +
         "using column options()")
@@ -1056,7 +1065,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("Test broadcast hash joins and scalar sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     var conn: Connection = null
     try {
       val ddlStr = "(YearI INT," + // NOT NULL
@@ -1172,7 +1181,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       if (conn != null) {
         conn.close()
       }
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 }
@@ -1365,7 +1374,7 @@ object PreparedQueryRoutingSingleNodeSuite{
   def updateDeleteOnColumnTable(snc: SnappyContext, serverHostPort: String): Unit = {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col_ud"
       val tableName2 = "order_line_2_row_ud"
@@ -1386,7 +1395,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       update_delete_query2(tableName1, 5, serverHostPort)
       update_delete_query2(tableName2, 6, serverHostPort)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
@@ -1455,7 +1464,7 @@ object PreparedQueryRoutingSingleNodeSuite{
   def equalityOnStringColumn(snc: SnappyContext, serverHostPort: String): Unit = {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col_eq"
       val tableName2 = "order_line_2_row_eq"
@@ -1473,7 +1482,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       equalityOnStringColumn_query1(tableName1, 1, serverHostPort)
       equalityOnStringColumn_query1(tableName2, 4, serverHostPort)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 }

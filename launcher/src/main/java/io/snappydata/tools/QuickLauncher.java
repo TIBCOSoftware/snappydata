@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -153,8 +153,9 @@ class QuickLauncher extends LauncherBase {
       }
     } catch (UnsatisfiedLinkError | SecurityException e) {
       System.out.println("WARNING: agent not loaded due to " + e +
-          ". Service might not be killed on OutOfMemory. Build jvmkill.c on your platform using build.sh script" +
-          " from source on your platform and replace the library in product jars directory to enable the agent.");
+          ". Service might not be killed on OutOfMemory. Build jvmkill.c on your platform " +
+          "using build.sh script from source on your platform and replace the library " +
+          "in product jars directory to enable the agent.");
     }
     // get the startup options and command-line arguments (JVM arguments etc)
     HashMap<String, Object> options = getStartOptions(args, snappyHome, commandLine, env);
