@@ -109,6 +109,11 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}hiveServer.enabled", "If true on a lead node, then an " +
         "embedded HiveServer2 with thrift access will be started", Some(false), prefix = null)
 
+  val HiveCompatible: SQLValue[Boolean] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
+        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
+    Some(false), prefix = null)
+
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +
         "created in embedded HiveServer2 will be a hive session else a SnappySession",

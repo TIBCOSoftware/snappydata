@@ -29,8 +29,7 @@ export SPARK_SCALA_VERSION="2.11"
 # disable randomized hash for string in Python 3.3+
 export PYTHONHASHSEED=0
 
-if [ "$JAVA_ARGS" != "" ]
-then
+if [ -n "`echo "$JAVA_ARGS" | grep -q verbose`" ]; then
   echo "Using JAVA_ARGS=$JAVA_ARGS"
 fi
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -34,6 +34,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.execution.ShowTablesHiveCommand
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, PutIntoTable, Update}
@@ -340,16 +341,18 @@ class SnappyParser(session: SnappySession)
      '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws
   }
 
+  final def alias: Rule1[Seq[String]] = rule {
+    AS ~ (identifier ~> (id: String => id :: Nil) | identifierList) | identifierList |
+      strictIdentifier ~> (id: String => id :: Nil)
+  }
+
   final def namedExpression: Rule1[Expression] = rule {
-    expression ~ (
-        AS ~ (
-            identifierList ~> ((e: Expression, ids: Seq[String]) => MultiAlias(e, ids)) |
-            identifier ~> ((e: Expression, a: String) => Alias(e, a)())
-        ) |
-        identifierList ~> ((e: Expression, ids: Seq[String]) => MultiAlias(e, ids)) |
-        strictIdentifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
-        MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
-    )
+    expression ~ alias.? ~> ((e: Expression, a: Any) => {
+      a.asInstanceOf[Option[Seq[String]]] match {
+        case None => e
+        case Some(ids) => if (ids.length == 1) Alias(e, ids)() else MultiAlias(e, ids)
+      }
+    })
   }
 
   final def parsedDataType: Rule1[DataType] = rule {
@@ -605,8 +608,17 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def baseRelation: Rule1[LogicalPlan] = rule {
-    tableIdentifier ~ streamWindowOptions.? ~ tableAlias.? ~>
-        ((tableIdent: TableIdentifier, w: Any, a: Any) => {
+    tableIdentifier ~ (
+        '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~ tableAlias.? ~>
+            ((ident: TableIdentifier, e: Any, a: Any) => a match {
+              case None => internals.newUnresolvedTableValuedFunction(
+                  ident, e.asInstanceOf[Seq[Expression]], Nil)
+              case Some((alias: String, columnAliases: Seq[_])) =>
+              internals.newSubqueryAlias(alias, internals.newUnresolvedTableValuedFunction(
+                   name, e.asInstanceOf[Seq[Expression]], columnAliases.asInstanceOf[Seq[String]]))
+            }) |
+        streamWindowOptions.? ~ tableAlias.? ~> ((tableIdent: TableIdentifier,
+            window: Any, alias: Any) => {
           val optAlias = a.asInstanceOf[Option[(String, Seq[String])]]
           updatePerTableQueryHint(tableIdent, optAlias)
           val window = w.asInstanceOf[Option[(Duration, Option[Duration])]]
@@ -617,7 +629,8 @@ class SnappyParser(session: SnappySession)
                 internals.newUnresolvedRelation(tableIdent, Some(alias)))
           }
           handleWindowSpec(window, plan, optAlias, isSubquery = false)
-        }) |
+        })
+    ) |
     '(' ~ ws ~ (
         start ~ ')' ~ ws ~ streamWindowOptions.? ~ tableAlias.? ~> { (child: LogicalPlan,
             w: Any, a: Any) =>
@@ -796,23 +809,8 @@ class SnappyParser(session: SnappySession)
     )
   }
 
-  protected final def tableValuedFunctionExpressions: Rule1[Seq[Expression]] = rule {
-    '(' ~ ws ~ (expression + commaSep).? ~ ')' ~>
-      ((e: Any) => e.asInstanceOf[Option[Seq[Expression]]] match {
-        case Some(ve) => ve
-        case _ => Nil
-      })
-  }
-
   protected final def relationPrimary: Rule1[LogicalPlan] = rule {
-    inlineTable | baseRelation |
-    identifier ~ '(' ~ ws ~ (expression + commaSep) ~ ')' ~ ws ~ tableAlias.? ~>
-        ((name: String, args: Seq[Expression], a: Any) => a match {
-          case None => internals.newUnresolvedTableValuedFunction(name, args, Nil)
-          case Some((alias: String, columnAliases: Seq[_])) =>
-            internals.newSubqueryAlias(alias, internals.newUnresolvedTableValuedFunction(
-              name, args, columnAliases.asInstanceOf[Seq[String]]))
-        })
+    inlineTable | baseRelation
   }
 
   protected final def withHints(plan: LogicalPlan): LogicalPlan = {
@@ -834,17 +832,17 @@ class SnappyParser(session: SnappySession)
     relationPrimary ~> (plan => withHints(plan)) ~ (
         joinType.? ~ JOIN ~ (relationPrimary ~> (plan => withHints(plan))) ~ (
             ON ~ expression ~> ((l: LogicalPlan, t: Any, r: LogicalPlan, e: Expression) =>
-              Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e))) |
+              withHints(Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e)))) |
             USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
                 ((l: LogicalPlan, t: Any, r: LogicalPlan, ids: Any) =>
-                  Join(l, r, UsingJoin(t.asInstanceOf[Option[JoinType]]
-                      .getOrElse(Inner), ids.asInstanceOf[Seq[String]]), None)) |
+                  withHints(Join(l, r, UsingJoin(t.asInstanceOf[Option[JoinType]]
+                      .getOrElse(Inner), ids.asInstanceOf[Seq[String]]), None))) |
             MATCH ~> ((l: LogicalPlan, t: Option[JoinType], r: LogicalPlan) =>
-              Join(l, r, t.getOrElse(Inner), None))
+              withHints(Join(l, r, t.getOrElse(Inner), None)))
         ) |
         NATURAL ~ joinType.? ~ JOIN ~ (relationPrimary ~> (plan => withHints(plan))) ~>
-            ((l: LogicalPlan, t: Any, r: LogicalPlan) => Join(l, r,
-              NaturalJoin(t.asInstanceOf[Option[JoinType]].getOrElse(Inner)), None))
+            ((l: LogicalPlan, t: Any, r: LogicalPlan) => withHints(Join(l, r,
+              NaturalJoin(t.asInstanceOf[Option[JoinType]].getOrElse(Inner)), None)))
     ).*
   }
 
@@ -937,21 +935,20 @@ class SnappyParser(session: SnappySession)
             }
           }
         ) |
-        '.' ~ (identifier. +('.' ~ ws) ~ ('.' ~ '*' ~ push(true) ~ ws).? ~> {
+        '.' ~ ws ~ (identifier. +('.' ~ ws) ~ ('.' ~ ws ~ '*' ~ push(true) ~ ws).? ~> {
           (i1: String, rest: Any, s: Any) =>
             if (s.asInstanceOf[Option[Boolean]].isDefined) {
               UnresolvedStar(Option(i1 +: rest.asInstanceOf[Seq[String]]))
             } else {
               UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]])
             }
-        } | '*' ~ ws ~> { i1: String =>
-             UnresolvedStar(Some(Seq(i1)))
+        } | '*' ~ ws ~> { (i1: String) => UnresolvedStar(Some(Seq(i1)))
         }) |
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     literal | paramLiteralQuestionMark |
-    '{' ~ FN ~ ws ~ functionIdentifier ~ '(' ~ (expression * commaSep) ~ ')' ~ ws ~ '}' ~ ws ~> {
-      (fn: FunctionIdentifier, e: Any) =>
+    '{' ~ ws ~ FN ~ functionIdentifier ~ '(' ~ ws ~ (expression * commaSep) ~ ')' ~
+        ws ~ '}' ~ ws ~> { (fn: FunctionIdentifier, e: Any) =>
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
         val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
         fn match {
@@ -969,8 +966,8 @@ class SnappyParser(session: SnappySession)
         keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
     ) |
     EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
-    CURRENT_DATE ~ "()".? ~ ws.? ~> CurrentDate |
-    CURRENT_TIMESTAMP ~ "()".? ~ ws.? ~> CurrentTimestamp |
+    CURRENT_DATE ~ ('(' ~ ws ~ ')' ~ ws).? ~> CurrentDate |
+    CURRENT_TIMESTAMP ~ ('(' ~ ws ~ ')' ~ ws).? ~> CurrentTimestamp |
     '(' ~ ws ~ (
         (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
           if (exprs.length == 1) exprs.head else CreateStruct(exprs)
@@ -1164,8 +1161,11 @@ class SnappyParser(session: SnappySession)
   // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
   protected def show: Rule1[LogicalPlan] = rule {
     SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
-        ((ident: Any, pat: Any) =>
-          ShowTablesCommand(ident.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
+        ((id: Any, pat: Any) => if (Property.HiveCompatible.get(session.sessionState.conf)) {
+          ShowTablesHiveCommand(id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])
+        } else {
+          ShowTablesCommand(id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])
+        }) |
     SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
       ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
     SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>

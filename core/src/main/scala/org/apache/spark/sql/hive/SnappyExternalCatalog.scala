@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -232,7 +232,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     } else {
       withHiveExceptionHandling(client.createTable(tableDefinition, ignoreIfExists))
     }
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(tableDefinition)
   }
 
   override def dropTable(
@@ -242,14 +242,14 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       purge: Boolean): Unit = withClient {
     requireDbExists(db)
     withHiveExceptionHandling(client.dropTable(db, table, ignoreIfNotExists, purge))
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(db, table)
   }
 
   override def renameTable(db: String, oldName: String, newName: String): Unit = withClient {
     val newTable = withHiveExceptionHandling(client.getTable(db, oldName))
         .copy(identifier = TableIdentifier(newName, Some(db)))
     withHiveExceptionHandling(client.alterTable(oldName, newTable))
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(db, oldName)
   }
 
   /**
@@ -263,7 +263,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     requireDbMatches(tableDefinition.database, tableDefinition)
     requireTableExists(tableDefinition.database, tableDefinition.identifier.table)
     withHiveExceptionHandling(client.alterTable(tableDefinition))
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(tableDefinition)
   }
 
   def alterTableSchema(db: String, table: String, schema: StructType): Unit = withClient {
@@ -565,7 +565,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       ignoreIfExists: Boolean): Unit = withClient {
     requireTableExists(db, table)
     withHiveExceptionHandling(client.createPartitions(db, table, parts, ignoreIfExists))
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(db, table)
   }
 
   override def dropPartitions(
@@ -578,7 +578,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
     requireTableExists(db, table)
     withHiveExceptionHandling(client.dropPartitions(
       db, table, parts, ignoreIfNotExists, purge = false, retainData = false))
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(db, table)
   }
 
   override def renamePartitions(
@@ -587,7 +587,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       specs: Seq[TablePartitionSpec],
       newSpecs: Seq[TablePartitionSpec]): Unit = withClient {
     withHiveExceptionHandling(client.renamePartitions(db, table, specs, newSpecs))
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(db, table)
   }
 
   override def alterPartitions(
@@ -595,7 +595,7 @@ private[spark] class SnappyExternalCatalog(var client: HiveClient, hadoopConf: C
       table: String,
       newParts: Seq[CatalogTablePartition]): Unit = withClient {
     withHiveExceptionHandling(client.alterPartitions(db, table, newParts))
-    SnappySession.clearAllCache()
+    SnappyStoreHiveCatalog.refreshSchemaOnAllMembers(db, table)
   }
 
   override def getPartition(

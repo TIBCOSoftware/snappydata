@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -162,7 +162,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
       isExternal: Boolean): Unit = {
     snappySession.sessionCatalog.invalidateTable(tableIdent)
     runStmtWithExceptionHandling(executeDropTableStmt(tableIdent, ifExists, isExternal))
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
     SnappySession.clearAllCache()
   }
 
@@ -242,7 +242,7 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
 
   def dropIndex(indexName: QualifiedTableName, ifExists: Boolean): Unit = {
     runStmtWithExceptionHandling(executeDropIndexStmt(indexName, ifExists))
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy(Some(indexName))
     SnappySession.clearAllCache()
   }
 
