@@ -313,7 +313,7 @@ pages:
 - 'Release Notes': 'release_notes/release_notes.md'
 - 'Release Notes': 
     - 'Known Issues': 'release_notes/known_issues.md'
-- Archives: prev_doc_ver.md
+- Doc Archives: prev_doc_ver.md
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 
