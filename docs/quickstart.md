@@ -26,25 +26,4 @@ You can use the following instructions and examples to try out SnappyData in 5 m
 
 * [Using SQL](quickstart/using_sql.md)
 
-Checkout the [SnappyData Quickstart guide](quickstart/snappydataquick_start.md) for a quick tour of SnappyData's basic features. Using the instructions in this guide, you can quickly try out the following:
-
-*	[Start SnappyData Cluster](quickstart/snappydataquick_start.md#st_snappy_cluster)
-
-*	[Check SnappyData Cluster Status](quickstart/snappydataquick_start.md#stats_cluster)
-
-*	[Connect/Disconnect SnappyData Shell](quickstart/snappydataquick_start.md#connectsnappyshell)
-
-*	[Create Tables](quickstart/snappydataquick_start.md#create_tab)
-
-*	[Create Tables and Import Data Using quickstart Scripts](quickstart/snappydataquick_start.md#quickstartscript)
-
-*	[Create a Column Table using an External Table](quickstart/snappydataquick_start.md#createcoltabwithext)
-
-*	[Run Queries](quickstart/snappydataquick_start.md#runqry)
-
-*	[Add Servers to Cluster](quickstart/snappydataquick_start.md#addservercluster)
-
-*	[Rebalance Data on Servers](quickstart/snappydataquick_start.md#rebalancedataonserver)
-
-*	[Stop Cluster](quickstart/snappydataquick_start.md#stop_snappy_cluster)
 
