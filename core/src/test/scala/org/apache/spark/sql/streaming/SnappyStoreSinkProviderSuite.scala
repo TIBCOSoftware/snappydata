@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -45,11 +45,13 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   private def getTopic(id: Int) = s"topic-$id"
 
   override def beforeAll() {
+    super.beforeAll()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
   }
 
   override def afterAll() {
+    super.afterAll()
     if (kafkaTestUtils != null) {
       kafkaTestUtils.teardown()
       kafkaTestUtils = null
@@ -117,7 +119,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 10, "lname2", 2),
+    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 13, "lname2", 2),
       Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
@@ -197,7 +199,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 10, "lname2", 2),
+    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 13, "lname2", 2),
       Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
@@ -319,7 +321,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id,last_name')" else ""
 
-    def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id, last_name)" else ""
+    def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id,last_name)" else ""
 
     val s = s"create table users (id long , first_name varchar(40), age int, " +
         s"last_name varchar(40) $primaryKey) using $provider $options "
@@ -340,7 +342,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def structFields() = {
       StructField("id", LongType, nullable = false) ::
-          StructField("first_name", StringType, nullable = true) ::
+          StructField("firstName", StringType, nullable = true) ::
           StructField("age", IntegerType, nullable = true) ::
           StructField("last_name", StringType, nullable = true) ::
           (if (withEventTypeColumn) {

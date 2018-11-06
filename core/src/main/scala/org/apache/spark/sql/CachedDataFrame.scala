@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
-import java.sql.SQLException
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -33,7 +32,6 @@ import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 
 import org.apache.spark._
@@ -85,8 +83,10 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
-  private def isLowLatencyQuery: Boolean =
-    isCached && cachedRDD.getNumPartitions <= 2 /* some small number */
+  private def isLowLatencyQuery: Boolean = {
+    // use a small value for number of RDD partitions
+    isCached && shuffleDependencies.length == 0 && cachedRDD.getNumPartitions <= 2
+  }
 
   @transient
   private var _rowConverter: UnsafeProjection = _
@@ -212,7 +212,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def setPoolForExecution(): Unit = {
     var pool = snappySession.sessionState.conf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
-    if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {
+    if (isLowLatencyQuery && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
         pool = Constant.LOW_LATENCY_POOL
       }
@@ -253,6 +253,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def endCollect(didPrepare: Boolean): Unit = {
     if (didPrepare) {
       prepared = false
+      // reset the pool
+      if (isLowLatencyQuery) {
+        val pool = snappySession.sessionState.conf.activeSchedulerPool
+        snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+      }
       // clear the shuffle dependencies asynchronously after the execution.
       startShuffleCleanups(snappySession.sparkContext)
     }
@@ -262,17 +267,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
    */
-  private def withCallback[U](name: String)(action: CachedDataFrame => (U, Long)): U = {
+  private def withCallback[U](name: String)(action: DataFrame => (U, Long)): U = {
     var didPrepare = false
     try {
       didPrepare = prepareForCollect()
-      val (result, elapsed) = action(this)
-      snappySession.listenerManager.onSuccess(name, queryExecution, elapsed)
-      result
-    } catch {
-      case e: Exception =>
-        snappySession.listenerManager.onFailure(name, queryExecution, e)
-        throw e
+      CachedDataFrame.withCallback(snappySession, this, name)(action)
     } finally {
       endCollect(didPrepare)
     }
@@ -790,6 +789,23 @@ object CachedDataFrame
       results.iterator collect {
         case r if (r ne null) && r._1 != null => r._1
       }
+    }
+  }
+
+  /**
+   * Wrap a Dataset action to track the QueryExecution and time cost,
+   * then report to the user-registered callback functions.
+   */
+  def withCallback[U](session: SparkSession, df: DataFrame, name: String)
+      (action: DataFrame => (U, Long)): U = {
+    try {
+      val (result, elapsed) = action(df)
+      session.listenerManager.onSuccess(name, df.queryExecution, elapsed)
+      result
+    } catch {
+      case e: Exception =>
+        session.listenerManager.onFailure(name, df.queryExecution, e)
+        throw e
     }
   }
 

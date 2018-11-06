@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -157,22 +157,11 @@ object ColumnTableBulkOps extends SparkSupport {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case lr: LogicalRelation if lr.relation.isInstanceOf[BulkPutRelation] =>
-        val putKeys = lr.relation.asInstanceOf[BulkPutRelation].getPutKeys
-        if (putKeys.isEmpty) {
-          throw new AnalysisException(
-            s"DeleteFrom in a column table requires key column(s) but got empty string")
-        }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
-        val exists = Join(subQuery, table, Inner, condition)
-        val deletePlan = Delete(table, exists, Nil)
-        val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
-        transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
       case lr: LogicalRelation if lr.relation.isInstanceOf[MutableRelation] =>
         val ks = lr.relation.asInstanceOf[MutableRelation].getKeyColumns
         if (ks.isEmpty) {
           throw new AnalysisException(
-            s"DeleteFrom in a table requires key column(s) but got empty string")
+            s"DeleteFrom operation requires key columns(s) or primary key defined on table.")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, ks)
         val exists = Join(subQuery, table, Inner, condition)

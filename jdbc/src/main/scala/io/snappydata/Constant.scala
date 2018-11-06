@@ -32,7 +32,7 @@ object Constant {
 
   val POOLED_THIN_CLIENT_URL = "jdbc:snappydata:pool://"
 
-  val JDBC_URL_PREFIX = "snappydata://"
+  val SNAPPY_URL_PREFIX = "snappydata://"
 
   val JDBC_EMBEDDED_DRIVER = "io.snappydata.jdbc.EmbeddedDriver"
 

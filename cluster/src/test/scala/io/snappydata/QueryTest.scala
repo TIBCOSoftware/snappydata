@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -317,7 +317,7 @@ class QueryTest extends SnappyFunSuite {
     snc.sql(s"create index APP.X_TEST_COL3 on APP.TEST (col3)")
     snc.sql(s"insert into TEST values ('one', 'vone', 'cone'), ('two', 'vtwo', 'ctwo')")
     val r = snc.sql(s"select count(*) from TEST").collect()
-    assert (1 === r.size)
+    assert (1 === r.length)
     assert (2 === r.head.get(0))
     snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
   }

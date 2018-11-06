@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -66,7 +66,7 @@ import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PreprocessTableIns
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
@@ -97,7 +97,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
    * and a catalog that interacts with external systems.
    */
   @transient
-  override private[sql] lazy val sharedState: SnappySharedState = {
+  override lazy val sharedState: SnappySharedState = {
     val sharedState = SnappyContext.sharedState(sparkContext)
     // replay global sql commands
     SnappyContext.getClusterMode(sparkContext) match {
@@ -1255,11 +1255,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
               }
             }
           case None =>
+            val properties = if (isBuiltIn) params
+            else {
+              val storage = DataSource.buildStorageFormatFromOptions(params)
+              val tableLocation = storage.locationUri match {
+                case None => sessionState.catalog.defaultTablePath(tableIdent)
+                case Some(l) => l
+              }
+              storage.properties + ("path" -> tableLocation)
+            }
             val ds = DataSource(self,
               className = source,
               userSpecifiedSchema = userSpecifiedSchema,
               partitionColumns = partitionColumns,
-              options = params)
+              options = properties)
             internals.writeToDataSource(ds, mode, df)
         }
     }
@@ -1476,7 +1485,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
           tableIdent, enableRls)
         sessionCatalog.invalidateAll()
         tableIdent.invalidate()
-        SnappyStoreHiveCatalog.registerRelationDestroy()
+        SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
         SnappySession.clearAllCache()
       case _ =>
         throw new AnalysisException("alter table not supported for external tables")
@@ -1505,7 +1514,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
           sessionCatalog.invalidateTable(tableIdent)
           sessionCatalog.asInstanceOf[ConnectorCatalog].connectorHelper
             .alterTable(tableIdent, isAddColumn, column)
-          SnappyStoreHiveCatalog.registerRelationDestroy()
+          SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
           return
       case _ =>
     }
@@ -1514,8 +1523,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       case lr: LogicalRelation if lr.relation.isInstanceOf[AlterableRelation] =>
         sessionCatalog.invalidateTable(tableIdent)
         lr.relation.asInstanceOf[AlterableRelation].alterTable(tableIdent, isAddColumn, column)
-        SnappyStoreHiveCatalog.registerRelationDestroy()
-        SnappySession.clearAllCache()
+        SnappyStoreHiveCatalog.registerRelationDestroy(Some(tableIdent))
       case _ =>
         throw new AnalysisException("alter table not supported for external tables")
     }
@@ -2048,6 +2056,7 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
+  // TODO: SW: global property? should be only session one
   private[sql] var tokenize: Boolean = _
 
   lazy val isEnterpriseEdition: Boolean = {
@@ -2355,15 +2364,11 @@ object SnappySession extends Logging {
 
   def clearAllCache(onlyQueryPlanCache: Boolean = false): Unit = {
     val sc = SnappyContext.globalSparkContext
-    if (!SnappyTableStatsProviderService.suspendCacheInvalidation &&
+    if (!SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION &&
         (sc ne null) && !sc.isStopped) {
       planCache.invalidateAll()
       if (!onlyQueryPlanCache) {
-        CodeGeneration.clearAllCache()
-        Utils.mapExecutors[Unit](sc, () => {
-          CodeGeneration.clearAllCache()
-          Iterator.empty
-        })
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.CLEAR_CODEGEN_CACHE, args = null)
       }
     }
   }

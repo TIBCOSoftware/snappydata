@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -55,11 +55,11 @@ class TokenizationTest
   }
 
   before {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
   }
 
   after {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     SnappySession.clearAllCache()
     snc.dropTable(s"$table", ifExists = true)
     snc.dropTable(s"$table2", ifExists = true)

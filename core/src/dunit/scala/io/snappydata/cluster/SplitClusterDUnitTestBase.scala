@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -215,7 +215,7 @@ trait SplitClusterDUnitTestBase extends Logging {
           ColumnUpdateDeleteTests.testSNAP1925(session)
           ColumnUpdateDeleteTests.testSNAP1926(session)
           ColumnUpdateDeleteTests.testConcurrentOps(session)
-          ColumnUpdateDeleteTests.testSNAP2124(session, checkPruning = true)
+          ColumnUpdateDeleteTests.testSNAP2124(session)
         } finally {
           StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
         }
