@@ -159,15 +159,15 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor with SparkSu
       case _ => throw new UnsupportedOperationException(
         s"Expected a child supporting code generation. Got: $child")
     }
-    if (!ctx.addedFunctions.contains("shouldStop")) {
+    if (!internals.isFunctionAddedToOuterClass(ctx, "shouldStop")) {
       // no need to stop in iteration at any point
-      ctx.addNewFunction("shouldStop",
+      internals.addFunction(ctx, "shouldStop",
         s"""
            |@Override
            |protected final boolean shouldStop() {
            |  return false;
            |}
-        """.stripMargin)
+        """.stripMargin, inlineToOuterClass = true)
     }
     childProduce
   }

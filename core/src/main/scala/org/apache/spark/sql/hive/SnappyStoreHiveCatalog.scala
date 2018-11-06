@@ -50,7 +50,7 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog._
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, SubqueryAlias}
-import org.apache.spark.sql.catalyst.util.{CaseInsensitiveMap, StringUtils}
+import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
@@ -87,7 +87,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
       functionResourceLoader,
       functionRegistry,
       sqlConf,
-      hadoopConf) {
+      hadoopConf) with SparkSupport {
 
   val sparkConf: SparkConf = snappySession.sparkContext.getConf
 
@@ -198,8 +198,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
     try {
       val relation: LogicalRelation = getCachedHiveTable(tableIdent)
       val keyColumns = relation match {
-        case LogicalRelation(mutable: MutableRelation, _, _) =>
-          val keyCols = mutable.getPrimaryKeyColumns
+        case lr: LogicalRelation if lr.relation.isInstanceOf[MutableRelation] =>
+          val keyCols = lr.relation.asInstanceOf[MutableRelation].getPrimaryKeyColumns
           if (keyCols.isEmpty) {
             Nil
           } else {
@@ -243,7 +243,7 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
         val table = withHiveExceptionHandling(in.getTable(client))
         val partitionColumns = table.partitionSchema.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
-        var options: Map[String, String] = new CaseInsensitiveMap(table.storage.properties)
+        var options = internals.newCaseInsensitiveMap(table.storage.properties)
         // add dbtable property if not present
         val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
         if (!options.contains(dbtableProp)) {
@@ -279,8 +279,8 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case _ => // Do nothing
         }
 
-        (LogicalRelation(relation, catalogTable = Some(table)), table, RelationInfo(
-          0, isPartitioned = false, Nil, Array.empty, Array.empty, Array.empty, -1))
+        (internals.newLogicalRelation(relation, None, Some(table), isStreaming = false), table,
+            RelationInfo(0, isPartitioned = false, Nil, Array.empty, Array.empty, Array.empty, -1))
       }
     }
 

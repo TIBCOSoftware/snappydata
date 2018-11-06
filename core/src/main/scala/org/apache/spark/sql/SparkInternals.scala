@@ -84,6 +84,19 @@ trait SparkInternals extends Logging {
       forceInline: Boolean = false, useFreshName: Boolean = true): String
 
   /**
+   * Adds a function to the generated class. In newer Spark versions, if the code for outer class
+   * grows too large, the function will be inlined into a new private, inner class,
+   * and a class-qualified name for the function will be returned.
+   */
+  def addFunction(ctx: CodegenContext, funcName: String, funcCode: String,
+      inlineToOuterClass: Boolean = false): String
+
+  /**
+   * Returns true if a given function has already been added to the outer class.
+   */
+  def isFunctionAddedToOuterClass(ctx: CodegenContext, funcName: String): Boolean
+
+  /**
    * Split the generated code for given expressions into multiple methods assuming
    * [[CodegenContext.INPUT_ROW]] has been used (else return inline expression code).
    */
@@ -113,7 +126,7 @@ trait SparkInternals extends Logging {
   /**
    * Create a new immutable map whose keys are case-insensitive from a given map.
    */
-  def createCaseInsensitiveMap(map: Map[String, String]): Map[String, String]
+  def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String]
 
   /**
    * Create a new SQL listener with SnappyData extensions and attach to the SparkUI.

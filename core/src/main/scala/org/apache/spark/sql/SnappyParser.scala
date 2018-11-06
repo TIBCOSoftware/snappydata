@@ -34,6 +34,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ShowTablesHiveCommand
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.LikeEscapeSimplification
@@ -342,15 +343,15 @@ class SnappyParser(session: SnappySession)
   }
 
   final def alias: Rule1[Seq[String]] = rule {
-    AS ~ (identifier ~> (id: String => id :: Nil) | identifierList) | identifierList |
-      strictIdentifier ~> (id: String => id :: Nil)
+    AS ~ (identifier ~> ((id: String) => id :: Nil) | identifierList) | identifierList |
+      strictIdentifier ~> ((id: String) => id :: Nil)
   }
 
   final def namedExpression: Rule1[Expression] = rule {
     expression ~ alias.? ~> ((e: Expression, a: Any) => {
       a.asInstanceOf[Option[Seq[String]]] match {
         case None => e
-        case Some(ids) => if (ids.length == 1) Alias(e, ids)() else MultiAlias(e, ids)
+        case Some(ids) => if (ids.length == 1) Alias(e, ids.head)() else MultiAlias(e, ids)
       }
     })
   }
@@ -612,13 +613,14 @@ class SnappyParser(session: SnappySession)
         '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~ tableAlias.? ~>
             ((ident: TableIdentifier, e: Any, a: Any) => a match {
               case None => internals.newUnresolvedTableValuedFunction(
-                  ident, e.asInstanceOf[Seq[Expression]], Nil)
+                Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]], Nil)
               case Some((alias: String, columnAliases: Seq[_])) =>
-              internals.newSubqueryAlias(alias, internals.newUnresolvedTableValuedFunction(
-                   name, e.asInstanceOf[Seq[Expression]], columnAliases.asInstanceOf[Seq[String]]))
+                internals.newSubqueryAlias(alias, internals.newUnresolvedTableValuedFunction(
+                  Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]],
+                  columnAliases.asInstanceOf[Seq[String]]))
             }) |
         streamWindowOptions.? ~ tableAlias.? ~> ((tableIdent: TableIdentifier,
-            window: Any, alias: Any) => {
+            w: Any, a: Any) => {
           val optAlias = a.asInstanceOf[Option[(String, Seq[String])]]
           updatePerTableQueryHint(tableIdent, optAlias)
           val window = w.asInstanceOf[Option[(Duration, Option[Duration])]]
@@ -966,7 +968,7 @@ class SnappyParser(session: SnappySession)
         keyWhenThenElse ~> (s => CaseWhen(s._1, s._2))
     ) |
     EXISTS ~ '(' ~ ws ~ query ~ ')' ~ ws ~> (Exists(_)) |
-    CURRENT_DATE ~ ('(' ~ ws ~ ')' ~ ws).? ~> CurrentDate |
+    CURRENT_DATE ~ ('(' ~ ws ~ ')' ~ ws).? ~> (() => CurrentDate()) |
     CURRENT_TIMESTAMP ~ ('(' ~ ws ~ ')' ~ ws).? ~> CurrentTimestamp |
     '(' ~ ws ~ (
         (expression + commaSep) ~ ')' ~ ws ~> ((exprs: Seq[Expression]) =>
@@ -1207,7 +1209,7 @@ class SnappyParser(session: SnappySession)
   protected final def explain: Rule1[LogicalPlan] = rule {
     EXPLAIN ~ (EXTENDED ~ push(true) | CODEGEN ~ push(false)).? ~ start ~> ((flagVal: Any,
         plan: LogicalPlan) => plan match {
-      case _: DescribeTableCommand => ExplainCommand(OneRowRelation)
+      case _: DescribeTableCommand => ExplainCommand(OneRowRelation.asInstanceOf[LogicalPlan])
       case _ =>
         val flag = flagVal.asInstanceOf[Option[Boolean]]
         // ensure plan is sent back as CLOB for large plans especially with CODEGEN

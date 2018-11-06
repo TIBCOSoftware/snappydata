@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
-import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -41,12 +40,10 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -60,7 +57,7 @@ import org.apache.spark.{SparkContext, SparkException}
 /**
  * Utility methods used by external storage layers.
  */
-object ExternalStoreUtils {
+object ExternalStoreUtils extends SparkSupport {
 
   private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) = {
     val sc = Option(SnappyContext.globalSparkContext)
@@ -209,7 +206,7 @@ object ExternalStoreUtils {
         case None => // Do nothing
       }
     })
-    new CaseInsensitiveMap(optMap.toMap)
+    internals.newCaseInsensitiveMap(optMap.toMap)
   }
 
   def getExpandedGranteesIterator(grantees: Seq[String]): Iterator[String] = {
@@ -414,7 +411,7 @@ object ExternalStoreUtils {
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
         dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
+          internals.newCaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
             schemaString, JdbcExtendedUtils.SCHEMADDL_PROPERTY, options).toMap),
           schemaString, data)
 
@@ -746,10 +743,6 @@ object ExternalStoreUtils {
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
     checkPositiveNum(Property.ColumnMaxDeltaRows.get(session.sessionState.conf),
       Property.ColumnMaxDeltaRows.name)
-  }
-
-  def getSQLListener: AtomicReference[SQLListener] = {
-    SparkSession.sqlListener
   }
 }
 

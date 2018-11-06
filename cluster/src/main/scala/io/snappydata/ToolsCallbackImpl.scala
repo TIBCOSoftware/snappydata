@@ -30,8 +30,7 @@ import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.ui.SQLTab
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
@@ -51,7 +50,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           JettyUtils.skipHandlerStart.set(true)
           // Creating SQL and Dashboard UI tabs
           if (!sc.isLocal) {
-            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+            SparkSupport.internals(sc).createAndAttachSQLListener(sc)
           }
           SnappyHiveThriftServer2.attachUI()
           new SnappyDashboardTab(ui)
@@ -67,7 +66,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
         case None => logDebug("Not setting auth handler")
           // Creating SQL and Dashboard UI tabs
           if (!sc.isLocal) {
-            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+            SparkSupport.internals(sc).createAndAttachSQLListener(sc)
           }
           SnappyHiveThriftServer2.attachUI()
           new SnappyDashboardTab(ui)

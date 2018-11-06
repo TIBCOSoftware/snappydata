@@ -22,7 +22,6 @@ import java.io.File
 import java.lang
 import java.nio.file.{Files, Paths}
 import java.sql.SQLException
-import java.util.Locale
 import java.util.Map.Entry
 import java.util.function.Consumer
 
@@ -549,7 +548,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected final def resourceType: Rule1[FunctionResource] = rule {
     identifier ~ stringLiteral ~> { (rType: String, path: String) =>
-      val resourceType = rType.toLowerCase(Locale.ROOT)
+      val resourceType = Utils.toLowerCase(rType)
       resourceType match {
         case "jar" =>
           FunctionResource(FunctionResourceType.fromString(resourceType), path)
@@ -585,11 +584,7 @@ abstract class SnappyDDLParser(session: SparkSession)
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = resources.asInstanceOf[Seq[FunctionResource]]
           funcResources.foreach(checkExists)
-          val catalogString = t match {
-            case VarcharType(Int.MaxValue) => "string"
-            case _ => t.catalogString
-          }
-          val classNameWithType = className + "__" + catalogString
+          val classNameWithType = className + "__" + t.catalogString
           internals.newCreateFunctionCommand(functionIdent.database,
             functionIdent.funcName, classNameWithType, funcResources, isTemp,
             ignoreIfExists, replace != None)
@@ -770,16 +765,9 @@ abstract class SnappyDDLParser(session: SparkSession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharType(size) =>
+        case CharStringType(size, baseType) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              .putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
-          (StringType, false)
-        case VarcharType(Int.MaxValue) => // indicates CLOB type
-          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
-          (StringType, false)
-        case VarcharType(size) =>
-          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              .putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
           (StringType, false)
         case StringType =>
           builder.putString(Constant.CHAR_TYPE_BASE_PROP, "STRING")

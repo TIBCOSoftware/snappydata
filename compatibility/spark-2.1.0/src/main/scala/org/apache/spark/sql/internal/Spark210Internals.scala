@@ -26,7 +26,7 @@ import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.{CatalogTable, FunctionResource}
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
@@ -35,7 +35,6 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, SQLBuilder, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
@@ -52,7 +51,7 @@ class Spark210Internals extends SparkInternals {
   override def version: String = "2.1.0"
 
   override def uncacheQuery(spark: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
-    implicit val encoder = RowEncoder(plan.schema)
+    implicit val encoder: ExpressionEncoder[Row] = RowEncoder(plan.schema)
     spark.sharedState.cacheManager.uncacheQuery(Dataset(spark, plan), blocking)
   }
 
@@ -105,7 +104,7 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def registerFunction(session: SparkSession, name: FunctionIdentifier,
-      info: ExpressionInfo, function: (Seq[Expression]) => Expression): Unit = {
+      info: ExpressionInfo, function: Seq[Expression] => Expression): Unit = {
     session.sessionState.functionRegistry.registerFunction(name.unquotedString, info, function)
   }
 
@@ -115,6 +114,16 @@ class Spark210Internals extends SparkInternals {
     val variableName = if (useFreshName) ctx.freshName(varName) else varName
     ctx.addMutableState(javaType, varName, initFunc(variableName))
     variableName
+  }
+
+  override def addFunction(ctx: CodegenContext, funcName: String, funcCode: String,
+      inlineToOuterClass: Boolean = false): String = {
+    ctx.addNewFunction(funcName, funcCode)
+    funcName
+  }
+
+  override def isFunctionAddedToOuterClass(ctx: CodegenContext, funcName: String): Boolean = {
+    ctx.addedFunctions.contains(funcName)
   }
 
   override def splitExpressions(ctx: CodegenContext, expressions: Seq[String]): String = {
@@ -137,23 +146,28 @@ class Spark210Internals extends SparkInternals {
     WholeStageCodegenExec(plan)
   }
 
-  override def createCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
+  override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
     new CaseInsensitiveMap(map)
   }
 
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
-    SparkSession.sqlListener.get() match {
-      case _: SnappySQLListener => // already set
+    // if the call is done the second time, then attach in embedded mode
+    // too since this is coming from ToolsCallbackImpl
+    val (forceAttachUI, listener) = SparkSession.sqlListener.get() match {
+      case l: SnappySQLListener => true -> l // already set
       case _ =>
         val listener = new SnappySQLListener(sparkContext.conf)
         if (SparkSession.sqlListener.compareAndSet(null, listener)) {
           sparkContext.addSparkListener(listener)
-          sparkContext.ui match {
-            case Some(ui) if !SnappyContext.getClusterMode(sparkContext)
-                .isInstanceOf[SnappyEmbeddedMode] => new SQLTab(listener, ui)
-            case _ =>
-          }
         }
+        false -> listener
+    }
+    // embedded mode attaches SQLTab later via ToolsCallbackImpl that also
+    // takes care of injecting any authentication module if configured
+    sparkContext.ui match {
+      case Some(ui) if forceAttachUI || !SnappyContext.getClusterMode(sparkContext)
+          .isInstanceOf[SnappyEmbeddedMode] => new SQLTab(listener, ui)
+      case _ =>
     }
   }
 
@@ -366,7 +380,7 @@ class Spark210Internals extends SparkInternals {
     }
   }
 
-  override def newPreWriteCheck(sessionState: SnappySessionState): (LogicalPlan => Unit) = {
+  override def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit = {
     PreWriteCheck(sessionState.conf, sessionState.catalog)
   }
 }

@@ -16,6 +16,10 @@
  */
 package org.apache.spark.sql.internal
 
+import java.lang.reflect.Field
+
+import scala.collection.mutable
+
 import io.snappydata.{HintName, QueryHint}
 
 import org.apache.spark.SparkContext
@@ -44,6 +48,12 @@ import org.apache.spark.sql.types.{DataType, Metadata}
  */
 class Spark232Internals extends SparkInternals {
 
+  private val codegenContextClassFunctions: Field = {
+    val f = classOf[CodegenContext].getDeclaredField("classFunctions")
+    f.setAccessible(true)
+    f
+  }
+
   override def version: String = "2.3.2"
 
   override def uncacheQuery(spark: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
@@ -55,7 +65,7 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def registerFunction(session: SparkSession, name: FunctionIdentifier,
-      info: ExpressionInfo, function: (Seq[Expression]) => Expression): Unit = {
+      info: ExpressionInfo, function: Seq[Expression] => Expression): Unit = {
     session.sessionState.functionRegistry.registerFunction(name, info, function)
   }
 
@@ -63,6 +73,19 @@ class Spark232Internals extends SparkInternals {
       varName: String, initFunc: String => String,
       forceInline: Boolean, useFreshName: Boolean): String = {
     ctx.addMutableState(javaType, varName, initFunc, forceInline, useFreshName)
+  }
+
+  override def addFunction(ctx: CodegenContext, funcName: String, funcCode: String,
+      inlineToOuterClass: Boolean = false): String = {
+    ctx.addNewFunction(funcName, funcCode, inlineToOuterClass)
+  }
+
+  override def isFunctionAddedToOuterClass(ctx: CodegenContext, funcName: String): Boolean = {
+    codegenContextClassFunctions.get(ctx).asInstanceOf[
+        mutable.Map[String, mutable.Map[String, String]]].get(ctx.outerClassName) match {
+      case Some(m) => m.contains(funcName)
+      case None => false
+    }
   }
 
   override def splitExpressions(ctx: CodegenContext, expressions: Seq[String]): String = {
@@ -83,10 +106,12 @@ class Spark232Internals extends SparkInternals {
     WholeStageCodegenExec(plan)(codegenStageId = 0)
   }
 
-  override def createCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
+  override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
     new CaseInsensitiveMap[String](map)
   }
 
+  // TODO: SW: inhibit SQLTab attach in SharedState.statusStore and instead do it
+  // here for embedded mode in the second call so that security policies are applied to the tab
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
     // SQLAppStatusListener is created in the constructor of SharedState that needs to be overridden
   }
@@ -287,7 +312,7 @@ class Spark232Internals extends SparkInternals {
     }
   }
 
-  override def newPreWriteCheck(sessionState: SnappySessionState): (LogicalPlan => Unit) = {
+  override def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit = {
     PreWriteCheck
   }
 }
