@@ -55,7 +55,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   bootProps.setProperty("hive.server2.thrift.bind.host", "localhost")
   bootProps.setProperty("hive.server2.thrift.port", testObject.thriftPort.toString)
 
-  override protected val sparkProductDir: String =
+  override protected val sparkOldProductDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
@@ -66,13 +66,13 @@ class SplitSnappyClusterDUnitTest(s: String)
     }
     super.beforeClass()
     startNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkOldProductDir)
   }
 
   override def afterClass(): Unit = {
     Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkProductDir)
+    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkOldProductDir)
     super.afterClass()
   }
 

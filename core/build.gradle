@@ -185,7 +185,7 @@ def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
 }
 
 task getApacheSparkDist {
-  dependsOn taskGetApacheSparkDist(sparkVersion, sparkDistName, sparkProductDir)
+  dependsOn taskGetApacheSparkDist(sparkOldVersion, sparkOldDistName, sparkOldProductDir)
   dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
 }
 

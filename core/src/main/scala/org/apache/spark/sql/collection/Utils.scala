@@ -788,17 +788,17 @@ object Utils extends SparkSupport {
 
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
-    if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
+    if (!internals.isFunctionAddedToOuterClass(ctx, TASKCONTEXT_FUNCTION)) {
       val contextClass = classOf[TaskContext].getName
       val taskContextVar = internals.addClassField(ctx, contextClass, "taskContext")
-      ctx.addNewFunction(TASKCONTEXT_FUNCTION,
+      internals.addFunction(ctx, TASKCONTEXT_FUNCTION,
         s"""
            |private $contextClass $TASKCONTEXT_FUNCTION() {
            |  final $contextClass context = $taskContextVar;
            |  if (context != null) return context;
            |  return ($taskContextVar = $contextClass.get());
            |}
-        """.stripMargin)
+        """.stripMargin, inlineToOuterClass = true)
     }
     TASKCONTEXT_FUNCTION
   }

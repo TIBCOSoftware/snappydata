@@ -74,8 +74,8 @@ class SplitClusterDUnitTest(s: String)
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
-  override protected val sparkProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+  override protected val sparkOldProductDir: String =
+    testObject.getEnvironmentVariable("APACHE_SPARK_OLD_HOME")
 
   protected val currentProductDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
@@ -106,12 +106,12 @@ class SplitClusterDUnitTest(s: String)
           |""".stripMargin, s"$confDir/servers")
     (snappyProductDir + "/sbin/snappy-start-all.sh").!!
 
-    vm3.invoke(getClass, "startSparkCluster", sparkProductDir)
+    vm3.invoke(getClass, "startSparkCluster", sparkOldProductDir)
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
-    vm3.invoke(getClass, "stopSparkCluster", sparkProductDir)
+    vm3.invoke(getClass, "stopSparkCluster", sparkOldProductDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
@@ -128,12 +128,12 @@ class SplitClusterDUnitTest(s: String)
 
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
-    testObject.invokeSparkShell(snappyProductDir, sparkProductDir, locatorClientPort, vm = vm3)
+    testObject.invokeSparkShell(snappyProductDir, sparkOldProductDir, locatorClientPort, vm = vm3)
   }
 
   // test to make sure that stock spark-shell for latest Spark release works with JDBC pool jar
   def testSparkShellCurrent(): Unit = {
-    testObject.invokeSparkShellCurrent(snappyProductDir, sparkProductDir, currentProductDir,
+    testObject.invokeSparkShellCurrent(snappyProductDir, sparkOldProductDir, currentProductDir,
       locatorClientPort, new Properties(), vm3)
   }
 }
@@ -728,12 +728,12 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     conn.close()
   }
 
-  def invokeSparkShellCurrent(productDir: String, sparkProductDir: String,
+  def invokeSparkShellCurrent(productDir: String, sparkOldProductDir: String,
       sparkCurrentProductDir: String, locatorClientPort: Int, props: Properties, vm: VM): Unit = {
     // stop existing spark cluster and start with current Spark version; stop on vm3 to also close
     // any existing SparkContext (subsequent tests will need to recreate the SparkContext)
-    if (vm eq null) stopSparkCluster(sparkProductDir)
-    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSparkCluster", sparkProductDir)
+    if (vm eq null) stopSparkCluster(sparkOldProductDir)
+    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSparkCluster", sparkOldProductDir)
     startSparkCluster(sparkCurrentProductDir)
     try {
       // perform some operations through spark-shell using JDBC pool driver API on current Spark
@@ -763,7 +763,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       conn.close()
     } finally {
       stopSparkCluster(sparkCurrentProductDir)
-      startSparkCluster(sparkProductDir)
+      startSparkCluster(sparkOldProductDir)
     }
   }
 }

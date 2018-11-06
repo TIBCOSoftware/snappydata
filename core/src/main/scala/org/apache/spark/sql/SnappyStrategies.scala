@@ -120,8 +120,8 @@ private[sql] trait SnappyStrategies {
       case HintName.JoinType_Sort =>
         if (RowOrdering.isOrderable(leftKeys)) {
           new joins.SnappySortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
-            planLater(left), planLater(right), left.statistics.sizeInBytes,
-            right.statistics.sizeInBytes) :: Nil
+            planLater(left), planLater(right), getStats(left).sizeInBytes,
+            getStats(right).sizeInBytes) :: Nil
         } else Nil
       case _ => throw new ParseException(s"Unknown joinType hint '$joinHint'. " +
           s"Expected one of ${QueryHint.JoinType.values}")
@@ -180,8 +180,8 @@ private[sql] trait SnappyStrategies {
                 joinType, joins.BuildLeft, replicatedTableJoin = false)
             } else if (RowOrdering.isOrderable(leftKeys)) {
               new joins.SnappySortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
-                planLater(left), planLater(right), left.statistics.sizeInBytes,
-                right.statistics.sizeInBytes) :: Nil
+                planLater(left), planLater(right), getStats(left).sizeInBytes,
+                getStats(right).sizeInBytes) :: Nil
             } else Nil
           }
           // broadcast joins preferred over exchange+local hash join or SMJ
@@ -214,8 +214,8 @@ private[sql] trait SnappyStrategies {
               joinType, joins.BuildLeft, replicatedTableJoin = false)
           } else if (RowOrdering.isOrderable(leftKeys)) {
             new joins.SnappySortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
-              planLater(left), planLater(right), left.statistics.sizeInBytes,
-              right.statistics.sizeInBytes) :: Nil
+              planLater(left), planLater(right), getStats(left).sizeInBytes,
+              getStats(right).sizeInBytes) :: Nil
           } else Nil
 
         case _ => Nil

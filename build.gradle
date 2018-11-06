@@ -108,9 +108,11 @@ allprojects {
     vendorName = 'SnappyData, Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.1.1'
+    sparkVersion = '2.1.0'
     snappySparkVersion = '2.1.1.4'
-    sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
+
+    sparkOldVersion = '2.1.1'
+    sparkOldDistName = "spark-${sparkOldVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
@@ -148,7 +150,7 @@ allprojects {
     buildIdPrefix = System.env.USER + ' '
 
     sparkDistDir = "${project.gradle.gradleUserHomeDir}/sparkDist"
-    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkOldProductDir = "${sparkDistDir}/${sparkOldDistName}"
     sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
@@ -163,7 +165,7 @@ allprojects {
   }
   if (rootProject.hasProperty('sparkDistDir')) {
     sparkDistDir = rootProject.property('sparkDistDir')
-    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkOldProductDir = "${sparkDistDir}/${sparkOldDistName}"
     sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
@@ -255,7 +257,7 @@ task cleanDUnit { doLast {
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkOldProductDir}/work", "${sparkOldProductDir}/logs"
   delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanSecurityDUnit { doLast {
@@ -264,7 +266,7 @@ task cleanSecurityDUnit { doLast {
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkOldProductDir}/work", "${sparkOldProductDir}/logs"
   delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanAllReports { doLast {
@@ -549,7 +551,7 @@ subprojects {
         }
 
         environment 'SNAPPY_HOME': snappyProductDir,
-          'APACHE_SPARK_HOME': sparkProductDir,
+          'APACHE_SPARK_OLD_HOME': sparkOldProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 

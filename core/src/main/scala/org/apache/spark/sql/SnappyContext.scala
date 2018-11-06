@@ -844,7 +844,7 @@ object SnappyContext extends Logging {
     classOf[execution.row.DefaultSource].getCanonicalName,
     "org.apache.spark.sql.sampling.DefaultSource"
   )
-  private lazy val builtinSources = SparkSupport.internals().createCaseInsensitiveMap(Map(
+  private lazy val builtinSources = SparkSupport.internals().newCaseInsensitiveMap(Map(
     ParserConsts.COLUMN_SOURCE -> classOf[execution.columnar.impl.DefaultSource].getCanonicalName,
     ParserConsts.ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> SAMPLE_SOURCE_CLASS,
