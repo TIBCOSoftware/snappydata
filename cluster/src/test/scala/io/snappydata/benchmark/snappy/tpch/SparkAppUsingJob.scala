@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -39,6 +39,7 @@ object SparkAppUsingJob  extends SnappySQLJob {
   var warmUp: Integer = _
   var runsForAverage: Integer = _
   var threadNumber: Integer = _
+  var randomSeed : Integer = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
@@ -95,10 +96,11 @@ object SparkAppUsingJob  extends SnappySQLJob {
       snc.sql(s"set $prop")
     }
 
-   for (query <- queries) {
+    QueryExecutor.setRandomSeed(randomSeed)
+    for (query <- queries) {
       QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
         threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
-   }
+    }
     QueryExecutor.close
 
   }
@@ -170,6 +172,12 @@ object SparkAppUsingJob  extends SnappySQLJob {
       config.getInt("threadNumber")
     } else {
       1
+    }
+
+    randomSeed = if (config.hasPath("randomSeed")) {
+      config.getInt("randomSeed")
+    } else {
+      42
     }
 
     SnappyJobValid()

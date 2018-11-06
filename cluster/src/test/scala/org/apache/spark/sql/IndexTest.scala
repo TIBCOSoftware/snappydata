@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -230,10 +230,12 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     import scala.concurrent.duration._
     val b = new Benchmark(s"JoinOrder optimization", size,
       warmupTime = numSecs.seconds)
-    b.addCase("WithOut Partition Pruning",
-      prepare = () => togglePruning(onOff = false, snc))(_ => snc.sql(queryString).collect())
-    b.addCase("With Partition Pruning",
-      prepare = () => togglePruning(onOff = true, snc))(_ => snc.sql(queryString).collect())
+    b.addCase("WithOut Partition Pruning", numIters = 0,
+      prepare = () => togglePruning(onOff = false, snc),
+      cleanup = () => {})(_ => snc.sql(queryString).collect())
+    b.addCase("With Partition Pruning", numIters = 0,
+      prepare = () => togglePruning(onOff = true, snc),
+      cleanup = () => {})(_ => snc.sql(queryString).collect())
     b.run()
   }
 
@@ -270,10 +272,12 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 
     //    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
     //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
-    b.addCase(s"$qNum without PartitionPruning",
-      prepare = () => togglePruning(onOff = false, snc))(_ => evalSnappyMods(false))
-    b.addCase(s"$qNum with PartitionPruning",
-      prepare = () => togglePruning(onOff = true, snc))(_ => evalSnappyMods(false))
+    b.addCase(s"$qNum without PartitionPruning", numIters = 0,
+      prepare = () => togglePruning(onOff = false, snc),
+      cleanup = () => {})(_ => evalSnappyMods(false))
+    b.addCase(s"$qNum with PartitionPruning", numIters = 0,
+      prepare = () => togglePruning(onOff = true, snc),
+      cleanup = () => {})(_ => evalSnappyMods(false))
     /*
         b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
         b.addCase(s"$qNum baseTPCH index = T", prepare = case3)(i => evalBaseTPCH)

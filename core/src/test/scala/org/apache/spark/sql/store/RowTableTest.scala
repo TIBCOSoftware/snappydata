@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -737,18 +737,18 @@ class RowTableTest
             "id3 bigint not null, id2 bigint not null, constraint netw_pk primary key (id2, id1)) ")
 
         val res1 = session.sessionCatalog.getKeyColumns("temp1")
-        assert(res1.collect().size == 1)
+        assert(res1.size == 1)
 
         val res2 = session.sessionCatalog.getKeyColumns("temp2")
-        assert(res2.collect().size == 0)
+        assert(res2.size == 0)
 
         val res3 = session.sessionCatalog.getKeyColumns("temp3")
-        assert(res3.collect().size == 2)
+        assert(res3.size == 2)
 
         Try(session.sessionCatalog.getKeyColumns("temp5")) match {
-            case Success(df) => throw new AssertionError(
+            case Success(_) => throw new AssertionError(
                 "Should not have succedded with incorrect options")
-            case Failure(error) => // Do nothing
+            case Failure(_) => // Do nothing
         }
     }
 }

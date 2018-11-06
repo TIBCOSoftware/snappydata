@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,21 +17,15 @@
 
 package org.apache.spark.sql.internal
 
-import scala.annotation.tailrec
-
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.Utils.unAlias
 
 trait JoinQueryPlanning {
 
-  @tailrec final def unAlias(e: Expression): Expression = e match {
-    case a: Alias => unAlias(a.child)
-    case _ => e
-  }
-
   def getKeyOrder(plan: LogicalPlan, joinKeys: Seq[Expression],
       partitioning: Seq[NamedExpression]): (Seq[Int], Boolean) = {
-    val part = partitioning.map(unAlias)
+    val part = partitioning.map(unAlias(_))
     lazy val planExpressions = plan.expressions
     val keyOrder = joinKeys.map { k =>
       val key = unAlias(k)
@@ -60,6 +54,6 @@ trait JoinQueryPlanning {
 
   private def joinKeySubsetOfPart(keyOrder: Seq[Int],
       partitioning: Seq[NamedExpression]): Boolean = {
-    keyOrder.filterNot(i => i == Int.MaxValue).nonEmpty
+    !keyOrder.forall(_ == Int.MaxValue)
   }
 }

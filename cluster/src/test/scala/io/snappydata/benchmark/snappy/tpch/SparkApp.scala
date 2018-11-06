@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -53,6 +53,7 @@ object SparkApp {
 
     val traceEvents = args(15).toBoolean
     val cacheTables = args(16).toBoolean
+    val randomSeed = args(17).toInt
 
     val loadPerfFileStream: FileOutputStream = new FileOutputStream(
       new File(s"${threadNumber}_Spark_LoadPerf.csv"))
@@ -154,6 +155,7 @@ object SparkApp {
       sparkSession.sql(s"set $prop")
     }
 
+    QueryExecutor.setRandomSeed(randomSeed)
     for (query <- queries) {
       QueryExecutor.execute(query, sparkSession.sqlContext, isResultCollection,
         isSnappy = false,

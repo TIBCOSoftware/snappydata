@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -40,13 +40,12 @@ clustermode=
 while (( "$#" )); do
   param="$1"
   case $param in
+    # Check for background/foreground start
     -bg | --background)
-      # Check for background start
       BACKGROUND=-bg
     ;;
     -fg | --foreground)
-      # Check for foreground start
-      BACKGROUND=""
+      BACKGROUND=-fg
     ;;
     rowstore)
       clustermode="rowstore"

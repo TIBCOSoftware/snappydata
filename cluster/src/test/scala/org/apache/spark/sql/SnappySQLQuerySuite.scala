@@ -45,6 +45,7 @@ import org.apache.spark.sql.functions.rand
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
 
+
 class SnappySQLQuerySuite extends SnappyFunSuite {
 
   private lazy val session: SnappySession = snc.snappySession
@@ -328,6 +329,83 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     intercept[AnalysisException](snappy.sql(q10))
     intercept[AnalysisException](snappy.sql(q11))
   }
+
+  test("test SNAP-2508") {
+
+    snc.sql("create table asif_test.gl_account (glAccountNumber clob)")
+    snc.sql("create table asif_test.gl_account_text (glAccountNumber clob)")
+
+    snc.sql("insert into asif_test.gl_account values('0660130001')")
+    snc.sql("insert into asif_test.gl_account_text values('0660130001')")
+
+    snc.sql(s"create table leaf1 (glaccountnumber clob, parentnodeid clob)")
+    snc.sql(s"insert into leaf1 values('0660130001', '6010100'), ('ABCDEF', '50000')")
+
+    snc.sql("create table asif_test.node_hierarchy(nodeid clob)")
+    snc.sql("insert into asif_test.node_hierarchy values('6010100')")
+
+
+    snc.sql("create table asif_test.node_object_mapping(nodeid clob, " +
+      "glaccountnumber clob, fromvalue clob)")
+
+    snc.sql("insert into asif_test.node_object_mapping values('6010100', '0660130001', '8')")
+
+
+    snc.sql("CREATE OR REPLACE VIEW suranjan_t2 as SELECT" +
+      " a.glaccountnumber" +
+      " FROM asif_test.gl_account a " +
+      " LEFT OUTER JOIN asif_test.gl_account_text b " +
+      " ON a.glAccountNumber = b.glAccountNumber")
+
+    snc.sql("create or replace view suranjan_t as SELECT" +
+      " a.nodeid" +
+      ", c.glaccountnumber" +
+      " FROM asif_test.node_hierarchy a" +
+      " LEFT JOIN asif_test.node_object_mapping b" +
+      " ON a.nodeid = b.nodeid" +
+      " LEFT JOIN suranjan_t2 c" +
+      " ON c.glaccountnumber between b.fromvalue and b.fromvalue")
+
+
+    snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+    snc.sql("set snappydata.sql.disableHashJoin=false")
+
+    val result = snc.sql("select " +
+      " LeafLevel.glaccountnumber" +
+      " , HLVL06.nodeid  AS HIER_LEVEL_06_NODE_ID" +
+      " FROM leaf1 LeafLevel" +
+      " JOIN suranjan_t HLVL06" +
+      " On (HLVL06.nodeid = LeafLevel.parentnodeid)")
+
+    // scalastyle:off
+    // println(result.queryExecution.optimizedPlan)
+    // println(result.queryExecution.executedPlan)
+    // scalastyle:on
+
+    // result.show()
+    assert(result.count == 1)
+  }
+
+  test("IS DISTINCT, IS NOT DISTINCT and <=> expressions") {
+    val snappy = this.snc.snappySession
+    val df = snappy.sql("select (case when id & 1 = 0 then null else id end) as a, " +
+        "(case when id & 2 = 0 then null else id end) b from range(1000)")
+    val rs1 = df.selectExpr("a is not distinct from b").collect()
+    val rs2 = df.selectExpr(
+      "(a is not null AND b is not null AND a = b) OR (a is null AND b is null)").collect()
+    assert(rs1.length === 1000)
+    assert(rs2.length === 1000)
+    assert(rs1 === rs2)
+    assert(df.selectExpr("a is not distinct from b").collect() === df.selectExpr(
+      "a <=> b").collect())
+
+    assert(df.selectExpr("a is distinct from b").collect() === df.selectExpr(
+      "(a is not null AND b is not null AND a <> b) OR (a is null AND b is not null) OR " +
+          "(a is not null AND b is null)").collect())
+    assert(df.selectExpr("a IS DISTINCT FROM b").collect() === df.selectExpr(
+      "NOT (a <=> b)").collect())
+  }
 }
+
 
 case class LowerCaseData(n: Int, l: String)

@@ -1,0 +1,28 @@
+# map functions for bash 3 that does not have associative arrays
+
+function keyIndex() {
+  key="$1"
+  shift
+  keys=("$@")
+
+  index=0
+  for k in ${keys[@]}; do
+    if [ "$k" = "$key" ]; then
+      echo $index
+      break
+    fi
+    ((index++))
+  done
+}
+
+function keyPutIndex() {
+  key="$1"
+  shift
+  keys=("$@")
+
+  index=$(keyIndex "$key" "${keys[@]}")
+  if [ -z "$index" ]; then
+    index=${#keys[@]}
+  fi
+  echo $index
+}

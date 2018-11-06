@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -157,7 +157,8 @@ case class ExternalTableDMLCmd(
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
-      case relation: SingleRowInsertableRelation => Seq(Row(relation.executeUpdate(command)))
+      case relation: SingleRowInsertableRelation =>
+        Seq(Row(relation.executeUpdate(command, session.catalog.currentDatabase)))
       case other => throw new AnalysisException("DML support requires " +
           "SingleRowInsertableRelation but found " + other)
     }

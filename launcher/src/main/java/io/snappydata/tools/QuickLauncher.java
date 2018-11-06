@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,6 +32,7 @@ import java.util.Properties;
 import com.gemstone.gemfire.internal.cache.Status;
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
 import com.gemstone.gemfire.internal.shared.LauncherBase;
+import com.sun.jna.Platform;
 
 class QuickLauncher extends LauncherBase {
 
@@ -124,6 +125,38 @@ class QuickLauncher extends LauncherBase {
     // add java path to command-line first
     commandLine.add(System.getProperty("java.home") + "/bin/java");
     commandLine.add("-server");
+
+    try {
+      // https://github.com/airlift/jvmkill is added to libgemfirexd.so
+      // adding agentpath helps kill jvm in case of OOM. kill -9 is not
+      // used as it fails in certain cases
+      if (Platform.isLinux()) {
+        if (Platform.is64Bit()) {
+          String agentPath = snappyHome + "/jars/libgemfirexd64.so";
+          System.load(agentPath);
+          commandLine.add("-agentpath:" + agentPath);
+        } else {
+          String agentPath = snappyHome + "/jars/libgemfirexd.so";
+          System.load(agentPath);
+          commandLine.add("-agentpath:" + agentPath);
+        }
+      } else if (Platform.isMac()) {
+        if (Platform.is64Bit()) {
+          String agentPath = snappyHome + "/jars/libgemfirexd64.dylib";
+          System.load(agentPath);
+          commandLine.add("-agentpath:" + agentPath);
+        } else {
+          String agentPath = snappyHome + "/jars/libgemfirexd.dylib";
+          System.load(agentPath);
+          commandLine.add("-agentpath:" + agentPath);
+        }
+      }
+    } catch (UnsatisfiedLinkError | SecurityException e) {
+      System.out.println("WARNING: agent not loaded due to " + e +
+          ". Service might not be killed on OutOfMemory. Build jvmkill.c on your platform " +
+          "using build.sh script from source on your platform and replace the library " +
+          "in product jars directory to enable the agent.");
+    }
     // get the startup options and command-line arguments (JVM arguments etc)
     HashMap<String, Object> options = getStartOptions(args, snappyHome, commandLine, env);
 
@@ -297,7 +330,7 @@ class QuickLauncher extends LauncherBase {
     final int numArgs = args.length;
     final LinkedHashMap<String, Object> options = new LinkedHashMap<>(numArgs);
     final ArrayList<String> vmArgs = new ArrayList<>(2);
-    boolean hostData = true;
+    boolean hostData = !this.isLocator;
 
     // skip first two arguments for node type and action
     for (int i = 2; i < numArgs; i++) {
