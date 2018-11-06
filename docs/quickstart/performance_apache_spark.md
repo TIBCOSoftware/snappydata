@@ -68,7 +68,7 @@ Ensure that you are in a Spark shell, and then follow the instructions below to 
         scala>  System.gc()
         scala>  System.runFinalization()
 
-5. **Create a SnappyContext**:
+5. **Create a SnappySession**:
 
 		scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 

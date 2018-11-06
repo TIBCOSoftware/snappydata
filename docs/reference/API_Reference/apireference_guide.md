@@ -496,7 +496,7 @@ The `deleteFrom` API deletes all those records from given snappy table which exi
 
 To use this API, key columns(for column table) or primary keys(for row tables) must be defined in the SnappyData table.
 
-Also, the source Dataframe must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using case-insensitive match of column names. If the source Dataframe contains columns other than the key columns, it will be ignored by the `deleteFrom` API.
+Also, the source DataFrame must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using case-insensitive match of column names. If the source DataFrame contains columns other than the key columns, it will be ignored by the `deleteFrom` API.
 
 
 **Syntax**
