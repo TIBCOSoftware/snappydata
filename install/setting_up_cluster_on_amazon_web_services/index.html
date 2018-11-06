@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Amazon Web Services (AWS) - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>Amazon Web Services (AWS) - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -1740,6 +1740,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1800,6 +1863,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1930,6 +2000,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1952,7 +2029,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1960,7 +2037,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../..">Docs</a> &raquo;</li>
     
       
         
@@ -2211,12 +2288,12 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 <ul>
 <li>Ensure Python v 2.7 or later is installed on your local computer.</li>
 </ul>
-<p><a id="clusermanagementec2script"></a></p>
 <p><a id="launchclusterec2script"></a></p>
 <h3 id="deploying-snappydata-cluster-with-ec2-scripts">Deploying SnappyData Cluster with EC2 Scripts</h3>
-<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
+<p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the
+aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
 <p><strong>Syntax</strong></p>
-<pre><code class="pre">./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt;
+<pre><code class="pre">./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt; [options]
 </code></pre>
 
 <p>Here:</p>
@@ -2228,26 +2305,32 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 <p><code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file.</p>
 </li>
 <li>
-<p><code>&lt;action&gt;</code> refers to the action to be performed. You must first launch your cluster using the <code>launch</code> action. The <code>start</code> and <code>stop</code> actions can be used to manage the nodes in the cluster.</p>
+<p><code>&lt;action&gt;</code> refers to the action to be performed. Some of the available actions are <code>launch</code>, <code>destroy</code>, <code>stop</code>, <code>start</code> and <code>reboot-cluster</code>.
+Use <code>launch</code> action to create a new cluster while <code>stop</code> and <code>start</code> actions work on existing clusters.</p>
 </li>
 </ul>
 <p>By default, the script starts one instance of a locator, lead, and server each.
-The script identifies each cluster by its unique cluster name (you provided) and internally ties members (locators, leads, and stores/servers) of the cluster with EC2 security groups.</p>
-<p>The  names and details of the members are automatically derived from the provided cluster name. When running the script you can also specify properties like the number of stores and region.</p>
+The script identifies each cluster by its unique cluster name that you provide and internally ties the members
+(locators, leads, and stores/servers) of the cluster with EC2 security groups, whose names are derived from the cluster name.</p>
+<p>When running the script, you can also specify options to configure the cluster such as the number of stores in the
+cluster and the region where the EC2 instances should be launched.</p>
 <p><strong>Example</strong></p>
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch my-cluster
 </code></pre>
 
-<p>In the above example, you are launching a SnappyData cluster named <strong>my-cluster</strong> with 2 stores (or servers). The locator is available in security group named <strong>my-cluster-locator</strong> and the store/server are available in <strong>my-cluster-store</strong>.</p>
-<p>The cluster is launched in the N. California (us-west-1) region on AWS and starts an Apache Zeppelin server on the instance where the lead is running.</br>
-The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.</p>
+<p>The above example launches a SnappyData cluster named <strong>my-cluster</strong> with 2 stores or servers.
+The locator is associated with security group named <strong>my-cluster-locator</strong> and the servers are associated with <strong>my-cluster-store</strong> security group.</p>
+<p>The cluster is launched in the <strong>N. California (us-west-1)</strong> region on AWS and has an Apache Zeppelin server running on the instance where the lead is running.</br></p>
+<p>The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>By default, the cluster is launched in the US East (N. Virginia) region on AWS. To launch the cluster in a specific region ensure that you set the region property <code>--region=</code>.</p>
+<p>By default, the cluster is launched in the <strong>N. Virginia (us-east-1)</strong> region on AWS. To launch the cluster in a specific region use option <code>--region</code>.</p>
 </div>
+<p><a id="clusermanagementec2script"></a></p>
 <h3 id="cluster-management">Cluster Management</h3>
-<p>This sections covers the following:</p>
+<p>This section covers the following:</p>
 <ul>
+<li><a href="#ec2custombuild">Using custom build</a></li>
 <li><a href="#ecsspecifyprop">Specifying Properties</a></li>
 <li><a href="#ec2stopcluster">Stopping the Cluster</a></li>
 <li><a href="#ec2resumecluster">Resuming the Cluster</a></li>
@@ -2256,33 +2339,51 @@ The example assumes that you have the key file (my-ec2-key.pem) in your home dir
 <li><a href="#connectclusterec2">Connecting to the Cluster</a></li>
 <li><a href="#ec2destroycluster">Destroying the Cluster</a></li>
 <li><a href="#ec2startclustrezeppelin">Starting Cluster with Apache Zeppelin</a></li>
-<li><a href="#ec2moreoption">More Options</a>
-<a id="ecsspecifyprop"></a></li>
+<li><a href="#ec2moreoption">More Options</a></li>
 </ul>
-<h4 id="specifying-properties">Specifying properties</h4>
-<p>If you want to configure each of the locator, lead, or server with specific properties, you can do so by specifying them in files named <strong>locators</strong>, <strong>leads</strong> or <strong>servers</strong>, respectively and placing these under <strong>aws/ec2/deploy/home/ec2-user/snappydata/</strong>. Refer to <a href="../../configuring_cluster/configuring_cluster/#configuration-files">this SnappyData documentation page</a> for example on how to configure these configuration files.</br>
-This is similar to how one would provide properties to SnappyData cluster nodes while launching it using the <code>sbin/snappy-start-all.sh</code> script.</br>
-The important difference here is that, instead of the host names of the locator, lead or store, you have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script replaces these with the actual host name of the members when they are launched.</p>
-<p>The sample configuration files for a cluster with 2 locators, 1 lead and 2 stores are given below:</p>
-<p><em>locators</em></p>
-<pre><code class="pre">{{LOCATOR_0}} -peer-discovery-port=9999 -heap-size=1024m
-{{LOCATOR_1}} -peer-discovery-port=9888 -heap-size=1024m
+<p><a id="ec2custombuild"></a></p>
+<h4 id="using-custom-build">Using custom build</h4>
+<p>This script by default uses the SnappyData OSS build available on the GitHub releases page to launch the cluster.
+To select a version of the OSS build available on GitHub, use option <code>--snappydata-version</code>.</p>
+<p>You can also provide your own SnappyData build to the script to launch the cluster, by using
+option <code>--snappydata-tarball</code> to the <code>launch</code> command.
+The build can be present either on a local filesystem or as a resource on the web.</p>
+<p>For example, to use <strong>SnappyData Enterprise</strong> build to launch the cluster, download the build tarball from
+www.snappydata.io/download on your local machine and give its path as value to above option.</p>
+<pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball=&quot;/home/ec2-user/snappydata/distributions/snappydata-1.0.2.1-bin.tar.gz&quot; 
 </code></pre>
 
-<p><em>leads</em></p>
-<pre><code class="pre">{{LEAD_0}} -heap-size=4096m -spark.ui.port=3333 -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -spark.executor.cores=10
+<p>Alternatively, you can also put your build file on a public web server and provide its URL to this option.</p>
+<pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball=&quot;https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.0.2.1-bin.tar.gz&quot; 
 </code></pre>
 
-<p><em>servers</em></p>
-<pre><code class="pre">{{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888
-{{SERVER_1}} -heap-size=4096m -locators={{LOCATOR_0}}:9999,{{LOCATOR_1}}:9888 -client-port=1530
+<p>The build file should be in <strong>.tar.gz</strong> format.</p>
+<p><a id="ecsspecifyprop"></a></p>
+<h4 id="specifying-properties">Specifying Properties</h4>
+<p>You can specify the configuration for the cluster via command line options. Use <code>--locator-conf</code> to specify the
+configuration properties for all the locators in the cluster. Similarly, <code>--server-conf</code> and <code>--lead-conf</code> allow you
+to specify the configuration properties for servers and leads in the cluster, respectively.</p>
+<p>Following is a sample configuration for all the three processes in a SnappyData cluster:</p>
+<pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 launch my-cluster \
+  --locator-conf=&quot;-peer-discovery-port=9999 -heap-size=1024m&quot; \
+  --lead-conf=&quot;-spark.executor.cores=10 -heap-size=4096m -spark.ui.port=3333&quot; \
+  --server-conf=&quot;-client-port=1530&quot;
 </code></pre>
 
-<p>When you run <strong>snappy-ec2</strong>, it looks for these files under <strong>aws/ec2/deploy/home/ec2-user/snappydata/</strong> and, if present, reads them while launching the cluster on Amazon EC2. Ensure that the number of locators, leads or servers specified by options <code>--locators</code>, <code>--leads</code> or <code>--stores</code> must match to the number of entries in their respective configuration file.
-</br>The script also reads <strong>snappy-env.sh</strong>, if present in this location.</p>
+<p>The utility also reads <strong>snappy-env.sh</strong>, if present in the directory where helper scripts are present.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+</div>
+<ul>
+<li>The earlier method of specifying the configuration properties by placing the actual
+  configuration files in the directory, where helper scripts are available, is discontinued.</li>
+<li>Ensure that the configuration properties specified are correct. Otherwise, launching the
+  SnappyData cluster may fail but the EC2 instances would still be running.</li>
+</ul>
 <p><a id="ec2stopcluster"></a></p>
 <h4 id="stopping-the-cluster">Stopping the Cluster</h4>
-<p>When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost. However, the data saved on EBS volumes is retained, unless the spot-instances are used.</p>
+<p>When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost.
+However, the data saved on EBS volumes is retained, unless the spot-instances are used.</p>
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
 </code></pre>
 
@@ -2294,11 +2395,13 @@ The important difference here is that, instead of the host names of the locator,
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The start command (or launch command with <code>--resume</code> option) ignores the <code>--locators</code>, <code>--leads</code>, or <code>--stores</code> options, and launches the SnappyData cluster on existing instances. The configuration files however, are read if they are present in the location mentioned above. You therefore must ensure that every time you use the <code>start</code> command, the number of entries in configuration files are equal to the number of instances in their respective security group.</p>
+<p>The <code>start</code> command, or <code>launch</code> command with <code>--resume</code> option, ignores the <code>--locators</code>, <code>--leads</code>, or <code>--stores</code> options and launches the SnappyData cluster on existing instances.
+However, if the configuration options are provided, they are read and processed, thus overriding their values that were provided when the cluster was launched or started previously.</p>
 </div>
 <p><a id="ec2addservertocluster"></a></p>
 <h4 id="adding-servers-to-the-cluster">Adding Servers to the Cluster</h4>
-<p>This is not yet fully supported using the script. You may have to manually launch an instance with <code>(cluster-name)-stores</code> group, and then use launch command with the <code>--resume</code> option.</p>
+<p>This is not yet supported using the script. You must manually launch an instance with <code>(cluster-name)-stores</code> group and
+then use <code>launch</code> command with the <code>--resume</code> option.</p>
 <p><a id="ec2listmember"></a></p>
 <h4 id="listing-members-of-the-cluster">Listing Members of the Cluster</h4>
 <p><strong>To get the first locator's hostname:</strong></p>
@@ -2308,8 +2411,9 @@ The important difference here is that, instead of the host names of the locator,
 <p>Use the <code>get-lead</code> command to get the first lead's hostname.</p>
 <p><a id="connectclusterec2"></a></p>
 <h4 id="connecting-to-the-cluster">Connecting to the Cluster</h4>
-<p>You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance. You can then use SSH to connect to any other member of the cluster without a password. </br>
-The SnappyData product directory is located under <strong>/home/ec2-user/snappydata/</strong> on all the members.</p>
+<p>You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance.
+You can then use SSH to connect to any other member of the cluster without a password. </br>
+The SnappyData product directory is located at <strong>/opt/snappydata/</strong> on all the members.</p>
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
 </code></pre>
 
@@ -2319,16 +2423,19 @@ The SnappyData product directory is located under <strong>/home/ec2-user/snappyd
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem destroy cluster-name
 </code></pre>
 
-<p>This retains the security groups created for this cluster. To delete this, use it with <code>--delete-</code> group option.</p>
+<p>This also deletes the security groups created for this cluster.</p>
 <p><a id="ec2startclustrezeppelin"></a></p>
 <h4 id="starting-cluster-with-apache-zeppelin">Starting Cluster with Apache Zeppelin</h4>
-<p>Optionally, you can start an instance of Apache Zeppelin server with the cluster. <a href="https://zeppelin.apache.org/">Apache Zeppelin</a> is a web-based notebook that enables interactive notebook. The Zeppelin server is launched on the same EC2 instance where the lead node is running.</p>
+<p>Optionally, you can start an instance of Apache Zeppelin server with the cluster.
+<a href="https://zeppelin.apache.org/">Apache Zeppelin</a> provides a web-based interactive notebook that is pre-configured to
+communicate with the SnappyData cluster. The Zeppelin server is launched on the same EC2 instance where the lead node is running.</p>
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin launch cluster-name
 </code></pre>
 
 <p><a id="ec2moreoption"></a></p>
 <h4 id="more-options">More Options</h4>
-<p>For a complete list of options provided by the script run <code>./snappy-ec2</code> (available in the  snappydata-ec2-<version>.tar.gz compressed file). </br>The options are also provided below for quick reference.</p>
+<p>For a complete list of options provided by the script, simply run <code>./snappy-ec2</code>. The options are also provided below
+for quick reference.</p>
 <pre><code class="pre">Usage: snappy-ec2 [options] &lt;action&gt; &lt;cluster_name&gt;
 
 &lt;action&gt; can be: launch, destroy, login, stop, start, get-locator, get-lead, reboot-cluster
@@ -2351,8 +2458,9 @@ Options:
                         you can configure additional, named profiles by using
                         this option (default: none)
   -t INSTANCE_TYPE, --instance-type=INSTANCE_TYPE
-                        Type of instance to launch (default: m4.large).
-                        WARNING: must be 64-bit; small instances won't work
+                        Type of server and lead instance to launch (default:
+                        m4.large). WARNING: must be 64-bit; small instances
+                        won't work
   --locator-instance-type=LOCATOR_INSTANCE_TYPE
                         Locator instance type (default: t2.medium)
   -r REGION, --region=REGION
@@ -2363,10 +2471,19 @@ Options:
                         for bandwidthbetween zones applies) (default: a single
                         zone chosen at random)
   -a AMI, --ami=AMI     Amazon Machine Image ID to use
-  --enterprise          (Will be supported soon) Use SnappyData Enterprise
-                        edition AMI from AWS Marketplace to launch the
-                        cluster. Overrides --ami option. Extra charges apply.
-                        (default: False)
+  --snappydata-tarball=SNAPPYDATA_TARBALL
+                        HTTP URL or local file path of the SnappyData
+                        distribution tarball with which the cluster will be
+                        launched. (default: )
+  --locator-conf=LOCATOR_CONF
+                        Configuration properties for locators (default: )
+  --server-conf=SERVER_CONF
+                        Configuration properties for servers (default: )
+  --lead-conf=LEAD_CONF
+                        Configuration properties for leads (default: )
+  -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
+                        Version of SnappyData to use: 'X.Y.Z' (default:
+                        LATEST)
   --with-zeppelin       Launch Apache Zeppelin server with the cluster. It'll
                         be launched on the same instance where lead node will
                         be running.
@@ -2382,7 +2499,14 @@ Options:
                         proxy at the given local address (for use with login)
   --resume              Resume installation on a previously launched cluster
                         (for debugging)
-  --ebs-vol-size=SIZE   Size (in GB) of each EBS volume.
+  --root-ebs-vol-size=SIZE
+                        Size (in GB) of root EBS volume for servers and leads.
+                        SnappyData is installed on root volume.
+  --root-ebs-vol-size-locator=SIZE
+                        Size (in GB) of root EBS volume for locators.
+                        SnappyData is installed on root volume.
+  --ebs-vol-size=SIZE   Size (in GB) of each additional EBS volume to be
+                        attached.
   --ebs-vol-type=EBS_VOL_TYPE
                         EBS volume type (e.g. 'gp2', 'standard').
   --ebs-vol-num=EBS_VOL_NUM
@@ -2442,7 +2566,8 @@ Options:
 </ul>
 <p><a id="usingawsmgmtconsole"></a></p>
 <h2 id="aws-management-console">AWS Management Console</h2>
-<p>You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information on launching an EC2 instance, refer to the <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html">AWS documentation</a>.
+<p>You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information
+on launching an EC2 instance, refer to the <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html">AWS documentation</a>.
 This section covers the following:</p>
 <ul>
 <li><a href="#prereqaws">Prerequisites</a></li>
@@ -2562,6 +2687,8 @@ Refer to the following documentation, for more information on <a href="http://do
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

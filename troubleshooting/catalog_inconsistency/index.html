@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Resolving Catalog Inconsistency Issues - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>Resolving Catalog Inconsistency Issues - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -1727,6 +1727,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1787,6 +1850,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1926,6 +1996,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1948,7 +2025,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1956,7 +2033,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../..">Docs</a> &raquo;</li>
     
       
         
@@ -2010,8 +2087,8 @@ ERROR 42X05: (SQLState=42X05 Severity=20000) (Server=localhost/127.0.0.1[1528] T
 </code></pre>
 
 <p>In case of inconsistencies, the log will contain messages as shown in the following example:</p>
-<pre><code>18/08/06 17:28:36.456 IST ThriftProcessor-3&lt;tid=0x82&gt; INFO snappystore: warning: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
-18/08/06 17:28:36.457 IST ThriftProcessor-3&lt;tid=0x82&gt; INFO snappystore: warning: Use system procedure SYS.REPAIR_CATALOG() to remove inconsistency
+<pre><code>18/08/06 17:28:36.456 IST ThriftProcessor-3&lt;tid=0x82&gt; WARN snappystore: CATALOG: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
+18/08/06 17:28:36.457 IST ThriftProcessor-3&lt;tid=0x82&gt; WARN snappystore: CATALOG: Use system procedure SYS.REPAIR_CATALOG() to remove inconsistency
 
 </code></pre>
 
@@ -2020,8 +2097,8 @@ ERROR 42X05: (SQLState=42X05 Severity=20000) (Server=localhost/127.0.0.1[1528] T
 </code></pre>
 
 <p>Later, you can examine the log to check which entries were removed. Following is a sample log for reference:</p>
-<pre><code>18/08/06 17:34:26.548 IST ThriftProcessor-3&lt;tid=0x82&gt; INFO snappystore: warning: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
-18/08/06 17:34:26.548 IST ThriftProcessor-3&lt;tid=0x82&gt; INFO snappystore: warning: Removing table APP.T1 from Hive metastore
+<pre><code>18/08/06 17:34:26.548 IST ThriftProcessor-3&lt;tid=0x82&gt; WARN snappystore: CATALOG: Catalog inconsistency detected: following tables in Hive metastore are not in datadictionary: schema = APP tables = [T1]
+18/08/06 17:34:26.548 IST ThriftProcessor-3&lt;tid=0x82&gt; WARN snappystore: CATALOG: Removing table APP.T1 from Hive metastore
 </code></pre>
               
             </div>
@@ -2051,6 +2128,8 @@ ERROR 42X05: (SQLState=42X05 Severity=20000) (Server=localhost/127.0.0.1[1528] T
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

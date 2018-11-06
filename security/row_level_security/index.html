@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Implementing Row Level Security - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>Implementing Row Level Security - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -885,6 +885,8 @@
                 <li class="toctree-l3"><a href="#implementing-row-level-security">Implementing  Row Level Security</a></li>
                 
                     <li><a class="toctree-l4" href="#overview-of-row-level-security">Overview of Row Level Security</a></li>
+                
+                    <li><a class="toctree-l4" href="#activating-row-level-security">Activating Row Level Security</a></li>
                 
                     <li><a class="toctree-l4" href="#creating-a-policy">Creating a Policy</a></li>
                 
@@ -1748,6 +1750,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1808,6 +1873,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1938,6 +2010,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1960,7 +2039,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1968,7 +2047,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../..">Docs</a> &raquo;</li>
     
       
         
@@ -1997,6 +2076,7 @@
 <p>The following topics are covered in this section:</p>
 <ul>
 <li><a href="#rlsoverview">Overview of Row Level Security</a></li>
+<li><a href="#actrowlevel">Activating Row Level Security</a></li>
 <li><a href="#createpolicy">Creating a Policy</a></li>
 <li><a href="#enablerowlevelsecurity">Enabling Row Level Security</a></li>
 <li><a href="#viewpolicy">Viewing Policy Details</a></li>
@@ -2006,8 +2086,17 @@
 </ul>
 <p><a id= rlsoverview> </a></p>
 <h2 id="overview-of-row-level-security">Overview of Row Level Security</h2>
-<p>Policy is a rule that is implemented by using a filter expression.  In SnappyData, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned by normal queries by data modification commands.
+<p>Policy is a rule that is implemented by using a filter expression.  In SnappyData, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned for normal queries by data modification commands. 
+For <a href="#actrowlevel">activating this row level security</a>, a system property must be added to the configuration files of servers, leads, and locators. 
 To restrict the permissions of a user at row level, <a href="#createpolicy">create a simple policy</a> for a table that can be applied on a per user basis and then <a href="#enablerowlevelsecurity">enable the row level security</a> for that table.</p>
+<p><a id= actrowlevel> </a></p>
+<h2 id="activating-row-level-security">Activating Row Level Security</h2>
+<p>For activating Row Level Security, a system property <code>-J-Dsnappydata.enable-rls=true</code> must be added to the configuration files of servers, leads, and locators when you <a href="../../configuring_cluster/configuring_cluster/">configure the cluster</a>. By default this is off.
+If this property is not added, you cannot enable the Row Level Security and an exception is thrown when you attempt to create the policy.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When this property is set to <strong>true</strong>, the Smart Connector access to SnappyData will fail with <code>java.lang.IllegalStateException: Row level security (snappydata.enable-rls) does not allow smart connector mode</code> exception.</p>
+</div>
 <p><a id= createpolicy> </a></p>
 <h2 id="creating-a-policy">Creating a Policy</h2>
 <p>A policy, which is a rule, can be created for row tables, column tables, and external GemFire tables.  Permissions can be granted to users on DML ops to access the tables for which policies are created.</p>
@@ -2101,7 +2190,7 @@ $ SELECT * FROM clients;
 <td>Name of the policy.</td>
 </tr>
 <tr>
-<td><strong>TABLESCHEMANAME</strong></td>
+<td><strong>SCHEMANAME</strong></td>
 <td>Schema Name of the table on which policy is applied.</td>
 </tr>
 <tr>
@@ -2228,6 +2317,8 @@ SELECT name FROM orders JOIN customers ON  customer_id WHERE order_id = 4711;
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../../favicon.ico">
   
-  <title>Configuration Parameters - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>Configuration Parameters - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -1742,6 +1742,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../ssl/">ssl</a>
         
     </li>
@@ -1802,6 +1865,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1932,6 +2002,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1954,7 +2031,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1962,7 +2039,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../../..">Docs</a> &raquo;</li>
     
       
         
@@ -2003,7 +2080,7 @@
 </li>
 </ul>
 <p><a id="property-types"></a></p>
-<h4 id="property-types">Property Types</h4>
+<h3 id="property-types">Property Types</h3>
 <p>SnappyData configuration properties are divided into the following property types:</p>
 <ul>
 <li>
@@ -2029,11 +2106,11 @@
 </ul>
 <p>Certain properties have additional behaviors or restrictions. See the individual property descriptions for more information.</p>
 <p><a id="property-prefixes"></a></p>
-<h4 id="property-prefixes">Property Prefixes</h4>
+<h3 id="property-prefixes">Property Prefixes</h3>
 <p>You must add a prefix to connection and boot property names when you define those properties as Java system properties. The <strong>Prefix</strong> row in each property table lists a prefix value (<code>snappydata.</code> or <code>gemfire.</code>) when one is required. Do not use an indicated prefix when you specify the property in a connection string.</p>
 <p>If no prefix is specified, use only the indicated property name in all circumstances. For example, use "host-data" whether you define this property in gemfirexd.properties, as a Java system property, or as a property definition for FabricServer.</p>
 <p><a id="non-ascii-strings"></a></p>
-<h4 id="using-non-ascii-strings-in-snappydata-property-files">Using Non-ASCII Strings in SnappyData Property Files</h4>
+<h3 id="using-non-ascii-strings-in-snappydata-property-files">Using Non-ASCII Strings in SnappyData Property Files</h3>
 <p>You can specify Unicode (non-ASCII) characters in SnappyData property files by using a <code>\uXXXX</code> escape sequence. For a supplementary character, you need two escape sequences, one for each of the two UTF-16 code units. The XXXX denotes the 4 hexadecimal digits for the value of the UTF-16 code unit. For example, a properties file might have the following entries:</p>
 <pre><code class="pre">s1=hello there
 s2=\u3053\u3093\u306b\u3061\u306f
@@ -2048,7 +2125,7 @@ log-file=my\u00df.log
 <p>to indicate the desired property definition of <code>log-file=my.log</code>.</p>
 <p>If you have edited and saved the file in a non-ASCII encoding, you can convert it to ASCII with the <code>native2ascii</code> tool included in your Oracle Java distribution. For example, you might want to do this when editing a properties file in Shift_JIS, a popular Japanese encoding.</p>
 <p><a id="property-names"></a></p>
-<h4 id="list-of-property-names">List of Property Names</h4>
+<h3 id="list-of-property-names">List of Property Names</h3>
 <p>Below is the list of all the configuration properties and links for each property reference page.</p>
 <ul>
 <li>
@@ -2118,6 +2195,33 @@ log-file=my\u00df.log
 <p><a href="../skip-constraint-checks/">skip-constraint-checks</a></p>
 </li>
 <li>
+<p><a href="../skip-locks/">skip-locks</a></p>
+</li>
+<li>
+<p><a href="../socket-buffer-size/">socket-buffer-size</a></p>
+</li>
+<li>
+<p><a href="../socket-lease-time/">socket-lease-time</a></p>
+</li>
+<li>
+<p><a href="../snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a></p>
+</li>
+<li>
+<p><a href="../snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a></p>
+</li>
+<li>
+<p><a href="../snappy.history/">snappy.history</a></p>
+</li>
+<li>
+<p><a href="../snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a></p>
+</li>
+<li>
+<p><a href="../snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a></p>
+</li>
+<li>
+<p><a href="../snappydata.query-timeout/">gemfirexd.query-timeout</a></p>
+</li>
+<li>
 <p><a href="../ssl/">ssl</a></p>
 </li>
 <li>
@@ -2170,6 +2274,8 @@ log-file=my\u00df.log
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../favicon.ico">
   
-  <title>Kubernetes - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>Kubernetes - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href=".." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -166,6 +166,8 @@
                 <li class="toctree-l3"><a href="#setting-up-cluster-on-kubernetes">Setting up Cluster on Kubernetes</a></li>
                 
                     <li><a class="toctree-l4" href="#prerequisites">Prerequisites</a></li>
+                
+                    <li><a class="toctree-l4" href="#getting-access-to-kubernetes-cluster">Getting Access to Kubernetes Cluster</a></li>
                 
                     <li><a class="toctree-l4" href="#deploying-snappydata-on-kubernetes">Deploying SnappyData on Kubernetes</a></li>
                 
@@ -1750,6 +1752,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../reference/configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1810,6 +1875,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1940,6 +2012,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../techsupport/">Contact and Support</a>
         
     </li>
@@ -1962,7 +2041,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1970,7 +2049,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="..">Docs</a> &raquo;</li>
     
       
         
@@ -2002,7 +2081,13 @@
 <p><a href="#prerequisites">Prerequisites</a></p>
 </li>
 <li>
+<p><a href="#pksaccess">Getting Access to Kubernetes cluster</a></p>
+</li>
+<li>
 <p><a href="#deploykubernetes">Deploying SnappyData Chart on Kubernetes</a></p>
+</li>
+<li>
+<p><a href="#pkskubernetes">Setting up PKS Environment for Kubernetes</a></p>
 </li>
 <li>
 <p><a href="#interactkubernetes">Interacting with SnappyData Cluster on Kubernetes</a></p>
@@ -2022,11 +2107,30 @@
 <p>The following prerequisites must be met to deploy SnappyData on Kubernetes:</p>
 <ul>
 <li>
-<p><strong>Kubernetes cluster</strong></br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS).</p>
+<p><strong>Kubernetes cluster</strong></br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned <a href="#pksaccess">here</a>.</p>
 </li>
 <li>
-<p><strong>Helm tool</strong></br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions <a href="https://docs.pivotal.io/runtimes/pks/1-0/configure-tiller-helm.html">here</a> to deploy Helm in your Kubernetes enviroment.</p>
+<p><strong>Helm tool</strong></br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions <a href="https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html">here</a> to deploy Helm in your Kubernetes enviroment.</p>
 </li>
+</ul>
+<p><a id= pksaccess> </a></p>
+<h2 id="getting-access-to-kubernetes-cluster">Getting Access to Kubernetes Cluster</h2>
+<p>If you would like to deploy Kubernetes on-premises, you can use any of the following options:</p>
+<h3 id="option-1-pks">Option 1 - PKS</h3>
+<ul>
+<li>PKS on vSphere: Follow these <a href="https://docs.pivotal.io/runtimes/pks/1-0/vsphere.html">instructions</a> </li>
+<li>PKS on GCP: Follow these <a href="https://docs.pivotal.io/runtimes/pks/1-0/gcp.html">instructions</a></li>
+<li>Create a Kubernetes cluster using PKS CLI : After PKS is setup you will need to create a Kubernetes cluster as described <a href="https://docs.pivotal.io/runtimes/pks/1-0/using.html">here</a></li>
+</ul>
+<h3 id="option-2-google-cloud-platform-gcp">Option 2 - Google Cloud Platform (GCP)</h3>
+<ul>
+<li>Login to your Google account and go to the <a href="https://console.cloud.google.com/">Cloud console</a> to launch a GKE cluster.</li>
+</ul>
+<p><strong>Steps to perform after Kubernetes cluster is available: </strong></p>
+<ul>
+<li>If using PKS, you must install the PKS command line tool. See instructions <a href="https://docs.pivotal.io/runtimes/pks/1-0/installing-pks-cli.html">here</a>.</li>
+<li>Install <code>kubectl</code> on your local development machine and configure access to the kubernetes/PKS cluster. See instructions for <code>kubectl</code> <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">here</a>. </li>
+<li>If you are using Google cloud, you will find instructions for setting up Google Cloud SDK ('gcloud') along with <code>kubectl</code> <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">here</a>.</li>
 </ul>
 <p><a id= deploykubernetes> </a></p>
 <h2 id="deploying-snappydata-on-kubernetes">Deploying SnappyData on Kubernetes</h2>
@@ -2114,10 +2218,6 @@ The output displays the external IP address  of the <em>snappydata-locator-publi
 <p>Check the SnappyData services running in the Kubernetes cluster.</br>
 <code>kubectl get svc --namespace=snappy</code></br>
 The output displays the external IP address of the <strong>snappydata-locator-public</strong> services  and the port number for external connections as shown in the following image:<img alt="Snappy-Leader-Service" src="../Images/services_Locator_Public.png" /></p>
-</li>
-<li>
-<p>Connect to the SnappyData leader pod using .. </br>
-<code>kubectl exec --namespace=snappy -it snappydata-leader-0 -- bash</code></p>
 </li>
 <li>
 <p>Launch SnappyData shell and then create tables and execute queries. </br>Following is an example of executing queries using SnappyData shell.</p>
@@ -2418,6 +2518,8 @@ $ cp log4j.properties.template log4j.properties
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

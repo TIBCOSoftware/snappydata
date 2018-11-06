@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Deploying Third Party Connectors - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>Deploying Third Party Connectors - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -1744,6 +1744,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1804,6 +1867,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1934,6 +2004,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1956,7 +2033,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1964,7 +2041,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../..">Docs</a> &raquo;</li>
     
       
         
@@ -1998,7 +2075,7 @@ SnappyData’s compatibility with Spark allows SnappyData to work with the same 
 <li><strong>deploy package</strong> - to deploy maven packages</li>
 <li><strong>deploy jar</strong> - to deploy your application or library Jars</li>
 </ul>
-<p>Besides these SQL extensions, support is provided in SnappyData 1.0.2 version to deploy packages as part of SnappyData Job submission. This is similar to <a href="https://spark.apache.org/docs/latest/submitting-applications.html">Spark’s support</a> for <strong>--packages</strong> when submitting Spark jobs.</p>
+<p>Besides these SQL extensions, support is provided in SnappyData 1.0.2.1 version to deploy packages as part of SnappyData Job submission. This is similar to <a href="https://spark.apache.org/docs/latest/submitting-applications.html">Spark’s support</a> for <strong>--packages</strong> when submitting Spark jobs.</p>
 <p>The following sections are included in this topic:</p>
 <ul>
 <li><a href="#deploypackages">Deploying Packages in SnappyData</a></li>
@@ -2009,7 +2086,7 @@ SnappyData’s compatibility with Spark allows SnappyData to work with the same 
 </ul>
 <p><a id= deploypackages> </a></p>
 <h2 id="deploying-packages-in-snappydata">Deploying Packages in SnappyData</h2>
-<p>Packages can be deployed in SnappyData using the <strong>DEPLOY PACKAGE</strong> SQL. You can pass the following through this SQL:</p>
+<p>Packages can be deployed in SnappyData using the <strong>DEPLOY PACKAGE</strong> SQL. Execute the <code>deploy package</code> command to deploy packages. You can pass the following through this SQL:</p>
 <ul>
 <li>Name of the package.</li>
 <li>Repository where the package is located.</li>
@@ -2024,13 +2101,13 @@ SnappyData’s compatibility with Spark allows SnappyData to work with the same 
 <p class="admonition-title">Tip</p>
 <p>Use <strong>spark-packages.org</strong> to search for Spark packages. Most of the popular Spark packages are listed here.</p>
 </div>
-<h3 id="sql-syntax-to-deploy-package-dependencies-in-snappydata">SQL syntax to deploy package dependencies in SnappyData:</h3>
-<pre><code class="pre">deploy package &lt;name&gt; ‘packages’ [ repos ‘repositories’ ] [ path 'some path to cache resolved jars' ]
+<h3 id="sql-syntax-to-deploy-package-dependencies-in-snappydata">SQL Syntax to Deploy Package Dependencies in SnappyData</h3>
+<pre><code class="pre">deploy package &lt;unique-alias-name&gt; ‘packages’ [ repos ‘repositories’ ] [ path 'some path to cache resolved jars' ]
 </code></pre>
 
 <ul>
 <li>
-<p><strong>name</strong> - A name to identify a package. This name can be used to remove the package from the cluster.  You can use alphabets, numbers, and underscores to create the name.</p>
+<p><strong>unique-alias-name</strong> - A name to identify a package. This name can be used to remove the package from the cluster.  You can use alphabets, numbers, and underscores to create the name.</p>
 </li>
 <li>
 <p><strong>packages</strong> - Comma-delimited string of maven packages. </p>
@@ -2043,37 +2120,37 @@ SnappyData’s compatibility with Spark allows SnappyData to work with the same 
 </li>
 </ul>
 <h3 id="example">Example</h3>
-<ul>
-<li>Deploy packages from a default repository.</li>
-</ul>
-<pre><code>deploy package spark_deep_learning_0_3_0 databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11 /home/snappydata/work
+<p><strong>Deploy packages from a default repository:</strong></p>
+<pre><code class="pre">deploy package deeplearning 'databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11' path '/home/snappydata/work';
 </code></pre>
 
-<pre><code class="pre">deploy package spark_redshift_300 com.databricks:spark-redshift_2.10:3.0.0-preview1 /home/snappydata/work
+<pre><code class="pre">deploy package Sparkredshift 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/snappydata/work';
 </code></pre>
 
-<ul>
-<li>Deploy packages from a non-default repository.  </li>
-</ul>
 <p><a id= deployjars> </a></p>
 <h2 id="deploying-jars-in-snappydata">Deploying Jars in SnappyData</h2>
-<p>SnappyData provides a method to deploy a jar in a running system through SQL. You can execute the <strong>deploy jar </strong> command to deploy dependency jars. </p>
+<p>SnappyData provides a method to deploy a jar in a running system through <strong>DEPLOY JAR</strong> SQL. You can execute the <code>deploy jar</code> command to deploy dependency jars. </p>
 <h3 id="syntax-for-deploying-jars-in-snappydata">Syntax for Deploying Jars in SnappyData</h3>
-<pre><code class="pre">deploy jar &lt;name&gt; ‘jars’
+<pre><code class="pre">deploy jar &lt;unique-alias-name&gt; ‘jars’
 </code></pre>
 
 <ul>
 <li>
-<p><strong>name</strong> - A name to identify the jar. This name can be used to remove the jar from the cluster.  You can use alphabets, numbers and underscores to create the name.</p>
+<p><strong>unique-alias-name</strong> - A name to identify the jar. This name can be used to remove the jar from the cluster.  You can use alphabets, numbers and underscores to create the name.</p>
 </li>
 <li>
 <p><strong>jars</strong> - Comma-delimited string of jar paths. These paths are expected to be accessible from all the lead nodes in SnappyData.</p>
 </li>
 </ul>
+<h3 id="example_1">Example</h3>
+<p><strong>Deploying jars:</strong></p>
+<pre><code>deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
+</code></pre>
+
 <p>All the deployed commands are stored in the SnappyData cluster. In cases where the artifacts of the dependencies are not available in the provided cache path, then during restart, it automatically resolves all the packages and jars again and installs them in the system.</p>
 <p><a id= listjarspackages> </a></p>
 <h2 id="viewing-the-deployed-jars-and-packages">Viewing the Deployed Jars and Packages</h2>
-<p>You can view all the packages and jars deployed in the system by using the <strong>list packages</strong> command. </p>
+<p>You can view all the packages and jars deployed in the system by using the <code>list packages</code> command. </p>
 <h3 id="syntax-for-listing-deployed-jars-and-packages">Syntax for Listing Deployed Jars and Packages</h3>
 <pre><code class="pre">snappy&gt; list packages;
 Or
@@ -2081,7 +2158,7 @@ snappy&gt; list jars;
 </code></pre>
 
 <p>Both of the above commands will list all the packages as well the jars that are installed in the system. Hence, you can use either one of those commands.</p>
-<h3 id="sample-output-for-listing-deployed-jars-and-packages">Sample Output for Listing Deployed Jars and Packages</h3>
+<h3 id="sample-output-of-listing-jarspackages">Sample Output of Listing Jars/Packages</h3>
 <pre><code class="pre">snappy&gt; list jars;
 alias          |coordinate                                     |isPackage
 -------------------------------------------------------------------------
@@ -2094,12 +2171,15 @@ MYJAR          |b.jar                                          |false
 <h2 id="removing-deployed-jars">Removing Deployed Jars</h2>
 <p>You can remove the deployed jars with the <strong>undeploy</strong> command. This command removes the jars that are directly installed and the jars that are associated with a package, from the system.</p>
 <h3 id="syntax-for-removing-deployed-jars">Syntax for Removing Deployed Jars</h3>
+<pre><code class="pre">undeploy &lt;unique-alias-name&gt;;
+</code></pre>
+
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The removal is only captured when you use the <strong>undeploy</strong> command,  the jars are removed only when the system restarts.</p>
+<p>The removal is only captured when you use the <strong>undeploy</strong> command, the jars are removed only when you restart the cluster.</p>
 </div>
-<h3 id="example_1">Example</h3>
-<pre><code class="pre">undeploy spark-daria_2.11.8-2.2.0_0.10.0.jar 
+<h3 id="example_2">Example</h3>
+<pre><code class="pre">undeploy spark_deep_learning_0_3_0;
 </code></pre>
 
 <div class="admonition attention">
@@ -2154,6 +2234,8 @@ MYJAR          |b.jar                                          |false
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

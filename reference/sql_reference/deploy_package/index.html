@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../../favicon.ico">
   
-  <title>DEPLOY PACKAGE - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>DEPLOY PACKAGE - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -1740,6 +1740,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1800,6 +1863,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1930,6 +2000,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1952,7 +2029,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1960,7 +2037,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../../..">Docs</a> &raquo;</li>
     
       
         
@@ -1991,12 +2068,12 @@
                 <h1 id="deploy-packages">DEPLOY PACKAGES</h1>
 <p>Deploys package in SnappyData.</p>
 <h2 id="syntax">Syntax</h2>
-<pre><code class="pre">deploy package &lt;name&gt; ‘packages’ [ repos ‘repositories’ ] [ path 'some path to cache resolved jars' ]
+<pre><code class="pre">deploy package &lt;unique-alias-name&gt; ‘packages’ [ repos ‘repositories’ ] [ path 'some path to cache resolved jars' ]
 </code></pre>
 
 <ul>
 <li>
-<p><strong>name</strong> - A name to identify a package. This name can be used to remove the package from the cluster.  You can use alphabets, numbers, and underscores to create the name.</p>
+<p><strong>unique-alias-name</strong> - A name to identify a package. This name can be used to remove the package from the cluster.  You can use alphabets, numbers, and underscores to create the name.</p>
 </li>
 <li>
 <p><strong>packages</strong> - Comma-delimited string of maven packages. </p>
@@ -2028,15 +2105,13 @@
 <ul>
 <li>Deploy packages from a default repository.</li>
 </ul>
-<pre><code>deploy package spark_deep_learning_0_3_0 databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11 /home/snappydata/work
+<pre><code>deploy package spark_deep_learning_0_3_0 'databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11' path '/home/snappydata/work'
 </code></pre>
 
-<pre><code class="pre">deploy package spark_redshift_300 com.databricks:spark-redshift_2.10:3.0.0-preview1 /home/snappydata/work
+<pre><code class="pre">deploy package spark_redshift_300 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/snappydata/work'
 </code></pre>
 
-<ul>
-<li>Deploy packages from a non-default repository.  </li>
-</ul>
+<p>Deploy packages from a non-default repository.</p>
 <p><strong>Related Topics</strong></br></p>
 <ul>
 <li><a href="../deploy_jar/">DEPLOY JAR</a></li>
@@ -2069,6 +2144,8 @@
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

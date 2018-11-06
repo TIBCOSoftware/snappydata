@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>How to Connect using JDBC Driver - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>How to Connect using JDBC Driver - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -284,6 +284,10 @@
             <ul>
             
                 <li class="toctree-l3"><a href="#how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</a></li>
+                
+                    <li><a class="toctree-l4" href="#connecting-with-jdbc-client-pool-driver">Connecting with JDBC Client Pool Driver</a></li>
+                
+                    <li><a class="toctree-l4" href="#limitations">Limitations</a></li>
                 
             
             </ul>
@@ -1734,6 +1738,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1794,6 +1861,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1924,6 +1998,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1946,7 +2027,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1954,7 +2035,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../..">Docs</a> &raquo;</li>
     
       
         
@@ -1980,22 +2061,22 @@
               
                 <h1 id="how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</h1>
 <p><a id="howto-jdbc"></a></p>
-<p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers based on which, the driver automatically connects to one of the servers.</p>
-<p><strong>To connect to the SnappyData cluster</strong>: Using JDBC, use URL of the form <code>jdbc:snappydata://&lt;locatorHostName&gt;:&lt;locatorClientPort&gt;/</code></p>
+<p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers. </p>
+<p>To connect to the SnappyData cluster using JDBC, use URL of the form <code>jdbc:snappydata://&lt;locatorHostName&gt;:&lt;locatorClientPort&gt;/</code></p>
 <p>Where the <code>&lt;locatorHostName&gt;</code> is the hostname of the node on which the locator is started and <code>&lt;locatorClientPort&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
 <p><strong>Dependencies</strong>: Use the Maven/SBT dependencies for the latest released version of SnappyData.</p>
-<p><strong>Example: Maven dependency:</strong></p>
+<p><strong>Example: Maven dependency</strong></p>
 <pre><code class="pre">&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client --&gt;
 &lt;dependency&gt;
     &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
-    &lt;artifactId&gt;snappydata-store-client&lt;/artifactId&gt;
-    &lt;version&gt;1.6.2&lt;/version&gt;
+    &lt;artifactId&gt;snappydata-jdbc_2.11&lt;/artifactId&gt;
+    &lt;version&gt;1.0.2.1&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre>
 
-<p><strong>Example: SBT dependency:</strong></p>
+<p><strong>Example: SBT dependency</strong></p>
 <pre><code class="pre">// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-store-client&quot; % &quot;1.6.2&quot;
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-jdbc_2.11&quot; % &quot;1.0.2.1&quot;
 </code></pre>
 
 <div class="admonition note">
@@ -2009,7 +2090,7 @@ libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-store-client
 </code></pre>
 
 <p>For more details, refer <a href="https://github.com/sbt/sbt/issues/3618">https://github.com/sbt/sbt/issues/3618</a>.</p>
-<p><strong>Code Example:</strong></p>
+<p><strong>Code Example</strong></p>
 <p><strong>Connect to a SnappyData cluster using JDBC on default client port</strong></p>
 <p>The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala">JDBCExample.scala</a></p>
 <pre><code class="pre">val url: String = s&quot;jdbc:snappydata://localhost:1527/&quot;
@@ -2044,6 +2125,108 @@ preparedStmt1.close()
 <p class="admonition-title">Note</p>
 <p>If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</p>
 </div>
+<h2 id="connecting-with-jdbc-client-pool-driver">Connecting with JDBC Client Pool Driver</h2>
+<p>JDBC client pool driver provides built-in connection pooling and relies on the non-pooled <a href="./">JDBC driver</a>. The driver initializes the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. 
+We recommend using the pooled driver for low latency operations such as point lookups and when using the Spark JDBC data source API (see example below). When you access SnappyData from Java frameworks such as Spring, we recommend using pooling provided in the framework and switch to using the non-pooled driver. </p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The underlying pool is uniquely associated with the set of properties that are passed while creating the connection. If any of the properties change, a new pool is created.</p>
+</div>
+<p><strong>To connect to SnappyData Cluster using JDBC client pool driver</strong>, use the url of the form: </br> <code>jdbc:snappydata:pool://&lt;host&gt;:&lt;port&gt;</code></br>
+Where <code>&lt;host&gt;</code> is the hostname of the node on which the locator is started and <code>&lt;port&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
+<p>The client pool driver class name is <strong>io.snappydata.jdbc.ClientPoolDriver</strong>.</p>
+<p>The following pool related properties can be used to tune the JDBC client pool driver:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pool.user</td>
+<td>The username to be passed to the JDBC client pool driver to establish a connection.</td>
+</tr>
+<tr>
+<td>pool.password</td>
+<td>The password to be passed to the JDBC  client pool driver to establish a connection.</td>
+</tr>
+<tr>
+<td>pool.initialSize</td>
+<td>The initial number of connections that are created when the pool is started. Default value is <code>max(256, availableProcessors * 8)</code>.</td>
+</tr>
+<tr>
+<td>pool.maxActive</td>
+<td>The maximum number of active connections that can be allocated from this pool at a time. The default value is <code>max(256, availableProcessors * 8)</code>.</td>
+</tr>
+<tr>
+<td>pool.minIdle</td>
+<td>The minimum number of established connections that should be maintained in the client pool. Default value is <strong>1</strong>.</td>
+</tr>
+<tr>
+<td>pool.maxIdle</td>
+<td>The maximum number of connections that should be maintained in the client pool. Default value is <strong>maxActive:</strong><code>max(256, availableProcessors * 8)</code>. Idle connections are checked periodically, if enabled, and the connections that are idle for more than the time set in <strong>minEvictableIdleTimeMillis</strong> are released.</td>
+</tr>
+<tr>
+<td>pool.maxWait</td>
+<td>(int) The maximum waiting period, in milliseconds, for establishing a connection after which an exception is thrown. Default value is 30000 (30 seconds).</td>
+</tr>
+<tr>
+<td>pool.removeAbandoned</td>
+<td>Flag to remove the abandoned connections, in case they exceed the settings for <strong>removeAbandonedTimeout</strong>. If set to true a connection is considered abandoned and eligible for removal, if its no longer in use than the settings for <strong>removeAbandonedTimeout</strong>. Setting this to <strong>true</strong> can recover db connections from applications that fail to close a connection. The default value is <strong>false</strong>.</td>
+</tr>
+<tr>
+<td>pool.removeAbandonedTimeout</td>
+<td>Timeout in seconds before an abandoned connection, that was in use, can be removed. The default value is 60 seconds. The value should be set to the time required for the longest running query in your applications.</td>
+</tr>
+<tr>
+<td>pool.timeBetweenEvictionRunsMillis</td>
+<td>Time period required to sleep between runs of the idle connection validation/cleaner thread. You should always set this value above one second. This time period determines how often we check for idle and abandoned connections and how often to validate the idle connections. The default value is 5000 (5 seconds).</td>
+</tr>
+<tr>
+<td>pool.minEvictableIdleTimeMillis</td>
+<td>The minimum time period, in milliseconds, for which an object can be idle in the pool before it qualifies for eviction. The default value is 60000 (60 seconds).</td>
+</tr>
+<tr>
+<td>driver</td>
+<td><code>io.snappydata.jdbc.ClientPoolDriver</code></br>This should be passed through Spark JDBC API for loading and using the driver.</td>
+</tr>
+<tr>
+<td>pool.testOnBorrow</td>
+<td>Indicates if the objects are validated before being borrowed from the pool. If the object fails to validate, it will be dropped from the pool, and will attempt to borrow another. In order to have a more efficient validation, see <code>pool.validationInterval</code>. Default value is <strong>true</strong>.</td>
+</tr>
+<tr>
+<td>pool.validationInterval</td>
+<td>Avoid excess validation, only run validation at most at this frequency - time in milliseconds. If a connection is due for validation, but has been validated previously within this interval, it will not be validated again. The default value is 10000 (10 seconds).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example Code Snippet:</strong></p>
+<pre><code class="pre">val properties = new Properties()
+properties.setProperty(&quot;pool.user&quot;, &quot;user&quot;)
+properties.setProperty(&quot;pool.password&quot;, &quot;pass&quot;)
+properties.setProperty(&quot;driver&quot;, ““io.snappydata.jdbc.ClientPoolDriver””)
+
+val builder = SparkSession
+.builder.
+appName(&quot;app&quot;)
+.master(&quot;local[*]&quot;)
+
+val spark: SparkSession = builder.getOrCreate
+
+val df = spark.read.jdbc(“jdbc:snappydata:pool://localhost:1527”, &quot;Table_X&quot;, properties)
+
+</code></pre>
+
+<h2 id="limitations">Limitations</h2>
+<p>If you set any of the following properties for a pooled connection, it gets auto-reset to the default values whenever you obtain a new pooled connection.</p>
+<ul>
+<li><strong>setAutoCommit</strong></li>
+<li><strong>setTransactionIsolation</strong></li>
+<li><strong>setReadOnly</strong></li>
+</ul>
+<p>However, if you have set any of the other properties (e.g. spark or snappy AQP related properties), it does not get auto-reset when you obtain a new pooled connection.</p>
               
             </div>
           </div>
@@ -2072,6 +2255,8 @@ preparedStmt1.close()
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>

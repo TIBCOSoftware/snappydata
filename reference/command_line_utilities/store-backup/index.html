@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../../favicon.ico">
   
-  <title>backup and restore - SnappyData Documentation<br/><sub>v.1.0.2</sub></title>
+  <title>backup and restore - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -1750,6 +1750,69 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/skip-locks/">skip-locks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/socket-buffer-size/">socket-buffer-size</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/socket-lease-time/">socket-lease-time</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.datadictionary.allow-startup-errors/">gemfirexd.datadictionary.allow-startup-errors</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.default-startup-recovery-delay/">gemfirexd.default-startup-recovery-delay</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappy.history/">snappy.history</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.max-lock-wait/">gemfirexd.max-lock-wait</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.query-cancellation-interval/">gemfirexd.query-cancellation-interval</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/snappydata.query-timeout/">gemfirexd.query-timeout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../configuration_parameters/ssl/">ssl</a>
         
     </li>
@@ -1810,6 +1873,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../apidocsintro/">API Documentation</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../API_Reference/apireference_guide/">SnappyData Spark extension API Reference Guide</a>
         
     </li>
 
@@ -1940,6 +2010,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../prev_doc_ver/">Doc Archives</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../techsupport/">Contact and Support</a>
         
     </li>
@@ -1962,7 +2039,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2</sub></a>
+        <a href="../../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
       </nav>
 
       
@@ -1970,7 +2047,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="">Docs</a> &raquo;</li>
+    <li><a href="../../..">Docs</a> &raquo;</li>
     
       
         
@@ -2009,7 +2086,7 @@
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <ul>
-<li>SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.</li>
+<li>SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of the live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.</li>
 <li>SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.</li>
 </ul>
 </div>
@@ -2167,8 +2244,15 @@ GFXD-DD-DISKSTORE_76705038-10de-4b3e-955b-446546fe4036 GFXD-DEFAULT-DISKSTORE_15
 Backup successful.
 </code></pre>
 
-<p>If the operation does not succeed, a message is displayed indicating that the backup was incomplete, and is noted in the ending status message. It leaves the file INCOMPLETE_BACKUP in its highest level backup directory. </br>
+<p>If the operation does not succeed, a message is displayed indicating that the backup was incomplete and is noted in the ending status message. It leaves the file INCOMPLETE_BACKUP in its highest level backup directory. 
 Offline members leave nothing, so you only have this message from the backup operation itself. Although offline members cannot back up their disk stores, a complete backup can be obtained if at least one copy of the data is available in a running member.</p>
+<p>If the cluster is secure, you also need to specify all the security properties as command-line arguments to the backup command. The security properties you need to provide are the same as those mentioned in the configuration files in the <strong>conf</strong> directory (locators, servers or leads) when the cluster is launched.
+The only difference is that any valid user can run this command. That is, the user does not have to be a snappydata cluster administrator to run the backup command.</p>
+<p>For example:</p>
+<pre><code>./bin/snappy backup   /snappydata_backup_location/   -locators=locatorhostname:10334  -auth-provider=LDAP  -gemfirexd.auth-ldap-server=ldap://&lt;ldap-server-host&gt;:389/  -user=&lt;username&gt;  -password=&lt;password&gt;  -gemfirexd.auth-ldap-search-base=&lt;search-base-values&gt;  -gemfirexd.auth-ldap-search-dn=&lt;search-dn-values&gt; -gemfirexd.auth-ldap-search-pw=&lt;password&gt;
+</code></pre>
+
+<p>Optionally, you can encrypt the user's password first and use it in the above command to explicitly avoid putting the password in plain text in the command-line. Here is <a href="https://snappydatainc.github.io/snappydata/security/specify_encrypt_passwords_conf_client/#using-encrypted-password-in-client-connections">how you can encrypt the password</a></p>
 <p><a id="incremental-backup"></a></p>
 <h2 id="performing-an-incremental-backup">Performing an Incremental backup</h2>
 <p>An incremental backup saves the difference between the last backup and the current data. An incremental backup copies only operation logs that are not already present in the baseline directories for each member. For incremental backups, the restore script contains explicit references to operation logs in one or more previously-chained incremental backups. When the restore script is run from an incremental backup, it also restores the operation logs from previous incremental backups that are part of the backup chain.</p>
@@ -2250,7 +2334,7 @@ Backup successful.
 <p>Restore your disk stores when your members are offline and the system is down.</p>
 </li>
 <li>
-<p>Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.</p>
+<p>Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts do not copy over files with the same names.</p>
 </li>
 <li>
 <p>Run the restore scripts. Run each script on the host where the backup originated.</p>
@@ -2299,6 +2383,8 @@ Backup successful.
 
  <!-- Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. -->
 </footer>
+
+
 	  
         </div>
       </div>
