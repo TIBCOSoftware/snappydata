@@ -338,7 +338,7 @@ final case class RefParamLiteral(var param: ParamLiteral)
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
-    case r: RefParamLiteral => param eq r.param
+    case r: RefParamLiteral => param.equals(r.param)
     case l: ParamLiteral => param eq l
     case _ => false
   }
