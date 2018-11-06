@@ -87,8 +87,6 @@ We recommend using the pooled driver for low latency operations such as point lo
 !!! Important
 	The underlying pool is uniquely associated with the set of properties that are passed while creating the connection. If any of the properties change, a new pool is created.
 
-<!--- #### (Jags) it is super important for us to document the caveats - if you set a connection property like autocommit(false) other connection requests on this pool will also have this property set. Not sure if this issue exists. If so, critical to document and provide suggestions. Lizy, please verify. --->
-
 **To connect to SnappyData Cluster using JDBC client pool driver**, use the url of the form: </br> `jdbc:snappydata:pool://<host>:<port>`
 
 The client pool driver class name is **io.snappydata.jdbc.ClientPoolDriver**.
@@ -132,3 +130,14 @@ val spark: SparkSession = builder.getOrCreate
 val df = spark.read.jdbc(“jdbc:snappydata:pool://localhost:1527”, "Table_X", properties)
 
 ```
+
+## Limitations
+
+If you set any of the following properties for a pooled connection, it gets auto-reset whenever you obtain a new pooled connection.
+
+*	**setAutoCommit**
+*	**setTransactionIsolation**
+*	**setReadOnly**
+
+However, if you set any of the other properties (e.g. spark or snappy AQP related), it does not get auto-rest when you obtain a new pooled connection.
+
