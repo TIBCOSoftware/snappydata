@@ -25,6 +25,7 @@ import scala.collection.mutable
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import io.snappydata.collection.ObjectObjectHashMap
 import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
@@ -235,7 +236,7 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
 
   def asLiteral: TokenLiteral = new TokenLiteral(value, dataType)
 
-  override protected def jsonFields: List[JField] = asLiteral.jsonFields
+  override protected[sql] def jsonFields: List[JField] = asLiteral.jsonFields
 
   override def sql: String = asLiteral.sql
 
@@ -255,6 +256,7 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
+    case r: RefParamLiteral => this eq r.param
     case l: ParamLiteral =>
       // match by position only if "tokenized" else value comparison (no-caching case)
       if (tokenized && !valueEquals) pos == l.pos && dataType == l.dataType
@@ -305,6 +307,57 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
   }
 }
 
+/**
+ * This class is used as a substitution for ParamLiteral when two
+ * ParamLiterals have same constant values during parsing.
+ * This behaves like being equal to the ParamLiteral it points
+ * to in all respects but will be different from another
+ * ParamLiteral at the same position (which also has to be a
+ * RefParamLiteral pointing to an equal ParamLiteral to be equal to this).
+ */
+final case class RefParamLiteral(var param: ParamLiteral)
+    extends TokenizedLiteral with KryoSerializable {
+
+  override def value: Any = param.value
+
+  override def dataType: DataType = param.dataType
+
+  override def nullable: Boolean = param.nullable
+
+  override def eval(input: InternalRow): Any = param.eval(input)
+
+  override def nodeName: String = param.nodeName
+
+  override def prettyName: String = param.prettyName
+
+  override protected def jsonFields: List[JField] = param.jsonFields
+
+  override def sql: String = param.sql
+
+  override def hashCode(): Int = param.hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case a: AnyRef if this eq a => true
+    case r: RefParamLiteral => param eq r.param
+    case l: ParamLiteral => param eq l
+    case _ => false
+  }
+
+  override def semanticEquals(other: Expression): Boolean = equals(other)
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeObject(output, param)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    param = kryo.readObject(input, classOf[ParamLiteral])
+  }
+
+  override def valueString: String = param.valueString
+
+  override def toString: String = param.toString
+}
+
 object TokenLiteral {
 
   private val valueField = {
@@ -342,6 +395,8 @@ trait ParamLiteralHolder {
   @transient
   private final val parameterizedConstants = new mutable.ArrayBuffer[ParamLiteral](4)
   @transient
+  private final var paramConstantMap: ObjectObjectHashMap[(DataType, Any), ParamLiteral] = _
+  @transient
   protected final var paramListId = 0
 
   private[sql] final def getAllLiterals: Array[ParamLiteral] = parameterizedConstants.toArray
@@ -349,7 +404,38 @@ trait ParamLiteralHolder {
   private[sql] final def getCurrentParamsId: Int = paramListId
 
   private[sql] final def addParamLiteralToContext(value: Any,
-      dataType: DataType): ParamLiteral = {
+      dataType: DataType): TokenizedLiteral = {
+    // for size >= 4 use a lookup map to search for same constant else linear search
+    val numConstants = parameterizedConstants.length
+    if (numConstants >= 4) {
+      if (paramConstantMap eq null) {
+        // populate the map while checking for a match
+        paramConstantMap = ObjectObjectHashMap.withExpectedSize(8)
+        var i = 0
+        var existing: ParamLiteral = null
+        while (i < numConstants) {
+          val param = parameterizedConstants(i)
+          if ((existing eq null) && dataType == param.dataType && value == param.value) {
+            existing = param
+          }
+          paramConstantMap.put(param.dataType -> param.value, param)
+          i += 1
+        }
+        if (existing ne null) return RefParamLiteral(existing)
+      } else {
+        val existing = paramConstantMap.get(dataType -> value)
+        if (existing ne null) return RefParamLiteral(existing)
+      }
+    } else {
+      var i = 0
+      while (i < numConstants) {
+        val param = parameterizedConstants(i)
+        if (dataType == param.dataType && value == param.value) {
+          return RefParamLiteral(param)
+        }
+        i += 1
+      }
+    }
     val p = ParamLiteral(value, dataType, parameterizedConstants.length, paramListId)
     parameterizedConstants += p
     p
@@ -380,6 +466,7 @@ trait ParamLiteralHolder {
 
   private[sql] final def clearConstants(): Unit = {
     parameterizedConstants.clear()
+    if (paramConstantMap ne null) paramConstantMap = null
     paramListId += 1
   }
 }
@@ -441,7 +528,7 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
 
   override def dataType: DataType = expr.dataType
 
-  override def value: Any = eval(EmptyRow)
+  override def value: Any = eval(null)
 
   override def nodeName: String = "DynamicExpression"
 
@@ -499,7 +586,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     val m = new ConcurrentHashMap[AnyRef, AnyRef](hset.length)
     var hasNull = false
     for (e <- hset) {
-      val v = e.eval(EmptyRow).asInstanceOf[AnyRef]
+      val v = e.eval(null).asInstanceOf[AnyRef]
       if (v ne null) {
         m.put(v, v)
       } else if (!hasNull) {
@@ -536,7 +623,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
       val e = hset(i)
       val v = e match {
         case d: DynamicReplacableConstant => d
-        case _ => e.eval(EmptyRow).asInstanceOf[AnyRef]
+        case _ => e.eval(null).asInstanceOf[AnyRef]
       }
       elements(i) = v
     }
@@ -572,7 +659,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
 
   override def sql: String = {
     val valueSQL = child.sql
-    val listSQL = hset.map(_.eval(EmptyRow)).mkString(", ")
+    val listSQL = hset.map(_.eval(null)).mkString(", ")
     s"($valueSQL IN ($listSQL))"
   }
 }
