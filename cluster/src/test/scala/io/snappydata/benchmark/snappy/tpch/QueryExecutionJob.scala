@@ -69,7 +69,7 @@ object QueryExecutionJob extends SnappySQLJob {
         val metricName = s"query_${query}_latency_milliseconds"
         if (!metrics.requestLatencies.contains(query)) {
           metrics.requestLatencies(query) = Histogram.build()
-              .name(metricName)
+              .name(metricName).labelNames("warmup","execution")
               .help(s"Query ${query} latency in milliseconds.").register();
         }
       }

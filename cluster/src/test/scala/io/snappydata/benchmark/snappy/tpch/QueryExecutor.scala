@@ -170,9 +170,11 @@ object QueryExecutor {
         var totalTime: Long = 0
         for (i <- 1 to (warmup + runsForAverage)) {
           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
-          var hst: Histogram.Timer = null
+          var timer: Histogram.Timer = null
           if(metricsProperties.isSinkEnabled) {
-            hst = metricsProperties.requestLatencies(queryNumber).startTimer()
+            timer = metricsProperties.requestLatencies(queryNumber)
+                .labels((i <= warmup).toString, i.toString)
+                .startTimer()
           }
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
@@ -188,7 +190,7 @@ object QueryExecutor {
           }
           val endTime = System.currentTimeMillis()
           if(metricsProperties.isSinkEnabled){
-            hst.observeDuration()
+            timer.observeDuration()
             metricsProperties.pushGateway.pushAdd(metricsProperties.registry, metricsProperties.jobName)
           }
           val iterationTime = endTime - startTime
