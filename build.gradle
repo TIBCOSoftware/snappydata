@@ -974,12 +974,6 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
-    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
-    copy {
-      from jdbcProject.shadowJar.destinationDir
-      into "${snappyProductDir}/connectors"
-      include jdbcProject.shadowJar.archiveName
-    }
   }
 }
 
