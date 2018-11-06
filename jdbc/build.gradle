@@ -110,6 +110,20 @@ if (rootProject.hasProperty('enablePublish')) {
   }
 }
 
+// clear dependencies from shadowJar POM
+install {
+  repositories.mavenInstaller {
+    pom.whenConfigured { p -> p.dependencies.clear() }
+  }
+}
+if (rootProject.hasProperty('enablePublish')) {
+  uploadArchives {
+    repositories.mavenDeployer {
+      pom.whenConfigured { p -> p.dependencies.clear() }
+    }
+  }
+}
+
 // write the POM for spark-package
 String sparkPackageName = "snappydata-jdbc-${version}-s_${scalaBinaryVersion}"
 
