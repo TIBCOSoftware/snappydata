@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,6 +18,7 @@ package org.apache.spark.sql.internal
 
 import io.snappydata.Property
 
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
@@ -26,17 +27,15 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{DataType, LongType}
-import org.apache.spark.sql.{AnalysisException, Dataset, SnappySession, SparkSession}
+import org.apache.spark.sql.types.{DataType, LongType, StructType}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, SparkSession}
 
 /**
-  * Helper object for PutInto operations for column tables.
-  * This class takes the logical plans from SnappyParser
-  * and converts it into another plan.
-  */
+ * Helper object for PutInto operations for column tables.
+ * This class takes the logical plans from SnappyParser
+ * and converts it into another plan.
+ */
 object ColumnTableBulkOps {
-
-
 
   def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
@@ -158,22 +157,11 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) =>
-        val putKeys = mutable.getPutKeys
-        if (putKeys.isEmpty) {
-          throw new AnalysisException(
-            s"DeleteFrom in a column table requires key column(s) but got empty string")
-        }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
-        val exists = Join(subQuery, table, Inner, condition)
-        val deletePlan = Delete(table, exists, Nil)
-        val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
-        transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
       case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
-        val ks = mutable.getKeyColumns
+        val ks = mutable.getPrimaryKeyColumns
         if (ks.isEmpty) {
           throw new AnalysisException(
-            s"DeleteFrom in a table requires key column(s) but got empty string")
+            s"DeleteFrom operation requires key columns(s) or primary key defined on table.")
         }
         val condition = prepareCondition(sparkSession, table, subQuery, ks)
         val exists = Join(subQuery, table, Inner, condition)
@@ -182,6 +170,31 @@ object ColumnTableBulkOps {
         transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
     }
     transFormedPlan
+  }
+
+  def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
+      schema: StructType, resolvedName: String, putInto: Boolean): Int = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val sessionState = session.sessionState
+    val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
+    val encoder = RowEncoder(schema)
+    val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
+      rows.map(encoder.toRow)), schema)
+    val plan = if (putInto) {
+      PutIntoTable(
+        table = UnresolvedRelation(tableIdent),
+        child = ds.logicalPlan)
+    } else {
+      new Insert(
+        table = UnresolvedRelation(tableIdent),
+        partition = Map.empty[String, Option[String]],
+        child = ds.logicalPlan,
+        overwrite = OverwriteOptions(enabled = false),
+        ifNotExists = false)
+    }
+    session.sessionState.executePlan(plan).executedPlan.executeCollect()
+        // always expect to create a TableInsertExec
+        .foldLeft(0)(_ + _.getInt(0))
   }
 }
 

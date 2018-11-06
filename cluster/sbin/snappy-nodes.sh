@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -38,6 +38,7 @@ function absPath() {
 }
 sbin="$(dirname "$(absPath "$0")")"
 
+. "$sbin/common.funcs"
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
@@ -52,7 +53,7 @@ if [ "$1" = "-bg" -o "$1" = "--background" ]; then
   shift
 fi
 export RUN_IN_BACKGROUND
-  
+
 # Check if --config is passed as an argument. It is an optional parameter.
 # Exit if the argument is not a directory.
 if [ "$1" == "--config" ]
@@ -88,6 +89,9 @@ case $componentType in
     if [ -f "${SPARK_CONF_DIR}/servers" ]; then
       HOSTLIST="${SPARK_CONF_DIR}/servers"
     fi
+    if [ -f "${SPARK_CONF_DIR}/leads" ]; then
+      LEADHOSTLIST="${SPARK_CONF_DIR}/leads"
+    fi
     ;;
   (lead)
     if [ -f "${SPARK_CONF_DIR}/leads" ]; then
@@ -108,7 +112,7 @@ fi
 
 default_loc_port=10334
 
-function readalllocators { 
+function readAllLocators() {
   retVal=
   while read loc || [[ -n "${loc}" ]]; do
     [[ -z "$(echo $loc | grep ^[^#] | grep -v ^$ )" ]] && continue
@@ -117,13 +121,13 @@ function readalllocators {
     else
       retVal="$retVal,$(echo $loc | sed "s#\([^ ]*\).*#\1:$default_loc_port#g")"
     fi
-  done < "${SPARK_CONF_DIR}/locators" 
+  done < "${SPARK_CONF_DIR}/locators"
   echo ${retVal#","}
 }
 
 LOCATOR_IS_LOCAL=
 if [ -f "${SPARK_CONF_DIR}/locators" ]; then
-  allLocators="$(readalllocators)"
+  allLocators="$(readAllLocators)"
   LOCATOR_ARGS="-locators=$allLocators"
   if echo $allLocators | egrep -wq '(localhost|127\.0\.0\.1|::1)'; then
     LOCATOR_IS_LOCAL=1
@@ -173,27 +177,28 @@ function execute() {
         args="${args} -J-Dp2p.minJoinTries=1"
       fi
     fi
-    # set the default bind-address and SPARK_LOCAL_IP
-    if ! echo $args $"${@// /\\ }" | grep -q '[-]bind-address='; then
-      args="${args} -bind-address=$host"
-    fi
-    if [ -z "$SPARK_LOCAL_IP" ]; then
-      export SPARK_LOCAL_IP=$host
-      preCommand="export SPARK_LOCAL_IP=$SPARK_LOCAL_IP; "
-    fi
 
+    bindAddress=
     clientBindAddress=
     clientHostName=
     clientPort=
     dumpServerInfo=
     for arg in $args $"${@// /\\ }"; do
       case "$arg" in
+        -bind-address=*) bindAddress="$(echo $arg | sed 's/-bind-address=//')" ;;
         -client-bind-address=*) clientBindAddress="$(echo $arg | sed 's/-client-bind-address=//')" ;;
         -hostname-for-clients=*) clientHostName="$(echo $arg | sed 's/-hostname-for-clients=//')" ;;
         -client-port=*) clientPort="$(echo $arg | sed 's/-client-port=//')" ;;
         -dump-server-info) dumpServerInfo=1 ;;
       esac
     done
+    # set the default bind-address and SPARK_LOCAL_IP
+    if [ -z "${bindAddress}" ]; then
+      args="${args} -bind-address=$host"
+      bindAddress="${host}"
+    fi
+    preCommand="${preCommand}export SPARK_LOCAL_IP=$bindAddress; "
+
     # set the default client-bind-address and locator's peer-discovery-address
     if [ -z "${clientBindAddress}" -a "${componentType}" != "lead" ]; then
       args="${args} -client-bind-address=${host}"
@@ -202,15 +207,13 @@ function execute() {
     if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
     fi
-    # set the public hostname for Spark Web UI
-    if [ -z "$SPARK_PUBLIC_DNS" -a "${componentType}" = "lead" ]; then
-      export SPARK_PUBLIC_DNS=$host
-      preCommand="${preCommand}export SPARK_PUBLIC_DNS=$SPARK_PUBLIC_DNS; "
+    # set the public hostname for Spark Web UI to hostname-for-clients if configured
+    if [ -n "${clientHostName}" ]; then
+      preCommand="${preCommand}export SPARK_PUBLIC_DNS=${clientHostName}; "
     fi
-    # Set hostname-for-clients on AWS as per SPARK_PUBLIC_DNS
-    if [ -n "${SPARK_IS_AWS_INSTANCE}" -a -n "${SPARK_PUBLIC_DNS}" -a "${componentType}" != "lead" -a "${host}" != 'localhost' -a "${host}" != "127.0.0.1" -a "${host}" != "::1" -a -z "${clientHostName}" ]; then
-      args="${args} -hostname-for-clients=${SPARK_PUBLIC_DNS}"
-      clientHostName="${SPARK_PUBLIC_DNS}"
+    # set host-data=false explicitly for leads
+    if [ "${componentType}" = "lead" ]; then
+      args="${args} -host-data=false"
     fi
 
     if [ -n "${dumpServerInfo}" ]; then
@@ -287,22 +290,110 @@ function execute() {
 }
 
 index=1
-declare -a arr
-if [ -n "${HOSTLIST}" ]; then
-  while read slave || [[ -n "${slave}" ]]; do
+isServerStart=
+declare -a leadHosts
+declare -a leadCounts
+if [ "$componentType" = "server" -a -n "$(echo $"${@// /\\ }" | grep -w start)" ]; then
+  isServerStart=1
+fi
+# check leads on the same nodes as servers
+# (and if none then memory-size can be increased)
+if [ -n "$LEADHOSTLIST" -a -n "$isServerStart" ]; then
+  while read slave || [[ -n "$slave" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
-    arr+=("${slave}");
     host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
     args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
-    if echo $"${@// /\\ }" | grep -wq "start\|status"; then
+    leadIndex=$(keyIndex "$host" "${leadHosts[@]}")
+    leadPutIndex="$leadIndex"
+    if [ -z "$leadPutIndex" ]; then
+      leadPutIndex=${#leadCounts[@]}
+    fi
+    leadHosts[$leadPutIndex]="$host"
+    # marker for the case when lead heap/memory has been configured explicitly
+    # in which case server side auto-configuration will also be skipped
+    if echo $args $"${@// /\\ }" | grep -q "heap-size=\|memory-size="; then
+      leadCounts[$leadPutIndex]=-1
+    elif [ -z "$leadIndex" ]; then
+      leadCounts[$leadPutIndex]=1
+    else
+      ((leadCounts[$leadPutIndex]++))
+    fi
+  done < "$LEADHOSTLIST"
+fi
+
+function getNumLeadsOnHost() {
+  host="$1"
+  numLeadsOnHost=
+  if [ ${#leadCounts[@]} -gt 0 ]; then
+    leadIndex=$(keyIndex "$host" "${leadHosts[@]}")
+    if [ -n "$leadIndex" ]; then
+      numLeadsOnHost="${leadCounts[$leadIndex]}"
+    fi
+  elif [ "$host" = "localhost" ]; then
+    numLeadsOnHost=1
+  fi
+  if [ -z "$numLeadsOnHost" ]; then
+    numLeadsOnHost=0
+  fi
+  echo $numLeadsOnHost
+}
+
+if [ -n "${HOSTLIST}" ]; then
+  declare -a arr
+  declare -a hosts
+  declare -a counts
+  isStartOrStatus=
+
+  while read slave || [[ -n "${slave}" ]]; do
+    [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
+    arr[${#arr[@]}]="$slave"
+    if [ -n "$isServerStart" ]; then
+      host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
+      hostIndex=$(keyIndex "$host" "${hosts[@]}")
+      if [ -z "$hostIndex" ]; then
+        hostIndex=${#hosts[@]}
+        counts[$hostIndex]=1
+      else
+        ((counts[$hostIndex]++))
+      fi
+      hosts[$hostIndex]="$host"
+    fi
+  done < "$HOSTLIST"
+
+  numSlaves=${#arr[@]}
+  if [ $numSlaves -eq 0 ]; then
+    arr[0]=localhost
+    hosts[0]=localhost
+    counts[0]=1
+    numSlaves=1
+  fi
+
+  if echo $"${@// /\\ }" | grep -wq "start\|status"; then
+    isStartOrStatus=1
+  fi
+  for slave in "${arr[@]}"; do
+    if [ -n "$isStartOrStatus" ]; then
+      host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
+      args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
+      # disable implicit off-heap for nodes having multiple servers configured
+      if [ -n "$isServerStart" ]; then
+        hostIndex=$(keyIndex "$host" "${hosts[@]}")
+        if [ -n "$hostIndex" -a ${counts[$hostIndex]} -gt 1 -a -z "$(echo $args $"${@// /\\ }" | grep 'memory-size=')" ]; then
+          args="$args -memory-size=0"
+        fi
+        # check number of leads on the same node
+        args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
+      fi
       execute "$@"
     fi
     ((index++))
-  done < $HOSTLIST
+  done
+
+  # stop nodes in reverse order
   if echo $"${@// /\\ }" | grep -wq "stop"; then
-    line=${#arr[@]}
+    line=$numSlaves
     if [ $((index-1)) -eq $line ]; then
-      for (( i=${#arr[@]}-1 ; i>=0 ; i-- )) ; do
+      for (( i=$numSlaves-1 ; i>=0 ; i-- )) ; do
         ((index--))
         CONF_ARG=${arr[$i]}
         host="$(echo "$CONF_ARG "| tr -s ' ' | cut -d ' ' -f1)"
@@ -314,6 +405,9 @@ if [ -n "${HOSTLIST}" ]; then
 else
   host="localhost"
   args=""
+  if [ -n "$isServerStart" ]; then
+    args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
+  fi
   execute "$@"
 fi
 wait

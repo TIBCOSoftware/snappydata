@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,7 +26,7 @@ import net.jpountz.lz4.LZ4Factory
 import org.xerial.snappy.Snappy
 
 import org.apache.spark.io.{CompressionCodec, LZ4CompressionCodec, LZFCompressionCodec, SnappyCompressionCodec}
-import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, releaseExecutionMemory}
+import org.apache.spark.memory.MemoryManagerCallback.allocateExecutionMemory
 
 /**
  * Utility methods for compression/decompression.
@@ -60,29 +60,42 @@ object CompressionUtils {
     buffer.putInt(4, uncompressedLen)
   }
 
-  def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
+  def acquireBufferForCompress(codecId: Int, input: ByteBuffer, len: Int,
       allocator: BufferAllocator): ByteBuffer = {
-    if (len < MIN_COMPRESSION_SIZE) return input
-
-    var result: ByteBuffer = null
-    val resultLen = codecId match {
+    if (len < MIN_COMPRESSION_SIZE) input
+    else codecId match {
       case CompressionCodecId.LZ4_ID =>
         val compressor = LZ4Factory.fastestInstance().fastCompressor()
         val maxLength = compressor.maxCompressedLength(len)
         val maxTotal = maxLength + COMPRESSION_HEADER_SIZE
-        result = allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
-        compressor.compress(input, input.position(), len,
-          result, COMPRESSION_HEADER_SIZE, maxLength)
+        allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
       case CompressionCodecId.SNAPPY_ID =>
         val maxTotal = Snappy.maxCompressedLength(len) + COMPRESSION_HEADER_SIZE
-        result = allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
+        allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
+      case _ => throw new IllegalStateException(s"Unknown compression codec $codecId")
+    }
+  }
+
+  def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
+      result: ByteBuffer): ByteBuffer = {
+    val position = input.position()
+    val resultLen = try codecId match {
+      case CompressionCodecId.LZ4_ID =>
+        val compressor = LZ4Factory.fastestInstance().fastCompressor()
+        val maxLength = compressor.maxCompressedLength(len)
+        compressor.compress(input, position, len,
+          result, COMPRESSION_HEADER_SIZE, maxLength)
+      case CompressionCodecId.SNAPPY_ID =>
         if (input.isDirect) {
           result.position(COMPRESSION_HEADER_SIZE)
           Snappy.compress(input, result)
         } else {
-          Snappy.compress(input.array(), input.arrayOffset() + input.position(),
+          Snappy.compress(input.array(), input.arrayOffset() + position,
             len, result.array(), COMPRESSION_HEADER_SIZE)
         }
+    } finally {
+      // reset the position/limit of input buffer in case it was changed by compressor
+      input.position(position)
     }
     // check if there was some decent reduction else return uncompressed input itself
     if (resultLen.toDouble <= len * MIN_COMPRESSION_RATIO) {
@@ -91,8 +104,6 @@ object CompressionUtils {
       result.limit(resultLen + COMPRESSION_HEADER_SIZE)
       result
     } else {
-      // release the compressed buffer
-      releaseExecutionMemory(result, COMPRESSION_OWNER, releaseBuffer = true)
       input
     }
   }
@@ -127,26 +138,19 @@ object CompressionUtils {
       val useAllocator = if (outputLen <= MIN_COMPRESSION_SIZE && !allocator.isDirect) {
         HeapBufferAllocator.instance()
       } else allocator
-      codecDecompress(input, outputLen, useAllocator, position, codec)
+      val result = allocateExecutionMemory(outputLen, DECOMPRESSION_OWNER, useAllocator)
+      codecDecompress(input, result, outputLen, position, codec)
+      result
     } else input
   }
 
-  private[sql] def codecDecompress(input: ByteBuffer,
-      allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
-    val outputLen = input.getInt(position + 4)
-    codecDecompress(input, outputLen, allocator, position, codecId)
-  }
-
-  private def codecDecompress(input: ByteBuffer, outputLen: Int,
-      allocator: BufferAllocator, position: Int, codecId: Int): ByteBuffer = {
-    var result: ByteBuffer = null
-    codecId match {
+  def codecDecompress(input: ByteBuffer, result: ByteBuffer, outputLen: Int,
+      position: Int, codecId: Int): Unit = {
+    try codecId match {
       case CompressionCodecId.LZ4_ID =>
-        result = allocateExecutionMemory(outputLen, DECOMPRESSION_OWNER, allocator)
         LZ4Factory.fastestInstance().fastDecompressor().decompress(input,
           position + 8, result, 0, outputLen)
       case CompressionCodecId.SNAPPY_ID =>
-        result = allocateExecutionMemory(outputLen, DECOMPRESSION_OWNER, allocator)
         input.position(position + 8)
         if (input.isDirect) {
           Snappy.uncompress(input, result)
@@ -154,8 +158,10 @@ object CompressionUtils {
           Snappy.uncompress(input.array(), input.arrayOffset() +
               input.position(), input.remaining(), result.array(), 0)
         }
+    } finally {
+      // reset the position/limit of input buffer in case it was changed by de-compressor
+      input.position(position)
     }
     result.rewind()
-    result
   }
 }

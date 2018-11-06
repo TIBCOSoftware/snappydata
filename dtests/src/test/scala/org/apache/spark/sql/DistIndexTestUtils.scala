@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -53,20 +53,22 @@ object DistIndexTestUtils {
         "true")
     }
 
-    var queryToBeExecuted = TPCH_Queries.getQuery(qNum, false, true)
-    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(qNum, queryToBeExecuted, snc, false)
-        ._1.foreach(_ => ())
+    val queryToBeExecuted = TPCH_Queries.getQuery(qNum, false, true)
+
+    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(
+      qNum, queryToBeExecuted, snc)._1.foreach(_ => ())
 //    def evalSnappyMods(genPlan: Boolean) = TPCH_Snappy.queryExecution(qNum, snc, useIndex = false,
 //      genPlan = genPlan)._1.foreach(_ => ())
 
     def evalBaseTPCH = qryProvider.execute(query, executor)
 
 
-    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
+    b.addCase(s"$qNum baseTPCH index = F", numIters = 0, prepare = case3, cleanup = () => {})(
+      _ => evalBaseTPCH)
     //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
     //    b.addCase(s"$qNum snappyMods joinOrder = F", prepare = case1)(i => evalSnappyMods(false))
     //    b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
-    b.addCase(s"$qNum baseTPCH index = T", prepare = case3)(i =>
+    b.addCase(s"$qNum baseTPCH index = T", numIters = 0, prepare = case3, cleanup = () => {})(_ =>
       evalBaseTPCH)
     b.run()
   }
@@ -90,9 +92,10 @@ object DistIndexTestUtils {
         pw.println("Query String is : " + str)
         snc.sql(str)
       })
-      var queryToBeExecuted = TPCH_Queries.getQuery(qNum.toString, false, true)
-      val (newAnswer, df) = QueryExecutor.queryExecution(qNum.toString, queryToBeExecuted, snc, false)
-      //val (newAnswer, df) = TPCH_Snappy.queryExecution(q, snc, false, false)
+      val queryToBeExecuted = TPCH_Queries.getQuery(qNum.toString, false, true)
+      val (newAnswer, df) = QueryExecutor.queryExecution(qNum.toString,
+        queryToBeExecuted, snc)
+      // val (newAnswer, df) = TPCH_Snappy.queryExecution(q, snc, false, false)
       newAnswer.foreach(pw.println)
       val isSorted = df.logicalPlan.collect { case s: Sort => s }.nonEmpty
       QueryTest.sameRows(expectedAnswer, newAnswer, isSorted).map { results =>

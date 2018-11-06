@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,6 +18,8 @@ package org.apache.spark.sql.streaming
 
 import scala.reflect.runtime.universe.TypeTag
 
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.{InternalRow, JavaTypeInference}
@@ -33,7 +35,11 @@ import org.apache.spark.streaming.dstream.DStream
 object StreamSqlHelper {
 
   def registerRelationDestroy(): Unit = {
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    try {
+      SnappyStoreHiveCatalog.registerRelationDestroy(relation = None)
+    } catch {
+      case e: Exception if GemFireXDUtils.retryToBeDone(e) => // ignore if node going down
+    }
   }
 
   def clearStreams(): Unit = {

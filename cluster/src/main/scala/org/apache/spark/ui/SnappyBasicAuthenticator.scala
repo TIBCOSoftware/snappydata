@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,6 @@ import javax.servlet.http.HttpServletRequest
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
@@ -44,8 +43,9 @@ class SnappyBasicAuthenticator extends BasicAuthenticator with Logging {
     props.setProperty(Attribute.USERNAME_ATTR, username)
     props.setProperty(Attribute.PASSWORD_ATTR, password.toString)
 
-    val result = FabricDatabase.getAuthenticationServiceBase.authenticate(Misc
-        .getMemStoreBooting.getDatabaseName, props)
+    val memStore = Misc.getMemStoreBooting
+    val result = memStore.getDatabase.getAuthenticationService.authenticate(
+      memStore.getDatabaseName, props)
 
     if (result != null) {
       val msg = s"ACCESS DENIED, user [$username]. $result"
