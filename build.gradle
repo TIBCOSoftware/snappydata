@@ -129,7 +129,7 @@ allprojects {
     snappyStoreVersion = '1.6.2.1'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.2'
+    zeppelinInterpreterVersion = '0.7.3.3'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
