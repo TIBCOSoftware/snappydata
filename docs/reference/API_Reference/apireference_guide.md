@@ -492,7 +492,11 @@ import org.apache.spark.sql.snappy._df.write.putInto(“t1”)
 ```
 <a id= deletefromapi> </a>
 ### deleteFrom
-Deletes the content of the DataFrame from the specified table.
+The `deleteFrom` API deletes all those records from given snappy table which exists in the input Dataframe. Existence of the record is checked by comparing the key columns (or the primary keys) values. 
+
+To use this API, key columns(for column table) or primary keys(for row tables) must be defined in the SnappyData table.
+
+Also, the source Dataframe must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using case-insensitive match of column names. If the source Dataframe contains columns other than the key columns, it will be ignored by the `deleteFrom` API.
 
 
 **Syntax**
