@@ -317,7 +317,17 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
  * ParamLiteral at the same position (which also has to be a
  * RefParamLiteral pointing to an equal ParamLiteral to be equal to this).
  *
- * Note: The RefParamLiteral maintains its own copy of value since it can change
+ * The above policy allows an expression like "a = 4 and b = 4" to be equal to
+ * "a = 5 and b = 5" after tokenization but will be different from
+ * "a = 5 and b = 6". This distinction is required because former can
+ * lead to a different execution plan after common-subexpression processing etc
+ * due to the fact that the actual values for the two tokenized values are equal.
+ * See TPCH Q19 for an example where equal values in two different positions
+ * lead to an optimized plan due to common-subexpression being pulled out of
+ * OR conditions as a separate AND condition which leads to further filter
+ * pushdowns which is not possible if the actual values are different.
+ *
+ * Note: This class maintains its own copy of value since it can change
  * in execution (e.g. ROUND can change precision of underlying Decimal value)
  * which should not lead to a change of value of referenced ParamLiteral or vice-versa.
  * However, during planning, code generation and other phases before runJob,
@@ -427,7 +437,6 @@ trait ParamLiteralHolder {
     }
     val p = ParamLiteral(value, dataType, numConstants, paramListId)
     parameterizedConstants += p
-    // value is (pos + 1) since 0 indicates absence in getLong
     if (paramConstantMap ne null) paramConstantMap.put(dataType -> value, p)
     p
   }
