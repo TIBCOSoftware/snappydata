@@ -49,6 +49,10 @@ trait DynamicReplacableConstant extends Expression {
 
   def value: Any
 
+  /**
+   * Used only for checking types and can be overridden by implementations to return
+   * dummy result (like null) whose [[value]] evaluation can be potentially expensive.
+   */
   private[sql] def getValueForTypeCheck: Any = value
 
   override final def deterministic: Boolean = true
