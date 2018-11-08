@@ -39,7 +39,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
-case class TermValues(literalValueRef : String, isNull : String, valueTerm : String)
+case class TermValues(literalValueRef: String, isNull: String, valueTerm: String)
+
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
 trait DynamicReplacableConstant extends Expression {
@@ -47,6 +48,8 @@ trait DynamicReplacableConstant extends Expression {
   @transient private lazy val termMap = new mutable.HashMap[CodegenContext, TermValues]
 
   def value: Any
+
+  private[sql] def getValueForTypeCheck: Any = value
 
   override final def deterministic: Boolean = true
 
@@ -58,8 +61,7 @@ trait DynamicReplacableConstant extends Expression {
 
   override final def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     // change the isNull and primitive to consts, to inline them
-    val value = this.value
-    assert(value != null || nullable, "Expected nullable as true when value is null")
+    val value = getValueForTypeCheck
     val addMutableState = !ctx.references.exists(_.asInstanceOf[AnyRef] eq this)
     val termValues = if (addMutableState) {
       val literalValueRef = ctx.addReferenceObj("literal", this,
@@ -219,7 +221,7 @@ final class TokenLiteral(_value: Any, _dataType: DataType)
  * for DynamicReplacableConstant and use .eval(..) for code generation.
  * see SNAP-1597 for more details.
  */
-final case class ParamLiteral(var value: Any, var dataType: DataType,
+case class ParamLiteral(var value: Any, var dataType: DataType,
     var pos: Int, @transient private[sql] val execId: Int,
     private[sql] var tokenized: Boolean = false,
     private[sql] var positionIndependent: Boolean = false,
@@ -256,7 +258,7 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
-    case r: RefParamLiteral => this eq r.param
+    case r: RefParamLiteral => r.referenceEquals(this)
     case l: ParamLiteral =>
       // match by position only if "tokenized" else value comparison (no-caching case)
       if (tokenized && !valueEquals) pos == l.pos && dataType == l.dataType
@@ -314,48 +316,35 @@ final case class ParamLiteral(var value: Any, var dataType: DataType,
  * to in all respects but will be different from another
  * ParamLiteral at the same position (which also has to be a
  * RefParamLiteral pointing to an equal ParamLiteral to be equal to this).
+ *
+ * Note: The RefParamLiteral maintains its own copy of value since it can change
+ * in execution (e.g. ROUND can change precision of underlying Decimal value)
+ * which should not lead to a change of value of referenced ParamLiteral or vice-versa.
+ * However, during planning, code generation and other phases before runJob,
+ * the value and dataType should match exactly which is checked by referenceEquals.
  */
-final case class RefParamLiteral(var param: ParamLiteral)
-    extends TokenizedLiteral with KryoSerializable {
+final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: DataType)
+    extends ParamLiteral(_value, _dataType, param.pos, param.execId) {
 
-  override def value: Any = param.value
-
-  override def dataType: DataType = param.dataType
-
-  override def nullable: Boolean = param.nullable
-
-  override def eval(input: InternalRow): Any = param.eval(input)
-
-  override def nodeName: String = param.nodeName
-
-  override def prettyName: String = param.prettyName
-
-  override protected def jsonFields: List[JField] = param.jsonFields
-
-  override def sql: String = param.sql
-
-  override def hashCode(): Int = param.hashCode()
+  private[sql] def referenceEquals(p: ParamLiteral): Boolean = {
+    if (param eq p) {
+      // Check that value and dataType should also be equal at this point.
+      // These can potentially change during execution due to application
+      // of functions on the value like ROUND.
+      assert(value == p.value)
+      assert(dataType == p.dataType)
+      true
+    } else false
+  }
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
-    case r: RefParamLiteral => param.equals(r.param)
-    case l: ParamLiteral => param eq l
+    case r: RefParamLiteral => referenceEquals(r.param)
+    case l: ParamLiteral => referenceEquals(l)
     case _ => false
   }
 
   override def semanticEquals(other: Expression): Boolean = equals(other)
-
-  override def write(kryo: Kryo, output: Output): Unit = {
-    kryo.writeObject(output, param)
-  }
-
-  override def read(kryo: Kryo, input: Input): Unit = {
-    param = kryo.readObject(input, classOf[ParamLiteral])
-  }
-
-  override def valueString: String = param.valueString
-
-  override def toString: String = param.toString
 }
 
 object TokenLiteral {
@@ -421,23 +410,25 @@ trait ParamLiteralHolder {
           paramConstantMap.put(param.dataType -> param.value, param)
           i += 1
         }
-        if (existing ne null) return RefParamLiteral(existing)
+        if (existing ne null) return new RefParamLiteral(existing, value, dataType)
       } else {
         val existing = paramConstantMap.get(dataType -> value)
-        if (existing ne null) return RefParamLiteral(existing)
+        if (existing ne null) return new RefParamLiteral(existing, value, dataType)
       }
     } else {
       var i = 0
       while (i < numConstants) {
         val param = parameterizedConstants(i)
         if (dataType == param.dataType && value == param.value) {
-          return RefParamLiteral(param)
+          return new RefParamLiteral(param, value, dataType)
         }
         i += 1
       }
     }
-    val p = ParamLiteral(value, dataType, parameterizedConstants.length, paramListId)
+    val p = ParamLiteral(value, dataType, numConstants, paramListId)
     parameterizedConstants += p
+    // value is (pos + 1) since 0 indicates absence in getLong
+    if (paramConstantMap ne null) paramConstantMap.put(dataType -> value, p)
     p
   }
 
@@ -461,6 +452,9 @@ trait ParamLiteralHolder {
         assert(p.pos == pos)
         pos += 1
       }
+    }
+    if (paramConstantMap ne null) {
+      assert(paramConstantMap.remove(p.dataType -> p.value) eq p)
     }
   }
 
@@ -529,6 +523,8 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
   override def dataType: DataType = expr.dataType
 
   override def value: Any = eval(null)
+
+  override private[sql] def getValueForTypeCheck: Any = null
 
   override def nodeName: String = "DynamicExpression"
 

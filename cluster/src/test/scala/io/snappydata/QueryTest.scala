@@ -22,6 +22,7 @@ import scala.collection.JavaConverters._
 import org.apache.spark.sql.execution.FilterExec
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.execution.joins.HashJoinExec
+import org.apache.spark.sql.functions.{bround, round}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession, SparkSession}
 
@@ -319,8 +320,8 @@ class QueryTest extends SnappyFunSuite {
     snc.sql(s"create index APP.X_TEST_COL3 on APP.TEST (col3)")
     snc.sql(s"insert into TEST values ('one', 'vone', 'cone'), ('two', 'vtwo', 'ctwo')")
     val r = snc.sql(s"select count(*) from TEST").collect()
-    assert (1 === r.length)
-    assert (2 === r.head.get(0))
+    assert(1 === r.length)
+    assert(2 === r.head.get(0))
     snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
   }
 
@@ -328,6 +329,8 @@ class QueryTest extends SnappyFunSuite {
     // check common sub-expression elimination in query leading to pushdown
     // of filters should not be inhibited due to ParamLiterals
     val session = this.snc.snappySession
+    import session.implicits._
+
     session.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
 
     session.sql("create table ct1 (id long, data string) using column")
@@ -354,5 +357,58 @@ class QueryTest extends SnappyFunSuite {
     assert(condString.contains("DATA#"))
     assert(!condString.contains("ID#"))
     session.sql(s"set spark.sql.autoBroadcastJoinThreshold=${10L * 1024 * 1024}")
+
+    // check for some combinations of repeated constants
+    val df = Seq(5, 55, 555).map(Tuple1(_)).toDF("a")
+    checkAnswer(
+      df.select(round('a), round('a, -1), round('a, -2)),
+      Seq(Row(5, 10, 0), Row(55, 60, 100), Row(555, 560, 600))
+    )
+    checkAnswer(
+      df.select(bround('a), bround('a, -1), bround('a, -2)),
+      Seq(Row(5, 0, 0), Row(55, 60, 100), Row(555, 560, 600))
+    )
+
+    val pi = BigDecimal("3.1415")
+    checkAnswer(
+      session.sql(s"SELECT round($pi, -3), round($pi, -2), round($pi, -1), " +
+          s"round($pi, 0), round($pi, 1), round($pi, 2), round($pi, 3)"),
+      Seq(Row(BigDecimal("0E3"), BigDecimal("0E2"), BigDecimal("0E1"), BigDecimal(3),
+        BigDecimal("3.1"), BigDecimal("3.14"), BigDecimal("3.142")))
+    )
+    checkAnswer(
+      session.sql(s"SELECT bround($pi, -3), bround($pi, -2), bround($pi, -1), " +
+          s"bround($pi, 0), bround($pi, 1), bround($pi, 2), bround($pi, 3)"),
+      Seq(Row(BigDecimal("0E3"), BigDecimal("0E2"), BigDecimal("0E1"), BigDecimal(3),
+        BigDecimal("3.1"), BigDecimal("3.14"), BigDecimal("3.142")))
+    )
+
+    // more than 4 constants to replace
+    val pi1 = pi + 1
+    val pi2 = pi + 2
+    val pi3 = pi + 3
+    val pi4 = pi + 4
+    val pi5 = pi + 5
+    val pi6 = pi + 6
+    checkAnswer(
+      session.sql(s"SELECT round($pi, -3), round($pi6, -2), round($pi, -1), " +
+          s"round($pi, 0), round($pi1, 1), round($pi, 2), round($pi2, 3), " +
+          s"round($pi3, 1), round($pi1, 2), round($pi4, 2), round($pi, 3), " +
+          s"round($pi5, 3), round($pi4, 0), round($pi, 1), round($pi6, 2)"),
+      Seq(Row(BigDecimal("0E3"), BigDecimal("0E2"), BigDecimal("0E1"),
+        BigDecimal(3), BigDecimal("4.1"), BigDecimal("3.14"), BigDecimal("5.142"),
+        BigDecimal("6.1"), BigDecimal("4.14"), BigDecimal("7.14"), BigDecimal("3.142"),
+        BigDecimal("8.142"), BigDecimal(7), BigDecimal("3.1"), BigDecimal("9.14")))
+    )
+    checkAnswer(
+      session.sql(s"SELECT bround($pi, -3), bround($pi6, -2), bround($pi, -1), " +
+          s"bround($pi, 0), bround($pi1, 1), bround($pi, 2), bround($pi2, 3), " +
+          s"bround($pi3, 1), bround($pi1, 2), bround($pi4, 2), bround($pi, 3), " +
+          s"bround($pi5, 3), bround($pi4, 0), bround($pi, 1), bround($pi6, 2)"),
+      Seq(Row(BigDecimal("0E3"), BigDecimal("0E2"), BigDecimal("0E1"),
+        BigDecimal(3), BigDecimal("4.1"), BigDecimal("3.14"), BigDecimal("5.142"),
+        BigDecimal("6.1"), BigDecimal("4.14"), BigDecimal("7.14"), BigDecimal("3.142"),
+        BigDecimal("8.142"), BigDecimal(7), BigDecimal("3.1"), BigDecimal("9.14")))
+    )
   }
 }
