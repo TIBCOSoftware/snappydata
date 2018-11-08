@@ -325,7 +325,7 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
  * See TPCH Q19 for an example where equal values in two different positions
  * lead to an optimized plan due to common-subexpression being pulled out of
  * OR conditions as a separate AND condition which leads to further filter
- * pushdowns which is not possible if the actual values are different.
+ * push down which is not possible if the actual values are different.
  *
  * Note: This class maintains its own copy of value since it can change
  * in execution (e.g. ROUND can change precision of underlying Decimal value)
@@ -346,6 +346,8 @@ final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: Dat
       true
     } else false
   }
+
+  override def hashCode(): Int = param.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
