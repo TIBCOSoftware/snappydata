@@ -46,8 +46,6 @@ import org.apache.spark.sql.execution.joins.HashJoinExec
 import org.apache.spark.sql.functions.{bround, rand, round}
 import org.apache.spark.sql.test.SQLTestData.TestData2
 
-
-
 class SnappySQLQuerySuite extends SnappyFunSuite {
 
   private lazy val session: SnappySession = snc.snappySession

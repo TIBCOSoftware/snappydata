@@ -317,8 +317,8 @@ class QueryTest extends SnappyFunSuite {
     snc.sql(s"create index APP.X_TEST_COL3 on APP.TEST (col3)")
     snc.sql(s"insert into TEST values ('one', 'vone', 'cone'), ('two', 'vtwo', 'ctwo')")
     val r = snc.sql(s"select count(*) from TEST").collect()
-    assert(1 === r.length)
-    assert(2 === r.head.get(0))
+    assert (1 === r.length)
+    assert (2 === r.head.get(0))
     snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
   }
 }
