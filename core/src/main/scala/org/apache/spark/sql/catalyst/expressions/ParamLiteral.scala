@@ -53,7 +53,11 @@ trait DynamicReplacableConstant extends Expression {
    * Used only for checking types and can be overridden by implementations to return
    * dummy result (like null) whose [[value]] evaluation can be potentially expensive.
    */
-  private[sql] def getValueForTypeCheck: Any = value
+  private[sql] def getValueForTypeCheck: Any = {
+    val value = this.value
+    assert(value != null || nullable, "Expected nullable as true when value is null")
+    value
+  }
 
   override final def deterministic: Boolean = true
 
@@ -80,6 +84,8 @@ trait DynamicReplacableConstant extends Expression {
       assert(tvOption.isDefined)
       tvOption.get
     }
+    // temporary result for storing value() result for cases where it can be
+    // potentially expensive (e.g. for DynamicFoldableExpression)
     val valueResult = ctx.freshName("valueResult")
     val isNullLocal = ev.isNull
     val valueLocal = ev.value
@@ -448,7 +454,7 @@ trait ParamLiteralHolder {
   }
 
   private[sql] final def addParamLiteralToContext(value: Any,
-      dataType: DataType): TokenizedLiteral = {
+      dataType: DataType): ParamLiteral = {
     val numConstants = parameterizedConstants.length
     val existing = findExistingParamLiteral(value, dataType, numConstants)
     if (existing ne null) {
@@ -553,7 +559,7 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
 
   override def dataType: DataType = expr.dataType
 
-  override def value: Any = eval(null)
+  override def value: Any = eval(EmptyRow)
 
   override private[sql] def getValueForTypeCheck: Any = null
 
@@ -613,7 +619,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     val m = new ConcurrentHashMap[AnyRef, AnyRef](hset.length)
     var hasNull = false
     for (e <- hset) {
-      val v = e.eval(null).asInstanceOf[AnyRef]
+      val v = e.eval(EmptyRow).asInstanceOf[AnyRef]
       if (v ne null) {
         m.put(v, v)
       } else if (!hasNull) {
@@ -650,7 +656,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
       val e = hset(i)
       val v = e match {
         case d: DynamicReplacableConstant => d
-        case _ => e.eval(null).asInstanceOf[AnyRef]
+        case _ => e.eval(EmptyRow).asInstanceOf[AnyRef]
       }
       elements(i) = v
     }
@@ -686,7 +692,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
 
   override def sql: String = {
     val valueSQL = child.sql
-    val listSQL = hset.map(_.eval(null)).mkString(", ")
+    val listSQL = hset.map(_.eval(EmptyRow)).mkString(", ")
     s"($valueSQL IN ($listSQL))"
   }
 }
