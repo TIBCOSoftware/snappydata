@@ -410,6 +410,8 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
   test("Push down TPCH Q19") {
     session.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
     try {
+      // this loop exists because initial implementation had a problem
+      // in RefParamLiteral.hashCode() that caused it to fail once in 2-3 runs
       for (_ <- 1 to 4) {
         testTPCHQ19()
       }
