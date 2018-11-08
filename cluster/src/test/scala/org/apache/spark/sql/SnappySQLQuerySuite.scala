@@ -433,8 +433,8 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     var ds = session.sql("select ct1.id, ct2.data from ct1 join ct2 on (ct1.id = ct2.id) where " +
         "(ct1.id < 1000 and ct2.data = 'data100') or (ct1.id < 1000 and ct1.data = 'data100')")
     var analyzedFilter = "Filter (((ID#0 < cast(ParamLiteral:0#0,1000 as bigint)) && " +
-        "(DATA#0 = ParamLiteral:1#0,data100)) || ((ID#0 < cast(ParamLiteral:0#0,1000 as " +
-        "bigint)) && (DATA#0 = ParamLiteral:1#0,data100)))"
+        "(DATA#0 = ParamLiteral:1#0,data100)) || ((ID#0 < cast(ParamLiteral:2#0,1000 as " +
+        "bigint)) && (DATA#0 = ParamLiteral:3#0,data100)))"
 
     def expectedTree: String =
       s"""Project [ID#0, DATA#0]
@@ -471,7 +471,7 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
         "(ct1.id < 1000 and ct2.data = 'data100') or (ct1.id < 20 and ct1.data = 'data100')")
     analyzedFilter = "Filter (((ID#0 < cast(ParamLiteral:0#0,1000 as bigint)) && " +
         "(DATA#0 = ParamLiteral:1#0,data100)) || ((ID#0 < cast(ParamLiteral:2#0,20 as " +
-        "bigint)) && (DATA#0 = ParamLiteral:1#0,data100)))"
+        "bigint)) && (DATA#0 = ParamLiteral:3#0,data100)))"
     assert(idPattern.replaceAllIn(ds.queryExecution.analyzed.treeString, "#0") === expectedTree)
     assert(ds.collect() === Array(Row(100L, "data100")))
 

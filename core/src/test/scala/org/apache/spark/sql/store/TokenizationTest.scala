@@ -878,7 +878,9 @@ class TokenizationTest
     var res2 = df.collect()
     val r2 = normalizeRow(res2)
     assert(!r1.sameElements(r2))
-    // assert( SnappySession.getPlanCache.asMap().size() == 1)
+
+    // no caching of broadcast plans
+    assert(cacheMap.size() == 0)
 
     // check for out of order collects on two queries that are cached
     var query1 = "select avg(taxiin + taxiout) avgTaxiTime, count(*) numFlights, " +

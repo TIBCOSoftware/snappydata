@@ -76,6 +76,7 @@ trait DynamicReplacableConstant extends Expression {
       assert(tvOption.isDefined)
       tvOption.get
     }
+    val valueResult = ctx.freshName("valueResult")
     val isNullLocal = ev.isNull
     val valueLocal = ev.value
     val dataType = Utils.getSQLDataType(this.dataType)
@@ -129,10 +130,11 @@ trait DynamicReplacableConstant extends Expression {
         val consumerClass = classOf[DirectStringConsumer].getName
         ctx.addMutableState(javaType, valueTerm,
           s"""
-             |if (($isNull = $valueRef.value() == null)) {
+             |Object $valueResult = $valueRef.value();
+             |if (($isNull = ($valueResult == null))) {
              |  $valueTerm = ${ctx.defaultValue(dataType)};
              |} else {
-             |  $valueTerm = ($box)$valueRef.value();
+             |  $valueTerm = ($box)$valueResult;
              |  if (com.gemstone.gemfire.internal.cache.GemFireCacheImpl.hasNewOffHeap() &&
              |      $getContext() != null) {
              |    // convert to off-heap value if possible
@@ -152,8 +154,9 @@ trait DynamicReplacableConstant extends Expression {
     if (unbox ne null) {
       ctx.addMutableState(javaType, valueTerm,
         s"""
-           |$isNull = $valueRef.value() == null;
-           |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueRef.value())$unbox;
+           |Object $valueResult = $valueRef.value();
+           |$isNull = $valueResult == null;
+           |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueResult)$unbox;
         """.stripMargin)
     }
     ev.copy(initCode, isNullLocal, valueLocal)
@@ -258,7 +261,7 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
-    case r: RefParamLiteral => r.referenceEquals(this)
+    case r: RefParamLiteral if r.param ne null => r.referenceEquals(this)
     case l: ParamLiteral =>
       // match by position only if "tokenized" else value comparison (no-caching case)
       if (tokenized && !valueEquals) pos == l.pos && dataType == l.dataType
@@ -332,9 +335,11 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
  * which should not lead to a change of value of referenced ParamLiteral or vice-versa.
  * However, during planning, code generation and other phases before runJob,
  * the value and dataType should match exactly which is checked by referenceEquals.
+ * After deserialization, the class no longer maintains a reference and falls back
+ * to behaving like a regular ParamLiteral.
  */
-final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: DataType)
-    extends ParamLiteral(_value, _dataType, param.pos, param.execId) {
+final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: DataType, _pos: Int)
+    extends ParamLiteral(_value, _dataType, _pos, execId = param.execId) {
 
   private[sql] def referenceEquals(p: ParamLiteral): Boolean = {
     if (param eq p) {
@@ -347,13 +352,15 @@ final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: Dat
     } else false
   }
 
-  override def hashCode(): Int = param.hashCode()
+  override def hashCode(): Int = if (param ne null) param.hashCode() else super.hashCode()
 
-  override def equals(obj: Any): Boolean = obj match {
-    case a: AnyRef if this eq a => true
-    case r: RefParamLiteral => referenceEquals(r.param)
-    case l: ParamLiteral => referenceEquals(l)
-    case _ => false
+  override def equals(obj: Any): Boolean = {
+    if (param ne null) obj match {
+      case a: AnyRef if this eq a => true
+      case r: RefParamLiteral => param == r.param
+      case l: ParamLiteral => referenceEquals(l)
+      case _ => false
+    } else super.equals(obj)
   }
 
   override def semanticEquals(other: Expression): Boolean = equals(other)
@@ -404,10 +411,9 @@ trait ParamLiteralHolder {
 
   private[sql] final def getCurrentParamsId: Int = paramListId
 
-  private[sql] final def addParamLiteralToContext(value: Any,
-      dataType: DataType): TokenizedLiteral = {
+  private def findExistingParamLiteral(value: Any, dataType: DataType,
+      numConstants: Int): ParamLiteral = {
     // for size >= 4 use a lookup map to search for same constant else linear search
-    val numConstants = parameterizedConstants.length
     if (numConstants >= 4) {
       if (paramConstantMap eq null) {
         // populate the map while checking for a match
@@ -422,25 +428,35 @@ trait ParamLiteralHolder {
           paramConstantMap.put(param.dataType -> param.value, param)
           i += 1
         }
-        if (existing ne null) return new RefParamLiteral(existing, value, dataType)
-      } else {
-        val existing = paramConstantMap.get(dataType -> value)
-        if (existing ne null) return new RefParamLiteral(existing, value, dataType)
-      }
+        existing
+      } else paramConstantMap.get(dataType -> value)
     } else {
       var i = 0
       while (i < numConstants) {
         val param = parameterizedConstants(i)
         if (dataType == param.dataType && value == param.value) {
-          return new RefParamLiteral(param, value, dataType)
+          return param
         }
         i += 1
       }
+      null
     }
-    val p = ParamLiteral(value, dataType, numConstants, paramListId)
-    parameterizedConstants += p
-    if (paramConstantMap ne null) paramConstantMap.put(dataType -> value, p)
-    p
+  }
+
+  private[sql] final def addParamLiteralToContext(value: Any,
+      dataType: DataType): TokenizedLiteral = {
+    val numConstants = parameterizedConstants.length
+    val existing = findExistingParamLiteral(value, dataType, numConstants)
+    if (existing ne null) {
+      val ref = new RefParamLiteral(existing, value, dataType, numConstants)
+      parameterizedConstants += ref
+      ref
+    } else {
+      val p = ParamLiteral(value, dataType, numConstants, paramListId)
+      parameterizedConstants += p
+      if (paramConstantMap ne null) paramConstantMap.put(dataType -> value, p)
+      p
+    }
   }
 
   private[sql] final def removeIfParamLiteralFromContext(l: TokenizedLiteral): Unit = l match {
@@ -464,7 +480,7 @@ trait ParamLiteralHolder {
         pos += 1
       }
     }
-    if (paramConstantMap ne null) {
+    if ((paramConstantMap ne null) && !p.isInstanceOf[RefParamLiteral]) {
       assert(paramConstantMap.remove(p.dataType -> p.value) eq p)
     }
   }
