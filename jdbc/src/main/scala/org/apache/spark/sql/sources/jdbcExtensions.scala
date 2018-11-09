@@ -407,7 +407,7 @@ object JdbcExtendedUtils extends Logging {
 
   def defaultPoolURL(session: SparkSession): String = {
     val sparkProp = s"${Constant.SPARK_PREFIX}${Constant.CONNECTION_PROPERTY}"
-    val conf = session.sparkContext.conf
+    val conf = session.conf
     val hostPort = conf.getOption(sparkProp) match {
       case Some(c) => c
       case None => conf.getOption(Constant.CONNECTION_PROPERTY) match {
@@ -419,23 +419,23 @@ object JdbcExtendedUtils extends Logging {
     s"${Constant.POOLED_THIN_CLIENT_URL}$hostPort"
   }
 
+  val PREFIXES: Array[String] = Array(
+    Constant.STORE_PROPERTY_PREFIX,
+    Constant.SPARK_STORE_PREFIX,
+    Constant.PROPERTY_PREFIX,
+    Constant.SPARK_SNAPPY_PREFIX)
+
   /** set the user/password in the property bag if not present */
   private[sql] def fillUserPassword(properties: SMap[String, String],
       session: SparkSession): SMap[String, String] = {
     var props = properties
     val conf = session.conf
-    var prefix = Constant.STORE_PROPERTY_PREFIX
-    (conf.getOption(prefix + Attribute.USERNAME_ATTR) match {
+    PREFIXES.find(p => conf.contains(p + Attribute.USERNAME_ATTR)) match {
       case None =>
-        prefix = Constant.SPARK_STORE_PREFIX
-        conf.getOption(prefix + Attribute.USERNAME_ATTR)
-      case s => s
-    }) match {
-      case None =>
-      case Some(user) =>
+      case Some(prefix) =>
         if (!props.contains(Attribute.USERNAME_ATTR) &&
             !props.contains(Attribute.USERNAME_ALT_ATTR)) {
-          props += (Attribute.USERNAME_ATTR -> user)
+          props += (Attribute.USERNAME_ATTR -> conf.get(prefix + Attribute.USERNAME_ATTR))
           conf.getOption(prefix + Attribute.PASSWORD_ATTR) match {
             case Some(password) => props += (Attribute.PASSWORD_ATTR -> password)
             case None =>

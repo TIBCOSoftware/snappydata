@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -468,16 +468,17 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createTempViewUsing: Rule1[LogicalPlan] = rule {
-    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW | TABLE) ~
-        tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
-        (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, tableIdent: TableIdentifier,
-        schema: Any, provider: String, options: Any) => CreateTempViewUsing(
-      tableIdent = tableIdent,
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW ~ push(false) |
+        TABLE ~ push(true)) ~ tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
+        (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, isTable: Boolean,
+        table: TableIdentifier, schema: Any, provider: String, opts: Any) => CreateTempViewUsing(
+      tableIdent = table,
       userSpecifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]].map(StructType(_)),
-      replace = replace != None,
+      // in Spark replace is always true for CREATE TEMPORARY TABLE
+      replace = replace != None || (!global && isTable),
       global = global,
       provider = provider,
-      options = options.asInstanceOf[Option[Map[String, String]]].getOrElse(Map.empty)))
+      options = opts.asInstanceOf[Option[Map[String, String]]].getOrElse(Map.empty)))
   }
 
   protected def dropIndex: Rule1[LogicalPlan] = rule {

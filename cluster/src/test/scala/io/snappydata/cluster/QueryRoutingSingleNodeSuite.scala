@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -277,7 +277,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
   test("Tokenization test with IN SubQuery") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col"
       val tableName2 = "order_line_2_col"
@@ -295,7 +295,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       (0 to 5).foreach(i => query2snc(tableName1, tableName2, serverHostPort, i))
       query2(tableName1, tableName2, serverHostPort)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
@@ -609,7 +609,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
   test("update delete on column table") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col_ud"
       val tableName2 = "order_line_2_row_ud"
@@ -631,7 +631,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       update_delete_query2(tableName2, 5)
       update_delete_query3(tableName2, 6, 1)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
@@ -693,7 +693,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
   test("put into on row table") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
 
     def createTable(tableName: String): Unit =
       snc.sql(s"create table $tableName (ol_1_int_id  integer primary key," +
@@ -736,7 +736,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       })
       assert(assertionNotFailed)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
