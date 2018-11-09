@@ -20,7 +20,7 @@ import java.util.regex.Pattern
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import io.snappydata.Constant
-import io.snappydata.jdbc.ClientPoolDriver
+import io.snappydata.jdbc.TomcatConnectionPool
 
 import org.apache.spark.Logging
 import org.apache.spark.annotation.DeveloperApi
@@ -61,7 +61,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
     sessionState.executePlan(plan.transformUp {
       case u: UnresolvedRelation =>
         // use the current connection, if any, to check in meta-data
-        ClientPoolDriver.CURRENT_CONNECTION.get() match {
+        TomcatConnectionPool.CURRENT_CONNECTION.get() match {
           case null => u
           case conn =>
             // convert to upper case since hive catalog is case-insensitive

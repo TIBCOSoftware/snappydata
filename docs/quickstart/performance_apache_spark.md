@@ -16,7 +16,7 @@ Use any of the options mentioned below to start the Spark shell:
 
         # Create a directory for SnappyData artifacts
         $ mkdir quickstartdatadir 
-        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:1.0.2-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 
 * **If you have downloaded SnappyData**:
 
@@ -68,7 +68,7 @@ Ensure that you are in a Spark shell, and then follow the instructions below to 
         scala>  System.gc()
         scala>  System.runFinalization()
 
-5. **Create a SnappyContext**:
+5. **Create a SnappySession**:
 
 		scala>  val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
 

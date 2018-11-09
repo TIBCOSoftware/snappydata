@@ -12,7 +12,7 @@ SnappyData offers the following SQL commands:
 *	**deploy package** - to deploy maven packages
 *	**deploy jar** - to deploy your application or library Jars
 
-Besides these SQL extensions, support is provided in SnappyData 1.0.2 version to deploy packages as part of SnappyData Job submission. This is similar to [Spark’s support](https://spark.apache.org/docs/latest/submitting-applications.html) for **--packages** when submitting Spark jobs.
+Besides these SQL extensions, support is provided in SnappyData 1.0.2.1 version to deploy packages as part of SnappyData Job submission. This is similar to [Spark’s support](https://spark.apache.org/docs/latest/submitting-applications.html) for **--packages** when submitting Spark jobs.
 
 The following sections are included in this topic:
 
@@ -26,7 +26,7 @@ The following sections are included in this topic:
 <a id= deploypackages> </a>
 ## Deploying Packages in SnappyData
 
-Packages can be deployed in SnappyData using the **DEPLOY PACKAGE** SQL. You can pass the following through this SQL:
+Packages can be deployed in SnappyData using the **DEPLOY PACKAGE** SQL. Execute the `deploy package` command to deploy packages. You can pass the following through this SQL:
 
 *	Name of the package.
 *	Repository where the package is located.
@@ -40,12 +40,12 @@ For resolving the package, Maven Central and Spark packages, located at [http://
 !!!Tip
 	Use **spark-packages.org** to search for Spark packages. Most of the popular Spark packages are listed here.
 
-### SQL syntax to deploy package dependencies in SnappyData:
+### SQL Syntax to Deploy Package Dependencies in SnappyData
 
 ```pre
-deploy package <name> ‘packages’ [ repos ‘repositories’ ] [ path 'some path to cache resolved jars' ]
+deploy package <unique-alias-name> ‘packages’ [ repos ‘repositories’ ] [ path 'some path to cache resolved jars' ]
 ```
-*	**name** - A name to identify a package. This name can be used to remove the package from the cluster.  You can use alphabets, numbers, and underscores to create the name.
+*	**unique-alias-name** - A name to identify a package. This name can be used to remove the package from the cluster.  You can use alphabets, numbers, and underscores to create the name.
 
 *	**packages** - Comma-delimited string of maven packages. 
 
@@ -55,30 +55,36 @@ deploy package <name> ‘packages’ [ repos ‘repositories’ ] [ path 'some p
 
 ### Example 
 
-*	Deploy packages from a default repository.
+**Deploy packages from a default repository:**
 	
-```
-deploy package spark_deep_learning_0_3_0 databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11 /home/snappydata/work
+``` pre
+deploy package deeplearning 'databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11' path '/home/snappydata/work';
 ```
 
 ```pre
-deploy package spark_redshift_300 com.databricks:spark-redshift_2.10:3.0.0-preview1 /home/snappydata/work
+deploy package Sparkredshift 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/snappydata/work';
 ```
-
-*	Deploy packages from a non-default repository.	
 
 <a id= deployjars> </a>
 ## Deploying Jars in SnappyData
 
-SnappyData provides a method to deploy a jar in a running system through SQL. You can execute the **deploy jar ** command to deploy dependency jars. 
+SnappyData provides a method to deploy a jar in a running system through **DEPLOY JAR** SQL. You can execute the `deploy jar` command to deploy dependency jars. 
 
 ### Syntax for Deploying Jars in SnappyData
 ```pre
-deploy jar <name> ‘jars’
+deploy jar <unique-alias-name> ‘jars’
 ```
-*	**name** - A name to identify the jar. This name can be used to remove the jar from the cluster.  You can use alphabets, numbers and underscores to create the name.
+*	**unique-alias-name** - A name to identify the jar. This name can be used to remove the jar from the cluster.  You can use alphabets, numbers and underscores to create the name.
 
 *	**jars** - Comma-delimited string of jar paths. These paths are expected to be accessible from all the lead nodes in SnappyData.
+
+### Example 
+
+**Deploying jars:**
+
+```
+deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
+```
 
 All the deployed commands are stored in the SnappyData cluster. In cases where the artifacts of the dependencies are not available in the provided cache path, then during restart, it automatically resolves all the packages and jars again and installs them in the system.
 
@@ -86,7 +92,7 @@ All the deployed commands are stored in the SnappyData cluster. In cases where t
 <a id= listjarspackages> </a>
 ## Viewing the Deployed Jars and Packages
 
-You can view all the packages and jars deployed in the system by using the **list packages** command. 
+You can view all the packages and jars deployed in the system by using the `list packages` command. 
 
 ### Syntax for Listing Deployed Jars and Packages
 
@@ -98,7 +104,7 @@ snappy> list jars;
 
 Both of the above commands will list all the packages as well the jars that are installed in the system. Hence, you can use either one of those commands.
 
-### Sample Output for Listing Deployed Jars and Packages
+### Sample Output of Listing Jars/Packages
 
 
 ```pre
@@ -116,14 +122,17 @@ You can remove the deployed jars with the **undeploy** command. This command rem
 
 ### Syntax for Removing Deployed Jars
 
+```pre
+undeploy <unique-alias-name>;
+```
 
 !!!Note
-	The removal is only captured when you use the **undeploy** command,  the jars are removed only when the system restarts.
+	The removal is only captured when you use the **undeploy** command, the jars are removed only when you restart the cluster.
 
 ### Example 
 	
 ```pre
-undeploy spark-daria_2.11.8-2.2.0_0.10.0.jar 
+undeploy spark_deep_learning_0_3_0;
 ```
 
 !!!Attention
