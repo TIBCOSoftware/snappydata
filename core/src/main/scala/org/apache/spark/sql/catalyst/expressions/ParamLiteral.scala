@@ -559,7 +559,7 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
 
   override def dataType: DataType = expr.dataType
 
-  override def value: Any = eval(EmptyRow)
+  override def value: Any = eval(null)
 
   override private[sql] def getValueForTypeCheck: Any = null
 
@@ -619,7 +619,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     val m = new ConcurrentHashMap[AnyRef, AnyRef](hset.length)
     var hasNull = false
     for (e <- hset) {
-      val v = e.eval(EmptyRow).asInstanceOf[AnyRef]
+      val v = e.eval(null).asInstanceOf[AnyRef]
       if (v ne null) {
         m.put(v, v)
       } else if (!hasNull) {
@@ -656,7 +656,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
       val e = hset(i)
       val v = e match {
         case d: DynamicReplacableConstant => d
-        case _ => e.eval(EmptyRow).asInstanceOf[AnyRef]
+        case _ => e.eval(null).asInstanceOf[AnyRef]
       }
       elements(i) = v
     }
@@ -692,7 +692,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
 
   override def sql: String = {
     val valueSQL = child.sql
-    val listSQL = hset.map(_.eval(EmptyRow)).mkString(", ")
+    val listSQL = hset.map(_.eval(null)).mkString(", ")
     s"($valueSQL IN ($listSQL))"
   }
 }
