@@ -1,6 +1,6 @@
 # List of Properties
 
-Below is a list of properties that can be set to configure the cluster. These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
+The following list of commonly used properties can be set to configure the cluster.  These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
 
 |Property|Description|Components</br>|
 |-|-|-|
@@ -31,6 +31,7 @@ Below is a list of properties that can be set to configure the cluster. These pr
 |-spark.network.timeout|The default timeout for all network interactions while running queries.|Lead|
 |-thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: Path to key store file </br>`keystore-type`: The type of key-store (default "JKS") </br>`keystore-password`: Password for the key store file</br>`keymanager-type`: The type of key manager factory </br>`truststore`: Path to trust store file</br>`truststore-type`: The type of trust-store (default "JKS")</br>`truststore-password`: Password for the trust store file </br>`trustmanager-type`: The type of trust manager factory </br> |Server|
 
+Other than the above properties, you can also refer the [Configuration Parameters section](/reference/configuration_parameters/config_parameters.md#property-names) for properties that are used in special cases.
 
 <a id="sql-properties"></a>
 ## SQL Properties

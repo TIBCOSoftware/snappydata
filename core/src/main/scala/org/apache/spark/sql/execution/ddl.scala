@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,6 @@ package org.apache.spark.sql.execution
 
 import scala.util.control.NonFatal
 
-import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.Property
@@ -28,7 +27,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Alias, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.{SQLBuilder, TableIdentifier}
@@ -38,7 +37,7 @@ import org.apache.spark.sql.execution.command.{CreateViewCommand, PersistedView,
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.types.{MetadataBuilder, StructField, StructType}
+import org.apache.spark.sql.types.{MetadataBuilder, StringType, StructField, StructType}
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
 
@@ -203,7 +202,7 @@ private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
     if (!Misc.isSecurityEnabled && !GemFireStore.ALLOW_RLS_WITHOUT_SECURITY) {
       throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
         null, new IllegalStateException("CREATE POLICY failed: Security (" +
-            Attribute.AUTH_PROVIDER + ") not enabled in the system"))
+            com.pivotal.gemfirexd.Attribute.AUTH_PROVIDER + ") not enabled in the system"))
     }
     if (!Misc.getMemStoreBooting.isRLSEnabled) {
       throw Util.generateCsSQLException(SQLState.SECURITY_EXCEPTION_ENCOUNTERED,
@@ -396,5 +395,29 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
         }
     }
     Nil
+  }
+}
+
+/**
+ * Unlike Spark's ShowTablesCommand, this does not include the schema name or "isTemporary"
+ * columns for hive compatibility.
+ */
+case class ShowTablesHiveCommand(schemaOpt: Option[String],
+    tableIdentifierPattern: Option[String]) extends RunnableCommand {
+
+  // The result of hive compatible SHOW TABLES has only one "name" column
+  override val output: Seq[Attribute] = {
+    AttributeReference("name", StringType, nullable = false)() :: Nil
+  }
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val catalog = sparkSession.sessionState.catalog
+    val schemaName = schemaOpt match {
+      case None => catalog.getCurrentDatabase
+      case Some(s) => s
+    }
+    val tables = tableIdentifierPattern.map(catalog.listTables(schemaName, _))
+        .getOrElse(catalog.listTables(schemaName))
+    tables.map(tableIdent => Row(tableIdent.table))
   }
 }
