@@ -115,10 +115,10 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
-  private def createTitleNode(title: String, tooltip: String, nodeId: String, display:Boolean):
+  private def createTitleNode(title: String, tooltip: String, nodeId: String, display: Boolean):
     Seq[Node] = {
 
-    val displayDefault: String =if (display) { "" } else { "display: none;" }
+    val displayDefault: String = if (display) { "" } else { "display: none;" }
 
     <div class="row-fluid" id={nodeId} style={displayDefault} >
       <div class="span12">
@@ -262,9 +262,9 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <th class="table-th-col-heading" style="width: 150px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
-                      SnappyDashboardPage.tableStatsColumn("sizeOnDiskTooltip")
+                      SnappyDashboardPage.tableStatsColumn("sizeSpillToDiskTooltip")
                     }>
-                {SnappyDashboardPage.tableStatsColumn("sizeOnDisk")}
+                {SnappyDashboardPage.tableStatsColumn("sizeSpillToDisk")}
               </span>
             </th>
             <th class="table-th-col-heading" style="width: 150px;">
@@ -422,10 +422,10 @@ object SnappyDashboardPage {
       "Distribution Type is either PARTITIONED or REPLICATED table ")
   tableStatsColumn += ("rowCount" -> "Row Count")
   tableStatsColumn += ("rowCountTooltip" -> "Total Rows in Table")
-  tableStatsColumn += ("sizeInMemory" -> "Memory Size")
+  tableStatsColumn += ("sizeInMemory" -> "In-Memory Size")
   tableStatsColumn += ("sizeInMemoryTooltip" -> "Tables Size in Memory")
-  tableStatsColumn += ("sizeOnDisk" -> "Disk Size")
-  tableStatsColumn += ("sizeOnDiskTooltip" -> "Tables Size on Disk")
+  tableStatsColumn += ("sizeSpillToDisk" -> "Spill-To-Disk Size")
+  tableStatsColumn += ("sizeSpillToDiskTooltip" -> "Tables Spillover to Disk Size ")
   tableStatsColumn += ("totalSize" -> "Total Size")
   tableStatsColumn += ("totalSizeTooltip" ->
       "Tables Total Size (In Memory size + Overflown To Disk Size)")
