@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -78,7 +78,8 @@ object SnappyTableStatsProviderService {
     service
   }
 
-  var suspendCacheInvalidation = false
+  // only for testing
+  var TEST_SUSPEND_CACHE_INVALIDATION = false
 }
 
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
@@ -87,7 +88,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     if (!doRun) {
       this.synchronized {
         if (!doRun) {
-          val delay = sc.getConf.getLong(SPARK_SNAPPY_PREFIX +
+          val delay = sc.getConf.getLong(PROPERTY_PREFIX +
               "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
           Misc.getGemFireCache.getCCPTimer.schedule(
