@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,7 @@
 package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
-import java.sql.DriverManager
+import java.sql.{DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
@@ -336,10 +336,9 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("big view") {
-    snc
-    var serverHostPort2 = TestUtil.startNetServer()
-    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
-    var stmt = conn.createStatement()
+    val snc = this.snc
+    val serverHostPort2 = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
     val session = this.snc.snappySession
 
     // check temporary view with USING and its meta-data
@@ -363,8 +362,28 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
     val viewname = "AIRLINEBOGUSVIEW"
+
+    // check catalog cache is cleared for VIEWs
+    val cstmt = conn.prepareCall(s"call SYS.GET_COLUMN_TABLE_SCHEMA(?, ?, ?)")
+    cstmt.setString(1, "APP")
+    cstmt.setString(2, viewname)
+    cstmt.registerOutParameter(3, java.sql.Types.CLOB)
+    try {
+      cstmt.execute()
+      assert(cstmt.getString(3) === "")
+      fail("expected to fail")
+    } catch {
+      case se: SQLException if se.getSQLState == "XIE0M" =>
+    }
+
     // create view
     session.sql(viewSql)
+
+    // meta-data lookup should not fail now
+    cstmt.execute()
+    assert(cstmt.getString(3).contains(
+      "CASE WHEN (YEARI > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
+
     // query on view
     session.sql(s"select count(*) from $viewname").collect()
     // check column names
