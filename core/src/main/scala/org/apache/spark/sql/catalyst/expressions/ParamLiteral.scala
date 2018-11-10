@@ -84,7 +84,7 @@ trait DynamicReplacableConstant extends Expression {
       assert(tvOption.isDefined)
       tvOption.get
     }
-    // temporary result for storing value() result for cases where it can be
+    // temporary variable for storing value() result for cases where it can be
     // potentially expensive (e.g. for DynamicFoldableExpression)
     val valueResult = ctx.freshName("valueResult")
     val isNullLocal = ev.isNull
@@ -232,7 +232,10 @@ final class TokenLiteral(_value: Any, _dataType: DataType)
  *
  * Where ever ParamLiteral case matching is required, it must match
  * for DynamicReplacableConstant and use .eval(..) for code generation.
- * see SNAP-1597 for more details.
+ * see SNAP-1597 for more details. For cases of common-subexpression elimination
+ * that depend on constant values being equal in different parts of the tree,
+ * a new RefParamLiteral has been added that points to a ParamLiteral and is always
+ * equal to it, see SNAP-2462 for more details.
  */
 case class ParamLiteral(var value: Any, var dataType: DataType,
     var pos: Int, @transient private[sql] val execId: Int,
@@ -326,15 +329,16 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
  * This class is used as a substitution for ParamLiteral when two
  * ParamLiterals have same constant values during parsing.
  * This behaves like being equal to the ParamLiteral it points
- * to in all respects but will be different from another
- * ParamLiteral at the same position (which also has to be a
- * RefParamLiteral pointing to an equal ParamLiteral to be equal to this).
+ * to in all respects but will be different from other ParamLiterals.
+ * Two RefParamLiterals will be equal iff their respective ParamLiterals are.
  *
  * The above policy allows an expression like "a = 4 and b = 4" to be equal to
  * "a = 5 and b = 5" after tokenization but will be different from
  * "a = 5 and b = 6". This distinction is required because former can
  * lead to a different execution plan after common-subexpression processing etc
- * due to the fact that the actual values for the two tokenized values are equal.
+ * that can apply on because the actual values for the two tokenized values are equal
+ * in this instance. Hence it can lead to a different plan in case where actual constants
+ * are different, so after tokenization they should act as different expressions.
  * See TPCH Q19 for an example where equal values in two different positions
  * lead to an optimized plan due to common-subexpression being pulled out of
  * OR conditions as a separate AND condition which leads to further filter
@@ -345,8 +349,9 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
  * which should not lead to a change of value of referenced ParamLiteral or vice-versa.
  * However, during planning, code generation and other phases before runJob,
  * the value and dataType should match exactly which is checked by referenceEquals.
- * After deserialization, the class no longer maintains a reference and falls back
- * to behaving like a regular ParamLiteral.
+ * After deserialization on remote executor, the class no longer maintains a reference
+ * and falls back to behaving like a regular ParamLiteral since the required analysis and
+ * other phases are already done, and final code generation requires a copy of the values.
  */
 final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: DataType, _pos: Int)
     extends ParamLiteral(_value, _dataType, _pos, execId = param.execId) {
@@ -372,8 +377,6 @@ final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: Dat
       case _ => false
     } else super.equals(obj)
   }
-
-  override def semanticEquals(other: Expression): Boolean = equals(other)
 }
 
 object TokenLiteral {
@@ -458,6 +461,12 @@ trait ParamLiteralHolder {
     val numConstants = parameterizedConstants.length
     val existing = findExistingParamLiteral(value, dataType, numConstants)
     if (existing ne null) {
+      // Add to paramelizedConstants list so that its position can be updated
+      // if required (e.g. if a ParamLiteral is reverted to a Literal for
+      //   functions that require so as in SnappyParserConsts.FOLDABLE_FUNCTIONS)
+      // In addition RefParamLiteral maintains its own copy of value to avoid updating
+      // the referenced ParamLiteral's value by functions like ROUND, so that needs to
+      // be changed too when a plan with updated tokens is created.
       val ref = new RefParamLiteral(existing, value, dataType, numConstants)
       parameterizedConstants += ref
       ref
