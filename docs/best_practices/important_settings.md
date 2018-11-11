@@ -55,17 +55,21 @@ For best performance, the following operating system settings are recommended on
 **Ulimit** </br> 
 Spark and SnappyData spawn a number of threads and sockets for concurrent/parallel processing so the server and lead node machines may need to be configured for higher limits of open files and threads/processes. </br>
 </br>A minimum of 8192 is recommended for open file descriptors limit and nproc limit to be greater than 128K. 
-</br>To change the limits of these settings for a user, the /etc/security/limits.conf file needs to be updated. A typical limits.conf used for SnappyData servers and leads looks like: 
+</br>To change the limits of these settings for a user, the **/etc/security/limits.conf** file needs to be updated. A typical **limits.conf** used for SnappyData servers and leads appears as follows: 
 
-```
-ec2-user          hard    nofile      163840 
-ec2-user          soft    nofile      16384
+```pre
+ec2-user          hard    nofile      32768
+ec2-user          soft    nofile      32768
 ec2-user          hard    nproc       unlimited
 ec2-user          soft    nproc       524288
 ec2-user          hard    sigpending  unlimited
 ec2-user          soft    sigpending  524288
 ```
 * `ec2-user` is the user running SnappyData.
+
+
+Recent linux distributions using systemd (like RHEL/CentOS 7, Ubuntu 18.04) need the NOFILE limit to be increased in systemd configuration too. Edit **/etc/systemd/system.conf ** as root, search for **#DefaultLimitNOFILE** under the **[Manager] **section. Uncomment and change it to **DefaultLimitNOFILE=32768**. 
+Reboot for the above changes to be applied. Confirm that the new limits have been applied in a terminal/ssh window with **"ulimit -a -S"** (soft limits) and **"ulimit -a -H"** (hard limits).
 
 **OS Cache Size**</br> 
 When there is a lot of disk activity especially during table joins and during an eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 

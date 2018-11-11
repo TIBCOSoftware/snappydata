@@ -31,7 +31,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.{LocalMode, SnappyContext, SnappyEmbeddedMode}
+import org.apache.spark.sql.{LocalMode, SnappyContext, SnappyEmbeddedMode, SnappySession}
 
 @SerialVersionUID(-46264515900419559L)
 object RefreshMetadata extends Enumeration
@@ -73,7 +73,7 @@ object RefreshMetadata extends Enumeration
    * specifies whether execution has to be done in connector mode or not.
    */
   def executeOnAll(sc: SparkContext, action: Type, args: Any,
-      executeInConnector: Boolean = true): Unit = {
+      executeInConnector: Boolean = true, executeLocallyInConnector: Boolean = false): Unit = {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) => executeOnAllEmbedded(action, args)
       case LocalMode(_, _) => executeLocal(action, args)
@@ -83,6 +83,8 @@ object RefreshMetadata extends Enumeration
           executeLocal(action, args)
           Iterator.empty
         })
+      } else if (executeLocallyInConnector) {
+        executeLocal(action, args)
       }
     }
   }
@@ -90,6 +92,8 @@ object RefreshMetadata extends Enumeration
   def executeLocal(action: Type, args: Any): Unit = {
     action match {
       case SET_RELATION_DESTROY =>
+        SnappySession.clearAllCache(onlyQueryPlanCache = true)
+        CodeGeneration.clearAllCache()
         val (version, relation) = args.asInstanceOf[(Int, Option[QualifiedTableName])]
         val myId = GemFireStore.getMyId
         if (myId ne null) {
