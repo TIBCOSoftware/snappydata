@@ -34,7 +34,7 @@ Logs generated in /home/shirishd/snappyData/repo3/snappydata/build-artifacts/sca
 SnappyData Locator pid: 2379 status: running
   Distributed system now has 1 members.
   Started DRDA server on: localhost/127.0.0.1[1527]
-SnappyData version 1.0.2 
+SnappyData version 1.0.2.1 
 snappy> Using CONNECTION0
 snappy> ENCRYPTED_PASSWORD                                                                                                              
 --------------------------------------------------------------------------------------------------------------------------------
