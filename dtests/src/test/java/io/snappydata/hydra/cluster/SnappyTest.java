@@ -2277,11 +2277,10 @@ public class SnappyTest implements Serializable {
             SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
             SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 100);
           } else if (appName.equals("CDCIngestionApp1")) {
-            userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
+            userAppArgs = finalStart + " " + finalEnd + " " + userAppArgs;
             SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
             SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
-          }
-           else if (appName.equals("BulkDeleteApp")) {
+          } else if (appName.equals("BulkDeleteApp")) {
             commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
                 " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
           }
@@ -3040,7 +3039,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
-                                            boolean restart, boolean rebalance) {
+      boolean restart, boolean rebalance) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
       return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart, rebalance);
@@ -3116,7 +3115,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
-                           boolean isDmlOp, boolean restart, boolean rebalance) {
+      boolean isDmlOp, boolean restart, boolean rebalance) {
     if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {

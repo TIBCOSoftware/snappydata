@@ -43,7 +43,7 @@ class cdcObject implements Runnable {
       Connection conn = getConnection();
       String filePath = path;
       ArrayList qArr = getQuery(filePath);
-      insertData(qArr,conn);
+      insertData(qArr, conn);
     } catch (Exception e) {
       System.out.println("Caught exception " + e.getMessage());
     }
@@ -174,10 +174,10 @@ public class CDCIngestionApp {
       String sqlServerInstance = args[3];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
       for (int i = 1; i <= 5; i++) {
-        cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth+"/insert"+i+".sql", sqlServerInstance);
+        cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth + "/insert" + i + ".sql", sqlServerInstance);
         //obj.start();
         executor.execute(obj);
-     }
+      }
       executor.shutdown();
       try {
         executor.awaitTermination(3600, TimeUnit.SECONDS);
