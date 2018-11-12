@@ -2280,23 +2280,8 @@ public class SnappyTest implements Serializable {
             userAppArgs = userAppArgs + " " + finalStart + " " + finalEnd;
             SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
             SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
-          } else if (appName.equals("BulkDeleteApp")) {
-            int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
-            int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
-            int finalStart1, finalEnd1;
-            if (BBfinalStart1 == 0 || BBfinalEnd1 == 0) {
-              finalStart1 = finalStart;
-              finalEnd1 = finalEnd;
-            } else {
-              finalStart1 = BBfinalStart1;
-              finalEnd1 = BBfinalEnd1;
-            }
-            userAppArgs = finalStart1 + " " + finalEnd1 + " " + userAppArgs;
-            Log.getLogWriter().info("For CDCIngestionApp1 app New Start range and end range : " + finalStart1 + " & " + finalEnd1 + " and args = " + userAppArgs);
-            SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", finalEnd1 + 1);
-            SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", finalEnd1 + 100);
-
-          } else if (appName.equals("BulkDeleteApp")) {
+          }
+           else if (appName.equals("BulkDeleteApp")) {
             commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
                 " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
           }

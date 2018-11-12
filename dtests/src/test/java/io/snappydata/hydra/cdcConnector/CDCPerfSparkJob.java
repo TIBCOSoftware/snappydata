@@ -114,7 +114,7 @@ public class CDCPerfSparkJob {
     return plTimeListHashMap;
   }
 
-  public static void runMixedQuery(ArrayList<String> qlist,String serverInstance) {
+  public static void runMixedQuery(ArrayList<String> qlist,int startRange,String serverInstance) {
     Connection sqlConn = null;
     Connection snappyConn ;
     try {
@@ -138,9 +138,18 @@ public class CDCPerfSparkJob {
         }
         else
         {
-          System.out.println("Query contains insert/delete");
+          System.out.println("Query contains insert/delete/update so get sqlServer connection");
           sqlConn = getSqlServerConnection(serverInstance);
-          sqlConn.createStatement().execute(query);
+          if(query.contains("UPDATE"))
+          {
+            Random rd = new Random();
+            PreparedStatement ps = sqlConn.prepareStatement(query);
+            System.out.println("The update query is " + query);
+            ps.setInt(1,rd.nextInt(startRange)+startRange);
+            ps.execute();
+          }
+          else
+            sqlConn.createStatement().execute(query);
         }
       }
     } catch (Exception ex) {
@@ -273,7 +282,7 @@ public class CDCPerfSparkJob {
             try {
               startBarierr.await();
               if(isMixedQuery) {
-                runMixedQuery(queryList,sqlServerInst);
+                runMixedQuery(queryList,startRange,sqlServerInst);
               }
               if (isBulkDelete) {
                 runBulkDelete(queryList, startRange, sqlServerInst);
