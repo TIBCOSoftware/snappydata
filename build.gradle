@@ -129,7 +129,7 @@ allprojects {
     snappyStoreVersion = '1.6.2.1'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.2'
+    zeppelinInterpreterVersion = '0.7.3.4'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
@@ -973,12 +973,6 @@ task product(type: Zip) {
     copy {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
-    }
-    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
-    copy {
-      from jdbcProject.shadowJar.destinationDir
-      into "${snappyProductDir}/connectors"
-      include jdbcProject.shadowJar.archiveName
     }
   }
 }
