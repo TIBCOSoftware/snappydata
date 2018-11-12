@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,7 +22,6 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
 
@@ -37,7 +36,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -262,17 +261,17 @@ abstract class BaseColumnFormatRelation(
     partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
   }
 
-    /** Get key columns of the column table */
-    override def getPrimaryKeyColumns: Seq[String] = {
-        val keyColsOptions = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
-        if (keyColsOptions.isDefined) {
-            keyColsOptions.get.split(",").map(_.trim)
-        } else {
-            Seq.empty[String]
-        }
+  /** Get key columns of the column table */
+  override def getPrimaryKeyColumns: Seq[String] = {
+    val keyColsOptions = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+    if (keyColsOptions.isDefined) {
+      keyColsOptions.get.split(",").map(_.trim)
+    } else {
+      Seq.empty[String]
     }
+  }
 
-    /**
+  /**
    * Get a spark plan to update rows in the relation. The result of SparkPlan
    * execution should be a count of number of updated rows.
    */
@@ -512,16 +511,9 @@ abstract class BaseColumnFormatRelation(
 
   override def flushRowBuffer(): Unit = {
     val sc = sqlContext.sparkContext
-    SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
-        // force flush all the buckets into the column store
-        Utils.mapExecutors[Unit](sc, () => {
-          GfxdSystemProcedures.flushLocalBuckets(resolvedName, true)
-          Iterator.empty
-        })
-        GfxdSystemProcedures.flushLocalBuckets(resolvedName, true)
-      case _ =>
-    }
+    // force flush all the buckets into the column store
+    RefreshMetadata.executeOnAll(sc, RefreshMetadata.FLUSH_ROW_BUFFER,
+      resolvedName, executeInConnector = false)
   }
 }
 

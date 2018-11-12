@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -83,8 +83,10 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
-  private def isLowLatencyQuery: Boolean =
-    isCached && cachedRDD.getNumPartitions <= 2 /* some small number */
+  private def isLowLatencyQuery: Boolean = {
+    // use a small value for number of RDD partitions
+    isCached && shuffleDependencies.length == 0 && cachedRDD.getNumPartitions <= 2
+  }
 
   @transient
   private var _rowConverter: UnsafeProjection = _
@@ -210,7 +212,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def setPoolForExecution(): Unit = {
     var pool = snappySession.sessionState.conf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
-    if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {
+    if (isLowLatencyQuery && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
         pool = Constant.LOW_LATENCY_POOL
       }
@@ -251,6 +253,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def endCollect(didPrepare: Boolean): Unit = {
     if (didPrepare) {
       prepared = false
+      // reset the pool
+      if (isLowLatencyQuery) {
+        val pool = snappySession.sessionState.conf.activeSchedulerPool
+        snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+      }
       // clear the shuffle dependencies asynchronously after the execution.
       startShuffleCleanups(snappySession.sparkContext)
     }

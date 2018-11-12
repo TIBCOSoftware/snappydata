@@ -39,12 +39,12 @@ SnappyData supports creation of stream tables from Twitter, Kafka, Files, Socket
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
 (COLUMN_DEFINITION)
-USING 'kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream'
+USING 'kafka_stream | file_stream | twitter_stream | socket_stream'
 OPTIONS (
 // multiple stream source specific options
   storagelevel '',
   rowConverter '',
-  topics '',
+  subscribe '',
   kafkaParams '',
   consumerKey '',
   consumerSecret '',
@@ -83,7 +83,7 @@ For example to create a stream table using kafka source :
      "storagelevel 'MEMORY_AND_DISK_SER_2', " +
      "rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
      "kafkaParams 'zookeeper.connect->localhost:2181;auto.offset.reset->smallest;group.id->myGroupId', " +
-     "topics 'streamTopic:01')")
+     "subscribe 'streamTopic:01')")
 
  // You can get a handle of underlying DStream of the table
  val dStream = snsc.getSchemaDStream("streamTable")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -82,15 +82,35 @@ private[sql] trait SnappyStrategies {
     private def applyJoinHint(joinHint: String, joinType: JoinType, leftKeys: Seq[Expression],
         rightKeys: Seq[Expression], condition: Option[Expression],
         left: LogicalPlan, right: LogicalPlan, buildSide: joins.BuildSide,
-        canBuild: JoinType => Boolean): Seq[SparkPlan] = joinHint match {
+        buildPlan: LogicalPlan, canBuild: JoinType => Boolean): Seq[SparkPlan] = joinHint match {
       case Constant.JOIN_TYPE_HASH =>
         if (canBuild(joinType)) {
+          // don't hash join beyond 10GB estimated size because that is likely a mistake
+          val buildSize = buildPlan.statistics.sizeInBytes
+          if (buildSize > math.max(JoinStrategy.getMaxHashJoinSize(conf),
+            10L * 1024L * 1024L * 1024L)) {
+            session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
+                s"$joinHint for ${right.simpleString} skipped for ${joinType.sql} " +
+                s"JOIN on columns=$rightKeys due to large estimated buildSize=$buildSize. " +
+                s"Increase session property ${Property.HashJoinSize.name} to force.",
+              SQLState.LANG_INVALID_JOIN_STRATEGY))
+            return Nil
+          }
           makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joinType,
-            buildSide, replicatedTableJoin = allowsReplicatedJoin(
-              if (buildSide eq joins.BuildLeft) left else right))
+            buildSide, replicatedTableJoin = allowsReplicatedJoin(buildPlan))
         } else Nil
       case Constant.JOIN_TYPE_BROADCAST =>
         if (canBuild(joinType)) {
+          // don't broadcast beyond 1GB estimated size because that is likely a mistake
+          val buildSize = buildPlan.statistics.sizeInBytes
+          if (buildSize > math.max(conf.autoBroadcastJoinThreshold, 1L * 1024L * 1024L * 1024L)) {
+            session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
+                s"$joinHint for ${right.simpleString} skipped for ${joinType.sql} " +
+                s"JOIN on columns=$rightKeys due to large estimated buildSize=$buildSize. " +
+                s"Increase session property ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key} to force.",
+              SQLState.LANG_INVALID_JOIN_STRATEGY))
+            return Nil
+          }
           joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
             buildSide, condition, planLater(left), planLater(right)) :: Nil
         } else Nil
@@ -115,7 +135,7 @@ private[sql] trait SnappyStrategies {
             case None =>
             case Some(joinHint) =>
               applyJoinHint(joinHint, joinType, leftKeys, rightKeys, condition,
-                left, right, joins.BuildRight, canBuildRight) match {
+                left, right, joins.BuildRight, right, canBuildRight) match {
                 case Nil => session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
                     s"$joinHint for ${right.simpleString} cannot be applied for ${joinType.sql} " +
                     s"JOIN on columns=$rightKeys. Will try on the other side of join: " +
@@ -127,7 +147,7 @@ private[sql] trait SnappyStrategies {
             case None =>
             case Some(joinHint) =>
               applyJoinHint(joinHint, joinType, leftKeys, rightKeys, condition,
-                left, right, joins.BuildLeft, canBuildLeft) match {
+                left, right, joins.BuildLeft, left, canBuildLeft) match {
                 case Nil => session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
                     s"$joinHint for ${left.simpleString} cannot be applied for ${joinType.sql} " +
                     s"JOIN on columns=$leftKeys", SQLState.LANG_INVALID_JOIN_STRATEGY))
@@ -347,12 +367,16 @@ private[sql] object JoinStrategy {
         plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
   }
 
+  def getMaxHashJoinSize(conf: SQLConf): Long = {
+    ExternalStoreUtils.sizeAsBytes(Property.HashJoinSize.get(conf),
+      Property.HashJoinSize.name, -1, Long.MaxValue)
+  }
+
   /**
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
-      Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
+    plan.statistics.sizeInBytes <= getMaxHashJoinSize(conf)
   }
 
   def isReplicatedJoin(plan: LogicalPlan): Boolean = plan match {

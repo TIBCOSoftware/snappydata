@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,10 +44,10 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.{CreateSnappyViewCommand, SnappyCacheTableCommand}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.execution.{CreateSnappyViewCommand, RefreshMetadata, SnappyCacheTableCommand}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.policy.PolicyProperties
@@ -468,16 +468,17 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createTempViewUsing: Rule1[LogicalPlan] = rule {
-    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW | TABLE) ~
-        tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
-        (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, tableIdent: TableIdentifier,
-        schema: Any, provider: String, options: Any) => CreateTempViewUsing(
-      tableIdent = tableIdent,
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW ~ push(false) |
+        TABLE ~ push(true)) ~ tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
+        (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, isTable: Boolean,
+        table: TableIdentifier, schema: Any, provider: String, opts: Any) => CreateTempViewUsing(
+      tableIdent = table,
       userSpecifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]].map(StructType(_)),
-      replace = replace != None,
+      // in Spark replace is always true for CREATE TEMPORARY TABLE
+      replace = replace != None || (!global && isTable),
       global = global,
       provider = provider,
-      options = options.asInstanceOf[Option[Map[String, String]]].getOrElse(Map.empty)))
+      options = opts.asInstanceOf[Option[Map[String, String]]].getOrElse(Map.empty)))
   }
 
   protected def dropIndex: Rule1[LogicalPlan] = rule {
@@ -989,10 +990,7 @@ case class DeployCommand(
         val sc = sparkSession.sparkContext
         val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
         SnappySession.addJarURIs(uris)
-        Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-          ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-          Iterator.empty
-        })
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
         val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
         ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
       }
@@ -1048,10 +1046,7 @@ case class DeployJarCommand(
       val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
-      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-        Iterator.empty
-      })
+      RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
       ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
     }
     Seq.empty[Row]
