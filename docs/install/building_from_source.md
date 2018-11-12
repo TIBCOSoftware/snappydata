@@ -54,7 +54,7 @@ This component depends on _core_ and _store_. The code in the _cluster_ depends 
 
 - **spark-jobserver** - Fork of _spark-jobserver_ project with some additions to integrate with SnappyData.
 
-  The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push like:
+  The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push as follows:
 
 ```pre
 [alias]
@@ -93,6 +93,7 @@ Useful build and test targets:
 ./gradlew precheckin -Pstore  -  cleanAll, buildAll, scalaStyle, build docs,
                            run full snappydata testsuite including quickstart
                            and also full SnappyData store testsuite
+./gradlew buildDtests   -  To build the Distributed tests
 ```
 
 The default build directory is _build-artifacts/scala-2.11_ for projects. An exception is *store* project, where the default build directory is *_build-artifacts/<os>_*; where; *os* is *linux* on Linux systems, *osx* on Mac, *windows* on Windows.
@@ -114,11 +115,15 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 
 To import into IntelliJ IDEA:
 
-* Upgrade IntelliJ IDEA to version 2016.x, including the latest Scala plug-in. Older versions (pre 14.x) have trouble dealing with Scala code, particularly some of the code in Spark. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via *JAVA_HOME*).
+- Upgrade IntelliJ IDEA to at least version 2016.x, preferably 2018.x or more, including the latest Scala plug-in. Older versions have trouble dealing with scala code particularly some of the code in Spark. Newer versions have trouble running tests with gradle import, since they do not honor the build output directory as set in gradle. Ensure JDK 8 is installed and IDEA can find it (either in PATH or via JAVA_HOME).
 
-* Increase the available JVM heap size for IDEA. Open bin/idea64.vmoptions (assuming 64-bit JVM) and increase `-Xmx` option to be something like *-Xmx2g* for comfortable use.
+- Increase the `Xmx` to 2g or more (4g, if possible) in the **IDEA global vmoptions** (in product bin directory, files named **idea64.vmoptions** for 64-bit and **idea.vmoptions** for 32-bit).
 
-* Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Clear the **Create separate module per source set** option, while other options can continue with the default . Click **Next** in the following screens.<br/>
+- If using Java 8 release 144 or later, also add **-Djdk.util.zip.ensureTrailingSlash=false** to the **global vmoptions** file to fix an [IDEA issue](https://intellij-support.jetbrains.com/hc/en-us/community/posts/115000754864--SOLVED-No-default-file-and-code-templates).
+
+* Increase the available JVM heap size for IDEA. Open **bin/idea64.vmoptions** (assuming 64-bit JVM) and increase `-Xmx` option to be something like **-Xmx2g** for comfortable use.
+
+* Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Click **Next** in the following screen. Clear the **Create separate module per source set** option, while other options can continue with the default. Click **Next** in the following screens.<br/>
     
 	!!! Note
 		
@@ -147,11 +152,26 @@ To import into IntelliJ IDEA:
 
 * If you get **NullPointerException** error when reading the **spark-version-info.properties** file, right-click and run the **copyResourcesAll** target from **snappydata_2.11> Tasks> other** (Gradle tab) to copy the required resources.
 
-* Increase the compiler heap sizes or else the build can take a long to completely, especially with integrated *spark* and *store*. In **File> Settings> Build, Execution, Deployment> Compiler** option increase the **Build process heap size** to 1536 or 2048. Similarly, in **Languages & Frameworks> Scala Compiler Server** option, increase the JVM maximum heap size to 1536 or 2048.
+* Increase the compiler heap sizes or else the build can take a long time to complete, especially with integrated *spark* and *store*. In **File> Settings> Build, Execution, Deployment> Compiler** option increase the **Build process heap size** to 1536 or 2048. Similarly, in **Languages & Frameworks> Scala Compiler Server** option, increase the JVM maximum heap size to 1536 or 2048.
 
 * Test the full build.
 
-* For JUnit tests configuration also append **/build-artifacts** to the working directory. That is, open **Run> Edit Configurations**, expand **Defaults** and select **JUnit**, the working directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise, append **build-artifacts** to working directory for ScalaTest. Without this, all intermediate log and other files pollute the source tree and will have to be cleaned manually.
+* For JUnit tests configuration also append **/build-artifacts** to the working directory. That is, open **Run> Edit Configurations**, expand **Defaults** and select **JUnit**, the working directory should be **\$MODULE_DIR\$/build-artifacts**. Likewise, append **build-artifacts** to the working directory for ScalaTest. Without this, all intermediate log and other files pollute the source tree and will have to be cleaned manually.
+
+* If you see the following error while building the project, open module settings, select the module **snappy-cluster_2.11**, go to its **Dependencies** tab and ensure that **snappy-spark-unsafe_2.11** comes before **spark-unsafe** or just find **snappy-spark-unsafe_2.11** and move it to the top.
+
+
+```pre
+Error:(236, 18) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+    if (source.getByte(i) == first && matchAt(source, target, i)) return true
+    Error:(233, 24) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+    val first = target.getByte(0)
+
+```
+
+Even with the above, running unit tests in IDEA may result in more runtime errors due to unexpected **slf4j** versions. A more comprehensive way to correct, both the compilation and unit test problems in IDEA, is to update the snappy-cluster or for whichever module unit tests are to be run and have the **TEST** imports at the end. 
+
+The easiest way to do that is to close IDEA, open the module IML file (**.idea/modules/cluster/snappy-cluster_2.11.iml** in this case) in an editor. Search for **scope="TEST"** and move all those lines to the bottom just before `</component>` close tag.
 
 ## Running a ScalaTest/JUnit
 
