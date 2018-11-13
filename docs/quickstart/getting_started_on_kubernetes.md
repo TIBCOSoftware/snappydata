@@ -1,5 +1,5 @@
 # Getting Started with SnappyData on Kubernetes
-Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes. This feature is currently available on an experimental basis.
+Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes.
 
 This following sections are included in this topic:
 
@@ -15,7 +15,7 @@ The following prerequisites must be met to deploy SnappyData on Kubernetes:
 
 *	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher.
 
-*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-0/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
+*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
 
 
 <a id= deploykubernetes> </a>

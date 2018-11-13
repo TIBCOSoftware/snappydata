@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -113,12 +113,12 @@ class StringAsVarcharDUnitTest(val s: String)
     }
 
     eNv(s, colTab1, stringType)
-    // query on row table does not get routed, hence rs metadata shows CLOB
+    // row table metadata is from store so rs metadata shows CLOB
     eNv(s, rowTab1, "CLOB")
     eNv(s, extTab1, stringType, true, 0)
     if (!useDDL) {
       eNv(s, rowTab2, "CLOB")
-      eNv(s, extTab2, "CLOB", true, 5)
+      eNv(s, extTab2, stringType, true, 5)
     }
 
     def testCastOperator(s: Statement, t: String, expectedCount: Int): Unit = {

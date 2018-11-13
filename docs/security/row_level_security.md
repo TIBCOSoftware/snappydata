@@ -1,8 +1,11 @@
 # Implementing  Row Level Security
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+
 The following topics are covered in this section:
 
 *	[Overview of Row Level Security](#rlsoverview)
+*	[Activating Row Level Security](#actrowlevel)
 *	[Creating a Policy](#createpolicy)
 *	[Enabling Row Level Security](#enablerowlevelsecurity)
 *	[Viewing Policy Details](#viewpolicy)
@@ -12,8 +15,17 @@ The following topics are covered in this section:
 
 <a id= rlsoverview> </a>
 ## Overview of Row Level Security
-Policy is a rule that is implemented by using a filter expression.  In SnappyData, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned by normal queries by data modification commands.
+Policy is a rule that is implemented by using a filter expression.  In SnappyData, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned for normal queries by data modification commands. 
+For [activating this row level security](#actrowlevel), a system property must be added to the configuration files of servers, leads, and locators. 
 To restrict the permissions of a user at row level, [create a simple policy](#createpolicy) for a table that can be applied on a per user basis and then [enable the row level security](#enablerowlevelsecurity) for that table.
+
+<a id= actrowlevel> </a>
+## Activating Row Level Security
+For activating Row Level Security, a system property `-J-Dsnappydata.enable-rls=true` must be added to the configuration files of servers, leads, and locators when you [configure the cluster](/configuring_cluster/configuring_cluster.md). By default this is off.
+If this property is not added, you cannot enable the Row Level Security and an exception is thrown when you attempt to create the policy.
+
+!!! Warning
+	When this property is set to **true**, the Smart Connector access to SnappyData will fail with `java.lang.IllegalStateException: Row level security (snappydata.enable-rls) does not allow smart connector mode` exception.
 
 <a id= createpolicy> </a>
 ## Creating a Policy
@@ -60,18 +72,27 @@ CREATE POLICY name ON table_name
 	CURRENT_USER implies to any user who is excecuting the query. 
     
     
-In the following example, we create a policy named **just_own_clients** where only user **tom** can view the data. 
+In the following example, we create a policy named **just_own_clients** where a user can view only the row where that user is the account manager.
+For example, if we want this rule to apply only to user **Tom**, then we can create the policy as shown:
 
 ```
 CREATE POLICY just_own_clients ON clients
     FOR SELECT
-    TO CURRENT_USER
+    TO TOM
     USING ACCOUNT_MANAGER = CURRENT_USER();
 ```
-**CURRENT_USER() ** is a built-in function which returns the name of the user who is currently executing the query. 
-If you want to apply the policy to selective users, then instead of **TO CURRENT_USER** you can provide the name of the individual users or LDAP group. 
+As per the the above policy, user **Tom** can see only one row, where as other users can view all the rows.
 
-After the row level security policy is enabled, the policy gets applied to the users.
+The same can be also applied to a LDAP group as shown:
+
+```
+CREATE POLICY just_own_clients ON clients
+    FOR SELECT
+    TO ldapgroup:group1
+    USING ACCOUNT_MANAGER = CURRENT_USER();
+```
+
+After the row level security policy is enabled, the policy gets applied to the corresponding users.
 
 <a id= enablerowlevelsecurity> </a>
 ## Enabling Row Level Security
@@ -106,7 +127,7 @@ The policy details can be viewed from a virtual table named **SYS.SYSPOLICIES**.
 | **Column** | **Description** |
 |--------|--------|
 |  **NAME**      |  Name of the policy.      |
-|    **TABLESCHEMANAME**    |     Schema Name of the table on which policy is applied.   |
+|    **SCHEMANAME**    |     Schema Name of the table on which policy is applied.   |
 |    **TABLENAME**    |  Table on which policy is applied.      |
 |   **POLICYFOR**     | The operation for which the policy is intended. For example, SELECT, UPDATE, INSERT etc. For now it will be only “SELECT”  |
 |    **APPLYTO**    |  The comma separated string of User Names ( or CURRENT_USER) or LDAP group on which the policy applies.      |

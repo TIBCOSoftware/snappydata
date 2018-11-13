@@ -9,7 +9,7 @@ To create a job that can be submitted through the job server, the job must imple
 object SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-
+}
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
@@ -33,7 +33,7 @@ class SnappySampleJob extends SnappySQLJob {
 object SnappyStreamingSampleJob extends SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
-
+}
   /** SnappyData calls this function to validate the job input and reject invalid job requests **/
   override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
@@ -71,7 +71,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/S
 !!! Note
 	When submitting concurrent jobs user must ensure that the `--app-name` parameter is different for each concurrent job. If two applications with the same name are submitted concurrently, the job fails and an error is reported, as the job server maintains a map of the application names and jar files used for that application.
     
-The program must be compiled and bundled as a jar file and submitted to jobs server as shown below.
+The program must be compiled and bundled as a jar file and submitted to jobs server as shown below:
 
 ```pre
 $ ./bin/snappy-job.sh submit  \
@@ -79,7 +79,9 @@ $ ./bin/snappy-job.sh submit  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
+    --packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.7
 ```
+
 The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id of this job.
 
 - `--lead`: Specifies the host name of the lead node along with the port on which it accepts jobs (8090)
@@ -89,6 +91,8 @@ The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id
 -  `--class`: Specifies the name of the class that contains implementation of the Spark job to be run
 
 -  `--app-jar`: Specifies the jar file that packages the code for Spark job
+
+-  `--packages`: Specifies the packages names, which must be comma separated. These package names can be used to inform Spark about all the dependencies of a job. For more details, refer to [Deploying Dependency Jars](/connectors/deployment_dependency_jar.md).
 
 The status returned by the utility is displayed below:
 
@@ -136,12 +140,12 @@ For writing jobs users need to include [Maven/SBT dependencies for the latest re
 For example, gradle can be configured as:
 
 ```pre
-compile('io.snappydata:snappydata-cluster_2.11:1.0.2') {
+compile('io.snappydata:snappydata-cluster_2.11:1.0.2.1') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-hive-thriftserver_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-streaming-kafka-0.8_2.11')
+        exclude(group: 'io.snappydata',module: 'snappy-spark-streaming-kafka-0.10_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-repl_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-sql_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-mllib_2.11')
@@ -160,7 +164,7 @@ Python users can submit a Python application using `./bin/spark-submit` in the S
 ./bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
-    --conf spark.ui.port=4042 /quickstart/python/CreateTable.py
+    --conf spark.ui.port=4042 ./quickstart/python/CreateTable.py
 ```
 
 `snappydata.connection` property is a combination of locator host and JDBC client port on which the locator listens for connections (default 1527). It is used to connect to the SnappyData cluster.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -37,6 +37,7 @@ object QueryExecutionJob extends SnappySQLJob {
   var runsForAverage: Integer = _
   var threadNumber: Integer = _
   var traceEvents : Boolean = _
+  var randomSeed : Integer = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
@@ -54,6 +55,7 @@ object QueryExecutionJob extends SnappySQLJob {
     println(s"****************queries : $queries")
     // scalastyle:on println
 
+    QueryExecutor.setRandomSeed(randomSeed)
     for (query <- queries) {
       QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
         threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
@@ -133,6 +135,12 @@ object QueryExecutionJob extends SnappySQLJob {
       config.getBoolean("traceEvents")
     } else {
       false
+    }
+
+    randomSeed = if (config.hasPath("randomSeed")) {
+      config.getInt("randomSeed")
+    } else {
+      42
     }
 
     SnappyJobValid()

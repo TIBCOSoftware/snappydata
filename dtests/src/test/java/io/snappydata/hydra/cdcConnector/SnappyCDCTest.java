@@ -8,6 +8,7 @@ import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
+
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.sql.Connection;
@@ -138,7 +139,7 @@ public class SnappyCDCTest extends SnappyTest {
     } else {
       Log.getLogWriter().info("Error");
     }*/
-    String nodeInfo = SnappyCDCPrms.getNodeConfig();
+    String nodeInfo = SnappyCDCPrms.getNodeInfoforHA();
 String nodeConfig = nodeInfo+"\n";
     try {
      //  FileUtils.copyFile(orgName, bkName);
@@ -356,8 +357,8 @@ String nodeConfig = nodeInfo+"\n";
     Log.getLogWriter().info("Inside HydraTask_runConcurrencyJob");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
-     }
-     snappyCDCTest.runConcurrencyTestJob();
+    }
+    snappyCDCTest.runConcurrencyTestJob();
   }
 
   public static void HydraTask_clusterRestart() {
@@ -368,7 +369,7 @@ String nodeConfig = nodeInfo+"\n";
     Boolean isStopStart = SnappyCDCPrms.getIsStopStartCluster();
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
     String nodeType = SnappyCDCPrms.getNodeType();
-    String nodeConfig = SnappyCDCPrms.getNodeConfig();
+    String nodeConfig = SnappyCDCPrms.getNodeInfoforHA();
     Boolean isModifyConf = SnappyCDCPrms.getIsModifyConf();
     Boolean isBackUpRecovery = SnappyCDCPrms.getIsBackUpRecovery();
     snappyCDCTest.clusterRestart(snappyPath,isStopStart,nodeType,isBackUpRecovery,nodeConfig,isModifyConf);
@@ -404,6 +405,7 @@ String nodeConfig = nodeInfo+"\n";
     catch(IOException ex){}
   }
 
+
   public void runConcurrencyTestJob() {
     try {
       CDCPerfSparkJob cdcPerfSparkJob = new CDCPerfSparkJob();
@@ -417,11 +419,11 @@ String nodeConfig = nodeInfo+"\n";
       String sqlServerInst = SnappyCDCPrms.getSqlServerInstance();
       String dataBaseName = SnappyCDCPrms.getDataBaseName();
       int intStartRange = SnappyCDCPrms.getInitStartRange();
-      Log.getLogWriter().info("Inside runConcurrencyTestJob() parameters are  " + threadCnt + " "+  queryPath+ " "
-          +endpoints.get(0)+ " " + isScanQuery+ " " +isBulkDelete+ " " +isPointLookUp + " " + intStartRange + " "
+      Log.getLogWriter().info("Inside runConcurrencyTestJob() parameters are  " + threadCnt + " " + queryPath + " "
+          + endpoints.get(0) + " " + isScanQuery + " " + isBulkDelete + " " + isPointLookUp + " " + intStartRange + " "
           + sqlServerInst + " " + dataBaseName);
-      cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath,endpoints.get(0), isScanQuery,isBulkDelete,
-          isPointLookUp,isMixedQuery,intStartRange,sqlServerInst);
+      cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath, endpoints.get(0), isScanQuery, isBulkDelete,
+          isPointLookUp, isMixedQuery, intStartRange, sqlServerInst);
 
     } catch (Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runConcurrencyTestJob() method");
@@ -446,7 +448,7 @@ String nodeConfig = nodeInfo+"\n";
       String queryPath = SnappyCDCPrms.getDataLocation();
       String sqlServer = SnappyCDCPrms.getSqlServerInstance();
       List<String> endpoints = validateLocatorEndpointData();
-      app.runIngestionApp(threadCnt, sRange, eRange, queryPath, sqlServer, endpoints.get(0));
+      app.runIngestionApp(sRange, eRange, threadCnt, queryPath, sqlServer, endpoints.get(0));
     }
     catch(Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runIngestionApp() method");
@@ -464,21 +466,123 @@ String nodeConfig = nodeInfo+"\n";
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
-    try{
+    try {
       InetAddress myHost = InetAddress.getLocalHost();
       String hostName[] = myHost.toString().split("/");
-      curlCmd = "curl -d \"name="+appName+"&terminate=true\" -X POST http://"+hostName[0]+":8080/app/killByName/";
+      curlCmd = "curl -d \"name=" + appName + "&terminate=true\" -X POST http://" + hostName[0] + ":8080/app/killByName/";
       Log.getLogWriter().info("The curlCmd  is " + curlCmd);
       pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + logFileName;
       logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-    }
-    catch(Exception ex){
-      Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() "+ ex.getMessage());
+    } catch (Exception ex) {
+      Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() " + ex.getMessage());
     }
   }
+
+  /*public static void performClusterRestartWithNewNode() {
+    String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+    String nodeInfoforHA = SnappyCDCPrms.getNodeInfoforHA();
+    File bkName = null;
+    File orgName = null;
+    String query = "SELECT count(*) from AIRLINE";
+    try {
+      Connection conn = getConnections();
+      ResultSet rs = conn.createStatement().executeQuery(query);
+      Log.getLogWriter().info("Count value is " + rs.getInt(0));
+      conn.close();
+      ProcessBuilder pbStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
+      snappyTest.executeProcess(pbStop, null);
+      bkName = new File(snappyPath + "/conf/servers_bk");
+      orgName = new File(snappyPath + "/conf/servers");
+      if (orgName.renameTo(bkName)) {
+        Log.getLogWriter().info("File renamed to " + bkName);
+      } else {
+        Log.getLogWriter().info("Error while renaming file");
+      }
+      File newServerConf = new File(snappyPath + "/conf/servers");
+      FileWriter fw = new FileWriter(newServerConf, true);
+      fw.write(nodeInfoforHA);
+      FileReader reader = new FileReader(bkName);
+      BufferedReader bufferedReader = new BufferedReader(reader);
+      String line;
+      while ((line = bufferedReader.readLine()) != null) {
+        fw.write(line);
+      }
+      reader.close();
+      FileReader reader1 = new FileReader(newServerConf);
+      BufferedReader bufferedReader1 = new BufferedReader(reader1);
+      String line1;
+      while ((line1 = bufferedReader1.readLine()) != null) {
+        System.out.println(line1);
+      }
+      reader1.close();
+
+      Thread.sleep(60000);
+      ProcessBuilder pbStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
+      snappyTest.executeProcess(pbStart, null);
+      Thread.sleep(60000);
+      Connection conn1 = getConnections();
+      ResultSet rs1 = conn1.createStatement().executeQuery(query);
+      Log.getLogWriter().info("Count value is " + rs1.getInt(0));
+      conn1.close();
+    }
+  }
+      //Read the existing server config*/
+/*
+  public static void performClusterRestartWithNewNode() {
+    String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+    String nodeInfoforHA = SnappyCDCPrms.getNodeInfoforHA();
+    File bkName = null;
+    File orgName = null;
+    String query = "SELECT count(*) from AIRLINE";
+    try {
+      Connection conn = getConnections();
+      ResultSet rs = conn.createStatement().executeQuery(query);
+      Log.getLogWriter().info("Count value is " + rs.getInt(0));
+      conn.close();
+      ProcessBuilder pbStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
+      snappyTest.executeProcess(pbStop, null);
+      bkName = new File(snappyPath + "/conf/servers_bk");
+      orgName = new File(snappyPath + "/conf/servers");
+      if (orgName.renameTo(bkName)) {
+        Log.getLogWriter().info("File renamed to " + bkName);
+      } else {
+        Log.getLogWriter().info("Error while renaming file");
+      }
+      File newServerConf = new File(snappyPath + "/conf/servers");
+      FileWriter fw = new FileWriter(newServerConf, true);
+      fw.write(nodeInfoforHA);
+      FileReader reader = new FileReader(bkName);
+      BufferedReader bufferedReader = new BufferedReader(reader);
+      String line;
+      while ((line = bufferedReader.readLine()) != null) {
+        fw.write(line);
+      }
+      reader.close();
+      FileReader reader1 = new FileReader(newServerConf);
+      BufferedReader bufferedReader1 = new BufferedReader(reader1);
+      String line1;
+      while ((line1 = bufferedReader1.readLine()) != null) {
+        System.out.println(line1);
+      }
+      reader1.close();
+
+      Thread.sleep(60000);
+      ProcessBuilder pbStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
+      snappyTest.executeProcess(pbStart, null);
+      Thread.sleep(60000);
+      Connection conn1 = getConnections();
+      ResultSet rs1 = conn1.createStatement().executeQuery(query);
+      Log.getLogWriter().info("Count value is " + rs1.getInt(0));
+      conn1.close();
+
+      //Read the existing server config
+    } catch (Exception e) {
+
+    }
+  }*/
 
   public static void performHA() {
     String scriptName;
@@ -487,7 +591,7 @@ String nodeConfig = nodeInfo+"\n";
       Log.getLogWriter().info("snappyPath File path is " + snappyPath);
       String nodeType = SnappyCDCPrms.getNodeType();
       Boolean isOnlyStop = SnappyCDCPrms.getIsOnlyStop();
-      String nodeInfoforHA = SnappyCDCPrms.getNodeConfig();
+      String nodeInfoforHA = SnappyCDCPrms.getNodeInfoforHA();
 
       if (nodeType.equals("allNodes")) {
         File log = new File(".");
@@ -507,11 +611,12 @@ String nodeConfig = nodeInfo+"\n";
         snappyTest.executeProcess(pbClustStart, logFile);
         Long totalTime1 = (System.currentTimeMillis() - startTime1);
         Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to shut down");
+
       }
       else {
-        if(nodeType.equalsIgnoreCase("servers"))
+        if (nodeType.equalsIgnoreCase("servers"))
           scriptName = "/sbin/snappy-servers.sh";
-        else if(nodeType.equalsIgnoreCase("leads"))
+        else if (nodeType.equalsIgnoreCase("leads"))
           scriptName = "/sbin/snappy-leads.sh";
         else
           scriptName = "/sbin/snappy-locators.sh";

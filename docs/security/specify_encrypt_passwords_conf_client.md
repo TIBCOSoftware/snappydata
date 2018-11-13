@@ -1,5 +1,7 @@
 # Specifying Encrypted Passwords in Conf Files or in Client Connections
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+
 SnappyData allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the SnappyData cluster in a secure mode.SnappyData provides a utility script called **snappy-encrypt-password.sh** to generate encrypted passwords of system users who launch the cluster.  This script is located under **sbin** directory of SnappyData product installation. 
 
 You can generate encrypted passwords before starting the SnappyData cluster and use it in **conf** files of the SnappyData servers, locators and leads. 
@@ -32,10 +34,8 @@ Logs generated in /home/shirishd/snappyData/repo3/snappydata/build-artifacts/sca
 SnappyData Locator pid: 2379 status: running
   Distributed system now has 1 members.
   Started DRDA server on: localhost/127.0.0.1[1527]
-SnappyData version 1.0.2 
-snappy> Aug 26, 2018 9:53:22 PM java.util.logging.LogManager$RootLogger log
-INFO: Starting client on '172.16.62.1' with ID='2493|2018/08/26 21:53:22.178 IST' Source-Revision=b35dcbc197cad69af9122c5c1f77bc6d6de4ad14
-Using CONNECTION0
+SnappyData version 1.0.2.1 
+snappy> Using CONNECTION0
 snappy> ENCRYPTED_PASSWORD                                                                                                              
 --------------------------------------------------------------------------------------------------------------------------------
 user1 = v13b607k2j611b8584423b2ea584c970fefd041f77f                                                                             
@@ -113,5 +113,3 @@ snappy> connect client 'localhost:1527;user=user2;password=v13b607k2j6c519cc8860
 Using CONNECTION1
 
 ```
-
-

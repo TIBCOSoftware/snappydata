@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -468,7 +468,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
     connectionType match {
-      case ConnectionType.Embedded =>
+      case ConnectionType.Embedded if onExecutor =>
         val currentCM = ContextService.getFactory.getCurrentContextManager
         if (currentCM ne null) {
           val conn = EmbedConnectionContext.getEmbedConnection(currentCM)
@@ -515,7 +515,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ThinClientConnectorMode(_, _) =>
             val catalog = snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
             val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
-            (relInfo.partitions, relInfo.embdClusterRelDestroyVersion)
+            (relInfo.partitions, relInfo.embedClusterRelDestroyVersion)
           case m => throw new UnsupportedOperationException(
             s"SnappyData table scan not supported in mode: $m")
         }
@@ -777,7 +777,7 @@ final class SmartConnectorColumnRDD(
     val partitionId = part.bucketId
     val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
       case "" => null
-      case id => id
+      case tx => tx
     }
     var itr: Iterator[ByteBuffer] = null
     try {
@@ -888,7 +888,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _commitTx, _delayRollover, null) {
+    _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
 
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
@@ -936,6 +936,9 @@ class SmartConnectorRowRDD(_session: SnappySession,
           clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
             new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
             tableName, true).setMetadataVersion(relDestroyVersion))
+        } else {
+          clientConn.setCommonStatementAttributes(
+            new StatementAttrs().setMetadataVersion(relDestroyVersion))
         }
         clientConn
       case _ => null

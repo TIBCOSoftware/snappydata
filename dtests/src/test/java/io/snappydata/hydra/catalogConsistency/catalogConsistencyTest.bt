@@ -1,0 +1,15 @@
+io/snappydata/hydra/catalogConsistency/catalogConsistencyTest.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  E=client clientHosts=10 clientVMsPerHost=1 clientThreadsPerVM=1
+  numVMsToStop=1
+
+io/snappydata/hydra/catalogConsistency/catalogConsistencyConcTest.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  E=client clientHosts=10 clientVMsPerHost=1 clientThreadsPerVM=1
+  numVMsToStop=1
