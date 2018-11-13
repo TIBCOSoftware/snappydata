@@ -2764,6 +2764,9 @@ public class SnappyTest implements Serializable {
   */
 
   public static synchronized void HydraTask_dumpStacks() {
+    snappyTest = new SnappyTest();
+    snappyTest.getClientHostDescription();
+    int tid = RemoteTestModule.getCurrentThread().getThreadId();
     snappyTest.dumpStacks();
   }
 
