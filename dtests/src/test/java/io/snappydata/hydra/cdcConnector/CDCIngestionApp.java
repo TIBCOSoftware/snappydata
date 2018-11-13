@@ -31,14 +31,14 @@ public class CDCIngestionApp implements Runnable {
   public void run() {
     System.out.println("Running " + threadName);
     try {
-      Connection conn;
-      if (sqlServer.isEmpty())
+      Connection conn ;
+      if(sqlServer.isEmpty())
         conn = getSnappyConnection();
       else
         conn = getSqlServerConnection();
       String path = filePath;
       ArrayList qArr = getQuery(path);
-      insertData(qArr, conn);
+      insertData(qArr,conn);
     } catch (Exception e) {
       System.out.println("Caught exception " + e.getMessage());
     }
@@ -79,7 +79,7 @@ public class CDCIngestionApp implements Runnable {
       System.out.println("Got connection" + conn.isClosed());
 
     } catch (Exception e) {
-      System.out.println("Caught exception in getConnection() " + e.getMessage());
+      System.out.println("Caught exception in getSqlServerConnection() " + e.getMessage());
     }
     return conn;
   }

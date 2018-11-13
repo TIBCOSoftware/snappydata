@@ -1812,6 +1812,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
+
    public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
@@ -2296,53 +2297,11 @@ public class SnappyTest implements Serializable {
           userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
-            command = setCDCSparkAppCmds(userAppArgs,commonArgs,snappyJobScript,userJob,masterHost,masterPort,logFile);
-          String appName = SnappyCDCPrms.getAppName();
-          if (appName.equals("CDCIngestionApp2")) {
-            int BBfinalStart2 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP2");
-            int BBfinalEnd2 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP2");
-            int finalStart2,finalEnd2;
-            if(BBfinalStart2 == 0 || BBfinalEnd2 == 0) {
-              finalStart2 = finalStart;
-              finalEnd2 = finalEnd;
-            }
-            else {
-              finalStart2 = BBfinalStart2;
-              finalEnd2 = BBfinalEnd2;
-            }
-            userAppArgs = finalStart2 + " " + finalEnd2 + " " + userAppArgs;
-            Log.getLogWriter().info("For CDCIngestionApp2 app New Start range and end range : " + finalStart2 + " & " + finalEnd2 + " and args = " + userAppArgs);
-            SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
-            SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 100);
-          } else if (appName.equals("CDCIngestionApp1")) {
-              int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
-              int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
-              int finalStart1,finalEnd1;
-              if(BBfinalStart1 == 0 || BBfinalEnd1 == 0) {
-                 finalStart1 = finalStart;
-                 finalEnd1 = finalEnd;
-              }
-              else {
-              finalStart1 = BBfinalStart1;
-              finalEnd1 = BBfinalEnd1;
-            }
-             userAppArgs = finalStart1 + " " + finalEnd1 + " " + userAppArgs;
-             Log.getLogWriter().info("For CDCIngestionApp1 app New Start range and end range : " + finalStart1 + " & " + finalEnd1 + " and args = " + userAppArgs);
-             SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", finalEnd1 + 1);
-             SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", finalEnd1 +100);
 
-          }
-          else if(appName.equals("BulkDeleteApp")){
-            commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-                " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " ;
-          }
-          command = snappyJobScript + " --class " + userJob +
-              " --name " + appName +
-              " --master spark://" + masterHost + ":" + masterPort + " " +
-              SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " +commonArgs +" " +snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-              userAppArgs;
-          } else {
+            command = setCDCSparkAppCmds(userAppArgs,commonArgs,snappyJobScript,userJob,masterHost,masterPort,logFile);
+
+       } else {
+
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
@@ -2380,7 +2339,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_InitializeBB(){
+  public static void HydraTask_InitializeBB() {
     try {
       Log.getLogWriter().info("InsideHydraTask_InitializeBB ");
       int startR = SnappyCDCPrms.getInitStartRange();
@@ -2390,8 +2349,7 @@ public class SnappyTest implements Serializable {
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 5000000);
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 10 + (startR + 5000000));
       Log.getLogWriter().info("Finished HydraTask_InitializeBB ");
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       Log.getLogWriter().info("HydraTask_InitializeBB exception " + e.getMessage());
     }
   }
