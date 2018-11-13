@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Random;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import hydra.Log;
 import org.apache.spark.sql.catalyst.plans.logical.Except;
 
@@ -39,7 +43,7 @@ class cdcObject implements Runnable {
       Connection conn = getConnection();
       String filePath = path;
       ArrayList qArr = getQuery(filePath);
-      insertData(qArr,conn);
+      insertData(qArr, conn);
     } catch (Exception e) {
       System.out.println("Caught exception " + e.getMessage());
     }
@@ -138,7 +142,9 @@ class cdcObject implements Runnable {
       br.close();
 
     } catch (FileNotFoundException e) {
+      System.out.println("Caught exception in getQuery() " + e.getMessage());
     } catch (IOException io) {
+      System.out.println("Caught exception in getQuery() " + io.getMessage());
     }
     return queryList;
   }
@@ -161,16 +167,27 @@ public class CDCIngestionApp {
 
   public static void main(String args[]) {
     try {
+      ExecutorService executor = Executors.newFixedThreadPool(5);
       int sRange = Integer.parseInt(args[0]);
       int eRange = Integer.parseInt(args[1]);
       String insertQPAth = args[2];
       String sqlServerInstance = args[3];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
       for (int i = 1; i <= 5; i++) {
-        cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth+"/insert"+i+".sql", sqlServerInstance);
-        obj.start();
-     }
+        cdcObject obj = new cdcObject("Thread-" + i, sRange, eRange, insertQPAth + "/insert" + i + ".sql", sqlServerInstance);
+        //obj.start();
+        executor.execute(obj);
+      }
+      executor.shutdown();
+      try {
+        executor.awaitTermination(3600, TimeUnit.SECONDS);
+      } catch (InterruptedException ie) {
+        Log.getLogWriter().info("Got Exception while waiting for all threads to complete populate" +
+            " tasks");
+      }
+
     } catch (Exception e) {
+      System.out.println("Caught exception in main " + e.getMessage());
     } finally {
       System.out.println("Spark ApplicationEnd: ");
     }

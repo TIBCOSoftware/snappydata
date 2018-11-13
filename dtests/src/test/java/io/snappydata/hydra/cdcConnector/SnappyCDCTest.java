@@ -3,6 +3,7 @@ package io.snappydata.hydra.cdcConnector;
 import hydra.Log;
 
 import io.snappydata.hydra.cluster.SnappyTest;
+
 import java.io.*;
 
 import java.net.InetAddress;
@@ -39,8 +40,8 @@ public class SnappyCDCTest extends SnappyTest {
     Log.getLogWriter().info("Inside HydraTask_runConcurrencyJob");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
-     }
-     snappyCDCTest.runConcurrencyTestJob();
+    }
+    snappyCDCTest.runConcurrencyTestJob();
   }
 
   public static void HydraTask_closeStreamingJob() {
@@ -54,19 +55,18 @@ public class SnappyCDCTest extends SnappyTest {
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
-    try{
+    try {
       InetAddress myHost = InetAddress.getLocalHost();
       String hostName[] = myHost.toString().split("/");
-      curlCmd = "curl -d \"name="+appName+"&terminate=true\" -X POST http://"+hostName[0]+":8080/app/killByName/";
+      curlCmd = "curl -d \"name=" + appName + "&terminate=true\" -X POST http://" + hostName[0] + ":8080/app/killByName/";
       Log.getLogWriter().info("The curlCmd  is " + curlCmd);
       pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + logFileName;
       logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-    }
-    catch(Exception ex){
-      Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() "+ ex.getMessage());
+    } catch (Exception ex) {
+      Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() " + ex.getMessage());
     }
   }
 
@@ -83,11 +83,11 @@ public class SnappyCDCTest extends SnappyTest {
       String sqlServerInst = SnappyCDCPrms.getSqlServerInstance();
       String dataBaseName = SnappyCDCPrms.getDataBaseName();
       int intStartRange = SnappyCDCPrms.getInitStartRange();
-      Log.getLogWriter().info("Inside runConcurrencyTestJob() parameters are  " + threadCnt + " "+  queryPath+ " "
-          +endpoints.get(0)+ " " + isScanQuery+ " " +isBulkDelete+ " " +isPointLookUp + " " + intStartRange + " "
+      Log.getLogWriter().info("Inside runConcurrencyTestJob() parameters are  " + threadCnt + " " + queryPath + " "
+          + endpoints.get(0) + " " + isScanQuery + " " + isBulkDelete + " " + isPointLookUp + " " + intStartRange + " "
           + sqlServerInst + " " + dataBaseName);
-      cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath,endpoints.get(0), isScanQuery,isBulkDelete,
-          isPointLookUp,isMixedQuery,intStartRange,sqlServerInst);
+      cdcPerfSparkJob.runConcurrencyTestJob(threadCnt, queryPath, endpoints.get(0), isScanQuery, isBulkDelete,
+          isPointLookUp, isMixedQuery, intStartRange, sqlServerInst);
 
     } catch (Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runConcurrencyTestJob() method");
@@ -104,13 +104,13 @@ public class SnappyCDCTest extends SnappyTest {
     File bkName = null;
     File orgName = null;
     String query = "SELECT count(*) from AIRLINE";
-    try{
+    try {
       Connection conn = getConnections();
       ResultSet rs = conn.createStatement().executeQuery(query);
       Log.getLogWriter().info("Count value is " + rs.getInt(0));
       conn.close();
       ProcessBuilder pbStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
-      snappyTest.executeProcess(pbStop,null);
+      snappyTest.executeProcess(pbStop, null);
       bkName = new File(snappyPath + "/conf/servers_bk");
       orgName = new File(snappyPath + "/conf/servers");
       if (orgName.renameTo(bkName)) {
@@ -118,8 +118,8 @@ public class SnappyCDCTest extends SnappyTest {
       } else {
         Log.getLogWriter().info("Error while renaming file");
       }
-      File newServerConf = new File (snappyPath + "/conf/servers");
-      FileWriter fw = new FileWriter(newServerConf,true);
+      File newServerConf = new File(snappyPath + "/conf/servers");
+      FileWriter fw = new FileWriter(newServerConf, true);
       fw.write(nodeInfoforHA);
       FileReader reader = new FileReader(bkName);
       BufferedReader bufferedReader = new BufferedReader(reader);
@@ -138,7 +138,7 @@ public class SnappyCDCTest extends SnappyTest {
 
       Thread.sleep(60000);
       ProcessBuilder pbStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
-      snappyTest.executeProcess(pbStart,null);
+      snappyTest.executeProcess(pbStart, null);
       Thread.sleep(60000);
       Connection conn1 = getConnections();
       ResultSet rs1 = conn1.createStatement().executeQuery(query);
@@ -146,8 +146,8 @@ public class SnappyCDCTest extends SnappyTest {
       conn1.close();
 
       //Read the existing server config
+    } catch (Exception e) {
     }
-    catch(Exception e){}
   }
 
   public static void performHA() {
@@ -180,12 +180,12 @@ public class SnappyCDCTest extends SnappyTest {
         Long totalTime1 = (System.currentTimeMillis() - startTime1);
         Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to shut down");
       } else {
-        if(nodeType.equalsIgnoreCase("servers"))
+        if (nodeType.equalsIgnoreCase("servers"))
           scriptName = "/sbin/snappy-servers.sh";
-        else if(nodeType.equalsIgnoreCase("leads"))
+        else if (nodeType.equalsIgnoreCase("leads"))
           scriptName = "/sbin/snappy-leads.sh";
-       else
-         scriptName = "/sbin/snappy-locators.sh";
+        else
+          scriptName = "/sbin/snappy-locators.sh";
 
         orgName = new File(snappyPath + "/conf/" + nodeType);
         bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
@@ -210,13 +210,13 @@ public class SnappyCDCTest extends SnappyTest {
           Log.getLogWriter().info("The destination file is " + dest);
           File logFile = new File(dest);
 
-          Log.getLogWriter().info("The nodeType is " +nodeType+ " script to stop is " + scriptName);
+          Log.getLogWriter().info("The nodeType is " + nodeType + " script to stop is " + scriptName);
           ProcessBuilder pbStop = new ProcessBuilder(snappyPath + scriptName, "stop");
           snappyTest.executeProcess(pbStop, logFile);
 
           Thread.sleep(30000); //sleep for 3 min before restarting the node.
 
-          Log.getLogWriter().info("The nodeType is " +nodeType+ " script to start is " + scriptName);
+          Log.getLogWriter().info("The nodeType is " + nodeType + " script to start is " + scriptName);
           ProcessBuilder pbStart = new ProcessBuilder(snappyPath + scriptName, "start");
           snappyTest.executeProcess(pbStart, logFile);
 
