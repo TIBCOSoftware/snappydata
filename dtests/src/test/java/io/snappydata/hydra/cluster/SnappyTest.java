@@ -16,28 +16,6 @@
  */
 package io.snappydata.hydra.cluster;
 
-import com.gemstone.gemfire.LogWriter;
-import com.gemstone.gemfire.SystemFailure;
-import hydra.*;
-import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
-import io.snappydata.hydra.connectionPool.HikariConnectionPool;
-import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
-import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.spark.SparkContext;
-import org.apache.spark.sql.SnappyContext;
-import sql.SQLBB;
-import sql.SQLHelper;
-import sql.SQLPrms;
-import sql.dmlStatements.DMLStmtIF;
-import sql.sqlutil.DMLStmtsFactory;
-import util.*;
-
 import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -54,6 +32,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.gemstone.gemfire.LogWriter;
+import com.gemstone.gemfire.SystemFailure;
+import hydra.*;
+import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
+import io.snappydata.hydra.connectionPool.HikariConnectionPool;
+import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
+import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang.StringUtils;
+import org.apache.spark.SparkContext;
+import org.apache.spark.sql.SnappyContext;
+import sql.SQLBB;
+import sql.SQLHelper;
+import sql.SQLPrms;
+import sql.dmlStatements.DMLStmtIF;
+import sql.sqlutil.DMLStmtsFactory;
+import util.*;
 
 public class SnappyTest implements Serializable {
 
@@ -1812,8 +1810,6 @@ public class SnappyTest implements Serializable {
     }
   }
 
-<<<<<<< HEAD
-
    public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
@@ -2337,7 +2333,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_InitializeBB(){
+  public static void HydraTask_InitializeBB() {
     try {
       Log.getLogWriter().info("InsideHydraTask_InitializeBB ");
       int startR = SnappyCDCPrms.getInitStartRange();
