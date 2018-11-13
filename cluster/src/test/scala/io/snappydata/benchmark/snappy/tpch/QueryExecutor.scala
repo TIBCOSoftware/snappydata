@@ -172,8 +172,8 @@ object QueryExecutor {
           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
           var timer: Histogram.Timer = null
           if(metricsProperties.isSinkEnabled) {
-            timer = metricsProperties.requestLatencies(queryNumber)
-                .labels((i <= warmup).toString, i.toString)
+            timer = metricsProperties.requestLatencies
+                .labels(queryNumber, (i <= warmup).toString, i.toString)
                 .startTimer()
           }
           val startTime = System.currentTimeMillis()

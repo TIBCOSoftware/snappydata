@@ -34,7 +34,7 @@ class MetricsProperties {
    var sinkHost: String = _
    var sinkPort: String = _
    var pushGateway: PushGateway = _
-   var requestLatencies = scala.collection.mutable.Map[String, Histogram]()
+   var requestLatencies : Histogram = _
    var registry: CollectorRegistry = _
    var jobName: String = _
  }
@@ -63,16 +63,13 @@ object QueryExecutionJob extends SnappySQLJob {
       println("Prometheus PushGateway is running at " + s"${metrics.sinkHost}:${metrics.sinkPort}")
       metrics.pushGateway = new PushGateway(
         s"${metrics.sinkHost}:${metrics.sinkPort}")
-      metrics.registry = CollectorRegistry.defaultRegistry
-      metrics.registry.clear()
-      for (query <- queries) {
-        val metricName = s"query_${query}_latency_milliseconds"
-        if (!metrics.requestLatencies.contains(query)) {
-          metrics.requestLatencies(query) = Histogram.build()
-              .name(metricName).labelNames("warmup","execution")
-              .help(s"Query ${query} latency in milliseconds.").register();
-        }
-      }
+      metrics.registry = new CollectorRegistry()
+      //metrics.registry.clear()
+      val metricName = s"query_latency_milliseconds"
+      metrics.requestLatencies = Histogram.build()
+          .name(metricName).labelNames("query", "warmup","execution")
+          .help("Query latency in milliseconds.").register(metrics.registry);
+
     }
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
