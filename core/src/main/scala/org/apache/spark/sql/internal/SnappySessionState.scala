@@ -427,17 +427,22 @@ class SnappySessionState(snappySession: SnappySession)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
-        case _: BypassRowLevelSecurity | _: Update | _: Delete |
-             _: DeleteFromTable | _: PutIntoTable => plan
+        case _: BypassRowLevelSecurity => plan
 
         // TODO: Asif: Bypass row level security filter apply if the command
         // is of type RunnableCommad. Later if it turns out any data operation
         // is happening via this command we need to handle it
         case _: RunnableCommand => plan
-        case _ if !alreadyPolicyApplied(plan) => plan.transformUp {
+        case _ if !alreadyPolicyApplied(plan) =>
+          val opType = plan match {
+            case _: Update | _: PutIntoTable => SnappySession.UPDATE_POLICY
+            case _: Delete | _: DeleteFromTable => SnappySession.DELETE_POLICY
+            case _ => SnappySession.SELECT_POLICY
+          }
+          plan.transformUp {
           case lr@LogicalRelation(rlsRelation: RowLevelSecurityRelation, _, _) =>
             val policyFilter = snappySession.sessionState.catalog.
-                getCombinedPolicyFilterForNativeTable(rlsRelation, Some(lr))
+                getCombinedPolicyFilterForNativeTable(rlsRelation, Some(lr), opType)
             policyFilter match {
               case Some(filter) => filter.copy(child = lr)
               case None => lr
@@ -457,6 +462,7 @@ class SnappySessionState(snappySession: SnappySession)
               LogicalFilter(And(condition2, condition1), child)
             }
         }
+
         case _ => plan
       }
     }

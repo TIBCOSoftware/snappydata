@@ -1607,9 +1607,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       currentUser
     }
 
-    if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
-      throw new AnalysisException("Currently Policy only For Select is supported")
-    }
+
+
 
     /*
     if (isTargetExternalRelation) {
@@ -2044,6 +2043,13 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
+  private[sql] val SELECT_POLICY = 0
+  private[sql] val UPDATE_POLICY = 1
+  private[sql] val DELETE_POLICY = 2
+  private[sql] val policyCodeMap = Map("SELECT" -> SELECT_POLICY, "UPDATE" -> UPDATE_POLICY,
+    "DELETE" -> DELETE_POLICY, "ALL" -> SELECT_POLICY)
+
+
 
   // TODO: SW: global property? should be only session one
   private[sql] var tokenize: Boolean = _

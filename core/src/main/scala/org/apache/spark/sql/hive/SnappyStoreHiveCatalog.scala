@@ -573,14 +573,15 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
   }
 
   final def getCombinedPolicyFilterForNativeTable(rlsRelation: RowLevelSecurityRelation,
-      wrappingLogicalRelation: Option[LogicalRelation]):
+      wrappingLogicalRelation: Option[LogicalRelation], opTypeForPolicy: Int):
   Option[Filter] = {
     // filter out policy rows
-    getCombinedPolicyFilter(rlsRelation, wrappingLogicalRelation, None)
+    getCombinedPolicyFilter(rlsRelation, wrappingLogicalRelation, opTypeForPolicy, None)
   }
 
   private def getCombinedPolicyFilter(rlsRelation: RowLevelSecurityRelation,
-      wrappingLogicalRelation: Option[LogicalRelation], currentUser: Option[String]):
+      wrappingLogicalRelation: Option[LogicalRelation], opTypeForPolicy: Int,
+      currentUser: Option[String]):
   Option[Filter] = {
     if (!rlsRelation.isRowLevelSecurityEnabled) {
       None
@@ -591,6 +592,9 @@ class SnappyStoreHiveCatalog(externalCatalog: SnappyExternalCatalog,
           case Some(ct) if isPolicy(ct) &&
               ct.properties.getOrElse(PolicyProperties.targetTable, "").
                   equals(rlsRelation.resolvedName) &&
+              opTypeForPolicy >= SnappySession.policyCodeMap.getOrElse(ct.properties.
+                  getOrElse(PolicyProperties.policyFor, "").toUpperCase,
+                throw new IllegalArgumentException("Unknown Policy Type")) &&
               currentUser.forall(user => {
                 val policyOwner = ct.properties.getOrElse(PolicyProperties.policyOwner, "")
                 if (user.equalsIgnoreCase(policyOwner)) {
