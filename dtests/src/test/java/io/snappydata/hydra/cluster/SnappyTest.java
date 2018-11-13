@@ -1812,6 +1812,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
+<<<<<<< HEAD
 
    public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
@@ -2297,11 +2298,8 @@ public class SnappyTest implements Serializable {
           userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
-
             command = setCDCSparkAppCmds(userAppArgs,commonArgs,snappyJobScript,userJob,masterHost,masterPort,logFile);
-
        } else {
-
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
@@ -2339,7 +2337,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void HydraTask_InitializeBB() {
+  public static void HydraTask_InitializeBB(){
     try {
       Log.getLogWriter().info("InsideHydraTask_InitializeBB ");
       int startR = SnappyCDCPrms.getInitStartRange();
