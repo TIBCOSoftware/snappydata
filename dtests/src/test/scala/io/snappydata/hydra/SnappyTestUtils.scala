@@ -19,7 +19,7 @@ package io.snappydata.hydra
 
 import java.io.{File, FileNotFoundException, IOException, PrintWriter}
 import java.util
-import java.util.Collections
+import java.util.{Arrays, Collections}
 
 import scala.io.Source
 
@@ -254,7 +254,7 @@ object SnappyTestUtils {
       val expectedArray = expectedRow.split(",")
       var diff: Double = 0.0
       if(actualArray.length == expectedArray.length){
-        for (i <- 0 to actualArray.length) {
+        for (i <- 0 to actualArray.length - 1) {
           val value1: String = actualArray(i)
           val value2: String = expectedArray(i)
           if (!value1.equals(value2)) {
@@ -290,7 +290,8 @@ object SnappyTestUtils {
         assert(p.getInputStream.read == -1)
       }
       val rc = p.waitFor
-      if ((rc == 0) || (pb.command.contains("grep") && rc == 1)) {
+      val pbCmd = util.Arrays.toString(pb.command.toArray)
+      if ((rc == 0) || (pbCmd.contains("grep -v -F") && rc == 1)) {
         pw.println("Process executed successfully")
         0
       }
@@ -437,12 +438,13 @@ object SnappyTestUtils {
     }
     pw.println(aStr.toString)
 
-    if(missing.size() == unexpected.size()) {
+    if((missing.size() > 0) && missing.size() == unexpected.size()) {
       Collections.sort(missing)
       Collections.sort(unexpected)
       for (i <- 0 to missing.size()) {
         if (!isIgnorable(missing.get(i), unexpected.get(i))) true
       }
+      pw.println("This mismatch can be ignored.")
       aStr.setLength(0) // data mismatch can be ignored
     }
     if (aStr.length() > 0) {
