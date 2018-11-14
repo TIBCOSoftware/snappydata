@@ -525,6 +525,9 @@ The following APIs are available for SnappyStoreHiveCatalog:
 *	[**getKeyColumns**](#getkeycolumapi)
 *	[**getTableType**](#gettabletypeapi) 
 
+!!! Note
+	These are developer APIs and are subject to change in the future.
+
 <a id= getkeycolumapi> </a>
 ### getKeyColumns
 Gets primary key or key columns of a SnappyData table.
@@ -542,30 +545,6 @@ getKeyColumns(tableName: String)
 |--------|--------|
 | tableName      |    Name of the table.|
 | Returns     |    Sequence of key columns (for column tables) or sequence of primary keys (for row tables).|
-**Example **
-
-```pre
-snappySession.sessionCatalog.getKeyColumns("t1")
-```
-
-<a id= getkeycolumandpositionsapi> </a>
-### getKeyColumnsAndPositions
-Gets the sequence of tupples containing the key column and it's position in the table schema.
-
-**Syntax**
-
-```
-getKeyColumnsAndPositions(tableName: String)
-
-```
-
-**Parameters**
-
-|Parameter	 | Description |
-|--------|--------|
-| tableName      |    Name of the table.|
-| Returns     |    Sequence of key columns (for column tables) or sequence of primary keys (for row tables).|
-
 **Example **
 
 ```pre
