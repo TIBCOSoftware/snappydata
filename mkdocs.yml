@@ -128,6 +128,7 @@ pages:
     - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
     - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
+    - 'Using the Spark JDBC Connector': 'connectors/spark_jdbc_connector.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'SnappyData Pulse': 'monitoring/monitoring.md'

@@ -1,7 +1,7 @@
-# How to Connect using JDBC Driver
 <a id="howto-jdbc"></a>
+# How to Connect using JDBC Driver
 
-You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers. 
+You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers.
 
 
 To connect to the SnappyData cluster using JDBC, use URL of the form `jdbc:snappydata://<locatorHostName>:<locatorClientPort>/`
@@ -80,6 +80,7 @@ preparedStmt1.close()
 
 
 ## Connecting with JDBC Client Pool Driver
+<a id="jdbcpooldriverconnect"></a>
 
 JDBC client pool driver provides built-in connection pooling and relies on the non-pooled [JDBC driver](/howto/connect_using_jdbc_driver.md). The driver initializes the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. 
 We recommend using the pooled driver for low latency operations such as point lookups and when using the Spark JDBC data source API (see example below). When you access SnappyData from Java frameworks such as Spring, we recommend using pooling provided in the framework and switch to using the non-pooled driver. 

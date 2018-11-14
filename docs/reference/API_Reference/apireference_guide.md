@@ -60,7 +60,7 @@ sql(sqlText : String)
 **Example** 
 
 ```
-snSession.sql(“select * from t1”)
+snappySession.sql(“select * from t1”)
 ```
 
 <a id= sqluncachedapi> </a>
@@ -84,7 +84,7 @@ sqlUncached(sqlText : String)
 **Example **
 
 ```pre
-snSesion.sql(“select * from t1”)
+snappySession.sql(“select * from t1”)
 ```
 <a id= createtableapi> </a>
 ### createTable
@@ -372,7 +372,7 @@ put(tableName: String, rows: Row*)
 **Example **
 
 ```pre
-snSession.put(tableName, dataDF.collect(): _*)
+snappySession.put(tableName, dataDF.collect(): _*)
 ```
 
 <a id= updatedapi> </a>
@@ -399,7 +399,7 @@ update(tableName: String, filterExpr: String, newColumnValues: Row,  updateColum
 **Example **
 
 ```pre
-snappySesion.update("t1", "ITEMREF = 3" , Row(99) , "ITEMREF" )
+snappySession.update("t1", "ITEMREF = 3" , Row(99) , "ITEMREF" )
 ```
 
 <a id= deleteapi> </a>
