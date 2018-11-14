@@ -1,7 +1,11 @@
 package io.snappydata.hydra.cdcConnector;
 
+import hydra.BasePrms;
+import hydra.HydraVector;
+import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyPrms;
 
+import java.util.Vector;
 public class SnappyCDCPrms extends SnappyPrms {
 
   /**
@@ -92,12 +96,12 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**
    * config file parameters for the node required during HA
    */
-  public static Long nodeConfig;
+  public static Long nodeInfoforHA;
 
   /**
    * config file parameters for the node required during HA
    */
-  public static Long nodeInfoforHA;
+  public static Long nodeName;
 
   /**
    * File path that consists of the confs and cluster scripts
@@ -144,6 +148,11 @@ public class SnappyCDCPrms extends SnappyPrms {
         (nodeInfoforHA, null));
     if (nodeInfo == null) return "";
     return nodeInfo;
+  }
+
+  public static Vector getNodeName() {
+    Long key = nodeName;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
   public static String getSnappyFileLoc() {
