@@ -158,7 +158,7 @@ public class CDCIngestionApp implements Runnable {
     }
   }
 
-  public void runIngestionApp(Integer thCnt, Integer sRange, Integer eRange, String path, String sqlServerInst, String hostName) {
+  public void runIngestionApp(Integer sRange, Integer eRange, Integer thCnt, String path, String sqlServerInst, String hostName) {
     ExecutorService executor = Executors.newFixedThreadPool(thCnt);
     for (int i = 1; i <= thCnt; i++) {
       threadName = "Thread-" + i;
@@ -189,7 +189,7 @@ public class CDCIngestionApp implements Runnable {
       String hostname = args[5];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
       CDCIngestionApp obj = new CDCIngestionApp();
-      obj.runIngestionApp(threadCnt, sRange, eRange, insertQPAth, sqlServerInstance, hostname);
+      obj.runIngestionApp(sRange, eRange, threadCnt, insertQPAth, sqlServerInstance, hostname);
     } catch (Exception e) {
       System.out.println("Caught exception in main " + e.getMessage());
     } finally {

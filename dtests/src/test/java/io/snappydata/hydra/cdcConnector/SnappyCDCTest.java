@@ -1,14 +1,6 @@
 package io.snappydata.hydra.cdcConnector;
 
-import com.gemstone.gemfire.GemFireConfigException;
-import hydra.*;
-import io.snappydata.hydra.cluster.SnappyBB;
-import io.snappydata.hydra.cluster.SnappyStartUpTest;
-import io.snappydata.hydra.cluster.SnappyTest;
-import org.apache.commons.io.FileUtils;
-
 import java.io.*;
-
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.sql.Connection;
@@ -16,6 +8,15 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+
+import com.gemstone.gemfire.GemFireConfigException;
+import hydra.HydraRuntimeException;
+import hydra.Log;
+import hydra.RemoteTestModule;
+import io.snappydata.hydra.cluster.SnappyBB;
+import io.snappydata.hydra.cluster.SnappyStartUpTest;
+import io.snappydata.hydra.cluster.SnappyTest;
+import org.apache.commons.io.FileUtils;
 
 public class SnappyCDCTest extends SnappyTest {
   public static SnappyCDCTest snappyCDCTest;
@@ -95,8 +96,8 @@ public class SnappyCDCTest extends SnappyTest {
       pb.redirectErrorStream(true);
       pb.redirectOutput(ProcessBuilder.Redirect.appendTo(serverKillOutput));
 
-      //wait for 30 secs before issuing mean kill
-      Thread.sleep(5000);
+      //wait for 1 min before issuing mean kill
+      Thread.sleep(60000);
       pr = pb.start();
       pr.waitFor();
     } catch (IOException e) {
@@ -131,11 +132,10 @@ public class SnappyCDCTest extends SnappyTest {
 
     File orgName = new File(snappyPath + "/conf/" + nodeType);
     File bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
-
-   // String nodeInfo =  SnappyCDCPrms.getNodeInfoforHA();
     String nodeInfo;
     Vector hostList = SnappyCDCPrms.getNodeName();
     String nodeName = String.valueOf(hostList.get(0));
+
     if(nodeType.equalsIgnoreCase("servers"))
       nodeInfo = nodeName + " -dir=/nfs/users/spillai/" + nodeName + " -heap-size=5g -memory-size=5g ";
     else
@@ -144,7 +144,6 @@ public class SnappyCDCTest extends SnappyTest {
     Log.getLogWriter().info("The nodeInfo is  " + nodeInfo);
     String nodeConfig = nodeInfo + "\n";
     try {
-      //  FileUtils.copyFile(orgName, bkName);
       if (!isNewNodeFirst) {
         FileUtils.copyFile(orgName, bkName);
         FileWriter fw = new FileWriter(orgName, true);
@@ -193,7 +192,7 @@ public class SnappyCDCTest extends SnappyTest {
         }
 //        FileUtils.copyFile(bkName, orgName);
       }
-      FileUtils.copyFile(bkName, orgName);
+    //  FileUtils.copyFile(bkName, orgName);
 
     } catch (FileNotFoundException e) {
       // File not found
@@ -268,7 +267,7 @@ public class SnappyCDCTest extends SnappyTest {
       //Start the cluster after 1 min
       // Thread.sleep(60000);
       Log.getLogWriter().info("Invoking startCluster");
-      startCluster(snappyPath, logFile);
+      startCluster(snappyPath, logFile, isModifyConf);
       snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
     } catch (GemFireConfigException ex) {
       Log.getLogWriter().info("Got the expected exception when starting a new server ,without locators " + ex.getMessage());
@@ -394,7 +393,7 @@ public class SnappyCDCTest extends SnappyTest {
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "clusterStart.log";
       File logFile = new File(dest);
-      snappyCDCTest.startCluster(snappyPath, logFile);
+      snappyCDCTest.startCluster(snappyPath, logFile, false);
     } catch (IOException ex) {
     }
   }
@@ -474,109 +473,6 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  /*public static void performClusterRestartWithNewNode() {
-    String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
-    String nodeInfoforHA = SnappyCDCPrms.getNodeInfoforHA();
-    File bkName = null;
-    File orgName = null;
-    String query = "SELECT count(*) from AIRLINE";
-    try {
-      Connection conn = getConnections();
-      ResultSet rs = conn.createStatement().executeQuery(query);
-      Log.getLogWriter().info("Count value is " + rs.getInt(0));
-      conn.close();
-      ProcessBuilder pbStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
-      snappyTest.executeProcess(pbStop, null);
-      bkName = new File(snappyPath + "/conf/servers_bk");
-      orgName = new File(snappyPath + "/conf/servers");
-      if (orgName.renameTo(bkName)) {
-        Log.getLogWriter().info("File renamed to " + bkName);
-      } else {
-        Log.getLogWriter().info("Error while renaming file");
-      }
-      File newServerConf = new File(snappyPath + "/conf/servers");
-      FileWriter fw = new FileWriter(newServerConf, true);
-      fw.write(nodeInfoforHA);
-      FileReader reader = new FileReader(bkName);
-      BufferedReader bufferedReader = new BufferedReader(reader);
-      String line;
-      while ((line = bufferedReader.readLine()) != null) {
-        fw.write(line);
-      }
-      reader.close();
-      FileReader reader1 = new FileReader(newServerConf);
-      BufferedReader bufferedReader1 = new BufferedReader(reader1);
-      String line1;
-      while ((line1 = bufferedReader1.readLine()) != null) {
-        System.out.println(line1);
-      }
-      reader1.close();
-
-      Thread.sleep(60000);
-      ProcessBuilder pbStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
-      snappyTest.executeProcess(pbStart, null);
-      Thread.sleep(60000);
-      Connection conn1 = getConnections();
-      ResultSet rs1 = conn1.createStatement().executeQuery(query);
-      Log.getLogWriter().info("Count value is " + rs1.getInt(0));
-      conn1.close();
-    }
-  }
-      //Read the existing server config*/
-/*
-  public static void performClusterRestartWithNewNode() {
-    String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
-    String nodeInfoforHA = SnappyCDCPrms.getNodeInfoforHA();
-    File bkName = null;
-    File orgName = null;
-    String query = "SELECT count(*) from AIRLINE";
-    try {
-      Connection conn = getConnections();
-      ResultSet rs = conn.createStatement().executeQuery(query);
-      Log.getLogWriter().info("Count value is " + rs.getInt(0));
-      conn.close();
-      ProcessBuilder pbStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
-      snappyTest.executeProcess(pbStop, null);
-      bkName = new File(snappyPath + "/conf/servers_bk");
-      orgName = new File(snappyPath + "/conf/servers");
-      if (orgName.renameTo(bkName)) {
-        Log.getLogWriter().info("File renamed to " + bkName);
-      } else {
-        Log.getLogWriter().info("Error while renaming file");
-      }
-      File newServerConf = new File(snappyPath + "/conf/servers");
-      FileWriter fw = new FileWriter(newServerConf, true);
-      fw.write(nodeInfoforHA);
-      FileReader reader = new FileReader(bkName);
-      BufferedReader bufferedReader = new BufferedReader(reader);
-      String line;
-      while ((line = bufferedReader.readLine()) != null) {
-        fw.write(line);
-      }
-      reader.close();
-      FileReader reader1 = new FileReader(newServerConf);
-      BufferedReader bufferedReader1 = new BufferedReader(reader1);
-      String line1;
-      while ((line1 = bufferedReader1.readLine()) != null) {
-        System.out.println(line1);
-      }
-      reader1.close();
-
-      Thread.sleep(60000);
-      ProcessBuilder pbStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
-      snappyTest.executeProcess(pbStart, null);
-      Thread.sleep(60000);
-      Connection conn1 = getConnections();
-      ResultSet rs1 = conn1.createStatement().executeQuery(query);
-      Log.getLogWriter().info("Count value is " + rs1.getInt(0));
-      conn1.close();
-
-      //Read the existing server config
-    } catch (Exception e) {
-
-    }
-  }*/
-
   public static String getNodeInfo(String hostName, String snappyPath, String nodeType) {
     String nodeInfo = "";
     Log.getLogWriter().info("Inside getNodeInfo");
@@ -587,9 +483,8 @@ public class SnappyCDCTest extends SnappyTest {
       File logFile = new File(dest);
       Process pr = null;
       if (!logFile.exists()) {
-        String cmd = " grep -r " + hostName + " " + snappyPath + "/conf/" + nodeType;
+        String cmd = " grep  ^" + hostName + " " + snappyPath + "/conf/" + nodeType + " | head -n1";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
-        // Log.getLogWriter().info(" The  cmd is " + cmd);
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
         pr = pb.start();
         pr.waitFor();
@@ -605,7 +500,6 @@ public class SnappyCDCTest extends SnappyTest {
     } catch (InterruptedException ex) {
       Log.getLogWriter().info("The exception in getNodeInfo is " + ex.getMessage());
     }
-    // Log.getLogWriter().info("The nodeInfo is  " + nodeInfo);
     return nodeInfo;
   }
 
@@ -616,16 +510,7 @@ public class SnappyCDCTest extends SnappyTest {
       Log.getLogWriter().info("snappyPath File path is " + snappyPath);
       String nodeType = SnappyCDCPrms.getNodeType();
       Boolean isOnlyStop = SnappyCDCPrms.getIsOnlyStop();
-      String nodeInfoforHA ;//SnappyCDCPrms.getNodeInfoforHA();
-      Random rnd = new Random();
-      Vector hostList = SnappyCDCPrms.getNodeName();
-      int num = rnd.nextInt(hostList.size());
-      String hostName = String.valueOf(hostList.get(num));//String.valueOf(rnd.nextInt(hostList.size()));
-      if (hostName.isEmpty()) {
-        Log.getLogWriter().info("The hostname is empty ,hence trying to get another hostname");
-        hostName = String.valueOf(hostList.get(1));
-      }
-      Log.getLogWriter().info("The hostname is  " + hostName);
+      String nodeInfoforHA;
 
       if (nodeType.equals("allNodes")) {
         File log = new File(".");
@@ -637,16 +522,25 @@ public class SnappyCDCTest extends SnappyTest {
         snappyTest.executeProcess(pbClustStop, logFile);
         Long totalTime = (System.currentTimeMillis() - startTime);
         Log.getLogWriter().info("The cluster took " + totalTime + " ms to shut down");
-        //Restart the cluster after 10 mins
 
+        //Restart the cluster after 10 mins
         Thread.sleep(600000);
         ProcessBuilder pbClustStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
         Long startTime1 = System.currentTimeMillis();
         snappyTest.executeProcess(pbClustStart, logFile);
         Long totalTime1 = (System.currentTimeMillis() - startTime1);
         Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to shut down");
-
       } else {
+        Random rnd = new Random();
+        Vector hostList = SnappyCDCPrms.getNodeName();
+        int num = rnd.nextInt(hostList.size());
+        String hostName = String.valueOf(hostList.get(num));//String.valueOf(rnd.nextInt(hostList.size()));
+        if (hostName.isEmpty()) {
+          Log.getLogWriter().info("The hostname is empty ,hence trying to get another hostname");
+          hostName = String.valueOf(hostList.get(1));
+        }
+        Log.getLogWriter().info("The hostname is  " + hostName);
+
         if (nodeType.equalsIgnoreCase("servers")) {
           scriptName = "/sbin/snappy-servers.sh";
           nodeInfoforHA = getNodeInfo(hostName, snappyPath, nodeType);
@@ -735,7 +629,7 @@ public class SnappyCDCTest extends SnappyTest {
     getClusterStatus(snappyPath, logFile);
   }
 
-  public static void startCluster(String snappyPath, File logFile) {
+  public static void startCluster(String snappyPath, File logFile, Boolean isModifyCluster) {
     Log.getLogWriter().info("Inside startCluster");
     ProcessBuilder pbClustStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
     Long startTime1 = System.currentTimeMillis();
