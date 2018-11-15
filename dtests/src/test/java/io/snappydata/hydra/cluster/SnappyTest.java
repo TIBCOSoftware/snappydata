@@ -2788,26 +2788,16 @@ public class SnappyTest implements Serializable {
     cmd.append("grep -r Exception " + getCurrentDirPath()).append(" | grep .log");
     String[] expectedExceptions = SnappyPrms.getExpectedExceptionList();
     if(cycleVms) {
-
       List<String> exceptions = Arrays.asList(expectedExceptions);
       exceptions.addAll(Arrays.asList(SnappyPrms.getExpectedExceptionListForHA()));
       expectedExceptions = (String[])exceptions.toArray();
     }
-    for (int i = 0; i < expectedExceptions.length; i++) {
-      cmd.append(" | grep -v ").append(expectedExceptions[i]);
-    }
+    for (int i = 0; i < expectedExceptions.length; i++)
+      cmd.append(" | grep -v \"").append(expectedExceptions[i] + "\"");
+    cmd.append("| grep -v .inc");
     Log.getLogWriter().info("grep command is : " + cmd);
     ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd.toString());
-    pb.redirectErrorStream(true);
-    pb.redirectOutput(ProcessBuilder.Redirect.appendTo(suspectStringFile));
-    try {
-      pr = pb.start();
-      pr.waitFor();
-    } catch (IOException ie) {
-
-    } catch (InterruptedException ie) {
-
-    }
+    executeProcess(pb,suspectStringFile);
   }
 
   /**
