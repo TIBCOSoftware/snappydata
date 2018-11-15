@@ -254,7 +254,7 @@ object SnappyTestUtils {
       val expectedArray = expectedRow.split(",")
       var diff: Double = 0.0
       if(actualArray.length == expectedArray.length){
-        for (i <- 0 to actualArray.length - 1) {
+        for (i <- 0 until actualArray.length) {
           val value1: String = actualArray(i)
           val value2: String = expectedArray(i)
           if (!value1.equals(value2)) {
@@ -441,7 +441,7 @@ object SnappyTestUtils {
     if((missing.size() > 0) && missing.size() == unexpected.size()) {
       Collections.sort(missing)
       Collections.sort(unexpected)
-      for (i <- 0 to missing.size()) {
+      for (i <- 0 until missing.size()) {
         if (!isIgnorable(missing.get(i), unexpected.get(i))) true
       }
       pw.println("This mismatch can be ignored.")
