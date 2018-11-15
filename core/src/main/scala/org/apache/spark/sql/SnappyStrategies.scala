@@ -39,7 +39,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, LogicalPlanWithHints, SQLConf}
+import org.apache.spark.sql.internal.{JoinQueryPlanning, LogicalPlanWithHints, SQLConf, SnappySessionState}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -48,18 +48,16 @@ import org.apache.spark.sql.streaming._
  */
 private[sql] trait SnappyStrategies {
 
-  self: DefaultPlanner =>
+  self: SnappySessionState =>
 
   object SnappyStrategies extends Strategy {
-
+k
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
       sampleSnappyCase(plan)
     }
   }
 
-  def isDisabled: Boolean = {
-    session.sessionState.disableStoreOptimizations
-  }
+  def isDisabled: Boolean = disableStoreOptimizations
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
   object StreamQueryStrategy extends Strategy {
@@ -89,7 +87,7 @@ private[sql] trait SnappyStrategies {
           val buildSize = buildPlan.statistics.sizeInBytes
           if (buildSize > math.max(JoinStrategy.getMaxHashJoinSize(conf),
             10L * 1024L * 1024L * 1024L)) {
-            session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
+            snappySession.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
                 s"$joinHint for ${right.simpleString} skipped for ${joinType.sql} " +
                 s"JOIN on columns=$rightKeys due to large estimated buildSize=$buildSize. " +
                 s"Increase session property ${Property.HashJoinSize.name} to force.",
@@ -104,7 +102,7 @@ private[sql] trait SnappyStrategies {
           // don't broadcast beyond 1GB estimated size because that is likely a mistake
           val buildSize = buildPlan.statistics.sizeInBytes
           if (buildSize > math.max(conf.autoBroadcastJoinThreshold, 1L * 1024L * 1024L * 1024L)) {
-            session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
+            snappySession.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
                 s"$joinHint for ${right.simpleString} skipped for ${joinType.sql} " +
                 s"JOIN on columns=$rightKeys due to large estimated buildSize=$buildSize. " +
                 s"Increase session property ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key} to force.",
@@ -124,7 +122,8 @@ private[sql] trait SnappyStrategies {
           s"Expected one of ${Constant.ALLOWED_JOIN_TYPE_HINTS}")
     }
 
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled || session.disableHashJoin) {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled ||
+        snappySession.disableHashJoin) {
       Nil
     } else {
       plan match {
@@ -136,9 +135,10 @@ private[sql] trait SnappyStrategies {
             case Some(joinHint) =>
               applyJoinHint(joinHint, joinType, leftKeys, rightKeys, condition,
                 left, right, joins.BuildRight, right, canBuildRight) match {
-                case Nil => session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
-                    s"$joinHint for ${right.simpleString} cannot be applied for ${joinType.sql} " +
-                    s"JOIN on columns=$rightKeys. Will try on the other side of join: " +
+                case Nil => snappySession.addWarning(new SQLWarning(s"Plan hint " +
+                    s"${QueryHint.JoinType}=$joinHint for ${right.simpleString} cannot be " +
+                    s"applied for ${joinType.sql} JOIN on columns=$rightKeys. " +
+                    s"Will try on the other side of join: " +
                     s"${left.simpleString}.", SQLState.LANG_INVALID_JOIN_STRATEGY))
                 case result => return result
               }
@@ -148,8 +148,9 @@ private[sql] trait SnappyStrategies {
             case Some(joinHint) =>
               applyJoinHint(joinHint, joinType, leftKeys, rightKeys, condition,
                 left, right, joins.BuildLeft, left, canBuildLeft) match {
-                case Nil => session.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
-                    s"$joinHint for ${left.simpleString} cannot be applied for ${joinType.sql} " +
+                case Nil => snappySession.addWarning(new SQLWarning(s"Plan hint " +
+                    s"${QueryHint.JoinType}=$joinHint for ${left.simpleString} cannot be " +
+                    s"applied for ${joinType.sql} " +
                     s"JOIN on columns=$leftKeys", SQLState.LANG_INVALID_JOIN_STRATEGY))
                 case result => return result
               }
@@ -324,7 +325,7 @@ private[sql] trait SnappyStrategies {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
-      new SnappyAggregationStrategy(self).apply(plan)
+      new SnappyAggregationStrategy(planner).apply(plan)
     }
   }
 }
@@ -418,7 +419,7 @@ private[sql] object JoinStrategy {
  *
  * Adapted from Spark's Aggregation strategy.
  */
-class SnappyAggregationStrategy(planner: DefaultPlanner)
+class SnappyAggregationStrategy(planner: SparkPlanner)
     extends Strategy {
 
   private val maxAggregateInputSize = {
