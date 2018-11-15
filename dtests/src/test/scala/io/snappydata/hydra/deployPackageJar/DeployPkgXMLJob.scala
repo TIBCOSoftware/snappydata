@@ -30,13 +30,13 @@ class DeployPkgXMLJob extends SnappySQLJob{
     val spark : SparkSession = SparkSession.builder().getOrCreate()
 
     val snc : SnappyContext = snappySession.sqlContext
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
     val Q1 : String = "SELECT * FROM Books"
 //    var tableType : String = jobConfig.getString("tableType")
 //    if(tableType == null){
 //      tableType = "column"
 //    }
-//    val outputFile = "ValidateBooksXMLJob" + jobConfig.getString("logFileName")
-    val outputFile = "/home/cbhatt/snappydata/hydraLogs/ValidateBooksXMLJob"
+    val outputFile = "ValidateBooksXML_" + "column" + "_" + System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)

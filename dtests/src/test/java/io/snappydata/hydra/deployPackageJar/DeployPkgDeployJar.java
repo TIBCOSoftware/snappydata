@@ -1,6 +1,7 @@
 package io.snappydata.hydra.deployPackageJar;
 
 import hydra.Log;
+import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import util.TestException;
 
@@ -10,7 +11,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -207,6 +212,24 @@ public class DeployPkgDeployJar extends SnappyTest {
         deployPkgJars.deployPkgWithRepos();
     }
 
+    /**
+     * This method start the deployment and kill the lead node
+     * then on restart package / jar should be automatically installed
+     * @since 1.0.2.1
+     */
+    public static void HydraTask_deployPkgAndKillLeadNode() {
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPkgAndKillLeadNode();
+    }
+
+    /**
+     * This method initialize the required job parameters
+     * while submitting the job through job script.
+     * @since 1.0.2.1
+     */
+    public static void initJobArtifacts() {
+        initSnappyArtifacts();
+    }
 
     /**
      * This method establish the connection with Snappy SQL via JDBC.
@@ -289,16 +312,16 @@ public class DeployPkgDeployJar extends SnappyTest {
 
             st.clearBatch();
 
-            int count = 0;
+            //int count = 0;
             for (Map.Entry<String, String> entry : source_Alias_Coordinate.entrySet()) {
                 undeploy_Pkg_Cmd = "undeploy " + entry.getKey() + ";";
                 Log.getLogWriter().info("Executing undeploy package command : " + undeploy_Pkg_Cmd);
                 conn.createStatement().execute(undeploy_Pkg_Cmd);
                 source_Alias_Coordinate.remove(entry.getKey());
                 result_Alias_Coordinate.remove(entry.getKey());
-                count++;
-                if (count >= 2)
-                    break;
+                //count++;
+                //if (count >= 2)
+                //break;
             }
 
             st.clearBatch();
@@ -360,16 +383,16 @@ public class DeployPkgDeployJar extends SnappyTest {
 
             st.clearBatch();
 
-            int count = 0;
+            //int count = 0;
             for (Map.Entry<String, String> entry : source_Alias_Coordinate.entrySet()) {
                 undeploy_Pkg_Cmd = "undeploy " + entry.getKey() + ";";
                 Log.getLogWriter().info("Executing undeploy package command : " + undeploy_Pkg_Cmd);
                 conn.createStatement().execute(undeploy_Pkg_Cmd);
                 source_Alias_Coordinate.remove(entry.getKey());
                 result_Alias_Coordinate.remove(entry.getKey());
-                count++;
-                if (count >= 1)
-                    break;
+                //count++;
+                //if (count >= 1)
+                //   break;
             }
 
             st.clearBatch();
@@ -802,7 +825,7 @@ public class DeployPkgDeployJar extends SnappyTest {
     /**
      * This method test the deploy package command where package is not available on Maven Central but at
      * other repositories.
-     * This method uses the comma separated packages and respositories.
+     * This method uses the comma separated packages and repositories.
      * @since 1.0.2
      *
      */
@@ -836,7 +859,6 @@ public class DeployPkgDeployJar extends SnappyTest {
                 st.clearBatch();
                 st = conn.createStatement();
                 if(st.execute(listPkgCmd)) {
-                    //Log.getLogWriter().info("List Package Execution : ");
                     rs = st.getResultSet();
                     if (rs.next())
                         Log.getLogWriter().info("Repos testing not executed successful...");
@@ -852,7 +874,66 @@ public class DeployPkgDeployJar extends SnappyTest {
         finally {
             closeConnection(conn);
         }
+    }
 
+    /**
+     *
+     * @since 1.0.2.1
+     */
+    private  void deployPkgAndKillLeadNode() {
+        Vector snappyJobClassName = SnappyPrms.getSnappyJobClassNames();
+        String userAppProperties = SnappyPrms.getCommaSepAPPProps();
+        String userAppName = SnappyPrms.getUserAppName();
+        String thirdParty_Pkgs_repos = SnappyPrms.getJarIdentifier();
+        boolean isDeploy = SnappyPrms.isDeployPkg();
+
+
+        //Below job / task kill the lead node
+        Runnable killLeadNode = () -> {
+                  Log.getLogWriter().info("Killing the Lead Node and Restart the Lead Node...");
+                  SnappyTest.HydraTask_cycleLeadVM();
+        };
+
+        //Below job / task will wait for 15 seconds until secondary lead node starts.
+        //It executes the job after new lead node discovered.
+        //Wait time is 15 seconds
+        Runnable submitJobKillLeadNode = () -> {
+                try {
+                    Log.getLogWriter().info("Start the snappy Job and put the thread immediately into sleep mode...");
+                    Thread.sleep(15000);
+                    boolean jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
+                            userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                    Log.getLogWriter().info("DeployPkgDeployJar -> SnappyJobStatus : " + jobStatus);
+                    if(jobStatus == false) {
+                        Log.getLogWriter().info("Resubmit the snappy job again...");
+                        Thread.sleep(12000);
+                        jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
+                                userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                    }
+                }
+                catch(InterruptedException e){
+                    Log.getLogWriter().info("Deploy pkg with Lead HA, job thread interrupted -> " + e.getMessage());
+                }
+            };
+
+        ExecutorService es = Executors.newFixedThreadPool(2);
+
+        es.submit(killLeadNode);
+        es.submit(submitJobKillLeadNode);
+        try {
+            Log.getLogWriter().info("Sleeping for " + 360000 + " millis before executor service shut down");
+            Thread.sleep(360000);
+            es.shutdown();
+            es.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+        }
+        /*try {
+            es.shutdown();
+            es.awaitTermination(180,TimeUnit.SECONDS);
+        }catch (InterruptedException e) {
+            Log.getLogWriter().info("Deploy pkg with Lead HA -> " + e.getMessage());
+        }*/
     }
 }
 
