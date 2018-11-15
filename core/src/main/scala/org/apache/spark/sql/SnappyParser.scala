@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -35,6 +35,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.ShowTablesHiveCommand
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
@@ -1132,8 +1133,11 @@ class SnappyParser(session: SnappySession)
   // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
   protected def show: Rule1[LogicalPlan] = rule {
     SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
-        ((ident: Any, pat: Any) =>
-          ShowTablesCommand(ident.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
+        ((id: Any, pat: Any) => if (Property.HiveCompatible.get(session.sessionState.conf)) {
+          ShowTablesHiveCommand(id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])
+        } else {
+          ShowTablesCommand(id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])
+        }) |
     SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
       ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
     SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>

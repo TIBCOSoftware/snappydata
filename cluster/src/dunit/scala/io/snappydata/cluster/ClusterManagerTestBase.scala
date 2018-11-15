@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -69,6 +69,7 @@ abstract class ClusterManagerTestBase(s: String)
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "95")
   bootProps.setProperty("gemfirexd.max-lock-wait", "60000")
+  bootProps.setProperty("member-timeout", "5000")
 
   // reduce startup time
   // sysProps.setProperty("p2p.discoveryTimeout", "1000")

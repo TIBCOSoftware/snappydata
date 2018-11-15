@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -309,7 +309,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         destLocDir.mkdirs();
       }
     } catch (IOException ie) {
-      throw new TestException("Got exception while creating new csv file.");
+      throw new TestException("Got exception while creating new csv file.", ie);
     }
 
     for (int i = 0; i < tableNames.length; i++) {
@@ -352,11 +352,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
               sb = new StringBuilder();
             }
           } catch (IOException ie) {
-            throw new TestException("Got exception while creating new csv file.");
+            throw new TestException("Got exception while creating new csv file.", ie);
           }
         }
       } catch (FileNotFoundException fe) {
-        throw new TestException("Got exception while creating new csv file.");
+        throw new TestException("Got exception while creating new csv file.", fe);
       }
     }
     return destLoc;
