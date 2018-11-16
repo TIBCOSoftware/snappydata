@@ -67,13 +67,6 @@ class SnappySessionState(val snappySession: SnappySession)
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
-  protected val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
-
-  experimentalMethods.extraStrategies = Seq(SnappyStrategies,
-    StoreStrategy, StreamQueryStrategy) ++
-      storeOptimizedRules
-
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
     case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
     case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
@@ -721,11 +714,20 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   override final def executePlan(plan: LogicalPlan): QueryExecution = {
+    ingestSnappyStrategies
     clearExecutionData()
     beforeExecutePlan(plan)
     val qe = newQueryExecution(plan)
     if (enableExecutionCache) executionCache.put(plan, qe)
     qe
+  }
+
+  private lazy val ingestSnappyStrategies = {
+    val storeOptimizedRules: Seq[Strategy] =
+      Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
+
+    experimentalMethods.extraStrategies = experimentalMethods.extraStrategies ++
+        Seq(SnappyStrategies, StoreStrategy, StreamQueryStrategy) ++ storeOptimizedRules
   }
 
   protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
