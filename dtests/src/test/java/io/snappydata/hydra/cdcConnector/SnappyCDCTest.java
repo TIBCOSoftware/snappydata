@@ -24,7 +24,7 @@ public class SnappyCDCTest extends SnappyTest {
   public SnappyCDCTest() {
   }
 
-  public static Connection getSnappyConnection() {
+  public Connection getSnappyConnection() {
     Connection conn = null;
     List<String> endpoints = validateLocatorEndpointData();
     String url = "jdbc:snappydata://" + endpoints.get(0);
@@ -46,7 +46,7 @@ public class SnappyCDCTest extends SnappyTest {
     return asList;
   }
 
-  public static void meanKillProcesses() {
+  public void meanKillProcesses() {
     Process pr = null;
     ProcessBuilder pb;
     File logFile, log = null, serverKillOutput;
@@ -110,7 +110,7 @@ public class SnappyCDCTest extends SnappyTest {
     clusterRestart(snappyPath, isStopStart, nodeType, false, "", false);
   }
 
-  public static void performRebalance() {
+  public void performRebalance() {
     try {
       Connection conn = getSnappyConnection();
       Long startTime = System.currentTimeMillis();
@@ -123,7 +123,15 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void addNewNode() {
+  public static void HydraTask_addNewNode() {
+    Log.getLogWriter().info("Inside HydraTask_addNewNode");
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.addNewNode();
+  }
+
+  public void addNewNode() {
     Log.getLogWriter().info("Indside startNewNodeFirst method");
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
     Log.getLogWriter().info("snappyPath File path is " + snappyPath);
@@ -136,7 +144,7 @@ public class SnappyCDCTest extends SnappyTest {
     Vector hostList = SnappyCDCPrms.getNodeName();
     String nodeName = String.valueOf(hostList.get(0));
 
-    if(nodeType.equalsIgnoreCase("servers"))
+    if (nodeType.equalsIgnoreCase("servers"))
       nodeInfo = nodeName + " -dir=/nfs/users/spillai/" + nodeName + " -heap-size=5g -memory-size=5g ";
     else
       nodeInfo = nodeName + " -dir=/nfs/users/spillai/lead ";
@@ -192,7 +200,7 @@ public class SnappyCDCTest extends SnappyTest {
         }
 //        FileUtils.copyFile(bkName, orgName);
       }
-    //  FileUtils.copyFile(bkName, orgName);
+      //  FileUtils.copyFile(bkName, orgName);
 
     } catch (FileNotFoundException e) {
       // File not found
@@ -205,7 +213,7 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void clusterModifyAndRestart(String snappyPath, String nodeType, String nodeConfig) {
+  public void clusterModifyAndRestart(String snappyPath, String nodeType, String nodeConfig) {
     File orgName = new File(snappyPath + "/conf/" + nodeType);
     File bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
     List hostList = getHostNames();
@@ -233,7 +241,7 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void clusterRestart(String snappyPath, Boolean isStopStart, String nodeType, Boolean isBackupRecovery, String nodeConfig, Boolean isModifyConf) {
+  public void clusterRestart(String snappyPath, Boolean isStopStart, String nodeType, Boolean isBackupRecovery, String nodeConfig, Boolean isModifyConf) {
     try {
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
@@ -278,7 +286,7 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void storeDataCount() {
+  public void storeDataCount() {
     Log.getLogWriter().info("Inside storeDataCount method");
     int tableCnt = 0;
     try {
@@ -318,7 +326,7 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void validateDataCount() {
+  public void validateDataCount() {
     Log.getLogWriter().info("Inside validateDataCount method");
     Map<String, Integer> tableCntMap = (Map<String, Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
     Log.getLogWriter().info("tableCntMap size = " + tableCntMap);
@@ -380,6 +388,7 @@ public class SnappyCDCTest extends SnappyTest {
       File logFile = new File(dest);
       snappyCDCTest.stopCluster(snappyPath, logFile);
     } catch (IOException ex) {
+      Log.getLogWriter().info("HydraTask_stopCluster got exception " + ex.getMessage());
     }
   }
 
@@ -395,6 +404,7 @@ public class SnappyCDCTest extends SnappyTest {
       File logFile = new File(dest);
       snappyCDCTest.startCluster(snappyPath, logFile, false);
     } catch (IOException ex) {
+      Log.getLogWriter().info("HydraTask_startCluster got exception " + ex.getMessage());
     }
   }
 
@@ -473,7 +483,7 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static String getNodeInfo(String hostName, String snappyPath, String nodeType) {
+  public String getNodeInfo(String hostName, String snappyPath, String nodeType) {
     String nodeInfo = "";
     Log.getLogWriter().info("Inside getNodeInfo");
     try {
@@ -503,7 +513,15 @@ public class SnappyCDCTest extends SnappyTest {
     return nodeInfo;
   }
 
-  public static void performHA() {
+  public static void HydraTask_performHA() {
+    Log.getLogWriter().info("Inside HydraTask_performHA");
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.performHA();
+  }
+
+  public void performHA() {
     String scriptName;
     try {
       String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
@@ -614,13 +632,21 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void removeDiskStore() {
+  public static void HydraTask_removeDiskStore() {
+    Log.getLogWriter().info("Inside HydraTask_removeDiskStore");
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.removeDiskStore();
+  }
+
+  public void removeDiskStore() {
     String dirPath = SnappyCDCPrms.getDataLocation();
     Log.getLogWriter().info("the dirPath is " + dirPath);
     removeDiskStoreFiles(dirPath);
   }
 
-  public static void stopCluster(String snappyPath, File logFile) {
+  public void stopCluster(String snappyPath, File logFile) {
     ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
     Long startTime = System.currentTimeMillis();
     snappyTest.executeProcess(pbClustStop, logFile);
@@ -629,7 +655,7 @@ public class SnappyCDCTest extends SnappyTest {
     getClusterStatus(snappyPath, logFile);
   }
 
-  public static void startCluster(String snappyPath, File logFile, Boolean isModifyCluster) {
+  public void startCluster(String snappyPath, File logFile, Boolean isModifyCluster) {
     Log.getLogWriter().info("Inside startCluster");
     ProcessBuilder pbClustStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
     Long startTime1 = System.currentTimeMillis();
@@ -639,7 +665,7 @@ public class SnappyCDCTest extends SnappyTest {
     getClusterStatus(snappyPath, logFile);
   }
 
-  public static void getClusterStatus(String snappyPath, File logFile) {
+  public void getClusterStatus(String snappyPath, File logFile) {
     Log.getLogWriter().info("Now getting cluster status");
     ProcessBuilder pbClustStats = new ProcessBuilder(snappyPath + "/sbin/snappy-status-all.sh");
     Long startTime1 = System.currentTimeMillis();
@@ -648,7 +674,7 @@ public class SnappyCDCTest extends SnappyTest {
     Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to report status");
   }
 
-  public static void stopIndividualNode(String snappyPath, String script, File logFile) {
+  public void stopIndividualNode(String snappyPath, String script, File logFile) {
     try {
       ProcessBuilder pbStop = new ProcessBuilder(snappyPath + script, "stop");
       snappyTest.executeProcess(pbStop, logFile);
@@ -658,12 +684,12 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void startIndividualNode(String snappyPath, String script, File logFile) {
+  public void startIndividualNode(String snappyPath, String script, File logFile) {
     ProcessBuilder pbStart = new ProcessBuilder(snappyPath + script, "start");
     snappyTest.executeProcess(pbStart, logFile);
   }
 
-  public static void removeDiskStoreFiles(String dirPath) {
+  public void removeDiskStoreFiles(String dirPath) {
     try {
       File dir = new File(dirPath);
       String[] extensions = new String[]{"crf", "drf", "krf", "idxkrf", "if"};

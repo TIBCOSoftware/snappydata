@@ -1,4 +1,4 @@
-TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
+TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = HydraTask_performHA
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeName= dev11
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = ${snappyFileLoc}
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = leads
@@ -8,7 +8,7 @@ TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMetho
            maxThreads = 1
            maxTimesToRun = 1;
 
-TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
+TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = HydraTask_performHA
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeName= dev11
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = ${snappyFileLoc}
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = locator
@@ -18,7 +18,7 @@ TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMetho
            maxThreads = 1
            maxTimesToRun = 1;
 
-TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
+TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = HydraTask_performHA
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = ${snappyFileLoc}
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeName= dev11 dev7 dev8 dev9
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = servers
@@ -28,7 +28,7 @@ TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMetho
            maxThreads = 1
            maxTimesToRun = 5;
 
-TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = performHA
+TASK       taskClass  = io.snappydata.hydra.cdcConnector.SnappyCDCTest taskMethod  = HydraTask_performHA
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-snappyFileLoc = ${snappyFileLoc}
            io.snappydata.hydra.cdcConnector.SnappyCDCPrms-nodeType = allNodes
            startInterval = 14400  //after 4 hours
