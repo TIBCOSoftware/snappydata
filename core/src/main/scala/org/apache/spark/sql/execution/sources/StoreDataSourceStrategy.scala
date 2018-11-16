@@ -75,8 +75,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case LogicalRelation(_, _, _) => {
         var foundParamLiteral = false
         val tp = plan.transformAllExpressions {
-          // SNAP-2265: if DynamicInSet is not handled for source implementations
-          // of PrunedFilteredScan so adding here
+          // SNAP-2265: DynamicInSet is not handled for source
+          // implementations of PrunedFilteredScan so handling here
           case DynamicInSet(child, hset) =>
             foundParamLiteral = true
             InSet(child, hset.map(_.eval(null)).toSet)
