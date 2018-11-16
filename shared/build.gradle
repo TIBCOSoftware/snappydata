@@ -52,7 +52,14 @@ dependencies {
   testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkCurrentShared}")
   testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkCurrentShared}")
 
-  compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+  //compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    compile project(':snappy-store:snappydata-store-client')
+    compile project(':snappy-store:snappydata-store-core')
+  } else {
+    compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+    compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+  }
 
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
 

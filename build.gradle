@@ -112,7 +112,7 @@ allprojects {
     snappySparkVersion = '2.1.1.4'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
-    sparkCurrentShared = '2.1.1'
+    sparkCurrentShared = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
@@ -984,7 +984,7 @@ task product(type: Zip) {
     def sharedProject = project(":shared_${scalaBinaryVersion}")
     copy {
       from sharedProject.shadowJar.destinationDir
-      into "${snappyProductDir}/connectors"
+      into "${snappyProductDir}/jars"
       include sharedProject.shadowJar.archiveName
     }
   }

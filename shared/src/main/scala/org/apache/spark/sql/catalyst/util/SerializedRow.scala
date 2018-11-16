@@ -91,6 +91,8 @@ final class SerializedRow extends InternalRow with SerializedRowData {
   override def update(i: Int, value: Any): Unit = {
     throw new UnsupportedOperationException("not implemented")
   }
+
+  override def anyNull: Boolean = isAnyNull
 }
 
 /**
@@ -326,10 +328,7 @@ trait SerializedRowData extends SpecializedGetters
     }
   }
 
-  // PS: Commented this becoz in older spark InternalRow was not having anyNull implementation
-  //  however in spark 2.3 contains implementation for the anyNull
-  // TODO verify it PS:
-  final def anyNull: Boolean = {
+  def isAnyNull : Boolean = {
     if (skipBytes == 0) {
       BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes >> 3)
     } else {
