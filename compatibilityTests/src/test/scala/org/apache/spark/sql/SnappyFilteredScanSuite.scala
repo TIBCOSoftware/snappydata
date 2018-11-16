@@ -22,13 +22,4 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 class SnappyFilteredScanSuite extends FilteredScanSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
-  override def ignored: Seq[String] = Seq(
-    "PushDown Returns 3: SELECT a FROM oneToTenFiltered WHERE a + b > 9 AND b < 16 AND c IN ('bbbbbBBBBB', 'cccccCCCCC', 'dddddDDDDD', 'foo') "
-  )
-
-  override def beforeAll() {
-    super.beforeAll()
-    spark.conf.set("snappydata.sql.planCaching", "false")
-  }
-
 }

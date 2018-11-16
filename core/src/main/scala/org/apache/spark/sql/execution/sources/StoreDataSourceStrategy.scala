@@ -38,7 +38,7 @@ package org.apache.spark.sql.execution.sources
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, DynamicInSet, EmptyRow, Expression, InSet, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
@@ -75,6 +75,11 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case LogicalRelation(_, _, _) => {
         var foundParamLiteral = false
         val tp = plan.transformAllExpressions {
+          // SNAP-2265: if DynamicInSet is not handled for source implementations
+          // of PrunedFilteredScan so adding here
+          case DynamicInSet(child, hset) =>
+            foundParamLiteral = true
+            InSet(child, hset.map(_.eval(null)).toSet)
           case pl: ParamLiteral =>
             foundParamLiteral = true
             pl.asLiteral
