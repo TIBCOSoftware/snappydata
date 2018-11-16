@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{DictionaryMap, LongKey, ObjectHashSet}
 
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -64,7 +64,8 @@ final class DictionaryEncoderNullable
 abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
     field: StructField, initDelta: (AnyRef, Long) => Long)
     extends ColumnDecoder(columnDataRef, startCursor, field,
-      initDelta) with DictionaryEncoding {
+      initDelta) with DictionaryEncoding
+{
 
   protected[this] final var stringDictionary: StringDictionary = _
   protected[this] final var intDictionary: Array[Int] = _
@@ -93,7 +94,7 @@ abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
       numElements: Int, dictionaryLen: Int, dataType: DataType): Long = {
     var position = cursor
     var index = 0
-    Utils.getSQLDataType(dataType) match {
+    JdbcExtendedUtils.getSQLDataType(dataType) match {
       case StringType =>
         stringDictionary = new StringDictionary(cursor, numElements)
         position = stringDictionary.initialize(columnBytes)

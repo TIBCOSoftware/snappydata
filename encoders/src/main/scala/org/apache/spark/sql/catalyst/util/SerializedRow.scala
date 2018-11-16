@@ -91,6 +91,8 @@ final class SerializedRow extends InternalRow with SerializedRowData {
   override def update(i: Int, value: Any): Unit = {
     throw new UnsupportedOperationException("not implemented")
   }
+
+  override def anyNull: Boolean = isAnyNull
 }
 
 /**
@@ -326,7 +328,7 @@ trait SerializedRowData extends SpecializedGetters
     }
   }
 
-  final def anyNull: Boolean = {
+  def isAnyNull : Boolean = {
     if (skipBytes == 0) {
       BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes >> 3)
     } else {

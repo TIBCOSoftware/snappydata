@@ -31,16 +31,18 @@ import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.shared._
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
+import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.RegionKey
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
 import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 
 import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, memoryManager, releaseExecutionMemory}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
+import org.apache.spark.sql.collection.UtilsShared
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
@@ -105,7 +107,10 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   def this() = this(-1L, -1, -1)
 
   override def getNumColumnsInTable(columnTableName: String): Int = {
-    val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
+    // PS: Refactored the method call, making a direct call
+    // GemFireContainer.getRowBufferTableName(..)  instead of
+    // val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
+    val bufferTable = GemFireContainer.getRowBufferTableName(columnTableName)
     GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
   }
 
@@ -126,7 +131,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
             if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
                 columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
               val numColumns = ColumnStatsSchema.numStatsColumns(numColumnsInTable)
-              val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
+              val unsafeRow = UtilsShared.toUnsafeRow(buffer, numColumns)
               unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
             } else {
               val allocator = ColumnEncoding.getAllocator(buffer)
@@ -207,6 +212,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   override def toString: String =
     s"ColumnKey(columnIndex=$columnIndex,partitionId=$partitionId,uuid=$uuid)"
+
 }
 
 /**
@@ -443,7 +449,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
     try {
       val heapSizeChange = determineHeapSizeChange(newBuffer, oldBuffer)
       if (heapSizeChange > 0) {
-        if (!StoreCallbacksImpl.acquireStorageMemory(context.getFullPath,
+        if (!acquireStorageMemory(context.getFullPath,
           heapSizeChange, buffer = null, offHeap = false, shouldEvict = true)) {
           throw LocalRegion.lowMemoryException(null, heapSizeChange)
         }
@@ -451,7 +457,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       // release if there has been a reduction in size
       // (due to heap/off-heap transition or compression)
       else if (heapSizeChange < 0) {
-        StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
+        releaseStorageMemory(context.getFullPath,
           -heapSizeChange, offHeap = false)
       }
       success = true
@@ -460,6 +466,27 @@ class ColumnFormatValue extends SerializedDiskBuffer
       // revert the old buffer in case of a LowMemoryException
       synchronized(replaceStoredBuffer(oldBuffer, state, isCompressed, context))
     }
+  }
+
+  def acquireStorageMemory(objectName: String, numBytes: Long,
+      buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
+
+    val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
+    if (numBytes > 0) {
+      return MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
+        MemoryManagerCallback.storageBlockId, numBytes, mode, buffer, shouldEvict)
+    } else if (numBytes < 0) {
+      MemoryManagerCallback.memoryManager.releaseStorageMemoryForObject(
+        objectName, -numBytes, mode)
+    }
+    true
+  }
+
+  def releaseStorageMemory(objectName: String, numBytes: Long,
+      offHeap: Boolean): Unit = {
+    val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
+    MemoryManagerCallback.memoryManager.
+        releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
 
   @GuardedBy("this")
@@ -798,6 +825,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       writeValue.release()
     }
   }
+/*
 
   override def fromData(in: DataInput): Unit = {
     // skip padding
@@ -853,6 +881,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
     }
   }
 
+*/
   override def getSizeInBytes: Int = {
     // Cannot use ReflectionObjectSizer to get estimate especially for direct
     // buffer which has a reference queue all of which gets counted incorrectly.
@@ -910,5 +939,59 @@ class ColumnFormatValue extends SerializedDiskBuffer
     // refCount access is deliberately not synchronized
     s"$className[size=${buffer.remaining()} $buffer diskId=$diskId " +
         s"context=$contextName refCount=$refCount]"
+  }
+
+  override def fromData(in: DataInput): Unit = {
+    // skip padding
+    in.readByte()
+    val numBytes = in.readInt()
+    if (numBytes > 0) {
+      val allocator = GemFireCacheImpl.getCurrentBufferAllocator
+      var buffer = in match {
+        case din: ByteBufferDataInput =>
+          // just transfer the internal buffer; higher layer (e.g. BytesAndBits)
+          // will take care not to release this buffer (if direct);
+          // buffer is already positioned at start of data
+          val buffer = allocator.transfer(din.getInternalBuffer,
+            DirectBufferAllocator.DIRECT_STORE_OBJECT_OWNER)
+          if (buffer.isDirect) {
+            memoryManager.changeOffHeapOwnerToStorage(buffer, allowNonAllocator = true)
+          }
+          buffer
+
+        case channel: InputStreamChannel =>
+          val buffer = allocator.allocateForStorage(numBytes)
+          var numTries = 0
+          do {
+            if (channel.read(buffer) == 0) {
+              // wait for a bit after some retries (no timeout)
+              numTries += 1
+              ClientSharedUtils.parkThreadForAsyncOperationIfRequired(channel, 0L, numTries)
+            }
+          } while (buffer.hasRemaining)
+          // move to the start of data
+          buffer.rewind()
+          buffer
+
+        case _ =>
+          // order is BIG_ENDIAN by default
+          val bytes = new Array[Byte](numBytes)
+          in.readFully(bytes, 0, numBytes)
+          allocator.fromBytesToStorage(bytes, 0, numBytes)
+      }
+      buffer = buffer.order(ByteOrder.LITTLE_ENDIAN)
+      val codecId = -buffer.getInt(buffer.position())
+      val isCompressed = CompressionCodecId.isCompressed(codecId)
+      // owner is already marked for storage
+      // if not compressed set the default codecId while the actual one will be
+      // set when the value is placed in region (in setDiskLocation) that will
+      // be used in further toData calls if required
+      setBuffer(buffer, if (isCompressed) codecId else CompressionCodecId.DEFAULT.id,
+        isCompressed, changeOwnerToStorage = false)
+    } else {
+      this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
+      this.decompressionState = -1
+      this.fromDisk = false
+    }
   }
 }

@@ -50,7 +50,7 @@ buildscript {
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
-  gradle.startParameter.continueOnFailure = true
+  gradle.startParameter.continueOnFailure = false
 
   repositories {
     mavenCentral()
@@ -113,6 +113,7 @@ allprojects {
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
+    sparkTestVersion = '2.3.2'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'

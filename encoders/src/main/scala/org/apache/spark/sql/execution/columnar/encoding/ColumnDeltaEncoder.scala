@@ -25,9 +25,8 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -329,7 +328,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // to be useful for even range filters.
     // Also during delta merges, can merge dictionaries separately then rewrite only indexes.
 
-    dataType = Utils.getSQLDataType(field.dataType)
+    dataType = JdbcExtendedUtils.getSQLDataType(field.dataType)
     setAllocator(GemFireCacheImpl.getCurrentBufferAllocator)
 
     // Simple two-way merge with duplicate elimination. If current delta has small number
@@ -690,14 +689,15 @@ object DeltaWriter {
              |};
           """.stripMargin
         }
-        CodeGeneration.logDebug(
-          s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
+        // PS: temporary commented it
+        /* CodeGeneration.logDebug(
+          s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression") */
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
           Array.empty[String]).asInstanceOf[DeltaWriterFactory]
       }
     })
 
-  def apply(dataType: DataType): DeltaWriter = Utils.getSQLDataType(dataType) match {
+  def apply(dataType: DataType): DeltaWriter = JdbcExtendedUtils.getSQLDataType(dataType) match {
     case StringType => new DeltaWriter {
       override def readAndEncode(srcDecoder: ColumnDecoder, srcColumnBytes: AnyRef,
           destEncoder: ColumnEncoder, destCursor: Long, encoderPosition: Int,

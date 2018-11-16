@@ -16,10 +16,9 @@
  */
 package io.snappydata.util
 
+import java.lang.management.ManagementFactory
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.io.File
-import java.lang.management.ManagementFactory
 
 /**
   *  This can be mixed into a class (but not an object?) to get the right method

@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.catalyst.util
 
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoding}
 import org.apache.spark.unsafe.Platform
 
 /**
@@ -65,4 +65,15 @@ final class SerializedArray(_skipBytes: Int = 4)
 
   override def array: Array[Any] =
     throw new UnsupportedOperationException("not supported on SerializedArray")
+
+  def setNullAt(i: Int): Unit = {
+    throw new UnsupportedOperationException("not implemented")
+  }
+
+  def update(i: Int, value: Any): Unit = {
+    throw new UnsupportedOperationException("not implemented")
+  }
+
+  def anyNull: Boolean = isAnyNull
+
 }
