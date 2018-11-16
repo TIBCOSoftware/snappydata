@@ -2199,7 +2199,8 @@ object SnappySession extends Logging {
     // literals in push down filters etc
     planCaching &&= (cachedRDD ne null) && executedPlan.find {
       case _: BroadcastHashJoinExec | _: BroadcastNestedLoopJoinExec |
-           _: BroadcastExchangeExec | _: InMemoryTableScanExec | _: RangeExec => true
+           _: BroadcastExchangeExec | _: InMemoryTableScanExec |
+           _: RangeExec | _: LocalTableScanExec => true
       case p if HiveClientUtil.isHiveExecPlan(p) => true
       case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[DependentRelation]
       case _ => false

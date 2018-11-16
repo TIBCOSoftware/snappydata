@@ -67,6 +67,33 @@ class TokenizationTest
     snc.dropTable(s"$colTableName", ifExists = true)
   }
 
+  test("SNAP-2712") {
+    val r1 = snc.sql("select substr(soundex('laxtaxmax'), 1, 3), soundex('tax') from values 1 = 1")
+    val c1s = r1.columns
+    val arr1 = r1.collect()
+    val r2 = snc.sql("select substr(soundex('laxtaxmax'), 2, 5), soundex('tax') from values 1 = 1")
+    val arr2 = r2.collect()
+    val c2s = r2.columns
+    assert(!c1s.sameElements(c2s))
+    assert(!arr1.sameElements(arr2))
+    assert (arr1(0).getString(0) === "L23")
+    assert (arr1(0).getString(1) === "T200")
+    assert (arr2(0).getString(0) === "232")
+    assert (arr2(0).getString(1) === "T200")
+
+    // Only substr
+    val r3 = snc.sql("select substr('suoertest', 0, 5) from values 1 = 1")
+    val c3s = r3.columns
+    val arr3 = r3.collect()
+    val r4 = snc.sql("select substr('supertest', 0, 5) from values 1 = 1")
+    val c4s = r4.columns
+    val arr4 = r4.collect()
+    assert(!c3s.sameElements(c4s))
+    assert(!arr3.sameElements(arr4))
+    assert (arr3(0).getString(0) === "suoer")
+    assert (arr4(0).getString(0) === "super")
+  }
+
   test("SNAP-2031 tpcds") {
     val sqlstr = s"WITH ss AS (SELECT s_store_sk, sum(ss_ext_sales_price) AS sales, " +
         s"sum(ss_net_profit) AS profit FROM store_sales, date_dim, store WHERE ss_sold_date_sk" +
