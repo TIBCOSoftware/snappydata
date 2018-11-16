@@ -153,8 +153,8 @@ Execute the following to deploy the **gemfire-function** jar:
 
 ```
 Deploy SnappyData GemFire Connector's gemfire-function jar (`gfeFunct
-ions-1.0.2.jar`):
-gfsh>deploy --jar=<SnappyData Product Home>//connectors/gfeFunctions-0.9.2.jar
+ions-0.9.2.1.jar`):
+gfsh>deploy --jar=<SnappyData Product Home>//connectors/gfeFunctions-0.9.2.1.jar
 
 
 ```
@@ -345,7 +345,7 @@ Following is a sample from the servers and leads file:
 
 ```
 localhost -locators=localhost:10334 -client-bind-address=localhost -client-port=1528 -heap-size=20g
--classpath=<SnappyData-Product-Home>//connectors/connector_2.11-0.9.2.jar:<path-to-jar>/person.jar
+-classpath=<SnappyData-Product-Home>//connectors/connector_2.11-0.9.2.1.jar:<path-to-jar>/persons.jar
 -snappydata.connector.gemfire-grid.<uniqueIDForGrid>=localhost[55221]
 ```
 
