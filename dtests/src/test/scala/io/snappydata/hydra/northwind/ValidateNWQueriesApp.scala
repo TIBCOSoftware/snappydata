@@ -53,7 +53,8 @@ object ValidateNWQueriesApp {
     var failedQueries = ""
     // scalastyle:off println
     val startTime = System.currentTimeMillis()
-    pw.println(s"ValidateQueries for ${tableType} tables started ..")
+    pw.println(s"${SnappyTestUtils.logTime} ValidateQueries for ${tableType} tables " +
+        s"started ..")
     if (isSmokeRun) {
       NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw, sqlContext)
     }
@@ -65,14 +66,16 @@ object ValidateNWQueriesApp {
     if (!failedQueries.isEmpty) {
       println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. See " +
           s"${getCurrentDirectory}/${outputFile}")
-      pw.println(s"Total execution took ${totalTime} seconds.")
-      pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
+      pw.println(s"${SnappyTestUtils.logTime} Total execution took ${totalTime} " +
+          s"seconds.")
+      pw.println(s"${SnappyTestUtils.logTime} Validation failed for ${tableType} " +
+          s"tables for queries ${failedQueries}. ")
       pw.close()
       throw new Exception(s"Validation task failed for ${tableType} tables. See " +
           s"${getCurrentDirectory}/${outputFile}")
     }
-    pw.println(s"ValidateQueries for ${tableType} tables completed successfully in ${totalTime} " +
-        s"seconds ")
+    pw.println(s"${SnappyTestUtils.logTime} ValidateQueries for ${tableType} tables " +
+        s"completed successfully in ${totalTime} seconds ")
     pw.close()
   }
 }

@@ -16,7 +16,6 @@
  */
 package io.snappydata.hydra.cluster;
 
-import java.util.List;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -646,6 +645,22 @@ public class SnappyPrms extends BasePrms {
 
   public static String[] getExpectedExceptionListForHA() {
     Long key = expectedExceptionsForHA;
+    Vector statements = tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
+  }
+
+  /**
+   * Parameter used to get the List of expected exceptions in the test run in case of HA.
+   * Array of values for expected exceptions
+   */
+  public static Long knownExceptionsForHA;
+
+  public static String[] getKnownExceptionListForHA() {
+    Long key = knownExceptionsForHA;
     Vector statements = tab().vecAt(key, new HydraVector());
     String[] strArr = new String[statements.size()];
     for (int i = 0; i < statements.size(); i++) {

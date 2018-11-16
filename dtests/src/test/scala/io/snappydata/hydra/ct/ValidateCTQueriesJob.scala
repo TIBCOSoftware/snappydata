@@ -45,7 +45,8 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       snc.setConf("dataFilesLocation", dataFilesLocation)
       CTQueries.snc = snc
       // scalastyle:off println
-      pw.println(s"Validation for $tableType tables started in snappy Job")
+      pw.println(s"${SnappyTestUtils.logTime} Validation for $tableType tables " +
+          s"started in snappy Job")
       val numRowsValidation: Boolean = jobConfig.getBoolean("numRowsValidation")
       val fullResultSetValidation: Boolean = jobConfig.getBoolean("fullResultSetValidation")
       SnappyTestUtils.validateFullResultSet = fullResultSetValidation
@@ -56,19 +57,21 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, sqlContext)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
+      pw.println(s"${SnappyTestUtils.logTime} Total execution took ${totalTime} " +
+          s"seconds.")
       if(!failedQueries.isEmpty) {
         println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
-        pw.println(s"Total execution took ${totalTime} seconds.")
-        pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
+        pw.println(s"${SnappyTestUtils.logTime} Validation failed for ${tableType} " +
+            s"tables for queries ${failedQueries}. ")
         pw.close()
         throw new TestException(s"Validation task failed for ${tableType}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
       }
       println(s"Validation for $tableType tables completed sucessfully. " +
           s"See ${getCurrentDirectory}/${outputFile}")
-      pw.println(s"ValidateQueries for ${tableType} tables completed successfully in " +
-          totalTime + " seconds ")
+      pw.println(s"${SnappyTestUtils.logTime} ValidateQueries for ${tableType} tables" +
+          s" completed successfully.")
       pw.close()
     } match {
       case Success(v) => pw.close()

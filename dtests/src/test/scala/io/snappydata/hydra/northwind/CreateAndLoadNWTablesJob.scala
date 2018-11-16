@@ -19,9 +19,9 @@ package io.snappydata.hydra.northwind
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
-import io.snappydata.hydra.northwind
-import org.apache.spark.sql._
+import io.snappydata.hydra.{SnappyTestUtils, northwind}
 
+import org.apache.spark.sql._
 import scala.util.{Failure, Success, Try}
 
 class CreateAndLoadNWTablesJob extends SnappySQLJob {
@@ -33,18 +33,15 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
       // scalastyle:off println
       println("jobConfig.entrySet().size() : " + jobConfig.entrySet().size())
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
-      pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
-      println(s"dataFilesLocation is : ${dataFilesLocation}")
+      pw.println(s"${SnappyTestUtils.logTime} dataFilesLocation : ${dataFilesLocation}")
       val tableType = jobConfig.getString("tableType")
-      pw.println(s"tableType : " + tableType)
-      println(s"tableType : " + tableType)
       snc.setConf("dataFilesLocation", dataFilesLocation)
       val createLargeOrderTable = jobConfig.getString("createLargeOrderTable").toBoolean
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
       NWTestUtil.dropTables(snc)
-      pw.println(s"Create and load ${tableType} tables Test started at : " + System
-          .currentTimeMillis)
+      pw.println(s"${SnappyTestUtils.logTime} Create and load ${tableType} tables " +
+          s"Test has started")
       tableType match {
         case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
         case "PartitionedRow" =>
@@ -53,14 +50,13 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
         case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
         case _ => // the default, catch-all
       }
-      pw.println(s"Create and load ${tableType} tables Test completed successfully at : " +
-          System.currentTimeMillis)
+      pw.println(s"${SnappyTestUtils.logTime} Create and load ${tableType} tables " +
+          s"Test completed successfully")
       pw.flush()
       if (createLargeOrderTable) {
         NWTestUtil.ingestMoreData(snc, 10)
       }
-      pw.println(s"Loaded more data successfully at : " +
-          System.currentTimeMillis)
+      pw.println(s"${SnappyTestUtils.logTime} Loaded more data successfully")
       pw.close()
     } match {
       case Success(v) => pw.close()

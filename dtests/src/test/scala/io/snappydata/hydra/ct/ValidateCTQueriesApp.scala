@@ -42,31 +42,34 @@ object ValidateCTQueriesApp {
     val dataFilesLocation = args(0)
     snc.setConf("dataFilesLocation", dataFilesLocation)
     // scalastyle:off println
-    pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     CTQueries.snc = snc
     val tableType = args(1)
     val fullResultSetValidation: Boolean = args(2).toBoolean
     val numRowsValidation: Boolean = args(3).toBoolean
     SnappyTestUtils.numRowsValidation = numRowsValidation
     SnappyTestUtils.validateFullResultSet = fullResultSetValidation
-    pw.println(s"Validation for queries with ${tableType} tables started")
+    pw.println(s"${SnappyTestUtils.logTime} Validation for queries with ${tableType} " +
+        s"tables started")
 
     val startTime = System.currentTimeMillis
     val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, sqlContext)
     val endTime = System.currentTimeMillis
     val totalTime = (endTime - startTime) / 1000
-    pw.println(s"Total time for execution is :: ${totalTime} seconds.")
+    pw.println(s"${SnappyTestUtils.logTime} Total time for execution is :" +
+        s" ${totalTime} seconds.")
     if (!failedQueries.isEmpty) {
       println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. See " +
           s"${getCurrentDirectory}/${outputFile}")
-      pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
+      pw.println(s"${SnappyTestUtils.logTime} Validation failed for ${tableType} " +
+          s"tables for queries ${failedQueries}. ")
       pw.close()
       throw new Exception(s"Validation task failed for ${tableType}. See " +
           s"${getCurrentDirectory}/${outputFile}")
     }
     println(s"Validation for queries with ${tableType} tables completed successfully. See " +
         s"${getCurrentDirectory}/${outputFile}")
-    pw.println(s"Validation for queries with ${tableType} tables completed successfully.")
+    pw.println(s"${SnappyTestUtils.logTime} Validation for queries with ${tableType} " +
+        s"tables completed successfully.")
     pw.close()
   }
 }

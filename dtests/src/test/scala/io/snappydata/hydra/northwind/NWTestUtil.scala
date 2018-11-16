@@ -75,12 +75,12 @@ object NWTestUtil {
     var failedQueries = ""
     if (SnappyTestUtils.validateFullResultSet) {
       // scalastyle:off println
-      pw.println(s"createAndLoadSparkTables started ...")
+      pw.println(s"${SnappyTestUtils.logTime} CreateAndLoadSparkTables started ...")
       val startTime = System.currentTimeMillis
       NWTestUtil.createAndLoadSparkTables(sqlContext)
       val finishTime = System.currentTimeMillis()
-      pw.println(s"createAndLoadSparkTables completed successfully in : " + ((finishTime -
-          startTime) / 1000) + " seconds")
+      pw.println(s"${SnappyTestUtils.logTime} CreateAndLoadSparkTables completed successfully in " +
+          s": " + ((finishTime - startTime) / 1000) + " seconds")
     }
     for (q <- NWQueries.queries) {
       var queryExecuted = false;
@@ -335,19 +335,17 @@ object NWTestUtil {
         case "Q56" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56, 8, "Q56",
           pw, sqlContext, usePlanCaching)
           if (executeQueriesByChangingConstants) {
-            hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56, 8, "Q56_1", pw,
+            hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56_1, 8, "Q56_1", pw,
               sqlContext, usePlanCaching)
-            hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56, 8, "Q56_2", pw,
+            hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56_2, 8, "Q56_2", pw,
               sqlContext, usePlanCaching)
-            hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56, 8, "Q56_3", pw,
+            hasValidationFailed = SnappyTestUtils.assertJoin(snc, NWQueries.Q56_3, 8, "Q56_3", pw,
               sqlContext, usePlanCaching)
           }; queryExecuted = true
         case _ => // do nothing
       }
-      if (queryExecuted) {
-        pw.println(s"Execution completed for query ${q._1}")
-      } else {
-        pw.println(s"Did not execute ${q._1}.")
+      if (!queryExecuted) {
+        pw.println(s"${SnappyTestUtils.logTime}  Did not execute ${q._1}.")
       }
       if (hasValidationFailed) {
         failedQueries = SnappyTestUtils.addToFailedQueryList(failedQueries, q._1)
