@@ -92,6 +92,21 @@ class TokenizationTest
     assert(!arr3.sameElements(arr4))
     assert (arr3(0).getString(0) === "suoer")
     assert (arr4(0).getString(0) === "super")
+
+    val r5 = snc.sql("select levenshtein('supriya','swati')")
+    val c5s = r5.columns
+    val arr5 = r5.collect()
+    val r6 = snc.sql("select levenshtein('swati','swati')")
+    val c6s = r6.columns
+    val arr6 = r6.collect()
+    val r7 = snc.sql("select levenshtein('swati','sonal')")
+    val c7s = r7.columns
+    val arr7 = r7.collect()
+    assert(!c5s.sameElements(c6s) && !c5s.sameElements(c7s))
+    assert(!arr5.sameElements(arr6) && !arr5.sameElements(arr7))
+    assert (arr5(0).getInt(0) === 5)
+    assert (arr6(0).getInt(0) === 0)
+    assert (arr7(0).getInt(0) === 4)
   }
 
   test("SNAP-2031 tpcds") {
