@@ -765,9 +765,11 @@ task product(type: Zip) {
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
   dependsOn ':snappy-launcher:jar'
   dependsOn ':jdbcJar'
+  dependsOn ":snappy-v2connector_${scalaBinaryVersion}:jar"
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
+  def v2connectorProject = project(":snappy-v2connector_${scalaBinaryVersion}")
   def targetProject = clusterProject
 
   if (isEnterpriseProduct) {
@@ -830,6 +832,12 @@ task product(type: Zip) {
       from launcherProject.jar.destinationDir
       into "${snappyProductDir}/jars"
       include launcherProject.jar.archiveName
+    }
+
+    copy {
+      from v2connectorProject.jar.destinationDir
+      into "${snappyProductDir}/jars"
+      include v2connectorProject.jar.archiveName
     }
 
     // create the RELEASE file
