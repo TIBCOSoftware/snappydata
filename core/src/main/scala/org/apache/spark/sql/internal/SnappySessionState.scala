@@ -78,7 +78,7 @@ class SnappySessionState(val snappySession: SnappySession)
   private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
 
   override lazy val streamingQueryManager: StreamingQueryManager = {
-    // Disabling `SnappyAggrerateStrategy` for streaming queries as it clashes with
+    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
     // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
     // implies that Snappydata aggregation optimisation will be turned off for any usage of
     // this session including non-streaming queries.
@@ -714,7 +714,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   override final def executePlan(plan: LogicalPlan): QueryExecution = {
-    ingestSnappyStrategies
+    snappyStrategies
     clearExecutionData()
     beforeExecutePlan(plan)
     val qe = newQueryExecution(plan)
@@ -722,7 +722,7 @@ class SnappySessionState(val snappySession: SnappySession)
     qe
   }
 
-  private lazy val ingestSnappyStrategies = {
+  private lazy val snappyStrategies = {
     val storeOptimizedRules: Seq[Strategy] =
       Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
