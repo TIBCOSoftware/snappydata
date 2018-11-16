@@ -741,7 +741,6 @@ public class SnappyTest implements Serializable {
     return endpoints;
   }
 
-
   /**
    * Returns PIDs for all the processes started in the test, e.g. locator, server, lead .
    */
@@ -758,7 +757,6 @@ public class SnappyTest implements Serializable {
     return pidList;
   }
 
-
   /**
    * Returns hostname of the process
    */
@@ -773,7 +771,6 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info("PID Host for : " + pid + " : " + pidHost);
     return pidHost;
   }
-
 
   /**
    * Returns primary lead port .
@@ -790,7 +787,6 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info("Returning primary lead port: " + port);
     return port;
   }
-
 
   protected void initHydraThreadLocals() {
     this.connection = getConnection();
@@ -2776,16 +2772,17 @@ public class SnappyTest implements Serializable {
   /*
   * Check if there is any suspect strings in the test. To be executed at the end of test.
   */
+
   public static synchronized void HydraTask_checkSuspectStrings() {
     snappyTest.checkSuspectStrings();
   }
 
   public void checkSuspectStrings() {
-    Process pr = null;
     String checkSuspectOutPut = getCurrentDirPath() + File.separator + "suspectStrings.txt";
     File suspectStringFile = new File(checkSuspectOutPut);
     StringBuilder cmd = new StringBuilder();
-    cmd.append("grep -r Exception " + getCurrentDirPath()).append(" | grep .log");
+    StringBuilder exceptedExcep = new StringBuilder();
+
     String[] expectedExceptions = SnappyPrms.getExpectedExceptionList();
     if(cycleVms) {
       List<String> exceptions = Arrays.asList(expectedExceptions);
@@ -2793,12 +2790,38 @@ public class SnappyTest implements Serializable {
       expectedExceptions = (String[])exceptions.toArray();
     }
     for (int i = 0; i < expectedExceptions.length; i++)
-      cmd.append(" | grep -v \"").append(expectedExceptions[i] + "\"");
-    cmd.append("| grep -v .inc");
+      exceptedExcep.append(" | grep -v \"").append(expectedExceptions[i] + "\"");
+
+    cmd.setLength(0);
+    cmd.append("find " + getCurrentDirPath() + " -type f \\( -name \"*.log\" -not -iname " +
+        "\"*aster*.log\" -or -name \"*.out\" \\) ");
+    cmd.append(" | xargs grep Exception ");
+    cmd.append(exceptedExcep.toString());
+    cmd. append(" | grep -v \\.java:");
     Log.getLogWriter().info("grep command is : " + cmd);
     ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd.toString());
-    executeProcess(pb,suspectStringFile);
+    executeProcess(pb, suspectStringFile);
+
+    if(suspectStringFile.length() != 0){
+      try {
+        StringBuilder exceptionList = new StringBuilder();
+        if(cycleVms){
+
+        }
+        BufferedReader reader = new BufferedReader(new FileReader(suspectStringFile));
+        String line = "";
+        while((line = reader.readLine()) != null)
+          exceptionList.append(line).append("\n");
+        throw new TestException("Unknown Exceptions observed in the run " + exceptionList
+            .toString());
+      } catch(FileNotFoundException fe) {
+
+      } catch(IOException ie) {
+
+      }
+    }
   }
+
 
   /**
    * Create and start snappy server.

@@ -52,7 +52,8 @@ class ValidateNWQueriesJob extends SnappySQLJob {
       NWQueries.dataFilesLocation = dataFilesLocation
       // scalastyle:off println
       val startTime = System.currentTimeMillis()
-      pw.println(s"ValidateQueries for ${tableType} tables started ..")
+      pw.println(s"${SnappyTestUtils.logTime} ValidateQueries for ${tableType} tables" +
+          s" started ..")
       if (isSmokeRun) {
         failedQueries = NWTestUtil.validateSelectiveQueriesFullResultSet(snc, tableType, pw,
           sqlContext)
@@ -62,17 +63,18 @@ class ValidateNWQueriesJob extends SnappySQLJob {
       }
       val finishTime = System.currentTimeMillis()
       val totalTime = (finishTime -startTime)/1000
+      pw.println(s"${SnappyTestUtils.logTime} Total execution took ${totalTime} " +
+          s"seconds.")
       if (!failedQueries.isEmpty) {
         println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
-        pw.println(s"Total execution took ${totalTime} seconds.")
-        pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
+        pw.println(s"${SnappyTestUtils.logTime} Validation failed for ${tableType} " +
+            s"tables for queries ${failedQueries}. ")
         pw.close()
         throw new TestException(s"Validation task failed for ${tableType}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
       }
-      pw.println(s"ValidateQueries for ${tableType} tables completed successfully in " +
-          totalTime + " seconds ")
+      pw.println(s"ValidateQueries for ${tableType} tables completed successfully.")
       pw.close()
     } match {
       case Success(v) => pw.close()

@@ -18,8 +18,9 @@
 package io.snappydata.hydra
 
 import java.io.{File, FileNotFoundException, IOException, PrintWriter}
+import java.sql.Timestamp
 import java.util
-import java.util.{Arrays, Collections}
+import java.util.Collections
 
 import scala.io.Source
 
@@ -31,6 +32,10 @@ object SnappyTestUtils {
   var validateFullResultSet: Boolean = false;
   var numRowsValidation: Boolean = false;
   var tableType: String = null
+
+  def logTime: String = {
+    "[" + new Timestamp(System.currentTimeMillis()).toString + "] "
+  }
 
   /*
   Executes the join query, matches only the full result with expected result, returns false if the
@@ -93,34 +98,35 @@ object SnappyTestUtils {
     assertQuery(snc, sqlString, 0, queryNum, pw, sqlContext, true)
   }
 
-    def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
-        pw: PrintWriter, sqlContext: SQLContext): Boolean = {
-      numRowsValidation = true
-      assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext, true)
-    }
+  def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
+      pw: PrintWriter, sqlContext: SQLContext): Boolean = {
+    numRowsValidation = true
+    assertQuery(snc, sqlString, numRows, queryNum, pw, sqlContext, true)
+  }
 
-    /*
-   Executes the query, matches the result with expected result, returns false if the query
-   validation has failed.
-   */
+  /*
+ Executes the query, matches the result with expected result, returns false if the query
+ validation has failed.
+ */
   def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String,
       pw: PrintWriter, sqlContext: SQLContext, usePlanCaching: Boolean): Boolean = {
     var validationFailed = false
     var snappyDF: DataFrame = null
-    if(!usePlanCaching) {
+    if (!usePlanCaching) {
       snappyDF = snc.sqlUncached(sqlString)
     } else {
       snappyDF = snc.sql(sqlString)
     }
     val count = snappyDF.count
     // scalastyle:off println
+    pw.println(s"\n${logTime} Executing Query $queryNum ...")
     println(s"Query $queryNum")
     snappyDF.explain(true)
     if (numRowsValidation) {
-      pw.println(s"Query ${queryNum} returned ${count} rows for ${tableType} table")
+      pw.println(s"${logTime} Query ${queryNum} returned ${count} rows for ${tableType} table")
       if (count != numRows) {
-        pw.println(s"Result mismatch for query ${queryNum} : found ${count} rows but expected " +
-            s" ${numRows} rows.")
+        pw.println(s"${logTime} Result mismatch for query ${queryNum}: found ${count} rows but " +
+            s"expected ${numRows} rows.")
         validationFailed = true
       }
       pw.flush()
@@ -128,14 +134,14 @@ object SnappyTestUtils {
     var fullRSValidationFailed: Boolean = false
     if (validateFullResultSet) {
       val snappyQueryFileName = s"Snappy_${queryNum}"
-      val snappyDest: String = getQueryResultDir("snappyQueryFiles") +
+      val snappyDest: String = getQueryResultDir("snappyResults") +
           File.separator + snappyQueryFileName
       // scalastyle:off println
       // pw.println(s"Snappy query results are at : ${snappyDest}")
       val snappyFile: File = new java.io.File(snappyDest)
 
       val sparkQueryFileName = s"Spark_${queryNum}"
-      val sparkDest: String = getQueryResultDir("sparkQueryFiles") + File.separator +
+      val sparkDest: String = getQueryResultDir("sparkResults") + File.separator +
           sparkQueryFileName
       // pw.println(s"Spark query results are at : ${sparkDest}")
       val sparkFile: File = new java.io.File(sparkDest)
@@ -148,7 +154,7 @@ object SnappyTestUtils {
           snappyDF = snappyDF.repartition(1) // .sortWithinPartitions(snap_col1, snap_col: _*)
           writeToFile(snappyDF, snappyDest, snc)
           // writeResultSetToCsv(snappyDF, snappyFile)
-          pw.println(s"${queryNum} Result Collected in file ${snappyDest}")
+          pw.println(s"${logTime} Snappy result collected in : ${snappyDest}")
         }
         if (!sparkFile.exists()) {
           // val col1 = sparkDF.schema.fieldNames(0)
@@ -156,26 +162,30 @@ object SnappyTestUtils {
           sparkDF = sparkDF.repartition(1) // .sortWithinPartitions(col1, col: _*)
           writeToFile(sparkDF, sparkDest, snc)
           // writeResultSetToCsv(sparkDF, sparkFile)
-          pw.println(s"${queryNum} Result Collected in file ${sparkDest}")
+          pw.println(s"${logTime} Spark result collected in : ${sparkDest}")
         }
         fullRSValidationFailed = compareFiles(snappyFile, sparkFile, pw, queryNum,
-           fullRSValidationFailed)
+          fullRSValidationFailed)
       } catch {
         case ex: Exception => {
           fullRSValidationFailed = true
-          pw.println(s"Full resultSet validation for ${queryNum} got the following exception:\n")
+          pw.println(s"${logTime} Full resultSet validation for ${queryNum} got the following " +
+              s"exception:\n")
           ex.printStackTrace(pw)
         }
       }
       pw.flush()
     }
     if (validationFailed) {
-      pw.println(s"\nNumRows validation failed for query ${queryNum} on ${tableType} table.")
+      pw.println(s"\n${logTime} NumRows validation failed for query ${queryNum} on ${tableType} " +
+          s"table.")
     }
-    if(fullRSValidationFailed){
-      pw.println(s"\nFull resultset validation failed for query ${queryNum} on ${tableType} table.")
+    if (fullRSValidationFailed) {
+      pw.println(s"\n${logTime} Full resultset validation failed for query ${queryNum} on " +
+          s"${tableType} table.")
       validationFailed = true
     }
+    pw.println(s"${logTime}  Execution completed for query ${queryNum}")
     pw.flush()
     return validationFailed
   }
@@ -253,7 +263,7 @@ object SnappyTestUtils {
       val actualArray = actualRow.split(",")
       val expectedArray = expectedRow.split(",")
       var diff: Double = 0.0
-      if(actualArray.length == expectedArray.length){
+      if (actualArray.length == expectedArray.length) {
         for (i <- 0 until actualArray.length) {
           val value1: String = actualArray(i)
           val value2: String = expectedArray(i)
@@ -292,20 +302,20 @@ object SnappyTestUtils {
       val rc = p.waitFor
       val pbCmd = util.Arrays.toString(pb.command.toArray)
       if ((rc == 0) || (pbCmd.contains("grep -v -F") && rc == 1)) {
-        pw.println("Process executed successfully")
+        println("Process executed successfully")
         0
       }
       else {
-        pw.println("Process execution failed with exit code: " + rc)
+        println("Process execution failed with exit code: " + rc)
         1
       }
     } catch {
       case e: IOException =>
-        pw.println("Exception occurred while starting the process:" + pb + "\nError Message:" + e
+        println("Exception occurred while starting the process:" + pb + "\nError Message:" + e
             .getMessage)
         1
       case e: InterruptedException =>
-        pw.println("Exception occurred while waiting for the process execution:" + p + "\nError " +
+        println("Exception occurred while waiting for the process execution:" + p + "\nError " +
             "Message:" + e.getMessage)
         1
     }
@@ -376,19 +386,19 @@ object SnappyTestUtils {
       writer.close()
     } catch {
       case fe: FileNotFoundException =>
-        pw.println("Log exception while overwirting the result mismatch files", fe)
-        false
+        pw.println(s"${logTime} Exception while overwriting the result mismatch files", fe)
+        return true
     }
     val unexpectedResultsFile = new File(unexpectedFileName)
     val missingResultsFile = new File(missingFileName)
     command = "grep -v -F -x -f " + sparkResultsFile + " " + snappyResultsFile
     pb = new ProcessBuilder("/bin/bash", "-c", command)
-    pw.println("Executing command : " + command)
+    println("Executing command : " + command)
     // get the unexpected rows in snappy
     executeProcess(pb, unexpectedResultsFile, pw)
     command = "grep -v -F -x -f " + snappyResultsFile + " " + sparkResultsFile
     pb = new ProcessBuilder("/bin/bash", "-c", command)
-    pw.println("Executing command : " + command)
+    println("Executing command : " + command)
     // get the missing rows in snappy
     executeProcess(pb, missingResultsFile, pw)
     var unexpectedRsReader: Iterator[String] = null
@@ -398,7 +408,7 @@ object SnappyTestUtils {
       missingRsReader = Source.fromFile(missingResultsFile).getLines()
     } catch {
       case fe: FileNotFoundException =>
-        pw.println("Could not find file to compare results.", fe)
+        pw.println(s"${logTime} Could not find file to compare results.", fe)
         return true
     }
     val unexpected = new util.ArrayList[String]
@@ -410,7 +420,8 @@ object SnappyTestUtils {
         missing.add("\n  " + missingRsReader.next())
     } catch {
       case ie: IOException =>
-        pw.println("Got exception while reading resultset files", ie)
+        pw.println(s"${logTime} Got exception while reading resultset" +
+            s" files", ie)
     }
 
     if (missing.size > 0) {
@@ -436,18 +447,20 @@ object SnappyTestUtils {
       }
       aStr.append("\n")
     }
-    pw.println(aStr.toString)
 
-    if((missing.size() > 0) && missing.size() == unexpected.size()) {
+    // check if the mismatch is due to decimal, and can be ignored
+    if ((missing.size() > 0) && missing.size() == unexpected.size()) {
       Collections.sort(missing)
       Collections.sort(unexpected)
       for (i <- 0 until missing.size()) {
         if (!isIgnorable(missing.get(i), unexpected.get(i))) true
       }
-      pw.println("This mismatch can be ignored.")
+      // pw.println("This mismatch can be ignored.")
       aStr.setLength(0) // data mismatch can be ignored
     }
+
     if (aStr.length() > 0) {
+      pw.println(s"${logTime} ${aStr.toString}")
       true
     } else {
       false
@@ -480,11 +493,11 @@ object SnappyTestUtils {
     val snappyQueryFileName = s"Snappy_${queryNum}"
     val snappyDest: String = getQueryResultDir("snappyQueryFiles") +
         File.separator + snappyQueryFileName
-    pw.println(snappyDest)
+    pw.println(s" ${logTime} ${snappyDest}")
     val snappyFile: File = new java.io.File(snappyDest)
     var snappyDF = snc.sql(sqlString)
 
-    pw.println(goldenFileDest)
+    pw.println(s"${logTime} ${goldenFileDest}")
     val goldenFileName = goldenFileDest + File.separator + s"Spark_$queryNum"
     val sortedGoldenDest = goldenFileDest + File.separator + s"Sorted_$queryNum"
     val sortedGoldenFile: File = new java.io.File(sortedGoldenDest)
@@ -497,10 +510,10 @@ object SnappyTestUtils {
         snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
         writeToFile(snappyDF, snappyDest, snc)
         // writeResultSetToCsv(snappyDF, snappyFile)
-        pw.println(s"${queryNum} Result Collected in file $snappyDest")
+        pw.println(s"${logTime} ${queryNum} Result Collected in file $snappyDest")
       }
       if (!goldenFile.exists()) {
-        pw.println(s"Did not find any golden file for query $queryNum")
+        pw.println(s"${logTime} Did not find any golden file for query $queryNum")
         throw new Exception(s"Did not find any golden file for query $queryNum")
       } else if (goldenFile.length() > 0) {
         // sort the contents of golden file before comparing results
@@ -512,9 +525,9 @@ object SnappyTestUtils {
         goldenDF = goldenDF.repartition(1).sortWithinPartitions(col1, col: _*)
         writeToFile(goldenDF, sortedGoldenDest, snc)
         // writeResultSetToCsv(goldenDF, sortedGoldenFile)
-        pw.println(s"${queryNum} Result Collected in file ${sortedGoldenDest}")
+        pw.println(s"${logTime} ${queryNum} Result Collected in file ${sortedGoldenDest}")
       } else {
-        pw.println(s"zero results in query $queryNum.")
+        pw.println(s"${logTime} No results in query result file for $queryNum.")
       }
       hasValidationFailed = compareFiles(snappyFile, sortedGoldenFile, pw, queryNum,
         hasValidationFailed)
@@ -522,7 +535,8 @@ object SnappyTestUtils {
     } catch {
       case ex: Exception => {
         hasValidationFailed = true
-        pw.println(s"Full resultSet Validation failed for ${queryNum} with following exception:\n")
+        pw.println(s"${logTime} Full resultSet Validation failed for ${queryNum} with following " +
+            s"exception:\n")
         ex.printStackTrace(pw)
       }
     }

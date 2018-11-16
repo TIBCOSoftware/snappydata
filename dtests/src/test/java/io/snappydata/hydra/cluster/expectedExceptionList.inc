@@ -18,8 +18,14 @@ io.snappydata.hydra.cluster.SnappyPrms-expectedExceptions =
 
 io.snappydata.hydra.cluster.SnappyPrms-expectedExceptionsForHA =
 "java.lang.reflect.InvocationTargetException"
-" java.lang.IllegalStateException: Cannot call methods on a stopped SparkContext"
+"java.lang.IllegalStateException: Cannot call methods on a stopped SparkContext"
 ;
+
+io.snappydata.hydra.cluster.SnappyPrms-knownExceptionsForHA =
+"java.lang.reflect.InvocationTargetException"
+"java.lang.IllegalStateException: Cannot call methods on a stopped SparkContext"
+;
+
 
 /*
 io.snappydata.hydra.cluster.SnappyPrms-suspectStrings =

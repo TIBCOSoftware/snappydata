@@ -18,8 +18,10 @@ package io.snappydata.hydra.northwind
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import io.snappydata.hydra.SnappyTestUtils
+
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
 
 object CreateAndLoadNWTablesSparkApp {
 
@@ -38,9 +40,10 @@ object CreateAndLoadNWTablesSparkApp {
     // scalastyle:off println
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesSparkApp.out"),
       true));
-    pw.println(s"dataFilesLocation : ${dataFilesLocation}")
+    pw.println(s"${SnappyTestUtils.logTime} dataFilesLocation : ${dataFilesLocation}")
     NWTestUtil.dropTables(snc)
-    pw.println(s"Create and load ${tableType} tables Test started at : " + System.currentTimeMillis)
+    pw.println(s"${SnappyTestUtils.logTime} Create and load ${tableType} tables Test " +
+        s"started")
     tableType match {
       case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
       case "PartitionedRow" => NWTestUtil.createAndLoadPartitionedTables(snc, createLargeOrderTable)
@@ -48,14 +51,13 @@ object CreateAndLoadNWTablesSparkApp {
       case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
       case _ => // the default, catch-all
     }
-    pw.println(s"Create and load ${tableType} tables Test completed successfully at : " + System
-        .currentTimeMillis)
+    pw.println(s"${SnappyTestUtils.logTime} Create and load ${tableType} tables Test " +
+        s"completed successfully.")
     pw.flush()
     if (createLargeOrderTable) {
       NWTestUtil.ingestMoreData(snc, 10)
     }
-    pw.println(s"Loaded more data successfully at : " + System
-        .currentTimeMillis)
+    pw.println(s"${SnappyTestUtils.logTime} Loaded more data successfully.")
     pw.close()
   }
 }
