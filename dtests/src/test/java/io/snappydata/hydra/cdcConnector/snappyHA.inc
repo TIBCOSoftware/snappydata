@@ -9,20 +9,20 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  =  
 
 TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLeadVM
             maxThreads = 1
-            startInterval = 360  //10 hours
-            endInterval = 360
+            startInterval = 180  //13 mins
+            endInterval = 180
             threadGroups = snappyStoreThreads;
 
 TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleStoreVms
-            startInterval = 1500  //  25 mins
-            endInterval = 1500
+            startInterval = 600  //  10 mins
+            endInterval = 600
             maxThreads = 1
             threadGroups = snappyThreads;
 
 
 TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLocatorVms
-            startInterval = 28800  // 24 hours
-            endInterval = 28800
+            startInterval = 1620  // 27 mins
+            endInterval = 1620
             maxThreads = 1
             threadGroups = snappyThreads;
 
