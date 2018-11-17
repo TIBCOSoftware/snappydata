@@ -3794,4 +3794,69 @@ public class SnappyTest implements Serializable {
     return Log.getLogWriter();
   }
 
+  public static void meanKillSnappyMember(String member) {
+    Process pr = null;
+    ProcessBuilder pb;
+    File logFile, log = null, serverKillOutput, leaderKillOutput, locatorKillOuptut;
+    Set<Integer> pids = new LinkedHashSet<>();
+    Set<String> pidList = new LinkedHashSet<>();
+    if(member.equals("lead")){
+      try {
+        HostDescription hd = TestConfig.getInstance().getMasterDescription()
+                .getVmDescription().getHostDescription();
+        Log.getLogWriter().info("Host Description : " + hd);
+        pidList = SnappyStartUpTest.getLeaderPidList();
+        Log.getLogWriter().info("Process ID's List : " + pidList);
+        log = new File(".");
+        String leader = log.getCanonicalPath() + File.separator + "leader.sh";
+        logFile = new File(leader);
+        String leaderKillLog = log.getCanonicalPath() + File.separator + "leaderKill.log";
+        leaderKillOutput = new File(leaderKillLog);
+        FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
+        BufferedWriter bw = new BufferedWriter(fw);
+        List asList = new ArrayList(pidList);
+        Collections.shuffle(asList);
+        String pidString = String.valueOf(asList.get(0));
+        Log.getLogWriter().info("pidString 1: " + pidString);
+        int pid = Integer.parseInt(pidString);
+        if (pids.contains(pid)) {
+          pidList.remove(pidString);
+          asList = new ArrayList(pidList);
+          Collections.shuffle(asList);
+          pidString = String.valueOf(asList.get(0));
+          Log.getLogWriter().info("pidString 2: " + pidString);
+          pid = Integer.parseInt(pidString);
+        }
+        pids.add(pid);
+        Log.getLogWriter().info("Leader Pid chosen for abrupt kill : " + pidString);
+        String pidHost = snappyTest.getPidHost(Integer.toString(pid));
+        if (pidHost.equalsIgnoreCase("localhost")) {
+          bw.write("/bin/kill -KILL " + pid);
+        } else {
+          bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+                  pidHost + " /bin/kill -KILL " + pid);
+        }
+        bw.newLine();
+        try {
+          RemoteTestModule.Master.removePID(hd, pid);
+        } catch (RemoteException e) {
+          String s = "Failed to remove PID from nukerun script: " + pid;
+          throw new HydraRuntimeException(s, e);
+        }
+        bw.close();
+        fw.close();
+        logFile.setExecutable(true);
+        pb = new ProcessBuilder(leader);
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(leaderKillOutput));
+        pr = pb.start();
+        pr.waitFor();
+      } catch (IOException e) {
+        throw new TestException("IOException occurred while retriving logFile path " + log + "\nError Message:" + e.getMessage());
+      } catch (InterruptedException e) {
+        String s = "Exception occurred while waiting for the process execution : " + pr;
+        throw new TestException(s, e);
+    }
+   }
+  }
 }

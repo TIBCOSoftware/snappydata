@@ -213,22 +213,23 @@ public class DeployPkgDeployJar extends SnappyTest {
     }
 
     /**
-     * This method start the deployment and kill the lead node
+     * This method start the deployment and kill the lead node (soft kill)
      * then on restart package / jar should be automatically installed
      * @since 1.0.2.1
      */
-    public static void HydraTask_deployPkgAndKillLeadNode() {
+    public static void HydraTask_deployPkgAndSoftKillLeadNode() {
         deployPkgJars = new DeployPkgDeployJar();
-        deployPkgJars.deployPkgAndKillLeadNode();
+        deployPkgJars.deployPkgAndSoftKillLeadNode();
     }
 
     /**
-     * This method initialize the required job parameters
-     * while submitting the job through job script.
+     * This method start the deployment and kill the lead node (mean kill)
+     * then on restart package / jar should be automatically installed
      * @since 1.0.2.1
      */
-    public static void initJobArtifacts() {
-        initSnappyArtifacts();
+    public static void HydraTask_deployPkgAndMeanKillLeadNode() {
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPkgAndMeanKillLeadNode();
     }
 
     /**
@@ -244,6 +245,34 @@ public class DeployPkgDeployJar extends SnappyTest {
             throw new TestException("Got exception while establish the connection.....", se);
         }
         return connection;
+    }
+
+    /**
+     * This method checks that whether lead node is up and running
+     * @since 1.0.2.1
+     * @return Lead node status
+     */
+    private boolean isLeadNodeUp(Connection conn) {
+        boolean isDeploy = SnappyPrms.isDeployPkg();
+        boolean isLeadNodeRunning = false;
+        Statement st;
+        ResultSet rs;
+
+       try {
+            st = conn.createStatement();
+            if(st.execute("select * from sys.members;")) {
+                rs = st.getResultSet();
+                while (rs.next()) {
+                    Log.getLogWriter().info("Checking the Lead node status...");
+                    if(rs.getString("KIND").equals("primary lead") && rs.getString("STATUS").equals("RUNNING")) {
+                    isLeadNodeRunning = true;
+                  }
+              }
+            }
+        }catch (SQLException se) {
+
+        }
+        return isLeadNodeRunning;
     }
 
     /**
@@ -312,6 +341,7 @@ public class DeployPkgDeployJar extends SnappyTest {
 
             st.clearBatch();
 
+            //FixME : Do not remove below comments, will be used in further enhancements.
             //int count = 0;
             for (Map.Entry<String, String> entry : source_Alias_Coordinate.entrySet()) {
                 undeploy_Pkg_Cmd = "undeploy " + entry.getKey() + ";";
@@ -383,6 +413,7 @@ public class DeployPkgDeployJar extends SnappyTest {
 
             st.clearBatch();
 
+            //FixME : Do not remove below comments, will be used in further enhancements.
             //int count = 0;
             for (Map.Entry<String, String> entry : source_Alias_Coordinate.entrySet()) {
                 undeploy_Pkg_Cmd = "undeploy " + entry.getKey() + ";";
@@ -880,18 +911,18 @@ public class DeployPkgDeployJar extends SnappyTest {
      *
      * @since 1.0.2.1
      */
-    private  void deployPkgAndKillLeadNode() {
+    private  void deployPkgAndSoftKillLeadNode() {
         Vector snappyJobClassName = SnappyPrms.getSnappyJobClassNames();
         String userAppProperties = SnappyPrms.getCommaSepAPPProps();
         String userAppName = SnappyPrms.getUserAppName();
         String thirdParty_Pkgs_repos = SnappyPrms.getJarIdentifier();
         boolean isDeploy = SnappyPrms.isDeployPkg();
 
-
         //Below job / task kill the lead node
         Runnable killLeadNode = () -> {
                   Log.getLogWriter().info("Killing the Lead Node and Restart the Lead Node...");
                   SnappyTest.HydraTask_cycleLeadVM();
+
         };
 
         //Below job / task will wait for 15 seconds until secondary lead node starts.
@@ -926,14 +957,83 @@ public class DeployPkgDeployJar extends SnappyTest {
             es.shutdown();
             es.awaitTermination(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndSoftKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
         }
-        /*try {
+    }
+
+    /**
+     * @since 1.0.2.1
+     */
+    private void deployPkgAndMeanKillLeadNode() {
+        Vector snappyJobClassName = SnappyPrms.getSnappyJobClassNames();
+        String userAppProperties = SnappyPrms.getCommaSepAPPProps();
+        String userAppName = SnappyPrms.getUserAppName();
+        String thirdParty_Pkgs_repos = SnappyPrms.getJarIdentifier();
+        boolean isDeploy = SnappyPrms.isDeployPkg();
+        Connection conn;
+        Statement st;
+        ResultSet rs;
+
+        conn = getJDBCConnection();
+        ExecutorService es = Executors.newFixedThreadPool(2);
+
+        //Below job / task mean kill the lead node
+        Runnable killLeadNode = () -> {
+            Log.getLogWriter().info("Killing the Lead Node and Restart the Lead Node...");
+            SnappyTest.meanKillSnappyMember("lead");
+        };
+
+
+        //Below job / task will wait for 15 seconds until secondary lead node starts.
+        //It executes the job after new lead node discovered.
+        //Wait time is 15 seconds
+        Runnable submitJobKillLeadNode = () -> {
+            try {
+                boolean isLeadNodeRunning;
+                Log.getLogWriter().info("Start the snappy Job and put the thread immediately into sleep mode...");
+                while(true) {
+                    isLeadNodeRunning = isLeadNodeUp(conn);
+                    Thread.sleep(5000);
+                    if(isLeadNodeRunning == false) {
+                        Log.getLogWriter().info("Lead Node Status : " + isLeadNodeRunning);
+                        Thread.sleep(5000);
+                    }
+                    else {
+                        Log.getLogWriter().info("Lead Node Status up and running : " + isLeadNodeRunning);
+                        Thread.sleep(5000);
+                        break;
+                    }
+                }
+                //Thread.sleep(15000);
+                //Log.getLogWriter().info("Lead Node Status : " + isLeadNodeRunning);
+                boolean jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
+                        userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                Log.getLogWriter().info("DeployPkgDeployJar -> SnappyJobStatus : " + jobStatus);
+                if(jobStatus == false) {
+                    Log.getLogWriter().info("Resubmit the snappy job again...");
+                    Thread.sleep(12000);
+                    jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
+                            userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                    if(conn != null)
+                        closeConnection(conn);
+                    if(isLeadNodeRunning == true)
+                        isLeadNodeRunning = false;
+                }
+            }
+            catch(InterruptedException e){
+                Log.getLogWriter().info("Deploy pkg with Lead HA, job thread interrupted -> " + e.getMessage());
+            }
+        };
+        es.submit(killLeadNode);
+        es.submit(submitJobKillLeadNode);
+        try {
+            Log.getLogWriter().info("Sleeping for " + 360000 + " millis before executor service shut down");
+            Thread.sleep(360000);
             es.shutdown();
-            es.awaitTermination(180,TimeUnit.SECONDS);
-        }catch (InterruptedException e) {
-            Log.getLogWriter().info("Deploy pkg with Lead HA -> " + e.getMessage());
-        }*/
+            es.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndSoftKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+        }
     }
 }
 

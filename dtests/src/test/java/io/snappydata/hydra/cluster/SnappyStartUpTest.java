@@ -124,6 +124,7 @@ public class SnappyStartUpTest extends SnappyTest {
     return pidList;
   }
 
+
   /**
    * Mandatory to use this method in case of clusterRestartWithRandomOrderForServerStartUp test.
    * As per current implementation, for starting the server snappy-servers.sh script is used, which starts
