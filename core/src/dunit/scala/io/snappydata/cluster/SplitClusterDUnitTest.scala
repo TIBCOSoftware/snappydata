@@ -701,6 +701,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val hostName = InetAddress.getLocalHost.getHostName
     val sparkShellCommand = s"$sparkProductDir/bin/spark-shell --master spark://$hostName:7077" +
         " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
+        " --conf spark.sql.catalogImplementation=in-memory" +
         s" --jars $snappyDataCoreJar" +
         securityConf +
         s" -i $scriptFile -i $scriptFile2"
@@ -751,8 +752,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       val hostName = InetAddress.getLocalHost.getHostName
       val sparkShellCommand = s"$sparkCurrentProductDir/bin/spark-shell " +
           s"--master spark://$hostName:7077 --conf spark.snappydata.connection=localhost:" +
-          locatorClientPort + s" --jars $snappyJdbcJar" + securityConf +
-          s" -i $scriptFile"
+          locatorClientPort + " --conf spark.sql.catalogImplementation=in-memory" +
+          s" --jars $snappyJdbcJar" + securityConf + s" -i $scriptFile"
 
       val conn = getConnection(locatorClientPort, props)
       val stmt = conn.createStatement()
