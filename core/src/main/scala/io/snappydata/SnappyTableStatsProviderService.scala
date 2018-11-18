@@ -209,8 +209,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         // External Tables
         hiveTables.collect {
           case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
-            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-              table.externalStore, table.dataSourcePath, table.driverClass)
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.schema,
+              table.shortProvider, table.externalStore, table.dataSourcePath, table.driverClass)
           }
         }
       }
