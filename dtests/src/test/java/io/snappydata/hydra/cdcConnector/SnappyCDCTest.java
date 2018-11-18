@@ -24,7 +24,7 @@ public class SnappyCDCTest extends SnappyTest {
   public SnappyCDCTest() {
   }
 
-  public Connection getSnappyConnection() {
+ /* public Connection getSnappyConnection() {
     Connection conn = null;
     List<String> endpoints = validateLocatorEndpointData();
     String url = "jdbc:snappydata://" + endpoints.get(0);
@@ -38,12 +38,19 @@ public class SnappyCDCTest extends SnappyTest {
     }
     return conn;
   }
-
-  public static List getHostNames() {
+*/
+ /* public static List getHostNames() {
     Set<String> pidList;
     pidList = SnappyStartUpTest.getServerPidList();
     List asList = new ArrayList(pidList);
     return asList;
+  }*/
+
+  public static void HydraTask_meanKillProcesses() {
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.meanKillProcesses();
   }
 
   public void meanKillProcesses() {
@@ -54,7 +61,7 @@ public class SnappyCDCTest extends SnappyTest {
     Boolean isStopStart = SnappyCDCPrms.getIsStopStartCluster();
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
     String nodeType = SnappyCDCPrms.getNodeType();
-    int numNodes = SnappyCDCPrms.getNumNodes();
+    int numNodes = SnappyCDCPrms.getNumNodesToStop();
     String pidString;
     try {
       pidList = SnappyStartUpTest.getServerPidList();
@@ -70,7 +77,6 @@ public class SnappyCDCTest extends SnappyTest {
       Collections.shuffle(asList);
       for (int i = 0; i < numNodes; i++) {
         pidString = String.valueOf(asList.get(i));
-        Log.getLogWriter().info("pidString : " + pidString);
         int pid = Integer.parseInt(pidString);
         Log.getLogWriter().info("Server Pid chosen for abrupt kill : " + pidString);
         String pidHost = snappyTest.getPidHost(Integer.toString(pid));
@@ -110,9 +116,16 @@ public class SnappyCDCTest extends SnappyTest {
     clusterRestart(snappyPath, isStopStart, nodeType, false, "", false);
   }
 
+  public static void HydraTask_performRebalance() {
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.performRebalance();
+  }
+
   public void performRebalance() {
     try {
-      Connection conn = getSnappyConnection();
+      Connection conn = SnappyTest.getLocatorConnection();
       Long startTime = System.currentTimeMillis();
       conn.createStatement().execute("call sys.rebalance_all_buckets();");
       Long endTime = System.currentTimeMillis();
@@ -124,7 +137,6 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public static void HydraTask_addNewNode() {
-    Log.getLogWriter().info("Inside HydraTask_addNewNode");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -132,11 +144,10 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public void addNewNode() {
-    Log.getLogWriter().info("Indside startNewNodeFirst method");
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
-    Log.getLogWriter().info("snappyPath File path is " + snappyPath);
     Boolean isNewNodeFirst = SnappyCDCPrms.getIsNewNodeFirst();
     String nodeType = SnappyCDCPrms.getNodeType();
+    String dirPath = SnappyCDCPrms.getDataLocation();
 
     File orgName = new File(snappyPath + "/conf/" + nodeType);
     File bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
@@ -145,9 +156,9 @@ public class SnappyCDCTest extends SnappyTest {
     String nodeName = String.valueOf(hostList.get(0));
 
     if (nodeType.equalsIgnoreCase("servers"))
-      nodeInfo = nodeName + " -dir=/nfs/users/spillai/" + nodeName + " -heap-size=5g -memory-size=5g ";
+      nodeInfo = nodeName + " -dir=" + dirPath + "/" + nodeName + " -heap-size=5g -memory-size=5g ";
     else
-      nodeInfo = nodeName + " -dir=/nfs/users/spillai/lead ";
+      nodeInfo = nodeName + " -dir=" + dirPath + "/lead";
 
     Log.getLogWriter().info("The nodeInfo is  " + nodeInfo);
     String nodeConfig = nodeInfo + "\n";
@@ -184,7 +195,7 @@ public class SnappyCDCTest extends SnappyTest {
           if (tempConfFile.renameTo(orgName)) {
             Log.getLogWriter().info("File renamed to " + orgName);
           } else {
-            Log.getLogWriter().info("Error");
+            Log.getLogWriter().info("Error while renaming file");
           }
 
           clusterRestart(snappyPath, true, "", false, "", false);
@@ -194,33 +205,29 @@ public class SnappyCDCTest extends SnappyTest {
 
         //delete the temp conf file created.
         if (tempConfFile.delete()) {
-          System.out.println(tempConfFile.getName() + " is deleted!");
+          Log.getLogWriter().info(tempConfFile.getName() + " is deleted!");
         } else {
-          System.out.println("Delete operation is failed.");
+          Log.getLogWriter().info("Delete the temp conf file operation failed.");
         }
-//        FileUtils.copyFile(bkName, orgName);
       }
-      //  FileUtils.copyFile(bkName, orgName);
-
     } catch (FileNotFoundException e) {
-      // File not found
-      e.printStackTrace();
+      Log.getLogWriter().info("Caught FileNotFoundException in addNewNode method " + e.getMessage());
     } catch (IOException e) {
-      // Error when writing to the file
-      e.printStackTrace();
+      Log.getLogWriter().info("Caught IOException in addNewNode method " + e.getMessage());
     } catch (Exception e) {
-      Log.getLogWriter().info("Caught Exception in addNewNode " + e.getMessage());
+      Log.getLogWriter().info("Caught Exception in addNewNode method" + e.getMessage());
     }
   }
 
-  public void clusterModifyAndRestart(String snappyPath, String nodeType, String nodeConfig) {
+  public void clusterConfModifyAndRestart(String snappyPath, String nodeType, String nodeConfig) {
     File orgName = new File(snappyPath + "/conf/" + nodeType);
     File bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
-    List hostList = getHostNames();
+    Set<String> pidList = SnappyStartUpTest.getServerPidList();
+    List hostList = new ArrayList(pidList);
     if (orgName.renameTo(bkName)) {
       Log.getLogWriter().info("File renamed to " + bkName);
     } else {
-      Log.getLogWriter().info("Error");
+      Log.getLogWriter().info("Error while renaming file");
     }
     try {
       File tempConfFile = new File(snappyPath + "/conf/" + nodeType);
@@ -230,14 +237,13 @@ public class SnappyCDCTest extends SnappyTest {
         String pidString = String.valueOf(hostList.get(i));
         Log.getLogWriter().info("pidString : " + pidString);
         int pid = Integer.parseInt(pidString);
-        Log.getLogWriter().info("Server Pid is : " + pidString);
         String pidHost = snappyTest.getPidHost(Integer.toString(pid));
         String newConfig = pidHost + " " + nodeConfig + "/" + pidHost + "  -critical-heap-percentage=95 \n";
         fw.write(newConfig);
       }
       fw.close();
     } catch (IOException ex) {
-      Log.getLogWriter().info("Caught exception in clusterModifyAndRestart " + ex.getMessage());
+      Log.getLogWriter().info("Caught exception in clusterConfModifyAndRestart " + ex.getMessage());
     }
   }
 
@@ -245,7 +251,6 @@ public class SnappyCDCTest extends SnappyTest {
     try {
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
-      Log.getLogWriter().info("The destination file is " + dest);
       File logFile = new File(dest);
       String dirPath = SnappyCDCPrms.getDataLocation();
       //Stop cluster
@@ -266,11 +271,10 @@ public class SnappyCDCTest extends SnappyTest {
         snappyTest.executeProcess(pb1, logFile);
       }
       if (isBackupRecovery) {
-        Log.getLogWriter().info("Inside isBackupRecovery true loop");
         removeDiskStoreFiles(dirPath);
       }
       if (isModifyConf) {
-        clusterModifyAndRestart(snappyPath, nodeType, nodeConfig);
+        clusterConfModifyAndRestart(snappyPath, nodeType, nodeConfig);
       }
       //Start the cluster after 1 min
       // Thread.sleep(60000);
@@ -278,7 +282,7 @@ public class SnappyCDCTest extends SnappyTest {
       startCluster(snappyPath, logFile, isModifyConf);
       snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
     } catch (GemFireConfigException ex) {
-      Log.getLogWriter().info("Got the expected exception when starting a new server ,without locators " + ex.getMessage());
+      Log.getLogWriter().info("Got the expected exception when starting a server ,without locators " + ex.getMessage());
     } catch (IOException ex) {
       Log.getLogWriter().info("Caught exception in cluster restart " + ex.getMessage());
     } catch (Exception ex) {
@@ -286,11 +290,17 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
+  public static void HydraTask_storeDataCount() {
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.storeDataCount();
+  }
+
   public void storeDataCount() {
-    Log.getLogWriter().info("Inside storeDataCount method");
     int tableCnt = 0;
     try {
-      Connection con = getSnappyConnection();
+      Connection con = SnappyTest.getLocatorConnection();
       String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs = con.createStatement().executeQuery(tableCntQry);
       while (rs.next())
@@ -303,10 +313,8 @@ public class SnappyCDCTest extends SnappyTest {
       ResultSet rs1 = con.createStatement().executeQuery(tableQry);
       while (rs1.next()) {
         String tableName = rs1.getString("TABLENAME");
-        //  if(!tableName.contains("SNAPPYSYS_INTERNA")) {
         tableArr[cnt] = tableName;
         cnt++;
-        //}
       }
       rs1.close();
       for (int i = 0; i < tableArr.length; i++) {
@@ -326,12 +334,18 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
+  public static void HydraTask_validateDataCount() {
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.validateDataCount();
+  }
+
   public void validateDataCount() {
-    Log.getLogWriter().info("Inside validateDataCount method");
     Map<String, Integer> tableCntMap = (Map<String, Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
     Log.getLogWriter().info("tableCntMap size = " + tableCntMap);
     try {
-      Connection con = getSnappyConnection();
+      Connection con = SnappyTest.getLocatorConnection();
       for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
         int snappyCnt = 0;
         String tableName = val.getKey();
@@ -355,7 +369,6 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public static void HydraTask_runConcurrencyJob() {
-    Log.getLogWriter().info("Inside HydraTask_runConcurrencyJob");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -363,21 +376,19 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public static void HydraTask_clusterRestart() {
-    Log.getLogWriter().info("Inside HydraTask_clusterRestart");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
     Boolean isStopStart = SnappyCDCPrms.getIsStopStartCluster();
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
     String nodeType = SnappyCDCPrms.getNodeType();
-    String nodeConfig = SnappyCDCPrms.getNodeInfoforHA();
+    String nodeConfig = SnappyCDCPrms.getNodeInfoForHA();
     Boolean isModifyConf = SnappyCDCPrms.getIsModifyConf();
     Boolean isBackUpRecovery = SnappyCDCPrms.getIsBackUpRecovery();
     snappyCDCTest.clusterRestart(snappyPath, isStopStart, nodeType, isBackUpRecovery, nodeConfig, isModifyConf);
   }
 
   public static void HydraTask_stopCluster() {
-    Log.getLogWriter().info("Inside HydraTask_stopCluster");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -393,7 +404,6 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public static void HydraTask_startCluster() {
-    Log.getLogWriter().info("Inside HydraTask_startCluster");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -434,7 +444,6 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public static void HydraTask_runIngestionApp() {
-    Log.getLogWriter().info("Inside HydraTask_runIngestionApp");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -443,7 +452,6 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void runIngestionApp() {
     try {
-      Log.getLogWriter().info("Inside runIngestionApp");
       CDCIngestionApp app = new CDCIngestionApp();
       Integer threadCnt = SnappyCDCPrms.getThreadCnt();
       Integer sRange = SnappyCDCPrms.getInitStartRange();
@@ -464,7 +472,6 @@ public class SnappyCDCTest extends SnappyTest {
     String logFileName = "sparkStreamingStopResult_" + System.currentTimeMillis() + ".log";
     File log = null;
     File logFile = null;
-    Log.getLogWriter().info("Inside HydraTask_closeStreamingJob");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -485,11 +492,9 @@ public class SnappyCDCTest extends SnappyTest {
 
   public String getNodeInfo(String hostName, String snappyPath, String nodeType) {
     String nodeInfo = "";
-    Log.getLogWriter().info("Inside getNodeInfo");
     try {
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "nodeNameForHA_" + nodeType + "_" + hostName + ".log";
-      Log.getLogWriter().info("The destination file is " + dest);
       File logFile = new File(dest);
       Process pr = null;
       if (!logFile.exists()) {
@@ -514,7 +519,6 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public static void HydraTask_performHA() {
-    Log.getLogWriter().info("Inside HydraTask_performHA");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -525,7 +529,6 @@ public class SnappyCDCTest extends SnappyTest {
     String scriptName;
     try {
       String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
-      Log.getLogWriter().info("snappyPath File path is " + snappyPath);
       String nodeType = SnappyCDCPrms.getNodeType();
       Boolean isOnlyStop = SnappyCDCPrms.getIsOnlyStop();
       String nodeInfoforHA;
@@ -610,30 +613,27 @@ public class SnappyCDCTest extends SnappyTest {
             if (tempConfFile.delete()) {
               System.out.println(tempConfFile.getName() + " is deleted!");
             } else {
-              System.out.println("Delete operation is failed.");
+              System.out.println("Delete the temp conf file operation failed.");
             }
             //restore the back up to its originals.
             if (bkName.renameTo(orgName)) {
               Log.getLogWriter().info("File renamed to " + orgName);
             } else {
-              Log.getLogWriter().info("Error");
+              Log.getLogWriter().info("Error in renaming the file");
             }
           }
         } catch (FileNotFoundException e) {
-          e.printStackTrace();
+          Log.getLogWriter().info("Caught FileNotFoundException in performHA method " + e.getMessage());
         } catch (IOException e) {
-          // Error when writing to the file
-          e.printStackTrace();
+          Log.getLogWriter().info("Caught IOException in performHA method " + e.getMessage());
         }
       }
-
     } catch (Exception e) {
       Log.getLogWriter().info("Caught Exception in performHA " + e.getMessage());
     }
   }
 
   public static void HydraTask_removeDiskStore() {
-    Log.getLogWriter().info("Inside HydraTask_removeDiskStore");
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
@@ -656,7 +656,6 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public void startCluster(String snappyPath, File logFile, Boolean isModifyCluster) {
-    Log.getLogWriter().info("Inside startCluster");
     ProcessBuilder pbClustStart = new ProcessBuilder(snappyPath + "/sbin/snappy-start-all.sh");
     Long startTime1 = System.currentTimeMillis();
     snappyTest.executeProcess(pbClustStart, logFile);

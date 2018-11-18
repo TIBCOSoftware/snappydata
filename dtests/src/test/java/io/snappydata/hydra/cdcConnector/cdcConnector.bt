@@ -11,7 +11,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   dataBaseName = testdatabase20G
   snappyFileLoc="$GEMFIRE/../snappy"
   hostPort = "0"
-  threadCnt = 1
+  threadCnt = 2
   coresPerStrmApp = 1
   sqlServerInstance = sqlServer1
   connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2.1.jar"
@@ -22,8 +22,6 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableListTemp.txt"
   initStartRange=1000001
   initEndRange=1000050
-  totalTaskTimeSec=600
-  maxResultWaitSec=500
   numVMsToStop=1
 
  io/snappydata/hydra/cdcConnector/cdcHATest.conf
@@ -39,7 +37,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    snappyFileLoc="$GEMFIRE/../snappy"
    hostPort = "0"
    dataBaseName = testdatabase20G
-   threadCnt = 1
+   threadCnt = 2
    coresPerStrmApp = 2
    sqlServerInstance = sqlServer1
    connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2.1.jar"
@@ -50,8 +48,6 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableListTemp.txt"
    initStartRange=1000001
    initEndRange=1000050
-   totalTaskTimeSec=1800
-   maxResultWaitSec=1200
    numVMsToStop=1
 
  io/snappydata/hydra/cdcConnector/cdcConnectorMultiSqlServerInstanceTest.conf
@@ -76,8 +72,6 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableNameList.txt"
    initStartRange=65000000
    initEndRange=65000010
-   totalTaskTimeSec=1800
-   maxResultWaitSec=600
 
  io/snappydata/hydra/cdcConnector/cdcConnectorLongRunningHAWithMultiSqlServer.conf
    A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
@@ -90,6 +84,10 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1"
    insertQueryPath2="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2"
    snappyFileLoc="$GEMFIRE/../snappy"
+   node1="dev11"
+   node2="dev8"
+   node3="dev9"
+   node4="dev10"
    threadCnt = 10
    coresPerStrmApp = 6
    dataBaseName = testdatabase
@@ -102,5 +100,3 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableNameList.txt"
    initStartRange=65000000
    initEndRange=65000010
-   totalTaskTimeSec=36000
-   maxResultWaitSec=36000

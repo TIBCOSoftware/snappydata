@@ -14,7 +14,7 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static Long dataLocation;
 
   /**
-   * Boolean value to determine if the query is a scan type query
+   * Boolean value to determine if conf is to be modified
    */
   public static Long isModifyConf;
 
@@ -26,7 +26,7 @@ public class SnappyCDCPrms extends SnappyPrms {
 
 
   /**
-   * Boolean value to determine if the test does back and recovery
+   * Boolean value to determine if the test does backUp and recovery
    */
   public static Long isbackUpRecovery;
 
@@ -79,7 +79,7 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**
    * Int value that determines the number of nodes to be stopped
    */
-  public static Long numNodes;
+  public static Long numNodesToStop;
 
 
   /**
@@ -96,7 +96,7 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**
    * config file parameters for the node required during HA
    */
-  public static Long nodeInfoforHA;
+  public static Long nodeInfoForHA;
 
   /**
    * config file parameters for the node required during HA
@@ -115,7 +115,7 @@ public class SnappyCDCPrms extends SnappyPrms {
 
 
   /**
-   * Name of host node
+   * HostName of the node
    */
   public static Long hostName;
 
@@ -143,9 +143,9 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long sqlServerInstance;
 
-  public static String getNodeInfoforHA() {
-    String nodeInfo = tasktab().stringAt(nodeInfoforHA, tab().stringAt
-        (nodeInfoforHA, null));
+  public static String getNodeInfoForHA() {
+    String nodeInfo = tasktab().stringAt(nodeInfoForHA, tab().stringAt
+        (nodeInfoForHA, null));
     if (nodeInfo == null) return "";
     return nodeInfo;
   }
@@ -271,8 +271,8 @@ public class SnappyCDCPrms extends SnappyPrms {
     return tasktab().intAt(key, tab().intAt(key, 1));
   }
 
-  public static int getNumNodes() {
-    Long key = numNodes;
+  public static int getNumNodesToStop() {
+    Long key = numNodesToStop;
     return tasktab().intAt(key, tab().intAt(key, 1));
   }
 
