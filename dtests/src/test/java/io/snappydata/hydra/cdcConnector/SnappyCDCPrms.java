@@ -6,6 +6,7 @@ import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyPrms;
 
 import java.util.Vector;
+
 public class SnappyCDCPrms extends SnappyPrms {
 
   /**
@@ -143,6 +144,11 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long sqlServerInstance;
 
+  /**
+   * Boolean value to determine whether to keep the original conf file or not
+   */
+  public static Long isKeepOrgConf;
+
   public static String getNodeInfoForHA() {
     String nodeInfo = tasktab().stringAt(nodeInfoForHA, tab().stringAt
         (nodeInfoForHA, null));
@@ -208,6 +214,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static boolean getIsModifyConf() {
     Long key = isModifyConf;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsKeepOrgConf() {
+    Long key = isKeepOrgConf;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

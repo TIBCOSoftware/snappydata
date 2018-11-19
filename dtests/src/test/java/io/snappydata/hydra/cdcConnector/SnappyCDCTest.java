@@ -148,6 +148,7 @@ public class SnappyCDCTest extends SnappyTest {
     Boolean isNewNodeFirst = SnappyCDCPrms.getIsNewNodeFirst();
     String nodeType = SnappyCDCPrms.getNodeType();
     String dirPath = SnappyCDCPrms.getDataLocation();
+    Boolean isKeepOrgConf = SnappyCDCPrms.getIsKeepOrgConf();
 
     File orgName = new File(snappyPath + "/conf/" + nodeType);
     File bkName = new File(snappyPath + "/conf/" + nodeType + "_bk");
@@ -210,6 +211,8 @@ public class SnappyCDCTest extends SnappyTest {
           Log.getLogWriter().info("Delete the temp conf file operation failed.");
         }
       }
+      if (isKeepOrgConf)
+        FileUtils.copyFile(bkName, orgName);
     } catch (FileNotFoundException e) {
       Log.getLogWriter().info("Caught FileNotFoundException in addNewNode method " + e.getMessage());
     } catch (IOException e) {
