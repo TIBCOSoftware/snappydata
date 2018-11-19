@@ -303,6 +303,7 @@ class TokenizationTest
 
     // check caching for non-code generated JsonTuple
 
+    // RDDScanExec plans are not considered for plan caching
     checkAnswer(snc.sql(
       """
         |SELECT json_tuple(json, 'f1', 'f2')
@@ -319,7 +320,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("value2", "10") :: Nil)
 
-    assert(cacheMap.size() == 2)
+    assert(cacheMap.size() == 0)
 
     checkAnswer(snc.sql(
       """
@@ -332,7 +333,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("10") :: Nil)
 
-    assert(cacheMap.size() == 4)
+    assert(cacheMap.size() == 0)
   }
 
   test("SNAP-2566") {
@@ -619,40 +620,6 @@ class TokenizationTest
       snc.sql("set spark.sql.caseSensitive = false")
       snc.sql("set schema = APP")
     }
-    logInfo("Successful")
-  }
-
-  ignore("Test tokenize for all data types") {
-    val numRows = 10
-    createAllTypeTableAndPoupulateData(numRows, s"$all_typetable")
-
-    try {
-      val q = (0 until numRows).zipWithIndex.map { case (_, i) =>
-        s"select * from $all_typetable where s = 'abc$i'"
-      }
-      val start = System.currentTimeMillis()
-      q.zipWithIndex.foreach  { case (x, i) =>
-        var result = snc.sql(x).collect()
-        assert(result.length === 1)
-        result.foreach( r => {
-          assert(r.get(0) == i && r.get(4) == s"abc$i")
-        })
-      }
-      val end = System.currentTimeMillis()
-
-      // snc.sql(s"select * from $table where a = 1200").collect()
-      // println("Time taken = " + (end - start))
-
-      val cacheMap = SnappySession.getPlanCache.asMap()
-      assert( cacheMap.size() == 1)
-      val x = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].sqlText
-      assert(x.equals(q(0)))
-      snc.sql(s"drop table $all_typetable")
-    } finally {
-      snc.sql("set spark.sql.caseSensitive = false")
-      snc.sql("set schema = APP")
-    }
-
     logInfo("Successful")
   }
 
