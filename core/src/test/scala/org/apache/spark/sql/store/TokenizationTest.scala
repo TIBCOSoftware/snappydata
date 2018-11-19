@@ -67,6 +67,48 @@ class TokenizationTest
     snc.dropTable(s"$colTableName", ifExists = true)
   }
 
+  test("SNAP-2712") {
+    val r1 = snc.sql("select substr(soundex('laxtaxmax'), 1, 3), soundex('tax') from values 1 = 1")
+    val c1s = r1.columns
+    val arr1 = r1.collect()
+    val r2 = snc.sql("select substr(soundex('laxtaxmax'), 2, 5), soundex('tax') from values 1 = 1")
+    val arr2 = r2.collect()
+    val c2s = r2.columns
+    assert(!c1s.sameElements(c2s))
+    assert(!arr1.sameElements(arr2))
+    assert (arr1(0).getString(0) === "L23")
+    assert (arr1(0).getString(1) === "T200")
+    assert (arr2(0).getString(0) === "232")
+    assert (arr2(0).getString(1) === "T200")
+
+    // Only substr
+    val r3 = snc.sql("select substr('suoertest', 0, 5) from values 1 = 1")
+    val c3s = r3.columns
+    val arr3 = r3.collect()
+    val r4 = snc.sql("select substr('supertest', 0, 5) from values 1 = 1")
+    val c4s = r4.columns
+    val arr4 = r4.collect()
+    assert(!c3s.sameElements(c4s))
+    assert(!arr3.sameElements(arr4))
+    assert (arr3(0).getString(0) === "suoer")
+    assert (arr4(0).getString(0) === "super")
+
+    val r5 = snc.sql("select levenshtein('supriya','swati')")
+    val c5s = r5.columns
+    val arr5 = r5.collect()
+    val r6 = snc.sql("select levenshtein('swati','swati')")
+    val c6s = r6.columns
+    val arr6 = r6.collect()
+    val r7 = snc.sql("select levenshtein('swati','sonal')")
+    val c7s = r7.columns
+    val arr7 = r7.collect()
+    assert(!c5s.sameElements(c6s) && !c5s.sameElements(c7s))
+    assert(!arr5.sameElements(arr6) && !arr5.sameElements(arr7))
+    assert (arr5(0).getInt(0) === 5)
+    assert (arr6(0).getInt(0) === 0)
+    assert (arr7(0).getInt(0) === 4)
+  }
+
   test("SNAP-2031 tpcds") {
     val sqlstr = s"WITH ss AS (SELECT s_store_sk, sum(ss_ext_sales_price) AS sales, " +
         s"sum(ss_net_profit) AS profit FROM store_sales, date_dim, store WHERE ss_sold_date_sk" +
