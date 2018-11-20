@@ -25,6 +25,7 @@ import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
+import io.snappydata.Property.HashAggregateSize
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
@@ -52,24 +53,39 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
 
-class SnappySessionState(snappySession: SnappySession)
-    extends SessionState(snappySession) {
-
+class SnappySessionState(val snappySession: SnappySession)
+    extends SessionState(snappySession) with SnappyStrategies {
   self =>
 
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
+  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
+    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
+    case _ => Nil
+  }
+
   protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
 
   private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
+
+  override lazy val streamingQueryManager: StreamingQueryManager = {
+    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
+    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
+    // implies that Snappydata aggregation optimisation will be turned off for any usage of
+    // this session including non-streaming queries.
+
+    HashAggregateSize.set(snappySession.sessionState.conf, "-1")
+    new StreamingQueryManager(snappySession)
+  }
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -676,9 +692,6 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def planner: DefaultPlanner = new DefaultPlanner(snappySession, conf,
-    experimentalMethods.extraStrategies)
-
   protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
@@ -701,11 +714,20 @@ class SnappySessionState(snappySession: SnappySession)
   }
 
   override final def executePlan(plan: LogicalPlan): QueryExecution = {
+    snappyStrategies
     clearExecutionData()
     beforeExecutePlan(plan)
     val qe = newQueryExecution(plan)
     if (enableExecutionCache) executionCache.put(plan, qe)
     qe
+  }
+
+  private lazy val snappyStrategies = {
+    val storeOptimizedRules: Seq[Strategy] =
+      Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
+
+    experimentalMethods.extraStrategies = experimentalMethods.extraStrategies ++
+        Seq(SnappyStrategies, StoreStrategy, StreamQueryStrategy) ++ storeOptimizedRules
   }
 
   protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
@@ -1099,27 +1121,6 @@ trait SQLAltName[T] extends AltName[T] {
   def remove(conf: SQLConf, useAltName: Boolean = false): Unit = {
     conf.unsetConf(if (useAltName) altName else name)
   }
-}
-
-class DefaultPlanner(val session: SnappySession, conf: SQLConf,
-    extraStrategies: Seq[Strategy])
-    extends SparkPlanner(session.sparkContext, conf, extraStrategies)
-        with SnappyStrategies {
-
-  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
-    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
-    case _ => Nil
-  }
-
-  private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
-
-  override def strategies: Seq[Strategy] =
-    Seq(SnappyStrategies,
-      StoreStrategy, StreamQueryStrategy) ++
-        storeOptimizedRules ++
-        super.strategies
 }
 
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
