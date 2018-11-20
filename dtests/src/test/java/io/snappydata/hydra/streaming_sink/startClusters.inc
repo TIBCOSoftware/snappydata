@@ -85,5 +85,12 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_initialize
 	threadGroups = snappyThreads;
 
+
+INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_executeSnappyJob
+    io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.streaming_sink.CreateTableInSnappyJob
+    io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "isRowTable=${isRowTable},withKeyColumn=${withKeyColumn},isPartitioned=${isPartitioned}"
+    io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
+    threadGroups = snappyThreads;
+
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
 INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/schema.inc;
