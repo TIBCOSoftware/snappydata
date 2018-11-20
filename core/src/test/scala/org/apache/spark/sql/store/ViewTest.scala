@@ -55,12 +55,13 @@ class ViewTest extends SnappyFunSuite {
   test("temporary view") {
     val session = this.snc.snappySession
 
-    val tableMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null))
+    val tableMeta = Seq(Row("ID", "int", null), Row("ADDR", "varchar(20)", null))
 
     checkAnswer(session.sql(s"describe $columnTable"), tableMeta)
     checkAnswer(session.sql(s"describe $rowTable"), tableMeta)
 
     val expected = getExpectedResult
+    val showResult = Seq(Row("", "VIEWONTABLE", true, false))
 
     // check temporary view and its meta-data for column table
     session.sql(s"create temporary view viewOnTable as $viewQuery from $columnTable")
@@ -68,6 +69,9 @@ class ViewTest extends SnappyFunSuite {
     assert(session.sessionCatalog.tableExists("viewOnTable") === true)
     checkAnswer(session.sql("describe viewOnTable"), viewTempMeta)
     checkAnswer(session.sql("select * from viewOnTable"), expected)
+    checkAnswer(session.sql("show views"), showResult)
+    checkAnswer(session.sql("show views in app"), showResult)
+    checkAnswer(session.sql("show views from app"), showResult)
 
     // should not be visible from another session
     val session2 = session.newSession()
@@ -97,6 +101,7 @@ class ViewTest extends SnappyFunSuite {
     val session = this.snc.snappySession
 
     val expected = getExpectedResult
+    val showResult = Seq(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true))
 
     // check temporary view and its meta-data for column table
     session.sql(s"create global temporary view viewOnTable as $viewQuery from $columnTable")
@@ -104,6 +109,9 @@ class ViewTest extends SnappyFunSuite {
     assert(session.sessionCatalog.getGlobalTempView("viewOnTable").isDefined)
     checkAnswer(session.sql("describe global_temp.viewOnTable"), viewTempMeta)
     checkAnswer(session.sql("select * from viewOnTable"), expected)
+    checkAnswer(session.sql("show views"), Nil)
+    checkAnswer(session.sql("show views in global_temp"), showResult)
+    checkAnswer(session.sql("show views from global_temp"), showResult)
 
     // should be visible from another session
     val session2 = session.newSession()
@@ -211,12 +219,16 @@ class ViewTest extends SnappyFunSuite {
       expectedResult: Seq[Row]): Unit = {
     session.sql(s"create view viewOnTable as $viewQuery from $table")
 
-    val viewMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null),
+    val viewMeta = Seq(Row("ID", "int", null), Row("ADDR", "varchar(20)", null),
       Row("RANK", "int", null))
+    val showResult = Seq(Row("APP", "VIEWONTABLE", false, false))
 
     assert(session.sessionCatalog.tableExists("viewOnTable") === true)
     checkAnswer(session.sql("describe viewOnTable"), viewMeta)
     checkAnswer(session.sql("select * from viewOnTable"), expectedResult)
+    checkAnswer(session.sql("show views"), showResult)
+    checkAnswer(session.sql("show views in app"), showResult)
+    checkAnswer(session.sql("show views from app"), showResult)
 
     // should be visible from another session
     var session2 = session.newSession()

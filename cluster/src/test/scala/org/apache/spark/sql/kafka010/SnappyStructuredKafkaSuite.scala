@@ -229,7 +229,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     streamingQuery.stop()
   }
 
-  test("streaming DataFrame join to static DataFrame") {
+  test("streaming join to snappy table") {
     import session.implicits._
 
     val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
@@ -252,7 +252,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .option("startingOffsets", "earliest").load
       .selectExpr("CAST(value AS STRING) accountName").as[(String)]
 
-    val streamingQuery = acctStreamingDF.join(dfBlackList, "accountName")
+    val streamingQuery = acctStreamingDF.join(session.table("blacklist"), "accountName")
       .writeStream
       .outputMode("append")
       .format("memory")
