@@ -1048,13 +1048,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     pb = new ProcessBuilder("/bin/bash", "-c", command);
     Log.getLogWriter().info("Executing command : " + command);
     //get the unexpected rows in snappy
-    testInstance.executeProcess(pb, unexpectedResultsFile);
+    executeProcess(pb, unexpectedResultsFile);
 
     command = "grep -v -F -x -f " + snappyFileName + " " + derbyFileName;
     pb = new ProcessBuilder("/bin/bash", "-c", command);
     Log.getLogWriter().info("Executing command : " + command);
     //get the missing rows in snappy
-    testInstance.executeProcess(pb, missingResultsFile);
+    executeProcess(pb, missingResultsFile);
 
     BufferedReader unexpectedRsReader, missingRsReader;
     try {
@@ -1093,7 +1093,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           table + ". Please check " + upexpectedFileName);
       aStr.append("\n");
     }
-    return aStr.toString();
+   /* if(missing.size() == 0 && unexpected.size() == 0)
+      Log.getLogWriter().info("Verified that the resulst are correct.");
+*/    return aStr.toString();
   }
 
   public PreparedStatement getPreparedStatement(Connection conn, PreparedStatement ps, String

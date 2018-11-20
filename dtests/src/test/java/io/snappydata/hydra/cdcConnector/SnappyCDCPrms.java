@@ -58,6 +58,10 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long isCDC;
 
+  /**
+   * Boolean value to determine if result set validation is before restart or after restart
+   */
+  public static Long isBeforeRestart;
 
   /**
    * Boolean value to determine if its only individual node stop
@@ -210,6 +214,11 @@ public class SnappyCDCPrms extends SnappyPrms {
         (sqlServerInstance, null));
     if (name == null) return "";
     return name;
+  }
+
+  public static boolean getIsBeforeRestart() {
+    Long key = isBeforeRestart;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static boolean getIsModifyConf() {

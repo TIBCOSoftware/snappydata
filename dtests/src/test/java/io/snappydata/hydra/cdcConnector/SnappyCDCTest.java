@@ -4,47 +4,28 @@ import java.io.*;
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
 import com.gemstone.gemfire.GemFireConfigException;
+import com.gemstone.gemfire.cache.query.Struct;
+import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.HydraRuntimeException;
 import hydra.Log;
 import hydra.RemoteTestModule;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
+import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import org.apache.commons.io.FileUtils;
+import sql.sqlutil.ResultSetHelper;
 
 public class SnappyCDCTest extends SnappyTest {
   public static SnappyCDCTest snappyCDCTest;
 
   public SnappyCDCTest() {
   }
-
- /* public Connection getSnappyConnection() {
-    Connection conn = null;
-    List<String> endpoints = validateLocatorEndpointData();
-    String url = "jdbc:snappydata://" + endpoints.get(0);
-    Log.getLogWriter().info("The URL is " + url);
-    String driver = "io.snappydata.jdbc.ClientDriver";
-    try {
-      Class.forName(driver);
-      conn = DriverManager.getConnection(url);
-    } catch (Exception ex) {
-      System.out.println("Caught exception in getSnappyConnection() method" + ex.getMessage());
-    }
-    return conn;
-  }
-*/
- /* public static List getHostNames() {
-    Set<String> pidList;
-    pidList = SnappyStartUpTest.getServerPidList();
-    List asList = new ArrayList(pidList);
-    return asList;
-  }*/
 
   public static void HydraTask_meanKillProcesses() {
     if (snappyCDCTest == null) {
@@ -302,6 +283,8 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void storeDataCount() {
     int tableCnt = 0;
+    Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
+    String fileName = SnappyCDCPrms.getDataLocation();
     try {
       Connection con = SnappyTest.getLocatorConnection();
       String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
@@ -331,6 +314,7 @@ public class SnappyCDCTest extends SnappyTest {
         rs3.close();
       }
       SnappyBB.getBB().getSharedMap().put("tableCntMap", tableCntMap);
+      getResultSet(con, isBeforeRestart, fileName);
       con.close();
     } catch (SQLException ex) {
       Log.getLogWriter().info("Caught exception in storeDataCount() " + ex.getMessage() + " SQL State is " + ex.getSQLState());
@@ -345,8 +329,10 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public void validateDataCount() {
+    Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
+    String fileName = SnappyCDCPrms.getDataLocation();
     Map<String, Integer> tableCntMap = (Map<String, Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
-    Log.getLogWriter().info("tableCntMap size = " + tableCntMap);
+    Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size());
     try {
       Connection con = SnappyTest.getLocatorConnection();
       for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
@@ -364,11 +350,65 @@ public class SnappyCDCTest extends SnappyTest {
         else
           Log.getLogWriter().info("FAILURE :The cnt fot table " + tableName + " = " + snappyCnt + " is NOT EQUAL to the BB count = " + BBCnt);
       }
+      getResultSet(con, isBeforeRestart, fileName);
     } catch (SQLException ex) {
-      Log.getLogWriter().info("ValidateDataCount got exception " + ex.getMessage());
+      Log.getLogWriter().info("ValidateDataCount got SQLException " + ex.getMessage());
     } catch (Exception ex) {
       Log.getLogWriter().info("ValidateDataCount got exception " + ex.getMessage());
     }
+  }
+
+  public void getResultSet(Connection conn, Boolean isBeforeRestart, String fileName) {
+    SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+    String logFile = getCurrentDirPath();
+    String outputFile;
+    try {
+      ArrayList<String> queryList = getQueryList(fileName);
+      for (int i = 0; i < queryList.size(); i++) {
+        if (isBeforeRestart) {
+          outputFile = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
+        } else
+          outputFile = logFile + File.separator + "afterRestartResultSet_query_" + i + ".out";
+        String qStr = queryList.get(i);
+        ResultSet snappyRS = conn.createStatement().executeQuery(qStr);
+        StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
+        List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
+        snappyRS.close();
+        testInstance.listToFile(snappyList, outputFile);
+        if (!isBeforeRestart) {
+          String beforeRestartFileName = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
+          testInstance.compareFiles(logFile, outputFile, beforeRestartFileName, true, "query_" + i);
+        }
+      }
+    } catch (SQLException ex) {
+      Log.getLogWriter().info("Caught sqlException in getResultSet method " + ex.getMessage());
+    }
+
+  }
+
+  public ArrayList getQueryList(String fileName) {
+    ArrayList queryList = new ArrayList<String>();
+    try {
+      BufferedReader br = new BufferedReader(new FileReader(fileName));
+      String line = null;
+      while ((line = br.readLine()) != null) {
+        String[] splitData = line.split(";");
+        for (int i = 0; i < splitData.length; i++) {
+          if (!(splitData[i] == null) || !(splitData[i].length() == 0)) {
+            String qry = splitData[i];
+            System.out.println("The query is " + qry);
+            queryList.add(qry);
+          }
+        }
+      }
+      br.close();
+
+    } catch (FileNotFoundException e) {
+      System.out.println("Caught FileNotFoundException in getQuery() " + e.getMessage());
+    } catch (IOException io) {
+      System.out.println("Caught IOException in getQuery() " + io.getMessage());
+    }
+    return queryList;
   }
 
   public static void HydraTask_runConcurrencyJob() {
