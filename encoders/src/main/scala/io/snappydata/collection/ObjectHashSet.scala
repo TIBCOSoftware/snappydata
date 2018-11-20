@@ -43,7 +43,7 @@ import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
-import org.apache.spark.sql.collection.UtilsShared
+import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.storage.TaskResultBlockId
 import org.apache.spark.{SparkEnv, TaskContext}
 
@@ -68,8 +68,8 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] val taskContext = TaskContext.get()
 
   private[this] val consumer = if (taskContext ne null) {
-    // PS: Refactored the Utils.taskMemoryManager() to UtilsShared.taskMemoryManager()
-    new ObjectHashSetMemoryConsumer(UtilsShared.taskMemoryManager(taskContext))
+    // PS: Refactored the Utils.taskMemoryManager() to SharedUtils.taskMemoryManager()
+    new ObjectHashSetMemoryConsumer(SharedUtils.taskMemoryManager(taskContext))
   } else null
 
   if (!longLived && (taskContext ne null)) {

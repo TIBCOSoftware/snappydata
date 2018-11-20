@@ -26,7 +26,7 @@ import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.sql.collection.UtilsShared
+import org.apache.spark.sql.collection.SharedUtils
 
 import org.apache.spark.storage.{BlockId, TestBlockId}
 import org.apache.spark.unsafe.Platform
@@ -204,8 +204,8 @@ object MemoryManagerCallback extends Logging {
       }
     } else
     */
-    // PS: Refactored a acquireStorageMemory(..) into UtilsShared and calling it.
-    if (!allocator.isDirect && !UtilsShared.acquireStorageMemory(
+    // PS: Refactored a acquireStorageMemory(..) into SharedUtils and calling it.
+    if (!allocator.isDirect && !SharedUtils.acquireStorageMemory(
       owner, size, buffer = null, offHeap = false, shouldEvict = true)) {
       throw LocalRegion.lowMemoryException(null, size)
     }
@@ -215,8 +215,8 @@ object MemoryManagerCallback extends Logging {
   /** release and accounting for byte buffer allocated by [[allocateExecutionMemory]] */
   def releaseExecutionMemory(buffer: ByteBuffer, owner: String): Unit = {
     if (buffer.hasArray) {
-      // PS: Refactored a releaseStorageMemory(..) into UtilsShared and calling it.
-      UtilsShared.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
+      // PS: Refactored a releaseStorageMemory(..) into SharedUtils and calling it.
+      SharedUtils.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
     }
   }
 }

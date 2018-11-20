@@ -42,8 +42,6 @@ import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.TaskLocation
-import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, GenericRow, UnsafeRow}
@@ -83,6 +81,20 @@ object Utils {
     }
   }
 
+  def getAllExecutorsMemoryStatus(
+      sc: SparkContext): Map[BlockManagerId, (Long, Long)] =
+    SharedUtils.getAllExecutorsMemoryStatus(sc)
+
+  final def isLoner(sc: SparkContext): Boolean = SharedUtils.isLoner(sc)
+
+  def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer =
+    SharedUtils.createStatsBuffer(statsData, allocator)
+
+  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow =
+    SharedUtils.toUnsafeRow(buffer, numColumns)
+
+  def getHostExecutorId(blockId: BlockManagerId): String = SharedUtils.getHostExecutorId(blockId)
+
   def analysisException(msg: String,
       cause: Option[Throwable] = None): AnalysisException =
     new AnalysisException(msg, None, None, None, cause)
@@ -114,16 +126,6 @@ object Utils {
         s"""Field "$columnName" does not exist in "$relationOutput".""")
     }
   }
-
-  def getAllExecutorsMemoryStatus(
-      sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
-    val memoryStatus = sc.env.blockManager.master.getMemoryStatus
-    // no filtering for local backend
-    if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
-  }
-
-  def getHostExecutorId(blockId: BlockManagerId): String =
-    TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
 
   def classForName(className: String): Class[_] =
     org.apache.spark.util.Utils.classForName(className)
@@ -247,10 +249,10 @@ object Utils {
   private final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
 
   /**
-    * Parse the given time interval value as long milliseconds.
-    *
-    * @see timeIntervalSpec for the allowed string specification
-    */
+   * Parse the given time interval value as long milliseconds.
+   *
+   * @see timeIntervalSpec for the allowed string specification
+   */
   def parseTimeInterval(optV: Any, module: String): Long = {
     optV match {
       case tii: Int => tii.toLong
@@ -389,9 +391,6 @@ object Utils {
     }
   }
 
-  final def isLoner(sc: SparkContext): Boolean =
-    (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
-
   def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
@@ -526,9 +525,9 @@ object Utils {
   }
 
   /**
-    * Get the result schema given an optional explicit schema and base table.
-    * In case both are specified, then check compatibility between the two.
-    */
+   * Get the result schema given an optional explicit schema and base table.
+   * In case both are specified, then check compatibility between the two.
+   */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
       baseTableOpt: Option[String], catalog: SnappyStoreHiveCatalog,
       asSelect: Boolean, table: String,
@@ -587,8 +586,8 @@ object Utils {
   }
 
   /**
-    * Register given driver class with Spark's loader.
-    */
+   * Register given driver class with Spark's loader.
+   */
   def registerDriver(driver: String): Unit = {
     try {
       DriverRegistry.register(driver)
@@ -599,8 +598,8 @@ object Utils {
   }
 
   /**
-    * Register driver for given JDBC URL and return the driver class name.
-    */
+   * Register driver for given JDBC URL and return the driver class name.
+   */
   def registerDriverUrl(url: String): String = {
     val driver = getDriverClassName(url)
     registerDriver(driver)
@@ -773,28 +772,6 @@ object Utils {
   def taskMemoryManager(context: TaskContext): TaskMemoryManager =
     context.taskMemoryManager()
 
-  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
-    if (buffer eq null) return null
-    val row = new UnsafeRow(numColumns)
-    if (buffer.isDirect) {
-      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), buffer.remaining())
-    } else {
-      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
-          buffer.arrayOffset() + buffer.position(), buffer.remaining())
-    }
-    row
-  }
-
-  def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
-    // need to create a copy since underlying Array[Byte] can be re-used
-    val statsLen = statsData.length
-    val statsBuffer = allocator.allocateForStorage(statsLen)
-    statsBuffer.put(statsData, 0, statsLen)
-    statsBuffer.rewind()
-    statsBuffer
-  }
-
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
     if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
@@ -826,7 +803,7 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[Bloc
     extends RDD[T](_sc, Nil) {
 
   override def getPartitions: Array[Partition] = {
-    var numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
+    var numberedPeers = SharedUtils.getAllExecutorsMemoryStatus(sparkContext).
         keySet.toList.zipWithIndex
 
     if (blockManagerIds.nonEmpty) {
@@ -893,7 +870,7 @@ class FixedPartitionRDD[T: ClassTag](_sc: SparkContext,
 class ExecutorLocalPartition(override val index: Int,
     val blockId: BlockManagerId) extends Partition {
 
-  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = SharedUtils.getHostExecutorId(blockId)
 
   override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
@@ -1008,15 +985,15 @@ private[spark] case class NarrowExecutorLocalSplitDep(
 }
 
 /**
-  * Stores information about the narrow dependencies used by a StoreRDD.
-  *
-  * @param narrowDep maps to the dependencies variable in the parent RDD:
-  *                  for each one to one dependency in dependencies,
-  *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
-  *                  the partition for that dependency) at the corresponding
-  *                  index. The size of narrowDeps should always be equal to
-  *                  the number of parents.
-  */
+ * Stores information about the narrow dependencies used by a StoreRDD.
+ *
+ * @param narrowDep maps to the dependencies variable in the parent RDD:
+ *                  for each one to one dependency in dependencies,
+ *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
+ *                  the partition for that dependency) at the corresponding
+ *                  index. The size of narrowDeps should always be equal to
+ *                  the number of parents.
+ */
 private[spark] class CoGroupExecutorLocalPartition(
     idx: Int, val blockId: BlockManagerId,
     val narrowDep: Option[NarrowExecutorLocalSplitDep])
@@ -1024,7 +1001,7 @@ private[spark] class CoGroupExecutorLocalPartition(
 
   override val index: Int = idx
 
-  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = SharedUtils.getHostExecutorId(blockId)
 
   override def toString: String =
     s"CoGroupExecutorLocalPartition($index, $blockId)"

@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.Platform
 
-object UtilsShared {
+object SharedUtils {
 
   def getAllExecutorsMemoryStatus(
       sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {

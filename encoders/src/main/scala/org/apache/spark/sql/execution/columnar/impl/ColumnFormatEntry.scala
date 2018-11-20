@@ -42,7 +42,7 @@ import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 
 import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, memoryManager, releaseExecutionMemory}
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
-import org.apache.spark.sql.collection.UtilsShared
+import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
@@ -131,7 +131,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
             if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
                 columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
               val numColumns = ColumnStatsSchema.numStatsColumns(numColumnsInTable)
-              val unsafeRow = UtilsShared.toUnsafeRow(buffer, numColumns)
+              val unsafeRow = SharedUtils.toUnsafeRow(buffer, numColumns)
               unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
             } else {
               val allocator = ColumnEncoding.getAllocator(buffer)

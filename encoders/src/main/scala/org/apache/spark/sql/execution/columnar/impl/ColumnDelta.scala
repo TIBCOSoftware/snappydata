@@ -29,7 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
 import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
-import org.apache.spark.sql.collection.UtilsShared
+import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
@@ -124,8 +124,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   private def mergeStats(oldBuffer: ByteBuffer, newBuffer: ByteBuffer,
       schema: StructType): ByteBuffer = {
     val numColumnsInStats = ColumnStatsSchema.numStatsColumns(schema.length)
-    val oldStatsRow = UtilsShared.toUnsafeRow(oldBuffer, numColumnsInStats)
-    val newStatsRow = UtilsShared.toUnsafeRow(newBuffer, numColumnsInStats)
+    val oldStatsRow = SharedUtils.toUnsafeRow(oldBuffer, numColumnsInStats)
+    val newStatsRow = SharedUtils.toUnsafeRow(newBuffer, numColumnsInStats)
     val oldCount = oldStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
     val newCount = newStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
 
@@ -198,7 +198,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
     // generate InternalRow to UnsafeRow projection
     val projection = UnsafeProjection.create(statsSchema.map(_.dataType))
     val statsRow = projection.apply(new GenericInternalRow(values))
-    UtilsShared.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
+    SharedUtils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
   }
 
   /** first delta update for a column will be put as is into the region */
