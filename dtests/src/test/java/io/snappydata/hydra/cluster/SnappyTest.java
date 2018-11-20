@@ -16,28 +16,6 @@
  */
 package io.snappydata.hydra.cluster;
 
-import com.gemstone.gemfire.LogWriter;
-import com.gemstone.gemfire.SystemFailure;
-import hydra.*;
-import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
-import io.snappydata.hydra.connectionPool.HikariConnectionPool;
-import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
-import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.spark.SparkContext;
-import org.apache.spark.sql.SnappyContext;
-import sql.SQLBB;
-import sql.SQLHelper;
-import sql.SQLPrms;
-import sql.dmlStatements.DMLStmtIF;
-import sql.sqlutil.DMLStmtsFactory;
-import util.*;
-
 import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -54,6 +32,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.gemstone.gemfire.LogWriter;
+import com.gemstone.gemfire.SystemFailure;
+import hydra.*;
+import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
+import io.snappydata.hydra.connectionPool.HikariConnectionPool;
+import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
+import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang.StringUtils;
+import org.apache.spark.SparkContext;
+import org.apache.spark.sql.SnappyContext;
+import sql.SQLBB;
+import sql.SQLHelper;
+import sql.SQLPrms;
+import sql.dmlStatements.DMLStmtIF;
+import sql.sqlutil.DMLStmtsFactory;
+import util.*;
 
 public class SnappyTest implements Serializable {
 
@@ -1811,8 +1809,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-
-  protected synchronized void recordSnappyProcessIDinNukeRun(String pName) {
+   public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
       File log = new File(".");
@@ -2296,10 +2293,8 @@ public class SnappyTest implements Serializable {
           userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
-
-          command = setCDCSparkAppCmds(userAppArgs, commonArgs, snappyJobScript, userJob,
-              masterHost, masterPort, logFile);
-        } else {
+            command = setCDCSparkAppCmds(userAppArgs,commonArgs,snappyJobScript,userJob,masterHost,masterPort,logFile);
+       } else {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
@@ -2311,11 +2306,11 @@ public class SnappyTest implements Serializable {
         snappyTest.executeProcess(pb, logFile);
         Log.getLogWriter().info("CDC stream is : " + SnappyCDCPrms.getIsCDCStream());
         if (SnappyCDCPrms.getIsCDCStream()) {
-          //wait for 1 min untill the cdc streams starts off.
+          //wait for 2 min until the cdc streams starts off.
           try {
             Thread.sleep(120000);
           } catch (InterruptedException ie) {
-
+             Log.getLogWriter().info("Caught exception in cdc thread.sleep " + ie.getMessage());
           }
           Log.getLogWriter().info("Inside getIsCDCStream : " + SnappyCDCPrms.getIsCDCStream());
           return;
@@ -2346,7 +2341,7 @@ public class SnappyTest implements Serializable {
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", endR);
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 5000000);
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 10 + (startR + 5000000));
-      Log.getLogWriter().info("Finishe HydraTask_InitializeBB ");
+      Log.getLogWriter().info("Finished HydraTask_InitializeBB ");
     } catch (Exception e) {
       Log.getLogWriter().info("HydraTask_InitializeBB exception " + e.getMessage());
     }
