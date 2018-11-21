@@ -70,7 +70,7 @@ object StringMessageProducer {
       DerbyTestUtils.HydraTask_initialize()
     }
     for (i <- 0 until numThreads) {
-      val thrStartRange = i * eventsPerThread
+      val thrStartRange = startRange + (i * eventsPerThread)
       val thread = new Thread(new RecordCreator(topic, eventsPerThread, thrStartRange, producer,
         opType, hasDerby))
       thread.start()
@@ -112,7 +112,7 @@ extends Runnable {
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
-    (startRange to (startRange + eventCount - 1)).foreach(i => {
+    (startRange until (startRange + eventCount)).foreach(i => {
       var id: Int = i
       val title: String = titleArr(random.nextInt(titleArr.length))
       val status: String = statusArr(random.nextInt(statusArr.length))
