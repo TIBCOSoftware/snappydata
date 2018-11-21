@@ -90,6 +90,7 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
       implicit val encoder = RowEncoder(schema)
 
       if(isConflationTest) {
+        pw.println("This is test with conflation enabled.")
         streamingDF.selectExpr("CAST(value AS STRING)")
             .as[String]
             .map(_.split(","))
@@ -108,10 +109,10 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
             .trigger(ProcessingTime("1 seconds"))
             .option("tableName", tableName)
             .option("streamQueryId", "Query" + testId)
-            .option("conflation", true)
+            .option("conflation", "true")
             .option("checkpointLocation", checkpointDirectory).start
       } else {
-        streamingDF.selectExpr("CAST(value AS STRING)")
+        val streamQuery = streamingDF.selectExpr("CAST(value AS STRING)")
             .as[String]
             .map(_.split(","))
             .map(r => {
@@ -130,6 +131,7 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
             .option("tableName", tableName)
             .option("streamQueryId", "Query" + testId)
             .option("checkpointLocation", checkpointDirectory).start
+        // streamQuery.processAllAvailable()
       }
     }
   }
