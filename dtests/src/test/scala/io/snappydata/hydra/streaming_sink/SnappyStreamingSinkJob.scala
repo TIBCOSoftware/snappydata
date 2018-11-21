@@ -36,7 +36,7 @@ class SnappyStreamingSinkJob extends SnappyStreamingJob {
     brokerList = brokerList.replace("--", ":")
     val kafkaTopic: String = jobConfig.getString("kafkaTopic")
     val tableName: String = jobConfig.getString("tableName")
-    val isConflationTest: Boolean = jobConfig.getBoolean("isConflationTest")
+    val isConflationTest: Boolean = jobConfig.getBoolean("isConflation")
 
     val checkpointDirectory: String = (new File("..")).getCanonicalPath +
         File.separator + "checkpointDirectory_" + tid
