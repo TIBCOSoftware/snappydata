@@ -92,5 +92,7 @@ INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest
     io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
     threadGroups = snappyThreads;
 
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-largeDataSet = true;
+
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
 INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/schema.inc;
