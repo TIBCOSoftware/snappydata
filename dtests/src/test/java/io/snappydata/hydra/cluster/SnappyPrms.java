@@ -552,6 +552,11 @@ public class SnappyPrms extends BasePrms {
   public static Long hasDynamicAppProps;
 
   /**
+   * (Boolean) parameter to pass connectionURL in APP_PROPS required for JDBC connection in snappy job.
+   */
+  public static Long useJDBCConnInSnappyJob;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
@@ -997,6 +1002,11 @@ public class SnappyPrms extends BasePrms {
 
   public static boolean hasDynamicAppProps() {
     Long key = hasDynamicAppProps;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean useJDBCConnInSnappyJob() {
+    Long key = useJDBCConnInSnappyJob;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

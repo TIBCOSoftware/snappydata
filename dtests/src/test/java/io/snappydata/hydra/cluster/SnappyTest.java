@@ -2182,9 +2182,16 @@ public class SnappyTest implements Serializable {
         String userJob = (String) jobClassNames.elementAt(i);
         String APP_PROPS = null;
         if (SnappyPrms.getCommaSepAPPProps() == null) {
-          APP_PROPS = "logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+          String primaryLocatorHost = getPrimaryLocatorHost();
+          String primaryLocatorPort = getPrimaryLocatorPort();
+          APP_PROPS = "logFileName=" + logFileName;
         } else {
-          APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+          APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName;
+        }
+        if(SnappyPrms.useJDBCConnInSnappyJob()){
+          String primaryLocatorHost = getPrimaryLocatorHost();
+          String primaryLocatorPort = getPrimaryLocatorPort();
+          APP_PROPS = "\"" + APP_PROPS + ",primaryLocatorHost=" + primaryLocatorHost + ",primaryLocatorPort=" + primaryLocatorPort + "\"";
         }
         if (SnappyPrms.hasDynamicAppProps()) {
           String dmlProps = dynamicAppProps.get(getMyTid());

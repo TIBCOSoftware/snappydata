@@ -18,11 +18,13 @@ import scala.util.{Failure, Success, Try}
   */
 object ConcurrentPutInto extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    val primaryLocatorHost = jobConfig.getString("primaryLocatorHost")
+    val primaryLocatorPort = jobConfig.getString("primaryLocatorPort")
     val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true));
     Try {
   val globalId = new AtomicInteger()
   val doPut = () => Future {
-    val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + primaryLocatorHost + ":" + primaryLocatorPort)
     val stmt = conn.createStatement()
     val myId = globalId.getAndIncrement()
     val blockSize = 100000L
