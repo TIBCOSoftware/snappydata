@@ -635,6 +635,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val session = new SnappySession(SparkContext.getActive.get)
     session.sessionCatalog.refreshPolicies(ldapGroup)
   }
+
+  override def jsonSchema(schema: Any): String = {
+    schema.asInstanceOf[StructType].json
+  }
 }
 
 trait StoreCallback extends Serializable {

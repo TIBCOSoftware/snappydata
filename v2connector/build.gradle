@@ -43,6 +43,7 @@ dependencies {
   testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:2.3.2")
 
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
+  compile project(":snappy-store:snappydata-util")
 
   testCompile project(':dunit')
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"

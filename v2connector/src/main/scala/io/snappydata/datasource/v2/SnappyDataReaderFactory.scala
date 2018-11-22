@@ -17,12 +17,54 @@
 
 package io.snappydata.datasource.v2
 
-import java.io.IOException
+import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
 
-class SnappyDataReaderFactory extends DataReaderFactory[Row] with DataReader[Row] {
+/**
+ * Creates {@link SnappyDataReader} that actually fetches data on executors
+ * Also returns the preferred locations for the bucket id for which
+ * {@link SnappyDataReader} is responsible for
+ * @param bucketId          bucketId for which this factory is created
+ * @param tableMetaData     metadata of the table being scanned
+ */
+class SnappyDataReaderFactory(val bucketId: Int, tableMetaData: SnappyTableMetaData)
+    extends DataReaderFactory[Row] {
+
+  /**
+   * The preferred locations where the data reader returned by this reader factory can run faster,
+   * but Spark does not guarantee to run the data reader on these locations.
+   * The implementations should make sure that it can be run on any location.
+   * The location is a string representing the host name.
+   *
+   * Note that if a host name cannot be recognized by Spark, it will be ignored as it was not in
+   * the returned locations. By default this method returns empty string array, which means this
+   * task has no location preference.
+   *
+   * If this method fails (by throwing an exception), the action would fail and no Spark job was
+   * submitted.
+   */
+  override def preferredLocations(): Array[String] = {
+    if (tableMetaData.bucketToServerMapping.isEmpty) return new Array[String](0)
+
+    // from bucketToServerMapping get the collection of hosts where the bucket exists
+    // (each element in preferredServers ArrayBuffer is in the form of a tuple (host, jdbcURL))
+    val preferredServers: ArrayBuffer[(String, String)] = tableMetaData.
+        bucketToServerMapping.get(bucketId)
+    if (preferredServers.isEmpty) return new Array[String](0)
+
+    val locations = Array.ofDim[String](preferredServers.length)
+    var index: Int = 0
+    preferredServers.foreach(
+      h => {
+        locations(index) = h._1
+        index = index + 1
+      }
+    )
+    locations
+  }
+
   /**
    * Returns a data reader to do the actual reading work.
    *
@@ -30,43 +72,7 @@ class SnappyDataReaderFactory extends DataReaderFactory[Row] with DataReader[Row
    * get retried until hitting the maximum retry times.
    */
   override def createDataReader(): DataReader[Row] = {
-
-    this
+    new SnappyDataReader(bucketId, tableMetaData)
   }
 
-  /**
-   * Proceed to next record, returns false if there is no more records.
-   *
-   * If this method fails (by throwing an exception), the corresponding Spark task would fail and
-   * get retried until hitting the maximum retry times.
-   *
-   * @throws IOException if failure happens during disk/network IO like reading files.
-   */
-  override def next(): Boolean = {
-    // For the first cut we are assuming that we will get entire data
-    // in the first call of this method
-    // We will have to think about breaking into chunks if the data size
-    // too huge to handle in one fetch
-    // Check the current smart connector code, to see how row buffers and column
-    // batches are brought and how filters and column projections are pushed.
-    // We can exactly mirror the smart connector implementation
-    // We decode and form a row. We will use our decoder classes
-    // which are to be moved to a new package. This package needs to be present in
-    // the classpath
-    false
-  }
-
-  /**
-   * Return the current record. This method should return same value until `next` is called.
-   *
-   * If this method fails (by throwing an exception), the corresponding Spark task would fail and
-   * get retried until hitting the maximum retry times.
-   */
-  override def get(): Row = {
-    // Return the row decoded in next()
-    // fake return value just to be able compile
-    Row.fromSeq(Seq(1))
-  }
-
-  override def close(): Unit = {}
 }

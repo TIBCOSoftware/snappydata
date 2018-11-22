@@ -17,14 +17,19 @@
 
 package io.snappydata.datasource.v2
 
+import java.util.function.Supplier
+
+import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.sources.v2.reader.DataSourceReader
-import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, ReadSupport}
+import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, ReadSupport, SessionConfigSupport}
 
 /**
  * DataSource V2 implementation for SnappyData
  */
 class SnappyDataSource extends DataSourceV2 with
-    ReadSupport {
+    ReadSupport with
+    DataSourceRegister with
+    SessionConfigSupport {
 
 
   /**
@@ -37,6 +42,31 @@ class SnappyDataSource extends DataSourceV2 with
    *                case-insensitive string-to-string map.
    */
   override def createReader(options: DataSourceOptions): DataSourceReader = {
-    new SnappyDataReader()
+    validateOptions(options)
+    new SnappyDataSourceReader(options)
+  }
+
+  override def shortName(): String = {
+    V2Constants.DATASOURCE_SHORT_NAME
+  }
+
+  override def keyPrefix(): String = {
+    V2Constants.KEY_PREFIX
+  }
+
+  private def validateOptions(options: DataSourceOptions): Unit = {
+    options.get(V2Constants.SnappyConnection).
+        orElseThrow(new Supplier[Throwable] {
+          override def get(): Throwable =
+            new IllegalArgumentException(
+              s"Required configuration ${V2Constants.SnappyConnection} not specified")
+        })
+
+    options.get(V2Constants.TABLE_NAME).
+        orElseThrow(new Supplier[Throwable] {
+          override def get(): Throwable =
+            new IllegalArgumentException(
+              s"Required configuration ${V2Constants.TABLE_NAME} not specified")
+        })
   }
 }

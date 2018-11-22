@@ -14,94 +14,95 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
 package io.snappydata.datasource.v2
 
-import java.util.{List => JList}
+import java.io.IOException
+import java.sql.{Connection, DriverManager}
+import java.util.Collections
+
+import scala.collection.mutable.ArrayBuffer
+
+import io.snappydata.thrift.StatementAttrs
+import io.snappydata.thrift.internal.ClientStatement
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.sources.v2.reader.{DataReaderFactory, DataSourceReader, SupportsPushDownFilters, SupportsPushDownRequiredColumns}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.sources.v2.reader.DataReader
 
-// created on driver
-class SnappyDataReader extends DataSourceReader with
-    SupportsPushDownRequiredColumns with
-    SupportsPushDownFilters {
-  /**
-   * Returns the actual schema of this data source reader, which may be different from the physical
-   * schema of the underlying storage, as column pruning or other optimizations may happen.
-   *
-   * If this method fails (by throwing an exception), the action would fail and no Spark job was
-   * submitted.
-   */
-  override def readSchema(): StructType = {
-    // return the schema
-    null
+/**
+ *  Actually fetches the data on executors
+ *
+ * @param bucketId          bucketId for which this factory is created
+ * @param tableMetaData     metadata of the table being scanned
+ */
+class SnappyDataReader(val bucketId: Int, tableMetaData: SnappyTableMetaData)
+    extends DataReader[Row] {
+
+  private lazy val conn = jdbcConnection()
+  setLocalBucketScan()
+
+  private def setLocalBucketScan(): Unit = {
+    val statement = conn.createStatement()
+
+    val thriftConn = statement match {
+      case clientStmt: ClientStatement =>
+        val clientConn = clientStmt.getConnection
+        if (tableMetaData.bucketCount > 0) { // partitioned table
+          clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
+            new StatementAttrs(), Collections.singleton(Int.box(bucketId)),
+            tableMetaData.tableName, true))
+        }
+        clientConn
+      case _ => null
+    }
+
+    // TODO: handle case of DRDA driver that is when thriftConn = null
+  }
+
+  private def jdbcConnection(): Connection = {
+    // from bucketToServerMapping get the collection of hosts where the bucket exists
+    // (each element in hostsAndURLs ArrayBuffer is in the form of a tuple (host, jdbcURL))
+    val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
+        bucketToServerMapping.get(bucketId)
+    val connectionURL = hostsAndURLs(0)._2
+    DriverManager.getConnection(connectionURL)
   }
 
   /**
-   * Returns a list of reader factories. Each factory is responsible for creating a data reader to
-   * output data for one RDD partition. That means the number of factories returned here is same as
-   * the number of RDD partitions this scan outputs.
+   * Proceed to next record, returns false if there is no more records.
    *
-   * Note that, this may not be a full scan if the data source reader mixes in other optimization
-   * interfaces like column pruning, filter push-down, etc. These optimizations are applied before
-   * Spark issues the scan request.
+   * If this method fails (by throwing an exception), the corresponding Spark task would fail and
+   * get retried until hitting the maximum retry times.
    *
-   * If this method fails (by throwing an exception), the action would fail and no Spark job was
-   * submitted.
+   * @throws IOException if failure happens during disk/network IO like reading files.
    */
-  override def createDataReaderFactories(): JList[DataReaderFactory[Row]] = {
-    // This will be called in the DataSourceV2ScanExec for creating
-    // org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanExec.readerFactories.
-    // Each factory object will correspond to one bucket/partition
-    // This will be called on the driver
-    // We will know the the name of the table from datasource options
-    // We will fire a system procedure to get the bucket to host mapping
-    // For each partition, we will create a factory with partition id and bucket id
-    // PERF: To start with, with we will consider one partition per bucket, later we can
-    // think batching multiple buckets for one partitions based on no of cores
-    // Each factory object will be constructed with table name and bucket ids
-    // call readSchema() and pushFilters() pass to the factory object so that
-    // Will return all the filters as unhandled filters initially using pushedFilters()
-
-    null
+  override def next(): Boolean = {
+    // For the first cut we are assuming that we will get entire data
+    // in the first call of this method
+    // We will have to think about breaking into chunks if the data size
+    // too huge to handle in one fetch
+    // Check the current smart connector code, to see how row buffers and column
+    // batches are brought and how filters and column projections are pushed.
+    // We can exactly mirror the smart connector implementation
+    // We decode and form a row. We will use our decoder classes
+    // which are to be moved to a new package. This package needs to be present in
+    // the classpath
+    false
   }
 
   /**
-   * Applies column pruning w.r.t. the given requiredSchema.
+   * Return the current record. This method should return same value until `next` is called.
    *
-   * Implementation should try its best to prune the unnecessary columns or nested fields, but it's
-   * also OK to do the pruning partially, e.g., a data source may not be able to prune nested
-   * fields, and only prune top-level columns.
-   *
-   * Note that, data source readers should update {@link DataSourceReader#readSchema()} after
-   * applying column pruning.
+   * If this method fails (by throwing an exception), the corresponding Spark task would fail and
+   * get retried until hitting the maximum retry times.
    */
-  override def pruneColumns(requiredSchema: StructType): Unit = {
-    // called by the engine to set projected columns so that our implementation can use those.
-    // Implementation should return these in readSchema()
+  override def get(): Row = {
+    // Return the row decoded in next()
+    // fake return value just to be able compile
+    Row.fromSeq(Seq(1))
   }
 
-  /**
-   * Pushes down filters, and returns filters that need to be evaluated after scanning.
-   */
-  override def pushFilters(filters: Array[Filter]): Array[Filter] = {
-    // This method is passed all filters and is supposed to return unhandled filters
-    // We will return all the filters as unhandled filters initially using pushFilters()
-    null
+  override def close(): Unit = {
+    if (conn != null) conn.close()
   }
-
-  /**
-   * Returns the filters that are pushed in {@link #pushFilters(Filter[])}.
-   * It's possible that there is no filters in the query and {@link #pushFilters(Filter[])}
-   * is never called, empty array should be returned for this case.
-   */
-  override def pushedFilters(): Array[Filter] = {
-    // looks like not much of use
-    null
-  }
-
 
 }
