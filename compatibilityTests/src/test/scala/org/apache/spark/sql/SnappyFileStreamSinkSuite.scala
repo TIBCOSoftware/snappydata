@@ -21,8 +21,4 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 
 class SnappyFileStreamSinkSuite extends FileStreamSinkSuite
     with SharedSnappySessionContext with SnappySparkTestUtil{
-
-  override def ignored: Seq[String] = Seq(
-    "parquet"
-  )
 }

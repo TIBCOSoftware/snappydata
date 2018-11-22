@@ -14,23 +14,12 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql
+package org.apache.spark.sql.execution.streaming
 
-import org.apache.spark.sql.streaming.{FileStreamSourceStressTestSuite, FileStreamSourceSuite}
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
+class SnappyStreamMetadataSuite extends StreamMetadataSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil{
 
-  override def ignored: Seq[String] = Seq(
-    "SPARK-17372 - write file names to WAL as Array[String]",
-    "FileStreamSource offset - read Spark 2.1.0 offset json format",
-    "FileStreamSource offset - read Spark 2.1.0 offset long format",
-    "FileStreamSourceLog - read Spark 2.1.0 log format"
-  )
-}
-
-class SnappyFileStreamSourceStressTestSuite extends FileStreamSourceStressTestSuite
-with SharedSnappySessionContext with SnappySparkTestUtil{
-
+  override def ignored: Seq[String] = Seq("read Spark 2.1.0 format")
 }

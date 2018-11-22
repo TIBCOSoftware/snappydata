@@ -14,23 +14,17 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql
+package org.apache.spark.sql.kafka010
 
-import org.apache.spark.sql.streaming.{FileStreamSourceStressTestSuite, FileStreamSourceSuite}
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
+class SnappyKafkaSinkSuite extends KafkaSinkSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "SPARK-17372 - write file names to WAL as Array[String]",
-    "FileStreamSource offset - read Spark 2.1.0 offset json format",
-    "FileStreamSource offset - read Spark 2.1.0 offset long format",
-    "FileStreamSourceLog - read Spark 2.1.0 log format"
-  )
-}
-
-class SnappyFileStreamSourceStressTestSuite extends FileStreamSourceStressTestSuite
-with SharedSnappySessionContext with SnappySparkTestUtil{
-
+    "streaming - write to kafka with topic field",
+    "streaming - write aggregation w/o topic field, with topic option",
+    "streaming - aggregation with topic field and topic option",
+    "streaming - write data with bad schema",
+    "streaming - write data with valid schema but wrong types")
 }
