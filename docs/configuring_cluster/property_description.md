@@ -1,6 +1,6 @@
 # List of Properties
 
-Below is a list of properties that can be set to configure the cluster. These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
+The following list of commonly used properties can be set to configure the cluster.  These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
 
 |Property|Description|Components</br>|
 |-|-|-|
@@ -14,6 +14,8 @@ Below is a list of properties that can be set to configure the cluster. These pr
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the `eviction-heap-percentage` to 81% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |Server</br>Lead</br>Locator|
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|Server</br>Lead</br>Locator|
 |-J-Dgemfirexd.hostname-for-clients<a id="host-name"></a>|Set the IP address or host name that this server/locator sends to JDBC/ODBC/thrift clients to use for connection. The default value causes the client-bind-address to be given to clients. This value can be different from client-bind-address for cases where locators, servers are behind a NAT firewall (AWS for example) where client-bind-address needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases this is handled by hostname translation itself, i.e. hostname used in client-bind-address resolves to internal IP address from inside but to public IP address from outside, but for other cases this property will be required.|Server|
+|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|
+|-J-Dsnappydata.RESTRICT_TABLE_CREATION|Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. Default is false. |Server</br>Lead</br>Locator|
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|Server</br>Lead</br>Locator|
 |-log-file|Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)|Server</br>Lead</br>Locator|
 |-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default)|Server</br>Lead|
@@ -21,12 +23,15 @@ Below is a list of properties that can be set to configure the cluster. These pr
 |-peer-discovery-address|Use this as value for the port in the "host:port" value of "-locators" property |Locator|
 |-peer-discovery-port|Port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.|Locator|
 |-rebalance<a id="rebalance"></a>|Triggers a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option.|Server|
+|-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. Default is 2000.|Lead|
 |-snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store (in bytes or k/m/g suffixes for the unit). The default value is 24M.|Lead|
-|-spark.driver.maxResultSize|Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead.|Lead|
+|-spark.driver.maxResultSize|Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead. The default max size is 1g. |Lead|
 |-spark.executor.cores|The number of cores to use on each server. |Lead|
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|Lead|
 |-spark.network.timeout|The default timeout for all network interactions while running queries.|Lead|
 |-thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: Path to key store file </br>`keystore-type`: The type of key-store (default "JKS") </br>`keystore-password`: Password for the key store file</br>`keymanager-type`: The type of key manager factory </br>`truststore`: Path to trust store file</br>`truststore-type`: The type of trust-store (default "JKS")</br>`truststore-password`: Password for the trust store file </br>`trustmanager-type`: The type of trust manager factory </br> |Server|
+
+Other than the above properties, you can also refer the [Configuration Parameters section](/reference/configuration_parameters/config_parameters.md#property-names) for properties that are used in special cases.
 
 <a id="sql-properties"></a>
 ## SQL Properties
@@ -35,14 +40,14 @@ These properties can be set using a `SET SQL` command or using the configuration
 
 For example: Set in the snappy SQL shell
 
-```no-highlight
+```pre
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.column.batchSize=100k;
 ```
 This sets the property for the snappy SQL shell's session.
 
 Set in the *conf/leads* file
-```no-highlight
+```pre
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
 ```
@@ -65,12 +70,12 @@ The command sets the property for the current SnappySession while setting it in 
 
 For example: Set in the  Snappy SQL shell (snappy-sql)
 
-```no-highlight
+```pre
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.flushReservoirThreshold=20000;
 ```
 Set in the *conf/leads* file
-```no-highlight
+```pre
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k -spark.sql.aqp.error=0.5
 ```

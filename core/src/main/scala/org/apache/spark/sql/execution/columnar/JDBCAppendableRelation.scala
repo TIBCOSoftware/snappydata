@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -59,6 +59,7 @@ abstract case class JDBCAppendableRelation(
     with DestroyRelation
     with IndexableRelation
     with Logging
+    with NativeTableRowLevelSecurityRelation
     with Serializable {
 
   self =>
@@ -67,14 +68,16 @@ abstract case class JDBCAppendableRelation(
 
   var tableExists: Boolean = _
 
+  var tableCreated : Boolean = _
+
   protected final val connProperties: ConnectionProperties =
     externalStore.connProperties
 
-  protected final val connFactory: () => Connection = JdbcUtils
+  override protected final val connFactory: () => Connection = JdbcUtils
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 
-  val resolvedName: String = table
+  override def resolvedName: String = table
 
   protected var delayRollover = false
 
@@ -112,7 +115,7 @@ abstract case class JDBCAppendableRelation(
   }
 
   def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Expression], prunePartitions: => Int): (RDD[Any], Array[Int]) = {
+      filters: Array[Expression], prunePartitions: () => Int): (RDD[Any], Array[Int]) = {
 
     val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
     (0 until schema.length).foreach(i =>

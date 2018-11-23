@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,9 +20,8 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.Constant
 
@@ -37,8 +36,9 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
 import org.apache.spark.sql.hive.{ConnectorCatalog, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -79,7 +79,6 @@ abstract class BaseColumnFormatRelation(
     with PartitionedDataSourceScan
     with RowInsertableRelation
     with MutableRelation {
-
 
   override def toString: String = s"${getClass.getSimpleName}[$table]"
 
@@ -129,7 +128,7 @@ abstract class BaseColumnFormatRelation(
       Some(() => sqlContext.sparkSession.asInstanceOf[SnappySession]))
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
-      filters: Array[Expression], _ignore: => Int): (RDD[Any], Array[Int]) = {
+      filters: Array[Expression], _ignore: () => Int): (RDD[Any], Array[Int]) = {
 
     // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
     // RDDs needn't have to care for orderless hashing scheme at invocation point.
@@ -146,13 +145,12 @@ abstract class BaseColumnFormatRelation(
       }
     }.filter(_.nonEmpty).map(_.get).unzip
 
-    val pcFields = StructType(fields).toAttributes
-    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
-    val bucketIdGeneration = UnsafeProjection.create(
-      HashPartitioning(pcFields, numBuckets)
-          .partitionIdExpression :: Nil, pcFields)
-
-    def prunePartitions: Int = {
+    def prunePartitions(): Int = {
+      val pcFields = StructType(fields).toAttributes
+      val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
+      val bucketIdGeneration = UnsafeProjection.create(
+        HashPartitioning(pcFields, numBuckets)
+            .partitionIdExpression :: Nil, pcFields)
       if (pruningExpressions.nonEmpty &&
           // verify all the partition columns are provided as filters
           pruningExpressions.length == partitioningColumns.length) {
@@ -177,7 +175,7 @@ abstract class BaseColumnFormatRelation(
     // Remove the update/delete key columns from RDD requiredColumns.
     // These will be handled by the ColumnTableScan directly.
     val columns = requiredColumns.filter(!_.startsWith(ColumnDelta.mutableKeyNamePrefix))
-    val (rdd, projection) = scanTable(table, columns, filters, -1)
+    val (rdd, projection) = scanTable(table, columns, filters, () => -1)
     val partitionEvaluator = rdd match {
       case c: ColumnarStorePartitionedRDD => c.getPartitionEvaluator
       case s => s.asInstanceOf[SmartConnectorColumnRDD].getPartitionEvaluator
@@ -200,7 +198,7 @@ abstract class BaseColumnFormatRelation(
   def buildUnsafeScanForSampledRelation(requiredColumns: Array[String],
       filters: Array[Expression]): (RDD[Any], RDD[Any],
       Seq[RDD[InternalRow]]) = {
-    val (rdd, projection) = scanTable(table, requiredColumns, filters, -1)
+    val (rdd, projection) = scanTable(table, requiredColumns, filters, () => -1)
     val rowRDD = buildRowBufferRDD(() => rdd.partitions, requiredColumns, filters,
       useResultSet = true, projection)
     (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
@@ -212,6 +210,7 @@ abstract class BaseColumnFormatRelation(
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     connectionType match {
       case ConnectionType.Embedded =>
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
         new RowFormatScanRDD(
           session,
           resolvedName,
@@ -223,7 +222,7 @@ abstract class BaseColumnFormatRelation(
           Array.empty[Expression],
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          commitTx = false, delayRollover, projection)
+          commitTx = false, delayRollover, projection, Some(region))
       case _ =>
         new SmartConnectorRowRDD(
           session,
@@ -234,7 +233,7 @@ abstract class BaseColumnFormatRelation(
           filters,
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          relInfo.embdClusterRelDestroyVersion,
+          relInfo.embedClusterRelDestroyVersion,
           _commitTx = false, delayRollover)
     }
   }
@@ -260,6 +259,16 @@ abstract class BaseColumnFormatRelation(
     // always use case-insensitive analysis for partitioning columns
     // since table creation can use case-insensitive in creation
     partitioningColumns.map(Utils.toUpperCase) ++ ColumnDelta.mutableKeyNames
+  }
+
+  /** Get key columns of the column table */
+  override def getPrimaryKeyColumns: Seq[String] = {
+    val keyColsOptions = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+    if (keyColsOptions.isDefined) {
+      keyColsOptions.get.split(",").map(_.trim)
+    } else {
+      Seq.empty[String]
+    }
   }
 
   /**
@@ -301,7 +310,7 @@ abstract class BaseColumnFormatRelation(
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert directly into column store for large number of rows
     if (numRows > (batchSize * numBuckets)) {
-      JdbcExtendedUtils.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+      ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
         resolvedName, putInto = false)
     } else {
       // insert into the row buffer
@@ -369,10 +378,10 @@ abstract class BaseColumnFormatRelation(
         mode match {
           case SaveMode.Ignore =>
 //            dialect match {
-//              case GemFireXDDialect =>
-//                GemFireXDDialect.initializeTable(table,
+//              case SnappyStoreDialect =>
+//                SnappyStoreDialect.initializeTable(table,
 //                  sqlContext.conf.caseSensitiveAnalysis, conn)
-//                GemFireXDDialect.initializeTable(externalColumnTableName,
+//                SnappyStoreDialect.initializeTable(externalColumnTableName,
 //                  sqlContext.conf.caseSensitiveAnalysis, conn)
 //              case _ => // Do nothing
 //            }
@@ -446,6 +455,9 @@ abstract class BaseColumnFormatRelation(
             pass.asInstanceOf[String])
         }
         JdbcExtendedUtils.executeUpdate(sql, conn)
+        // setting table created to true here as cleanup
+        // in case of failed creation does a exists check.
+        tableCreated = true
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
             sqlContext.conf.caseSensitiveAnalysis, conn)
@@ -474,16 +486,24 @@ abstract class BaseColumnFormatRelation(
   /**
    * Execute a DML SQL and return the number of rows affected.
    */
-  override def executeUpdate(sql: String): Int = {
+  override def executeUpdate(sql: String, defaultSchema: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       connProperties.poolProps, connProperties.connProps,
       connProperties.hikariCP)
+    var currentSchema: String = null
     try {
+      if (defaultSchema ne null) {
+        currentSchema = connection.getSchema
+        if (defaultSchema != currentSchema) {
+          connection.setSchema(defaultSchema)
+        }
+      }
       val stmt = connection.prepareStatement(sql)
       val result = stmt.executeUpdate()
       stmt.close()
       result
     } finally {
+      if (currentSchema ne null) connection.setSchema(currentSchema)
       connection.commit()
       connection.close()
     }
@@ -491,16 +511,9 @@ abstract class BaseColumnFormatRelation(
 
   override def flushRowBuffer(): Unit = {
     val sc = sqlContext.sparkContext
-    SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
-        // force flush all the buckets into the column store
-        Utils.mapExecutors[Unit](sc, () => {
-          GfxdSystemProcedures.flushLocalBuckets(resolvedName, true)
-          Iterator.empty
-        })
-        GfxdSystemProcedures.flushLocalBuckets(resolvedName, true)
-      case _ =>
-    }
+    // force flush all the buckets into the column store
+    RefreshMetadata.executeOnAll(sc, RefreshMetadata.FLUSH_ROW_BUFFER,
+      resolvedName, executeInConnector = false)
   }
 }
 
@@ -882,7 +895,7 @@ final class DefaultSource extends SchemaRelationProvider
       success = true
       relation
     } finally {
-      if (!success && !relation.tableExists) {
+      if (!success && relation.tableCreated) {
         // destroy the relation
         relation.destroy(ifExists = true)
       }

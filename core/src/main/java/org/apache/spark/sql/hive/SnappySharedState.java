@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.SparkException;
 import org.apache.spark.sql.ClusterMode;
 import org.apache.spark.sql.SnappyContext;
+import org.apache.spark.sql.SnappyEmbeddedMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
@@ -30,7 +31,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.ui.SQLListener;
 import org.apache.spark.sql.execution.ui.SQLTab;
 import org.apache.spark.sql.execution.ui.SnappySQLListener;
-import org.apache.spark.sql.hive.client.HiveClient;
+import org.apache.spark.sql.hive.client.HiveClientImpl;
 import org.apache.spark.sql.internal.SharedState;
 import org.apache.spark.sql.internal.StaticSQLConf;
 import org.apache.spark.ui.SparkUI;
@@ -43,7 +44,7 @@ public final class SnappySharedState extends SharedState {
   /**
    * A Hive client used to interact with the meta-store.
    */
-  private final HiveClient client;
+  private final HiveClientImpl client;
 
   /**
    * The ExternalCatalog implementation used for SnappyData (either
@@ -67,20 +68,20 @@ public final class SnappySharedState extends SharedState {
   /**
    * Create Snappy's SQL Listener instead of SQLListener
    */
-  private static SQLListener createListenerAndUI(SparkContext sc) {
+  private static void createListenerAndUI(SparkContext sc) {
     SQLListener initListener = ExternalStoreUtils.getSQLListener().get();
     if (initListener == null) {
       SnappySQLListener listener = new SnappySQLListener(sc.conf());
       if (ExternalStoreUtils.getSQLListener().compareAndSet(null, listener)) {
         sc.addSparkListener(listener);
         scala.Option<SparkUI> ui = sc.ui();
-        if (ui.isDefined()) {
+        // embedded mode attaches SQLTab later via ToolsCallbackImpl that also
+        // takes care of injecting any authentication module if configured
+        if (ui.isDefined() &&
+            !(SnappyContext.getClusterMode(sc) instanceof SnappyEmbeddedMode)) {
           new SQLTab(listener, ui.get());
         }
       }
-      return ExternalStoreUtils.getSQLListener().get();
-    } else {
-      return initListener;
     }
   }
 
@@ -94,15 +95,15 @@ public final class SnappySharedState extends SharedState {
     try {
       // avoid inheritance of activeSession
       SparkSession.clearActiveSession();
-      this.client = HiveClientUtil$.MODULE$.newClient(sparkContext());
+      this.client = (HiveClientImpl)HiveClientUtil$.MODULE$.newClient(sparkContext());
 
       ClusterMode mode = SnappyContext.getClusterMode(sparkContext());
       if (mode instanceof ThinClientConnectorMode) {
         this.snappyCatalog = new SnappyConnectorExternalCatalog(this.client,
-            sparkContext().hadoopConfiguration());
+            this.client.conf());
       } else {
         this.snappyCatalog = new SnappyExternalCatalog(this.client,
-            sparkContext().hadoopConfiguration());
+            this.client.conf());
       }
 
       // Initialize global temporary view manager.
@@ -147,7 +148,7 @@ public final class SnappySharedState extends SharedState {
     return sharedState;
   }
 
-  public HiveClient metadataHive() {
+  public HiveClientImpl metadataHive() {
     return this.client;
   }
 

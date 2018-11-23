@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,10 +21,10 @@ import scala.collection.mutable
 
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{Assertions, BeforeAndAfter}
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
@@ -325,4 +325,54 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     logInfo("Successful")
   }
 
+  test("Spark caching using SQL") {
+    val snappy = this.snc.snappySession
+    ColumnTableBatchInsertTest.testSparkCachingUsingSQL(sc, snappy.sql, snappy.catalog.isCached,
+      df => snappy.sharedState.cacheManager.lookupCachedData(df).isDefined)
+  }
+}
+
+object ColumnTableBatchInsertTest extends Assertions {
+
+  def testSparkCachingUsingSQL(sc: SparkContext, executeSQL: String => Dataset[Row],
+      isTableCached: String => Boolean, isCached: Dataset[Row] => Boolean): Unit = {
+    executeSQL("cache table cachedTable1 as select id, rand() from range(1000000)")
+    // check that table has been cached and materialized
+    assert(isTableCached("cachedTable1"))
+    var rddInfos = sc.ui.get.storageListener.rddInfoList
+    assert(rddInfos.length === 1)
+    assert(rddInfos.head.name.contains("Range (0, 1000000"))
+
+    assert(executeSQL("select count(*) from cachedTable1").collect()(0).getLong(0) === 1000000)
+    rddInfos = sc.ui.get.storageListener.rddInfoList
+    assert(rddInfos.length === 1)
+    assert(rddInfos.head.name.contains("Range (0, 1000000"))
+
+    executeSQL("uncache table cachedTable1")
+    assert(!isTableCached("cachedTable1"))
+    rddInfos = sc.ui.get.storageListener.rddInfoList
+    assert(rddInfos.length === 0)
+
+    // temporary table should still exist
+    assert(executeSQL("select count(*) from cachedTable1").collect()(0).getLong(0) === 1000000)
+
+    executeSQL("cache lazy table cachedTable2 as select id, rand() from range(500000)")
+    assert(isTableCached("cachedTable2"))
+    // check that cache has not been materialized yet
+    rddInfos = sc.ui.get.storageListener.rddInfoList
+    assert(rddInfos.length === 0)
+    assert(executeSQL("select count(*) from cachedTable2").collect()(0).getLong(0) === 500000)
+    rddInfos = sc.ui.get.storageListener.rddInfoList
+    assert(rddInfos.length === 1)
+    assert(rddInfos.head.name.contains("Range (0, 500000"))
+
+    // drop table directly without explicit uncache should also do it
+    val table = executeSQL("select * from cachedTable2")
+    executeSQL("drop table cachedTable2")
+    assert(!isCached(table))
+    rddInfos = sc.ui.get.storageListener.rddInfoList
+    assert(rddInfos.length === 0)
+
+    executeSQL("drop table cachedTable1")
+  }
 }

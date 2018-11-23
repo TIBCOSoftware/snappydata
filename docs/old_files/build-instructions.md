@@ -105,8 +105,11 @@ Running individual tests within some suite works using the _--tests_ argument.
 
 Intellij is the IDE commonly used by the snappydata developers. Those who really prefer Eclipse can try the scala-IDE and gradle support, but has been seen to not work as well (e.g. gradle support is not integrated with scala plugin etc).  To import into Intellij:
 
-- Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plugin. Older versions have trouble dealing with scala code particularly some of the code in _spark_.
-- Select import project, then point to the snappydata directory. Use external Gradle import. When using JDK 7, add _-XX:MaxPermSize=350m_ to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore _"Gradle location is unknown warning"_. Ensure that a JDK 7/8 installation has been selected. Ignore and dismiss the _"Unindexed remote maven repositories found"_ warning message, if seen.
+- Update Intellij to the latest version, including the latest Scala plugin. Older versions have trouble dealing with scala code particularly some of the code in _spark_.
+- Increase the Xmx to 2g or more (4g if possible) in the IDEA global vmoptions (in product bin directory, files named idea64.vmoptions for 64-bit and idea.vmoptions for 32-bit).
+- If using Java 8 release 144 or later, also add -Djdk.util.zip.ensureTrailingSlash=false to the global vmoptions file to fix an IDEA issue (https://intellij-support.jetbrains.com/hc/en-us/community/posts/115000754864--SOLVED-No-default-file-and-code-templates). Not required for the latest IDEA releases.
+- Select import project, then point to the snappydata directory. Use external Gradle import. Unselect "Create separate module per source set" option.
+- When using JDK 7, add _-XX:MaxPermSize=350m_ to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore _"Gradle location is unknown warning"_. Ensure that a JDK 7/8 installation has been selected. Ignore and dismiss the _"Unindexed remote maven repositories found"_ warning message, if seen.
 - Once import finishes, go to _File->Settings->Editor->Code Style->Scala_. Set the scheme as _Project_. Check that the same has been set in Java Code Style too. Then OK to close it. Next copy _codeStyleSettings.xml_ in snappydata top-level directory to .idea directory created by Intellij. Check that settings are now applied in _File->Settings->Editor->Code Style->Java_ which should show Indent as 2 and continuation indent as 4 (same for Scala).
 - If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.
 - Generate avro and GemFireXD required sources by expanding: _snappydata_2.11->Tasks->other_. Right click on _generateSources_ and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if _./gradlew clean_ has been run, or you have made changes to _javacc/avro/messages.xml_ source files. *If you get unexpected _"Database not found"_ or _NullPointerException_ errors in GemFireXD layer, then first thing to try is to run the _generateSources_ target again.*
@@ -114,6 +117,14 @@ Intellij is the IDE commonly used by the snappydata developers. Those who really
 - Test the full build.
 - For JDK 7: _Open Run->Edit Configurations_. Expand Defaults, and select Application. Add _-XX:MaxPermSize=350m_ in VM options. Similarly add it to VM parameters for ScalaTest and JUnit. Most of unit tests will have trouble without this option.
 - For JUnit configuration also append _/build-artifacts_ to the working directory i.e. the directory should be _\$MODULE_DIR\$/build-artifacts_. Likewise change working directory for ScalaTest to be inside _build-artifacts_ otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.
+- If you see below error during building the project, open module settings, select the module snappy-cluster_2.11, go to its Dependencies tab and ensure that snappy-spark-unsafe_2.11 comes before spark-unsafe (or just find snappy-spark-unsafe_2.11 and move it to top).
+
+```
+Error:(236, 18) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+      if (source.getByte(i) == first && matchAt(source, target, i)) return true
+Error:(233, 24) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
+    val first = target.getByte(0)
+```
 
 
 ### Running a scalatest/junit

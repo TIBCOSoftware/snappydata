@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -270,9 +270,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
         case null =>
              // write null for unchanged columns apart from null count field (by this update)
           (ColumnStatsSchema(field.name, field.dataType,
-            nullCountNullable = true).schema, allNullsExprs)
+            nullCountNullable = false).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,
-          s"$deltaEncoders[$u].getRealEncoder()", nullCountNullable = true)
+          s"$deltaEncoders[$u].getRealEncoder()")
       }
     }.unzip
     // GenerateUnsafeProjection will automatically split stats expressions into separate

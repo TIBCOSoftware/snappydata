@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -79,7 +79,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
   }
 
   test("SNAP-2124 update missed") {
-    ColumnUpdateDeleteTests.testSNAP2124(this.snc.snappySession, checkPruning = true)
+    ColumnUpdateDeleteTests.testSNAP2124(this.snc.snappySession)
   }
 
   test("SNAP-1985: update delete on string type") {

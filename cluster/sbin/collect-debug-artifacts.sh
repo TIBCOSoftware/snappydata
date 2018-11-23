@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -54,27 +54,27 @@ while [ "$1" != "" ]; do
       CONF_FILE="$2"
       shift ;;
     --conf=*|--config=*)
-      CONF_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      CONF_FILE="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -x)
       TAR_FILE="$2"
       shift ;;
     --extract=*|--xtract=*)
-      TAR_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      TAR_FILE="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -o)
       OUTPUT_DIR="$2"
       shift ;;
     --out=*|--outdir=*)
-      OUTPUT_DIR="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      OUTPUT_DIR="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -s)
       START_TIME="$2"
       shift ;;
     --start=*)
-      START_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      START_TIME="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -e)
       END_TIME="$2"
       shift ;;
     --end=*)
-      END_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+      END_TIME="`echo "$1" | sed 's/^[^=]*=//'`" ;;
     -h|--help)
     usage
     exit 0
@@ -87,6 +87,9 @@ while [ "$1" != "" ]; do
     ;;
     -d|--dump)
     DUMP_STACK=1
+    ;;
+    -m|--hprofdump)
+    HPROF_DUMP=1
     ;;
     *)
     usage
@@ -223,10 +226,14 @@ function collect_data {
     INTERVAL_BETWEEN_DUMPS=0
   fi
 
+  if [ "${HPROF_DUMP}" != "1" ]; then
+    HPROF_DUMP=0
+  fi
+
   # Create the outdir with the same name on each remote and collect everything there.
   typeset -f | ssh $host "$(cat);collect_on_remote \"${wd}\" \"${NO_OF_STACK_DUMPS}\" \\
       \"${INTERVAL_BETWEEN_DUMPS}\" \"${GET_EVERYTHING}\" \"${collector_host}\" \\
-      \"${VERBOSE}\" \"${START_EPOCH}\" \"${END_EPOCH}\""
+      \"${VERBOSE}\" \"${START_EPOCH}\" \"${END_EPOCH}\" \"${HPROF_DUMP}\""
 }
 
 function collect_on_remote {
@@ -238,6 +245,7 @@ function collect_on_remote {
   verbose="$6"
   start_epoch="$7"
   end_epoch="$8"
+  get_hprof="$9"
 
   # Create a .tmpcda dir if not exists else empty it
   tmp_dir="$data_dir/.tmpcda"
@@ -275,10 +283,6 @@ function collect_on_remote {
       files+=($l)
     done
     for l in $( ls *.gfs* 2> /dev/null )
-    do
-      files+=($l)
-    done
-    for l in $( ls *.jfr* 2> /dev/null )
     do
       files+=($l)
     done
@@ -421,6 +425,31 @@ function collect_on_remote {
       else
         break
       fi
+    done
+  fi
+
+  # Add other files
+  for l in $( ls *.jfr* 2> /dev/null )
+  do
+    files+=($l)
+  done
+  for l in $( ls jvmkill*.log 2> /dev/null )
+  do
+    files+=($l)
+  done
+  for l in $( ls *.jmap 2> /dev/null )
+  do
+    files+=($l)
+  done
+
+  # Add hprof files too if asked for
+  if [ "${get_hprof}" = "1" ]; then
+    if [ "${verbose}" = "1" ]; then
+      echo "collecting hprof files too"
+    fi
+    for l in $( ls *.hprof 2> /dev/null )
+    do
+      files+=($l)
     done
   fi
 

@@ -13,7 +13,7 @@ All user names must be valid authorization identifiers even if user authenticati
 If an external authentication system is used, SnappyData does not convert a user's name to an authorization identifier until after authentication has occurred (but before the user is authorized). For example, with an example user named Fred:
 
 Within the user authentication system, Fred might be known as FRed. If the external user authentication service is case-sensitive, Fred must always be typed as:
-```scala
+```pre
 connect client 'localhost:1527;user=FRed;password=flintstone';
 ```
 Within the SnappyData user authorization system, Fred becomes a case-insensitive authorization identifier. Here, FRed is known as FRED.
@@ -22,7 +22,7 @@ Also consider a second example, where Fred has a slightly different name within 
 
 Within the user authentication system, Fred is known as Fred. You must now put double quotes around the username, because it is not a valid SQL92Identifier. SnappyData removes the double quotes when passing the name to the external authentication system.
 
-```scala
+```pre
 connect client 'localhost:1527;user="Fred!";password=flintstone';
 ```
 

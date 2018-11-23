@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -85,7 +85,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   }
 
   test("Test storage when storage can not borrow from execution memory") {
-    val sparkSession = createSparkSession(1, 0.5)
+    val sparkSession = createSparkSession(1, 0.5, sparkMemory = 1500L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, options)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -30,15 +30,18 @@ sbin="$(dirname "$(absPath "$0")")"
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
-BACKGROUND=
+BACKGROUND=-fg
 clustermode=
 
 while (( "$#" )); do
   param="$1"
   case $param in
+    # Check for background/foreground stop
     -bg | --background)
-      # Check for background stop
       BACKGROUND="$param"
+    ;;
+    -fg | --foreground)
+      BACKGROUND=-fg
     ;;
     rowstore)
       clustermode="rowstore"
@@ -59,6 +62,3 @@ fi
 
 # Stop locators
 "$sbin"/snappy-locators.sh stop
-
-
-

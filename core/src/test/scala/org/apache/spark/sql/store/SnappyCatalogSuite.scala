@@ -16,7 +16,7 @@
  */
 
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -73,7 +73,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
 
   after {
     try {
-      snappySession.catalog.listDatabases().collect().foreach(db =>
+      snappySession.catalog.listDatabases().filter("name != 'SYS'").collect().foreach(db =>
         snappySession.catalog.listTables(db.name).collect().foreach(
           table => dropTable(table.name, Option(table.database))
         )
@@ -165,14 +165,14 @@ class SnappyCatalogSuite extends SnappyFunSuite
 
   test("list databases") {
     assert(snappySession.catalog.listDatabases().collect()
-        .map(_.name.toUpperCase).toSet == Set("APP", "DEFAULT"))
+        .map(_.name.toUpperCase).toSet == Set("APP", "DEFAULT", "SYS"))
     createDatabase("my_db1")
     createDatabase("my_db2")
     assert(snappySession.catalog.listDatabases().collect().map(_.name.toUpperCase).toSet ==
-        Set("APP", "MY_DB1", "MY_DB2", "DEFAULT"))
+        Set("APP", "MY_DB1", "MY_DB2", "DEFAULT", "SYS"))
     dropDatabase("MY_DB1")
     assert(snappySession.catalog.listDatabases().collect().map(_.name.toUpperCase).toSet ==
-        Set("APP", "MY_DB2", "DEFAULT"))
+        Set("APP", "MY_DB2", "DEFAULT", "SYS"))
   }
 
   test("list tables") {

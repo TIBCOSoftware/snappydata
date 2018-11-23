@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.net.URLClassLoader
 import java.sql.SQLException
 import java.util.Collections
 
@@ -26,7 +27,7 @@ import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedExcep
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
 import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, LocalRegion, TXManagerImpl, TXStateInterface}
-import com.gemstone.gemfire.internal.shared.FetchRequest
+import com.gemstone.gemfire.internal.shared.{FetchRequest, SystemProperties}
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -50,7 +51,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFo
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, SortDirection, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
@@ -112,7 +113,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           val dependents = if (catalogEntry.dependents != null) {
             val tables = Misc.getMemStore.getAllContainers.asScala.
                 map(x => (x.getSchemaName + "." + x.getTableName, x.fetchHiveMetaData(false)))
-            catalogEntry.dependents.toSeq.map(x => tables.find(x == _._1).get._2)
+            catalogEntry.dependents.toSeq.map(x => tables.find(
+              c => x == c._1 && (c._2 ne null)).get._2)
           } else Nil
 
           val tableName = container.getQualifiedTableName
@@ -156,7 +158,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   def getInternalTableSchemas: java.util.List[String] = {
     val schemas = new java.util.ArrayList[String](1)
-    schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
+    schemas.add(SystemProperties.SNAPPY_HIVE_METASTORE)
     schemas
   }
 
@@ -243,11 +245,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
             ${ctx.declareAddedFunctions()}
 
-            public boolean check($rowClass statsRow, boolean isLastStatsRow) {
+            public boolean check($rowClass statsRow, boolean isLastStatsRow, boolean isDelta) {
               // TODO: don't have the update count for delta row (only insert count)
               // so adding the delta "insert" count to full count read in previous call
               $numRows += statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
-              return $filterFunction(statsRow, $numRows, isLastStatsRow);
+              return $filterFunction(statsRow, $numRows, isLastStatsRow, isDelta);
             }
          }
       """
@@ -282,9 +284,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
               numColumnsInStatBlob)
             // check the delta stats after full stats (null columns will be treated as failure
             // which is what is required since it means that only full stats check should be done)
-            if (filterPredicate.check(statsRow, deltaStatsRow eq null) ||
-                ((deltaStatsRow ne null) &&
-                    filterPredicate.check(deltaStatsRow, isLastStatsRow = true))) {
+            if (filterPredicate.check(statsRow, deltaStatsRow eq null, isDelta = false) ||
+                ((deltaStatsRow ne null) && filterPredicate.check(deltaStatsRow,
+                  isLastStatsRow = true, isDelta = true))) {
               return
             }
             batchIterator.moveNext()
@@ -418,7 +420,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def registerRelationDestroyForHiveStore(): Unit = {
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy(None)
   }
 
   def getSnappyTableStats: AnyRef = {
@@ -621,6 +623,18 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def clearConnectionPools(): Unit = {
     ConnectionPool.clear()
   }
+
+  override def getLeadClassLoader: URLClassLoader =
+    ToolsCallbackInit.toolsCallback.getLeadClassLoader()
+
+  override def clearSessionCache(onlyQueryPlanCache: Boolean = false): Unit = {
+    SnappySession.clearAllCache(onlyQueryPlanCache)
+  }
+
+  override def refreshPolicies(ldapGroup: String): Unit = {
+    val session = new SnappySession(SparkContext.getActive.get)
+    session.sessionCatalog.refreshPolicies(ldapGroup)
+  }
 }
 
 trait StoreCallback extends Serializable {
@@ -633,5 +647,5 @@ trait StoreCallback extends Serializable {
  * an additional argument for the same to determine whether to update metrics or not.
  */
 trait StatsPredicate {
-  def check(row: UnsafeRow, isLastStatsRow: Boolean): Boolean
+  def check(row: UnsafeRow, isLastStatsRow: Boolean, isDelta: Boolean): Boolean
 }

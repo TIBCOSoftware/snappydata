@@ -15,7 +15,7 @@ The conditions are:
 
 Below is the usage of the script
 
-```no-highlight
+```pre
 
       <linux-shell> ./sbin/collect-debug-artifacts.sh -h
 

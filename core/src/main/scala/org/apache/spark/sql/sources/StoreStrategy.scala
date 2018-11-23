@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation}
-import org.apache.spark.sql.internal.PutIntoColumnTable
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, PutIntoColumnTable}
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
 import org.apache.spark.sql.{Strategy, _}
 
@@ -79,20 +79,31 @@ object StoreStrategy extends Strategy {
     case AlterTableAddColumn(tableIdent, addColumn) =>
       ExecutedCommandExec(AlterTableAddColumnCommand(tableIdent, addColumn)) :: Nil
 
+    case AlterTableToggleRowLevelSecurity(tableIdent, enableRls) =>
+      ExecutedCommandExec(AlterTableToggleRowLevelSecurityCommand(tableIdent, enableRls)) :: Nil
+
     case AlterTableDropColumn(tableIdent, column) =>
       ExecutedCommandExec(AlterTableDropColumnCommand(tableIdent, column)) :: Nil
 
     case CreateIndex(indexName, baseTable, indexColumns, options) =>
       ExecutedCommandExec(CreateIndexCommand(indexName, baseTable, indexColumns, options)) :: Nil
 
+    case CreatePolicy(policyName, tableName, policyFor, applyTo, expandedApplyTo,
+    currentUser, filterStr, filter: BypassRowLevelSecurity) =>
+      ExecutedCommandExec(CreatePolicyCommand(policyName, tableName, policyFor, applyTo,
+        expandedApplyTo, currentUser, filterStr, filter)) :: Nil
+
+    case DropPolicy(ifExists, policyIdent) =>
+      ExecutedCommandExec(DropPolicyCommand(ifExists, policyIdent)) :: Nil
+
     case DropIndex(ifExists, indexName) =>
       ExecutedCommandExec(DropIndexCommand(indexName, ifExists)) :: Nil
 
     case SetSchema(schemaName) => ExecutedCommandExec(SetSchemaCommand(schemaName)) :: Nil
 
-    case d@DeployCommand(_, _, _, _) => ExecutedCommandExec(d) :: Nil
+    case d@DeployCommand(_, _, _, _, _) => ExecutedCommandExec(d) :: Nil
 
-    case d@DeployJarCommand(_, _) => ExecutedCommandExec(d) :: Nil
+    case d@DeployJarCommand(_, _, _) => ExecutedCommandExec(d) :: Nil
 
     case d@UnDeployCommand(_) => ExecutedCommandExec(d) :: Nil
 
@@ -146,7 +157,8 @@ case class ExternalTableDMLCmd(
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
-      case relation: SingleRowInsertableRelation => Seq(Row(relation.executeUpdate(command)))
+      case relation: SingleRowInsertableRelation =>
+        Seq(Row(relation.executeUpdate(command, session.catalog.currentDatabase)))
       case other => throw new AnalysisException("DML support requires " +
           "SingleRowInsertableRelation but found " + other)
     }

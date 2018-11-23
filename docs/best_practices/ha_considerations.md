@@ -1,17 +1,16 @@
-<a id="cores"></a>
 # High Availability (HA) Considerations
-<a id="ha-consideration"></a>
+<a id="ha-consideration"></a> <a id="cores"></a>
 
 High availability options are available for all the SnappyData components.
 
 **Lead** </br>
 SnappyData supports secondary lead nodes. If the primary lead becomes unavailable, one of  the secondary lead nodes takes over immediately. 
-Setting up the secondary lead node is highly recommended because the system cannot function if the lead node is unavailable. Currently, the queries and jobs that are executing when the primary lead becomes unavailable, are not re-tried and have to be resubmitted.
+[Setting up the secondary lead node](../configuring_cluster/configuring_cluster.md#confsecondarylead) is highly recommended because the system cannot function if the lead node is unavailable. Currently, the queries and jobs that are executing when the primary lead becomes unavailable, are not re-tried and have to be resubmitted.
 
 **Locator**</br>
 SnappyData supports multiple locators in the cluster for high availability. 
-It is recommended to set up multiple locators (ideally two) as, if a locator becomes unavailable, the cluster continues to be available. New members can however not join the cluster.</br>
-With multiple locators, clients notice nothing and the fail over recovery is completely transparent.
+It is recommended to set up multiple locators (ideally two). If a locator becomes unavailable, the cluster continues to be available. However, new members cannot join the cluster.</br>
+With multiple locators, there are no impact on the clients and the fail over recovery is completely transparent.
 
 **DataServer**</br>
 SnappyData supports redundant copies of data for fault tolerance. A table can be configured to store redundant copies of the data.  So, if a server is unavailable, and if there is a redundant copy available on some other server, the tasks are automatically retried on those servers. This is totally transparent to the user. 

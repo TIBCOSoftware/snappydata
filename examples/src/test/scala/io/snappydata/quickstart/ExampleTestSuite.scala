@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -48,11 +48,11 @@ class ExampleTestSuite extends SnappyTestRunner {
     Job("io.snappydata.examples.CreateAndLoadAirlineDataJob", localLead, quickStartJar)
 
     SparkSubmit("AirlineDataApp", appClass = "io.snappydata.examples.AirlineDataSparkApp", None,
-      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4041"),
+      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4051"),
       appJar = quickStartJar)
 
     SparkSubmit("PythonAirlineDataApp", appClass = "", None,
-      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4041"),
+      confs = Seq("snappydata.connection=localhost:1527", "spark.ui.port=4051"),
       appJar = s"$snappyHome/quickstart/python/AirlineDataPythonApp.py")
 
   }
@@ -70,7 +70,8 @@ class ExampleTestSuite extends SnappyTestRunner {
   }
 
   test("QuickStart.scala script") {
-    SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=" +
+    SparkShell("spark.sql.catalogImplementation=in-memory" :: Nil,
+      "--driver-memory=4g --driver-java-options=" +
       "\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\"" +
       " \"-XX:MaxNewSize=1g\"",
       scriptFile = s"$snappyHome/quickstart/scripts/Quickstart.scala")

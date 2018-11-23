@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,32 +19,43 @@ package org.apache.spark.sql
 
 
 import java.io.File
+import java.lang
+import java.nio.file.{Files, Paths}
+import java.sql.SQLException
 import java.util.Map.Entry
 import java.util.function.Consumer
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-import io.snappydata.Constant
-import org.apache.spark.TaskContext
-import org.apache.spark.deploy.SparkSubmitUtils
+
+import com.gemstone.gemfire.SystemFailure
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
+import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
+import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
-import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
+
+import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, ExecutorLocalRDD, ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.execution.{CreateSnappyViewCommand, DescribeSnappyTableCommand, RefreshMetadata, SnappyCacheTableCommand}
+import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
+import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, JdbcExtendedUtils}
 import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-
-import scala.collection.mutable.ArrayBuffer
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -58,6 +69,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CASE: Rule0 = rule { keyword(Consts.CASE) }
   final def CAST: Rule0 = rule { keyword(Consts.CAST) }
   final def CREATE: Rule0 = rule { keyword(Consts.CREATE) }
+  final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
   final def CURRENT: Rule0 = rule { keyword(Consts.CURRENT) }
   final def CURRENT_DATE: Rule0 = rule { keyword(Consts.CURRENT_DATE) }
   final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
@@ -108,24 +120,37 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def WHEN: Rule0 = rule { keyword(Consts.WHEN) }
   final def WHERE: Rule0 = rule { keyword(Consts.WHERE) }
   final def WITH: Rule0 = rule { keyword(Consts.WITH) }
+  final def USER: Rule0 = rule { keyword(Consts.USER) }
 
   // non-reserved keywords
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
+  final def AUTHORIZATION: Rule0 = rule { keyword(Consts.AUTHORIZATION) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
+  final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def CODEGEN: Rule0 = rule { keyword(Consts.CODEGEN) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
+  final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
+  final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
+  final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
+  final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
+  final def DISK_STORE: Rule0 = rule { keyword(Consts.DISK_STORE) }
+  final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXECUTE: Rule0 = rule { keyword(Consts.EXECUTE) }
+  final def EXPLAIN: Rule0 = rule { keyword(Consts.EXPLAIN) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
   final def EXTERNAL: Rule0 = rule { keyword(Consts.EXTERNAL) }
   final def FETCH: Rule0 = rule { keyword(Consts.FETCH) }
   final def FIRST: Rule0 = rule { keyword(Consts.FIRST) }
   final def FN: Rule0 = rule { keyword(Consts.FN) }
+  final def FOR: Rule0 = rule { keyword(Consts.FOR) }
   final def FULL: Rule0 = rule { keyword(Consts.FULL) }
   final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
   final def FUNCTIONS: Rule0 = rule { keyword(Consts.FUNCTIONS) }
@@ -139,8 +164,12 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def JARS: Rule0 = rule { keyword(Consts.JARS) }
   final def LAST: Rule0 = rule { keyword(Consts.LAST) }
   final def LAZY: Rule0 = rule { keyword(Consts.LAZY) }
+  final def LDAPGROUP: Rule0 = rule { keyword(Consts.LDAPGROUP) }
+  final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def LIST: Rule0 = rule { keyword(Consts.LIST) }
+  final def MEMBERS: Rule0 = rule { keyword(Consts.MEMBERS) }
+  final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
   final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
@@ -152,8 +181,12 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
   final def REPLACE: Rule0 = rule { keyword(Consts.REPLACE) }
+  final def RESET: Rule0 = rule { keyword(Consts.RESET) }
+  final def RESTRICT: Rule0 = rule { keyword(Consts.RESTRICT) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
+  final def SCHEMAS: Rule0 = rule { keyword(Consts.SCHEMAS) }
+  final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
   final def SORT: Rule0 = rule { keyword(Consts.SORT) }
@@ -162,12 +195,15 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def STREAM: Rule0 = rule { keyword(Consts.STREAM) }
   final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
   final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
+  final def TBLPROPERTIES: Rule0 = rule { keyword(Consts.TBLPROPERTIES) }
   final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
+  final def USE: Rule0 = rule { keyword(Consts.USE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
   final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
+  final def VIEWS: Rule0 = rule { keyword(Consts.VIEWS) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -203,7 +239,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def SETS: Rule0 = rule { keyword(Consts.SETS) }
   final def LATERAL: Rule0 = rule { keyword(Consts.LATERAL) }
 
-  // DDLs, SET, SHOW etc
+  // DDLs, SET etc
 
   final type TableEnd = (Option[String], Option[Map[String, String]],
       Option[LogicalPlan])
@@ -263,11 +299,13 @@ abstract class SnappyDDLParser(session: SparkSession)
             case Some(true) =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = false)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = false)
             case _ =>
               CreateTableUsingSelect(tableIdent, None,
                 userSpecifiedSchema, schemaDDL, provider,
-                Array.empty[String], mode, options, queryPlan, isBuiltIn = true)
+                Array.empty[String], mode, options, MarkerForCreateTableAsSelect(queryPlan),
+                isBuiltIn = true)
           }
         case None =>
           external match {
@@ -280,6 +318,75 @@ abstract class SnappyDDLParser(session: SparkSession)
           }
       }
     }
+  }
+
+  protected final def policyFor: Rule1[String] = rule {
+    (FOR ~ capture(ALL | SELECT | UPDATE | INSERT | DELETE)).? ~> ((forOpt: Any) =>
+      forOpt match {
+        case Some(v) => v.asInstanceOf[String].trim
+        case None => SnappyParserConsts.SELECT.upper
+      })
+  }
+
+  protected final def policyTo: Rule1[Seq[String]] = rule {
+    (TO ~
+        (capture(CURRENT_USER) |
+            (LDAPGROUP ~ ':' ~ ws ~
+                push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
+                identifier ~ ws ~> {(ldapOpt: Any, x) =>
+              ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
+        ). + (commaSep) ~> {
+        (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
+          }).? ~> { (toOpt: Any) =>
+      toOpt match {
+        case Some(x) => x.asInstanceOf[Seq[String]]
+        case _ => Seq(SnappyParserConsts.CURRENT_USER.upper)
+      }
+    }
+
+  }
+
+  protected def createPolicy: Rule1[LogicalPlan] = rule {
+    (CREATE ~ POLICY) ~ tableIdentifier ~ ON ~ tableIdentifier ~ policyFor ~
+        policyTo ~ USING ~ capture(expression) ~> { (policyName: TableIdentifier,
+        tableName: TableIdentifier, policyFor: String,
+        applyTo: Seq[String], filterExp: Expression, filterStr: String) => {
+      val snappySession = session.asInstanceOf[SnappySession]
+      val tableIdent = snappySession.sessionState.catalog.
+          newQualifiedTableName(tableName)
+      val applyToAll = applyTo.exists(_.equalsIgnoreCase(
+        SnappyParserConsts.CURRENT_USER.upper))
+      val expandedApplyTo = if (applyToAll) {
+        Seq.empty[String]
+      } else {
+        ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
+      }
+      /*
+      val targetRelation = snappySession.sessionState.catalog.lookupRelation(tableIdent)
+      val isTargetExternalRelation =  targetRelation.find(x => x match {
+        case _: ExternalRelation => true
+        case _ => false
+      }).isDefined
+      */
+      var currentUser = this.session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "")
+
+      currentUser = IdUtil.getUserAuthorizationId(
+        if (currentUser.isEmpty) Constant.DEFAULT_SCHEMA
+        else snappySession.sessionState.catalog.formatDatabaseName(currentUser))
+
+      val policyIdent = snappySession.sessionState.catalog
+          .newQualifiedTableName(policyName)
+      val filter = PolicyProperties.createFilterPlan(filterExp, tableIdent,
+        currentUser, expandedApplyTo)
+
+      CreatePolicy(policyIdent, tableIdent, policyFor, applyTo, expandedApplyTo, currentUser,
+        filterStr, filter)
+    }
+    }
+  }
+
+  protected def dropPolicy: Rule1[LogicalPlan] = rule {
+    DROP ~ POLICY ~ ifExists ~ tableIdentifier ~> DropPolicy
   }
 
   protected final def beforeDDLEnd: Rule0 = rule {
@@ -296,8 +403,11 @@ abstract class SnappyDDLParser(session: SparkSession)
       StringBuilder :: TableEnd :: HNil] = rule {
     ddlEnd.asInstanceOf[Rule[StringBuilder :: HNil,
         StringBuilder :: TableEnd :: HNil]] |
-    (capture(ANY ~ beforeDDLEnd.*) ~> ((s: StringBuilder, n: String) =>
-      s.append(n))) ~ tableEnd1
+    // no free form pass through to store layer if USING has been provided
+    // to detect genuine syntax errors correctly rather than store throwing
+    // some irrelevant error
+    (!(ws ~ (USING ~ qualifiedName | OPTIONS ~ options)) ~ capture(ANY ~ beforeDDLEnd.*) ~>
+        ((s: StringBuilder, n: String) => s.append(n))) ~ tableEnd1
   }
 
   protected final def tableEnd: Rule2[StringBuilder, TableEnd] = rule {
@@ -345,7 +455,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         case Some(seq) => seq
         case None => Nil
       }
-      CreateViewCommand(
+      CreateSnappyViewCommand(
         name = table,
         userSpecifiedColumns = userCols,
         comment = comment.asInstanceOf[Option[String]],
@@ -359,16 +469,17 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createTempViewUsing: Rule1[LogicalPlan] = rule {
-    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW | TABLE) ~
-        tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
-        (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, tableIdent: TableIdentifier,
-        schema: Any, provider: String, options: Any) => CreateTempViewUsing(
-      tableIdent = tableIdent,
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW ~ push(false) |
+        TABLE ~ push(true)) ~ tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
+        (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, isTable: Boolean,
+        table: TableIdentifier, schema: Any, provider: String, opts: Any) => CreateTempViewUsing(
+      tableIdent = table,
       userSpecifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]].map(StructType(_)),
-      replace = replace != None,
+      // in Spark replace is always true for CREATE TEMPORARY TABLE
+      replace = replace != None || (!global && isTable),
       global = global,
       provider = provider,
-      options = options.asInstanceOf[Option[Map[String, String]]].getOrElse(Map.empty)))
+      options = opts.asInstanceOf[Option[Map[String, String]]].getOrElse(Map.empty)))
   }
 
   protected def dropIndex: Rule1[LogicalPlan] = rule {
@@ -383,16 +494,38 @@ abstract class SnappyDDLParser(session: SparkSession)
     DROP ~ (VIEW ~ push(true)) ~ ifExists ~ tableIdentifier ~> DropTableOrView
   }
 
+  protected def createSchema: Rule1[LogicalPlan] = rule {
+    CREATE ~ SCHEMA ~ ifNotExists ~ identifier ~ (
+        AUTHORIZATION ~ (
+            LDAPGROUP ~ ':' ~ ws ~ identifier ~> ((group: String) => group -> true) |
+            identifier ~> ((id: String) => id -> false)
+        )
+    ).? ~> ((notExists: Boolean, schemaName: String, authId: Any) =>
+      CreateSchema(notExists, schemaName, authId.asInstanceOf[Option[(String, Boolean)]]))
+  }
+
+  protected def dropSchema: Rule1[LogicalPlan] = rule {
+    DROP ~ SCHEMA ~ ifExists ~ identifier ~ RESTRICT.? ~> DropSchema
+  }
+
   protected def truncateTable: Rule1[LogicalPlan] = rule {
     TRUNCATE ~ TABLE ~ ifExists ~ tableIdentifier ~> TruncateManagedTable
   }
-
-  protected def alterTableAddColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ ADD  ~ COLUMN.? ~ column  ~> AlterTableAddColumn
+  protected def alterTableToggleRowLevelSecurity: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ ((ENABLE ~ push(true)) | (DISABLE ~ push(false))) ~
+        ROW ~ LEVEL ~ SECURITY ~> {
+      (tableName: TableIdentifier, enbableRLS: Boolean) =>
+        AlterTableToggleRowLevelSecurity(tableName, enbableRLS)
+    }
   }
 
-  protected def alterTableDropColumn: Rule1[LogicalPlan] = rule {
-    ALTER ~ TABLE ~ tableIdentifier ~ DROP  ~ COLUMN.? ~ qualifiedName ~> AlterTableDropColumn
+  protected def alterTable: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ (
+        ADD ~ COLUMN.? ~ column ~ EOI ~> AlterTableAddColumn |
+        DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumn |
+        ANY. + ~ EOI ~> ((r: TableIdentifier) =>
+          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
+    )
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
@@ -452,7 +585,11 @@ abstract class SnappyDDLParser(session: SparkSession)
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = Seq(funcResource)
           funcResources.foreach(checkExists)
-          val classNameWithType = className + "__" + t.catalogString
+          val catalogString = t match {
+            case VarcharType(Int.MaxValue) => "string"
+            case _ => t.catalogString
+          }
+          val classNameWithType = className + "__" + catalogString
           CreateFunctionCommand(
             functionIdent.database,
             functionIdent.funcName,
@@ -481,20 +618,27 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   /**
-   * GRANT/REVOKE on a table (only for column and row tables).
+   * Commands like GRANT/REVOKE/CREATE DISKSTORE/CALL on a table that are passed through
+   * as is to the SnappyData store layer (only for column and row tables).
    *
    * Example:
    * {{{
    *   GRANT SELECT ON table TO user1, user2;
    *   GRANT INSERT ON table TO ldapGroup: group1;
+   *   CREATE DISKSTORE diskstore_name ('dir1' 10240)
+   *   DROP DISKSTORE diskstore_name
+   *   CALL SYSCS_UTIL.SYSCS_SET_RUNTIMESTATISTICS(1)
    * }}}
    */
-  protected def grantRevoke: Rule1[LogicalPlan] = rule {
-    (GRANT | REVOKE) ~ ANY.* ~> (() => DMLExternalTable(
-      TableIdentifier("SYSDUMMY1", Some("SYSIBM")) /* dummy table */ ,
-      LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-        SaveMode.Ignore, Map(JdbcExtendedUtils.DBTABLE_PROPERTY -> "SYSIBM.SYSDUMMY1"),
-        "", None)), input.sliceString(0, input.length)))
+  protected def passThrough: Rule1[LogicalPlan] = rule {
+    (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ (CALL | EXECUTE))) ~ ANY.* ~>
+        /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
+        (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
+          Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
+          LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
+            SaveMode.Ignore, Map((JdbcExtendedUtils.DBTABLE_PROPERTY,
+                s"${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")),
+            "", None)), input.sliceString(0, input.length)))
   }
 
   protected def deployPackages: Rule1[LogicalPlan] = rule {
@@ -502,10 +646,10 @@ abstract class SnappyDDLParser(session: SparkSession)
         (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
         ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
           packages, alias.identifier, repos.asInstanceOf[Option[String]],
-          path.asInstanceOf[Option[String]]))) |
+          path.asInstanceOf[Option[String]], restart = false))) |
       JAR ~ tableIdentifier ~ stringLiteral ~>
           ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
-        alias.identifier, commaSepPaths))) |
+        alias.identifier, commaSepPaths, restart = false))) |
     UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
     LIST ~ (
       PACKAGES ~> (() => ListPackageJarsCommand(true)) |
@@ -527,11 +671,23 @@ abstract class SnappyDDLParser(session: SparkSession)
    * This will display all columns of table `avroTable` includes column_name,
    *   column_type,comment
    */
-  protected def describeTable: Rule1[LogicalPlan] = rule {
-    DESCRIBE ~ (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
-        ((extended: Any, tableIdent: TableIdentifier) =>
-          DescribeTableCommand(tableIdent, Map.empty[String, String], extended
-              .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false))
+  protected def describe: Rule1[LogicalPlan] = rule {
+    (DESCRIBE | DESC) ~ (
+        FUNCTION ~ (EXTENDED ~ push(true)).? ~
+            functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
+          DescribeFunctionCommand(name,
+            extended.asInstanceOf[Option[Boolean]].isDefined)) |
+        SCHEMA ~ (EXTENDED ~ push(true)).? ~ identifier ~>
+            ((extended: Any, name: String) =>
+              DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined)) |
+        (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
+            ((extended: Any, tableIdent: TableIdentifier) => {
+              // ensure columns are sent back as CLOB for large results with EXTENDED
+              queryHints.put(QueryHint.ColumnsAsClob.toString, "data_type,comment")
+              new DescribeSnappyTableCommand(tableIdent, Map.empty[String, String], extended
+                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)
+            })
+    )
   }
 
   protected def refreshTable: Rule1[LogicalPlan] = rule {
@@ -541,7 +697,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def cache: Rule1[LogicalPlan] = rule {
     CACHE ~ (LAZY ~ push(true)).? ~ TABLE ~ tableIdentifier ~
         (AS ~ query).? ~> ((isLazy: Any, tableIdent: TableIdentifier,
-        plan: Any) => CacheTableCommand(tableIdent,
+        plan: Any) => SnappyCacheTableCommand(tableIdent,
       plan.asInstanceOf[Option[LogicalPlan]],
       isLazy.asInstanceOf[Option[Boolean]].isDefined))
   }
@@ -569,44 +725,12 @@ abstract class SnappyDDLParser(session: SparkSession)
             SetCommand(None)
           }
         }
-    )
+    ) |
+    USE ~ identifier ~> SetSchema
   }
 
-  // It can be the following patterns:
-  // SHOW FUNCTIONS;
-  // SHOW FUNCTIONS mydb.func1;
-  // SHOW FUNCTIONS func1;
-  // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
-  protected def show: Rule1[LogicalPlan] = rule {
-   SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~> ((ident: Any) =>
-      ShowTablesCommand(ident.asInstanceOf[Option[String]], None)) |
-       SHOW ~ identifier.? ~ FUNCTIONS ~ LIKE.? ~
-        (functionIdentifier | stringLiteral).? ~> { (id: Any, nameOrPat: Any) =>
-      val (user, system) = id.asInstanceOf[Option[String]]
-          .map(_.toLowerCase) match {
-        case None | Some("all") => (true, true)
-        case Some("system") => (false, true)
-        case Some("user") => (true, false)
-        case Some(x) =>
-          throw new ParseException(s"SHOW $x FUNCTIONS not supported")
-      }
-      nameOrPat match {
-        case Some(name: FunctionIdentifier) => ShowFunctionsCommand(
-          name.database, Some(name.funcName), user, system)
-        case Some(pat: String) => ShowFunctionsCommand(
-          None, Some(ParserUtils.unescapeSQLString(pat)), user, system)
-        case None => ShowFunctionsCommand(None, None, user, system)
-        case _ => throw new ParseException(
-          s"SHOW FUNCTIONS $nameOrPat unexpected")
-      }
-    }
-  }
-
-  protected def desc: Rule1[LogicalPlan] = rule {
-    DESCRIBE ~ FUNCTION ~ (EXTENDED ~ push(true)).? ~
-        functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
-      DescribeFunctionCommand(name,
-        extended.asInstanceOf[Option[Boolean]].isDefined))
+  protected def reset: Rule1[LogicalPlan] = rule {
+    RESET ~> { () => ResetCommand }
   }
 
   // helper non-terminals
@@ -650,9 +774,19 @@ abstract class SnappyDDLParser(session: SparkSession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharStringType(size, baseType) =>
+        case CharType(size) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+          (StringType, false)
+        case VarcharType(Int.MaxValue) => // indicates CLOB type
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+          (StringType, false)
+        case VarcharType(size) =>
+          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
+          (StringType, false)
+        case StringType =>
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "STRING")
           (StringType, false)
         case _ => (t, true)
       }
@@ -675,24 +809,29 @@ abstract class SnappyDDLParser(session: SparkSession)
     (tableSchema ~> (Some(_)) | ws ~> (() => None)).named("tableSchema") ~ EOI
   }
 
-  protected final def pair: Rule1[(String, String)] = rule {
-    qualifiedName ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
+  protected final def optionKey: Rule1[String] = rule {
+    qualifiedName | stringLiteral
+  }
+
+  protected final def option: Rule1[(String, String)] = rule {
+    optionKey ~ ('=' ~ ws).? ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
   }
 
   protected final def options: Rule1[Map[String, String]] = rule {
-    '(' ~ ws ~ (pair * commaSep) ~ ')' ~ ws ~>
+    '(' ~ ws ~ (option * commaSep) ~ ')' ~ ws ~>
         ((pairs: Any) => pairs.asInstanceOf[Seq[(String, String)]].toMap)
   }
 
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTable | describeTable | refreshTable | dropTable | truncateTable |
-    createView | createTempViewUsing | dropView |
-    alterTableAddColumn | alterTableDropColumn | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevoke | show
+    createTable | describe | refreshTable | dropTable | truncateTable |
+    createView | createTempViewUsing | dropView | createSchema | dropSchema |
+    alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
+    alterTable | createStream | streamContext |
+    createIndex | dropIndex | createFunction | dropFunction | passThrough
   }
 
   protected def query: Rule1[LogicalPlan]
-
+  protected def expression: Rule1[Expression]
   protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T
 
   protected def newInstance(): SnappyDDLParser
@@ -707,6 +846,10 @@ case class CreateTableUsing(
     allowExisting: Boolean,
     options: Map[String, String],
     isBuiltIn: Boolean) extends Command
+
+case class CreatePolicy(policyName: QualifiedTableName, tableName: QualifiedTableName,
+    policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
+    currentUser: String, filterStr: String, filter: BypassRowLevelSecurity) extends Command
 
 case class CreateTableUsingSelect(
     tableIdent: TableIdentifier,
@@ -723,9 +866,89 @@ case class CreateTableUsingSelect(
 case class DropTableOrView(isView: Boolean, ifExists: Boolean,
     tableIdent: TableIdentifier) extends Command
 
+case class CreateSchema(ifNotExists: Boolean, schemaName: String,
+    authId: Option[(String, Boolean)]) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val catalog = session.sessionCatalog
+    val schema = catalog.formatDatabaseName(schemaName)
+
+    // create schema in catalog first
+    catalog.createDatabase(CatalogDatabase(schema, description = s"User schema $schema",
+      catalog.getDefaultDBPath(schema), Map.empty), ifNotExists)
+
+    // next in store if catalog was successful
+    val authClause = authId match {
+      case None => ""
+      case Some((id, false)) => s""" AUTHORIZATION "$id""""
+      case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
+    }
+    // for smart connector use a normal connection with route-query=true
+    val conn = session.defaultPooledOrConnectorConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
+      stmt.close()
+    } catch {
+      case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
+      case err: Error if SystemFailure.isJVMFailureError(err) =>
+        SystemFailure.initiateFailure(err)
+        // If this ever returns, rethrow the error. We're poisoned
+        // now, so don't let this thread continue.
+        throw err
+      case t: Throwable =>
+        // drop from catalog
+        catalog.dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
+        // Whenever you catch Error or Throwable, you must also
+        // check for fatal JVM error (see above).  However, there is
+        // _still_ a possibility that you are dealing with a cascading
+        // error condition, so you also need to check to see if the JVM
+        // is still usable:
+        SystemFailure.checkFailure()
+        throw t
+    } finally {
+      conn.close()
+    }
+    Nil
+  }
+}
+
+case class DropSchema(ifExists: Boolean, schemaName: String) extends RunnableCommand {
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val catalog = session.sessionCatalog
+    val schema = catalog.formatDatabaseName(schemaName)
+    if (schema == "DEFAULT") {
+      throw new AnalysisException(s"Can not drop default schema")
+    }
+    // drop schema in store first
+    val checkIfExists = if (ifExists) " IF EXISTS" else ""
+    // for smart connector use a normal connection with route-query=true
+    val conn = session.defaultPooledOrConnectorConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
+      stmt.close()
+    } finally {
+      conn.close()
+
+      // drop from catalog in finally block for force cleanup
+      catalog.dropDatabase(schema, ifExists, cascade = false)
+    }
+    Nil
+  }
+}
+
+case class DropPolicy(ifExists: Boolean,
+    policyIdentifier: TableIdentifier) extends Command
+
 case class TruncateManagedTable(ifExists: Boolean, tableIdent: TableIdentifier) extends Command
 
 case class AlterTableAddColumn(tableIdent: TableIdentifier, addColumn: StructField)
+    extends Command
+
+case class AlterTableToggleRowLevelSecurity(tableIdent: TableIdentifier, enable: Boolean)
     extends Command
 
 case class AlterTableDropColumn(tableIdent: TableIdentifier, column: String) extends Command
@@ -753,49 +976,79 @@ case class SetSchema(schemaName: String) extends Command
 
 case class SnappyStreamingActions(action: Int, batchInterval: Option[Duration]) extends Command
 
-/**
-  * Returns a list of jar files that are added to resources.
-  * If jar files are provided, return the ones that are added to resources.
-  */
 case class DeployCommand(
-    coordinates: String,
-    alias: String,
-    repos: Option[String],
-    jarCache: Option[String]) extends RunnableCommand {
+  coordinates: String,
+  alias: String,
+  repos: Option[String],
+  jarCache: Option[String],
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
-    if (jarsstr.nonEmpty) {
-      val jars = jarsstr.split(",")
-      val sc = sparkSession.sparkContext
-      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
-      SnappySession.addJarURIs(uris)
-      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-        Iterator.empty
-      })
-      val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
-      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+    try {
+      val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+      if (jarsstr.nonEmpty) {
+        val jars = jarsstr.split(",")
+        val sc = sparkSession.sparkContext
+        val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+        SnappySession.addJarURIs(uris)
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
+        val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+        ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+      }
+      Seq.empty[Row]
+    } catch {
+      case ex: Throwable =>
+        ex match {
+          case err: Error =>
+            if (SystemFailure.isJVMFailureError(err)) {
+              SystemFailure.initiateFailure(err)
+              // If this ever returns, rethrow the error. We're poisoned
+              // now, so don't let this thread continue.
+              throw err
+            }
+          case _ =>
+        }
+        Misc.checkIfCacheClosing(ex)
+        if (restart) {
+          logWarning(s"Following mvn coordinate" +
+              s" could not be resolved during restart: $coordinates", ex)
+          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+            throw ex
+          }
+          Seq.empty[Row]
+        } else {
+          throw ex
+        }
     }
-    Seq.empty[Row]
   }
 }
 
 case class DeployJarCommand(
-    alias: String,
-    paths: String) extends RunnableCommand {
+  alias: String,
+  paths: String,
+  restart: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (paths.nonEmpty) {
       val jars = paths.split(",")
+      val (availableUris, unavailableUris) = jars.partition(f => Files.isReadable(Paths.get(f)))
+      if (unavailableUris.nonEmpty) {
+        logWarning(s"Following jars are unavailable" +
+            s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+        if (restart && lang.Boolean.parseBoolean(
+          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+          throw new IllegalStateException(
+            s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
+        }
+        if (!restart) {
+          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
+        }
+      }
       val sc = sparkSession.sparkContext
-      val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
       SnappySession.addJarURIs(uris)
-      Utils.mapExecutors[Unit](sparkSession.sparkContext, () => {
-        ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
-        Iterator.empty
-      })
-      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, false)
+      RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
+      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
     }
     Seq.empty[Row]
   }
@@ -812,14 +1065,14 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet()
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
-      override def accept(t: Entry[String, String]) = {
+      override def accept(t: Entry[String, String]): Unit = {
         val alias = t.getKey
         val value = t.getValue
         val indexOf = value.indexOf('|')
         if (indexOf > 0) {
           // It is a package
           val pkg = value.substring(0, indexOf)
-          rows+= Row(alias, pkg, true)
+          rows += Row(alias, pkg, true)
         }
         else {
           // It is a jar
@@ -832,7 +1085,7 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
               f
             }
           })
-          rows+= Row(alias, jarfiles.mkString(","), false)
+          rows += Row(alias, jarfiles.mkString(","), false)
         }
       }
     })

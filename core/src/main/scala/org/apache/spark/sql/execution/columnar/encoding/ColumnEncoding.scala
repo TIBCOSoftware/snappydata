@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,10 +20,10 @@ import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, HeapBufferAllocator}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientSharedUtils, HeapBufferAllocator}
 import io.snappydata.util.StringUtils
 
-import org.apache.spark.memory.MemoryManagerCallback
+import org.apache.spark.memory.MemoryManagerCallback.memoryManager
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthInBytes
@@ -767,35 +767,34 @@ object ColumnEncoding {
     if (buffer.isDirect) DirectBufferAllocator.instance()
     else HeapBufferAllocator.instance()
 
-  def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder = {
-    val allocator = getAllocator(buffer)
-    getColumnDecoder(allocator.baseObject(buffer), allocator.baseOffset(buffer) +
-        buffer.position(), field, ColumnEncoding.identityLong)
-  }
+  def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder =
+    getColumnDecoder(buffer, field, ColumnEncoding.identityLong)
 
   def getColumnDecoderAndBuffer(buffer: ByteBuffer,
       field: StructField, initDelta: (AnyRef, Long) => Long): (ColumnDecoder, AnyRef) = {
     val allocator = getAllocator(buffer)
     val columnBytes = allocator.baseObject(buffer)
-    val baseOffset = allocator.baseOffset(buffer) + buffer.position()
-    (getColumnDecoder(columnBytes, baseOffset, field, initDelta), columnBytes)
+    (getColumnDecoder(buffer, field, initDelta), columnBytes)
   }
 
-  final def getColumnDecoder(columnBytes: AnyRef, offset: Long,
+  final def getColumnDecoder(buffer: ByteBuffer,
       field: StructField, initDelta: (AnyRef, Long) => Long): ColumnDecoder = {
+    buffer.order(ByteOrder.LITTLE_ENDIAN)
+    val allocator = getAllocator(buffer)
+    val columnBytes = allocator.baseObject(buffer)
     // typeId at the start followed by null bit set values
-    var cursor = offset
-    val typeId = readInt(columnBytes, cursor)
-    cursor += 4
+    val typeId = try {
+      buffer.getInt(buffer.position())
+    } catch {
+      case t: Throwable =>
+        throw new IllegalStateException(s"Failed to read typeId from " +
+            s"buffer=0x${ClientSharedUtils.toHexString(buffer)}: $t")
+    }
+    val cursor = allocator.baseOffset(buffer) + buffer.position() + 4
     val dataType = Utils.getSQLDataType(field.dataType)
     if (typeId >= allDecoders.length) {
-      val bytesStr = columnBytes match {
-        case null => ""
-        case bytes: Array[Byte] => s" bytes: ${bytes.toSeq}"
-        case _ => ""
-      }
       throw new IllegalStateException(s"Unknown encoding typeId = $typeId " +
-          s"for $dataType($field)$bytesStr")
+          s"for $dataType($field) bytes=0x${ClientSharedUtils.toHexString(buffer)}")
     }
 
     val decoder = allDecoders(typeId)(columnBytes, cursor, field, initDelta, dataType,
@@ -1153,8 +1152,7 @@ trait NotNullEncoder extends ColumnEncoder {
       clearSource(newSize, releaseData = false)
       // mark its allocation for storage
       if (columnData.isDirect) {
-        MemoryManagerCallback.memoryManager.changeOffHeapOwnerToStorage(
-          columnData, allowNonAllocator = false)
+        memoryManager.changeOffHeapOwnerToStorage(columnData, allowNonAllocator = false)
       }
       columnData
     } else {

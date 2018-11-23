@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -468,7 +468,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   override def getConnection(id: String, onExecutor: Boolean): Connection = {
     connectionType match {
-      case ConnectionType.Embedded =>
+      case ConnectionType.Embedded if onExecutor =>
         val currentCM = ContextService.getFactory.getCurrentContextManager
         if (currentCM ne null) {
           val conn = EmbedConnectionContext.getEmbedConnection(currentCM)
@@ -495,7 +495,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       rowBuffer: String,
       projection: Array[Int],
       filters: Array[Expression],
-      prunePartitions: => Int,
+      prunePartitions: () => Int,
       session: SparkSession,
       schema: StructType,
       delayRollover: Boolean): RDD[Any] = {
@@ -503,7 +503,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD(snappySession, tableName, projection,
-          (filters eq null) || filters.length == 0, prunePartitions, this)
+          filters, (filters eq null) || filters.length == 0, prunePartitions, this)
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
@@ -515,7 +515,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           case ThinClientConnectorMode(_, _) =>
             val catalog = snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
             val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
-            (relInfo.partitions, relInfo.embdClusterRelDestroyVersion)
+            (relInfo.partitions, relInfo.embedClusterRelDestroyVersion)
           case m => throw new UnsupportedOperationException(
             s"SnappyData table scan not supported in mode: $m")
         }
@@ -525,7 +525,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
             connProperties.hikariCP),
-          schema, this, parts, prunePartitions , embdClusterRelDestroyVersion, delayRollover)
+          schema, this, parts, prunePartitions, embdClusterRelDestroyVersion, delayRollover)
     }
   }
 
@@ -658,15 +658,16 @@ final class ColumnarStorePartitionedRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var projection: Array[Int],
-    private var fullScan: Boolean,
-    @(transient @param) partitionPruner: => Int,
+    @transient private[sql] val filters: Array[Expression],
+    private[sql] var fullScan: Boolean,
+    @(transient @param) partitionPruner: () => Int,
     @transient private val store: JDBCSourceAsColumnarStore)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   private[this] var allPartitions: Array[Partition] = _
   private val evaluatePartitions: () => Array[Partition] = () => {
     val region = Misc.getRegionForTable(tableName, true)
-    partitionPruner match {
+    partitionPruner() match {
       case -1 if allPartitions != null =>
         allPartitions
       case -1 =>
@@ -755,12 +756,12 @@ final class SmartConnectorColumnRDD(
     @transient private val session: SnappySession,
     private var tableName: String,
     private var projection: Array[Int],
-    @transient private val filters: Array[Expression],
+    @transient private[sql] val filters: Array[Expression],
     private var connProperties: ConnectionProperties,
     private var schema: StructType,
     @transient private val store: ExternalStore,
     @transient private val allParts: Array[Partition],
-    @(transient @param) partitionPruner: => Int,
+    @(transient @param) partitionPruner: () => Int,
     private var relDestroyVersion: Int,
     private var delayRollover: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -774,32 +775,40 @@ final class SmartConnectorColumnRDD(
     val conn: Connection = helper.getConnection(connProperties, part)
     logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
-    // fetch all the column blobs pushing down the filters
-    val (statement, rs, txId) = helper.prepareScan(conn, tableName, projection,
-      serializedFilters, part, relDestroyVersion)
-    val itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
-      context, partitionId)
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
+      case "" => null
+      case tx => tx
+    }
+    var itr: Iterator[ByteBuffer] = null
+    try {
+      // fetch all the column blobs pushing down the filters
+      val (statement, rs) = helper.prepareScan(conn, txId,
+        tableName, projection,
+        serializedFilters, part, relDestroyVersion)
+      itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
+        context, partitionId)
+    } finally {
+      if (context ne null) {
+        context.addTaskCompletionListener { _ =>
+          logDebug(s"The txid going to be committed is $txId " + tableName)
 
-    if (context ne null) {
-      context.addTaskCompletionListener { _ =>
-        logDebug(s"The txid going to be committed is $txId " + tableName)
-
-        // if ((txId ne null) && !txId.equals("null")) {
-        val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-        ps.setString(1, if (txId ne null) txId else "")
-        ps.setString(2, if (delayRollover) tableName else "")
-        ps.executeUpdate()
-        logDebug(s"The txid being committed is $txId")
-        ps.close()
-        SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
-        logDebug(s"closed connection for task from listener $partitionId")
-        try {
-          conn.close()
-          logDebug("closed connection for task " + context.partitionId())
-        } catch {
-          case NonFatal(e) => logWarning("Exception closing connection", e)
+          // if ((txId ne null) && !txId.equals("null")) {
+          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+          ps.setString(1, if (txId ne null) txId else "")
+          ps.setString(2, if (delayRollover) tableName else "")
+          ps.executeUpdate()
+          logDebug(s"The txid being committed is $txId")
+          ps.close()
+          SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
+          logDebug(s"closed connection for task from listener $partitionId")
+          try {
+            conn.close()
+            logDebug("closed connection for task " + context.partitionId())
+          } catch {
+            case NonFatal(e) => logWarning("Exception closing connection", e)
+          }
+          // }
         }
-        // }
       }
     }
     itr
@@ -820,7 +829,7 @@ final class SmartConnectorColumnRDD(
     split.asInstanceOf[SmartExecutorBucketPartition].hostList.map(_._1)
   }
 
-  def getPartitionEvaluator: () => Array[Partition] = () => partitionPruner match {
+  def getPartitionEvaluator: () => Array[Partition] = () => partitionPruner() match {
     case -1 => allParts
     case bucketId =>
       val part = allParts(bucketId).asInstanceOf[SmartExecutorBucketPartition]
@@ -879,7 +888,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _commitTx, _delayRollover, null) {
+    _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
 
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
@@ -927,6 +936,9 @@ class SmartConnectorRowRDD(_session: SnappySession,
           clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
             new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
             tableName, true).setMetadataVersion(relDestroyVersion))
+        } else {
+          clientConn.setCommonStatementAttributes(
+            new StatementAttrs().setMetadataVersion(relDestroyVersion))
         }
         clientConn
       case _ => null
@@ -1014,21 +1026,21 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
 class SnapshotConnectionListener(store: JDBCSourceAsColumnarStore,
     delayRollover: Boolean) extends TaskCompletionListener {
-  val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
-  var isSuccess = false
+  private val connAndTxId: Array[_ <: Object] = store.beginTx(delayRollover)
+  private var isSuccess = false
 
   override def onTaskCompletion(context: TaskContext): Unit = {
     val txId = connAndTxId(1).asInstanceOf[String]
-    val conn = connAndTxId(0).asInstanceOf[Connection]
-    if (connAndTxId(1) != null) {
+    val conn = Option(connAndTxId(0).asInstanceOf[Connection])
+    if (connAndTxId(1) ne null) {
       if (success()) {
-        store.commitTx(txId, delayRollover, Some(conn))
+        store.commitTx(txId, delayRollover, conn)
       }
       else {
-        store.rollbackTx(txId, Some(conn))
+        store.rollbackTx(txId, conn)
       }
     }
-    store.closeConnection(Some(conn))
+    store.closeConnection(conn)
   }
 
   def success(): Boolean = {

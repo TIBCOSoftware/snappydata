@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,7 +27,8 @@ import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, 
 
 class ConvertCsvToParquetAndLoadTablesJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-    val pw = new PrintWriter(new FileOutputStream(new File("LoadNWTablesUsingParquetDataJob.out"), true));
+    val pw = new PrintWriter(new FileOutputStream
+      (new File("LoadNWTablesUsingParquetDataJob.out"), true));
     val currDir = new java.io.File(".").getCanonicalPath
     Try {
       val snc = snSession.sqlContext
@@ -38,7 +39,7 @@ class ConvertCsvToParquetAndLoadTablesJob extends SnappySQLJob {
       pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
       snc.setConf("dataFilesLocation", dataFilesLocation)
 
-      val parquetFileLocation = currDir + File.separator + ".." + File.separator + ".." + 
+      val parquetFileLocation = currDir + File.separator + ".." + File.separator + ".." +
           File.separator + "parquetFiles"
       pw.println(s"Parquet file location is : ${parquetFileLocation}")
       val parquetFileDir : File = new File(parquetFileLocation)

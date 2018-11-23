@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -33,7 +33,7 @@ sbin="$(dirname "$(absPath "$0")")"
 
 # Launch the slaves
 if echo $@ | grep -qw start; then
-  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" $@ $LOCATOR_STARTUP_OPTIONS
+  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" "$@" $LOCATOR_STARTUP_OPTIONS $ENCRYPT_PASSWORD_OPTIONS
 else
-  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" $@
+  "$sbin/snappy-nodes.sh" locator cd "$SNAPPY_HOME" \; "$sbin/snappy-locator.sh" "$@"
 fi

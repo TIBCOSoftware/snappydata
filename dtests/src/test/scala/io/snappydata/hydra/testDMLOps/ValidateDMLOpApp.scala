@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,14 +25,13 @@ import org.apache.spark.{SparkConf, SparkContext}
 object ValidateDMLOpApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
+    val threadID = args(1)
     val conf = new SparkConf().
-        setAppName("DMLOp Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("DMLOp_App_thr_" + threadID + "_" + System.currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val threadID = args(1)
+
     val outputFile = "DMLOpsApp_thr_" + threadID + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))
     val stmt = args(0)

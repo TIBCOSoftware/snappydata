@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -65,4 +65,12 @@ trait ToolsCallback {
   def setLeadClassLoader(): Unit
 
   def getLeadClassLoader(): URLClassLoader
+
+  /**
+   *
+   * @param schema
+   * @param currentOwner
+   * @return the schema owner, can be ldap group
+   */
+  def checkSchemaPermission(schema: String, currentOwner: String): String
 }

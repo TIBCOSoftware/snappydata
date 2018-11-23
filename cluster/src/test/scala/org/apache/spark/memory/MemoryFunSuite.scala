@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,8 +19,9 @@ package org.apache.spark.memory
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.core.FileCleaner
-import org.apache.spark.SparkFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAfterAll {
@@ -34,10 +35,10 @@ class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAft
     if (SnappyContext.globalSparkContext != null) {
       SnappyContext.globalSparkContext.stop()
     }
+    FileCleaner.cleanStoreFiles()
     System.setProperty("snappydata.umm.memtrace", "true")
     return
   }
-
 
   after {
     if (SnappyContext.globalSparkContext != null) {

@@ -8,23 +8,42 @@ The administrator can manage user permissions in a secure cluster using the [GRA
 
 The [GRANT](../reference/sql_reference/grant.md) statement is used to grant specific permissions to users. The [REVOKE](../reference/sql_reference/revoke.md) statement is used to revoke permissions.
 
-!!!Note:
+!!! Note
 
 	* A user requiring [INSERT](../reference/sql_reference/insert.md), [UPDATE](../reference/sql_reference/update.md) or [DELETE](../reference/sql_reference/delete.md) permissions may also require explicit [SELECT](../reference/sql_reference/select.md) permission on a table
 	
 	* Only administrators can execute built-in procedures (like INSTALL-JAR)
 
+### Adding Restrictions in Default Schema
+
+Users in SnappyData cluster have their own schema by default when they log into the cluster. They have full access within this schema.
+But in some cases, cluster administrators may need to ensure controlled use of the cluster resources by its users and may need to enforce restrictions on them.
+
+This can be achieved by setting the system property `snappydata.RESTRICT_TABLE_CREATION` to true in **conf** files at the time of starting the cluster.
+This forbids the users to create tables in their default schema. Users also cannot execute queries on tables in the schema.
+
+Administrators, however, can explicitly grant permissions to these users on their respective default schemas using GRANT command. The default value of the property is false.
+
+You need to prefix `-J-D` to the property name while specifying it in the conf files (locators, leads, and servers).
+```
+$ cat conf/servers
+localhost -auth-provider=LDAP -J-Dsnappydata.RESTRICT_TABLE_CREATION=true -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
+          -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com \
+          -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com \
+          -J-Dgemfirexd.auth-ldap-search-pw=user123
+```
+
 ## LDAP Groups in SnappyData Authorization
 SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.
 
 Here is an example SQL to grant privileges to individual users:
-```scala
+```pre
 GRANT SELECT ON TABLE t TO sam,bob;
 ```
 
 You can also grant privileges to LDAP groups using the following syntax:
 
-```scala
+```pre
 GRANT SELECT ON Table t TO ldapGroup:<groupName>, bob;
 GRANT INSERT ON Table t TO ldapGroup:<groupName>, bob;
 ```
@@ -32,7 +51,7 @@ GRANT INSERT ON Table t TO ldapGroup:<groupName>, bob;
 SnappyData fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in SnappyData). </br>
 Similarly, when a REVOKE SQL statement is executed SnappyData removes the privileges individually for all members that make up a group. To support changes to Group membership within the LDAP Server, there is an additional System procedure to refresh the privileges recorded in SnappyData.
 
-```scala
+```pre
 CALL SYS.REFRESH_LDAP_GROUP('<GROUP NAME>');
 ```
 
@@ -40,7 +59,7 @@ This step has to be performed manually by admin when relevant LDAP groups change
 
 To optimize searching for groups in the LDAP server the following optional properties can be specified. These are similar to the current ones used for authentication: `gemfirexd.auth-ldap-search-base` and `gemfirexd.auth-ldap-search-filter`. The support for LDAP groups requires using LDAP as also the authentication mechanism.
 
-```scala
+```pre
 gemfirexd.group-ldap-search-base
 // base to identify objects of type group
 gemfirexd.group-ldap-search-filter
@@ -53,7 +72,7 @@ If no `gemfirexd.group-ldap-search-base` property has been provided then the one
 If no search filter is specified then SnappyData uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
 To be precise, the default search filter is:
 
-```scala
+```pre
 (&(|(objectClass=group)(objectClass=groupOfNames)(objectClass=groupOfMembers)
   (objectClass=groupOfUniqueNames))(|(cn=%GROUP%)(name=%GROUP%)))
 ```
@@ -62,7 +81,7 @@ The token "%GROUP%" is replaced by the actual group name in the search pattern. 
 
 An LDAP group entry can look like below:
 
-```scala
+```pre
 dn: cn=group1,ou=group,dc=example,dc=com
 objectClass: groupOfNames
 cn: group1
@@ -72,7 +91,7 @@ member: uid=user2,ou=group,dc=example,dc=com
 member: cn=group11,ou=group,dc=example,dc=com
 ```
 
-!!! NOTE:
+!!! Note
 
 	* There is NO multi-group support for users yet, so if a user has been granted access by two LDAP groups only the first one will take effect.
 

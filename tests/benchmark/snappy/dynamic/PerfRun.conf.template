@@ -17,8 +17,8 @@ sparkProperties="-heap-size=1g -memory-size=1g -conserve-sockets=false"
 sparkSqlProperties="\"\""
 
 #location of checkout
-SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
-#SnappyData=/home/kishor/SNAPPY/CHECKOUT/snappydata-0.7-bin
+SnappyData=<SnappyData-build-path>
+#SnappyData=/home/perfuser/SNAPPY/CHECKOUT/snappydata-0.7-bin
 
 #number of buckets for order and lineitem tables
 buckets_Order_Lineitem=128
@@ -44,23 +44,28 @@ Persistence_Type=SYNCHRONOUS
 #Loading from parquet or csv file
 Parquet=true
 
+# Create Parquet files from CSV (tbl) files for future tests
+# When Parquet=true, the table creation job will expect parqurt files to already exist to load data into Snappy tables.
+# When Parquet=false, one can create parquet files in table creation job for use in query execution if createParquet=true
+createParquet=true
+
 #From how many files data should be loaded in table
 #NumberOfLoadStages=10
 NumberOfLoadStages=1
 
 #Machine Setup
-locator=localhost
-leads=localhost
-servers=(localhost localhost)
+locator=<host1>
+leads=<host1>
+servers=(<host2> <host3> <host4>)
 #servers=(localhost)
 
 #Port required while doing exeution through JDBC
 port=1527
 
 #Log Directories
-locatorDir=/home/kishor/SNAPPY/OUTPUT/TPCH/locator
-leadDir=/home/kishor/SNAPPY/OUTPUT/TPCH/lead
-serverDir=/home/kishor/SNAPPY/OUTPUT/TPCH/server
+locatorDir=<locator-log-directory-path>
+leadDir=<lead-log-directory-path>
+serverDir=<server-log-directory-path>
 
 #Locator Properties
 locatorProperties="-conserve-sockets=false -J-Xloggc:gc.log -J-XX:+PrintGCDetails -J-XX:+PrintGCDateStamps -J-XX:+PrintGCTimeStamps -J-XX:+PrintHeapAtGC"
@@ -72,7 +77,7 @@ serverMemory="-heap-size=1g -memory-size=2g"
 ### While collecting results for result validation, always keep isDynamic=false and resultCollection=false. In this case WarmupRuns and AverageRuns will not be considered
 ### In case of Performance run, isDynamic is true, resultCollection is fasle and set the required number of warmupRuns and AverageRuns
 #represent whether query should use dynamic paramters or static
-IsDynamic=false
+IsDynamic=true
 
 #Whether to collect results.For performance testing this should be false.
 ResultCollection=true
@@ -83,20 +88,29 @@ WarmupRuns=2
 AverageRuns=3
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.0-tests.jar
+TPCHJar=<TPCHJar-path>
 
 #Size of the TPCH data. Do not chage format
 #dataSize=1GB_Stages
 dataSize=1GB
 
 #Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
-dataDir=/home/kishor/SNAPPY/DATA/TPCH/$dataSize
+dataDir=<data-directory-path>
+#dataDir=/home/perfuser/SNAPPY/DATA/TPCH/$dataSize
 
 #Location where final output will be collected
-outputLocation=/home/kishor/SNAPPY/OUTPUT/TPCH/SNAPPY_RESULT
+outputLocation=<path-to-location-for-generating-results>
 
 #GoldenFile against which query results should be compared
-ExpectedResultsAvailableAt=/home/kishor/SNAPPY/CURRENTWORK/volumeTesting/STOCK_SPARK_RESULT
+ExpectedResultsAvailableAt=<path-to-stock-spark-result>
+#ExpectedResultsAvailableAt=/home/perfuser/SNAPPY/CURRENTWORK/volumeTesting/STOCK_SPARK_RESULT
 
 #Location of query results files
-ActualResultsAvailableAt=/home/kishor/SNAPPY/CURRENTWORK/volumeTesting/23May_SNAPPY_RESULT
+ActualResultsAvailableAt=<path-to-actual-results>
+#ActualResultsAvailableAt=/home/perfuser/SNAPPY/CURRENTWORK/volumeTesting/23May_SNAPPY_RESULT
+
+# Trace events to get granular timing info and report in loadPerfStream
+traceEvents=true
+
+# seed value for random number used in generating query parameter data
+randomSeed=42

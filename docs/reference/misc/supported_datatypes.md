@@ -1,7 +1,5 @@
 # Data Types
 
-**WORK IN PROGRESS - OUTDATED CONTENT**
-
 The SQL type system determines the compile-time and runtime type of an expression. Each type has a certain range of permissible values that can be assigned to a column or value of that type.
 
 The special value NULL, denotes an unassigned or missing value of any of the types (columns that have been assigned as non-nullable using NOT NULL clause or the primary key columns cannot have a NULL value). The supported types are given below.
@@ -93,13 +91,13 @@ A binary large object represents an array of raw bytes of varying length.
 | Equivalent Java type                 | java.lang.Blob                               |
 | Maximum length (also default length) | 2 GB - 1 (or 2,147,483,647)                  |
 
-``` no-highlight
+```pre
 { BLOB | BINARY LARGE OBJECT } [ ( length [{ K | M | G }] ) ] 
 ```
 
 The length of the BLOB is expressed in number of bytes by default. The suffixes K, M, and G stand for kilobyte, megabyte and gigabyte, and use the multiples of 1024, 1024\*1024, or 1024\*1024\*1024 respectively.
 
-``` no-highlight
+```pre
 CREATE TABLE blob_data(id INT primary key, data BLOB(10M)); 
 –- search for a blob 
 select length(data) from blob_data where id = 100;
@@ -108,8 +106,17 @@ select length(data) from blob_data where id = 100;
 <a id="boolean"></a>
 ## BOOLEAN
 
+The data type representing `Boolean` values. This is equivalent to Java's `boolean` primitive type.
+
 <a id="byte"></a>
 ## BYTE
+
+The data type representing `Byte` values. It is an 8-bit signed integer (equivalent to Java's `byte` primitive type).
+
+|                                      |                                              |
+|--------------------------------------|----------------------------------------------|
+| Minimum value                  | java.lang.Byte.MIN_VALUE                             |
+| Maximum value | java.lang.Byte.MAX_VALUE |
 
 <a id="char"></a>
 ## CHAR
@@ -118,7 +125,7 @@ Provides for fixed-length strings. If a string value is shorter than the expecte
 
 To represent a single quotation mark within a string, use two quotation marks:
 
-``` no-highlight
+```pre
 VALUES 'going to Chandra''s place' 
 ```
 
@@ -130,7 +137,7 @@ The length of CHAR is an unsigned integer constant.
 | Maximum length       | java.lang.Integer.MAX\_VALUE (2147483647 )       |
 | Default length       | 1                                                |
 
-``` no-highlight
+```pre
 CHAR[ACTER] [(length)] 
 ```
 
@@ -147,11 +154,11 @@ The length is expressed in number characters, unless you specify the suffix K, M
 | Equivalent Java type                 | java.sql.Clob                                |
 | Maximum length (also default length) | 2 GB - 1 (or 2,147,483,647)                  |
 
-``` no-highlight
+```pre
 { CLOB | CHARACTER LARGE OBJECT } [ ( length [{ K | M | G }] ) ] 
 ```
 
-``` no-highlight
+```pre
 CREATE TABLE clob_data(id INT primary key, text CLOB(10M)); 
 –- search for a clob
 select text from clob_data where id = 100;
@@ -163,15 +170,15 @@ select text from clob_data where id = 100;
 
 Provides for storage of a date as year-month-day. Supported formats are:
 
-``` no-highlight
+```pre
 yyyy-mm-dd 
 ```
 
-``` no-highlight
+```pre
 mm/dd/yyyy 
 ```
 
-``` no-highlight
+```pre
 dd.mm.yyyy 
 ```
 
@@ -181,11 +188,11 @@ The year (yyyy) must always be expressed with four digits, while months (mm) and
 |----------------------|----------------------------------------------|
 | Equivalent Java type | java.sql.Date                                |
 
-``` no-highlight
+```pre
 VALUES '2010-05-04'
 ```
 
-``` no-highlight
+```pre
 VALUES DATE('2001-10-12')
 ```
 
@@ -209,11 +216,11 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Default precision    | 5                                                        |
 | Default scale        | 0                                                        |
 
-``` no-highlight
+```pre
 { DECIMAL | DEC } [(precision [, scale ])]
 ```
 
-``` no-highlight
+```pre
 -- this cast loses fractional precision 
 values cast (23.8372 AS decimal(4,1)); 
 -–- results in: 
@@ -244,7 +251,7 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Default precision       | 5                                                                                                                                                                |
 | Default scale           | 0                                                                                                                                                                |
 
-``` no-highlight
+```pre
 –- examples of valid values 
 values 233.31E3; 
 values 8928E+06; 
@@ -264,7 +271,7 @@ Alias for a REAL or DOUBLE data type, depending on the specified precision. The 
 | Minumum/Maximum limits | Same as those for FLOAT if the precision is less than 23. Otherwise, same minimum/maximum limits as those for DOUBLE. |
 | Default precision      | 53                                                                                                                    |
 
-``` no-highlight
+```pre
 FLOAT [(precision)]
 ```
 
@@ -290,10 +297,14 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 <a id="long"></a>
 
 ## LONG
-
-
 <a id="map"></a>
-- [MAP](#map)
+
+The data type representing `Long` values. It's a 64-bit signed integer (equivalent to Java's `long` primitive type).
+
+|                      |                                            |
+|----------------------|--------------------------------------------|
+| Minimum value   | java.lang.Long.MIN_VALUE                          |
+|    Maximum value   | java.lang.Long.MAX_VALUE |
 
 !!! Note
 	Supported only for column tables
@@ -311,7 +322,7 @@ The meta-data differences from DECIMAL are listed below. Otherwise, NUMERIC beha
 |--------------------|------------------------|
 |  |  |
 
-``` no-highlight
+```pre
 NUMERIC [(precision [, scale ])]
 ```
 <a id="real"></a>
@@ -347,16 +358,18 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 <a id="string"></a>
 ## STRING
 
+The data type representing `String` values. A String encoded in UTF-8 as an Array[Byte], which can be used for comparison search.
+
 <a id="timestamp"></a>
 ## TIMESTAMP
 
 Provides for storage of both DATE and TIME as a combined value. In addition it allows for fractional seconds having up to six digits. Supported formats are:
 
-``` no-highlight
+```pre
 yyyy-MM-dd hh:mm:ss[.nnnnnn] 
 ```
 
-``` no-highlight
+```pre
 yyyy-MM-dd-hh.mm.ss[.nnnnnn] 
 ```
 
@@ -366,7 +379,7 @@ The year (yyyy) must always be expressed with four digits. Months (MM), days (dd
 |----------------------|--------------------------------------------------------|
 | Equivalent Java type | java.sql.Timestamp                                     |
 
-``` no-highlight
+```pre
 VALUES '2000-02-03 12:23:04' 
 VALUES TIMESTAMP(' 2000-02-03 12:23:04.827') 
 VALUES TIMESTAMP('2000-02-03 12:23:04')
@@ -388,7 +401,7 @@ Provides for variable-length strings with a maximum limit for length. If a strin
 
 The type of a string constant is CHAR, not VARCHAR. To represent a single quotation mark within a string, use two quotation marks:
 
-``` no-highlight
+```pre
 VALUES 'going to Chandra''s place' 
 ```
 
@@ -399,7 +412,7 @@ The length of VARCHAR is an unsigned integer constant.
 | Equivalent Java type | java.lang.String                                 |
 | Maximum length       | 32672                                            |
 
-``` no-highlight
+```pre
 { VARCHAR | CHAR VARYING | CHARACTER VARYING }(length)
 ```
 

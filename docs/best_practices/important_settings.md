@@ -14,6 +14,8 @@ This section provides guidelines for configuring the following important setting
 
 * [SnappyData Smart Connector mode and Local mode Settings](#smartconnector-local-settings)
 
+* [Code Generation and Tokenization](#codegenerationtokenization)
+
 <a id="buckets"></a>
 ## Buckets
 
@@ -27,8 +29,8 @@ If there are more buckets in a table than required, it means there is less data 
 
 For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when [creating a table](../reference/sql_reference/create-table.md).
 
-<a id="member-timeout"></a>
 ## member-timeout
+<a id="member-timeout"></a>
 
 The default [member-timeout](../configuring_cluster/property_description.md#member-timeout) in SnappyData cluster is 30 seconds. The default `spark.network.timeout` is 120 seconds and `spark.executor.heartbeatInterval` is 10 seconds as noted in the [Spark documents](https://spark.apache.org/docs/latest/configuration.html). </br> 
 If applications require node failure detection to be faster, then these properties should be reduced accordingly (`spark.executor.heartbeatInterval` but must always be much lower than `spark.network.timeout` as specified in the Spark Documents). </br>
@@ -53,11 +55,11 @@ For best performance, the following operating system settings are recommended on
 **Ulimit** </br> 
 Spark and SnappyData spawn a number of threads and sockets for concurrent/parallel processing so the server and lead node machines may need to be configured for higher limits of open files and threads/processes. </br>
 </br>A minimum of 8192 is recommended for open file descriptors limit and nproc limit to be greater than 128K. 
-</br>To change the limits of these settings for a user, the /etc/security/limits.conf file needs to be updated. A typical limits.conf used for SnappyData servers and leads looks like: 
+</br>To change the limits of these settings for a user, the **/etc/security/limits.conf** file needs to be updated. A typical **limits.conf** used for SnappyData servers and leads appears as follows: 
 
-```
-ec2-user          hard    nofile      163840 
-ec2-user          soft    nofile      16384
+```pre
+ec2-user          hard    nofile      32768
+ec2-user          soft    nofile      32768
 ec2-user          hard    nproc       unlimited
 ec2-user          soft    nproc       524288
 ec2-user          hard    sigpending  unlimited
@@ -65,16 +67,24 @@ ec2-user          soft    sigpending  524288
 ```
 * `ec2-user` is the user running SnappyData.
 
+
+Recent linux distributions using systemd (like RHEL/CentOS 7, Ubuntu 18.04) need the NOFILE limit to be increased in systemd configuration too. Edit **/etc/systemd/system.conf ** as root, search for **#DefaultLimitNOFILE** under the **[Manager] **section. Uncomment and change it to **DefaultLimitNOFILE=32768**. 
+Reboot for the above changes to be applied. Confirm that the new limits have been applied in a terminal/ssh window with **"ulimit -a -S"** (soft limits) and **"ulimit -a -H"** (hard limits).
+
 **OS Cache Size**</br> 
 When there is a lot of disk activity especially during table joins and during an eviction, the process may experience GC pauses. To avoid such situations, it is recommended to reduce the OS cache size by specifying a lower dirty ratio and less expiry time of the dirty pages.</br> 
-The following are the typical configuration to be done on the machines that are running SnappyData processes. 
+
+Add the following to */etc/sysctl.conf* using the command `sudo vim /etc/sysctl.conf` or `sudo gedit /etc/sysctl.conf` or by using an editor of your choice:</br>
 
 ```
-sudo sysctl -w vm.dirty_background_ratio=2
-sudo sysctl -w vm.dirty_ratio=4
-sudo sysctl -w vm.dirty_expire_centisecs=2000
-sudo sysctl -w vm.dirty_writeback_centisecs=300
+vm.dirty_background_ratio=2
+vm.dirty_ratio=4
+vm.dirty_expire_centisecs=2000
+vm.dirty_writeback_centisecs=300
 ```
+Then apply to current session using the command `sudo sysctl -p`
+
+These settings lower the OS cache buffer sizes which reduces long GC pauses during disk flush but can decrease overall disk write throughput. This is especially true for slower magnetic disks where the bulk insert throughput can see a noticeable drop (such as 20%), while the duration of GC pauses should reduce significantly (such as 50% or more). If long GC pauses, for example in the range of 10s of seconds, during bulk inserts, updates, or deletes is not a problem then these settings can be skipped.
 
 **Swap File** </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
@@ -120,3 +130,23 @@ CMS collector with ParNew is used by default as above and recommended. GC settin
 
 
 Set in the **conf/locators**, **conf/leads**, and **conf/servers** file.
+
+<a id="codegenerationtokenization"></a>
+## Code Generation and Tokenization
+SnappyData uses generated code for best performance for most of the queries and internal operations. This is done for both Spark-side whole-stage code generation for queries, for example,[Technical Preview of Apache Spark 2.0 blog]( https://databricks.com/blog/2016/05/11/apache-spark-2-0-technical-preview-easier-faster-and-smarter.html), and internally by SnappyData for many operations. For example, rolling over data from row buffer to column store or merging batches among others. </br>The point key lookup queries on row tables and JDBC inserts bypasses this and performs direct operations. However, for all other operations the product uses code generation for best performance.
+
+In many cases, the first query execution is slightly slower than subsequent query executions. This is primarily due to the overhead of compilation of generated code for the query plan and optimized machine code generation by JVM's hotspot JIT.
+Each distinct piece of generated code is a separate class which is loaded using its own ClassLoader. To reduce these overheads in multiple runs, this class is reused using a cache whose size is controlled by** spark.sql.codegen.cacheSize** property (default is 2000). Thus when the size limit of the cache is breached, the older classes that are used for a while gets removed from the cache.
+
+Further to minimize the generated plans, SnappyData performs tokenization of the values that are most constant in queries by default. Therefore the queries that differ only in constants can still create the same generated code plan.
+Thus if an application has a fixed number of query patterns that are used repeatedly, then the effect of the slack during the first execution, due to compilation and JIT, is minimized.
+
+!!!note
+	A single query pattern constitues of queries that differ only in constant values that are embedded in the query string.
+
+For cases where application has many query patterns, you can increase the value of **spark.sql.codegen.cacheSize** property from the default size of **2000**. 
+
+You can also increase the value for JVM's **ReservedCodeCacheSize** property and add additional RAM capacity accordingly. 
+
+!!!Note
+	In the smart connector mode, Apache Spark has the default cache size as 100 which cannot be changed while the same property works if you are using SnappyData's Spark distribution.

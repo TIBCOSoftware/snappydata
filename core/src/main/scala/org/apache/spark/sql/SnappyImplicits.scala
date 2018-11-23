@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -97,6 +97,17 @@ object snappy extends Serializable {
     }
 
     /**
+     * Like [[mapPartitionsPreserve]] but also skips closure cleaning like
+     * Spark's mapPartitionsInternal.
+     */
+    private[spark] def mapPartitionsPreserveInternal[U: ClassTag](
+        f: Iterator[T] => Iterator[U],
+        preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
+      new MapPartitionsPreserveRDD(rdd, (_, _, itr: Iterator[T]) => f(itr),
+        preservesPartitioning)
+    }
+
+    /**
      * Return a new RDD by applying a function to each partition of given RDD,
      * while tracking the index of the original partition.
      *
@@ -154,7 +165,7 @@ object snappy extends Serializable {
   private[this] val parColsMethod = classOf[DataFrameWriter[_]]
       .getDeclaredMethods.find(_.getName.contains("$normalizedParCols"))
       .getOrElse(sys.error("Failed to obtain method  " +
-      "normalizedParCols from DataFrameWriter"))
+          "normalizedParCols from DataFrameWriter"))
 
   dfField.setAccessible(true)
   parColsMethod.setAccessible(true)
@@ -197,23 +208,11 @@ object snappy extends Serializable {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
-        case _ => sys.error("Expected a SnappyContext for putInto operation")
+        case _ => sys.error("Expected a SnappyContext for deleteFrom operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
-          .asInstanceOf[Option[Seq[String]]]
-      // A partitioned relation's schema can be different from the input
-      // logicalPlan, since partition columns are all moved after data columns.
-      // We Project to adjust the ordering.
-      // TODO: this belongs to the analyzer.
-      val input = normalizedParCols.map { parCols =>
-        val (inputPartCols, inputDataCols) = df.logicalPlan.output.partition {
-          attr => parCols.contains(attr.name)
-        }
-        Project(inputDataCols ++ inputPartCols, df.logicalPlan)
-      }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        session.sessionState.catalog.newQualifiedTableName(tableName)), df.logicalPlan))
           .executedPlan.executeCollect()
     }
   }

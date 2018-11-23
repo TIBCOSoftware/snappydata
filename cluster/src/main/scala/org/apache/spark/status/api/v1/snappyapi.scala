@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import scala.collection.mutable
 
 
 class ClusterSummary private[spark](
-    val clusterInfo:  mutable.HashMap[String, Any],
+    val clusterInfo: mutable.HashMap[String, Any],
     val membersInfo: Seq[MemberSummary],
     val tablesInfo: Seq[TableSummary],
     val externalTablesInfo: Seq[ExternalTableSummary]
@@ -47,6 +47,7 @@ class MemberSummary private[spark](
     val isDataServer: Boolean,
     val isLead: Boolean,
     val isActiveLead: Boolean,
+    val cores: Int,
     val cpuActive: Int,
     val clients: Long,
     val maxMemory: Long,
@@ -87,12 +88,13 @@ class TableSummary private[spark](
     val isReplicatedTable: Boolean,
     val rowCount: Long,
     val sizeInMemory: Long,
+    val sizeSpillToDisk: Long,
     val totalSize: Long,
     val bucketCount: Int
 )
 
 class ExternalTableSummary private[spark](
-    val tableName: String,
+    val tableFQName: String,
     val provider: String,
     val source: String
 )

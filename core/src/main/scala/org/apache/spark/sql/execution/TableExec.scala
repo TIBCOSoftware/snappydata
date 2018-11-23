@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -115,7 +115,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
                 .region.asInstanceOf[PartitionedRegion]
             // if the two are different then its partition pruning case
             if (numBuckets == rdd.getNumPartitions) {
-              new DelegateRDD(sparkContext, rdd,
+              new DelegateRDD(sparkContext, rdd, Seq.empty[RDD[InternalRow]],
                 Array.tabulate(numBuckets)(
                   StoreUtils.getBucketPreferredLocations(region, _, forWrite = true)))
             } else rdd
@@ -146,7 +146,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       // if the two are different then its partition pruning case
       if (numBuckets == rdd.getNumPartitions) {
         val table = relation.get.asInstanceOf[PartitionedDataSourceScan].table
-        new DelegateRDD(sparkContext, rdd, preferredLocations(table))
+        new DelegateRDD(sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations(table))
       } else rdd
     }
   }
