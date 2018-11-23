@@ -17,7 +17,7 @@
 package io.snappydata.datasource.v2
 
 import java.io.IOException
-import java.sql.{Connection, DriverManager}
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
 import java.util.Collections
 
 import scala.collection.mutable.ArrayBuffer
@@ -26,6 +26,8 @@ import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.ClientStatement
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.v2.reader.DataReader
 
 /**
@@ -33,12 +35,32 @@ import org.apache.spark.sql.sources.v2.reader.DataReader
  *
  * @param bucketId          bucketId for which this factory is created
  * @param tableMetaData     metadata of the table being scanned
+ * @param queryConstructs   contains projections and filters
  */
-class SnappyDataReader(val bucketId: Int, tableMetaData: SnappyTableMetaData)
+class SnappyDataReader(val bucketId: Int,
+    tableMetaData: SnappyTableMetaData, queryConstructs: QueryConstructs)
     extends DataReader[Row] {
 
   private lazy val conn = jdbcConnection()
-  setLocalBucketScan()
+  private var preparedStatement: PreparedStatement = _
+  private var resultSet: ResultSet = _
+  private lazy val resultColumnCount = resultSet.getMetaData.getColumnCount
+
+  initiateScan()
+
+  def initiateScan(): Unit = {
+    setLocalBucketScan()
+    prepareScanStatement()
+  }
+
+  private def jdbcConnection(): Connection = {
+    // from bucketToServerMapping get the collection of hosts where the bucket exists
+    // (each element in hostsAndURLs ArrayBuffer is in the form of a tuple (host, jdbcURL))
+    val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
+        bucketToServerMapping.get(bucketId)
+    val connectionURL = hostsAndURLs(0)._2
+    DriverManager.getConnection(connectionURL)
+  }
 
   private def setLocalBucketScan(): Unit = {
     val statement = conn.createStatement()
@@ -58,13 +80,20 @@ class SnappyDataReader(val bucketId: Int, tableMetaData: SnappyTableMetaData)
     // TODO: handle case of DRDA driver that is when thriftConn = null
   }
 
-  private def jdbcConnection(): Connection = {
-    // from bucketToServerMapping get the collection of hosts where the bucket exists
-    // (each element in hostsAndURLs ArrayBuffer is in the form of a tuple (host, jdbcURL))
-    val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
-        bucketToServerMapping.get(bucketId)
-    val connectionURL = hostsAndURLs(0)._2
-    DriverManager.getConnection(connectionURL)
+  private def prepareScanStatement(): Unit = {
+    val columnList = queryConstructs.projections.fieldNames.mkString(",")
+    val filterWhereClause = if (queryConstructs.filters.isDefined) {
+      // TODO: form a string from filters here
+      ""
+    } else {
+      ""
+    }
+
+    val sqlText = s"SELECT $columnList FROM" +
+        s" ${quotedName(tableMetaData.tableName)}$filterWhereClause"
+
+    preparedStatement = conn.prepareStatement(sqlText)
+    resultSet = preparedStatement.executeQuery()
   }
 
   /**
@@ -86,7 +115,7 @@ class SnappyDataReader(val bucketId: Int, tableMetaData: SnappyTableMetaData)
     // We decode and form a row. We will use our decoder classes
     // which are to be moved to a new package. This package needs to be present in
     // the classpath
-    false
+    resultSet.next()
   }
 
   /**
@@ -96,12 +125,16 @@ class SnappyDataReader(val bucketId: Int, tableMetaData: SnappyTableMetaData)
    * get retried until hitting the maximum retry times.
    */
   override def get(): Row = {
-    // Return the row decoded in next()
-    // fake return value just to be able compile
-    Row.fromSeq(Seq(1))
+    val values = new Array[Any](resultColumnCount)
+    for(index <- 0 until   resultColumnCount) {
+      values(index) = resultSet.getObject(index + 1)
+    }
+    new GenericRowWithSchema(values, queryConstructs.projections)
   }
 
   override def close(): Unit = {
+    if (resultSet != null) resultSet.close()
+    if (preparedStatement != null) preparedStatement.close()
     if (conn != null) conn.close()
   }
 

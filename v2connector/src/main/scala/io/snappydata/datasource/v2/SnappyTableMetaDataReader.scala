@@ -76,14 +76,22 @@ final class SnappyTableMetaDataReader {
 
       val storageType = getV2MetaDataStmt.getString(3)
       val bucketCount = getV2MetaDataStmt.getInt(4)
-      val partitioningCols = getV2MetaDataStmt.getString(5).split(":")
 
+      val pkColsString = getV2MetaDataStmt.getString(5)
+      val partitioningCols = Option(pkColsString) match {
+        case Some(str) => str.split(":")
+        case None => Array.empty[String]
+
+      }
+
+      // even though the name below is bucketToServerMapping; for replicated tables
+      // this returns list of all servers on which replicated table exists
       val bucketToServerMappingString = getV2MetaDataStmt.getString(6)
       val bucketToServerMapping = if (bucketCount > 0) {
         Option(ConnectorUtils.setBucketToServerMappingInfo(bucketToServerMappingString))
       }
       else {
-        None
+        Option(ConnectorUtils.setReplicasToServerMappingInfo(bucketToServerMappingString))
       }
 
       SnappyTableMetaData(tableName, schema, storageType, bucketCount,
@@ -94,6 +102,21 @@ final class SnappyTableMetaDataReader {
   }
 }
 
+/**
+ *  Metadata for tables
+ *
+ * @param tableName               table for which metadata is needed
+ * @param schema                  table schema (columns)
+ * @param tableStorageType        table type that is ROW/COLUMN etc.
+ * @param bucketCount             0 for replicated tables otherwise the actual count
+ * @param partitioningCols        partitioning columns
+ * @param bucketToServerMapping   For a partitioned table, this is an array with each entry
+ *                                corresponding to a bucket(0th entry for bucket#0 and so on).
+ *                                Each entry is an ArrayBuffer of tuples in the form of
+ *                                (host, jdbcURL) for hosts where bucket exists
+ *                                For replicated table the array contains a single ArrayBuffer
+ *                                of tuples((host, jdbcURL)) for all hosts where the table exists
+ */
 case class SnappyTableMetaData(tableName: String,
     schema: StructType, tableStorageType: String,
     bucketCount: Int, partitioningCols: Seq[String] = Nil,

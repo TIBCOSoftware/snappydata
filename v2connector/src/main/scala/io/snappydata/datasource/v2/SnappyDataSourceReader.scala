@@ -23,12 +23,14 @@ import java.util.{List => JList}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.sources.v2.DataSourceOptions
-import org.apache.spark.sql.sources.v2.reader.{DataReaderFactory, DataSourceReader, SupportsPushDownFilters, SupportsPushDownRequiredColumns}
+import org.apache.spark.sql.sources.v2.reader.partitioning.Partitioning
+import org.apache.spark.sql.sources.v2.reader.{DataReaderFactory, DataSourceReader, SupportsPushDownFilters, SupportsPushDownRequiredColumns, SupportsReportPartitioning}
 import org.apache.spark.sql.types.StructType
 
 // created on driver
 class SnappyDataSourceReader(options: DataSourceOptions)
     extends DataSourceReader with
+    SupportsReportPartitioning with
     SupportsPushDownRequiredColumns {
 //    with SupportsPushDownFilters {
 
@@ -81,8 +83,9 @@ class SnappyDataSourceReader(options: DataSourceOptions)
     val factories =
       new util.ArrayList[DataReaderFactory[Row]](tableMetaData.bucketToServerMapping.get.length)
     var bucketId = 0
+    val queryConstructs = QueryConstructs(readSchema())
     tableMetaData.bucketToServerMapping.foreach(b => b.foreach(_ => {
-      factories.add(new SnappyDataReaderFactory(bucketId, tableMetaData))
+      factories.add(new SnappyDataReaderFactory(bucketId, tableMetaData, queryConstructs))
       bucketId = bucketId + 1
     } ))
     factories
@@ -123,5 +126,12 @@ class SnappyDataSourceReader(options: DataSourceOptions)
 //    null
 //  }
 
-
+  /**
+   * Returns the output data partitioning that this reader guarantees.
+   */
+  override def outputPartitioning(): Partitioning = {
+    new SnappyDataPartitioning(tableMetaData)
+  }
 }
+
+case class QueryConstructs(projections: StructType, filters: Option[Array[Filter]] = None)

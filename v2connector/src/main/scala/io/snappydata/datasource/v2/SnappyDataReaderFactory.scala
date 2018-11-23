@@ -28,8 +28,10 @@ import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
  * {@link SnappyDataReader} is responsible for
  * @param bucketId          bucketId for which this factory is created
  * @param tableMetaData     metadata of the table being scanned
+ * @param queryConstructs   contains projections and filters
  */
-class SnappyDataReaderFactory(val bucketId: Int, tableMetaData: SnappyTableMetaData)
+class SnappyDataReaderFactory(val bucketId: Int,
+    tableMetaData: SnappyTableMetaData, queryConstructs: QueryConstructs)
     extends DataReaderFactory[Row] {
 
   /**
@@ -48,10 +50,14 @@ class SnappyDataReaderFactory(val bucketId: Int, tableMetaData: SnappyTableMetaD
   override def preferredLocations(): Array[String] = {
     if (tableMetaData.bucketToServerMapping.isEmpty) return new Array[String](0)
 
-    // from bucketToServerMapping get the collection of hosts where the bucket exists
-    // (each element in preferredServers ArrayBuffer is in the form of a tuple (host, jdbcURL))
-    val preferredServers: ArrayBuffer[(String, String)] = tableMetaData.
-        bucketToServerMapping.get(bucketId)
+    val preferredServers: ArrayBuffer[(String, String)] = if (tableMetaData.bucketCount > 0) {
+      // from bucketToServerMapping get the collection of hosts where the bucket exists
+      // (each element in preferredServers ArrayBuffer is in the form of a tuple (host, jdbcURL))
+      tableMetaData.bucketToServerMapping.get(bucketId)
+    } else { // replicated tables
+      tableMetaData.bucketToServerMapping.get(0)
+    }
+
     if (preferredServers.isEmpty) return new Array[String](0)
 
     val locations = Array.ofDim[String](preferredServers.length)
@@ -72,7 +78,7 @@ class SnappyDataReaderFactory(val bucketId: Int, tableMetaData: SnappyTableMetaD
    * get retried until hitting the maximum retry times.
    */
   override def createDataReader(): DataReader[Row] = {
-    new SnappyDataReader(bucketId, tableMetaData)
+    new SnappyDataReader(bucketId, tableMetaData, queryConstructs)
   }
 
 }

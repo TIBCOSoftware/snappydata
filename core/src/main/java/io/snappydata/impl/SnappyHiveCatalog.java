@@ -596,14 +596,19 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           value = parameters.get(ExternalStoreUtils.DEPENDENT_RELATIONS());
           String[] dependentRelations = value != null
               ? value.toString().split(",") : null;
-          int columnBatchSize = ExternalStoreUtils.sizeAsBytes(parameters.get(
-              ExternalStoreUtils.COLUMN_BATCH_SIZE()), ExternalStoreUtils.COLUMN_BATCH_SIZE());
-          int columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.parseInt(
-              parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS())),
-              ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
-          value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
-          String compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
           String tableType = ExternalTableType.getTableType(table);
+          int columnBatchSize = 0;
+          int columnMaxDeltaRows = 0 ;
+          String compressionCodec = "";
+          if (ExternalTableType.Column().name().equalsIgnoreCase(tableType)) {
+            columnBatchSize = ExternalStoreUtils.sizeAsBytes(parameters.get(
+                ExternalStoreUtils.COLUMN_BATCH_SIZE()), ExternalStoreUtils.COLUMN_BATCH_SIZE());
+            columnMaxDeltaRows = ExternalStoreUtils.checkPositiveNum(Integer.parseInt(
+                parameters.get(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS())),
+                ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS());
+            value = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC());
+            compressionCodec = value == null ? Constant.DEFAULT_CODEC() : value.toString();
+          }
           Properties metadata = table.getMetadata();
           String tblDataSourcePath = getDataSourcePath(metadata);
           String driverClass = metadata.getProperty("driver");
