@@ -416,8 +416,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def cachePutInto(plan: Option[LogicalPlan], table: String): Boolean = {
     // first acquire the global lock for putInto
-    val lock = PartitionedRegion.getRegionLock("PUTINTO_" + table, GemFireCacheImpl.getExisting)
-    lock.lock()
+    val lock = SnappyContext.getClusterMode(sparkContext) match {
+      case _: ThinClientConnectorMode => null
+      case _ =>
+        PartitionedRegion.getRegionLock("PUTINTO_" + table, GemFireCacheImpl.getExisting)
+    }
+    if (lock ne null) lock.lock()
     var hasUpdates = false
     try {
       val cachedPlan = plan match {
@@ -444,15 +448,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       hasUpdates
     } finally {
       // release lock immediately if no updates are to be done
-      if (!hasUpdates) lock.unlock()
+      if (!hasUpdates && (lock ne null)) lock.unlock()
     }
   }
 
   private[sql] def clearPutInto(): Unit = {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
-      case (cachedPlan: Option[LogicalPlan], lock: PartitionedRegion.RegionLock) =>
-        lock.unlock()
+      case (cachedPlan: Option[LogicalPlan], lock) =>
+        if (lock != null) lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
         if (cachedPlan.isDefined) {
           sharedState.cacheManager.uncacheQuery(this, cachedPlan.get, blocking = true)
         }
