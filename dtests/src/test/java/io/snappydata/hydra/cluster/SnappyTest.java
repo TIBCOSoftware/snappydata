@@ -426,6 +426,8 @@ public class SnappyTest implements Serializable {
             + "_" + RemoteTestModule.getMyVmid(), leadHost);
         SnappyBB.getBB().getSharedMap().put("leadPort_" + RemoteTestModule
             .getMyClientName() + "_" + RemoteTestModule.getMyVmid(), Integer.toString(leadPort));
+        Log.getLogWriter().info("SS - Lead Host for lead : " + RemoteTestModule
+            .getMyClientName() + "_" + RemoteTestModule.getMyVmid() + ": " + leadHost + ", Lead jobserver UI port is: " + leadPort);
         break;
       case WORKER:
         nodeLogDir = HostHelper.getLocalHost();
@@ -547,6 +549,31 @@ public class SnappyTest implements Serializable {
   public static void HydraTask_writeLocatorConfigData() {
     snappyTest.writeLocatorConfigData("locators", "locatorLogDir");
     if (isLongRunningTest) writeLocatorConnectionInfo();
+  }
+
+  /**
+   * This method checks whether primary lead node is up and running in the cluster.
+   *
+   * @return Lead node status
+   */
+  public static boolean isPrimaryLeadUpAndRunning() {
+    boolean isLeadNodeRunning = false;
+    ResultSet rs;
+    try {
+      Connection conn = getLocatorConnection();
+      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
+      while (rs.next()) {
+        Log.getLogWriter().info("Checking the Lead node status...");
+        if (rs.getString("STATUS").equals("RUNNING")) {
+          isLeadNodeRunning = true;
+          SnappyBB.getBB().getSharedMap().put("PrimaryLeadPID", rs.getString("PID"));
+          Log.getLogWriter().info("Primary Lead node is up and running...");
+        }
+      }
+    } catch (SQLException se) {
+      throw new TestException("Got SQLException while running the query on sys.members: " + se.getMessage());
+    }
+    return isLeadNodeRunning;
   }
 
   /**
@@ -1809,7 +1836,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-   public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
+  public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
       File log = new File(".");
@@ -2182,13 +2209,11 @@ public class SnappyTest implements Serializable {
         String userJob = (String) jobClassNames.elementAt(i);
         String APP_PROPS = null;
         if (SnappyPrms.getCommaSepAPPProps() == null) {
-          String primaryLocatorHost = getPrimaryLocatorHost();
-          String primaryLocatorPort = getPrimaryLocatorPort();
           APP_PROPS = "logFileName=" + logFileName;
         } else {
           APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName;
         }
-        if(SnappyPrms.useJDBCConnInSnappyJob()){
+        if (SnappyPrms.useJDBCConnInSnappyJob()) {
           String primaryLocatorHost = getPrimaryLocatorHost();
           String primaryLocatorPort = getPrimaryLocatorPort();
           APP_PROPS = "\"" + APP_PROPS + ",primaryLocatorHost=" + primaryLocatorHost + ",primaryLocatorPort=" + primaryLocatorPort + "\"";
@@ -2300,8 +2325,8 @@ public class SnappyTest implements Serializable {
           userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
-            command = setCDCSparkAppCmds(userAppArgs,commonArgs,snappyJobScript,userJob,masterHost,masterPort,logFile);
-       } else {
+          command = setCDCSparkAppCmds(userAppArgs, commonArgs, snappyJobScript, userJob, masterHost, masterPort, logFile);
+        } else {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
@@ -2317,7 +2342,7 @@ public class SnappyTest implements Serializable {
           try {
             Thread.sleep(120000);
           } catch (InterruptedException ie) {
-             Log.getLogWriter().info("Caught exception in cdc thread.sleep " + ie.getMessage());
+            Log.getLogWriter().info("Caught exception in cdc thread.sleep " + ie.getMessage());
           }
           Log.getLogWriter().info("Inside getIsCDCStream : " + SnappyCDCPrms.getIsCDCStream());
           return;
@@ -3426,20 +3451,34 @@ public class SnappyTest implements Serializable {
     Set<String> fileContent = new LinkedHashSet<String>();
     fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
     boolean found = false;
+    String primaryLeadPid = null;
     for (String nodeConfig : fileContent) {
       if (nodeConfig.contains(vmDir)) {
         //check for active lead member dir
-        String searchString1 = "Primary lead lock acquired";
-        String searchString2 = "Resuming startup sequence from STANDBY";
+        boolean isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
+        if (!isPrimaryLeadUp) {
+          for (int i = 0; i < 3; i++) {
+            isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
+          }
+        }
+        if (cycleVms && !isPrimaryLeadUp) {
+          do {
+            isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
+          } while (isPrimaryLeadUp);
+        }
+
+        primaryLeadPid = (String) SnappyBB.getBB().getSharedMap().get("PrimaryLeadPID");
+        String searchString1 = primaryLeadPid;
+        Log.getLogWriter().info("SS - primaryLeadPID: " + primaryLeadPid);
         File dirFile = new File(vmDir);
         for (File srcFile : dirFile.listFiles()) {
-          if (srcFile.getAbsolutePath().contains("snappyleader.log")) {
+          if (srcFile.getAbsolutePath().contains("snappyleader.pid")) {
             try {
               FileInputStream fis = new FileInputStream(srcFile);
               BufferedReader br = new BufferedReader(new InputStreamReader(fis));
               String str = null;
               while ((str = br.readLine()) != null && !found) {
-                if (str.toLowerCase().contains(searchString1.toLowerCase()) || str.toLowerCase().contains(searchString2.toLowerCase())) {
+                if (str.toLowerCase().contains(searchString1.toLowerCase())) {
                   found = true;
                 }
               }
