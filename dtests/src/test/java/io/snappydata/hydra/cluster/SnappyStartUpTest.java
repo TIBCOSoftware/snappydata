@@ -98,7 +98,7 @@ public class SnappyStartUpTest extends SnappyTest {
     }
   }
 
-  protected static synchronized Set<String> getServerPidList() {
+  public static synchronized Set<String> getServerPidList() {
     Set<String> pidList = new HashSet<>();
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
