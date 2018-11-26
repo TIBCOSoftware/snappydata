@@ -23,6 +23,9 @@ class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
+    "FileStreamSource schema: no path",
+    "FileStreamSource schema: path doesn't exist (without schema) should throw exception",
+    "FileStreamSource schema: path doesn't exist (with schema) should throw exception",
     "SPARK-17372 - write file names to WAL as Array[String]",
     "FileStreamSource offset - read Spark 2.1.0 offset json format",
     "FileStreamSource offset - read Spark 2.1.0 offset long format",
