@@ -30,36 +30,45 @@ You can also download the Enterprise Edition [here](https://www.snappydata.io/do
 
 ## New Features 
 
-The following new features are included in SnappyData 1.0.2.1 version:
+SnappyData 1.0.2.1 version includes the following new features:
 
 *	Support Spark's HiveServer2 in SnappyData cluster. Enables starting an embedded Spark HiveServer2 on leads in embedded mode.
-*	Provided a default Structured Streaming Sink implementation for SnappyData column and row tables. Conflation of events with same key columns can be enabled by a sink property.
-*	Added a -agent jvm argument in the launch commands to kill the jvm as soon as OOM occurs. This is important because the VM sometimes used to crash in unexpected ways later as a side effect of this corrupting internal metadata which later gave restart troubles.
-*	Allow NONE as a valid policy for server-auth-provider. Essentially, the cluster can now be configured only for user authentication and mutual peer to peer authentication of cluster members can be disabled by specifying this property as NONE.
-*	Add support for query hints to force a join type. This may be useful for cases where the result is known to be small, for example, but plan rules cannot determine so.
-*	Allow deleteFrom API to work as far as the dataframe contains key columns.
+*	Provided a default [Structured Streaming Sink implementation](/howto/use_stream_processing_with_snappydata.md#structuredstreaming) for SnappyData column and row tables. A Sink property can enable conflation of events with the same key columns. 
+*	Added a **-agent **JVM argument in the launch commands to kill the JVM as soon as Out-of-Memory(OOM) occurs. This is important because the VM sometimes used to crash in unexpected ways later as a side effect of this corrupting internal metadata which later gave restart troubles. [Handling Out-of-Memory Error](../best_practices/important_settings.md#oomerrorhandle)
+*	Allow **NONE** as a valid policy for `server-auth-provider`. Essentially, the cluster can now be configured only for user authentication, and mutual peer to peer authentication of cluster members can be disabled by specifying this property as NONE.
+*	Add support for query hints to force a join type. This may be useful for cases where the result is known to be small, for example, but plan rules cannot determine it.
+*	Allow **deleteFrom** API to work as long as the dataframe contains key columns.
 
 ## Performance Enhancements
 
 The following performance enhancements are included in SnappyData 1.0.2.1 version:
 
-*	Avoid shuffle when join key columns are a superset of child partitioning. 
-*	Added a pooled version of SnappyData JDBC driver for Spark to connect to SnappyData cluster as JDBC datasource.
-*	[SNAP-2657] Added caching for hive catalog lookups. Meta-data queries with large number of tables take quite long because of nested loop joins between  SYSTABLES and HIVETABLES for most meta-data queries. Even if the table numbers were in hundreds it used to take a lot of time.
+*	Avoid shuffle when join key columns are a superset of child partitioning.
+
+*	Added a pooled version of SnappyData JDBC driver for Spark to connect to SnappyData cluster as JDBC data source. [Connecting with JDBC Client Pool Driver](../howto/connect_using_jdbc_driver.md#jdbcpooldriverconnect) 
+
+*	Added caching for hive catalog lookups. Meta-data queries with large number of tables take quite long because of nested loop joins between **SYSTABLES** and **HIVETABLES** for most meta-data queries. Even if the table numbers were in hundreds, it used to take much time. [SNAP-2657]
 
 
 ## Select Fixes and Performance Related Fixes
 
 The following defect fixes are included in SnappyData 1.0.2.1 version:
 
-*	[SNAP-2659] Reset the pool at the end of collect to avoid spill over of low latency pool setting to latter operations that may not use the CachedDataFrame execution paths.
-*	[SNAP-2491] Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through SnappyData shell does not reflect in spark-shell. 
-*	Fixing occasional failures in serialization using CachedDataFrame, if the node is just starting/stopping. Also, fix a hang in shutdown for cases where hive client close is trying to boot up the node again, waiting on the locks taken during the shutdown.
-*	[SNAP-2566] Lead and Lag window functions were failing due to incorrect analysis error.
-Fixed the validate-disk-store tool. It was not getting initialized with registered types. This was required to deserialize byte arrays being read from persisted files.
-*	Fix schema in ResultSet metadata. It used to show the default schema 'APP' always.
-*	[SNAP-2627] Sometimes a false unique constraint violation happened due to removed or destroyed AbstractRegionEntry. Now an attempt is made to remove it from index and another try is made to put the new value against the index key.
-*	[SNAP-2654] Fix for memory leak in oldEntrieMap leading to LowMemoryException and OutOfMemoryException.
+*	Reset the pool at the end of collect to avoid spillover of low latency pool setting to the latter operations that may not use the CachedDataFrame execution paths. [SNAP-2659]
+
+*	Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through SnappyData shell does not reflect in spark-shell. [SNAP-2491]  
+
+*	Fixed the occasional failures in serialization using **CachedDataFrame**, if the node is just starting/stopping. Also, fixed a hang in shutdown for cases where hive client close is trying to boot up the node again, waiting on the locks that are taken during the shutdown.
+
+*	Lead and Lag window functions were failing due to incorrect analysis error. [SNAP-2566]
+
+*	Fixed the **validate-disk-store** tool. It was not getting initialized with registered types. This was required to deserialize byte arrays being read from persisted files.
+
+*	Fix schema in ResultSet metadata. It used to show the default schema **APP** always.
+
+*	Sometimes a false unique constraint violation happened due to removed or destroyed AbstractRegionEntry. Now an attempt is made to remove it from the index and another try is made to put the new value against the index key. [SNAP-2627]
+
+*	Fix for memory leak in oldEntrieMap leading to **LowMemoryException** and **OutOfMemoryException**. [SNAP-2654]
 
 
 ## Description of Download Artifacts
