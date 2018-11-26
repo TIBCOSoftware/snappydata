@@ -14,15 +14,11 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql
+package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.streaming.FileStreamSinkSuite
+import org.apache.spark.sql.execution.streaming.MemorySinkSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyFileStreamSinkSuite extends FileStreamSinkSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "parquet"
-  )
+class SnappyMemorySinkSuite extends MemorySinkSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil{
 }
