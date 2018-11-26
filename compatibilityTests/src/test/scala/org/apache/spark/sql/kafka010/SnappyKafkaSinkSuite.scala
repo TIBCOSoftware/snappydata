@@ -16,15 +16,18 @@
  */
 package org.apache.spark.sql.kafka010
 
-import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
+import org.apache.spark.DebugFilesystem
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil, TestSnappySession}
 
 class SnappyKafkaSinkSuite extends KafkaSinkSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
+with SharedSnappySessionContext with SnappySparkTestUtil {
+    override def createSparkSession: SnappySession = {
+        sparkConf.set("spark.hadoop.fs.file.impl", classOf[DebugFilesystem].getName)
 
-  override def ignored: Seq[String] = Seq(
-    "streaming - write to kafka with topic field",
-    "streaming - write aggregation w/o topic field, with topic option",
-    "streaming - aggregation with topic field and topic option",
-    "streaming - write data with bad schema",
-    "streaming - write data with valid schema but wrong types")
+        // setting case sensitivity to true to pass some failing tests.
+        // See https://jira.snappydata.io/browse/SNAP-2732
+        sparkConf.set("spark.sql.caseSensitive", "true")
+        new TestSnappySession(sparkConf)
+    }
 }
