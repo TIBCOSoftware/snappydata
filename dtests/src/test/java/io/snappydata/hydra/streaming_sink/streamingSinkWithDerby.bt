@@ -1,0 +1,6 @@
+io/snappydata/hydra/streaming_sink/streaming_sinkWithRandomOps.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
+  opType=4 isRowTable=false withKeyColumn=true
