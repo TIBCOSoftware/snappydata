@@ -78,7 +78,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = session.sql(sql)
+  private[this] val df = session.sqlCached(sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
