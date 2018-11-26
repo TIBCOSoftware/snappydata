@@ -56,3 +56,9 @@ If the script calls for dependent scripts (for example load_countries.sql, load_
 ```pre
 ./bin/snappy run -file=/home/user1/snappydata/examples/quickstart/scripts/create_and_load_column_table.sql -path=/home/user1/snappydata/examples/quickstart -client-bind-address=localhost -client-port=1527
 ```
+You can also run the command by providing the username and password.
+
+```
+./bin/snappy run -file=/home/supriya/snappy/snappydata/examples/quickstart/scripts/create_and_load_column_table.sql -client-bind-address=localhost -client-port=1527 -user=user1 -password=user123
+
+```
