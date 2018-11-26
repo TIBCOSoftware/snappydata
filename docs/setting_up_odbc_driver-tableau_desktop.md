@@ -11,7 +11,7 @@
 
 1. [Download the SnappyData 1.0.2.1 Enterprise Edition](install.md#download-snappydata).
 
-2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.0.zip** file.
+2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.2.zip** file.
 
 3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the  SnappyData ODBC driver.
 
@@ -49,3 +49,4 @@ To create SnappyData DSN from ODBC Data Sources:
 !!! Note
 	Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. 
 
+For information about connecting Tableau using SnappyData ODBC Driver, refer to [Connect Tableau using ODBC Driver](./howto/tableauconnect.md#odbcdritab)

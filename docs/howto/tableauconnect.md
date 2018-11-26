@@ -1,16 +1,22 @@
 # How to Connect Tableau to SnappyData
 
-To connect Tableau to SnappyData, you must download and install SnappyData Enterprise Version 1.0.2.1.
+Download and install SnappyData Enterprise Version to connect Tableau to SnappyData.You can connect Tableau using one of the following options:
+
+*	[Connect Tableau using Hive Server](#hivesertab)
+*	[Connect Tableau using ODBC driver](#odbcdritab)
+
+<a id=hivesertab></a>
+## Connect Tableau using Hive Server
 
 Use the following steps to connect Tableau to SnappyData:
 
-## Step 1: Enable Hive Server in SnappyData Cluster
+### Step 1: Enable Hive Server in SnappyData Cluster
 1. Download and Install the SnappyData Enterprise version 1.0.2.1 from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases). 
 2.	[Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
 3.	In the [Lead node configuration](../configuring_cluster/configuring_cluster.md#configuring-leads), set the following property:</br>`snappydata.hiveServer.enabled=true`
 4.	Launch the SnappyData cluster. </br>`./sbin/snappy-start-all.sh`
 
-##Step 2: Connect to Tableau Desktop
+### Step 2: Connect to Tableau Desktop
 1.	Download and install **Tableau Desktop v2018.3.x** from the [Tableau Download page](https://www.tableau.com/support/releases/online/2018.3). You may also need to register your product.
 2. Open the Tableau Desktop application, on the left panel, from the **To A Server **section, select **Spark SQL connector** option. 
 	![Tableau_desktop](../Images/LocateSparkSQL.png)
@@ -32,7 +38,49 @@ Use the following steps to connect Tableau to SnappyData:
 	!!! Note
     	The **Sign In** button is disabled if Simba Spark ODBC Driver is not already installed on your system.  To enable it, click the **Download and Install the drivers **link and install Simba Spark ODBC Driver. Now the **Sign in** button is enabled.
 
+<a id=odbcdritab></a>
+## Connect Tableau using SnappyData ODBC Driver
 
+Get latest version of SnappyData and SnappyData ODBC driver from [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases). 
 
+Use the following instructions to connect Tableau using SnappyData ODBC driver:
 
+### Step 1: Setup SnappyData ODBC Driver
 
+Follow the instructions provided [here](/setting_up_odbc_driver-tableau_desktop.md) to setup SnappyData ODBC Driver.
+
+### Step 2: Install Tableau Desktop (10.1 or Higher)
+
+To install Tableau desktop:
+
+1. [Download Tableau Desktop](https://www.tableau.com/products/desktop).
+
+2. Depending on your Windows installation, download the 32-bit or 64-bit version of the installer.
+
+3. Follow the steps to complete the installation and ensure that you register and activate your product.
+
+### Step 3: Connect Tableau Desktop to SnappyData Server
+
+When using Tableau with the SnappyData ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file that is available in the downloaded **snappydata-odbc-1.0.2.zip**.
+
+To connect the Tableau Desktop to the SnappyData Server:
+
+1. Copy the **odbc-snappydata.tdc** file to the <_User_Home_Path_>/Documents/My Tableau Repository/Datasources directory.
+
+2. Open the Tableau Desktop application.
+
+3. On the Start Page,
+
+	a. Under **Connect** > **To a Server**, click **Other Databases (ODBC)**. The Other Databases (ODBC) window is displayed.
+
+	b. In the DSN drop-down list, select the name that you provided for your SnappyData ODBC connection (for example *snappydsn*), and then click **Connect**.
+
+4. When the connection to the SnappyData server is established, the **Sign In** option is enabled. Click **Sign In** to log into Tableau.
+
+5. From the **Schema** drop-down list, select a schema. For example, *app*. </br>All tables from the selected schema are listed.
+
+6. Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click **Update Now** to refresh and view your changes.
+
+7. In the **Worksheets** tab, click **sheet** to start the analysis.</br> 
+
+8. On this screen, you can click and drag a field from the **Dimensions** area to **Rows** or **Columns**.</br> Refer to the Tableau documentation for more information on data visualization.
