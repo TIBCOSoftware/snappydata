@@ -9,7 +9,9 @@ SnappyData uses mutual authentication between the SnappyData locator and subsequ
 
 To enable LDAP authentication, set the following authentication properties in the [configuration files](../configuring_cluster/configuring_cluster.md) **conf/locators**, **conf/servers**, and **conf/leads** files.
 
-* `auth-provider`: The authentication provider. Set the `auth-provider` property to `LDAP`, to enable LDAP for authenticating all distributed system members as well as clients to the distributed system. 
+* `auth-provider`: The authentication provider. Set the `auth-provider` property to `LDAP`, to enable LDAP for authenticating all distributed system members as well as clients to the distributed system.
+
+*	`server-auth-provider`: Peer-to-peer authentication of cluster members is configured in the SnappyData cluster. You can set `server-auth-provider` property to **NONE** if you want to disable the peer-to-peer authentication.
 
 * `user`: The user name of the administrator starting the cluster
 
