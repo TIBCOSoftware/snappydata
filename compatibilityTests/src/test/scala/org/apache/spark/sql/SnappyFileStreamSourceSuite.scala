@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.streaming.FileStreamSourceSuite
+import org.apache.spark.sql.streaming.{FileStreamSourceStressTestSuite, FileStreamSourceSuite}
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
@@ -31,4 +31,9 @@ class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
     "FileStreamSource offset - read Spark 2.1.0 offset long format",
     "FileStreamSourceLog - read Spark 2.1.0 log format"
   )
+}
+
+class SnappyFileStreamSourceStressTestSuite extends FileStreamSourceStressTestSuite
+with SharedSnappySessionContext with SnappySparkTestUtil{
+
 }
