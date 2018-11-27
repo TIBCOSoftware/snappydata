@@ -933,10 +933,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
     if (mismatchString.length() > 0) {
       Log.getLogWriter().info(mismatchString.toString());
-      mismatchString.setLength(0);
-      query = "select * from ";
-      for (String table : tables) {
-        mismatchString.append(verifyResultsForTable(query + table, table, "", false, true));
+      if(!query.contains("select * ")) {
+        mismatchString.setLength(0);
+        query = "select * from ";
+        for (String table : tables) {
+          mismatchString.append(verifyResultsForTable(query + table, table, "", false, true));
+        }
       }
       throw new TestException(mismatchString.toString());
     }
