@@ -426,8 +426,6 @@ public class SnappyTest implements Serializable {
             + "_" + RemoteTestModule.getMyVmid(), leadHost);
         SnappyBB.getBB().getSharedMap().put("leadPort_" + RemoteTestModule
             .getMyClientName() + "_" + RemoteTestModule.getMyVmid(), Integer.toString(leadPort));
-        Log.getLogWriter().info("SS - Lead Host for lead : " + RemoteTestModule
-            .getMyClientName() + "_" + RemoteTestModule.getMyVmid() + ": " + leadHost + ", Lead jobserver UI port is: " + leadPort);
         break;
       case WORKER:
         nodeLogDir = HostHelper.getLocalHost();
@@ -1755,9 +1753,7 @@ public class SnappyTest implements Serializable {
 
       for (int i = 0; i < scriptNames.size(); i++) {
         String userScript = (String) scriptNames.elementAt(i);
-        Log.getLogWriter().info("SS - userScript: " + userScript);
         String filePath = snappyTest.getScriptLocation(userScript);
-        Log.getLogWriter().info("SS - filePath: " + filePath);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "scriptResult_" +
             RemoteTestModule.getCurrentThread().getThreadId() + ".log";
@@ -1765,7 +1761,6 @@ public class SnappyTest implements Serializable {
         String comma_separated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
         String command = filePath + " " + comma_separated_args_list;
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
-        Log.getLogWriter().info("SS - command is: " + pb.command());
         snappyTest.executeProcess(pb, logFile);
       }
     } catch (IOException e) {
@@ -3469,7 +3464,7 @@ public class SnappyTest implements Serializable {
 
         primaryLeadPid = (String) SnappyBB.getBB().getSharedMap().get("PrimaryLeadPID");
         String searchString1 = primaryLeadPid;
-        Log.getLogWriter().info("SS - primaryLeadPID: " + primaryLeadPid);
+        Log.getLogWriter().info("primaryLeadPID: " + primaryLeadPid);
         File dirFile = new File(vmDir);
         for (File srcFile : dirFile.listFiles()) {
           if (srcFile.getAbsolutePath().contains("snappyleader.pid")) {
