@@ -3,12 +3,13 @@ Instruct SnappyData members to stop waiting for a disk store to become available
 
 ## Syntax
 
-### Secured Cluster
+**Secured cluster**
+
 ```pre
 ./bin/snappy revoke-missing-disk-store -locators=<addresses> -auth-provider=<auth-provider> -user=<username> -password=<password> -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:<ldap-server-port>/ -gemfirexd.auth-ldap-search-base=<search-base-values> -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
 
 ```
-### Non-Secured Cluster
+**Non-secured cluster**
 
 ```pre
 ./bin/snappy revoke-missing-disk-store <disk-store-id>
@@ -36,7 +37,7 @@ The table describes options and arguments for snappy `revoke-missing-disk-store`
 
 ## Example
 
-### Secured Cluster
+**Secured cluster**
 
 The following example depicts how to revoke the missing disk stores in a secured cluster:
 
@@ -62,7 +63,7 @@ revocation was successful and no disk stores are now missing
 ```
 Finally, you can use the same `list-missing-disk-stores `command to confirm that no disk stores are missing.
 
-### Non-Secured Cluster
+**Non-secured cluster**
 
 The following example depicts how to revoke the missing disk stores in a non-secured cluster:
 
@@ -84,5 +85,3 @@ Connecting to distributed system: -locators=localhost:10334
 revocation was successful and no disk stores are now missing
 ```
 Finally, use the `list-missing-disk-stores` command to confirm that none of the disk stores are missing.
-
-

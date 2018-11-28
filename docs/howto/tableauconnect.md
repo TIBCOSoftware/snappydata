@@ -8,7 +8,7 @@ Download and install SnappyData Enterprise edition to connect Tableau to SnappyD
 <a id=hivesertab></a>
 ## Connect Tableau using Thrift Server 
 
-Use the following steps to connect Tableau to SnappyData using Thrift Server that is Compatible with Apache HiveServer2. This is also fully compatible with Spark's Thrift. 
+Use the following steps to connect Tableau to SnappyData using Thrift Server that is compatible with Apache HiveServer2. This is also fully compatible with Spark's Thrift.
 
 ### Step 1: Enable Thrift Server in SnappyData Cluster
 1. Download and Install the SnappyData Enterprise version 1.0.2.1 from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases). 

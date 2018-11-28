@@ -7,10 +7,10 @@ Perform online compaction of SnappyData disk stores.
 **For secured cluster**
 
 ```
-./bin/snappy compact-all-disk-stores -locators=l=<addresses> -auth-provider=<authprovider> -user=<username> -password=<password> -gemfirexd.auth-ldap-search-base=<search-base-values> -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
+./bin/snappy compact-all-disk-stores -locators==<addresses> -auth-provider=<authprovider> -user=<username> -password=<password> -gemfirexd.auth-ldap-search-base=<search-base-values> -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
 ```
 
-**For non secured cluster**
+**For non-secured cluster**
 
 ```pre
 ./bin/snappy compact-all-disk-stores==
@@ -33,21 +33,21 @@ When a CRUD operation is performed on a persistent/overflow table, the data is w
 
 Manual compaction can be done for online and offline disk stores. For the online disk store, the current operation log is not available for compaction, no matter how much garbage it contains.
 
-Offline compaction runs essentially in the same way, but without the incoming CRUD operations. Also, because there is no current open log, the compaction creates a new one to get started.
+Offline compaction runs in the same way, but without the incoming CRUD operations. Also, because there is no current open log, the compaction creates a new one to get started.
 
 ## Online Compaction
 
 To run manual online compaction, ALLOWFORCECOMPACTION should be set to true while [creating a diskstore](../sql_reference/create-diskstore.md)
-You can run manual online compaction at any time while the system is running. Oplogs eligible for compaction based on the COMPACTIONTHRESHOLD are compacted into the current oplog.
+You can run manual online compaction at any time while the system is running. Oplogs that are eligible for compaction, based on the COMPACTIONTHRESHOLD, are compacted into the current oplog.
 
 ## Example
 
-### Secured Cluster
+**Secured cluster**
 
 ```
 ./bin/snappy compact-all-disk-stores -locators=locatorhostname:10334 -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/ -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=user123
 
-// The followint output is displayed:
+// The following output is displayed:
 
 Connecting to distributed system: locators=localhost[10334]
 18/11/15 17:54:02.964 IST main<tid=0x1> INFO SNAPPY: TraceAuthentication: Enabling authorization for auth provider LDAP
@@ -61,7 +61,7 @@ The following disk stores compacted some files:
 
 ```
 
-### Non-secured Cluster
+**Non-secured cluster**
 
 ```
 ./bin/snappy compact-all-disk-stores==locators=locatorhostname:10334*
