@@ -57,6 +57,30 @@ class NorthWindTest
     validatePartitionedColumnTableQueries(snc)
   }
 
+  // enable if transformations are supported in plan-caching.
+  ignore("SNAP-2451"){
+    createAndLoadColumnTables(snc)
+
+    val df1 = snc.sql("SELECT ShipCountry, Sum(Order_Details.UnitPrice * Quantity * Discount)" +
+        " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
+        " Orders.OrderID = Order_Details.OrderID" +
+        " where orders.OrderID > 11000 GROUP BY ShipCountry")
+
+    val result1 = df1.repartition(1).collect()
+    assert(result1.length == 22)
+
+
+    val df2 = snc.sql("SELECT ShipCountry, Sum(Order_Details.UnitPrice * Quantity * Discount)" +
+        " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
+        " Orders.OrderID = Order_Details.OrderID" +
+        " where orders.OrderID > 11070 GROUP BY ShipCountry")
+
+    val result2 = df2.repartition(1).collect()
+    assert(result2.length == 7)
+
+
+  }
+
   test("Test colocated tables queries") {
     createAndLoadColocatedTables(snc)
     validateColocatedTableQueries(snc)
