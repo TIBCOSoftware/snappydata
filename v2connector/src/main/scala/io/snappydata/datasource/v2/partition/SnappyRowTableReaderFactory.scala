@@ -59,7 +59,7 @@ class SnappyRowTableReaderFactory(val bucketId: Int,
    * get retried until hitting the maximum retry times.
    */
   override def createDataReader(): DataReader[Row] = {
-    new SnappyDataRowTableReader(bucketId, tableMetaData, queryConstructs)
+    new SnappyRowTableReader(bucketId, tableMetaData, queryConstructs)
   }
 
 }

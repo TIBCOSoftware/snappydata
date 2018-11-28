@@ -38,7 +38,7 @@ import org.apache.spark.sql.sources.v2.reader.DataReader
  * @param tableMetaData     metadata of the table being scanned
  * @param queryConstructs   contains projections and filters
  */
-class SnappyDataRowTableReader(val bucketId: Int,
+class SnappyRowTableReader(val bucketId: Int,
     tableMetaData: SnappyTableMetaData, queryConstructs: QueryConstructs)
     extends DataReader[Row] {
 
