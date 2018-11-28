@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.LogWriterImpl
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemfireCacheHelper, LocalRegion, PolicyTableData}
 import com.gemstone.gemfire.internal.shared.SystemProperties
@@ -466,6 +467,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   private def metadata(result: CatalogMetadataDetails): LocalRegion = {
     result.setCatalogSchemaVersion(externalCatalog.getCatalogSchemaVersion)
+    // dummy null result for LocalRegion to avoid adding a return null in all calling points
     null
   }
 
@@ -505,14 +507,20 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val tableObj = ConnectorExternalCatalog.convertFromCatalogTable(table)
           val tableType = CatalogObjectType.getTableType(table)
           if (CatalogObjectType.isTableBackedByRegion(tableType)) {
-            val (relationInfo, regionOpt) = externalCatalog.getRelationInfo(
-              table.identifier.unquotedString, !CatalogObjectType.isColumnTable(tableType))
-            tableObj.setPartitionColumns(columnList(relationInfo.partitioningCols))
-            tableObj.setIndexColumns(columnList(relationInfo.indexCols))
-            tableObj.setPrimaryKeyColumns(columnList(relationInfo.pkCols))
-            tableObj.setNumBuckets(if (relationInfo.isPartitioned) relationInfo.numBuckets else 0)
-            metadata(result.setCatalogTable(tableObj))
-            if (regionOpt.isDefined) regionOpt.get else null
+            // a query during drop table from client can show region as destroyed here which
+            // is indicated by a lack of catalog schema version in the result
+            try {
+              val (relationInfo, regionOpt) = externalCatalog.getRelationInfo(
+                table.identifier.unquotedString, !CatalogObjectType.isColumnTable(tableType))
+              tableObj.setPartitionColumns(columnList(relationInfo.partitioningCols))
+              tableObj.setIndexColumns(columnList(relationInfo.indexCols))
+              tableObj.setPrimaryKeyColumns(columnList(relationInfo.pkCols))
+              tableObj.setNumBuckets(if (relationInfo.isPartitioned) relationInfo.numBuckets else 0)
+              metadata(result.setCatalogTable(tableObj))
+              if (regionOpt.isDefined) regionOpt.get else null
+            } catch {
+              case _: RegionDestroyedException => result.setCatalogTable(tableObj); null
+            }
           } else metadata(result.setCatalogTable(tableObj))
       }
 
@@ -580,8 +588,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     // RelationInfo is neither required nor can be obtained here due to absence of "session"
     assert(tableObj.getBucketOwnersSize == 0, "unexpected bucket owners in updateCatalogMetadata")
     checkSchemaPermission(tableObj.getSchemaName, tableObj.getTableName, user)
-    ConnectorExternalCatalog.convertToCatalogTable(tableObj, request.getCatalogSchemaVersion,
-      session = null)._1
+    ConnectorExternalCatalog.convertToCatalogTable(request, session = null)._1
   }
 
   private def updateCatalogMetadata(operation: Int, request: CatalogMetadataDetails,

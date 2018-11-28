@@ -355,12 +355,20 @@ abstract class BaseColumnFormatRelation(
     try {
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      if (tableExists && mode == SaveMode.ErrorIfExists) {
-        throw new AnalysisException(s"Table '$table' already exists. SaveMode: ErrorIfExists.")
-      }
-      // empty schema is sent by DefaultSource's RelationProvider implementation to indicate
-      // no schema was specified which will only work if table already exists
-      if (!tableExists && schema.isEmpty) {
+      if (tableExists) {
+        mode match {
+          case SaveMode.Ignore => return
+          case SaveMode.ErrorIfExists =>
+            throw new AnalysisException(s"Table '$table' already exists. SaveMode: ErrorIfExists.")
+          case SaveMode.Overwrite =>
+            // truncate the table and return
+            truncate()
+            return
+          case _ =>
+        }
+      } else if (schema.isEmpty) {
+        // empty schema is sent by DefaultSource's RelationProvider implementation to indicate
+        // no schema was specified which will only work if table already exists
         throw new TableNotFoundException(schemaName, tableName)
       }
     } finally {

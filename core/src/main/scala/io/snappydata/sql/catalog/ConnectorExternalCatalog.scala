@@ -224,7 +224,11 @@ class ConnectorExternalCatalog(val session: SnappySession)
       val (schema, table) = SnappyExternalCatalog.getTableWithSchema(qualifiedTableName, "")
       assert(schema.length > 0)
       ConnectorExternalCatalog.getRelationInfo(new TableIdentifier(table, Some(schema)),
-        catalog = this) -> None
+        catalog = this) match {
+        case None => throw new TableNotFoundException(schema, table, Some(new RuntimeException(
+          "RelationInfo for the table is missing. Its region may have been destroyed.")))
+        case Some(r) => r -> None
+      }
     }
   }
 
@@ -363,7 +367,8 @@ class ConnectorExternalCatalog(val session: SnappySession)
 object ConnectorExternalCatalog extends Logging {
 
   /** A cache of Spark SQL data source tables that have been accessed. */
-  private lazy val cachedCatalogTables: Cache[TableIdentifier, (CatalogTable, RelationInfo)] = {
+  private lazy val cachedCatalogTables: Cache[TableIdentifier,
+      (CatalogTable, Option[RelationInfo])] = {
     CacheBuilder.newBuilder().maximumSize(SnappyExternalCatalog.cacheSize).build()
   }
 
@@ -376,8 +381,9 @@ object ConnectorExternalCatalog extends Logging {
       Option(storage.getOutputFormat), Option(storage.getSerde), storage.compressed, storageProps)
   }
 
-  private[snappydata] def convertToCatalogTable(tableObj: CatalogTableObject,
-      catalogSchemaVersion: Long, session: SnappySession): (CatalogTable, RelationInfo) = {
+  private[snappydata] def convertToCatalogTable(request: CatalogMetadataDetails,
+      session: SnappySession): (CatalogTable, Option[RelationInfo]) = {
+    val tableObj = request.getCatalogTable
     val identifier = TableIdentifier(tableObj.getTableName, Option(tableObj.getSchemaName))
     val tableType = tableObj.getTableType match {
       case "EXTERNAL" => CatalogTableType.EXTERNAL
@@ -418,10 +424,16 @@ object ConnectorExternalCatalog extends Logging {
       tableObj.getUnsupportedFeatures.asScala, tableObj.tracksPartitionsInCatalog,
       tableObj.schemaPreservesCase)
 
+    // if catalog schema version is not set then it indicates that RelationInfo was not filled
+    // in due to region being destroyed or similar exception
+    if (!request.isSetCatalogSchemaVersion) {
+      return table -> None
+    }
+    val catalogSchemaVersion = request.getCatalogSchemaVersion
     val bucketOwners = tableObj.getBucketOwners
     if (bucketOwners.isEmpty) {
       // external tables (with source as csv, parquet etc.)
-      (table, RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY, EMPTY_STRING_ARRAY,
+      table -> Some(RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY, EMPTY_STRING_ARRAY,
         EMPTY_STRING_ARRAY, Array.empty[Partition], catalogSchemaVersion))
     } else {
       val bucketCount = tableObj.getNumBuckets
@@ -432,14 +444,14 @@ object ConnectorExternalCatalog extends Logging {
         val allNetUrls = SmartConnectorRDDHelper.setBucketToServerMappingInfo(
           bucketCount, bucketOwners, session)
         val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
-        (table, RelationInfo(bucketCount, isPartitioned = true, partitionCols,
+        table -> Some(RelationInfo(bucketCount, isPartitioned = true, partitionCols,
           indexCols, pkCols, partitions, catalogSchemaVersion))
       } else {
         val allNetUrls = SmartConnectorRDDHelper.setReplicasToServerMappingInfo(
           tableObj.getBucketOwners.get(0).getSecondaries, session)
         val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
-        (table, RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY, indexCols, pkCols,
-          partitions, catalogSchemaVersion))
+        table -> Some(RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY, indexCols,
+          pkCols, partitions, catalogSchemaVersion))
       }
     }
   }
@@ -536,7 +548,7 @@ object ConnectorExternalCatalog extends Logging {
   }
 
   private def loadFromCache(name: TableIdentifier,
-      catalog: ConnectorExternalCatalog): (CatalogTable, RelationInfo) = {
+      catalog: ConnectorExternalCatalog): (CatalogTable, Option[RelationInfo]) = {
     cachedCatalogTables.getIfPresent(name) match {
       case null => synchronized {
         cachedCatalogTables.getIfPresent(name) match {
@@ -548,8 +560,7 @@ object ConnectorExternalCatalog extends Logging {
             val result = catalog.withExceptionHandling(catalog.connectorHelper.getCatalogMetadata(
               snappydataConstants.CATALOG_GET_TABLE, request))
             if (!result.isSetCatalogTable) throw new TableNotFoundException(schemaName, name.table)
-            val (table, relationInfo) = convertToCatalogTable(result.getCatalogTable,
-              result.getCatalogSchemaVersion, catalog.session)
+            val (table, relationInfo) = convertToCatalogTable(result, catalog.session)
             val tableMetadata = table -> relationInfo
             cachedCatalogTables.put(name, tableMetadata)
             tableMetadata
@@ -565,7 +576,8 @@ object ConnectorExternalCatalog extends Logging {
     loadFromCache(name, catalog)._1
   }
 
-  def getRelationInfo(name: TableIdentifier, catalog: ConnectorExternalCatalog): RelationInfo = {
+  def getRelationInfo(name: TableIdentifier,
+      catalog: ConnectorExternalCatalog): Option[RelationInfo] = {
     loadFromCache(name, catalog)._2
   }
 

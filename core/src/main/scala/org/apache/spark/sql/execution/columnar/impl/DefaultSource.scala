@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar.impl
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -38,7 +39,7 @@ import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode,
  * which is parsed locally in the CreatableRelationProvider implementation.
  */
 final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationProvider
-    with CreatableRelationProvider with DataSourceRegister {
+    with CreatableRelationProvider with DataSourceRegister with Logging {
 
   override def shortName(): String = SnappyParserConsts.COLUMN_SOURCE
 
@@ -184,7 +185,9 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
         session.sqlContext)
     }
     try {
+      logDebug(s"Trying to create table $fullTableName")
       relation.createTable(mode)
+      logDebug(s"Successfully created the table ${relation.resolvedName}")
       success = true
       relation
     } finally {

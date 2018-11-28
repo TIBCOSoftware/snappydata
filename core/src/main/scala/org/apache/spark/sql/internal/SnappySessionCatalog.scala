@@ -386,8 +386,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(name)
     val table = formatTableName(name.table)
 
-    if (schemaName != globalTempViewManager.database &&
-        (name.database.isDefined || !tempTables.contains(table))) {
+    if (!isTemporaryTable(tableIdent)) {
       checkSchemaPermission(schemaName, table, defaultUser = null)
       // resolve the table and destroy underlying storage if possible
       externalCatalog.getTableOption(schemaName, table) match {
