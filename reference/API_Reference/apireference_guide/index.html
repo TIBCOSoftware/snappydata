@@ -121,6 +121,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/snappydataquick_start/">SnappyData Cluster SQL Tutorials</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -350,6 +357,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
@@ -786,6 +800,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -1849,7 +1870,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../apidocsintro/">API Documentation</a>
+        <a class="" href="../../../apidocsintro/">API Reference</a>
         
     </li>
 
@@ -1883,7 +1904,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        <a class="" href="../../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver</a>
         
     </li>
 
@@ -2194,14 +2215,14 @@
 </tbody>
 </table>
 <p><strong>Example</strong> </p>
-<pre><code>snSesion.sql(“select * from t1”)
+<pre><code>snappySession.sql(“select * from t1”)
 </code></pre>
 
 <p><a id= sqluncachedapi> </a></p>
 <h3 id="sqluncached">sqlUncached</h3>
 <p>You can use this API to run a query using a fresh plan for a given SQL String.</p>
 <p><strong>Syntax</strong></p>
-<pre><code>sqlUnCached(sqlText : String)
+<pre><code>sqlUncached(sqlText : String)
 </code></pre>
 
 <p><strong>Parameters</strong></p>
@@ -2224,19 +2245,19 @@
 </tbody>
 </table>
 <p><strong>Example </strong></p>
-<pre><code class="pre">snSesion.sql(“select * from t1”)
+<pre><code class="pre">snappySession.sql(“select * from t1”)
 </code></pre>
 
 <p><a id= createtableapi> </a></p>
 <h3 id="createtable">createTable</h3>
-<p>Creates a SnappyData managed table. Any relation providers, that is row, column etc., which are supported by SnappyData can be created here.</p>
+<p>Creates a SnappyData managed table. Any relation providers, that is the row, column etc., which are supported by SnappyData can be created here.</p>
 <p><strong>Syntax</strong></p>
-<pre><code>def createTable(
+<pre><code>createTable(
       tableName: String,
       provider: String,
-      schema: StructType,
+      schemaDDL: String,
       options: Map[String, String],
-      allowExisting: Boolean = false)
+      allowExisting: Boolean)
 </code></pre>
 
 <p><strong>Parameters</strong></p>
@@ -2253,7 +2274,7 @@
 <td>Name of the table.</td>
 </tr>
 <tr>
-<td>Provider</td>
+<td>provider</td>
 <td>Provider name such as ‘ROW’, ‘COLUMN’' etc.</td>
 </tr>
 <tr>
@@ -2261,12 +2282,12 @@
 <td>The table schema.</td>
 </tr>
 <tr>
-<td>Options</td>
+<td>options</td>
 <td>Properties for table creation. For example, partition_by, buckets etc.</td>
 </tr>
 <tr>
 <td>allowExisting</td>
-<td>When set to <strong>true</strong>, tables with the same name are ignored, else a <strong>table exist</strong> exception is shown.</td>
+<td>When set to <strong>true</strong>, tables with the same name are ignored, else an <strong>AnalysisException</strong> is thrown stating that the table already exists.</td>
 </tr>
 </tbody>
 </table>
@@ -2275,7 +2296,7 @@
 val props = Map.empty[String, String]
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
 val rdd = sc.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
-val dataDF = snc.createDataFrame(rdd)
+val dataDF = snappySession.createDataFrame(rdd)
 
 snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 
@@ -2283,15 +2304,15 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 
 <p><a id= createtable1> </a></p>
 <h3 id="createtable_1">createTable</h3>
-<p>Creates a SnappyData managed JDBC table which takes a free format DDL string. The DDL string should adhere to syntax of underlying JDBC store.  SnappyData ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The option parameter can take connection details.</p>
+<p>Creates a SnappyData managed JDBC table which takes a free format DDL string. The DDL string should adhere to the syntax of the underlying JDBC store. SnappyData ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The options parameter can take connection details.</p>
 <p><strong>Syntax</strong></p>
 <pre><code>Syntax: 
-  def createTable(
+  createTable(
       tableName: String,
       provider: String,
-      schema: StructType,
+      schemaDDL: String,
       options: Map[String, String],
-      allowExisting: Boolean = false)
+      allowExisting: Boolean)
 
 </code></pre>
 
@@ -2309,20 +2330,20 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <td>Name of the table.</td>
 </tr>
 <tr>
-<td>Provider</td>
+<td>provider</td>
 <td>Provider name such as ‘ROW’, ‘COLUMN’' etc.</td>
 </tr>
 <tr>
 <td>schemaDDL</td>
-<td>The table schema as a string interpreted by provider.</td>
+<td>The table schema as a string interpreted by the provider.</td>
 </tr>
 <tr>
-<td>Options</td>
+<td>options</td>
 <td>Properties for table creation. For example, partition_by, buckets etc.</td>
 </tr>
 <tr>
 <td>allowExisting</td>
-<td>When set to <strong>true</strong>,  tables with the same name are ignored, else a <strong>table exist</strong> exception is shown.</td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -2331,7 +2352,7 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
    val props = Map(
       &quot;url&quot; -&gt; s&quot;jdbc:derby:$path&quot;,
       &quot;driver&quot; -&gt; &quot;org.apache.derby.jdbc.EmbeddedDriver&quot;,
-    &quot;poolImpl&quot; -&gt; &quot;tomcat&quot;,
+      &quot;poolImpl&quot; -&gt; &quot;tomcat&quot;,
       &quot;user&quot; -&gt; &quot;app&quot;,
        &quot;password&quot; -&gt; &quot;app&quot;
        )
@@ -2589,12 +2610,12 @@ snappySession.insert(&quot;t1&quot;, row)
 </tr>
 <tr>
 <td>rows</td>
-<td>List of rows to be inserted into the table.</td>
+<td>List of rows to be put into the table.</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Example </strong></p>
-<pre><code class="pre">snSession.put(tableName, dataDF.collect(): _*)
+<pre><code class="pre">snappySession.put(tableName, dataDF.collect(): _*)
 </code></pre>
 
 <p><a id= updatedapi> </a></p>
@@ -2623,7 +2644,7 @@ snappySession.insert(&quot;t1&quot;, row)
 </tr>
 <tr>
 <td>newColumnValues</td>
-<td>A single row containing all the updated column  values. They MUST match the <strong>updateColumn: list  passed</strong>.</td>
+<td>A single row containing all the updated column values. They MUST match the <strong>updateColumn: list passed</strong>.</td>
 </tr>
 <tr>
 <td>updateColumns</td>
@@ -2632,12 +2653,12 @@ snappySession.insert(&quot;t1&quot;, row)
 </tbody>
 </table>
 <p><strong>Example </strong></p>
-<pre><code class="pre">snappySesion.update(&quot;t1&quot;, &quot;ITEMREF = 3&quot; , Row(99) , &quot;ITEMREF&quot; )
+<pre><code class="pre">snappySession.update(&quot;t1&quot;, &quot;ITEMREF = 3&quot; , Row(99) , &quot;ITEMREF&quot; )
 </code></pre>
 
 <p><a id= deleteapi> </a></p>
 <h3 id="delete">delete</h3>
-<p>Deletes all the rows in table that match passed filter expression. This works only for row tables.</p>
+<p>Deletes all the rows in the table that match passed filter expression. This works only for row tables.</p>
 <p><strong>Syntax</strong></p>
 <pre><code>delete(tableName: String, filterExpr: String)
 </code></pre>
@@ -2694,11 +2715,11 @@ snappySession.insert(&quot;t1&quot;, row)
 </tr>
 <tr>
 <td>endTime</td>
-<td>End time as string in the format <strong>yyyy-mm-dd hh:mm:ss</strong>. If passed as <strong>null</strong>, newest interval is considered as the last interval.</td>
+<td>End time as string in the format <strong>yyyy-mm-dd hh:mm:ss</strong>. If passed as <strong>null</strong>, the newest interval is considered as the last interval.</td>
 </tr>
 <tr>
 <td>k</td>
-<td>Optional. Number of elements to be queried. This is to be passed only for stream summary</td>
+<td>Optional. The number of elements to be queried. This is to be passed only for stream summary</td>
 </tr>
 </tbody>
 </table>
@@ -2714,8 +2735,8 @@ snappySession.insert(&quot;t1&quot;, row)
 </ul>
 <p><a id= putintoapi> </a></p>
 <h3 id="putinto">putInto</h3>
-<p>Puts the content of the DataFrame into the specified table. It requires that the schema of the DataFrame is the same as the schema of the table. If some rows are already present in the table, then they are updated.
-Also, the table on which <strong>putInto</strong> is implemented should have defined key columns, if its a column table. If it is a row table, then it should have defined primary key.</p>
+<p>Puts the content of the DataFrame into the specified table. It requires that the schema of the DataFrame is the same as the schema of the table. Column names are ignored while matching the schemas and <strong>put into</strong> operation is performed using position based resolution.
+If some rows are already present in the table, then they are updated. Also, the table on which <strong>putInto</strong> is implemented should have defined key columns, if its a column table. If it is a row table, then it should have defined a primary key.</p>
 <p><strong>Syntax</strong></p>
 <pre><code>putInto(tableName: String)
 
@@ -2737,15 +2758,15 @@ Also, the table on which <strong>putInto</strong> is implemented should have def
 </tbody>
 </table>
 <p><strong>Example </strong></p>
-<pre><code class="pre">import org.apache.spark.sql.snappy._df.write.putInto(“t1”)
-
+<pre><code class="pre">import org.apache.spark.sql.snappy._
+df.write.putInto(“snappy_table”)
 </code></pre>
 
 <p><a id= deletefromapi> </a></p>
 <h3 id="deletefrom">deleteFrom</h3>
 <p>The <code>deleteFrom</code> API deletes all those records from given snappy table which exists in the input Dataframe. Existence of the record is checked by comparing the key columns (or the primary keys) values. </p>
 <p>To use this API, key columns(for column table) or primary keys(for row tables) must be defined in the SnappyData table.</p>
-<p>Also, the source DataFrame must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using case-insensitive match of column names. If the source DataFrame contains columns other than the key columns, it will be ignored by the <code>deleteFrom</code> API.</p>
+<p>Also, the source DataFrame must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using a case-insensitive match of column names. If the source DataFrame contains columns other than the key columns, it will be ignored by the <code>deleteFrom</code> API.</p>
 <p><strong>Syntax</strong></p>
 <pre><code>deleteFrom(tableName: String)
 </code></pre>
@@ -2766,7 +2787,8 @@ Also, the table on which <strong>putInto</strong> is implemented should have def
 </tbody>
 </table>
 <p><strong>Example </strong></p>
-<pre><code class="pre">import org.apache.spark.sql.snappy._df.write.deleteFrom(“t1”)
+<pre><code class="pre">import org.apache.spark.sql.snappy._
+df.write.deleteFrom(“snappy_table”)
 
 </code></pre>
 
@@ -2776,6 +2798,10 @@ Also, the table on which <strong>putInto</strong> is implemented should have def
 <li><a href="#getkeycolumapi"><strong>getKeyColumns</strong></a></li>
 <li><a href="#gettabletypeapi"><strong>getTableType</strong></a> </li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These are developer APIs and are subject to change in the future.</p>
+</div>
 <p><a id= getkeycolumapi> </a></p>
 <h3 id="getkeycolumns">getKeyColumns</h3>
 <p>Gets primary key or key columns of a SnappyData table.</p>
@@ -2797,9 +2823,16 @@ Also, the table on which <strong>putInto</strong> is implemented should have def
 <td>tableName</td>
 <td>Name of the table.</td>
 </tr>
+<tr>
+<td>Returns</td>
+<td>Sequence of key columns (for column tables) or sequence of primary keys (for row tables).</td>
+</tr>
+<tr>
+<td><strong>Example </strong></td>
+<td></td>
+</tr>
 </tbody>
 </table>
-<p><strong>Example </strong></p>
 <pre><code class="pre">snappySession.sessionCatalog.getKeyColumns(&quot;t1&quot;)
 </code></pre>
 
@@ -2823,6 +2856,10 @@ Also, the table on which <strong>putInto</strong> is implemented should have def
 <td>tableName</td>
 <td>Name of the table.</td>
 </tr>
+<tr>
+<td>Returns</td>
+<td>Type of the table. Row, Column, Index, Stream, External, None etc.</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example </strong></p>
@@ -2838,7 +2875,7 @@ Also, the table on which <strong>putInto</strong> is implemented should have def
         <a href="../../misc/passwordless_ssh/" class="btn btn-neutral float-right" title="Configuring SSH Login without Password">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../../../apidocsintro/" class="btn btn-neutral" title="API Documentation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../../apidocsintro/" class="btn btn-neutral" title="API Reference"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   

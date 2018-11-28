@@ -121,6 +121,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/snappydataquick_start/">SnappyData Cluster SQL Tutorials</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -350,6 +357,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
@@ -797,6 +811,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -1860,7 +1881,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../apidocsintro/">API Documentation</a>
+        <a class="" href="../../apidocsintro/">API Reference</a>
         
     </li>
 
@@ -1881,7 +1902,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver</a>
         
     </li>
 
@@ -2167,7 +2188,7 @@
 </tr>
 <tr>
 <td>-spark.sql.codegen.cacheSize<a id="codegencache"></a></td>
-<td>Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. Default is 2000.</td>
+<td>Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. Default is 2000.</td>
 <td>Lead</td>
 </tr>
 <tr>
@@ -2177,7 +2198,7 @@
 </tr>
 <tr>
 <td>-spark.driver.maxResultSize</td>
-<td>Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead.</td>
+<td>Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead. The default max size is 1g.</td>
 <td>Lead</td>
 </tr>
 <tr>

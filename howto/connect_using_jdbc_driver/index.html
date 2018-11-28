@@ -121,6 +121,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/snappydataquick_start/">SnappyData Cluster SQL Tutorials</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -361,6 +368,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
@@ -797,6 +811,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -1860,7 +1881,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../apidocsintro/">API Documentation</a>
+        <a class="" href="../../apidocsintro/">API Reference</a>
         
     </li>
 
@@ -1881,7 +1902,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver</a>
         
     </li>
 
@@ -2059,9 +2080,9 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</h1>
-<p><a id="howto-jdbc"></a></p>
-<p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers. </p>
+                <p><a id="howto-jdbc"></a></p>
+<h1 id="how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</h1>
+<p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers.</p>
 <p>To connect to the SnappyData cluster using JDBC, use URL of the form <code>jdbc:snappydata://&lt;locatorHostName&gt;:&lt;locatorClientPort&gt;/</code></p>
 <p>Where the <code>&lt;locatorHostName&gt;</code> is the hostname of the node on which the locator is started and <code>&lt;locatorClientPort&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
 <p><strong>Dependencies</strong>: Use the Maven/SBT dependencies for the latest released version of SnappyData.</p>
@@ -2125,6 +2146,7 @@ preparedStmt1.close()
 <p class="admonition-title">Note</p>
 <p>If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the <strong>io.snappydata.jdbc.ClientDriver</strong> class.</p>
 </div>
+<p><a id="jdbcpooldriverconnect"></a></p>
 <h2 id="connecting-with-jdbc-client-pool-driver">Connecting with JDBC Client Pool Driver</h2>
 <p>JDBC client pool driver provides built-in connection pooling and relies on the non-pooled <a href="./">JDBC driver</a>. The driver initializes the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. 
 We recommend using the pooled driver for low latency operations such as point lookups and when using the Spark JDBC data source API (see example below). When you access SnappyData from Java frameworks such as Spring, we recommend using pooling provided in the framework and switch to using the non-pooled driver. </p>

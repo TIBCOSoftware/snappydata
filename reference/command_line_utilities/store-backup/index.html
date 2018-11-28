@@ -121,6 +121,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../quickstart/snappydataquick_start/">SnappyData Cluster SQL Tutorials</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -350,6 +357,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
@@ -786,6 +800,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -1872,7 +1893,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../apidocsintro/">API Documentation</a>
+        <a class="" href="../../../apidocsintro/">API Reference</a>
         
     </li>
 
@@ -1893,7 +1914,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        <a class="" href="../../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver</a>
         
     </li>
 
@@ -2250,6 +2271,7 @@ Offline members leave nothing, so you only have this message from the backup ope
 The only difference is that any valid user can run this command. That is, the user does not have to be a snappydata cluster administrator to run the backup command.</p>
 <p>For example:</p>
 <pre><code>./bin/snappy backup   /snappydata_backup_location/   -locators=locatorhostname:10334  -auth-provider=LDAP  -gemfirexd.auth-ldap-server=ldap://&lt;ldap-server-host&gt;:389/  -user=&lt;username&gt;  -password=&lt;password&gt;  -gemfirexd.auth-ldap-search-base=&lt;search-base-values&gt;  -gemfirexd.auth-ldap-search-dn=&lt;search-dn-values&gt; -gemfirexd.auth-ldap-search-pw=&lt;password&gt;
+
 </code></pre>
 
 <p>Optionally, you can encrypt the user's password first and use it in the above command to explicitly avoid putting the password in plain text in the command-line. Here is <a href="https://snappydatainc.github.io/snappydata/security/specify_encrypt_passwords_conf_client/#using-encrypted-password-in-client-connections">how you can encrypt the password</a></p>

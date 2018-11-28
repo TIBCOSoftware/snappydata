@@ -121,6 +121,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/snappydataquick_start/">SnappyData Cluster SQL Tutorials</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -350,6 +357,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
@@ -790,6 +804,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -855,6 +876,10 @@
             <ul>
             
                 <li class="toctree-l3"><a href="#launching-the-cluster-in-secure-mode">Launching the Cluster in Secure Mode</a></li>
+                
+                    <li><a class="toctree-l4" href="#authentication-properties">Authentication Properties</a></li>
+                
+                    <li><a class="toctree-l4" href="#example-launching-locator-in-secure-mode">Example - Launching Locator in Secure Mode</a></li>
                 
             
             </ul>
@@ -1856,7 +1881,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../apidocsintro/">API Documentation</a>
+        <a class="" href="../../apidocsintro/">API Reference</a>
         
     </li>
 
@@ -1877,7 +1902,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver</a>
         
     </li>
 
@@ -2058,10 +2083,15 @@
                 <h1 id="launching-the-cluster-in-secure-mode">Launching the Cluster in Secure Mode</h1>
 <p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <p>SnappyData uses mutual authentication between the SnappyData locator and subsequent SnappyData members that boot and join the distributed system.</p>
+<p><a id= authproperties> </a></p>
+<h2 id="authentication-properties">Authentication Properties</h2>
 <p>To enable LDAP authentication, set the following authentication properties in the <a href="../../configuring_cluster/configuring_cluster/">configuration files</a> <strong>conf/locators</strong>, <strong>conf/servers</strong>, and <strong>conf/leads</strong> files.</p>
 <ul>
 <li>
-<p><code>auth-provider</code>: The authentication provider. Set the <code>auth-provider</code> property to <code>LDAP</code>, to enable LDAP for authenticating all distributed system members as well as clients to the distributed system. </p>
+<p><code>auth-provider</code>: The authentication provider. Set the <code>auth-provider</code> property to <code>LDAP</code>, to enable LDAP for authenticating all distributed system members as well as clients to the distributed system.</p>
+</li>
+<li>
+<p><code>server-auth-provider</code>: Peer-to-peer authentication of cluster members is configured in the SnappyData cluster. You can set <code>server-auth-provider</code> property to <strong>NONE</strong> if you want to disable the peer-to-peer authentication.</p>
 </li>
 <li>
 <p><code>user</code>: The user name of the administrator starting the cluster</p>
@@ -2082,7 +2112,7 @@
 <p><code>J-Dgemfirexd.auth-ldap-search-pw</code>: The password for the LDAP search user which is used for looking up the DN indicated by configuration parameter <code>Dgemfirexd.auth-ldap-search-dn</code>. </p>
 </li>
 </ul>
-<p><strong>Example</strong>: </p>
+<h2 id="example-launching-locator-in-secure-mode">Example - Launching Locator in Secure Mode</h2>
 <p>In the below example, we are launching the locator in secure mode, which communicates with the LDAP server at localhost listening on port 389.</p>
 <pre><code class="pre">localhost -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/  \
           -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com \

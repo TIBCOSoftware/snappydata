@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../favicon.ico">
   
-  <title>Setting Up SnappyData ODBC Driver and Tableau Desktop - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>Setting Up SnappyData ODBC Driver - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -24,7 +24,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Setting Up SnappyData ODBC Driver and Tableau Desktop";
+    var mkdocs_page_name = "Setting Up SnappyData ODBC Driver";
     var mkdocs_page_input_path = "setting_up_odbc_driver-tableau_desktop.md";
     var mkdocs_page_url = "/setting_up_odbc_driver-tableau_desktop/";
   </script>
@@ -117,6 +117,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../quickstart/using_sql/">Using SQL</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../quickstart/snappydataquick_start/">SnappyData Cluster SQL Tutorials</a>
         
     </li>
 
@@ -350,6 +357,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../howto/tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
@@ -786,6 +800,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -1849,7 +1870,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../apidocsintro/">API Documentation</a>
+        <a class="" href="../apidocsintro/">API Reference</a>
         
     </li>
 
@@ -1870,19 +1891,15 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        <a class="current" href="./">Setting Up SnappyData ODBC Driver</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#setting-up-snappydata-odbc-driver-and-tableau-desktop">Setting Up SnappyData ODBC Driver and Tableau Desktop</a></li>
+                <li class="toctree-l3"><a href="#setting-up-snappydata-odbc-driver">Setting Up SnappyData ODBC Driver</a></li>
                 
                     <li><a class="toctree-l4" href="#step-1-install-the-snappydata-odbc-driver">Step 1: Install the SnappyData ODBC Driver</a></li>
                 
                     <li><a class="toctree-l4" href="#step-2-create-snappydata-dsn-from-odbc-data-sources-64-bit32-bit">Step 2: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit</a></li>
-                
-                    <li><a class="toctree-l4" href="#step-3-install-tableau-desktop-101-or-higher">Step 3. Install Tableau Desktop (10.1 or Higher)</a></li>
-                
-                    <li><a class="toctree-l4" href="#step-4-connecting-tableau-desktop-to-snappydata-server">Step 4. Connecting Tableau Desktop to SnappyData Server</a></li>
                 
             
             </ul>
@@ -2047,7 +2064,7 @@
         
       
     
-    <li>Setting Up SnappyData ODBC Driver and Tableau Desktop</li>
+    <li>Setting Up SnappyData ODBC Driver</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -2063,7 +2080,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="setting-up-snappydata-odbc-driver-and-tableau-desktop">Setting Up SnappyData ODBC Driver and Tableau Desktop</h1>
+                <h1 id="setting-up-snappydata-odbc-driver">Setting Up SnappyData ODBC Driver</h1>
 <p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2082,7 +2099,7 @@
 <p><a href="../install/#download-snappydata">Download the SnappyData 1.0.2.1 Enterprise Edition</a>.</p>
 </li>
 <li>
-<p>Click <strong>ODBC INSTALLERS</strong> to download the <strong>snappydata-odbc-1.0.0.zip</strong> file.</p>
+<p>Click <strong>ODBC INSTALLERS</strong> to download the <strong>snappydata-odbc-1.0.2.zip</strong> file.</p>
 </li>
 <li>
 <p>Follow <a href="../howto/connect_using_odbc_driver/">steps 1 and 2</a> to install the  SnappyData ODBC driver.</p>
@@ -2136,50 +2153,7 @@
 <p class="admonition-title">Note</p>
 <p>Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. </p>
 </div>
-<h2 id="step-3-install-tableau-desktop-101-or-higher">Step 3. Install Tableau Desktop (10.1 or Higher)</h2>
-<p>To install Tableau desktop:</p>
-<ol>
-<li>
-<p><a href="https://www.tableau.com/products/desktop">Download Tableau Desktop</a>.</p>
-</li>
-<li>
-<p>Depending on your Windows installation, download the 32-bit or 64-bit version of the installer.</p>
-</li>
-<li>
-<p>Follow the steps to complete the installation and ensure that you register and activate your product.</p>
-</li>
-</ol>
-<h2 id="step-4-connecting-tableau-desktop-to-snappydata-server">Step 4. Connecting Tableau Desktop to SnappyData Server</h2>
-<p>When using Tableau with the SnappyData ODBC Driver for the first time, you must add the <strong>odbc-snappydata.tdc</strong> file, that is available in the downloaded <strong>snappydata-odbc-1.0.0.zip</strong>.</p>
-<p>To connect the Tableau Desktop to the SnappyData Server:</p>
-<ol>
-<li>
-<p>Copy the <strong>odbc-snappydata.tdc</strong> file to the &lt;<em>User_Home_Path</em>&gt;/Documents/My Tableau Repository/Datasources directory.</p>
-</li>
-<li>
-<p>Open the Tableau Desktop application.</p>
-</li>
-<li>
-<p>On the Start Page,</p>
-<p>a. Under <strong>Connect</strong> &gt; <strong>To a Server</strong>, click <strong>Other Databases (ODBC)</strong>. The Other Databases (ODBC) window is displayed.</p>
-<p>b. In the DSN drop-down list, select the name that you provided for your SnappyData ODBC connection (for example <em>snappydsn</em>), and then click <strong>Connect</strong>.</p>
-</li>
-<li>
-<p>When connection to the SnappyData server is established, the <strong>Sign In</strong> option is enabled. Click <strong>Sign In</strong> to log into Tableau.</p>
-</li>
-<li>
-<p>From the <strong>Schema</strong> drop-down list, select a schema. For example, <em>app</em>. </br>All tables from the selected schema are listed.</p>
-</li>
-<li>
-<p>Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click <strong>Update Now</strong> to refresh and view your changes.</p>
-</li>
-<li>
-<p>In the <strong>Worksheets</strong> tab, click <strong>sheet</strong> to start the analysis.</br> </p>
-</li>
-<li>
-<p>On this screen, you can click and drag a field from the <strong>Dimensions</strong> area to <strong>Rows</strong> or <strong>Columns</strong>.</br> Refer to the Tableau documentation for more information on data visualization.</p>
-</li>
-</ol>
+<p>For information about connecting Tableau using SnappyData ODBC Driver, refer to <a href="../howto/tableauconnect/#odbcdritab">Connect Tableau using ODBC Driver</a></p>
               
             </div>
           </div>

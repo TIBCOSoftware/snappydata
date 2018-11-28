@@ -121,6 +121,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/snappydataquick_start/">SnappyData Cluster SQL Tutorials</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -350,6 +357,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
@@ -786,6 +800,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -1849,7 +1870,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../apidocsintro/">API Documentation</a>
+        <a class="" href="../../apidocsintro/">API Reference</a>
         
     </li>
 
@@ -1870,7 +1891,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver and Tableau Desktop</a>
+        <a class="" href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up SnappyData ODBC Driver</a>
         
     </li>
 
@@ -2184,33 +2205,55 @@
 </tbody>
 </table>
 <h2 id="new-features">New Features</h2>
-<p>The following new features are included in SnappyData 1.0.2.1 version:</p>
+<p>SnappyData 1.0.2.1 version includes the following new features:</p>
 <ul>
 <li>Support Spark's HiveServer2 in SnappyData cluster. Enables starting an embedded Spark HiveServer2 on leads in embedded mode.</li>
-<li>Provided a default Structured Streaming Sink implementation for SnappyData column and row tables. Conflation of events with same key columns can be enabled by a sink property.</li>
-<li>Added a -agent jvm argument in the launch commands to kill the jvm as soon as OOM occurs. This is important because the VM sometimes used to crash in unexpected ways later as a side effect of this corrupting internal metadata which later gave restart troubles.</li>
-<li>Allow NONE as a valid policy for server-auth-provider. Essentially, the cluster can now be configured only for user authentication and mutual peer to peer authentication of cluster members can be disabled by specifying this property as NONE.</li>
-<li>Add support for query hints to force a join type. This may be useful for cases where the result is known to be small, for example, but plan rules cannot determine so.</li>
-<li>Allow deleteFrom API to work as far as the dataframe contains key columns.</li>
+<li>Provided a default <a href="../../howto/use_stream_processing_with_snappydata/#structuredstreaming">Structured Streaming Sink implementation</a> for SnappyData column and row tables. A Sink property can enable conflation of events with the same key columns. </li>
+<li>Added a <strong>-agent </strong>JVM argument in the launch commands to kill the JVM as soon as Out-of-Memory(OOM) occurs. This is important because the VM sometimes used to crash in unexpected ways later as a side effect of this corrupting internal metadata which later gave restart troubles. <a href="../../best_practices/important_settings/#oomerrorhandle">Handling Out-of-Memory Error</a></li>
+<li>Allow <strong>NONE</strong> as a valid policy for <code>server-auth-provider</code>. Essentially, the cluster can now be configured only for user authentication, and mutual peer to peer authentication of cluster members can be disabled by specifying this property as NONE.</li>
+<li>Add support for query hints to force a join type. This may be useful for cases where the result is known to be small, for example, but plan rules cannot determine it.</li>
+<li>Allow <strong>deleteFrom</strong> API to work as long as the dataframe contains key columns.</li>
 </ul>
 <h2 id="performance-enhancements">Performance Enhancements</h2>
 <p>The following performance enhancements are included in SnappyData 1.0.2.1 version:</p>
 <ul>
-<li>Avoid shuffle when join key columns are a superset of child partitioning. </li>
-<li>Added a pooled version of SnappyData JDBC driver for Spark to connect to SnappyData cluster as JDBC datasource.</li>
-<li>[SNAP-2657] Added caching for hive catalog lookups. Meta-data queries with large number of tables take quite long because of nested loop joins between  SYSTABLES and HIVETABLES for most meta-data queries. Even if the table numbers were in hundreds it used to take a lot of time.</li>
+<li>
+<p>Avoid shuffle when join key columns are a superset of child partitioning.</p>
+</li>
+<li>
+<p>Added a pooled version of SnappyData JDBC driver for Spark to connect to SnappyData cluster as JDBC data source. <a href="../../howto/connect_using_jdbc_driver/#jdbcpooldriverconnect">Connecting with JDBC Client Pool Driver</a> </p>
+</li>
+<li>
+<p>Added caching for hive catalog lookups. Meta-data queries with large number of tables take quite long because of nested loop joins between <strong>SYSTABLES</strong> and <strong>HIVETABLES</strong> for most meta-data queries. Even if the table numbers were in hundreds, it used to take much time. [SNAP-2657]</p>
+</li>
 </ul>
 <h2 id="select-fixes-and-performance-related-fixes">Select Fixes and Performance Related Fixes</h2>
 <p>The following defect fixes are included in SnappyData 1.0.2.1 version:</p>
 <ul>
-<li>[SNAP-2659] Reset the pool at the end of collect to avoid spill over of low latency pool setting to latter operations that may not use the CachedDataFrame execution paths.</li>
-<li>[SNAP-2491] Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through SnappyData shell does not reflect in spark-shell. </li>
-<li>Fixing occasional failures in serialization using CachedDataFrame, if the node is just starting/stopping. Also, fix a hang in shutdown for cases where hive client close is trying to boot up the node again, waiting on the locks taken during the shutdown.</li>
-<li>[SNAP-2566] Lead and Lag window functions were failing due to incorrect analysis error.
-Fixed the validate-disk-store tool. It was not getting initialized with registered types. This was required to deserialize byte arrays being read from persisted files.</li>
-<li>Fix schema in ResultSet metadata. It used to show the default schema 'APP' always.</li>
-<li>[SNAP-2627] Sometimes a false unique constraint violation happened due to removed or destroyed AbstractRegionEntry. Now an attempt is made to remove it from index and another try is made to put the new value against the index key.</li>
-<li>[SNAP-2654] Fix for memory leak in oldEntrieMap leading to LowMemoryException and OutOfMemoryException.</li>
+<li>
+<p>Reset the pool at the end of collect to avoid spillover of low latency pool setting to the latter operations that may not use the CachedDataFrame execution paths. [SNAP-2659]</p>
+</li>
+<li>
+<p>Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through SnappyData shell does not reflect in spark-shell. [SNAP-2491]  </p>
+</li>
+<li>
+<p>Fixed the occasional failures in serialization using <strong>CachedDataFrame</strong>, if the node is just starting/stopping. Also, fixed a hang in shutdown for cases where hive client close is trying to boot up the node again, waiting on the locks that are taken during the shutdown.</p>
+</li>
+<li>
+<p>Lead and Lag window functions were failing due to incorrect analysis error. [SNAP-2566]</p>
+</li>
+<li>
+<p>Fixed the <strong>validate-disk-store</strong> tool. It was not getting initialized with registered types. This was required to deserialize byte arrays being read from persisted files.</p>
+</li>
+<li>
+<p>Fix schema in ResultSet metadata. It used to show the default schema <strong>APP</strong> always.</p>
+</li>
+<li>
+<p>Sometimes a false unique constraint violation happened due to removed or destroyed AbstractRegionEntry. Now an attempt is made to remove it from the index and another try is made to put the new value against the index key. [SNAP-2627]</p>
+</li>
+<li>
+<p>Fix for memory leak in oldEntrieMap leading to <strong>LowMemoryException</strong> and <strong>OutOfMemoryException</strong>. [SNAP-2654]</p>
+</li>
 </ul>
 <h2 id="description-of-download-artifacts">Description of Download Artifacts</h2>
 <p>The following table describes the download artifacts included in SnappyData 1.0.2.1 version:</p>
