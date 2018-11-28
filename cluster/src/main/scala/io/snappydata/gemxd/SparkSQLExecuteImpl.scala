@@ -36,7 +36,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{Constant, QueryHint}
+import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
@@ -482,6 +482,7 @@ object SnappySessionPerConnection {
     if (session != null) session
     else {
       val session = SnappyContext().snappySession
+      Property.PlanCaching.set(session.sessionState.conf, true)
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
     }
