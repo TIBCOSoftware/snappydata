@@ -148,7 +148,7 @@ import org.apache.spark.sql.snappy._
 class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, parameters: Map[String, String],
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
-    import org.apache.spark.sql.functions._
+    import org.apache.spark.sql.functions.lit
     val df1 = df.withColumn("batch_id", lit(batchId))
     val count = df1.cache().count()
     val distinctCount = df1.distinct().count()
