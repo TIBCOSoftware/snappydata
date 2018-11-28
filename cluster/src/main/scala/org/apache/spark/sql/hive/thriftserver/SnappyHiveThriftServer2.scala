@@ -19,6 +19,7 @@ package org.apache.spark.sql.hive.thriftserver
 
 import java.net.InetAddress
 
+import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.hive.service.cli.thrift.ThriftCLIService
 import org.apache.log4j.{Level, LogManager}
@@ -26,7 +27,7 @@ import org.apache.log4j.{Level, LogManager}
 import org.apache.spark.Logging
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2.HiveThriftServer2Listener
 import org.apache.spark.sql.hive.thriftserver.ui.ThriftServerTab
-import org.apache.spark.sql.hive.{HiveUtils, SnappySharedState}
+import org.apache.spark.sql.hive.{HiveUtils, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 /**
@@ -74,7 +75,11 @@ object SnappyHiveThriftServer2 extends Logging {
       if (useHiveSession) serverConf
       else {
         // use internal hive conf adding hive.server2 configurations
-        val conf = sparkSession.sharedState.asInstanceOf[SnappySharedState].metadataHive().conf
+        val client = SnappyHiveExternalCatalog.getExistingInstance.client()
+        // read client conf by reflection here because the HiveClientImpl
+        // is loaded by separate IsolatedClientLoader
+        val conf = client.getClass.getMethod("conf").invoke(client)
+            .asInstanceOf[HiveConf]
         val itr = serverConf.iterator()
         while (itr.hasNext) {
           val entry = itr.next()

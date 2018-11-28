@@ -17,6 +17,7 @@
 package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
+import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
 import java.sql.DriverManager
 import java.util.TimeZone
@@ -52,20 +53,22 @@ import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.metric.SQLMetric
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
+import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
 
 object Utils {
 
+  final val EMPTY_STRING_ARRAY = Array.empty[String]
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
   private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
@@ -97,10 +100,6 @@ object Utils {
         s"""$module: Cannot resolve column name "$col" among
             (${cols.mkString(", ")})""")
     }
-  }
-
-  def fieldName(f: StructField): String = {
-    if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
   }
 
   def fieldIndex(relationOutput: Seq[Attribute], columnName: String,
@@ -500,21 +499,17 @@ object Utils {
    * @return the result Metadata object to use for StructField
    */
   def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
-    // Put BASE as 'CLOB' so that SnappyStoreHiveCatalog.normalizeSchema() removes these
+    // Put BASE as 'CLOB' so that SnappySessionCatalog.normalizeSchema() removes these
     // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
     // render this field as CLOB.
-    // If we don't add this property here, SnappyStoreHiveCatalog.normalizeSchema() will add one
+    // If we don't add this property here, SnappySessionCatalog.normalizeSchema() will add one
     // on its own and this field would be rendered as VARCHAR.
     new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
         .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
   }
 
-  def schemaFields(schema: StructType): Map[String, StructField] = {
-    Map(schema.fields.flatMap { f =>
-      val name = if (f.metadata.contains("name")) f.metadata.getString("name")
-      else f.name
-      Iterator((name, f))
-    }: _*)
+  def schemaFields(schema: StructType): SMap[String, StructField] = {
+    new CaseInsensitiveMutableHashMap[StructField](schema.fields.map(f => f.name -> f).toMap)
   }
 
   def getFields(o: Any): Map[String, Any] = {
@@ -530,7 +525,7 @@ object Utils {
     * In case both are specified, then check compatibility between the two.
     */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
-      baseTableOpt: Option[String], catalog: SnappyStoreHiveCatalog,
+      baseTableOpt: Option[String], catalog: SnappySessionCatalog,
       asSelect: Boolean, table: String,
       tableType: String): (StructType, Option[LogicalPlan]) = {
     schemaOpt match {
@@ -540,7 +535,7 @@ object Utils {
           // should have matching schema
           try {
             val tablePlan = catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTableName))
+              catalog.snappySession.tableIdentifier(baseTableName))
             val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
               (s, Some(tablePlan))
@@ -567,7 +562,7 @@ object Utils {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
             val tablePlan = catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTable))
+              catalog.snappySession.tableIdentifier(baseTable))
             (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
             case ae: AnalysisException =>
@@ -696,6 +691,11 @@ object Utils {
       }
     }
     conf
+  }
+
+  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader = {
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+    new MutableURLClassLoader(urls, parentLoader)
   }
 
   def setDefaultConfProperty(conf: SparkConf, name: String,

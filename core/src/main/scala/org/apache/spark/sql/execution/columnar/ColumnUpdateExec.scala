@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Exp
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnStatsSchema}
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -39,16 +39,16 @@ import org.apache.spark.sql.types.StructType
 case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
-    appendableRelation: JDBCAppendableRelation, updateColumns: Seq[Attribute],
+    columnRelation: BaseColumnFormatRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
     connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
-  override def relation: Option[DestroyRelation] = Some(appendableRelation)
+  override def relation: Option[DestroyRelation] = Some(columnRelation)
 
   val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
-    appendableRelation.getCompressionCodec)
+    columnRelation.getCompressionCodec)
 
   private val schemaAttributes = tableSchema.toAttributes
 

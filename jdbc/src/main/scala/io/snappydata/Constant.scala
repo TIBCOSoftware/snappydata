@@ -50,9 +50,6 @@ object Constant {
 
   val SPARK_STORE_PREFIX: String = SPARK_PREFIX + STORE_PROPERTY_PREFIX
 
-  val SPLIT_VIEW_TEXT_PROPERTY = "snappydata.view.text"
-  val SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY = "snappydata.view.originalText"
-
   val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
   val CONNECTION_PROPERTY: String = s"${PROPERTY_PREFIX}connection"

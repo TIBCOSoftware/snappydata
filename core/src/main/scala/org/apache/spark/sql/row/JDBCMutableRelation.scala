@@ -18,15 +18,14 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import scala.collection.mutable
-
 import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.sql.catalog.RelationInfo
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -34,7 +33,6 @@ import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
-import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -47,10 +45,9 @@ import org.apache.spark.{Logging, Partition}
  * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-case class JDBCMutableRelation(
+abstract case class JDBCMutableRelation(
     connProperties: ConnectionProperties,
     table: String,
-    provider: String,
     mode: SaveMode,
     userSpecifiedString: String,
     parts: Array[Partition],
@@ -84,28 +81,33 @@ case class JDBCMutableRelation(
 
   import scala.collection.JavaConverters._
 
-  override final lazy val schema: StructType = JDBCRDD.resolveTable(
-    new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
+  protected var _schema: StructType = _
+
+  override final def schema: StructType = {
+    if (_schema eq null) {
+      _schema = JDBCRDD.resolveTable(
+        new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
+    }
+    _schema
+  }
 
   override def resolvedName: String = table
 
-  var tableExists: Boolean = _
+  override val (schemaName: String, tableName: String) =
+    JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
 
-  var tableCreated : Boolean = false
+  private[sql] var tableCreated: Boolean = _
 
-  final lazy val schemaFields: Map[String, StructField] =
+  final lazy val schemaFields: scala.collection.Map[String, StructField] =
     Utils.schemaFields(schema)
 
-  def partitionColumns: Seq[String] = Nil
+  def partitionExpressions(relation: LogicalRelation): Seq[Expression]
 
-  def partitionExpressions(relation: LogicalRelation): Seq[Expression] = Nil
+  def numBuckets: Int
 
-  def numBuckets: Int = -1
+  def isPartitioned: Boolean
 
-  def isPartitioned: Boolean = false
-
-  override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] =
-    filters.filter(ExternalStoreUtils.unhandledFilter)
+  protected def relationInfo: RelationInfo
 
   override protected final val connFactory: () => Connection =
     JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
@@ -113,41 +115,28 @@ case class JDBCMutableRelation(
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
-      try {
+    try {
       conn = connFactory()
-      tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      if (mode == SaveMode.Ignore && tableExists) {
-//        dialect match {
-//          case d: JdbcExtendedDialect => d.initializeTable(table,
-//            sqlContext.conf.caseSensitiveAnalysis, conn)
-//          case _ => // Do Nothing
-//        }
-        return resolvedName
-      }
-
-      // We should not throw table already exists from here. This is expected
-      // as new relation objects are created on each invocation of DDL.
-      // We should silently ignore it. Or else we have to take care of all
-      // SaveMode in top level APIs, which will be cumbersome as we take
-      // actions based on dialects e.g. for SaveMode.Overwrite we truncate
-      // rather than dropping the table. ErrorIfExist should be checked from
-      // top level APIs like session.createTable, which we already do.
-      // if (mode == SaveMode.ErrorIfExists && tableExists) {
-      //  sys.error(s"Table $table already exists.")
-      // }
-
-      if (mode == SaveMode.Overwrite && tableExists) {
-        // truncate the table if possible
-        val truncate = dialect match {
-          case d: JdbcExtendedDialect => d.truncateTable(table)
-          case _ => s"TRUNCATE TABLE $table"
+      if (tableExists) {
+        mode match {
+          case SaveMode.Ignore => return resolvedName
+          case SaveMode.ErrorIfExists =>
+            throw new AnalysisException(s"Table '$table' already exists. SaveMode: ErrorIfExists.")
+          case SaveMode.Append =>
+            // truncate the table if possible
+            val truncate = dialect match {
+              case d: JdbcExtendedDialect => d.truncateTable(table)
+              case _ => s"TRUNCATE TABLE $table"
+            }
+            JdbcExtendedUtils.executeUpdate(truncate, conn)
+          case _ => throw new IllegalArgumentException(s"createTable: unexpected mode = $mode")
         }
-        JdbcExtendedUtils.executeUpdate(truncate, conn)
       }
-
       // Create the table if the table didn't exist.
       if (!tableExists) {
+        if (userSpecifiedString.isEmpty) throw new TableNotFoundException(schemaName, tableName)
         // quote the table name e.g. for reserved keywords or special chars
         val sql = s"CREATE TABLE ${quotedName(table)} $userSpecifiedString"
         val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
@@ -235,54 +224,15 @@ case class JDBCMutableRelation(
    * UPDATE and DELETE operations for affecting the selected rows.
    */
   override def getKeyColumns: Seq[String] = {
-    val conn = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
-    try {
-      val metadata = conn.getMetaData
-      val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
-        table, conn)
-      val primaryKeys = metadata.getPrimaryKeys(null, schemaName, tableName)
-      val keyColumns = new mutable.ArrayBuffer[String](2)
-      while (primaryKeys.next()) {
-        keyColumns += primaryKeys.getString(4)
-      }
-      primaryKeys.close()
-      // if partitioning columns are different from primary key then add those
-      if (keyColumns.nonEmpty) {
-        partitionColumns.foreach { p =>
-          // always use case-insensitive analysis for partitioning columns
-          // since table creation can use case-insensitive in creation
-          val partCol = Utils.toUpperCase(p)
-          if (!keyColumns.contains(partCol)) keyColumns += partCol
-        }
-      }
-      keyColumns
-    } finally {
-      conn.close()
-    }
+    val keyColumns = relationInfo.pkCols
+    // if partitioning columns are different from primary key then add those
+    if (keyColumns.length > 0) {
+      keyColumns ++ partitionColumns.filter(!keyColumns.contains(_))
+    } else Nil
   }
 
-    /** Get primary keys of the row table */
-    override def getPrimaryKeyColumns: Seq[String] = {
-        val conn = ConnectionPool.getPoolConnection(table, dialect,
-            connProperties.poolProps, connProperties.connProps,
-            connProperties.hikariCP)
-        try {
-            val metadata = conn.getMetaData
-            val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
-                table, conn)
-            val primaryKeys = metadata.getPrimaryKeys(null, schemaName, tableName)
-            val primaryKey = new mutable.ArrayBuffer[String](2)
-            while (primaryKeys.next()) {
-                primaryKey += primaryKeys.getString(4)
-            }
-            primaryKey
-        }
-        finally {
-            conn.close()
-        }
-    }
+  /** Get primary keys of the row table */
+  override def getPrimaryKeyColumns: Seq[String] = relationInfo.pkCols
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     // use the Insert plan for best performance
@@ -360,8 +310,8 @@ case class JDBCMutableRelation(
     // may not have efficient index lookup
     updateColumns.foreach { c =>
       setFields(index) = schemaFields.getOrElse(c, throw new AnalysisException(
-          "JDBCUpdatableRelation: Cannot resolve column name " +
-              s""""$c" among (${schema.fieldNames.mkString(", ")})"""))
+        "JDBCUpdatableRelation: Cannot resolve column name " +
+            s""""$c" among (${schema.fieldNames.mkString(", ")})"""))
       index += 1
     }
     val connection = ConnectionPool.getPoolConnection(table, dialect,
@@ -436,17 +386,19 @@ case class JDBCMutableRelation(
     ""
   }
 
-  override def createIndex(indexIdent: QualifiedTableName,
-      tableIdent: QualifiedTableName,
+  override def createIndex(indexIdent: TableIdentifier,
+      tableIdent: TableIdentifier,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
+      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      val fullTableName = session.sessionCatalog.resolveTableIdentifier(tableIdent).unquotedString
+      val tableExists = JdbcExtendedUtils.tableExists(fullTableName,
         conn, dialect, sqlContext)
 
-      val sql = constructSQL(indexIdent.toString(), tableIdent.toString(),
-        indexColumns, options)
+      val sql = constructSQL(session.sessionCatalog.resolveTableIdentifier(
+        indexIdent).unquotedString, fullTableName, indexColumns, options)
 
       // Create the Index if the table exists.
       if (tableExists) {
@@ -469,10 +421,16 @@ case class JDBCMutableRelation(
     }
   }
 
-  override def dropIndex(indexIdent: QualifiedTableName,
-      tableIdent: QualifiedTableName,
+  override def dropIndex(indexIdent: TableIdentifier, tableIdent: TableIdentifier,
       ifExists: Boolean): Unit = {
-    throw new UnsupportedOperationException()
+    val conn = connFactory()
+    try {
+      val ifExistsStr = if (ifExists) " IF EXISTS" else ""
+      JdbcExtendedUtils.executeUpdate(s"DROP INDEX$ifExistsStr ${tableIdent.unquotedString}", conn)
+    } finally {
+      conn.commit()
+      conn.close()
+    }
   }
 
   private def getDataType(column: StructField): String = {
@@ -488,21 +446,23 @@ case class JDBCMutableRelation(
     dataType
   }
 
-  override def alterTable(tableIdent: QualifiedTableName,
-        isAddColumn: Boolean, column: StructField): Unit = {
+  override def alterTable(tableIdent: TableIdentifier,
+      isAddColumn: Boolean, column: StructField): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
+      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.unquotedString,
         conn, dialect, sqlContext)
       val sql = if (isAddColumn) {
-      val nullable = if (column.nullable) "" else " NOT NULL"
-      s"""alter table ${quotedName(table)}
+        val nullable = if (column.nullable) "" else " NOT NULL"
+        s"""alter table ${quotedName(table)}
             add column "${column.name}" ${getDataType(column)}$nullable"""
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
       if (tableExists) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
+        // clear the schema to enable refresh in subsequent schema() calls
+        _schema = null
       } else {
         throw new AnalysisException(s"table $table does not exist.")
       }
@@ -510,8 +470,8 @@ case class JDBCMutableRelation(
       case se: java.sql.SQLException =>
         if (se.getMessage.contains("No suitable driver found")) {
           throw new AnalysisException(s"${se.getMessage}\n" +
-            "Ensure that the 'driver' option is set appropriately and " +
-            "the driver jars available (--jars option in spark-submit).")
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
         } else {
           throw se
         }
@@ -520,10 +480,4 @@ case class JDBCMutableRelation(
       conn.close()
     }
   }
-
-}
-
-final class DefaultSource extends MutableRelationProvider with DataSourceRegister {
-
-  override def shortName(): String = "jdbc_mutable"
 }

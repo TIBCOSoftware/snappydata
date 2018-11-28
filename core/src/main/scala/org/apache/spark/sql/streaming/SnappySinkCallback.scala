@@ -150,7 +150,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
     df.cache().count()
     log.debug(s"Processing batchId $batchId with parameters $parameters ...")
-    val tableName = snappySession.sessionCatalog.formatName(parameters(TABLE_NAME))
+    val tableName = snappySession.sessionCatalog.formatTableName(parameters(TABLE_NAME))
     val conflationEnabled = if (parameters.contains(CONFLATION)) {
       parameters(CONFLATION).toBoolean
     } else {

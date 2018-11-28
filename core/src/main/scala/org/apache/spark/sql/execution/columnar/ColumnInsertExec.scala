@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Exp
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
@@ -45,7 +46,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
       partitionExpressions: Seq[Expression],
-      relation: JDBCAppendableRelation, table: String) = {
+      relation: BaseColumnFormatRelation, table: String) = {
     // TODO: add compression for binary/complex types
     this(child, partitionColumns, partitionExpressions, relation.numBuckets,
       relation.isPartitioned, Some(relation), relation.getColumnBatchParams, table,

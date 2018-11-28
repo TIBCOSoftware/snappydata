@@ -17,14 +17,13 @@
 package org.apache.spark.sql.aqp
 
 
-import io.snappydata.SnappyDataFunctions.usageStr
+import io.snappydata.sql.catalog.CatalogObjectType
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.ExpressionInfo
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName}
 import org.apache.spark.sql.policy.CurrentUser
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
@@ -46,7 +45,7 @@ class SnappyContextFunctions {
       "CURRENT_USER", usageStr, "")
     registry.registerFunction("CURRENT_USER", info,
       e => {
-        if (! e.isEmpty) {
+        if (e.nonEmpty) {
           throw new AnalysisException("Argument(s)  passed for zero arg function " +
               s"CURRENT_USER")
         }
@@ -63,7 +62,7 @@ class SnappyContextFunctions {
     throw new UnsupportedOperationException("missing aqp jar")
 
   def insertIntoTopK(session: SnappySession, rows: RDD[Row],
-      topKName: QualifiedTableName, time: Long): Unit =
+      topKName: String, time: Long): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def queryTopK(session: SnappySession, topKName: String,
@@ -75,8 +74,7 @@ class SnappyContextFunctions {
     throw new UnsupportedOperationException("missing aqp jar")
 
   def queryTopKRDD(session: SnappySession, topK: String,
-      startTime: String,
-      endTime: String, schema: StructType): RDD[InternalRow] =
+      startTime: String, endTime: String, schema: StructType): RDD[InternalRow] =
     throw new UnsupportedOperationException("missing aqp jar")
 
   protected[sql] def collectSamples(session: SnappySession, rows: RDD[Row],
@@ -103,8 +101,8 @@ class SnappyContextFunctions {
 
   def aqpTablePopulator(session: SnappySession): Unit = {
     // register blank tasks for the stream tables so that the streams start
-    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
-      ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
+    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](
+      CatalogObjectType.Stream).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 
   def sql[T](fn: => T): T = fn

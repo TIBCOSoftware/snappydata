@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.{Logging, SparkFiles}
+import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.util.MutableURLClassLoader
