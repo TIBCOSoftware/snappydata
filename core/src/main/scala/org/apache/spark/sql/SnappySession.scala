@@ -201,7 +201,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   override def sql(sqlText: String): DataFrame = {
     try {
-      sqlCached(sqlText)
+      sqInternal(sqlText)
     } catch {
       // fallback to uncached flow for streaming queries
       case ae: AnalysisException
@@ -211,7 +211,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-   def sqlCached(sqlText: String): CachedDataFrame = {
+   private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
   }
 
