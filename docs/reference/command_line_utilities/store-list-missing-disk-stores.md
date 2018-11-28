@@ -4,12 +4,12 @@ Lists all disk stores with the most recent data for which other members are wait
 
 ## Syntax
 
-### Secured Cluster
+**Secured cluster**
 
 ```
 ./bin/snappy list-missing-disk-stores -locators=<addresses> -auth-provider=<auth-provider> -user=<username> -password=<password> -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:<ldap-server-port>/  -gemfirexd.auth-ldap-search-base=<search-base-values> -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
 ```
-### Non Secured Cluster
+**Non-secured cluster**
 
 ```pre
 ./bin/snappy list-missing-disk-stores -locators=localhost:bind address
@@ -28,7 +28,7 @@ The table describes options for snappy list-missing-disk-stores.
 
 ## Example
 
-### Secured Cluster
+**Secured cluster**
 
 ```
 ./bin/snappy list-missing-disk-stores -locators=localhost:10334 -auth-provider=LDAP -user=snappy1 -password=snappy1  -J-Dgemfirexd.auth-ldap-server=ldap://localhost:389/ -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=user123
@@ -43,7 +43,7 @@ Connecting to distributed system: locators=localhost[10334]
 The distributed system did not have any missing disk stores
 ```
 
-### Non-secured Cluster
+**Non-secured Cluster**
 
 ```pre
 ./bin/snappy list-missing-disk-stores -locators=localhost:10334

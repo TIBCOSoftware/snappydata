@@ -3,13 +3,14 @@ Indicates a member waiting for other diskStoreID to go ahead with the initializa
 
 ## Syntax
 
-### Secured Cluster 
+**Secured cluster**
 
 ```
 ./bin/snappy unblock-disk-store<disk-store-id> -locators=localhost:<addresses>  -auth-provider=<auth-provider> -user=<username> -password=<password> -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:<ldap-server-port>/ -gemfirexd.auth-ldap-search-base=<search-base-values> -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
 ```
 
-### Non-Secured Cluster
+**Non-secured cluster**
+
 ```pre
 ./bin/snappy unblock-disk-store <disk-store-id>
    <-locators=<addresses>> 
@@ -30,7 +31,7 @@ The table describes options and arguments for snappy unblock-disk-store. If no m
 
 ## Example
 
-### Secured Cluster
+**Secured cluster**
 
 ```
 ./bin/snappy unblock-disk-store a395f237-c5e5-4e76-8024-353272e86f28 -locators=localhost:10334 -auth-provider=LDAP -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:389/ -user=<username> -password=<password> -gemfirexd.auth-ldap-search-base=<search-base-values> -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
@@ -44,7 +45,9 @@ Connecting to distributed system: locators=localhost[10334]
 		Max Storage Pool Size = 628.9 MB (659499777)
 Unblock was successful and no disk stores are now waiting
 ```
-### Non-Secured Cluster
+
+**Non-secured cluster**
+
 ```pre
 ./bin/snappy unblock-disk-store a395f237-c5e5-4e76-8024-353272e86f28 -locators=localhost:10334
 Connecting to distributed system: -locators=localhost:10334

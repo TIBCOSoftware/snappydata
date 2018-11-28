@@ -20,7 +20,7 @@ You can use this command:
 
 *	Before compacting an offline disk store, to determine whether it is worthwhile.
 *	Before restoring a disk store.
-*	Any time you want ensure the disk store is in good shape.
+*	Any time you want to ensure the disk store is in good shape.
 
 ## Example
 

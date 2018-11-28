@@ -33,7 +33,7 @@ This table describes options for the `snappy run` command. Default values are us
 |-J-D;property=value;|Sets Java system property to the specified value.|
 |-password|If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, you are prompted to enter a password from the console.|
 |-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/store_command_reference.md) command.|
-|-user|If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|
+|-user|If the servers or locators have been configured to use authentication, this option specifies the username to use for booting the server and joining the distributed system.|
 
 ## Description
 
