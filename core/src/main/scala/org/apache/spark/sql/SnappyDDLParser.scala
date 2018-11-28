@@ -438,12 +438,12 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def dropTable: Rule1[LogicalPlan] = rule {
     DROP ~ TABLE ~ ifExists ~ tableIdentifier ~> ((exists: Boolean, table: TableIdentifier) =>
-      DropTableCommand(table, exists, isView = false, purge = false))
+      DropTableOrViewCommand(table, exists, isView = false, purge = false))
   }
 
   protected def dropView: Rule1[LogicalPlan] = rule {
     DROP ~ VIEW ~ ifExists ~ tableIdentifier ~> ((exists: Boolean, table: TableIdentifier) =>
-      DropTableCommand(table, exists, isView = true, purge = false))
+      DropTableOrViewCommand(table, exists, isView = true, purge = false))
   }
 
   protected def alterView: Rule1[LogicalPlan] = rule {

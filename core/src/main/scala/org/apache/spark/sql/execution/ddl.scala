@@ -44,7 +44,7 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, RunnableCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
@@ -68,6 +68,29 @@ case class CreateTableUsingCommand(
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
       schemaDDL, mode, allOptions, isBuiltIn, query)
     Nil
+  }
+}
+
+/**
+ * Like Spark's DropTableCommand but checks for non-existent table case upfront to avoid
+ * unnecessary warning logs from Spark's plan.
+ */
+case class DropTableOrViewCommand(
+    tableIdent: TableIdentifier,
+    ifExists: Boolean,
+    isView: Boolean,
+    purge: Boolean) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
+
+    if (!catalog.tableExists(tableIdent)) {
+      val resolved = catalog.resolveTableIdentifier(tableIdent)
+      if (ifExists) return Nil
+      else throw new TableNotFoundException(resolved.database.get, resolved.table)
+    }
+
+    DropTableCommand(tableIdent, ifExists, isView, purge).run(sparkSession)
   }
 }
 

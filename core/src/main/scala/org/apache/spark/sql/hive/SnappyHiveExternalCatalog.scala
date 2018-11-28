@@ -87,14 +87,13 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf, val hadoopCon
     val cacheLoader = new CacheLoader[TableIdentifier, CatalogTable]() {
       override def load(name: TableIdentifier): CatalogTable = {
         logDebug(s"Looking up data source for $name")
-        val table = withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
+        withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
           name.database.get, name.table)) match {
           case None =>
             nonExistentTables.put(name, java.lang.Boolean.TRUE)
             throw new TableNotFoundException(name.database.get, name.table)
           case Some(catalogTable) => finalizeCatalogTable(catalogTable)
         }
-        table
       }
     }
     CacheBuilder.newBuilder().maximumSize(cacheSize).build(cacheLoader)
@@ -397,14 +396,20 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf, val hadoopCon
     // property separately because Spark's HiveExternalCatalog does not support schema changes
     if (catalogTable.tableType == CatalogTableType.EXTERNAL) {
       val oldRawDefinition = withHiveExceptionHandling(client.getTable(
-        tableDefinition.database, tableDefinition.identifier.table))
-      if (oldRawDefinition.schema.length != tableDefinition.schema.length) {
+        catalogTable.database, catalogTable.identifier.table))
+      val oldSchema = ExternalStoreUtils.getTableSchema(
+        oldRawDefinition.properties, forView = false) match {
+        case None => oldRawDefinition.schema
+        case Some(s) => s
+      }
+      if (oldSchema.length != catalogTable.schema.length) {
         val maxLen = conf.get(SCHEMA_STRING_LENGTH_THRESHOLD)
-        // only change to new schema and corresponding properties and assume rest is same
+        // only change to new schema with corresponding properties and assume
+        // rest is same since this can only come through SnappySession.alterTable
         val newProps = JdbcExtendedUtils.addSplitProperty(catalogTable.schema.json,
           SnappyExternalCatalog.TABLE_SCHEMA, oldRawDefinition.properties, maxLen)
         withHiveExceptionHandling(client.alterTable(oldRawDefinition.copy(
-          schema = tableDefinition.schema, properties = newProps.toMap)))
+          schema = catalogTable.schema, properties = newProps.toMap)))
 
         registerCatalogSchemaChange(catalogTable.identifier :: Nil)
         return
@@ -691,6 +696,7 @@ object SnappyHiveExternalCatalog {
       }
       catalog
     } else {
+      // TODO: SW: check logging in a secure cluster normally and via smart connector on shell
       // Reduce log level to warning during hive client initialization
       // as it generates hundreds of line of logs which are of no use.
       // Once the initialization is done, restore the logging level.

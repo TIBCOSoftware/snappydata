@@ -58,7 +58,7 @@ import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
-import org.apache.spark.sql.execution.command.{DropTableCommand, ExecutedCommandExec}
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
@@ -1216,7 +1216,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    */
   private[sql] def dropTable(tableIdent: TableIdentifier, ifExists: Boolean,
       isView: Boolean): Unit = {
-    val plan = DropTableCommand(tableIdent, ifExists, isView, purge = false)
+    val plan = DropTableOrViewCommand(tableIdent, ifExists, isView, purge = false)
     sessionState.executePlan(plan).toRdd
   }
 
@@ -1256,11 +1256,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
       column: StructField): Unit = {
-    val plan = sessionCatalog.resolveRelation(tableIdent)
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
-    plan match {
+    sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         ar.alterTable(tableIdent, isAddColumn, column)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)

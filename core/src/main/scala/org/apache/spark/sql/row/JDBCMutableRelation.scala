@@ -124,14 +124,14 @@ abstract case class JDBCMutableRelation(
           case SaveMode.Ignore => return resolvedName
           case SaveMode.ErrorIfExists =>
             throw new AnalysisException(s"Table '$table' already exists. SaveMode: ErrorIfExists.")
-          case SaveMode.Append =>
+          case SaveMode.Overwrite =>
             // truncate the table if possible
             val truncate = dialect match {
               case d: JdbcExtendedDialect => d.truncateTable(table)
               case _ => s"TRUNCATE TABLE $table"
             }
             JdbcExtendedUtils.executeUpdate(truncate, conn)
-          case _ => throw new IllegalArgumentException(s"createTable: unexpected mode = $mode")
+          case _ =>
         }
       }
       // Create the table if the table didn't exist.

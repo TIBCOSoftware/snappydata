@@ -52,9 +52,19 @@ object HiveClientUtil extends Logging {
     val sparkConf = conf.clone()
     var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
     var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
-    if (user.isEmpty && password.isEmpty) {
+    if (user.isEmpty) {
       user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
       password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+    }
+    // check store boot properties
+    if (user.isEmpty) {
+      val bootProperties = Misc.getMemStore.getBootProperties
+      bootProperties.get(USERNAME_ATTR).asInstanceOf[String] match {
+        case null =>
+        case u =>
+          user = Some(u)
+          password = Option(bootProperties.get(PASSWORD_ATTR).asInstanceOf[String])
+      }
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {
