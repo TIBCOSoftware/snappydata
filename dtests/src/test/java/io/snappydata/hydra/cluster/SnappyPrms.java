@@ -352,6 +352,11 @@ public class SnappyPrms extends BasePrms {
   public static Long sleepTimeSecsForMemberStatus;
 
   /**
+   * (int) number of threads required for concurrent execution of queries/tasks.
+   */
+  public static Long numThreadsForConcExecution;
+
+  /**
    * (int) warmUp time in secs for concurrenct queries execution.
    * Number of seconds the queries should be executed before recording the execution time for calculating
    * the latency and throughput stats in concurrency tests.
