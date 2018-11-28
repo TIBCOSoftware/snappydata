@@ -76,6 +76,8 @@ trait RowPutRelation extends DestroyRelation {
 
 trait BulkPutRelation extends DestroyRelation {
 
+  def table: String
+
   def getPutKeys: Option[Seq[String]]
 
   /**
@@ -280,8 +282,8 @@ trait AlterableRelation {
    * The schema of this instance must reflect the updated one after alter.
    *
    * @param tableIdent  Table identifier
-   * @param isAddColumn true if column has to be added and false if it is to be dropped
-   * @param column      the column to be added or dropped
+   * @param isAddColumn True if column is to be added else it is to be dropped
+   * @param column      Column to be added or dropped
    */
   def alterTable(tableIdent: TableIdentifier,
       isAddColumn: Boolean, column: StructField): Unit
