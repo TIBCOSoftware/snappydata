@@ -12,9 +12,10 @@ object ConcurrentPutInto extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val primaryLocatorHost = jobConfig.getString("primaryLocatorHost")
     val primaryLocatorPort = jobConfig.getString("primaryLocatorPort")
+    val numThreads = jobConfig.getString("numThreadsForConcExecution").toInt
     val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true))
     Try {
-      ConcPutIntoTest.concPutInto(primaryLocatorHost, primaryLocatorPort)
+      ConcPutIntoTest.concPutInto(primaryLocatorHost, primaryLocatorPort, numThreads)
       pw.close()
     } match {
       case Success(v) => pw.close()
