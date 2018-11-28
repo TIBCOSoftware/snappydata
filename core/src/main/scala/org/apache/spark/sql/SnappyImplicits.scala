@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -216,24 +216,11 @@ object snappy extends Serializable {
         case sc: SnappySession => sc
         case _ => sys.error("Expected a SnappyContext for deleteFrom operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
-          .asInstanceOf[Option[Seq[String]]]
-      // A partitioned relation's schema can be different from the input
-      // logicalPlan, since partition columns are all moved after data columns.
-      // We Project to adjust the ordering.
-      // TODO: this belongs to the analyzer.
-      val input = normalizedParCols.map { parCols =>
-        val (inputPartCols, inputDataCols) = df.logicalPlan.output.partition {
-          attr => parCols.contains(attr.name)
-        }
-        Project(inputDataCols ++ inputPartCols, df.logicalPlan)
-      }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
+        session.sessionState.catalog.newQualifiedTableName(tableName)), df.logicalPlan))
           .executedPlan.executeCollect()
     }
-
   }
 }
 

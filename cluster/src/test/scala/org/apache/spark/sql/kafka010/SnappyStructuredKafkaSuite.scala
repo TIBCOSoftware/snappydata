@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -229,7 +229,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     streamingQuery.stop()
   }
 
-  test("streaming DataFrame join to static DataFrame") {
+  test("streaming join to snappy table") {
     import session.implicits._
 
     val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
@@ -252,7 +252,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .option("startingOffsets", "earliest").load
       .selectExpr("CAST(value AS STRING) accountName").as[(String)]
 
-    val streamingQuery = acctStreamingDF.join(dfBlackList, "accountName")
+    val streamingQuery = acctStreamingDF.join(session.table("blacklist"), "accountName")
       .writeStream
       .outputMode("append")
       .format("memory")

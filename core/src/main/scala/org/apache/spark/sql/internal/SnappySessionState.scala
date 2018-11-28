@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,6 +25,7 @@ import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
+import io.snappydata.Property.HashAggregateSize
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
@@ -52,24 +53,39 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
 
-class SnappySessionState(snappySession: SnappySession)
-    extends SessionState(snappySession) {
-
+class SnappySessionState(val snappySession: SnappySession)
+    extends SessionState(snappySession) with SnappyStrategies {
   self =>
 
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
+  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
+    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
+    case _ => Nil
+  }
+
   protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
 
   private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
+
+  override lazy val streamingQueryManager: StreamingQueryManager = {
+    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
+    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
+    // implies that Snappydata aggregation optimisation will be turned off for any usage of
+    // this session including non-streaming queries.
+
+    HashAggregateSize.set(snappySession.sessionState.conf, "-1")
+    new StreamingQueryManager(snappySession)
+  }
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -142,7 +158,7 @@ class SnappySessionState(snappySession: SnappySession)
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
-      implicit val ss = snappySession
+      implicit val ss: SnappySession = snappySession
       var insertedSnappyOpts = 0
       val modified = super.batches.map {
         case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
@@ -314,6 +330,10 @@ class SnappySessionState(snappySession: SnappySession)
   private[spark] val leaderPartitions = new ConcurrentHashMap[PartitionedRegion,
       Array[Partition]](16, 0.7f, 1)
 
+  @volatile private[sql] var enableExecutionCache: Boolean = _
+  protected final lazy val executionCache =
+    new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
+
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
    */
@@ -423,8 +443,8 @@ class SnappySessionState(snappySession: SnappySession)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
-        case  (_: BypassRowLevelSecurity | _: Update | _: Delete |
-               _: DeleteFromTable | _: PutIntoTable) => plan
+        case _: BypassRowLevelSecurity | _: Update | _: Delete |
+             _: DeleteFromTable | _: PutIntoTable => plan
 
         // TODO: Asif: Bypass row level security filter apply if the command
         // is of type RunnableCommad. Later if it turns out any data operation
@@ -504,7 +524,7 @@ class SnappySessionState(snappySession: SnappySession)
                   || (projs.length == 1 && projs.head.isInstanceOf[Star])))) {
             boolsArray(allProjectionBool) = false
           }
-          case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+          case _: GlobalLimit | _: LocalLimit => boolsArray(alreadyProcessed_bool) = true
           case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
             boolsArray(filter_bool) = true
           case _ =>
@@ -672,9 +692,6 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def planner: DefaultPlanner = new DefaultPlanner(snappySession, conf,
-    experimentalMethods.extraStrategies)
-
   protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
@@ -696,10 +713,29 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def executePlan(plan: LogicalPlan): QueryExecution = {
+  override final def executePlan(plan: LogicalPlan): QueryExecution = {
+    snappyStrategies
     clearExecutionData()
-    newQueryExecution(plan)
+    beforeExecutePlan(plan)
+    val qe = newQueryExecution(plan)
+    if (enableExecutionCache) executionCache.put(plan, qe)
+    qe
   }
+
+  private lazy val snappyStrategies = {
+    val storeOptimizedRules: Seq[Strategy] =
+      Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
+
+    experimentalMethods.extraStrategies = experimentalMethods.extraStrategies ++
+        Seq(SnappyStrategies, StoreStrategy, StreamQueryStrategy) ++ storeOptimizedRules
+  }
+
+  protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
+  }
+
+  private[sql] def getExecution(plan: LogicalPlan): QueryExecution = executionCache.get(plan)
+
+  private[sql] def clearExecutionCache(): Unit = executionCache.clear()
 
   private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
     queryPreparations(topLevel = false).foldLeft(plan) {
@@ -1087,27 +1123,6 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-class DefaultPlanner(val session: SnappySession, conf: SQLConf,
-    extraStrategies: Seq[Strategy])
-    extends SparkPlanner(session.sparkContext, conf, extraStrategies)
-        with SnappyStrategies {
-
-  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
-    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
-    case _ => Nil
-  }
-
-  private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
-
-  override def strategies: Seq[Strategy] =
-    Seq(SnappyStrategies,
-      StoreStrategy, StreamQueryStrategy) ++
-        storeOptimizedRules ++
-        super.strategies
-}
-
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
@@ -1153,39 +1168,28 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(dr: DeletableRelation, _, _) =>
-          def comp(a: Attribute, targetCol: String): Boolean = a match {
-            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
-          }
-
-          val expectedOutput = l.output
-          if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same column name(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          l match {
-            case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
-              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
-                comp(e, a.toUpperCase)))) {
-                throw new AnalysisException(s"${child.output.mkString(",")}" +
-                    s" columns in the WHERE clause of the DELETE FROM statement must " +
-                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
-              }
-            case _ =>
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
-
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
-          val expectedOutput = l.output
-          if (child.output.length != expectedOutput.length) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same number of column(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+
+          val keyColumns = dr.getPrimaryKeyColumns
+          val childOutput = keyColumns.map(col =>
+            child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"$l requires that the query in the " +
+                  "WHERE clause of the DELETE FROM statement " +
+                  s"must have all the key column(s) ${keyColumns.mkString(",")} but found " +
+                  s"${child.output.mkString(",")} instead.")
+            })
+
+          val expectedOutput = keyColumns.map(col =>
+            l.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"The target table must contain all the" +
+                  s" key column(s) ${keyColumns.mkString(",")}. " +
+                  s"Actual schema: ${l.output.mkString(",")}")
+            })
+
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, Project(childOutput, child))
+
         case _ => d
       }
 
@@ -1536,4 +1540,7 @@ class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
     case 0 => child
     case 1 => hints
   }
+
+  override def simpleString: String =
+    s"LogicalPlanWithHints[hints = $hints; child = ${child.simpleString}]"
 }

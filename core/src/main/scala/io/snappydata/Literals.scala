@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -107,6 +107,11 @@ object Property extends Enumeration {
   val HiveServerEnabled: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.enabled", "If true on a lead node, then an " +
         "embedded HiveServer2 with thrift access will be started", Some(false), prefix = null)
+
+  val HiveCompatible: SQLValue[Boolean] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
+        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
+    Some(false), prefix = null)
 
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +

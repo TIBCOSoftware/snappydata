@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -54,7 +54,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     }
   }
 
-  private[sql] final def hasPlanHints: Boolean = _planHints ne null
+  private[sql] final def hasPlanHints: Boolean = (_planHints ne null) && !_planHints.isEmpty
 
   protected def clearQueryHints(): Unit = {
     if (!queryHints.isEmpty) queryHints.clear()
@@ -426,6 +426,7 @@ object SnappyParserConsts {
   final val EXISTS: Keyword = reservedKeyword("exists")
   final val FALSE: Keyword = reservedKeyword("false")
   final val FROM: Keyword = reservedKeyword("from")
+  final val FUNCTION: Keyword = reservedKeyword("function")
   final val GROUP: Keyword = reservedKeyword("group")
   final val HAVING: Keyword = reservedKeyword("having")
   final val IN: Keyword = reservedKeyword("in")
@@ -457,10 +458,6 @@ object SnappyParserConsts {
   final val WHEN: Keyword = reservedKeyword("when")
   final val WHERE: Keyword = reservedKeyword("where")
   final val WITH: Keyword = reservedKeyword("with")
-  final val FUNCTION: Keyword = reservedKeyword("function")
-
-
-
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
@@ -537,6 +534,7 @@ object SnappyParserConsts {
   final val RESTRICT: Keyword = nonReservedKeyword("restrict")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
   final val SCHEMAS: Keyword = nonReservedKeyword("schemas")
+  final val SECURITY: Keyword = nonReservedKeyword("security")
   final val SEMI: Keyword = nonReservedKeyword("semi")
   final val SHOW: Keyword = nonReservedKeyword("show")
   final val SORT: Keyword = nonReservedKeyword("sort")
@@ -551,11 +549,11 @@ object SnappyParserConsts {
   final val UNDEPLOY: Keyword = nonReservedKeyword("undeploy")
   final val UNCACHE: Keyword = nonReservedKeyword("uncache")
   final val USE: Keyword = nonReservedKeyword("use")
+  final val USER: Keyword = nonReservedKeyword("user")
   final val USING: Keyword = nonReservedKeyword("using")
   final val VALUES: Keyword = nonReservedKeyword("values")
   final val VIEW: Keyword = nonReservedKeyword("view")
-  final val SECURITY: Keyword = nonReservedKeyword("security")
-  final val USER: Keyword = nonReservedKeyword("user")
+  final val VIEWS: Keyword = nonReservedKeyword("views")
 
   // Window analytical functions are non-reserved
   final val DURATION: Keyword = nonReservedKeyword("duration")

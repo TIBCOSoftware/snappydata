@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import java.nio.ByteBuffer
 import java.sql.DriverManager
 import java.util.TimeZone
 
+import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
@@ -45,7 +46,7 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, GenericRow, UnsafeRow}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
@@ -347,6 +348,12 @@ object Utils {
       case None => throw new GemFireXDRuntimeException(
         s"SparkSQLExecuteImpl: getPartitionData() block $blockId not found")
     }
+  }
+
+  @tailrec
+  def unAlias(e: Expression, childClass: Class[_] = null): Expression = e match {
+    case a: Alias if (childClass eq null) || childClass.isInstance(a.child) => unAlias(a.child)
+    case _ => e
   }
 
   def getInternalType(dataType: DataType): Class[_] = {
@@ -812,6 +819,9 @@ object Utils {
   }
 
   def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
+
+  def sqlInternal(snappy: SnappySession, sqlText: String): CachedDataFrame =
+    snappy.sqInternal(sqlText)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -918,7 +928,7 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       case _ => false
     }
 
-    override def iterator() = new java.util.Iterator[Integer] {
+    override def iterator(): java.util.Iterator[Integer] = new java.util.Iterator[Integer] {
       private[this] var bucket = bucketSet.nextSetBit(0)
 
       override def hasNext: Boolean = bucket >= 0

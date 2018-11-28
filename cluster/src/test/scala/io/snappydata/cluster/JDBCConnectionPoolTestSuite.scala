@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -209,8 +209,7 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     conn.close()
   }
 
-  ignore("Test connection pool to test pool exhaus") {
-
+  test("Test connection pool for pool exhaustion") {
     try {
       snc
       val serverHostPort = TestUtil.startNetServer()
@@ -229,20 +228,13 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
       // scalastyle:off
       Class.forName(driverName)
       // max active is 3 and trying to use more than that
-      for (i <- 1 to 6) {
+      for (_ <- 1 to 6) {
         val conn = DriverManager.getConnection(url, properties)
         // conn.close()
       }
-      assert(false)
-
+      fail("Expected PoolExhaustedException")
     } catch {
-      case e: org.apache.tomcat.jdbc.pool.PoolExhaustedException => {
-        assert(true)
-      }
-      case e: Exception => {
-        assert(false)
-      }
+      case _: org.apache.tomcat.jdbc.pool.PoolExhaustedException => // expected
     }
   }
-
 }

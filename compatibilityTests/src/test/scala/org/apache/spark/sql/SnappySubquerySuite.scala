@@ -16,8 +16,12 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappySubquerySuite extends SubquerySuite with SharedSnappySessionContext{
+class SnappySubquerySuite extends SubquerySuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
+  override def ignored: Seq[String] = Seq(
+    "SPARK-18854 numberedTreeString for subquery"
+  )
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -309,7 +309,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         destLocDir.mkdirs();
       }
     } catch (IOException ie) {
-      throw new TestException("Got exception while creating new csv file.");
+      throw new TestException("Got exception while creating new csv file.", ie);
     }
 
     for (int i = 0; i < tableNames.length; i++) {
@@ -352,11 +352,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
               sb = new StringBuilder();
             }
           } catch (IOException ie) {
-            throw new TestException("Got exception while creating new csv file.");
+            throw new TestException("Got exception while creating new csv file.", ie);
           }
         }
       } catch (FileNotFoundException fe) {
-        throw new TestException("Got exception while creating new csv file.");
+        throw new TestException("Got exception while creating new csv file.", fe);
       }
     }
     return destLoc;
@@ -933,10 +933,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
     if (mismatchString.length() > 0) {
       Log.getLogWriter().info(mismatchString.toString());
-      mismatchString.setLength(0);
-      query = "select * from ";
-      for (String table : tables) {
-        mismatchString.append(verifyResultsForTable(query + table, table, "", false, true));
+      if(!query.contains("select * ")) {
+        mismatchString.setLength(0);
+        query = "select * from ";
+        for (String table : tables) {
+          mismatchString.append(verifyResultsForTable(query + table, table, "", false, true));
+        }
       }
       throw new TestException(mismatchString.toString());
     }
@@ -1048,13 +1050,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     pb = new ProcessBuilder("/bin/bash", "-c", command);
     Log.getLogWriter().info("Executing command : " + command);
     //get the unexpected rows in snappy
-    testInstance.executeProcess(pb, unexpectedResultsFile);
+    executeProcess(pb, unexpectedResultsFile);
 
     command = "grep -v -F -x -f " + snappyFileName + " " + derbyFileName;
     pb = new ProcessBuilder("/bin/bash", "-c", command);
     Log.getLogWriter().info("Executing command : " + command);
     //get the missing rows in snappy
-    testInstance.executeProcess(pb, missingResultsFile);
+    executeProcess(pb, missingResultsFile);
 
     BufferedReader unexpectedRsReader, missingRsReader;
     try {
@@ -1093,7 +1095,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           table + ". Please check " + upexpectedFileName);
       aStr.append("\n");
     }
-    return aStr.toString();
+   /* if(missing.size() == 0 && unexpected.size() == 0)
+      Log.getLogWriter().info("Verified that the resulst are correct.");
+*/    return aStr.toString();
   }
 
   public PreparedStatement getPreparedStatement(Connection conn, PreparedStatement ps, String
