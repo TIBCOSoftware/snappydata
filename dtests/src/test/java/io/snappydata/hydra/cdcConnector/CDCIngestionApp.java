@@ -101,7 +101,11 @@ public class CDCIngestionApp implements Runnable {
         System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
         if (qStr.contains("PUT INTO")) {
           for (int j = startRange; j <= endRange; j++) {
-            String newStr = qStr.replace("?", Integer.toString(j));
+            String newStr;
+            if (qStr.contains("?"))
+              newStr = qStr.replace("?", Integer.toString(j));
+            else
+              newStr = qStr;
             System.out.println("The new query String is " + newStr);
             conn.createStatement().execute(newStr);
           }
