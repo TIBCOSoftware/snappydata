@@ -14,13 +14,14 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.datasource.v2
+package io.snappydata.datasource.v2.driver
 
 import java.sql.{CallableStatement, DriverManager}
 
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Constant
+import io.snappydata.datasource.v2.{ConnectorUtils, V2Constants}
 
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.types.{DataType, StructType}
@@ -110,9 +111,10 @@ final class SnappyTableMetaDataReader {
  * @param tableStorageType        table type that is ROW/COLUMN etc.
  * @param bucketCount             0 for replicated tables otherwise the actual count
  * @param partitioningCols        partitioning columns
- * @param bucketToServerMapping   For a partitioned table, this is an array with each entry
- *                                corresponding to a bucket(0th entry for bucket#0 and so on).
- *                                Each entry is an ArrayBuffer of tuples in the form of
+ * @param bucketToServerMapping   For a partitioned table, this is an array where each entry
+ *                                is an ArrayBuffer of tuples and corresponds to a bucket(0th
+ *                                entry for bucket#0 and so on).
+ *                                Each entry in the ArrayBuffer is in the form of
  *                                (host, jdbcURL) for hosts where bucket exists
  *                                For replicated table the array contains a single ArrayBuffer
  *                                of tuples((host, jdbcURL)) for all hosts where the table exists

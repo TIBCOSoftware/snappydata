@@ -21,6 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 import io.snappydata.collection.ObjectObjectHashMap
+import io.snappydata.datasource.v2.driver.SnappyTableMetaData
 
 /**
  * Contains utility methods required by connectors
@@ -147,5 +148,29 @@ object ConnectorUtils {
       val portStr: String = matcher.group(3)
       (host, address, portStr)
     }
+  }
+
+  def preferredLocations(tableMetaData: SnappyTableMetaData, bucketId: Int): Array[String] = {
+    if (tableMetaData.bucketToServerMapping.isEmpty) return new Array[String](0)
+
+    val preferredServers: ArrayBuffer[(String, String)] = if (tableMetaData.bucketCount > 0) {
+      // from bucketToServerMapping get the collection of hosts where the bucket exists
+      // (each element in preferredServers ArrayBuffer is in the form of a tuple (host, jdbcURL))
+      tableMetaData.bucketToServerMapping.get(bucketId)
+    } else { // replicated tables
+      tableMetaData.bucketToServerMapping.get(0)
+    }
+
+    if (preferredServers.isEmpty) return new Array[String](0)
+
+    val locations = Array.ofDim[String](preferredServers.length)
+    var index: Int = 0
+    preferredServers.foreach(
+      h => {
+        locations(index) = h._1
+        index = index + 1
+      }
+    )
+    locations
   }
 }

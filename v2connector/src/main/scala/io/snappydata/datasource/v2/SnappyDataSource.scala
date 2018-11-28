@@ -19,6 +19,8 @@ package io.snappydata.datasource.v2
 
 import java.util.function.Supplier
 
+import io.snappydata.datasource.v2.driver.{ColumnTableDataSourceReader, RowTableDataSourceReader, SnappyTableMetaData, SnappyTableMetaDataReader}
+
 import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.sources.v2.reader.DataSourceReader
 import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, ReadSupport, SessionConfigSupport}
@@ -31,7 +33,6 @@ class SnappyDataSource extends DataSourceV2 with
     DataSourceRegister with
     SessionConfigSupport {
 
-
   /**
    * Creates a {@link DataSourceReader} to scan the data from this data source.
    *
@@ -43,7 +44,15 @@ class SnappyDataSource extends DataSourceV2 with
    */
   override def createReader(options: DataSourceOptions): DataSourceReader = {
     validateOptions(options)
-    new SnappyDataSourceReader(options)
+    val tableMetaData: SnappyTableMetaData =
+      new SnappyTableMetaDataReader().getTableMetaData(options)
+    val dataSourceReader = tableMetaData.tableStorageType match {
+      case "ROW" => new RowTableDataSourceReader(options, tableMetaData)
+      case "COLUMN" => new ColumnTableDataSourceReader(options, tableMetaData)
+      case _ => throw new UnsupportedOperationException(s"Operations on tables of type" +
+          s" ${tableMetaData.tableStorageType} are not supported from V2 connector")
+    }
+    dataSourceReader
   }
 
   override def shortName(): String = {
@@ -68,5 +77,6 @@ class SnappyDataSource extends DataSourceV2 with
             new IllegalArgumentException(
               s"Required configuration ${V2Constants.TABLE_NAME} not specified")
         })
+
   }
 }

@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.datasource.v2
+package io.snappydata.datasource.v2.partition
 
 import java.io.IOException
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
@@ -22,6 +22,7 @@ import java.util.Collections
 
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.datasource.v2.driver.{QueryConstructs, SnappyTableMetaData}
 import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.ClientStatement
 
@@ -37,7 +38,7 @@ import org.apache.spark.sql.sources.v2.reader.DataReader
  * @param tableMetaData     metadata of the table being scanned
  * @param queryConstructs   contains projections and filters
  */
-class SnappyDataReader(val bucketId: Int,
+class SnappyDataRowTableReader(val bucketId: Int,
     tableMetaData: SnappyTableMetaData, queryConstructs: QueryConstructs)
     extends DataReader[Row] {
 

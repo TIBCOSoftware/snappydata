@@ -15,24 +15,17 @@
  * LICENSE file.
  */
 
-package io.snappydata.datasource.v2
+package io.snappydata.datasource.v2.partition
 
-import scala.collection.mutable.ArrayBuffer
+import io.snappydata.datasource.v2.ConnectorUtils
+import io.snappydata.datasource.v2.driver.{QueryConstructs, SnappyTableMetaData}
 
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.sources.v2.reader.{DataReader, DataReaderFactory}
+import org.apache.spark.sql.vectorized.ColumnarBatch
 
-/**
- * Creates {@link SnappyDataReader} that actually fetches data on executors
- * Also returns the preferred locations for the bucket id for which
- * {@link SnappyDataReader} is responsible for
- * @param bucketId          bucketId for which this factory is created
- * @param tableMetaData     metadata of the table being scanned
- * @param queryConstructs   contains projections and filters
- */
-class SnappyDataReaderFactory(val bucketId: Int,
+class SnappyColumnBatchReaderFactory(val bucketId: Int,
     tableMetaData: SnappyTableMetaData, queryConstructs: QueryConstructs)
-    extends DataReaderFactory[Row] {
+    extends DataReaderFactory[ColumnarBatch] {
 
   /**
    * The preferred locations where the data reader returned by this reader factory can run faster,
@@ -48,27 +41,7 @@ class SnappyDataReaderFactory(val bucketId: Int,
    * submitted.
    */
   override def preferredLocations(): Array[String] = {
-    if (tableMetaData.bucketToServerMapping.isEmpty) return new Array[String](0)
-
-    val preferredServers: ArrayBuffer[(String, String)] = if (tableMetaData.bucketCount > 0) {
-      // from bucketToServerMapping get the collection of hosts where the bucket exists
-      // (each element in preferredServers ArrayBuffer is in the form of a tuple (host, jdbcURL))
-      tableMetaData.bucketToServerMapping.get(bucketId)
-    } else { // replicated tables
-      tableMetaData.bucketToServerMapping.get(0)
-    }
-
-    if (preferredServers.isEmpty) return new Array[String](0)
-
-    val locations = Array.ofDim[String](preferredServers.length)
-    var index: Int = 0
-    preferredServers.foreach(
-      h => {
-        locations(index) = h._1
-        index = index + 1
-      }
-    )
-    locations
+    ConnectorUtils.preferredLocations(tableMetaData, bucketId)
   }
 
   /**
@@ -77,8 +50,8 @@ class SnappyDataReaderFactory(val bucketId: Int,
    * If this method fails (by throwing an exception), the corresponding Spark task would fail and
    * get retried until hitting the maximum retry times.
    */
-  override def createDataReader(): DataReader[Row] = {
-    new SnappyDataReader(bucketId, tableMetaData, queryConstructs)
+  override def createDataReader(): DataReader[ColumnarBatch] = {
+    new SnappyColumnBatchReader(bucketId, tableMetaData, queryConstructs)
   }
 
 }

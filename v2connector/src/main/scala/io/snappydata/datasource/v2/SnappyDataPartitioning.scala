@@ -16,6 +16,8 @@
  */
 package io.snappydata.datasource.v2
 
+import io.snappydata.datasource.v2.driver.SnappyTableMetaData
+
 import org.apache.spark.sql.sources.v2.reader.partitioning.{ClusteredDistribution, Distribution, Partitioning}
 
 class SnappyDataPartitioning(tableMetaData: SnappyTableMetaData) extends Partitioning {
