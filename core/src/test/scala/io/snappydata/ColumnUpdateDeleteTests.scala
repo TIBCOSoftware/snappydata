@@ -518,12 +518,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     // concurrent updates to different rows but same batches
     val barrier = new CyclicBarrier(concurrency)
     var tasks = Array.tabulate(concurrency)(i => Future {
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
+        waited = true
         res = snappy.sql(s"update updateTable set id = $idUpdate, " +
             s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
             s"where (id % $step) = $i").collect()
@@ -532,6 +534,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))
@@ -547,12 +550,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     // concurrent deletes
     tasks = Array.tabulate(concurrency)(i => Future {
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
+        waited = true
         res = snappy.sql(
           s"delete from updateTable where (id % $step) = ${step - i - 1}").collect()
         assert(res.map(_.getLong(0)).sum > 0)
@@ -560,6 +565,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))

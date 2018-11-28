@@ -23,6 +23,7 @@ import java.net.URLClassLoader
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
@@ -165,7 +166,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def checkSchemaPermission(schema: String, currentUser: String): String = {
     val ms = Misc.getMemStoreBootingNoThrow
-    if (ms != null) {
+    val userId = IdUtil.getUserAuthorizationId(currentUser)
+    if (ms ne null) {
       var conn: EmbedConnection = null
       if (ms.isSnappyStore && Misc.isSecurityEnabled) {
         var contextSet = false
@@ -176,23 +178,22 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           contextSet = true
           val sd = dd.getSchemaDescriptor(
             schema, conn.getLanguageConnection.getTransactionExecute, false)
-          if (sd == null) {
-            if (schema.equals(currentUser)) {
-              if (ms.tableCreationAllowed()) return currentUser
+          if (sd eq null) {
+            if (schema.equalsIgnoreCase(userId) ||
+                schema.equalsIgnoreCase(userId.replace('-', '_'))) {
+              if (ms.tableCreationAllowed()) return userId
               throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
                 schema, schema)
             } else {
               throw StandardException.newException(SQLState.LANG_SCHEMA_DOES_NOT_EXIST, schema)
             }
           }
-          PrivilegeInfo.checkOwnership(currentUser, sd, sd, dd)
+          PrivilegeInfo.checkOwnership(userId, sd, sd, dd)
           sd.getAuthorizationId
         } finally {
           if (contextSet) conn.getTR.restoreContextStack()
         }
-      } else {
-        currentUser
-      }
-    } else currentUser
+      } else userId
+    } else userId
   }
 }

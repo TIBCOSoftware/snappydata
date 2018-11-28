@@ -24,8 +24,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.Property
 import io.snappydata.Property.HashAggregateSize
+import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
@@ -43,12 +45,12 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.execution.command.{DDLUtils, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
-import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
@@ -62,7 +64,6 @@ import org.apache.spark.{Partition, SparkConf}
 
 class SnappySessionState(val snappySession: SnappySession)
     extends SessionState(snappySession) with SnappyStrategies {
-  self =>
 
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
@@ -74,8 +75,6 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
-
-  private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
 
   override lazy val streamingQueryManager: StreamingQueryManager = {
     // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
@@ -121,10 +120,10 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
-    new PreprocessTableInsertOrPut(conf) ::
+    new PreprocessTable(this) ::
+        ResolveRelationsExtended ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
-        ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
         RowLevelSecurity ::
@@ -343,7 +342,7 @@ class SnappySessionState(val snappySession: SnappySession)
         catalog.lookupRelation(u.tableIdentifier, u.alias)
       } catch {
         case _: NoSuchTableException =>
-          u.failAnalysis(s"Table not found: ${u.tableName}")
+          u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
       }
     }
 
@@ -442,6 +441,9 @@ class SnappySessionState(val snappySession: SnappySession)
     Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
+      val memStore = GemFireStore.getBootingInstance
+      if ((memStore eq null) || !memStore.isRLSEnabled) return plan
+
       plan match {
         case _: BypassRowLevelSecurity | _: Update | _: Delete |
              _: DeleteFromTable | _: PutIntoTable => plan
@@ -500,7 +502,7 @@ class SnappySessionState(val snappySession: SnappySession)
 
     def limitExternalDataFetch(plan: LogicalPlan): Int = {
       // if plan is pure select with or without limit , has GemFireRelation,
-      // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
+      // no Filter , no GroupBy, no Aggregate then apply rule and is not a CreateTable
       // or a CreateView
       // TODO: Deal with View
 
@@ -545,8 +547,7 @@ class SnappySessionState(val snappySession: SnappySession)
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
-    private def getKeyAttributes(table: LogicalPlan,
-        child: LogicalPlan,
+    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
         plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
@@ -557,7 +558,7 @@ class SnappySessionState(val snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return (Nil, DMLExternalTable(catalog.newQualifiedTableName(
+                return (Nil, DMLExternalTable(snappySession.tableIdentifier(
                   mutable.table), lr, currentKey.sqlText), lr)
               case _ =>
                 throw new AnalysisException(
@@ -635,7 +636,7 @@ class SnappySessionState(val snappySession: SnappySession)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
-          val allReferences = newChild.references ++
+          val allReferences = newChild.references ++ AttributeSet(updateAttrs) ++
               AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
           u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
             keyColumns = keyAttrs.map(_.toAttribute),
@@ -651,9 +652,9 @@ class SnappySessionState(val snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
-      case d@DeleteFromTable(_, child) if child.resolved =>
+      case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
         ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
-      case p@PutIntoTable(_, child) if child.resolved =>
+      case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
         ColumnTableBulkOps.transformPutPlan(sparkSession, p)
     }
 
@@ -667,32 +668,19 @@ class SnappySessionState(val snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog: SnappyStoreHiveCatalog = {
-    SnappyContext.getClusterMode(snappySession.sparkContext) match {
-      case ThinClientConnectorMode(_, _) =>
-        new SnappyConnectorCatalog(
-          snappySharedState.snappyCatalog(),
-          snappySession,
-          metadataHive,
-          snappySession.sharedState.globalTempViewManager,
-          functionResourceLoader,
-          functionRegistry,
-          conf,
-          newHadoopConf())
-      case _ =>
-        new SnappyStoreHiveCatalog(
-          snappySharedState.snappyCatalog(),
-          snappySession,
-          metadataHive,
-          snappySession.sharedState.globalTempViewManager,
-          functionResourceLoader,
-          functionRegistry,
-          conf,
-          newHadoopConf())
-    }
+  override lazy val catalog: SnappySessionCatalog = {
+    new SnappySessionCatalog(
+      snappySharedState.getExternalCatalogInstance(snappySession),
+      snappySession,
+      snappySession.sharedState.globalTempViewManager,
+      functionResourceLoader,
+      functionRegistry,
+      conf,
+      newHadoopConf())
   }
 
-  protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
+  protected[sql] def queryPreparations(
+      topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq[Rule[SparkPlan]](
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
@@ -714,7 +702,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   override final def executePlan(plan: LogicalPlan): QueryExecution = {
-    snappyStrategies
+    initSnappyStrategies
     clearExecutionData()
     beforeExecutePlan(plan)
     val qe = newQueryExecution(plan)
@@ -722,7 +710,7 @@ class SnappySessionState(val snappySession: SnappySession)
     qe
   }
 
-  private lazy val snappyStrategies = {
+  private lazy val initSnappyStrategies: Unit = {
     val storeOptimizedRules: Seq[Strategy] =
       Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
@@ -1123,9 +1111,43 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
-    extends Rule[LogicalPlan] {
+private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule[LogicalPlan] {
+
+  private def conf: SQLConf = state.conf
+
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+
+    // Add dbtable property for create table. While other routes can add it in
+    // SnappySession.createTable, the DataFrameWriter path needs to be handled here.
+    case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
+      // treat saveAsTable with mode=Append as insertInto
+      if (mode == SaveMode.Append && queryOpt.isDefined) {
+        new Insert(table = UnresolvedRelation(tableDesc.identifier),
+          partition = Map.empty, child = queryOpt.get,
+          overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
+      } else if (SnappyContext.isBuiltInProvider(tableDesc.provider.get)) {
+        val tableName = state.catalog.resolveTableIdentifier(tableDesc.identifier).unquotedString
+        // dependent tables are stored as comma-separated so don't allow comma in table name
+        if (tableName.indexOf(',') != -1) {
+          throw new AnalysisException(s"Table '$tableName' cannot contain comma in its name")
+        }
+        var newOptions = tableDesc.storage.properties +
+            (SnappyExternalCatalog.DBTABLE_PROPERTY -> tableName)
+        if (CatalogObjectType.isColumnTable(SnappyContext.getProviderType(
+          tableDesc.provider.get))) {
+          // add default batchSize and maxDeltaRows options for column tables
+          if (!newOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
+            newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
+                ExternalStoreUtils.defaultColumnMaxDeltaRows(state.snappySession).toString)
+          }
+          if (!newOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
+            newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
+                ExternalStoreUtils.defaultColumnBatchSize(state.snappySession).toString)
+          }
+        }
+        c.copy(tableDesc.copy(storage = tableDesc.storage.copy(properties = newOptions)))
+      } else c
+
     // Check for SchemaInsertableRelation first
     case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
     _, _), _, child, _, _) if l.resolved && child.resolved =>
@@ -1268,7 +1290,6 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
    * If necessary, cast data types and rename fields to the expected
    * types and names.
    */
-  // TODO: do we really need to rename?
   def castAndRenameChildOutputForPut[T <: LogicalPlan](
       plan: T,
       expectedOutput: Seq[Attribute],
@@ -1519,6 +1540,9 @@ object ResolveAggregationExpressions extends Rule[LogicalPlan] {
   }
 }
 
+/**
+ * Used to bypass LIMIT on external relation fetch for CREATE TABLE ... AS SELECT ...
+ */
 case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
 }

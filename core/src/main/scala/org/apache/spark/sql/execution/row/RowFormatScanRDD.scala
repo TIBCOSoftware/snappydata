@@ -206,7 +206,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
-        ps.setInt(3, -1)
+        ps.setLong(3, -1)
         ps.executeUpdate()
       } finally {
         ps.close()

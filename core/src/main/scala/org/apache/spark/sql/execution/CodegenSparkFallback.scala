@@ -80,7 +80,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
     do {
       cause match {
         case sqle: SQLException
-          if SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH.equals(sqle.getSQLState) =>
+          if SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(sqle.getSQLState) =>
           return true
         case e: Error =>
           if (SystemFailure.isJVMFailureError(e)) {
@@ -113,7 +113,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         if (isConnectorCatalogStaleException(t, session)) {
           logWarning(s"SmartConnector catalog is not upto date. " +
               s"Please reconstruct the dataframe and retry the operation")
-          session.sessionCatalog.invalidateAll()
+          session.externalCatalog.invalidateAll()
           SnappySession.clearAllCache()
           throw new CatalogStaleException("Smart connector catalog is " +
               "not upto date due to table schema " +

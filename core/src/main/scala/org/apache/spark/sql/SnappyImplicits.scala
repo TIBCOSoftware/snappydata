@@ -146,7 +146,7 @@ object snappy extends Serializable {
 
     def mapPartitionsWithIndexPreserveLocations[U: ClassTag](
         f: (Int, Iterator[T]) => Iterator[U],
-        p: (Int) => Seq[String],
+        p: Int => Seq[String],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
       new PreserveLocationsRDD(rdd,
@@ -201,8 +201,7 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
-          .executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), input)).executedPlan.executeCollect()
 
       session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
           foreach { cachedPlan =>
@@ -218,8 +217,7 @@ object snappy extends Serializable {
       }
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), df.logicalPlan))
-          .executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), df.logicalPlan)).executedPlan.executeCollect()
     }
   }
 }

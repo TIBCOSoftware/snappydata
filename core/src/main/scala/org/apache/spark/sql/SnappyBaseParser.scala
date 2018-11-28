@@ -527,6 +527,7 @@ object SnappyParserConsts {
   final val PUT: Keyword = nonReservedKeyword("put")
   final val REFRESH: Keyword = nonReservedKeyword("refresh")
   final val REGEXP: Keyword = nonReservedKeyword("regexp")
+  final val RENAME: Keyword = nonReservedKeyword("rename")
   final val REPLACE: Keyword = nonReservedKeyword("replace")
   final val REVOKE: Keyword = nonReservedKeyword("revoke")
   final val REPOS: Keyword = nonReservedKeyword("repos")

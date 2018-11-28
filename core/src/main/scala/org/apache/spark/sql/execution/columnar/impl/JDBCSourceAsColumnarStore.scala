@@ -48,12 +48,11 @@ import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
-import org.apache.spark.sql.hive.ConnectorCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
+import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 import org.apache.spark.util.TaskCompletionListener
 import org.apache.spark.{Partition, TaskContext, TaskKilledException}
 
@@ -121,7 +120,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
     assert(!conn.isClosed)
     tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) {
-      (conn: Connection) => {
+      conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
             val context = TXManagerImpl.currentTXContext()
@@ -206,7 +205,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   def rollbackTx(txId: String, conn: Option[Connection]): Unit = {
     // noinspection RedundantDefaultArgument
     tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
-      (conn: Connection) => {
+      conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
             Misc.getGemFireCache.getCacheTransactionManager.rollback()
@@ -397,9 +396,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    */
   private def doGFXDInsertOrPut(columnTableName: String, batch: ColumnBatch,
       batchId: Long, partitionId: Int, maxDeltaRows: Int,
-      compressionCodecId: Int): (Connection => Unit) = {
+      compressionCodecId: Int): Connection => Unit = {
     {
-      (connection: Connection) => {
+      connection: Connection => {
         val deltaUpdate = batch.deltaIndexes ne null
         // we are using the same connection on which tx was started.
         val rowInsertStr = getRowInsertOrPutStr(columnTableName, deltaUpdate)
@@ -510,22 +509,14 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         val poolProps = connProperties.poolProps -
             (if (connProperties.hikariCP) "jdbcUrl" else "url")
 
-        val (parts, embdClusterRelDestroyVersion) =
-          SnappyContext.getClusterMode(session.sparkContext) match {
-          case ThinClientConnectorMode(_, _) =>
-            val catalog = snappySession.sessionCatalog.asInstanceOf[ConnectorCatalog]
-            val relInfo = catalog.getCachedRelationInfo(catalog.newQualifiedTableName(rowBuffer))
-            (relInfo.partitions, relInfo.embedClusterRelDestroyVersion)
-          case m => throw new UnsupportedOperationException(
-            s"SnappyData table scan not supported in mode: $m")
-        }
-
+        val catalog = snappySession.externalCatalog
+        val relationInfo = catalog.getRelationInfo(rowBuffer, rowTable = false)._1
         new SmartConnectorColumnRDD(snappySession, tableName, projection, filters,
           ConnectionProperties(connProperties.url,
             connProperties.driver, connProperties.dialect, poolProps,
             connProperties.connProps, connProperties.executorConnProps,
-            connProperties.hikariCP),
-          schema, this, parts, prunePartitions, embdClusterRelDestroyVersion, delayRollover)
+            connProperties.hikariCP), schema, store = this, allParts = relationInfo.partitions,
+          prunePartitions, relationInfo.catalogSchemaVersion, delayRollover)
     }
   }
 
@@ -559,8 +550,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   }
 
   private def doRowBufferPut(batch: ColumnBatch,
-      partitionId: Int): (Connection => Unit) = {
-    (connection: Connection) => {
+      partitionId: Int): Connection => Unit = {
+    connection: Connection => {
       val gen = CodeGeneration.compileCode(
         tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
@@ -762,7 +753,7 @@ final class SmartConnectorColumnRDD(
     @transient private val store: ExternalStore,
     @transient private val allParts: Array[Partition],
     @(transient @param) partitionPruner: () => Int,
-    private var relDestroyVersion: Int,
+    private var catalogSchemaVersion: Long,
     private var delayRollover: Boolean)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
@@ -783,8 +774,7 @@ final class SmartConnectorColumnRDD(
     try {
       // fetch all the column blobs pushing down the filters
       val (statement, rs) = helper.prepareScan(conn, txId,
-        tableName, projection,
-        serializedFilters, part, relDestroyVersion)
+        tableName, projection, serializedFilters, part, catalogSchemaVersion)
       itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
         context, partitionId)
     } finally {
@@ -858,7 +848,7 @@ final class SmartConnectorColumnRDD(
     }
     ConnectionPropertiesSerializer.write(kryo, output, connProperties)
     StructTypeSerializer.write(kryo, output, schema)
-    output.writeVarInt(relDestroyVersion, false)
+    output.writeVarLong(catalogSchemaVersion, false)
     output.writeBoolean(delayRollover)
   }
 
@@ -872,7 +862,7 @@ final class SmartConnectorColumnRDD(
     serializedFilters = if (filterLen > 0) input.readBytes(filterLen) else null
     connProperties = ConnectionPropertiesSerializer.read(kryo, input)
     schema = StructTypeSerializer.read(kryo, input, c = null)
-    relDestroyVersion = input.readVarInt(false)
+    catalogSchemaVersion = input.readVarLong(false)
     delayRollover = input.readBoolean()
   }
 }
@@ -884,7 +874,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _connProperties: ConnectionProperties,
     _filters: Array[Expression],
     _partEval: () => Array[Partition],
-    private var relDestroyVersion: Int,
+    private var catalogSchemaVersion: Long,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
@@ -935,20 +925,20 @@ class SmartConnectorRowRDD(_session: SnappySession,
         if (isPartitioned) {
           clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
             new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
-            tableName, true).setMetadataVersion(relDestroyVersion))
+            tableName, true).setCatalogVersion(catalogSchemaVersion))
         } else {
           clientConn.setCommonStatementAttributes(
-            new StatementAttrs().setMetadataVersion(relDestroyVersion))
+            new StatementAttrs().setCatalogVersion(catalogSchemaVersion))
         }
         clientConn
       case _ => null
     }
     if (isPartitioned && (thriftConn eq null)) {
-      val ps = conn.prepareStatement(
-        s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, $relDestroyVersion)")
+      val ps = conn.prepareStatement("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
       ps.setString(1, tableName)
       val bucketString = bucketPartition.bucketId.toString
       ps.setString(2, bucketString)
+      ps.setLong(3, catalogSchemaVersion)
       ps.executeUpdate()
       ps.close()
     }
@@ -1015,12 +1005,12 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
-    output.writeVarInt(relDestroyVersion, false)
+    output.writeVarLong(catalogSchemaVersion, false)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
-    relDestroyVersion = input.readVarInt(false)
+    catalogSchemaVersion = input.readVarLong(false)
   }
 }
 

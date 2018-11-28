@@ -21,30 +21,30 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 
-import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.LeafExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
-import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.{DataType, StringType}
+import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.unsafe.types.UTF8String
 
+/**
+ * There is no code generation since this expression should get constant folded by the optimizer.
+ */
 case class CurrentUser() extends LeafExpression with CodegenFallback {
+
   override def foldable: Boolean = true
+
   override def nullable: Boolean = false
 
   override def dataType: DataType = StringType
 
   override def eval(input: InternalRow): Any = {
-   val snappySession = SparkSession.getActiveSession.getOrElse(
-     throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
-    var owner = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
-
-    owner = IdUtil.getUserAuthorizationId(
-        if (owner.isEmpty) Constant.DEFAULT_SCHEMA
-      else snappySession.sessionState.catalog.formatDatabaseName(owner))
-
-    UTF8String.fromString(owner)
+    val snappySession = SparkSession.getActiveSession.getOrElse(
+      throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
+    val owner = snappySession.conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)
+    // normalize the name for string comparison
+    UTF8String.fromString(IdUtil.getUserAuthorizationId(owner))
   }
 
   override def prettyName: String = "current_user"

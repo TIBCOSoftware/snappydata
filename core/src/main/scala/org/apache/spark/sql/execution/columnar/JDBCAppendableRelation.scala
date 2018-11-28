@@ -28,15 +28,13 @@ import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
-import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 
@@ -46,7 +44,7 @@ import org.apache.spark.sql.types.StructType
  * are retrieved using a JDBC URL or DataSource.
  */
 abstract case class JDBCAppendableRelation(
-    table: String,
+    override val table: String,
     provider: String,
     mode: SaveMode,
     override val schema: StructType,
@@ -66,9 +64,7 @@ abstract case class JDBCAppendableRelation(
 
   override val needConversion: Boolean = false
 
-  var tableExists: Boolean = _
-
-  var tableCreated : Boolean = _
+  private[sql] var tableCreated: Boolean = _
 
   protected final val connProperties: ConnectionProperties =
     externalStore.connProperties
@@ -80,10 +76,6 @@ abstract case class JDBCAppendableRelation(
   override def resolvedName: String = table
 
   protected var delayRollover = false
-
-  def numBuckets: Int = -1
-
-  def isPartitioned: Boolean = true
 
   override def sizeInBytes: Long = {
     SnappyTableStatsProviderService.getService.getTableStatsFromService(table) match {
@@ -131,11 +123,6 @@ abstract case class JDBCAppendableRelation(
     }
   }
 
-  override def getInsertPlan(relation: LogicalRelation,
-      child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, Nil, Nil, this, table)
-  }
-
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
@@ -173,63 +160,10 @@ abstract case class JDBCAppendableRelation(
     }
   }
 
-  // truncate both actual and shadow table
-  def truncate(): Unit = writeLock {
-    externalStore.tryExecute(table) { conn =>
-      JdbcExtendedUtils.truncateTable(conn, table, dialect)
-    }
-  }
-
-  def createTable(mode: SaveMode): Unit = {
-    val conn = connFactory()
-    try {
-      tableExists = JdbcExtendedUtils.tableExists(table, conn,
-        dialect, sqlContext)
-      if (mode == SaveMode.Ignore && tableExists) {
-//        dialect match {
-//          case d: JdbcExtendedDialect =>
-//            d.initializeTable(table,
-//              sqlContext.conf.caseSensitiveAnalysis, conn)
-//          case _ => // do nothing
-//        }
-      }
-      else if (mode == SaveMode.ErrorIfExists && tableExists) {
-        sys.error(s"Table $table already exists.")
-      }
-    } finally {
-      conn.commit()
-      conn.close()
-    }
-    createExternalTableForColumnBatches(table, externalStore)
-  }
-
-  protected def createExternalTableForColumnBatches(tableName: String,
-      externalStore: ExternalStore): Unit = {
-    require(tableName != null && tableName.length > 0,
-      "createExternalTableForColumnBatches: expected non-empty table name")
-
-    val (primarykey, partitionStrategy) = dialect match {
-      // The driver if not a loner should be an accesor only
-      case d: JdbcExtendedDialect =>
-        (s"constraint ${tableName}_partitionCheck check (partitionId != -1), " +
-            "primary key (uuid, partitionId)",
-            d.getPartitionByClause("partitionId"))
-      case _ => ("primary key (uuid)", "")
-    }
-
-    createTable(externalStore, s"create table ${quotedName(tableName)} (uuid varchar(36) " +
-        "not null, partitionId integer not null, numRows integer not null, " +
-        "stats blob, " + schema.fields.map(structField =>
-      externalStore.columnPrefix + structField.name + " blob")
-        .mkString(", ") + s", $primarykey) $partitionStrategy",
-      tableName, dropIfExists = false) // for test make it false
-  }
-
   def createTable(externalStore: ExternalStore, tableStr: String,
       tableName: String, dropIfExists: Boolean): Unit = {
 
-    externalStore.tryExecute(tableName)
-      { conn =>
+      externalStore.tryExecute(tableName) { conn =>
         if (dropIfExists) {
           JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
             ifExists = true)
@@ -253,41 +187,21 @@ abstract case class JDBCAppendableRelation(
       }
   }
 
-  /**
-   * Destroy and cleanup this relation. It may include, but not limited to,
-   * dropping the external table that this relation represents.
-   */
-  override def destroy(ifExists: Boolean): Unit = {
-    // drop the external table using a non-pool connection
-    val conn = connFactory()
-    try {
-      // clean up the connection pool and caches
-      ExternalStoreUtils.removeCachedObjects(sqlContext, table)
-    } finally {
-      try {
-        JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
-      } finally {
-        conn.commit()
-        conn.close()
-      }
-    }
-  }
-
   def flushRowBuffer(): Unit = {
     // nothing by default
   }
 
-  override def createIndex(indexIdent: QualifiedTableName,
-      tableIdent: QualifiedTableName,
+  override def createIndex(indexIdent: TableIdentifier,
+      tableIdent: TableIdentifier,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
-    throw new UnsupportedOperationException("Indexes are not supported")
+    throw new UnsupportedOperationException(s"Indexes are not supported for $toString")
   }
 
-  override def dropIndex(indexIdent: QualifiedTableName,
-      tableIdent: QualifiedTableName,
+  override def dropIndex(indexIdent: TableIdentifier,
+      tableIdent: TableIdentifier,
       ifExists: Boolean): Unit = {
-    throw new UnsupportedOperationException("Indexes are not supported")
+    throw new UnsupportedOperationException(s"Indexes are not supported for $toString")
   }
 
   private[sql] def externalColumnTableName: String

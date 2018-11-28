@@ -19,6 +19,7 @@ package io.snappydata.impl
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import java.util.Collections
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -27,6 +28,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 import io.snappydata.collection.ObjectObjectHashMap
+import io.snappydata.thrift.BucketOwners
 import io.snappydata.thrift.internal.ClientPreparedStatement
 
 import org.apache.spark.Partition
@@ -45,7 +47,7 @@ final class SmartConnectorRDDHelper {
 
   def prepareScan(conn: Connection, txId: String, columnTable: String, projection: Array[Int],
       serializedFilters: Array[Byte], partition: SmartExecutorBucketPartition,
-      relDestroyVersion: Int): (PreparedStatement, ResultSet) = {
+      catalogVersion: Long): (PreparedStatement, ResultSet) = {
     val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?)")
     pstmt.setString(1, columnTable)
     pstmt.setString(2, projection.mkString(","))
@@ -59,11 +61,11 @@ final class SmartConnectorRDDHelper {
       case clientStmt: ClientPreparedStatement =>
         val bucketSet = Collections.singleton(Int.box(partition.bucketId))
         clientStmt.setLocalExecutionBucketIds(bucketSet, columnTable, true)
-        clientStmt.setMetadataVersion(relDestroyVersion)
+        clientStmt.setCatalogVersion(catalogVersion)
         clientStmt.setSnapshotTransactionId(txId)
       case _ =>
         pstmt.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
-            s"'$columnTable', '${partition.bucketId}', $relDestroyVersion)")
+            s"'$columnTable', '${partition.bucketId}', $catalogVersion)")
         if (txId ne null) {
           pstmt.execute(s"call sys.USE_SNAPSHOT_TXID('$txId')")
         }
@@ -152,45 +154,55 @@ object SmartConnectorRDDHelper {
     }
   }
 
-  def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
+  private def addNetUrl(netUrls: ArrayBuffer[(String, String)], server: String,
+      preferHost: Boolean, urlPrefix: String, urlSuffix: String,
+      availableNetUrls: ObjectObjectHashMap[String, String]): Unit = {
+    val hostAddressPort = returnHostPortFromServerString(server)
+    val hostName = hostAddressPort._1
+    val host = if (preferHost) hostName else hostAddressPort._2
+    val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
+    netUrls += host -> netUrl
+    if (!availableNetUrls.containsKey(host)) {
+      availableNetUrls.put(host, netUrl)
+    }
+  }
+
+  def setBucketToServerMappingInfo(numBuckets: Int, buckets: java.util.List[BucketOwners],
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
-    if (bucketToServerMappingStr != null) {
+    if (!buckets.isEmpty) {
       // check if Spark executors are using IP addresses or host names
       val preferHost = preferHostName(session)
-      val arr: Array[String] = bucketToServerMappingStr.split(":")
+      val preferPrimaries = session.preferPrimaries
       var orphanBuckets: ArrayBuffer[Int] = null
-      val noOfBuckets = arr(0).toInt
-      // val redundancy = arr(1).toInt
-      val allNetUrls = new Array[ArrayBuffer[(String, String)]](noOfBuckets)
-      val bucketsServers: String = arr(2)
-      val newarr: Array[String] = bucketsServers.split("\\|")
+      val allNetUrls = new Array[ArrayBuffer[(String, String)]](numBuckets)
       val availableNetUrls = ObjectObjectHashMap.withExpectedSize[String, String](4)
-      for (x <- newarr) {
-        val aBucketInfo: Array[String] = x.split(";")
-        val bid: Int = aBucketInfo(0).toInt
-        if (!(aBucketInfo(1) == "null")) {
+      for (bucket <- buckets.asScala) {
+        val bucketId = bucket.getBucketId
+        // use primary so that DMLs are routed optimally
+        val primary = bucket.getPrimary
+        if (primary ne null) {
           // get (host,addr,port)
-          val hostAddressPort = returnHostPortFromServerString(aBucketInfo(1))
-          val hostName = hostAddressPort._1
-          val host = if (preferHost) hostName else hostAddressPort._2
-          val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
-          val netUrls = new ArrayBuffer[(String, String)](1)
-          netUrls += host -> netUrl
-          allNetUrls(bid) = netUrls
-          if (!availableNetUrls.containsKey(host)) {
-            availableNetUrls.put(host, netUrl)
+          val secondaries = if (preferPrimaries) Collections.emptyList()
+          else bucket.getSecondaries
+          val netUrls = new ArrayBuffer[(String, String)](secondaries.size() + 1)
+          addNetUrl(netUrls, primary, preferHost, urlPrefix, urlSuffix, availableNetUrls)
+          if (secondaries.size() > 0) {
+            for (secondary <- secondaries.asScala) {
+              addNetUrl(netUrls, secondary, preferHost, urlPrefix, urlSuffix, availableNetUrls)
+            }
           }
+          allNetUrls(bucketId) = netUrls
         } else {
           // Save the bucket which does not have a neturl,
           // and later assign available ones to it.
           if (orphanBuckets eq null) {
             orphanBuckets = new ArrayBuffer[Int](2)
           }
-          orphanBuckets += bid
+          orphanBuckets += bucketId
         }
       }
       if (orphanBuckets ne null) {
@@ -209,7 +221,7 @@ object SmartConnectorRDDHelper {
     Array.empty
   }
 
-  def setReplicasToServerMappingInfo(replicaNodesStr: String,
+  def setReplicasToServerMappingInfo(replicaNodes: java.util.List[String],
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
     // check if Spark executors are using IP addresses or host names
     val preferHost = preferHostName(session)
@@ -217,9 +229,8 @@ object SmartConnectorRDDHelper {
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
-    val hostInfo = replicaNodesStr.split(";")
     val netUrls = ArrayBuffer.empty[(String, String)]
-    for (host <- hostInfo) {
+    for (host <- replicaNodes.asScala) {
       val hostAddressPort = returnHostPortFromServerString(host)
       val hostName = hostAddressPort._1
       val h = if (preferHost) hostName else hostAddressPort._2
