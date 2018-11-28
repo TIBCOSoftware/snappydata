@@ -148,7 +148,13 @@ import org.apache.spark.sql.snappy._
 class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, parameters: Map[String, String],
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
-    df.cache().count()
+    import org.apache.spark.sql.functions._
+    val df1 = df.withColumn("batch_id", lit(batchId))
+    val count = df1.cache().count()
+    val distinctCount = df1.distinct().count()
+    if(count != distinctCount){
+      throw new RuntimeException("duplicate records found")
+    }
     log.debug(s"Processing batchId $batchId with parameters $parameters ...")
     val tableName = snappySession.sessionCatalog.formatName(parameters(TABLE_NAME))
     val conflationEnabled = if (parameters.contains(CONFLATION)) {
@@ -157,13 +163,13 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       false
     }
     val keyColumns = snappySession.sessionCatalog.getKeyColumnsAndPositions(tableName)
-    val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
+    val eventTypeColumnAvailable = df1.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
 
     log.debug(s"keycolumns: '${keyColumns.map(p => s"${p._1.name}(${p._2})").mkString(",")}'" +
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {
-      val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df
+      val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df1
       if (eventTypeColumnAvailable) {
         val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.DELETE)
             .drop(EVENT_TYPE_COLUMN)
@@ -191,7 +197,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         val msg = s"$EVENT_TYPE_COLUMN is present in data but key columns are not defined on table."
         throw new IllegalStateException(msg)
       } else {
-        df.write.insertInto(tableName)
+        df1.write.insertInto(tableName)
       }
     }
     // test hook for validating idempotency
@@ -213,17 +219,17 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       import org.apache.spark.sql.functions._
       val keyColumnPositions = keyColumns.map(_._2)
       var index = 0
-      val (keyCols, otherCols) = df.columns.toList.partition { _ =>
+      val (keyCols, otherCols) = df1.columns.toList.partition { _ =>
         val contains = keyColumnPositions.contains(index)
         index += 1
         contains
       }
-      val conflatedDf = if (otherCols.isEmpty) df.distinct()
+      val conflatedDf = if (otherCols.isEmpty) df1.distinct()
       else {
         val exprs = otherCols.map(c => last(c).alias(c))
-        df.groupBy(keyCols.head, keyCols.tail: _*)
+        df1.groupBy(keyCols.head, keyCols.tail: _*)
             .agg(exprs.head, exprs.tail: _*)
-            .select(df.columns.head, df.columns.tail: _*)
+            .select(df1.columns.head, df1.columns.tail: _*)
       }
       conflatedDf.cache()
     }
