@@ -163,11 +163,12 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {
-      val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df
+      val dataFrame: DataFrame = if (conflationEnabled) {
+        groupByKeyColumnsAndGetLast(df).cache()
+      } else df
       if (eventTypeColumnAvailable) {
-        val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.DELETE)
-            .drop(EVENT_TYPE_COLUMN)
-        deleteDf.write.deleteFrom(tableName)
+        // processing all deletes prior to conflating to cater SNAP-2745
+        processDeletes()
         if (posDup) {
           val upsertEventTypes = List(EventType.INSERT, EventType.UPDATE)
           val upsertDf = dataFrame
@@ -202,6 +203,12 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
 
     log.debug(s"Processing batchId $batchId with parameters $parameters ... Done.")
 
+    def processDeletes() = {
+      val deletedDf = df.filter(df(EVENT_TYPE_COLUMN) === EventType.DELETE)
+          .drop(EVENT_TYPE_COLUMN)
+      groupByKeyColumnsAndGetLast(deletedDf)
+          .write.deleteFrom(tableName)
+    }
 
     // We are grouping by key columns and getting the last record.
     // Note that this approach will work as far as the incoming dataframe is partitioned
@@ -209,8 +216,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     // If above conditions are not met in that case we will need separate ordering column(s) to
     // order the events. A new optional parameter needs to be exposed as part of the snappysink
     // API to accept the ordering column(s).
-    def getConflatedDf = {
-      import org.apache.spark.sql.functions._
+    def groupByKeyColumnsAndGetLast(df: DataFrame) = {
       val keyColumnPositions = keyColumns.map(_._2)
       var index = 0
       val (keyCols, otherCols) = df.columns.toList.partition { _ =>
@@ -220,12 +226,13 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       }
       val conflatedDf = if (otherCols.isEmpty) df.distinct()
       else {
+        import org.apache.spark.sql.functions._
         val exprs = otherCols.map(c => last(c).alias(c))
         df.groupBy(keyCols.head, keyCols.tail: _*)
             .agg(exprs.head, exprs.tail: _*)
             .select(df.columns.head, df.columns.tail: _*)
       }
-      conflatedDf.cache()
+      conflatedDf
     }
   }
 }
