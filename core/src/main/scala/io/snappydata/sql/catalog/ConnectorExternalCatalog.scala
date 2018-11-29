@@ -76,10 +76,6 @@ class ConnectorExternalCatalog(val session: SnappySession)
         e.getSQLState.startsWith(SQLState.GFXD_NODE_SHUTDOWN_PREFIX)
   }
 
-  def invalidateCaches(schema: String, table: String): Unit = {
-    invalidateCaches(schema -> table :: Nil)
-  }
-
   override def invalidateCaches(relations: Seq[(String, String)]): Unit = {
     if (relations.isEmpty) invalidateAll()
     else relations.foreach(ConnectorExternalCatalog.cachedCatalogTables.invalidate)
@@ -165,26 +161,20 @@ class ConnectorExternalCatalog(val session: SnappySession)
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_CREATE_TABLE, request))
 
-    invalidateCaches(getTableWithBaseTable(table))
+    // version stored in RelationInfo will be out-of-date now for all tables so clear everything
+    invalidateCaches(Nil)
   }
 
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
       purge: Boolean): Unit = {
-    val tableDefinition = getTableOption(schema, table) match {
-      case None =>
-        if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
-      case Some(t) => t
-    }
     val request = new CatalogMetadataDetails()
     request.setNames((schema :: table :: Nil).asJava).setExists(ignoreIfNotExists)
         .setUpdateFlag(purge)
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_DROP_TABLE, request))
 
-    val allDependents = SnappyExternalCatalog.getDependents(tableDefinition.properties).map { d =>
-      SnappyExternalCatalog.getTableWithSchema(d, schema)
-    }
-    invalidateCaches(getTableWithBaseTable(tableDefinition) ++ allDependents)
+    // version stored in RelationInfo will be out-of-date now for all tables so clear everything
+    invalidateCaches(Nil)
   }
 
   override def alterTable(table: CatalogTable): Unit = {
@@ -193,7 +183,8 @@ class ConnectorExternalCatalog(val session: SnappySession)
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_ALTER_TABLE, request))
 
-    invalidateCaches(table.database, table.identifier.table)
+    // version stored in RelationInfo will be out-of-date now for all tables so clear everything
+    invalidateCaches(Nil)
   }
 
   override def createPolicy(schemaName: String, policyName: String, targetTable: String,

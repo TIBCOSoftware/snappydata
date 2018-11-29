@@ -258,7 +258,7 @@ class LeadImpl extends ServerImpl with Lead
       while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
         Thread.sleep(100)
       }
-      // initialize global context
+      // initialize global state
       password match {
         case Some(p) =>
           // set the password back and remove after initialization

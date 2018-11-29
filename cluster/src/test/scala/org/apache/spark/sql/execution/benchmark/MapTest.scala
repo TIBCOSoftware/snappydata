@@ -36,7 +36,7 @@ class MapTest extends SnappyFunSuite {
   private val INSERT = 2
   private val DELETE = 3
 
-  test("hash set comparison") {
+  ignore("hash set comparison") {
     val numEntries = 1000000
     val numOperations = 1000000
     val numIterations = 10
@@ -318,7 +318,7 @@ class MapTest extends SnappyFunSuite {
     benchmark.run()
   }
 
-  test("hash map comparison") {
+  ignore("hash map comparison") {
     val numEntries = 1000000
     val numOperations = 1000000
     val numIterations = 10
@@ -628,7 +628,7 @@ class MapTest extends SnappyFunSuite {
     benchmark.run()
   }
 
-  test("compare small map gets") {
+  ignore("compare small map gets") {
     val numEntries = 20
     val numLoops = 1000000
     val numIterations = 10

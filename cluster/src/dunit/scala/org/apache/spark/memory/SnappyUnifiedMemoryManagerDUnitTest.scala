@@ -308,7 +308,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
         val stmt = conn.createStatement()
         val columnTable = ColumnFormatRelation.columnBatchTableName(tableName.toUpperCase)
         stmt.execute(s"CALL SYS.SET_BUCKETS_FOR_LOCAL_EXECUTION('$columnTable', " +
-            s"'${(0 until numBuckets).mkString(",")}', 0)")
+            s"'${(0 until numBuckets).mkString(",")}', -1)")
         val rs = stmt.executeQuery(s"CALL SYS.COLUMN_TABLE_SCAN('$columnTable', " +
             s"'${(1 to numColumns).mkString(",")}', null)")
         var n = 0
