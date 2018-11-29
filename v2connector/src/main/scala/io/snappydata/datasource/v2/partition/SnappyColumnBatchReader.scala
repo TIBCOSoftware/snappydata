@@ -25,16 +25,18 @@ class SnappyColumnBatchReader (val bucketId: Int,
     tableMetaData: SnappyTableMetaData, queryConstructs: QueryConstructs)
     extends DataReader[ColumnarBatch] {
 
+  val rowBufferReader = new SnappyRowTableReader(bucketId, tableMetaData, queryConstructs)
+
 
   override def next(): Boolean = {
-   false
+   rowBufferReader.next()
   }
 
   override def get(): ColumnarBatch = {
-    null
+    rowBufferReader.getAsColumnarBatch()
   }
 
   override def close(): Unit = {
-
+    rowBufferReader.close()
   }
 }

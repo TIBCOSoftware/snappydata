@@ -30,6 +30,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.v2.reader.DataReader
+import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarBatch}
 
 /**
  *  Actually fetches the data on executors
@@ -127,10 +128,25 @@ class SnappyRowTableReader(val bucketId: Int,
    */
   override def get(): Row = {
     val values = new Array[Any](resultColumnCount)
-    for(index <- 0 until   resultColumnCount) {
+    for(index <- 0 until resultColumnCount) {
       values(index) = resultSet.getObject(index + 1)
     }
     new GenericRowWithSchema(values, queryConstructs.projections)
+  }
+
+  /**
+   * Returns the current record in the result set as a ColumnarBatch
+   * @return ColumnarBatch of one row
+   */
+  def getAsColumnarBatch(): ColumnarBatch = {
+    val columnVectors = new Array[ColumnVector](resultColumnCount)
+    for(index <- 0 until resultColumnCount) {
+      columnVectors(index) = new JDBCResultSetColumnVector(
+        queryConstructs.projections.fields(index).dataType, resultSet, index + 1)
+    }
+    val columnarBatch = new ColumnarBatch(columnVectors)
+    columnarBatch.setNumRows(1)
+    columnarBatch
   }
 
   override def close(): Unit = {
