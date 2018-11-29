@@ -60,7 +60,7 @@ sql(sqlText : String)
 **Example** 
 
 ```
-snSesion.sql(“select * from t1”)
+snappySession.sql(“select * from t1”)
 ```
 
 <a id= sqluncachedapi> </a>
@@ -71,7 +71,7 @@ You can use this API to run a query using a fresh plan for a given SQL String.
 **Syntax**
 
 ```
-sqlUnCached(sqlText : String)
+sqlUncached(sqlText : String)
 ```
 
 **Parameters**
@@ -84,22 +84,22 @@ sqlUnCached(sqlText : String)
 **Example **
 
 ```pre
-snSesion.sql(“select * from t1”)
+snappySession.sql(“select * from t1”)
 ```
 <a id= createtableapi> </a>
 ### createTable
 
-Creates a SnappyData managed table. Any relation providers, that is row, column etc., which are supported by SnappyData can be created here.
+Creates a SnappyData managed table. Any relation providers, that is the row, column etc., which are supported by SnappyData can be created here.
 
 **Syntax**
 
 ```
-def createTable(
+createTable(
       tableName: String,
       provider: String,
-      schema: StructType,
+      schemaDDL: String,
       options: Map[String, String],
-      allowExisting: Boolean = false)
+      allowExisting: Boolean)
 ```
 
 **Parameters**
@@ -107,10 +107,10 @@ def createTable(
 |Parameter	 | Description |
 |--------|--------|
 |  tableName |  Name of the table.    | 
-|Provider  |Provider name such as ‘ROW’, ‘COLUMN’' etc.|
+|provider  |Provider name such as ‘ROW’, ‘COLUMN’' etc.|
 |schema   | The table schema.|
-|  Options | Properties for table creation. For example, partition_by, buckets etc.|
-| allowExisting |When set to **true**, tables with the same name are ignored, else a **table exist** exception is shown.|
+|  options | Properties for table creation. For example, partition_by, buckets etc.|
+| allowExisting |When set to **true**, tables with the same name are ignored, else an **AnalysisException** is thrown stating that the table already exists. |
 
 **Example**
 
@@ -119,7 +119,7 @@ case class Data(col1: Int, col2: Int, col3: Int)
 val props = Map.empty[String, String]
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
 val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-val dataDF = snc.createDataFrame(rdd)
+val dataDF = snappySession.createDataFrame(rdd)
 
 snappySession.createTable(tableName, "column", dataDF.schema, props)
 
@@ -127,18 +127,18 @@ snappySession.createTable(tableName, "column", dataDF.schema, props)
 <a id= createtable1> </a>
 ### createTable
 
-Creates a SnappyData managed JDBC table which takes a free format DDL string. The DDL string should adhere to syntax of underlying JDBC store.  SnappyData ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The option parameter can take connection details.
+Creates a SnappyData managed JDBC table which takes a free format DDL string. The DDL string should adhere to the syntax of the underlying JDBC store. SnappyData ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The options parameter can take connection details.
 
 **Syntax**
 
 ```
 Syntax: 
-  def createTable(
+  createTable(
       tableName: String,
       provider: String,
-      schema: StructType,
+      schemaDDL: String,
       options: Map[String, String],
-      allowExisting: Boolean = false)
+      allowExisting: Boolean)
 
 ```
 
@@ -147,10 +147,10 @@ Syntax:
 |Parameter	 | Description |
 |--------|--------|
 |  tableName |  Name of the table. | 
-|Provider  |Provider name such as ‘ROW’, ‘COLUMN’' etc.|
-|schemaDDL   |The table schema as a string interpreted by provider.|
-|  Options | Properties for table creation. For example, partition_by, buckets etc.|
-|allowExisting |When set to **true**,  tables with the same name are ignored, else a **table exist** exception is shown.|
+|provider  |Provider name such as ‘ROW’, ‘COLUMN’' etc.|
+|schemaDDL   |The table schema as a string interpreted by the provider.|
+|  options | Properties for table creation. For example, partition_by, buckets etc.|
+|allowExisting ||When set to **true**, tables with the same name are ignored, else an **AnalysisException** is thrown stating that the table already exists.|
 
 **Example**
 
@@ -159,7 +159,7 @@ Syntax:
    val props = Map(
       "url" -> s"jdbc:derby:$path",
       "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
-    "poolImpl" -> "tomcat",
+      "poolImpl" -> "tomcat",
       "user" -> "app",
        "password" -> "app"
        )
@@ -367,12 +367,12 @@ put(tableName: String, rows: Row*)
 |Parameter	 | Description |
 |--------|--------|
 | tableName       | Table name for the put operation | 
-|rows| List of rows to be inserted into the table.|
+|rows| List of rows to be put into the table.|
 
 **Example **
 
 ```pre
-snSession.put(tableName, dataDF.collect(): _*)
+snappySession.put(tableName, dataDF.collect(): _*)
 ```
 
 <a id= updatedapi> </a>
@@ -392,20 +392,20 @@ update(tableName: String, filterExpr: String, newColumnValues: Row,  updateColum
 |--------|--------|
 | tableName    |   Th table name which needs to be updated.|
 |filterExpr| SQL WHERE criteria to select rows that will be updated.| 
-|newColumnValues| A single row containing all the updated column  values. They MUST match the **updateColumn: list  passed**.|
+|newColumnValues| A single row containing all the updated column values. They MUST match the **updateColumn: list passed**.|
 |updateColumns| List of all column names that are updated.|
 
 
 **Example **
 
 ```pre
-snappySesion.update("t1", "ITEMREF = 3" , Row(99) , "ITEMREF" )
+snappySession.update("t1", "ITEMREF = 3" , Row(99) , "ITEMREF" )
 ```
 
 <a id= deleteapi> </a>
 ### delete
 
-Deletes all the rows in table that match passed filter expression. This works only for row tables.
+Deletes all the rows in the table that match passed filter expression. This works only for row tables.
 
 
 **Syntax**
@@ -447,8 +447,8 @@ queryApproxTSTopK(topKName: String,
 |--------|--------|
 | topKName      |   The topK structure that is to be queried.|
 |startTime|  Start time as string in the format **yyyy-mm-dd hh:mm:ss**.  If passed as **null**, the oldest interval is considered as the start interval.| 
-|endTime| End time as string in the format **yyyy-mm-dd hh:mm:ss**. If passed as **null**, newest interval is considered as the last interval.|
-|k| Optional. Number of elements to be queried. This is to be passed only for stream summary|
+|endTime| End time as string in the format **yyyy-mm-dd hh:mm:ss**. If passed as **null**, the newest interval is considered as the last interval.|
+|k| Optional. The number of elements to be queried. This is to be passed only for stream summary|
 
 
 
@@ -467,8 +467,8 @@ The following APIs are available for DataFrameWriter:
 <a id= putintoapi> </a>
 ### putInto
 
-Puts the content of the DataFrame into the specified table. It requires that the schema of the DataFrame is the same as the schema of the table. If some rows are already present in the table, then they are updated.
-Also, the table on which **putInto** is implemented should have defined key columns, if its a column table. If it is a row table, then it should have defined primary key.
+Puts the content of the DataFrame into the specified table. It requires that the schema of the DataFrame is the same as the schema of the table. Column names are ignored while matching the schemas and **put into** operation is performed using position based resolution.
+If some rows are already present in the table, then they are updated. Also, the table on which **putInto** is implemented should have defined key columns, if its a column table. If it is a row table, then it should have defined a primary key.
 
 **Syntax**
 
@@ -487,8 +487,8 @@ putInto(tableName: String)
 **Example **
 
 ```pre
-import org.apache.spark.sql.snappy._df.write.putInto(“t1”)
-
+import org.apache.spark.sql.snappy._
+df.write.putInto(“snappy_table”)
 ```
 <a id= deletefromapi> </a>
 ### deleteFrom
@@ -496,7 +496,7 @@ The `deleteFrom` API deletes all those records from given snappy table which exi
 
 To use this API, key columns(for column table) or primary keys(for row tables) must be defined in the SnappyData table.
 
-Also, the source DataFrame must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using case-insensitive match of column names. If the source DataFrame contains columns other than the key columns, it will be ignored by the `deleteFrom` API.
+Also, the source DataFrame must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using a case-insensitive match of column names. If the source DataFrame contains columns other than the key columns, it will be ignored by the `deleteFrom` API.
 
 
 **Syntax**
@@ -514,7 +514,8 @@ deleteFrom(tableName: String)
 **Example **
 
 ```pre
-import org.apache.spark.sql.snappy._df.write.deleteFrom(“t1”)
+import org.apache.spark.sql.snappy._
+df.write.deleteFrom(“snappy_table”)
 
 ```
 
@@ -524,10 +525,12 @@ The following APIs are available for SnappyStoreHiveCatalog:
 *	[**getKeyColumns**](#getkeycolumapi)
 *	[**getTableType**](#gettabletypeapi) 
 
+!!! Note
+	These are developer APIs and are subject to change in the future.
+
 <a id= getkeycolumapi> </a>
 ### getKeyColumns
 Gets primary key or key columns of a SnappyData table.
-
 
 **Syntax**
 
@@ -541,12 +544,13 @@ getKeyColumns(tableName: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName      |    Name of the table.|
-
+| Returns     |    Sequence of key columns (for column tables) or sequence of primary keys (for row tables).|
 **Example **
 
 ```pre
 snappySession.sessionCatalog.getKeyColumns("t1")
 ```
+
 <a id= gettabletypeapi> </a>
 ### getTableType
 Gets the table type (row, column etc.) of a SnappyData table. 
@@ -563,6 +567,7 @@ getTableType(tableName: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName      |    Name of the table.|
+| Returns     |   Type of the table. Row, Column, Index, Stream, External, None etc. |
 
 **Example **
 
