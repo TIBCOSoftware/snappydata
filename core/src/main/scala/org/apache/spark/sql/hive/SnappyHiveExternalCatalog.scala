@@ -38,7 +38,7 @@ import io.snappydata.sql.catalog.{CatalogObjectType, RelationInfo, SnappyExterna
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.http.annotation.GuardedBy
-import org.apache.log4j.LogManager
+import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -60,7 +60,8 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{AnalysisException, _}
 import org.apache.spark.{SparkConf, SparkException}
 
-class SnappyHiveExternalCatalog private[hive](val conf: SparkConf, val hadoopConf: Configuration)
+class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
+    val hadoopConf: Configuration, val createTime: Long)
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyExternalCatalog {
 
   {
@@ -678,51 +679,40 @@ object SnappyHiveExternalCatalog {
   def getInstance(sparkConf: SparkConf,
       hadoopConf: Configuration): SnappyHiveExternalCatalog = synchronized {
     val catalog = instance
+    val createTime = Misc.getMemStoreBooting.getCreateTime
     if (catalog ne null) {
-      // check if configuration is compatible
-      val existingConf = catalog.conf.getAll.toMap
-      val newConf = sparkConf.getAll.toMap
-      // TODO: SW: fix
-      if (false && existingConf != newConf) {
-        throw new SparkException(
-          s"""External catalog already exists with a different SparkConf.
-             |Existing SparkConf: $existingConf
-             |New SparkConf: $newConf""".stripMargin)
-      }
-      if (catalog.hadoopConf.asScala.toSet != hadoopConf.asScala.toSet) {
-        throw new SparkException(
-          s"""External catalog already exists with a different hadoop configuration.
-             |Existing ${catalog.hadoopConf}
-             |New $hadoopConf""".stripMargin)
-      }
-      catalog
-    } else {
-      // TODO: SW: check logging in a secure cluster normally and via smart connector on shell
-      // Reduce log level to warning during hive client initialization
-      // as it generates hundreds of line of logs which are of no use.
-      // Once the initialization is done, restore the logging level.
-      val logger = Misc.getI18NLogWriter.asInstanceOf[GFToSlf4jBridge]
-      val previousLevel = logger.getLevel
-      val log4jLogger = LogManager.getRootLogger
-      val log4jLevel = log4jLogger.getEffectiveLevel
-      logger.info("Starting hive meta-store initialization")
-      val reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL ||
-          previousLevel == LogWriterImpl.INFO_LEVEL
-      if (reduceLog) {
-        // logger.setLevel(LogWriterImpl.WARNING_LEVEL) SW:
-        // log4jLogger.setLevel(Level.WARN) SW:
-      }
-      try {
-        instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf)
-        // fire a dummy query to initialize more components of hive meta-store
-        assert(instance.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS").isEmpty)
-      } finally {
-        logger.setLevel(previousLevel)
-        log4jLogger.setLevel(log4jLevel)
-        logger.info("Done hive meta-store initialization")
-      }
-      instance
+      // Check if it is being invoked for the same instance of GemFireStore.
+      // We don't store the store instance itself to avoid a dangling reference to
+      // entire store even after shutdown, rather compare its creation time.
+      if (createTime == catalog.createTime) return catalog
+      close()
     }
+
+    // TODO: SW: check logging in a secure cluster normally and via smart connector on shell
+    // Reduce log level to warning during hive client initialization
+    // as it generates hundreds of line of logs which are of no use.
+    // Once the initialization is done, restore the logging level.
+    val logger = Misc.getI18NLogWriter.asInstanceOf[GFToSlf4jBridge]
+    val previousLevel = logger.getLevel
+    val log4jLogger = LogManager.getRootLogger
+    val log4jLevel = log4jLogger.getEffectiveLevel
+    logger.info("Starting hive meta-store initialization")
+    val reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL ||
+        previousLevel == LogWriterImpl.INFO_LEVEL
+    if (reduceLog) {
+      logger.setLevel(LogWriterImpl.WARNING_LEVEL)
+      log4jLogger.setLevel(Level.WARN)
+    }
+    try {
+      instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
+      // fire a dummy query to initialize more components of hive meta-store
+      assert(instance.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS").isEmpty)
+    } finally {
+      logger.setLevel(previousLevel)
+      log4jLogger.setLevel(log4jLevel)
+      logger.info("Done hive meta-store initialization")
+    }
+    instance
   }
 
   private[sql] def getExistingInstance: SnappyHiveExternalCatalog = synchronized {

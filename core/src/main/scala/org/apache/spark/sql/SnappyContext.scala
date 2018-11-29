@@ -802,7 +802,6 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
 object SnappyContext extends Logging {
 
-  @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
   @volatile private[this] var _sharedState: SnappySharedState = _
 
@@ -937,15 +936,6 @@ object SnappyContext extends Logging {
     case _: IllegalStateException => null
   }
 
-  private def newSnappyContext(sc: SparkContext) = {
-    val snc = new SnappyContext(sc)
-    // No need to synchronize. any occurrence would do
-    if (_anySNContext == null) {
-      _anySNContext = snc
-    }
-    snc
-  }
-
   private def initMemberBlockMap(sc: SparkContext): Unit = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache != null && Utils.isLoner(sc)) {
@@ -965,9 +955,9 @@ object SnappyContext extends Logging {
    */
   def apply(): SnappyContext = {
     if (_globalContextInitialized) {
-      val gc = globalSparkContext
-      if (gc != null) {
-        newSnappyContext(gc)
+      val sc = globalSparkContext
+      if (sc ne null) {
+        new SnappyContext(sc)
       } else null
     } else null
   }
@@ -978,8 +968,8 @@ object SnappyContext extends Logging {
    * @return
    */
   def apply(sc: SparkContext): SnappyContext = {
-    if (sc != null) {
-      newSnappyContext(sc)
+    if (sc ne null) {
+      new SnappyContext(sc)
     } else {
       apply()
     }
@@ -1205,7 +1195,6 @@ object SnappyContext extends Logging {
     }
     contextLock.synchronized {
       _clusterMode = null
-      _anySNContext = null
       _globalSNContextInitialized = false
       _globalContextInitialized = false
     }
