@@ -43,4 +43,4 @@ Once you have installed the SnappyData ODBC Driver, you can connect to SnappyDat
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
 When prompted, select the SnappyData ODBC Driver from the list of drivers and enter a Data Source name, SnappyData Server Host, Port, User Name and Password.
-Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver and Tableau Desktop](../setting_up_odbc_driver-tableau_desktop.md).  
+Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver](../setting_up_odbc_driver-tableau_desktop.md).  
