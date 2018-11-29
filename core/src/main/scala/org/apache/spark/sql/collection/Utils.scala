@@ -35,9 +35,9 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
-import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
@@ -162,6 +162,25 @@ object Utils {
   def resolveQCS(options: SMap[String, Any], fieldNames: Array[String],
       module: String): (Array[Int], Array[String]) = {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
+  }
+
+  // maximum power of 2 less than Integer.MAX_VALUE
+  private val MAX_HASH_CAPACITY = 1 << 30
+
+  def checkCapacity(capacity: Int): Int = {
+    if (capacity > 0 && capacity <= MAX_HASH_CAPACITY) {
+      capacity
+    } else if (capacity == 0) {
+      2
+    } else {
+      throw new IllegalStateException("Capacity (" + capacity +
+          ") can't be more than " + MAX_HASH_CAPACITY + " elements or negative")
+    }
+  }
+
+  def nextPowerOf2(n: Int): Int = {
+    val highBit = Integer.highestOneBit(if (n > 0) n else 2)
+    checkCapacity(if (highBit == n) n else highBit << 1)
   }
 
   def parseInteger(v: Any, module: String, option: String, min: Int = 1,
@@ -643,8 +662,8 @@ object Utils {
     override def get(key: A): Option[B] = map.get(key)
   }
 
-  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): ObjectObjectHashMap[K, V] = {
-    val m = ObjectObjectHashMap.withExpectedSize[K, V](map.size)
+  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): UnifiedMap[K, V] = {
+    val m = new UnifiedMap[K, V](map.size)
     map.foreach(p => m.put(p._1, p._2))
     m
   }

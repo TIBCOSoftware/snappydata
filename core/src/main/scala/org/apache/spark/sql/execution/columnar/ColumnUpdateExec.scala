@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.execution.columnar
 
-import io.snappydata.collection.IntObjectHashMap
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
@@ -72,9 +72,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
    */
   private def tableToUpdateIndex: IntObjectHashMap[Integer] = {
     if (_tableToUpdateIndex ne null) return _tableToUpdateIndex
-    val m = IntObjectHashMap.withExpectedSize[Integer](updateIndexes.length)
+    val m = new IntObjectHashMap[Integer](updateIndexes.length)
     for (i <- updateIndexes.indices) {
-      m.justPut(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
+      m.put(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
     }
     _tableToUpdateIndex = m
     _tableToUpdateIndex
@@ -89,8 +89,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   // (e.g. for putInto). BatchId attribute is always third last in the keyColumns
   // while ordinal (index of row in the batch) is the one before that.
   override def requiredChildOrdering: Seq[Seq[SortOrder]] =
-  Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
-    StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
+    Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
+      StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
@@ -268,7 +268,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
         case null =>
-             // write null for unchanged columns apart from null count field (by this update)
+          // write null for unchanged columns apart from null count field (by this update)
           (ColumnStatsSchema(field.name, field.dataType,
             nullCountNullable = false).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,

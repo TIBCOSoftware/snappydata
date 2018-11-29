@@ -24,8 +24,8 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
-import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.sql.catalog.SnappyExternalCatalog
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
@@ -220,7 +220,7 @@ object StoreUtils {
       region: PartitionedRegion, preferPrimaries: Boolean): Array[Partition] = {
 
     val numTotalBuckets = region.getTotalNumberOfBuckets
-    val serverToBuckets = ObjectObjectHashMap.withExpectedSize[InternalDistributedMember,
+    val serverToBuckets = new UnifiedMap[InternalDistributedMember,
         (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])](4)
     val adviser = region.getRegionAdvisor
     for (p <- 0 until numTotalBuckets) {
@@ -258,7 +258,8 @@ object StoreUtils {
     val allocatedBuckets = new Array[Boolean](numTotalBuckets)
     // group buckets into as many partitions as available cores on each member
     var partitionIndex = -1
-    val partitions = serverToBuckets.asScala.flatMap { case (m, (blockId, buckets)) =>
+    val parts = mapAsScalaMapConverter(serverToBuckets)
+    val partitions = parts.asScala.flatMap { case (m, (blockId, buckets)) =>
       val numBuckets = buckets.length
       val numPartitions = math.max(1, blockId.map(b => math.min(math.min(
         b.numProcessors, b.executorCores), numBuckets)).getOrElse(numBuckets))

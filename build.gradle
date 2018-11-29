@@ -139,7 +139,7 @@ allprojects {
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
     sparkJobServerVersion = '0.6.2.8'
-    kolobokeVersion = '1.0.0'
+    eclipseCollectionsVersion = '9.2.0'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()

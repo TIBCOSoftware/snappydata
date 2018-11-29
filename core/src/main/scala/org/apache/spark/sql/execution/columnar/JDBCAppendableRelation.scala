@@ -22,8 +22,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.Attribute
-import io.snappydata.collection.ObjectLongHashMap
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -109,11 +109,11 @@ abstract case class JDBCAppendableRelation(
   def scanTable(tableName: String, requiredColumns: Array[String],
       filters: Array[Expression], prunePartitions: () => Int): (RDD[Any], Array[Int]) = {
 
-    val fieldNames = ObjectLongHashMap.withExpectedSize[String](schema.length)
+    val fieldNames = new ObjectLongHashMap[String](schema.length)
     (0 until schema.length).foreach(i =>
       fieldNames.put(Utils.toLowerCase(schema(i).name), i + 1))
     val projection = requiredColumns.map { c =>
-      val index = fieldNames.getLong(Utils.toLowerCase(c))
+      val index = fieldNames.get(Utils.toLowerCase(c))
       if (index == 0) Utils.analysisException(s"Column $c does not exist in $tableName")
       index.toInt
     }

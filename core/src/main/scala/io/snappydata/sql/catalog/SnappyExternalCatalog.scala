@@ -117,14 +117,14 @@ trait SnappyExternalCatalog extends ExternalCatalog {
       }
     } else {
       try {
-        getCachedCatalogTable(new TableIdentifier(table, Some(schema)))
+        getCachedCatalogTable(schema, table)
       } catch {
         case e@(_: UncheckedExecutionException | _: ExecutionException) => throw e.getCause
       }
     }
   }
 
-  protected def getCachedCatalogTable(table: TableIdentifier): CatalogTable
+  protected def getCachedCatalogTable(schema: String, table: String): CatalogTable
 
   def systemSchemaDefinition: CatalogDatabase =
     CatalogDatabase(SYS_SCHEMA, "System schema", SYS_SCHEMA, Map.empty) // path is dummy
@@ -255,21 +255,21 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }
   }
 
-  protected def getTableWithBaseTable(table: CatalogTable): Seq[TableIdentifier] = {
-    var tableWithBase = table.identifier :: Nil
+  protected def getTableWithBaseTable(table: CatalogTable): Seq[(String, String)] = {
+    var tableWithBase = (table.database -> table.identifier.table) :: Nil
     getBaseTable(table) match {
       case None =>
       case Some(baseTable) =>
         val withSchema = getTableWithSchema(baseTable, table.database)
         // add base table to the list of relations to be invalidated
-        tableWithBase = new TableIdentifier(withSchema._2, Some(withSchema._1)) :: tableWithBase
+        tableWithBase = withSchema :: tableWithBase
     }
     tableWithBase
   }
 
-  def invalidateCaches(relations: Seq[TableIdentifier]): Unit
+  def invalidateCaches(relations: Seq[(String, String)]): Unit
 
-  def invalidate(name: TableIdentifier): Unit
+  def invalidate(name: (String, String)): Unit
 
   def invalidateAll(): Unit
 

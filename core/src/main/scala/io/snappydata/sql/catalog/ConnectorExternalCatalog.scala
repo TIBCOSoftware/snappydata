@@ -77,16 +77,17 @@ class ConnectorExternalCatalog(val session: SnappySession)
   }
 
   def invalidateCaches(schema: String, table: String): Unit = {
-    invalidateCaches(new TableIdentifier(table, Some(schema)) :: Nil)
+    invalidateCaches(schema -> table :: Nil)
   }
 
-  override def invalidateCaches(relations: Seq[TableIdentifier]): Unit = {
-    if (relations.isEmpty) invalidateAll() else relations.foreach(invalidate)
+  override def invalidateCaches(relations: Seq[(String, String)]): Unit = {
+    if (relations.isEmpty) invalidateAll()
+    else relations.foreach(ConnectorExternalCatalog.cachedCatalogTables.invalidate)
     // there is no version update in this call here, rather only the caches are cleared
     RefreshMetadata.executeLocal(RefreshMetadata.UPDATE_CATALOG_SCHEMA_VERSION, args = null)
   }
 
-  override def invalidate(name: TableIdentifier): Unit = {
+  override def invalidate(name: (String, String)): Unit = {
     ConnectorExternalCatalog.cachedCatalogTables.invalidate(name)
   }
 
@@ -133,10 +134,9 @@ class ConnectorExternalCatalog(val session: SnappySession)
     if (schema == SnappyExternalCatalog.SYS_SCHEMA) true
     else {
       val itr = ConnectorExternalCatalog.cachedCatalogTables.asMap().keySet().iterator()
-      val schemaOpt = Some(schema)
       while (itr.hasNext) {
-        val table = itr.next()
-        if (table.database == schemaOpt) return true
+        val tableWithSchema = itr.next()
+        if (tableWithSchema._1 == schema) return true
       }
       val request = new CatalogMetadataRequest()
       request.setSchemaName(schema)
@@ -182,8 +182,7 @@ class ConnectorExternalCatalog(val session: SnappySession)
       snappydataConstants.CATALOG_DROP_TABLE, request))
 
     val allDependents = SnappyExternalCatalog.getDependents(tableDefinition.properties).map { d =>
-      val (s, t) = SnappyExternalCatalog.getTableWithSchema(d, schema)
-      new TableIdentifier(t, Some(s))
+      SnappyExternalCatalog.getTableWithSchema(d, schema)
     }
     invalidateCaches(getTableWithBaseTable(tableDefinition) ++ allDependents)
   }
@@ -194,7 +193,7 @@ class ConnectorExternalCatalog(val session: SnappySession)
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_ALTER_TABLE, request))
 
-    invalidateCaches(table.identifier :: Nil)
+    invalidateCaches(table.database, table.identifier.table)
   }
 
   override def createPolicy(schemaName: String, policyName: String, targetTable: String,
@@ -204,8 +203,8 @@ class ConnectorExternalCatalog(val session: SnappySession)
         "not supported for smart connector mode")
   }
 
-  override protected def getCachedCatalogTable(table: TableIdentifier): CatalogTable = {
-    ConnectorExternalCatalog.getCatalogTable(table, this)
+  override protected def getCachedCatalogTable(schema: String, table: String): CatalogTable = {
+    ConnectorExternalCatalog.getCatalogTable(schema -> table, catalog = this)
   }
 
   override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
@@ -223,8 +222,7 @@ class ConnectorExternalCatalog(val session: SnappySession)
     } else {
       val (schema, table) = SnappyExternalCatalog.getTableWithSchema(qualifiedTableName, "")
       assert(schema.length > 0)
-      ConnectorExternalCatalog.getRelationInfo(new TableIdentifier(table, Some(schema)),
-        catalog = this) match {
+      ConnectorExternalCatalog.getRelationInfo(schema -> table, catalog = this) match {
         case None => throw new TableNotFoundException(schema, table, Some(new RuntimeException(
           "RelationInfo for the table is missing. Its region may have been destroyed.")))
         case Some(r) => r -> None
@@ -233,8 +231,7 @@ class ConnectorExternalCatalog(val session: SnappySession)
   }
 
   override def tableExists(schema: String, table: String): Boolean = {
-    val tableIdent = new TableIdentifier(table, Some(schema))
-    if (ConnectorExternalCatalog.cachedCatalogTables.getIfPresent(tableIdent) ne null) true
+    if (ConnectorExternalCatalog.cachedCatalogTables.getIfPresent(schema -> table) ne null) true
     else {
       val request = new CatalogMetadataRequest()
       request.setSchemaName(schema).setNameOrPattern(table)
@@ -367,7 +364,7 @@ class ConnectorExternalCatalog(val session: SnappySession)
 object ConnectorExternalCatalog extends Logging {
 
   /** A cache of Spark SQL data source tables that have been accessed. */
-  private lazy val cachedCatalogTables: Cache[TableIdentifier,
+  private lazy val cachedCatalogTables: Cache[(String, String),
       (CatalogTable, Option[RelationInfo])] = {
     CacheBuilder.newBuilder().maximumSize(SnappyExternalCatalog.cacheSize).build()
   }
@@ -547,7 +544,7 @@ object ConnectorExternalCatalog extends Logging {
       function.identifier.database))
   }
 
-  private def loadFromCache(name: TableIdentifier,
+  private def loadFromCache(name: (String, String),
       catalog: ConnectorExternalCatalog): (CatalogTable, Option[RelationInfo]) = {
     cachedCatalogTables.getIfPresent(name) match {
       case null => synchronized {
@@ -555,11 +552,10 @@ object ConnectorExternalCatalog extends Logging {
           case null =>
             logDebug(s"Looking up data source for $name")
             val request = new CatalogMetadataRequest()
-            val schemaName = name.database.get
-            request.setSchemaName(schemaName).setNameOrPattern(name.table)
+            request.setSchemaName(name._1).setNameOrPattern(name._2)
             val result = catalog.withExceptionHandling(catalog.connectorHelper.getCatalogMetadata(
               snappydataConstants.CATALOG_GET_TABLE, request))
-            if (!result.isSetCatalogTable) throw new TableNotFoundException(schemaName, name.table)
+            if (!result.isSetCatalogTable) throw new TableNotFoundException(name._1, name._2)
             val (table, relationInfo) = convertToCatalogTable(result, catalog.session)
             val tableMetadata = table -> relationInfo
             cachedCatalogTables.put(name, tableMetadata)
@@ -572,11 +568,11 @@ object ConnectorExternalCatalog extends Logging {
     }
   }
 
-  def getCatalogTable(name: TableIdentifier, catalog: ConnectorExternalCatalog): CatalogTable = {
+  def getCatalogTable(name: (String, String), catalog: ConnectorExternalCatalog): CatalogTable = {
     loadFromCache(name, catalog)._1
   }
 
-  def getRelationInfo(name: TableIdentifier,
+  def getRelationInfo(name: (String, String),
       catalog: ConnectorExternalCatalog): Option[RelationInfo] = {
     loadFromCache(name, catalog)._2
   }

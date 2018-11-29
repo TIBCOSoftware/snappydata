@@ -532,7 +532,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (isTemporaryTable(table)) {
       super.refreshTable(table)
     } else {
-      externalCatalog.invalidate(resolveTableIdentifier(table))
+      val resolved = resolveTableIdentifier(table)
+      externalCatalog.invalidate(resolved.database.get -> resolved.table)
     }
   }
 
