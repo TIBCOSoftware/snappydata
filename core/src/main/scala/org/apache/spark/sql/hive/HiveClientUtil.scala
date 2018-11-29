@@ -82,9 +82,13 @@ object HiveClientUtil extends Logging {
     initCommonHiveMetaStoreProperties(metadataConf)
 
     // adjust some properties for in-built hive client on the copy of SparkConf
+    sparkConf.remove(HiveUtils.HIVE_METASTORE_VERSION)
     sparkConf.remove(HiveUtils.HIVE_METASTORE_BARRIER_PREFIXES)
     sparkConf.set(HiveUtils.HIVE_METASTORE_SHARED_PREFIXES, Seq(
       "io.snappydata.jdbc", "com.pivotal.gemfirexd.jdbc"))
+    // always use builtin classes with the base class loader without isolation
+    sparkConf.set(HiveUtils.HIVE_METASTORE_JARS, "builtin")
+    sparkConf.set("spark.sql.hive.metastore.isolation", "false")
 
     SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
   }
