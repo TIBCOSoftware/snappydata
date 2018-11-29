@@ -73,7 +73,7 @@ case class CreateTableUsingCommand(
 
 /**
  * Like Spark's DropTableCommand but checks for non-existent table case upfront to avoid
- * unnecessary warning logs from Spark's plan.
+ * unnecessary warning logs from Spark's DropTableCommand.
  */
 case class DropTableOrViewCommand(
     tableIdent: TableIdentifier,
@@ -84,7 +84,7 @@ case class DropTableOrViewCommand(
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
 
-    if (!catalog.tableExists(tableIdent)) {
+    if (!catalog.isTemporaryTable(tableIdent) && !catalog.tableExists(tableIdent)) {
       val resolved = catalog.resolveTableIdentifier(tableIdent)
       if (ifExists) return Nil
       else throw new TableNotFoundException(resolved.database.get, resolved.table)

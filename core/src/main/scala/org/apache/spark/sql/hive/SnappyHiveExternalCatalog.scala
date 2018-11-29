@@ -36,6 +36,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, RelationInfo, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.http.annotation.GuardedBy
 import org.apache.log4j.{Level, LogManager}
 
@@ -46,10 +47,11 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.StringUtils
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils.EMPTY_STRING_ARRAY
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.hive.client.HiveClientImpl
 import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA_STRING_LENGTH_THRESHOLD, WAREHOUSE_PATH}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
@@ -651,20 +653,21 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf, val hadoopCon
   override def close(): Unit = {}
 
   private[hive] def closeHive(): Unit = synchronized {
-    val client = hiveClient
-    if (client ne null) {
-      // TODO: SW: see how to close the isolated loader (by reflection?)
-      // also need to fix the HiveThriftServer's client.
-      // Perhaps force use non-isolated client for embedded mode.
-      /*
-      val loader = client.clientLoader
-      val hive = loader.cachedHive
-      if (hive != null) {
-        loader.cachedHive = null
-        Hive.set(hive.asInstanceOf[Hive])
-        Hive.closeCurrent()
+    // Non-isolated client can be closed here directly which is only present in cluster mode
+    // using the new property HiveUtils.HIVE_METASTORE_ISOLATION not present in upstream.
+    // Isolated loader would require reflection but that case is only in snappy-core
+    // unit tests and will never happen in actual usage so ignored here.
+    if (ToolsCallbackInit.toolsCallback ne null) {
+      val client = hiveClient.asInstanceOf[HiveClientImpl]
+      if (client ne null) {
+        val loader = client.clientLoader
+        val hive = loader.cachedHive
+        if (hive != null) {
+          loader.cachedHive = null
+          Hive.set(hive.asInstanceOf[Hive])
+          Hive.closeCurrent()
+        }
       }
-      */
     }
   }
 }
