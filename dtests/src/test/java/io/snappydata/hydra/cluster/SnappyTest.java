@@ -3451,8 +3451,10 @@ public class SnappyTest implements Serializable {
       if (nodeConfig.contains(vmDir)) {
         //check for active lead member dir
         boolean isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
+        // try to query the sys.members three times for primary lead node status in case not 'Running' in normal senario
         if (!isPrimaryLeadUp) {
           for (int i = 0; i < 3; i++) {
+            if (isPrimaryLeadUp) break;
             isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
           }
         }
@@ -3461,7 +3463,9 @@ public class SnappyTest implements Serializable {
             isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
           } while (isPrimaryLeadUp);
         }
-
+        if (!isPrimaryLeadUp) {
+          throw new TestException("Primary lead node is not up and running in the cluster.");
+        }
         primaryLeadPid = (String) SnappyBB.getBB().getSharedMap().get("PrimaryLeadPID");
         String searchString1 = primaryLeadPid;
         Log.getLogWriter().info("primaryLeadPID: " + primaryLeadPid);
