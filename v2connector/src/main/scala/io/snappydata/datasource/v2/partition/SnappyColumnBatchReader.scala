@@ -31,22 +31,27 @@ class SnappyColumnBatchReader (val bucketId: Int,
   val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
       bucketToServerMapping.get(bucketId)
 
-  val helper = new SnappyColumnBatchRDDHelper(
+  val colBufferReader = new SnappyColumnBatchRDDHelper(
     tableMetaData.tableName, queryConstructs.projections, tableMetaData.schema,
     queryConstructs.filters,
     bucketId, hostsAndURLs)
 
-  helper.initialize
+  colBufferReader.initialize
+  val rowBufferReader = new SnappyRowTableReader(bucketId, tableMetaData, queryConstructs)
+
+  var hasDataInRowBuffer = false
 
   override def next(): Boolean = {
-    helper.hasNext
+    hasDataInRowBuffer = rowBufferReader.next()
+    if (hasDataInRowBuffer) hasDataInRowBuffer else (true == colBufferReader.hasNext)
   }
 
   override def get(): ColumnarBatch = {
-    helper.next
+    if (hasDataInRowBuffer) rowBufferReader.getAsColumnarBatch() else colBufferReader.next
   }
 
   override def close(): Unit = {
-    helper.close
+    rowBufferReader.close()
+    colBufferReader.close
   }
 }
