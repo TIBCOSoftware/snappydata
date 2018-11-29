@@ -27,7 +27,7 @@ import org.apache.hadoop.hive.conf.HiveConf.ConfVars
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.execution.HiveTableScanExec
-import org.apache.spark.sql.{ClusterMode, LocalMode, SnappyContext, SnappyEmbeddedMode, ThinClientConnectorMode}
+import org.apache.spark.sql.{ClusterMode, SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -81,14 +81,14 @@ object HiveClientUtil extends Logging {
 
     initCommonHiveMetaStoreProperties(metadataConf)
 
-    // adjust some properties for in-built hive client on the copy of SparkConf
-    sparkConf.remove(HiveUtils.HIVE_METASTORE_VERSION)
-    sparkConf.remove(HiveUtils.HIVE_METASTORE_BARRIER_PREFIXES)
-    sparkConf.set(HiveUtils.HIVE_METASTORE_SHARED_PREFIXES, Seq(
-      "io.snappydata.jdbc", "com.pivotal.gemfirexd.jdbc"))
+    // remove all custom hive settings and add defaults needed for access to in-built meta-store
+    val hiveSettings = sparkConf.getAll.filter(_._1.startsWith("spark.sql.hive"))
+    if (hiveSettings.nonEmpty) hiveSettings.foreach(k => sparkConf.remove(k._1))
     // always use builtin classes with the base class loader without isolation
     sparkConf.set(HiveUtils.HIVE_METASTORE_JARS, "builtin")
     sparkConf.set("spark.sql.hive.metastore.isolation", "false")
+    sparkConf.set(HiveUtils.HIVE_METASTORE_SHARED_PREFIXES, Seq(
+      "io.snappydata.jdbc", "com.pivotal.gemfirexd.jdbc"))
 
     SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
   }
@@ -150,11 +150,10 @@ object HiveClientUtil extends Logging {
 
   private def resolveMetaStoreDBProps(clusterMode: ClusterMode): (String, String) = {
     clusterMode match {
-      case null | SnappyEmbeddedMode(_, _) | LocalMode(_, _) =>
-        (ExternalStoreUtils.defaultStoreURL(clusterMode) + getCommonJDBCSuffix,
-            Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, _) =>
         throw new IllegalStateException("Hive client should not be used in smart connector")
+      case _ => (ExternalStoreUtils.defaultStoreURL(clusterMode) + getCommonJDBCSuffix,
+          Constant.JDBC_EMBEDDED_DRIVER)
     }
   }
 

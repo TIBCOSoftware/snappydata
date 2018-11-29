@@ -39,8 +39,8 @@ import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
-import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.sql.catalog.CatalogObjectType
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
@@ -135,8 +135,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val itr = memStats.iterator()
 
-      val members = ObjectObjectHashMap.withExpectedSize[String,
-          MemberStatistics](8)
+      val members = new UnifiedMap[String, MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
@@ -168,7 +167,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
         memberStats.setStatus("Running")
       }
-      membersInfo ++= members.asScala
+      membersInfo ++= mapAsScalaMapConverter(members).asScala
       // mark members no longer running as stopped
       existingMembers.filterNot(members.containsKey).foreach(m =>
         membersInfo(m).setStatus("Stopped"))

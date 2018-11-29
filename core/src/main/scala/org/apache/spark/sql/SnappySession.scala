@@ -36,9 +36,9 @@ import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
-import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
@@ -209,7 +209,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             var hasCommand = false
             val relations = plan.collect {
               case _: Command => hasCommand = true; null
-              case u: UnresolvedRelation => u.tableIdentifier
+              case u: UnresolvedRelation =>
+                val tableIdent = sessionCatalog.resolveTableIdentifier(u.tableIdentifier)
+                tableIdent.database.get -> tableIdent.table
             }
             if (hasCommand) externalCatalog.invalidateAll()
             else if (relations.nonEmpty) {
@@ -1287,7 +1289,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     plan match {
       case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
         rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
-        externalCatalog.invalidateCaches(tableIdent :: Nil)
+        externalCatalog.invalidateCaches(tableIdent.database.get -> tableIdent.table :: Nil)
       case _ =>
         throw new AnalysisException("ALTER TABLE enable/disable Row Level Security " +
             s"not supported for ${tableIdent.unquotedString}")
@@ -1933,7 +1935,7 @@ object SnappySession extends Logging {
       val numHints = session.queryHints.size()
       val hints = if (numHints == 0) java.util.Collections.emptyMap[String, String]()
       else {
-        val m = ObjectObjectHashMap.withExpectedSize[String, String](numHints)
+        val m = new UnifiedMap[String, String](numHints)
         m.putAll(session.queryHints)
         m
       }

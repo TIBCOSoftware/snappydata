@@ -27,9 +27,9 @@ import com.gemstone.gemfire.internal.SocketCreator
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
-import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.thrift.BucketOwners
 import io.snappydata.thrift.internal.ClientPreparedStatement
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.SnappySession
@@ -156,7 +156,7 @@ object SmartConnectorRDDHelper {
 
   private def addNetUrl(netUrls: ArrayBuffer[(String, String)], server: String,
       preferHost: Boolean, urlPrefix: String, urlSuffix: String,
-      availableNetUrls: ObjectObjectHashMap[String, String]): Unit = {
+      availableNetUrls: UnifiedMap[String, String]): Unit = {
     val hostAddressPort = returnHostPortFromServerString(server)
     val hostName = hostAddressPort._1
     val host = if (preferHost) hostName else hostAddressPort._2
@@ -179,7 +179,7 @@ object SmartConnectorRDDHelper {
       val preferPrimaries = session.preferPrimaries
       var orphanBuckets: ArrayBuffer[Int] = null
       val allNetUrls = new Array[ArrayBuffer[(String, String)]](numBuckets)
-      val availableNetUrls = ObjectObjectHashMap.withExpectedSize[String, String](4)
+      val availableNetUrls = new UnifiedMap[String, String](4)
       for (bucket <- buckets.asScala) {
         val bucketId = bucket.getBucketId
         // use primary so that DMLs are routed optimally

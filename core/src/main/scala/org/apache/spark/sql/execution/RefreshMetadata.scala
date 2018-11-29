@@ -26,7 +26,6 @@ import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils
 import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils.GetFunctionMembers
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
@@ -94,7 +93,7 @@ object RefreshMetadata extends Enumeration
         SnappySession.clearAllCache(onlyQueryPlanCache = true)
         CodeGeneration.clearAllCache()
         if (args != null) {
-          val (version, relations) = args.asInstanceOf[(Long, Seq[TableIdentifier])]
+          val (version, relations) = args.asInstanceOf[(Long, Seq[(String, String)])]
           // update the version stored in own profile
           val profile = GemFireXDUtils.getMyProfile(false)
           if (profile ne null) {

@@ -18,8 +18,8 @@ package org.apache.spark.sql.execution.columnar
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.collection.OpenHashSet
 import io.snappydata.{Constant, Property}
+import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
@@ -784,7 +784,7 @@ object ColumnWriter {
    * Supported types for which column statistics are maintained and can be used
    * for statistics checks. Excludes DecimalType that should be checked explicitly.
    */
-  val SUPPORTED_STATS_TYPES = new OpenHashSet[DataType](java.util.Arrays.asList(Array(
+  val SUPPORTED_STATS_TYPES = new UnifiedSet[DataType](java.util.Arrays.asList(Array(
     BooleanType, ByteType, ShortType, IntegerType, LongType, DateType, TimestampType,
     StringType, FloatType, DoubleType): _*))
 

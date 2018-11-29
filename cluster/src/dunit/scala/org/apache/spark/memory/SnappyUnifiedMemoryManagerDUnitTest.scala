@@ -19,7 +19,6 @@ package org.apache.spark.memory
 
 import java.sql.DriverManager
 import java.util.Properties
-import java.util.function.ObjLongConsumer
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -27,6 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
+import org.eclipse.collections.api.block.procedure.primitive.ObjectLongProcedure
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionConfBuilder, ConnectionUtil}
@@ -524,8 +524,8 @@ object SnappyUnifiedMemoryManagerDUnitTest {
         SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager].logStats()
         var sum = 0L
-        mMap.forEach(new ObjLongConsumer[MemoryOwner] {
-          override def accept(key: MemoryOwner, value: Long): Unit = {
+        mMap.forEachKeyValue(new ObjectLongProcedure[MemoryOwner] {
+          override def value(key: MemoryOwner, value: Long): Unit = {
             if (key.owner.toLowerCase().contains(tableName.toLowerCase())) {
               sum += value
             }

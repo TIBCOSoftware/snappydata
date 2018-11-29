@@ -73,6 +73,7 @@ datanucleus-api-jdo-3.2.6.jar			Apache V2: 	http://www.apache.org/licenses/LICEN
 datanucleus-core-3.2.10.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 datanucleus-rdbms-3.2.9.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 derby-10.12.1.1.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
+eclipse-collections-9.2.0.jar                   EPL-1.0:        https://www.eclipse.org/legal/epl-v10.html
 eigenbase-properties-1.1.5.jar			Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 flyway-core-3.2.1.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 gemfire-core-1.6.2.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
@@ -186,8 +187,6 @@ jtransforms-2.4.0.jar				MPL             http://www.mozilla.org/MPL/2.0/index.tx
 jul-to-slf4j-1.7.21.jar				MIT 		http://www.opensource.org/licenses/mit-license.php
 kafka-clients-0.8.2.1.jar			Apache V2:	http://jpam.sourceforge.net/LICENSE.txt
 kafka_2.11-0.8.2.1.jar				Apache V2:	http://jpam.sourceforge.net/LICENSE.txt
-koloboke-api-jdk8-1.0.0.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
-koloboke-impl-common-jdk8-1.0.0.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 kryo-shaded-4.0.0.jar				BSD		http://www.opensource.org/licenses/bsd-license.php
 leveldbjni-all-1.8.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
 libfb303-0.9.3.jar				Apache V2: 	http://www.apache.org/licenses/LICENSE-2.0
@@ -350,9 +349,10 @@ The following components are provided under the Common Public 1.0 License. See p
 Eclipse Public License 1.0
 ========================================================================
 
-The following components are provided under the Eclipse Public License 1.0. See project link for details.
+The following components are provided under the Eclipse Public License 1.0. See project links for details.
 
      (Eclipse Public License v1.0) Eclipse JDT Core (org.eclipse.jdt:core:3.1.1 - http://www.eclipse.org/jdt/)
+     (Eclipse Public License v1.0) Eclipse Collections (org.eclipse.collections:9.2.0 - https://github.com/eclipse/eclipse-collections/blob/9.2.0/LICENSE-EPL-1.0.txt)
 
 ========================================================================
 Mozilla Public License 1.0
@@ -1009,7 +1009,6 @@ SECTION 1: BSD-STYLE, MIT-STYLE, OR SIMILAR STYLE LICENSES
 
 SECTION 2: Apache License, V2.0
 
-   >>> koloboke-1.0.0
    >>> hadoop-common-2.7.3
    >>> swagger-ui-2.0.17
 
@@ -1178,21 +1177,6 @@ Copyright (C) 2006-2009 Dustin Sallings
 --------------- SECTION 2: Apache License, V2.0 ----------
 
 Apache License, V2.0 is applicable to the following component(s).
-
-
->>> koloboke-1.0.0
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
 
 
 >>> hadoop-common-2.7.3
