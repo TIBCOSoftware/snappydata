@@ -238,7 +238,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
             // reduce log4j level to avoid "function exists" warnings
             val log4jLogger = LogManager.getRootLogger
             if (log4jLogger.getEffectiveLevel == Level.WARN) {
-              // log4jLogger.setLevel(Level.ERROR) SW:
+              log4jLogger.setLevel(Level.ERROR)
             }
           } else {
             lockTaken = lockService.writeLock(hiveClientObject, lockOwner,
