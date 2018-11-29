@@ -1198,7 +1198,7 @@ class SnappyParser(session: SnappySession)
   private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize)
+    MATCH ~> (() => tokenize = session.tokenize && canTokenize)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {

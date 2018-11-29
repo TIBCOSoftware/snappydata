@@ -237,6 +237,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
 
   @transient
+  private[sql] var tokenize: Boolean = Property.Tokenize.get(sessionState.conf)
+
+  @transient
   private[sql] var partitionPruning: Boolean = Property.PartitionPruning.get(sessionState.conf)
 
   @transient
@@ -1768,9 +1771,6 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
-
-  // TODO: SW: remove this global property and make it per session
-  private[sql] var tokenize: Boolean = _
 
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)

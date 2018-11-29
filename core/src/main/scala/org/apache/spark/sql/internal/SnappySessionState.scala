@@ -840,8 +840,8 @@ class SnappyConf(@transient val session: SnappySession)
 
     case Property.Tokenize.name =>
       value match {
-        case Some(boolVal) => SnappySession.tokenize = boolVal.toString.toBoolean
-        case None => SnappySession.tokenize = Property.Tokenize.defaultValue.get
+        case Some(boolVal) => session.tokenize = boolVal.toString.toBoolean
+        case None => session.tokenize = Property.Tokenize.defaultValue.get
       }
       session.clearPlanCache()
 
