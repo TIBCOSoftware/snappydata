@@ -44,6 +44,7 @@ dependencies {
 
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
   compile project(":snappy-store:snappydata-util")
+  compile project(":snappy-encoders_${scalaBinaryVersion}")
 
   testCompile project(':dunit')
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"

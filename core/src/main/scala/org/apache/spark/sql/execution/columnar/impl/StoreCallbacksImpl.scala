@@ -636,7 +636,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     session.sessionCatalog.refreshPolicies(ldapGroup)
   }
 
-  override def jsonSchema(schema: Any): String = {
+  def jsonSchema(schema: Any): String = {
     schema.asInstanceOf[StructType].json
   }
 }

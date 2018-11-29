@@ -20,16 +20,16 @@ import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
-import com.pivotal.gemfirexd.Attribute
-import com.zaxxer.hikari.util.PropertyElf
-import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-
-import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.pivotal.gemfirexd.Attribute
+import com.zaxxer.hikari.util.PropertyElf
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
+
 import org.apache.spark.sql.SnappyDataBaseDialect
+import org.apache.spark.sql.jdbc.JdbcDialect
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
@@ -109,7 +109,7 @@ object ConnectionPool {
               if (connectionProps != null) {
                 hconf.setDataSourceProperties(connectionProps)
               }
-              new HDataSource(hconf)
+              new HikariDataSource(hconf)
             } else {
               val tconf = new PoolProperties()
               PropertyElf.setTargetFromProperties(tconf, poolProps)
@@ -158,7 +158,7 @@ object ConnectionPool {
     if (ids.isEmpty) {
       pools -= poolKey
       if (poolKey._3) {
-        dsKey._1.asInstanceOf[HDataSource].close()
+        dsKey._1.asInstanceOf[HikariDataSource].close()
       } else {
         dsKey._1.asInstanceOf[TDataSource].close(true)
       }

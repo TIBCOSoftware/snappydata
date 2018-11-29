@@ -16,7 +16,10 @@
  */
 package io.snappydata.datasource.v2.partition
 
+import scala.collection.mutable.ArrayBuffer
+
 import io.snappydata.datasource.v2.driver.{QueryConstructs, SnappyTableMetaData}
+import io.snappydata.util.V2ColumnBatchDecoderHelper
 
 import org.apache.spark.sql.sources.v2.reader.DataReader
 import org.apache.spark.sql.vectorized.ColumnarBatch
@@ -25,16 +28,25 @@ class SnappyColumnBatchReader (val bucketId: Int,
     tableMetaData: SnappyTableMetaData, queryConstructs: QueryConstructs)
     extends DataReader[ColumnarBatch] {
 
+  val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
+      bucketToServerMapping.get(bucketId)
+
+  val helper = new V2ColumnBatchDecoderHelper(
+    tableMetaData.tableName, queryConstructs.projections, tableMetaData.schema,
+    queryConstructs.filters,
+    bucketId, hostsAndURLs)
+
+  helper.initialize
 
   override def next(): Boolean = {
-   false
+    helper.hasNext
   }
 
   override def get(): ColumnarBatch = {
-    null
+    helper.next
   }
 
   override def close(): Unit = {
-
+    helper.close
   }
 }

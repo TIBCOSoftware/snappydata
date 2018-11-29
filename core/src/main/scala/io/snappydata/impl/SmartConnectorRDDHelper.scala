@@ -118,9 +118,6 @@ object SmartConnectorRDDHelper {
 
   DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
 
-  var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
-  var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
-
   def getPartitions(bucketToServerList: Array[ArrayBuffer[(String, String)]]): Array[Partition] = {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
