@@ -76,8 +76,7 @@ object snappy extends Serializable {
      */
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD[U, T](rdd,
-        (_, _, iter) => iter.map(cleanF))
+      new MapPartitionsPreserveRDD[U, T](rdd, (_, _, iter) => iter.map(cleanF))
     }
 
     /**
@@ -203,11 +202,6 @@ object snappy extends Serializable {
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
         session.sessionState.catalog.newQualifiedTableName(tableName)), input))
           .executedPlan.executeCollect()
-
-      session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
-          foreach { cachedPlan =>
-            session.sharedState.cacheManager.uncacheQuery(session, cachedPlan, blocking = true)
-          }
     }
 
     def deleteFrom(tableName: String): Unit = {
@@ -222,6 +216,7 @@ object snappy extends Serializable {
           .executedPlan.executeCollect()
     }
   }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(session: SnappySession,
