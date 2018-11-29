@@ -98,8 +98,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <div id="AutoUpdateErrorMsg">
       </div>
     </div>
-    <div id="onoffswitch-Container" style="position: absolute; width: 100%;">
-      <div id="onoffswitch-holder">
+    <div id="autorefreshswitch-container">
+      <div id="autorefreshswitch-holder">
         <div class="onoffswitch">
           <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox"
                  id="myonoffswitch" checked="checked" />
@@ -109,6 +109,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
             <span class="onoffswitch-switch"></span>
           </label>
         </div>
+        <div id="autorefreshswitch-label">Auto Refresh:</div>
       </div>
     </div>
     <div class="row-fluid">
