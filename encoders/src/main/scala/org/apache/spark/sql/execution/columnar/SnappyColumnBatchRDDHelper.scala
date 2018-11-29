@@ -1,7 +1,7 @@
 /*
  * TODO COMMENT HERE
  */
-package io.snappydata.util
+package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
@@ -18,7 +18,6 @@ import org.apache.derby.iapi.types.HarmonySerialBlob
 
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
-import org.apache.spark.sql.execution.columnar.{ColumnBatchIteratorOnRS, SnappyColumnVector}
 import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.types._
@@ -34,7 +33,7 @@ import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarBatch}
  * @param hostList
  * @param relDestroyVersion
  */
-class V2ColumnBatchDecoderHelper(tableName: String, projection: StructType,
+class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
     schema: StructType, filters: Option[Array[Filter]], bucketId: Int,
     hostList: ArrayBuffer[(String, String)],
     relDestroyVersion: Int = -1) {
@@ -93,7 +92,7 @@ class V2ColumnBatchDecoderHelper(tableName: String, projection: StructType,
       val field = schema.fields(columnOrdinal - 1)
 
       val columnVector = new SnappyColumnVector(field.dataType, field,
-        batchBuffer, scan_batchNumRows, 0)
+        batchBuffer, scan_batchNumRows, columnOrdinal)
 
       columnVectors(vectorIndex) = columnVector
       vectorIndex = vectorIndex + 1
@@ -151,6 +150,7 @@ class V2ColumnBatchDecoderHelper(tableName: String, projection: StructType,
    * @return
    */
   private def serializeFilters: Array[Byte] = {
+    // TODO: Serialize filter here
 //    if (filters != null & filters.size > 0 ) {
 //      KryoSerializerPool.serialize((kryo, out) => kryo.writeObject(out, filters))
 //    } else null
@@ -253,7 +253,8 @@ class V2ColumnBatchDecoderHelper(tableName: String, projection: StructType,
         val bucketSet = Collections.singleton(Int.box(bucketId))
         clientStmt.setLocalExecutionBucketIds(bucketSet, columnTable, true)
         clientStmt.setMetadataVersion(relDestroyVersion)
-//        clientStmt.setSnapshotTransactionId(txId)
+      // TODO: Transaction Handling temprary commented.
+      // clientStmt.setSnapshotTransactionId(txId)
       case _ =>
         pstmt.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
             s"'$columnTable', '${bucketId}', $relDestroyVersion)")
@@ -266,7 +267,7 @@ class V2ColumnBatchDecoderHelper(tableName: String, projection: StructType,
     (pstmt, rs)
   }
 
-  // Methods from the ExternalStoreUtils.scala - Duplicate entries
+  // TODO:PS:Review Methods from the ExternalStoreUtils.scala - Duplicate entries
   // Start-----------
   private def addProperty(props: mutable.Map[String, String], key: String,
       default: String): Unit = {
@@ -310,7 +311,7 @@ class V2ColumnBatchDecoderHelper(tableName: String, projection: StructType,
   // End-----------
 }
 
-object V2ColumnBatchDecoderHelper {
+object SnappyColumnBatchRDDHelper {
 
   // TODO:PS:Review: Moved here from the SmartConnectorRDDHelper
   // and replaced all occurances with

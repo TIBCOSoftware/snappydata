@@ -56,7 +56,7 @@ class BasicDataSourceV2Suite extends SparkFunSuite {
     //    df2.collect().foreach(println)
 
 
-    val df3 = spark.sql("select ID, rank, designation from v1")
+    val df3 = spark.sql("select id, rank, designation from v1 where id is null")
     df3.explain(true)
     // scalastyle:off
     println("numrows = " + df3.count())

@@ -7,10 +7,10 @@ import java.sql.DriverManager
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.util.V2ColumnBatchDecoderHelper
 import org.apache.avro.generic.GenericData.StringType
 
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.execution.columnar.SnappyColumnBatchRDDHelper
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
 object ColumnBatchDecoderTest {
@@ -36,9 +36,11 @@ object ColumnBatchDecoderTest {
     val stmt = conn.createStatement()
     // stmt.execute("set snappydata.column.maxDeltaRows=1")
     stmt.execute("DROP TABLE IF EXISTS TEST_TABLE")
-    stmt.execute("create table TEST_TABLE (ID long, rank int, designation String) " +
+    stmt.execute("create table TEST_TABLE (ID long, rank int, designation String NULL ) " +
         "using column options (buckets '4', COLUMN_MAX_DELTA_ROWS '1') as select id, 101, " +
-        " 'somerank' || id from range(20000)")
+        " 'somerank' || id from range(20)")
+    stmt.close()
+    conn.close()
 
  /*
     val field1 = StructField("ID", LongType, true)
@@ -67,8 +69,5 @@ object ColumnBatchDecoderTest {
       }
     }
     */
-
-    stmt.close()
-    conn.close()
   }
 }

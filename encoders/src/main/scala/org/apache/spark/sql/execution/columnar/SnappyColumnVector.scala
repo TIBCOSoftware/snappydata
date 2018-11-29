@@ -11,11 +11,12 @@ import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarArray, ColumnarMap
 import org.apache.spark.unsafe.types.UTF8String
 
 class SnappyColumnVector(dataType: DataType, structField: StructField,
-    byteBuffer: ByteBuffer, numOfRow: Int, numOfNulls: Int)
+    byteBuffer: ByteBuffer, numOfRow: Int, ordinal: Int)
     extends ColumnVector(dataType: DataType) {
 
   private val columnDecoder = ColumnEncoding.getColumnDecoder(byteBuffer, structField,
     ColumnEncoding.identityLong)
+
   private val arrayOfBytes = if (byteBuffer == null || byteBuffer.isDirect) {
     null
   } else {
@@ -25,10 +26,14 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   override def close(): Unit = {}
 
   override def hasNull: Boolean = {
-    columnDecoder.isNullAt(arrayOfBytes, 0)
+    columnDecoder.hasNulls
   }
 
-  override def numNulls(): Int = { numOfNulls }
+  override def numNulls(): Int = {
+    // scalastyle:off
+    println(" numNull called ============= ")
+   columnDecoder.numNulls(arrayOfBytes, ordinal, columnDecoder.getNextNullPosition)
+  }
 
   override def isNullAt(rowId: Int): Boolean = {
     columnDecoder.isNullAt(arrayOfBytes, rowId)
