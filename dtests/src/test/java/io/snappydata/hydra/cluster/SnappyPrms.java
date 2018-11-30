@@ -340,6 +340,12 @@ public class SnappyPrms extends BasePrms {
   public static Long executeInBackground;
 
   /**
+   * (boolean) whether to test conflation.
+   */
+
+  public static Long isConflationTest;
+
+  /**
    * (int) how long (seconds) it should wait before retrieving server status
    */
   public static Long sleepTimeSecsForMemberStatus;

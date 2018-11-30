@@ -47,7 +47,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
-import org.apache.spark.sql.execution.{CreateSnappyViewCommand, RefreshMetadata, SnappyCacheTableCommand}
+import org.apache.spark.sql.execution.{CreateSnappyViewCommand, DescribeSnappyTableCommand, RefreshMetadata, SnappyCacheTableCommand}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.policy.PolicyProperties
@@ -203,6 +203,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
   final def VIEW: Rule0 = rule { keyword(Consts.VIEW) }
+  final def VIEWS: Rule0 = rule { keyword(Consts.VIEWS) }
 
   // Window analytical functions (non-reserved)
   final def DURATION: Rule0 = rule { keyword(Consts.DURATION) }
@@ -683,7 +684,7 @@ abstract class SnappyDDLParser(session: SparkSession)
             ((extended: Any, tableIdent: TableIdentifier) => {
               // ensure columns are sent back as CLOB for large results with EXTENDED
               queryHints.put(QueryHint.ColumnsAsClob.toString, "data_type,comment")
-              DescribeTableCommand(tableIdent, Map.empty[String, String], extended
+              new DescribeSnappyTableCommand(tableIdent, Map.empty[String, String], extended
                   .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)
             })
     )
