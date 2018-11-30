@@ -383,22 +383,22 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def dropTable(tableIdent: TableIdentifier, ignoreIfNotExists: Boolean,
       purge: Boolean): Unit = synchronized {
     val name = addMissingGlobalTempSchema(tableIdent)
-    val schemaName = getSchemaName(name)
+    val schema = getSchemaName(name)
     val table = formatTableName(name.table)
 
     if (!isTemporaryTable(tableIdent)) {
-      checkSchemaPermission(schemaName, table, defaultUser = null)
+      checkSchemaPermission(schema, table, defaultUser = null)
       // resolve the table and destroy underlying storage if possible
-      externalCatalog.getTableOption(schemaName, table) match {
+      externalCatalog.getTableOption(schema, table) match {
         case None =>
-          if (ignoreIfNotExists) return else throw new TableNotFoundException(schemaName, table)
+          if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
         case Some(metadata) =>
           // fail if there are any existing dependents except policies
-          val dependents = externalCatalog.getDependents(schemaName, table,
+          val dependents = externalCatalog.getDependents(schema, table,
             excludeTypes = CatalogObjectType.Policy :: Nil)
           if (dependents.nonEmpty) {
-            throw new AnalysisException(s"$schemaName.$table cannot be " +
-                s"dropped because of dependent objects: ${dependents.mkString(",")}")
+            throw new AnalysisException(s"Object $schema.$table cannot be dropped because of " +
+                s"dependent objects: ${dependents.map(_.identifier.unquotedString).mkString(",")}")
           }
           metadata.provider match {
             case Some(provider) if provider != DDLUtils.HIVE_PROVIDER =>
