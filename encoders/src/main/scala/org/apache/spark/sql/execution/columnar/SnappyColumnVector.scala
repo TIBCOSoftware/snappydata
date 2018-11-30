@@ -17,52 +17,77 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   private val columnDecoder = ColumnEncoding.getColumnDecoder(byteBuffer, structField,
     ColumnEncoding.identityLong)
 
+  var rowOrdinal = 0
+  var currentNullCount = 0
+  var nextNullPosition = 0
+
   private val arrayOfBytes = if (byteBuffer == null || byteBuffer.isDirect) {
     null
   } else {
     byteBuffer.array
   }
 
-  override def close(): Unit = {}
-
-  override def hasNull: Boolean = {
-    columnDecoder.hasNulls
+  override def close(): Unit = {
+    // TODO:PS:Review does any close or cleanup required.
   }
 
+  override def hasNull: Boolean = {
+    var hasNull = true
+    nextNullPosition = columnDecoder.getNextNullPosition
+    if (rowOrdinal < nextNullPosition ||
+        (rowOrdinal == nextNullPosition + 1 &&
+            rowOrdinal < incrementAndGetNextNullPosition) ||
+        (rowOrdinal != nextNullPosition && ((currentNullCount =
+            columnDecoder.numNulls(arrayOfBytes, rowOrdinal, currentNullCount)) == 0 ||
+            rowOrdinal != columnDecoder.getNextNullPosition))) {
+      hasNull = false
+    }
+    rowOrdinal = rowOrdinal + 1
+    hasNull
+  }
+
+  private def incrementAndGetNextNullPosition : Int = {
+    currentNullCount = currentNullCount + 1
+    nextNullPosition = columnDecoder.findNextNullPosition(
+      arrayOfBytes, nextNullPosition, currentNullCount)
+    nextNullPosition
+  }
   override def numNulls(): Int = {
-   columnDecoder.numNulls(arrayOfBytes, ordinal, columnDecoder.getNextNullPosition)
+    // TODO:PS:Review what will be the numNulls here.
+   // columnDecoder.numNulls(arrayOfBytes, rowOrdinal, columnDecoder.getNextNullPosition)
+    currentNullCount
   }
 
   override def isNullAt(rowId: Int): Boolean = {
-    columnDecoder.isNullAt(arrayOfBytes, rowId)
-  }
-
-  override def getBoolean(rowId: Int): Boolean = {
-    columnDecoder.readBoolean(arrayOfBytes, rowId)
-  }
-
-  override def getByte(rowId: Int): Byte = {
-    columnDecoder.readByte(arrayOfBytes, rowId)
-  }
-
-  override def getShort(rowId: Int): Short = {
-    columnDecoder.readShort(arrayOfBytes, rowId)
+    hasNull
   }
 
   override def getInt(rowId: Int): Int = {
-    columnDecoder.readInt(arrayOfBytes, rowId)
+    columnDecoder.readInt(arrayOfBytes, rowId - currentNullCount)
+  }
+
+  override def getBoolean(rowId: Int): Boolean = {
+    columnDecoder.readBoolean(arrayOfBytes, rowId - currentNullCount)
+  }
+
+  override def getByte(rowId: Int): Byte = {
+    columnDecoder.readByte(arrayOfBytes, rowId - currentNullCount)
+  }
+
+  override def getShort(rowId: Int): Short = {
+    columnDecoder.readShort(arrayOfBytes, rowId - currentNullCount)
   }
 
   override def getLong(rowId: Int): Long = {
-    columnDecoder.readLong(arrayOfBytes, rowId)
+    columnDecoder.readLong(arrayOfBytes, rowId - currentNullCount)
   }
 
   override def getFloat(rowId: Int): Float = {
-    columnDecoder.readFloat(arrayOfBytes, rowId)
+    columnDecoder.readFloat(arrayOfBytes, rowId - currentNullCount)
   }
 
   override def getDouble(rowId: Int): Double = {
-    columnDecoder.readDouble(arrayOfBytes, rowId)
+    columnDecoder.readDouble(arrayOfBytes, rowId - currentNullCount)
   }
 
   override def getArray(rowId: Int): ColumnarArray = {
@@ -90,15 +115,15 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def getDecimal(rowId: Int, precision: Int, scale: Int): Decimal = {
-    columnDecoder.readDecimal(arrayOfBytes, rowId, precision, scale)
+    columnDecoder.readDecimal(arrayOfBytes, rowId - currentNullCount, precision, scale)
   }
 
   override def getUTF8String(rowId: Int): UTF8String = {
-    columnDecoder.readUTF8String(arrayOfBytes, rowId)
+    columnDecoder.readUTF8String(arrayOfBytes, rowId - currentNullCount)
   }
 
   override def getBinary(rowId: Int): Array[Byte] = {
-    columnDecoder.readBinary(arrayOfBytes, rowId)
+    columnDecoder.readBinary(arrayOfBytes, rowId - currentNullCount)
   }
 
   override def getChild(ordinal: Int): ColumnVector = {
