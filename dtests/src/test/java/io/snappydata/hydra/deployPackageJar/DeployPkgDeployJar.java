@@ -212,14 +212,26 @@ public class DeployPkgDeployJar extends SnappyTest {
         deployPkgJars.deployPkgWithRepos();
     }
 
+
+    /**
+     * This method deploy the package globally (deploy package command) and run the snappy job
+     * which convert the csv data (result of running sql queries) and to JSON data using
+     * google gson libraries.
+     * @since 1.0.2.1
+     */
+    public static void HydraTask_deployPkgCSVToJSON_SnappyJob() {
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPkgCSVToJSON_SnappyJob();
+    }
+
     /**
      * This method start the deployment and kill the lead node (soft kill)
      * then on restart package / jar should be automatically installed
      * @since 1.0.2.1
      */
-    public static void HydraTask_deployPkgAndSoftKillLeadNode() {
+    public static void HydraTask_deployPkgAndNiceKillLeadNode() {
         deployPkgJars = new DeployPkgDeployJar();
-        deployPkgJars.deployPkgAndSoftKillLeadNode();
+        deployPkgJars.deployPkgAndNiceKillLeadNode();
     }
 
     /**
@@ -252,27 +264,59 @@ public class DeployPkgDeployJar extends SnappyTest {
      * @since 1.0.2.1
      * @return Lead node status
      */
-    private boolean isLeadNodeUp(Connection conn) {
-        boolean isDeploy = SnappyPrms.isDeployPkg();
+    private String isLeadNodeUp(Connection conn) {
         boolean isLeadNodeRunning = false;
+        boolean isPrimaryLead = false;
         Statement st;
         ResultSet rs;
+        String kind;
+        String status;
+        String port;
+        String host;
+        String pid;
+        String returnValue = null;
 
-       try {
+        try {
             st = conn.createStatement();
             if(st.execute("select * from sys.members;")) {
                 rs = st.getResultSet();
                 while (rs.next()) {
-                    Log.getLogWriter().info("Checking the Lead node status...");
-                    if(rs.getString("KIND").equals("primary lead") && rs.getString("STATUS").equals("RUNNING")) {
-                    isLeadNodeRunning = true;
-                  }
+                    kind = rs.getString("KIND");
+                    status = rs.getString("STATUS");
+                    port = rs.getString("PORT");
+                    host = rs.getString("HOST");
+                    pid = rs.getString("PID");
+
+                    if(kind.equals("primary lead") || kind.equals("lead"))
+                        Log.getLogWriter().info("Member : Status : Host : Port : PId => " + kind + ":" + status + ":" + host + ":" + port + "=>" + pid);
+
+
+                        if (kind.equals("primary lead") && status.equals("RUNNING")) {
+                            returnValue = "1," + pid + "," +  host + "," +  port;
+                        }
+
               }
+//              if(isPrimaryLead == true) {
+//                    isLeadNodeRunning = true;
+//                    isPrimaryLead = false;
+//              }
+//FIXME : First if statement is correct one, above code changes may be temporary
+//FIXME : Presently added for debug purpose
+//                if(rs.getString("KIND").equals("primary lead") && rs.getString("STATUS").equals("RUNNING")) {
+//                    Log.getLogWriter().info("Primary lead port is (isLeadNodeup()) : " + port);
+//                    isLeadNodeRunning = true;
+//                }
+//                if(rs.getString("KIND").equals("lead") && rs.getString("STATUS").equals("STANDBY")) {
+//                    String standbyLead = rs.getString("lead");
+//                    String status = rs.getString("STANDBY");
+//                    String secondaryPort = rs.getString("PORT");
+//                    Log.getLogWriter().info("Standby lead information : " + standbyLead + "," + status + "," + secondaryPort);
+//                }
             }
         }catch (SQLException se) {
 
         }
-        return isLeadNodeRunning;
+        return returnValue;
     }
 
     /**
@@ -907,22 +951,85 @@ public class DeployPkgDeployJar extends SnappyTest {
         }
     }
 
+
+    /**
+     * This method deploy the package globally (deploy package command) and run the snappy job
+     * which convert the csv data (result of running sql queries) and to JSON data using
+     * google gson libraries.
+     * @since 1.0.2.1
+     */
+    private  void deployPkgCSVToJSON_SnappyJob() {
+        Connection conn;
+        String deployPkgCmd;
+        final String listPkgCmd = "list packages;";
+        boolean isListPkg;
+        final String pkgCoordinates = "'com.google.code.gson:gson:2.8.5'";
+        //final String pkgCoordinates =  "'com.databricks:spark-avro_2.11:4.0.0'";
+        final String path = " path ";
+        final String alias = " GoogleGSON ";
+        Statement st;
+        ResultSet rs;
+
+        conn = getJDBCConnection();
+        try {
+            Log.getLogWriter().info("deployPkgCSVToJSON started, deploying Google GSON Package..." );
+            deployPkgCmd = "deploy package" + alias + pkgCoordinates + path + "'" + userHomeDir + "/TPC'";
+            Log.getLogWriter().info("deploy package command is : " + deployPkgCmd);
+            conn.createStatement().execute(deployPkgCmd);
+            HydraTask_executeSnappyJob();
+            Log.getLogWriter().info("Executing undeploy : " + "undeploy " + alias.trim());
+            conn.createStatement().execute("undeploy " + alias.trim());
+            st = conn.createStatement();
+            if(st.execute(listPkgCmd)) {
+                Log.getLogWriter().info("list package command.....");
+                rs = st.getResultSet();
+                while (rs.next()) {
+                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                }
+            }
+
+        }catch(SQLException se) {
+            Log.getLogWriter().info("CSVToJSON conversion Exception : " + se.getMessage());
+        }finally {
+            closeConnection(conn);
+        }
+
+    }
+
+
     /**
      *
      * @since 1.0.2.1
      */
-    private  void deployPkgAndSoftKillLeadNode() {
+    private  void deployPkgAndNiceKillLeadNode() {
         Vector snappyJobClassName = SnappyPrms.getSnappyJobClassNames();
         String userAppProperties = SnappyPrms.getCommaSepAPPProps();
         String userAppName = SnappyPrms.getUserAppName();
         String thirdParty_Pkgs_repos = SnappyPrms.getJarIdentifier();
         boolean isDeploy = SnappyPrms.isDeployPkg();
+        Connection conn;
+        Statement st;
+        ResultSet rs;
+
+        conn = getJDBCConnection();
+        ExecutorService es = Executors.newFixedThreadPool(2);
 
         //Below job / task kill the lead node
         Runnable killLeadNode = () -> {
-                  Log.getLogWriter().info("Killing the Lead Node and Restart the Lead Node...");
-                  SnappyTest.HydraTask_cycleLeadVM();
-
+                  String returnValue = "";
+                  String[] memberValue;
+                  while (true) {
+                  if(returnValue.equals(""))
+                    returnValue = isLeadNodeUp(conn);
+                  memberValue = returnValue.split(",");
+                  Log.getLogWriter().info("[test] > " + memberValue[0] + "," + memberValue[1]);
+                  if (memberValue[0].equals("1")) {
+                     Log.getLogWriter().info("Primary lead node up and running : " + memberValue[0].equals("1"));
+                     break;
+                  }
+                }
+                Log.getLogWriter().info("Killing the primary lead node...");
+                SnappyTest.HydraTask_cycleLeadVM();
         };
 
         //Below job / task will wait for 15 seconds until secondary lead node starts.
@@ -930,8 +1037,24 @@ public class DeployPkgDeployJar extends SnappyTest {
         //Wait time is 15 seconds
         Runnable submitJobKillLeadNode = () -> {
                 try {
-                    Log.getLogWriter().info("Start the snappy Job and put the thread immediately into sleep mode...");
-                    Thread.sleep(15000);
+                    String returnValue = "";
+                    String[] memberValue;
+                    Log.getLogWriter().info("Start the snappy Job and waiting to switch over from secondary to primary lead..., Thread Sleeping...");
+                    while(true) {
+                        Thread.sleep(40000);
+                        returnValue = isLeadNodeUp(conn);
+                        memberValue = returnValue.split(",");
+                        //Thread.sleep(1000);
+                        if(!memberValue[0].equals("1")) {
+                            Log.getLogWriter().info("Waiting for switch over from secondary to primary");
+                            //Thread.sleep(1000);
+                        }
+                        else {
+                            Log.getLogWriter().info("Secondary (now primary) lead node up and running again : " + memberValue[0].equals("1"));
+                            Log.getLogWriter().info("[test] > " + memberValue[0] + "," + memberValue[1] + "," + memberValue[2] + "," + memberValue[3]);
+                            break;
+                        }
+                    }
                     boolean jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
                             userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
                     Log.getLogWriter().info("DeployPkgDeployJar -> SnappyJobStatus : " + jobStatus);
@@ -947,17 +1070,17 @@ public class DeployPkgDeployJar extends SnappyTest {
                 }
             };
 
-        ExecutorService es = Executors.newFixedThreadPool(2);
+
 
         es.submit(killLeadNode);
         es.submit(submitJobKillLeadNode);
         try {
-            Log.getLogWriter().info("Sleeping for " + 360000 + " millis before executor service shut down");
-            Thread.sleep(360000);
+            Log.getLogWriter().info("Sleeping for " + 300000 + " millis before executor service shut down");
+            Thread.sleep(300000);
             es.shutdown();
             es.awaitTermination(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndSoftKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndNiceKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
         }
     }
 
@@ -970,6 +1093,8 @@ public class DeployPkgDeployJar extends SnappyTest {
         String userAppName = SnappyPrms.getUserAppName();
         String thirdParty_Pkgs_repos = SnappyPrms.getJarIdentifier();
         boolean isDeploy = SnappyPrms.isDeployPkg();
+        //String port = SnappyPrms.getLeadPort();
+        //Log.getLogWriter().info("job server port : " + port);
         Connection conn;
         Statement st;
         ResultSet rs;
@@ -979,33 +1104,46 @@ public class DeployPkgDeployJar extends SnappyTest {
 
         //Below job / task mean kill the lead node
         Runnable killLeadNode = () -> {
-            Log.getLogWriter().info("Killing the Lead Node and Restart the Lead Node...");
-            SnappyTest.meanKillSnappyMember("lead");
-        };
-
-
-        //Below job / task will wait for 15 seconds until secondary lead node starts.
-        //It executes the job after new lead node discovered.
-        //Wait time is 15 seconds
-        Runnable submitJobKillLeadNode = () -> {
-            try {
-                boolean isLeadNodeRunning;
-                Log.getLogWriter().info("Start the snappy Job and put the thread immediately into sleep mode...");
-                while(true) {
-                    isLeadNodeRunning = isLeadNodeUp(conn);
-                    Thread.sleep(5000);
-                    if(isLeadNodeRunning == false) {
-                        Log.getLogWriter().info("Lead Node Status : " + isLeadNodeRunning);
-                        Thread.sleep(5000);
-                    }
-                    else {
-                        Log.getLogWriter().info("Lead Node Status up and running : " + isLeadNodeRunning);
-                        Thread.sleep(5000);
+                String returnValue = "";
+                String[] memberValue;
+                while (true) {
+                    if(returnValue.equals(""))
+                        returnValue = isLeadNodeUp(conn);
+                    memberValue = returnValue.split(",");
+                    Log.getLogWriter().info("[test] > " + memberValue[0] + "," + memberValue[1]);
+                    if (memberValue[0].equals("1")) {
+                        Log.getLogWriter().info("Primary lead node up and running : " + memberValue[0].equals("1"));
                         break;
                     }
                 }
-                //Thread.sleep(15000);
-                //Log.getLogWriter().info("Lead Node Status : " + isLeadNodeRunning);
+                Log.getLogWriter().info("Killing the primary lead node...");
+                SnappyTest.meanKillSnappyMember("lead",memberValue[1]);
+        };
+
+
+        //Below job / task will wait until secondary lead node starts.
+        //It executes the job after new lead node discovered.
+        //Wait time is
+        Runnable submitJobKillLeadNode = () -> {
+            try {
+                String returnValue = "";
+                String[] memberValue;
+                Log.getLogWriter().info("Start the snappy Job and waiting to switch over from secondary to primary lead...");
+                while(true) {
+                    Thread.sleep(40000);
+                    returnValue = isLeadNodeUp(conn);
+                    memberValue = returnValue.split(",");
+                    //Thread.sleep(1000);
+                    if(!memberValue[0].equals("1")) {
+                        Log.getLogWriter().info("Waiting for switch over from secondary to primary");
+                        //Thread.sleep(1000);
+                    }
+                    else {
+                        Log.getLogWriter().info("Secondary (now primary) lead node up and running again : " + memberValue[0].equals("1"));
+                        Log.getLogWriter().info("[test] > " + memberValue[0] + "," + memberValue[1] + "," + memberValue[2] + "," + memberValue[3]);
+                        break;
+                    }
+                }
                 boolean jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
                         userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
                 Log.getLogWriter().info("DeployPkgDeployJar -> SnappyJobStatus : " + jobStatus);
@@ -1016,23 +1154,22 @@ public class DeployPkgDeployJar extends SnappyTest {
                             userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
                     if(conn != null)
                         closeConnection(conn);
-                    if(isLeadNodeRunning == true)
-                        isLeadNodeRunning = false;
                 }
             }
             catch(InterruptedException e){
                 Log.getLogWriter().info("Deploy pkg with Lead HA, job thread interrupted -> " + e.getMessage());
             }
         };
+
         es.submit(killLeadNode);
         es.submit(submitJobKillLeadNode);
         try {
-            Log.getLogWriter().info("Sleeping for " + 360000 + " millis before executor service shut down");
-            Thread.sleep(360000);
+            Log.getLogWriter().info("Sleeping for " + 300000 + " millis before executor service shut down");
+            Thread.sleep(300000);
             es.shutdown();
             es.awaitTermination(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndSoftKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndNiceKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
         }
     }
 }
