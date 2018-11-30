@@ -1118,8 +1118,25 @@ task jdbcJar {
   }
 }
 
+task v2ConnectorJar {
+  dependsOn ":snappy-v2connector_${scalaBinaryVersion}:shadowJar"
+
+  doLast {
+    def v2ConnectorProject = project(":snappy-v2connector_${scalaBinaryVersion}")
+    String v2ConnectorName = "snappydata-v2connector_${scalaBinaryVersion}-${version}.jar"
+    // copy the snappy-v2connector shadow jar into distributions
+    copy {
+      from v2ConnectorProject.shadowJar.destinationDir
+      into "${rootProject.buildDir}/distributions"
+      include v2ConnectorProject.shadowJar.archiveName
+      rename { filename -> v2ConnectorName }
+    }
+  }
+}
+
 task copyShadowJars {
   dependsOn jdbcJar
+  dependsOn v2ConnectorJar
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
