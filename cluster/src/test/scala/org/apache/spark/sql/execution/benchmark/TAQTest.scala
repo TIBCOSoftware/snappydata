@@ -25,6 +25,7 @@ import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{Decimal, DecimalType, StringType, StructField, StructType}
@@ -135,7 +136,7 @@ class TAQTestJob extends SnappySQLJob with Logging {
     for (_ <- 1 to numRuns) {
       val start = System.nanoTime()
       for (_ <- 1 to numIters) {
-        session.sql("select * from citi_order where id=1000 " +
+        Utils.sqlInternal(session, "select * from citi_order where id=1000 " +
             "--GEMFIREXD-PROPERTIES executionEngine=Spark").collectInternal()
       }
       val end = System.nanoTime()
