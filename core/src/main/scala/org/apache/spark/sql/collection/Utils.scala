@@ -410,11 +410,13 @@ object Utils {
   final def isLoner(sc: SparkContext): Boolean =
     (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
-  def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
+  def parseColumnsAsClob(s: String, session: SnappySession): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
     } else {
-      (false, s.toUpperCase.split(',').toSet)
+      val parser = session.snappyParser
+      (false, s.split(',').map(c => Utils.toUpperCase(parser.parseSQLOnly(
+        c, parser.parseIdentifier.run()))).toSet)
     }
   }
 

@@ -97,7 +97,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
   }
 
   private def catalogStaleFailure(cause: Throwable, session: SnappySession): Exception = {
-    logWarning(s"SmartConnector catalog is not upto date. " +
+    logWarning(s"SmartConnector catalog is not up to date. " +
         s"Please reconstruct the Dataset and retry the operation")
     new CatalogStaleException("Smart connector catalog is out of date due to " +
         "table schema change (DROP/CREATE/ALTER operation). " +
@@ -146,7 +146,9 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
                 session.sessionState.disableStoreOptimizations = true
               }
               try {
-                val plan = exec().executedPlan
+                val plan = exec().executedPlan.transform {
+                  case CodegenSparkFallback(p) => p
+                }
                 val result = f(plan)
                 // update child for future executions
                 child = plan
