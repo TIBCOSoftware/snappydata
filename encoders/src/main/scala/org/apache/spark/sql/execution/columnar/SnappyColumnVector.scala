@@ -30,8 +30,6 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def numNulls(): Int = {
-    // scalastyle:off
-    println(" numNull called ============= ")
    columnDecoder.numNulls(arrayOfBytes, ordinal, columnDecoder.getNextNullPosition)
   }
 

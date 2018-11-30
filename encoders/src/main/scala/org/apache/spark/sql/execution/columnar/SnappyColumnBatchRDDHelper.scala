@@ -3,6 +3,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import java.util.{Collections, Properties}
@@ -144,17 +145,32 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
     }
   }
 
+  def getBlob(value: Any, conn: Connection): java.sql.Blob = {
+    val serializedValue: Array[Byte] = serialize(value)
+    val blob = conn.createBlob()
+    blob.setBytes(1, serializedValue)
+    blob
+  }
+
+  def serialize(value: Any): Array[Byte] = {
+    val baos: ByteArrayOutputStream = new ByteArrayOutputStream()
+    val os: ObjectOutputStream = new ObjectOutputStream(baos)
+    os.writeObject(value)
+    os.close()
+    baos.toByteArray
+  }
+
   /**
    * Method serializes the passed filters from Spark format to snappy format.
    *
    * @return
    */
   private def serializeFilters: Array[Byte] = {
-    // TODO: Serialize filter here
-//    if (filters != null & filters.size > 0 ) {
-//      KryoSerializerPool.serialize((kryo, out) => kryo.writeObject(out, filters))
-//    } else null
-    null
+    if (filters.isDefined) {
+      serialize(filters.get)
+    } else {
+      null
+    }
   }
 
   private def getConnProperties(): ConnectionProperties = {
@@ -239,12 +255,14 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
   private def prepareScan(conn: Connection, txId: String, columnTable: String,
       projection: Array[Int], serializedFilters: Array[Byte], bucketId: Int,
       relDestroyVersion: Int): (PreparedStatement, ResultSet) = {
-    val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?)")
+    val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?, 0)")
     pstmt.setString(1, columnTable)
     pstmt.setString(2, projection.mkString(","))
     // serialize the filters
     if ((serializedFilters ne null) && serializedFilters.length > 0) {
-      pstmt.setBlob(3, new HarmonySerialBlob(serializedFilters))
+      val blob = conn.createBlob()
+      blob.setBytes(1, serializedFilters)
+      pstmt.setBlob(3, blob)
     } else {
       pstmt.setNull(3, java.sql.Types.BLOB)
     }

@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.net.URLClassLoader
 import java.sql.SQLException
+import java.util
 import java.util.Collections
 
 import scala.collection.JavaConverters._
@@ -187,13 +188,19 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   @throws(classOf[SQLException])
-  override def columnTableScan(columnTable: String,
-      projection: Array[Int], serializedFilters: Array[Byte],
-      bucketIds: java.util.Set[Integer]): CloseableIterator[ColumnTableEntry] = {
+  override def columnTableScan(columnTable: String, projection: Array[Int],
+      serializedFilters: Array[Byte], bucketIds: util.Set[Integer],
+      useKryoSerializer: Boolean): CloseableIterator[ColumnTableEntry] = {
     // deserialize the filters
     val batchFilters = if ((serializedFilters ne null) && serializedFilters.length > 0) {
-      KryoSerializerPool.deserialize(serializedFilters, 0, serializedFilters.length,
-        (kryo, in) => kryo.readObject(in, classOf[Array[Filter]])).toSeq
+      if (useKryoSerializer) {
+        KryoSerializerPool.deserialize(serializedFilters, 0, serializedFilters.length,
+          (kryo, in) => kryo.readObject(in, classOf[Array[Filter]])).toSeq
+      } else {
+        // java serializer
+        val v = SmartConnectorHelper.deserialize(serializedFilters).asInstanceOf[Array[Filter]]
+        v.toSeq
+      }
     } else null
     val (region, schemaAttrs, batchFilterExprs) = try {
       val lr = Misc.getRegionForTable(columnTable, true).asInstanceOf[LocalRegion]
@@ -363,7 +370,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   private def attr(a: String, schema: Seq[AttributeReference]): AttributeReference = {
     // filter passed should have same case as in schema and not be qualified which
     // should be true since these have been created from resolved Expression by sender
-    schema.find(_.name == a) match {
+    // TODO: [shirish] converted to uppercase to make v2 connector work
+    schema.find( x => x.name == a || x.name == a.toUpperCase) match {
       case Some(attr) => attr
       case _ => throw Utils.analysisException(s"Could not find $a in ${schema.mkString(", ")}")
     }

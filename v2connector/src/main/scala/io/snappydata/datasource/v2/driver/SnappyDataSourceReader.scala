@@ -17,7 +17,9 @@
 
 package io.snappydata.datasource.v2.driver
 
-import io.snappydata.datasource.v2.SnappyDataPartitioning
+import scala.collection.mutable.ArrayBuffer
+
+import io.snappydata.datasource.v2.{EvaluateFilter, SnappyDataPartitioning}
 
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.sources.v2.DataSourceOptions
@@ -36,6 +38,8 @@ abstract class SnappyDataSourceReader(options: DataSourceOptions,
   // projected columns
   var projectedColumns: Option[StructType] = None
   var filtersPushedToSnappy: Option[Array[Filter]] = None
+  var whereClause: String = _
+  var whereClauseArgs: ArrayBuffer[Any] = _
 
   /**
    * Returns the actual schema of this data source reader, which may be different from the physical
@@ -72,7 +76,10 @@ abstract class SnappyDataSourceReader(options: DataSourceOptions,
     // This method is passed all filters and is supposed to return unhandled filters
     // We will return all the filters as unhandled filters initially using pushFilters()
     // TODO: update the filters that can be pushed to Snappy
-    filtersPushedToSnappy = None
+    val (predicateClause, predicateArgs) = EvaluateFilter.evaluateWhereClause(filters)
+    whereClause = predicateClause
+    whereClauseArgs = predicateArgs
+    filtersPushedToSnappy = Option(filters)
     filters
   }
 
@@ -83,7 +90,8 @@ abstract class SnappyDataSourceReader(options: DataSourceOptions,
    */
   override def pushedFilters(): Array[Filter] = {
     // looks like not much of use
-    filtersPushedToSnappy.getOrElse(Array.empty[Filter])
+//    filtersPushedToSnappy.getOrElse(Array.empty[Filter])
+    Array.empty[Filter]
   }
 
   /**
@@ -94,4 +102,5 @@ abstract class SnappyDataSourceReader(options: DataSourceOptions,
   }
 }
 
-case class QueryConstructs(projections: StructType, filters: Option[Array[Filter]] = None)
+case class QueryConstructs(projections: StructType, filters: Option[Array[Filter]] = None,
+    whereClause: String = "", whereClauseArgs: ArrayBuffer[Any])

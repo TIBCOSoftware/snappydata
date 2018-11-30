@@ -37,7 +37,8 @@ class ColumnTableDataSourceReader(options: DataSourceOptions, tableMetaData: Sna
     val factories = new util.ArrayList[DataReaderFactory[
         ColumnarBatch]](tableMetaData.bucketToServerMapping.get.length)
     var bucketId = 0
-    val queryConstructs = QueryConstructs(readSchema(), filtersPushedToSnappy)
+    val queryConstructs = QueryConstructs(readSchema(), filtersPushedToSnappy,
+      whereClause, whereClauseArgs)
     tableMetaData.bucketToServerMapping.foreach(b => b.foreach(_ => {
       factories.add(new SnappyColumnBatchReaderFactory(bucketId, tableMetaData, queryConstructs))
       bucketId = bucketId + 1

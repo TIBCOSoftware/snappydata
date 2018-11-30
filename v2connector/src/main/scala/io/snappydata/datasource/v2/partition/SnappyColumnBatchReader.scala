@@ -35,19 +35,26 @@ class SnappyColumnBatchReader (val bucketId: Int,
     tableMetaData.tableName, queryConstructs.projections, tableMetaData.schema,
     queryConstructs.filters,
     bucketId, hostsAndURLs)
-
   colBufferReader.initialize
-  val rowBufferReader = new SnappyRowTableReader(bucketId, tableMetaData, queryConstructs)
 
+  val rowBufferReader = new SnappyRowTableReader(bucketId, tableMetaData, queryConstructs)
   var hasDataInRowBuffer = false
 
   override def next(): Boolean = {
     hasDataInRowBuffer = rowBufferReader.next()
-    if (hasDataInRowBuffer) hasDataInRowBuffer else (true == colBufferReader.hasNext)
+    if (hasDataInRowBuffer) {
+      hasDataInRowBuffer
+    } else {
+      colBufferReader.hasNext
+    }
   }
 
   override def get(): ColumnarBatch = {
-    if (hasDataInRowBuffer) rowBufferReader.getAsColumnarBatch() else colBufferReader.next
+    if (hasDataInRowBuffer) {
+      rowBufferReader.getAsColumnarBatch()
+    } else {
+      colBufferReader.next
+    }
   }
 
   override def close(): Unit = {

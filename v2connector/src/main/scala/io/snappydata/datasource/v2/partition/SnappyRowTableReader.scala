@@ -22,6 +22,7 @@ import java.util.Collections
 
 import scala.collection.mutable.ArrayBuffer
 
+import io.snappydata.datasource.v2.ConnectorUtils
 import io.snappydata.datasource.v2.driver.{QueryConstructs, SnappyTableMetaData}
 import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.ClientStatement
@@ -84,9 +85,9 @@ class SnappyRowTableReader(val bucketId: Int,
 
   private def prepareScanStatement(): Unit = {
     val columnList = queryConstructs.projections.fieldNames.mkString(",")
-    val filterWhereClause = if (queryConstructs.filters.isDefined) {
-      // TODO: form a string from filters here
-      ""
+
+    val filterWhereClause = if (queryConstructs.whereClause ne null) {
+      queryConstructs.whereClause
     } else {
       ""
     }
@@ -95,6 +96,9 @@ class SnappyRowTableReader(val bucketId: Int,
         s" ${quotedName(tableMetaData.tableName)}$filterWhereClause"
 
     preparedStatement = conn.prepareStatement(sqlText)
+    if (queryConstructs.whereClauseArgs ne null) {
+      ConnectorUtils.setStatementParameters(preparedStatement, queryConstructs.whereClauseArgs)
+    }
     resultSet = preparedStatement.executeQuery()
   }
 
