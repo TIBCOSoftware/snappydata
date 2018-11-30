@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.DataSerializer
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.Attribute
@@ -481,7 +482,11 @@ object SnappySessionPerConnection {
     val session = connectionIdMap.get(connectionID)
     if (session != null) session
     else {
-      val session = SnappyContext().snappySession
+      val session = SnappyContext.globalSparkContext match {
+        // use a CancelException to force failover by client to another lead if available
+        case null => throw new CacheClosedException("No SparkContext ...")
+        case sc => new SnappySession(sc)
+      }
       Property.PlanCaching.set(session.sessionState.conf, true)
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
