@@ -71,7 +71,7 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
     val scan_colNextBytes = columnBatchIterator.next()
 
     // Calculate the number of row in the current batch
-    val numStatsColumns = ColumnStatsSchema.numStatsColumns(projection.length)
+    val numStatsColumns = ColumnStatsSchema.numStatsColumns(schema.length)
     val scan_statsRow = org.apache.spark.sql.collection.SharedUtils
         .toUnsafeRow(scan_colNextBytes, numStatsColumns)
     val scan_deltaStatsRow = org.apache.spark.sql.collection.SharedUtils.
@@ -81,6 +81,8 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
       scan_deltaStatsRow.getInt(0)
     } else 0
     scan_batchNumRows = scan_batchNumFullRows + scan_batchNumDeltaRows
+    // scalastyle:off
+//    println (s" scan_batchNumRows : $scan_batchNumRows ")
 
     // Construct ColumnBatch and return
     val columnVectors = new Array[ColumnVector](projection.length)
@@ -97,6 +99,7 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
       columnVectors(vectorIndex) = columnVector
       vectorIndex = vectorIndex + 1
     }
+
     val columBatch = new ColumnarBatch(columnVectors)
     columBatch.setNumRows(scan_batchNumRows)
     columBatch
