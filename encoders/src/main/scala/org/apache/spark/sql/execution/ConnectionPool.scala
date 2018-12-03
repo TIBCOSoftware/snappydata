@@ -16,12 +16,15 @@
  */
 package org.apache.spark.sql.execution
 
-import java.sql.Connection
+import java.sql.{Connection, SQLException}
 import java.util.Properties
 import javax.sql.DataSource
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.HashMap
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
 
 import com.pivotal.gemfirexd.Attribute
 import com.zaxxer.hikari.util.PropertyElf
@@ -30,6 +33,8 @@ import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 
 import org.apache.spark.sql.SnappyDataBaseDialect
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.SnappyStoreClientDialect
+import org.apache.spark.sql.sources.ConnectionProperties
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
@@ -193,4 +198,6 @@ object ConnectionPool {
     pools.clear()
     idToPoolMap.clear()
   }
+
+
 }

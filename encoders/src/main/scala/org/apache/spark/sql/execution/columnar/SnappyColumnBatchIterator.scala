@@ -94,6 +94,13 @@ abstract class ResultSetIterator[A](conn: Connection,
     } catch {
       case NonFatal(e) => logWarning("Exception closing statement", e)
     }
+    try {
+      if (conn ne null) {
+        conn.close()
+      }
+    } catch {
+      case NonFatal(e) => logWarning("Exception closing connection", e)
+    }
     hasNextValue = false
 
   }
