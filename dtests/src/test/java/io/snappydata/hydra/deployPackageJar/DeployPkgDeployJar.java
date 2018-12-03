@@ -963,10 +963,10 @@ public class DeployPkgDeployJar extends SnappyTest {
         String deployPkgCmd;
         final String listPkgCmd = "list packages;";
         boolean isListPkg;
-        final String pkgCoordinates = "'com.google.code.gson:gson:2.8.5'";
+        final String pkgCoordinates = "'com.google.code.gson:gson:2.8.5,com.databricks:spark-avro_2.11:4.0.0'";
         //final String pkgCoordinates =  "'com.databricks:spark-avro_2.11:4.0.0'";
         final String path = " path ";
-        final String alias = " GoogleGSON ";
+        final String alias = " GoogleGSONAndAvro ";
         Statement st;
         ResultSet rs;
 
@@ -976,6 +976,14 @@ public class DeployPkgDeployJar extends SnappyTest {
             deployPkgCmd = "deploy package" + alias + pkgCoordinates + path + "'" + userHomeDir + "/TPC'";
             Log.getLogWriter().info("deploy package command is : " + deployPkgCmd);
             conn.createStatement().execute(deployPkgCmd);
+            st = conn.createStatement();
+            if(st.execute(listPkgCmd)) {
+                rs = st.getResultSet();
+                while(rs.next()) {
+                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                }
+            }
+            st.clearBatch();
             HydraTask_executeSnappyJob();
             Log.getLogWriter().info("Executing undeploy : " + "undeploy " + alias.trim());
             conn.createStatement().execute("undeploy " + alias.trim());
@@ -1117,7 +1125,7 @@ public class DeployPkgDeployJar extends SnappyTest {
                     }
                 }
                 Log.getLogWriter().info("Killing the primary lead node...");
-                SnappyTest.meanKillSnappyMember("lead",memberValue[1]);
+                //SnappyTest.meanKillSnappyMember("lead",memberValue[1]);
         };
 
 
