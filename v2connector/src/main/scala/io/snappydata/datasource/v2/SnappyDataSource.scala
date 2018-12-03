@@ -46,6 +46,7 @@ class SnappyDataSource extends DataSourceV2 with
     validateOptions(options)
     val tableMetaData: SnappyTableMetaData =
       new SnappyTableMetaDataReader().getTableMetaData(options)
+    populateUserStats(options)
     val dataSourceReader = tableMetaData.tableStorageType match {
       case "ROW" => new RowTableDataSourceReader(options, tableMetaData)
       case "COLUMN" => new ColumnTableDataSourceReader(options, tableMetaData)
@@ -77,6 +78,17 @@ class SnappyDataSource extends DataSourceV2 with
             new IllegalArgumentException(
               s"Required configuration ${V2Constants.TABLE_NAME} not specified")
         })
+
+  }
+
+  private def populateUserStats(options: DataSourceOptions): Unit = {
+    import scala.collection.JavaConverters._
+    val optionsMap : java.util.Map[String, String] = options.asMap()
+    optionsMap.asScala.foreach(e =>
+      if (e._1.endsWith("_size")) {
+        UserProvidedStats.statsMap.+=(e._1 -> e._2.toLong)
+      }
+    )
 
   }
 }

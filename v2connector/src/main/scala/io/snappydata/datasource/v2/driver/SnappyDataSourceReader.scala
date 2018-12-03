@@ -19,12 +19,12 @@ package io.snappydata.datasource.v2.driver
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.datasource.v2.{EvaluateFilter, SnappyDataPartitioning}
+import io.snappydata.datasource.v2.{EvaluateFilter, SnappyDataPartitioning, SnappyStatistics, V2Constants}
 
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.sources.v2.reader.partitioning.Partitioning
-import org.apache.spark.sql.sources.v2.reader.{DataSourceReader, SupportsPushDownFilters, SupportsPushDownRequiredColumns, SupportsReportPartitioning}
+import org.apache.spark.sql.sources.v2.reader.{DataSourceReader, Statistics, SupportsPushDownFilters, SupportsPushDownRequiredColumns, SupportsReportPartitioning, SupportsReportStatistics}
 import org.apache.spark.sql.types.StructType
 
 // created on driver
@@ -33,7 +33,8 @@ abstract class SnappyDataSourceReader(options: DataSourceOptions,
     extends DataSourceReader with
     SupportsReportPartitioning with
     SupportsPushDownRequiredColumns with
-    SupportsPushDownFilters {
+    SupportsPushDownFilters with
+    SupportsReportStatistics {
 
   // projected columns
   var projectedColumns: Option[StructType] = None
@@ -99,6 +100,10 @@ abstract class SnappyDataSourceReader(options: DataSourceOptions,
    */
   override def outputPartitioning(): Partitioning = {
     new SnappyDataPartitioning(tableMetaData)
+  }
+
+  override def getStatistics(): Statistics = {
+    new SnappyStatistics(options.get(V2Constants.TABLE_NAME).get())
   }
 }
 

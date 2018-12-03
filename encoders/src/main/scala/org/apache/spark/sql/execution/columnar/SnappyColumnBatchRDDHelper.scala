@@ -15,7 +15,6 @@ import scala.util.Random
 
 import io.snappydata.Constant
 import io.snappydata.thrift.internal.ClientPreparedStatement
-import org.apache.derby.iapi.types.HarmonySerialBlob
 
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
