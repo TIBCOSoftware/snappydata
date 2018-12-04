@@ -36,7 +36,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
 |-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|
-|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| 
+|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
 |-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|
@@ -70,18 +70,18 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 
 |Property|Description</br>|
 |-|-|
-|-bind-address|IP address on which the locator is bound. The default behaviour is to bind to all local addresses.|
+|-bind-address|IP address on which the lead is bound. The default behaviour is to bind to all local addresses.|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|
-|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
+|-dir|The working directory of the lead that contains the SnappyData Lead status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.</br>|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM. |
 |-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)|
-|-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
+|-J|JVM option passed to the spawned SnappyData Lead JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
 |-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
-|-log-file|Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)|
-|-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
+|-log-file|Path of the file to which this member writes log messages (default is **snappyleader.log** in the working directory)|
+|-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
 |-snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store. The default value is 24M.|
 |-spark.driver.maxResultSize|Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M, or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead.|
 |-spark.executor.cores|The number of cores to use on each server. |
@@ -186,7 +186,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 ```pre
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-	--packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11" 
+	--packages 'SnappyDataInc:snappydata:1.0.2.1-s_2.11'
 ```
 <a id="environment"></a>
 ## Environment Settings
