@@ -8,3 +8,4 @@ create table testL (id string NOT NULL, data string, data2 decimal, APPLICATION_
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
 using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+

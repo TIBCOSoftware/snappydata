@@ -36,12 +36,12 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true))
     Try {
       runTasksWithChangingRangeForPutInto(snSession, blockSize, stepSize)
-      /*runTasksWithChangingRangeForPutInto(snSession, 100000L, 10000L)
+      /* runTasksWithChangingRangeForPutInto(snSession, 100000L, 10000L)
       runTasksWithChangingRangeForPutInto(snSession, 150000L, 20000L)
       runTasksWithChangingRangeForPutInto(snSession, 200000L, 30000L)
       runTasksWithChangingRangeForPutInto(snSession, 500000L, 40000L)
       runTasksWithChangingRangeForPutInto(snSession, 1010000L, 10000L)
-      runTasksWithChangingRangeForPutInto(snSession, 100000L, 50000L)*/
+      runTasksWithChangingRangeForPutInto(snSession, 100000L, 50000L) */
       pw.close()
     } match {
       case Success(v) => pw.close()
@@ -51,16 +51,20 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
     }
   }
 
-  def runTasksWithChangingRangeForPutInto(snSession: SnappySession, blockSize: Long, stepSize: Long): Unit = {
+  def runTasksWithChangingRangeForPutInto(snSession: SnappySession, blockSize:
+  Long, stepSize: Long): Unit = {
     val globalId = new AtomicInteger()
     val doPut = () => Future {
       val myId = globalId.getAndIncrement()
       for (i <- (myId * 1000) until 1000000) {
-        snSession.sql("put into testL select 'id', " +
-            "'biggerDataForInsertsIntoTheTable1_' || id, id * 10.2 , 'APPLICATION_ID_' || 'id', " +
-            "'ORDERGROUPID_' || 'id', 'PAYMENTADDRESS1' ||'id', 'PAYMENTADDRESS2' ||'id', 'PAYMENTCOUNTRY' ||'id'," +
-            " 'PAYMENTSTATUS' ||'id', 'PAYMENTRESULT' ||'id', 'PAYMENTZIP' ||'id', 'PAYMENTSETUP' ||'id'," +
-            " 'PROVIDER_RESPONSE_DETAILS' ||'id', 'PAYMENTAMOUNT' ||'id', 'PAYMENTCHANNEL' ||'id', " +
+        snSession.sql("put into testL select id, " +
+            "'biggerDataForInsertsIntoTheTable1_' || id, id * 10.2 , 'APPLICATION_ID_' || id, " +
+            "'ORDERGROUPID_' || 'id', 'PAYMENTADDRESS1' ||'id', 'PAYMENTADDRESS2' ||'id'," +
+            " 'PAYMENTCOUNTRY' ||'id'," +
+            " 'PAYMENTSTATUS' ||'id', 'PAYMENTRESULT' ||'id', 'PAYMENTZIP' ||'id'," +
+            " 'PAYMENTSETUP' ||'id'," +
+            " 'PROVIDER_RESPONSE_DETAILS' ||'id', 'PAYMENTAMOUNT' ||'id'," +
+            " 'PAYMENTCHANNEL' ||'id', " +
             " 'PAYMENTCITY' ||'id', 'PAYMENTSTATECODE' ||'id', 'PAYMENTSETDOWN' ||'id',  " +
             " 'PAYMENTREFNUMBER' ||'id', 'PAYMENTST' ||'id', " +
             "  null, null, null, null, null, null, null, null, null, null " +
@@ -79,6 +83,11 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
 
     putTasks.foreach(Await.result(_, Duration.Inf))
     queryTasks.foreach(Await.result(_, Duration.Inf))
+  }
+
+  def saveDataAsJson(snSession: SnappySession): Unit = {
+    val tableDf = snSession.table("tableL");
+
   }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
