@@ -376,8 +376,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
           case _ =>
             try {
               SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-                  values.forall(member => (member.isDataServer
-                  && (member.getOffHeapMemorySize > 0)))
+                  values.forall(member => (!member.isDataServer ||
+                  (member.getOffHeapMemorySize > 0)))
             }
             catch {
               case _: Throwable => false
