@@ -27,15 +27,16 @@ import org.apache.spark.{SparkConf, SparkContext}
 object ValidateCTQueriesApp {
 
   def main(args: Array[String]) {
+
+    val threadID = Thread.currentThread().getId
     val conf = new SparkConf().
-        setAppName("ValidateCTQueriesApp Application_" + System.currentTimeMillis())
+        setAppName("ValidateCTQueriesApp_" + threadID + "_" + System.currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
-    val threadID = Thread.currentThread().getId
     val outputFile = "ValidateCTQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
         ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))

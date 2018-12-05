@@ -26,8 +26,9 @@ import org.apache.spark.{SparkConf, SparkContext}
 object ValidateNWQueriesApp {
 
   def main(args: Array[String]) {
+    val threadID = Thread.currentThread().getId
     val conf = new SparkConf().
-        setAppName("ValidateNWQueries Application_" + System.currentTimeMillis())
+        setAppName("ValidateNWQueriesApplication_" + threadID + "_" + System.currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
@@ -46,7 +47,6 @@ object ValidateNWQueriesApp {
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
-    val threadID = Thread.currentThread().getId
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
         ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));

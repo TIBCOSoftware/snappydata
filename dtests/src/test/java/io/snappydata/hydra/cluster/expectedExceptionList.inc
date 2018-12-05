@@ -14,6 +14,7 @@ io.snappydata.hydra.cluster.SnappyPrms-expectedExceptions =
 "org.apache.spark.SparkException: Exception thrown in awaitResult"
 "com.gemstone.gemfire.distributed.LockServiceDestroyedException"
 "Failed to retrieve information for"
+"WARN LeadImpl: Exception while starting lead node"
 ;
 
 io.snappydata.hydra.cluster.SnappyPrms-expectedExceptionsForHA =
@@ -22,8 +23,8 @@ io.snappydata.hydra.cluster.SnappyPrms-expectedExceptionsForHA =
 ;
 
 io.snappydata.hydra.cluster.SnappyPrms-knownExceptionsForHA =
-"java.lang.reflect.InvocationTargetException"
-"java.lang.IllegalStateException: Cannot call methods on a stopped SparkContext"
+"java.net.ConnectException: Connection refused"
+"Caused by: org.apache.thrift.transport.TTransportException: Failed to create or configure socket."
 ;
 
 
