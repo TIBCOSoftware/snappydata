@@ -376,7 +376,7 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
             SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
           case _ =>
             try {
-              SnappyTableStatsProviderService.getService.getMembersStatsOnDemand.
+              SnappyTableStatsProviderService.getService.getMembersStatsFromService.
                   values.exists(member => (member.isDataServer
                   && (member.getOffHeapMemorySize > 0)))
             }
