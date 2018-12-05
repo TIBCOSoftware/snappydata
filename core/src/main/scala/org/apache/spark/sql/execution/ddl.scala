@@ -370,14 +370,13 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
       case None => session.catalog.cacheTable(tableIdent.quotedString)
       case Some(lp) =>
         val df = Dataset.ofRows(session, lp)
-        val isOffHeap = SnappyContext.getClusterMode(sparkSession.sparkContext)
-        match {
+        val isOffHeap = SnappyContext.getClusterMode(sparkSession.sparkContext) match {
           case _: ThinClientConnectorMode =>
             SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
           case _ =>
             try {
               SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-                  values.exists(member => (member.isDataServer
+                  values.forall(member => (member.isDataServer
                   && (member.getOffHeapMemorySize > 0)))
             }
             catch {
