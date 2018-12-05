@@ -84,13 +84,16 @@ object LoadData extends SnappySQLJob {
     }
 
     // loading data
-    val startTime = System.currentTimeMillis()
-    pw.println(s"[${new Timestamp(startTime)}] Start loading data...")
+    var startTime, endTime: Long = 0L
+    pw.println(s"[${new Timestamp(System.currentTimeMillis())}] Start loading data...")
     if(insertType.equals("externalTable")){
+      startTime = System.currentTimeMillis()
       snc.sql(externalTableDDL)
       snc.sql(s"insert into ${tableName} select * from STAGING_$tableName" )
+      endTime = System.currentTimeMillis()
     } else { // dataframe.insertinto
       var meterReadings_DF: DataFrame = null
+      startTime = System.currentTimeMillis()
       if (insertFrom.equals("csv")) {
         meterReadings_DF =
             snc.read.format("com.databricks.spark.csv")
@@ -104,8 +107,8 @@ object LoadData extends SnappySQLJob {
             snc.read.load(s"${fileLocation}/$tableName")
       }
       meterReadings_DF.write.insertInto(s"${tableName}")
+      endTime = System.currentTimeMillis()
     }
-    val endTime = System.currentTimeMillis()
     val totalTime = (endTime - startTime)/1000
     pw.println(s"[${new Timestamp(endTime)}] Loading data using $insertType from $insertFrom took" +
         s" $totalTime secs")
