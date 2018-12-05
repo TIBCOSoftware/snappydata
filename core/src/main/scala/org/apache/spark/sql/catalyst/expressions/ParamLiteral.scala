@@ -274,7 +274,7 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def equals(obj: Any): Boolean = obj match {
     case a: AnyRef if this eq a => true
-    case r: RefParamLiteral if r.param ne null => r.referenceEquals(this)
+    case r: RefParamLiteral if r.param ne null => r.referenceEquals(this) || r.param.equals(this)
     case l: ParamLiteral =>
       // match by position only if "tokenized" else value comparison (no-caching case)
       if (tokenized && !valueEquals) pos == l.pos && dataType == l.dataType
@@ -283,6 +283,7 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
   }
 
   override def semanticEquals(other: Expression): Boolean = equals(other)
+
 
   private def valueEquals(p: ParamLiteral): Boolean = value match {
     case null => p.value == null
@@ -373,10 +374,13 @@ final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: Dat
     if (param ne null) obj match {
       case a: AnyRef if this eq a => true
       case r: RefParamLiteral => param == r.param
-      case l: ParamLiteral => referenceEquals(l)
+      case l: ParamLiteral => referenceEquals(l) || l.equals(this.param)
       case _ => false
     } else super.equals(obj)
   }
+
+  override def semanticEquals(other: Expression): Boolean = equals(other)
+   
 }
 
 object TokenLiteral {
