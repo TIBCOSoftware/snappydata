@@ -72,12 +72,11 @@ object ColumnTableBulkOps {
         val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
-        val doInsertJoin = sparkSession.asInstanceOf[SnappySession].cachePutInto(
-          if (subQuery.statistics.sizeInBytes <= cacheSize) Some(updateSubQuery) else None,
-          mutable.table)
-        val insertChild = if (doInsertJoin) {
-          Join(subQuery, updateSubQuery, LeftAnti, condition)
-        } else subQuery
+        val insertChild = sparkSession.asInstanceOf[SnappySession].cachePutInto(
+          subQuery.statistics.sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
+          case None => subQuery
+          case Some(newUpdateSubQuery) => Join(subQuery, newUpdateSubQuery, LeftAnti, condition)
+        }
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
           OverwriteOptions(enabled = false), ifNotExists = false)

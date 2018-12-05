@@ -635,7 +635,7 @@ class SnappySessionState(val snappySession: SnappySession)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
-          val allReferences = newChild.references ++
+          val allReferences = newChild.references ++ AttributeSet(updateAttrs) ++
               AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
           u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
             keyColumns = keyAttrs.map(_.toAttribute),

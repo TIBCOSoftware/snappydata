@@ -17,12 +17,12 @@
 
 package org.apache.spark.sql.execution.columnar.encoding
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.cache.{EntryEvent, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
-import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl}
+import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl}
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, FetchRequest}
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 
@@ -57,10 +57,22 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
   override def writeIsNull(ordinal: Int): Unit =
     throw new UnsupportedOperationException(s"decoderBeforeFinish for $toString")
 
-  private var deletedPositions: Array[Int] = _
+  /**
+   * The deleted position array is maintained as a raw ByteBuffer with native ByteOrder so
+   * that ByteBuffer.get/put and Unsafe access via Platform class are equivalent.
+   */
+  private var deletedPositions: ByteBuffer = _
+
+  private[this] def bufferOwner: String = "DELETE_ENCODER"
+
+  private[this] def allocatePositions(size: Int): Unit = {
+    deletedPositions = allocator.allocate(size, bufferOwner).order(ByteOrder.nativeOrder())
+    allocator.clearPostAllocate(deletedPositions, 0)
+  }
 
   def initialize(initSize: Int): Int = {
-    deletedPositions = new Array[Int]((initSize << 2) + 16)
+    allocator = GemFireCacheImpl.getCurrentBufferAllocator
+    allocatePositions(initSize << 2)
     // cursor indicates index into deletedPositions array
     0
   }
@@ -69,12 +81,20 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
       withHeader: Boolean, allocator: BufferAllocator,
       minBufferSize: Int = -1): Long = initialize(initSize)
 
+  private[this] def baseSetPosition(index: Int, value: Int): Unit = {
+    deletedPositions.putInt(index << 2, value)
+  }
+
   def writeInt(position: Int, value: Int): Int = {
-    if (position >= deletedPositions.length) {
-      deletedPositions = java.util.Arrays.copyOf(deletedPositions,
-        (deletedPositions.length * 3) >> 1)
+    val limit = deletedPositions.limit()
+    if (position >= (limit >> 2)) {
+      val expandBy = position >> 1
+      // expand will ensure that ByteOrder is same
+      deletedPositions = allocator.expand(deletedPositions, expandBy << 1, bufferOwner)
+      assert(deletedPositions.order() == ByteOrder.nativeOrder())
+      allocator.clearPostAllocate(deletedPositions, limit)
     }
-    deletedPositions(position) = value
+    baseSetPosition(position, value)
     position + 1
   }
 
@@ -97,24 +117,28 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
     bufferCursor += 4
     if (ColumnEncoding.littleEndian) {
       // bulk copy if platform endian-ness matches the final format
-      Platform.copyMemory(deletedPositions, Platform.INT_ARRAY_OFFSET,
-        bufferBytes, bufferCursor, numPositions << 2)
+      Platform.copyMemory(this.allocator.baseObject(deletedPositions),
+        this.allocator.baseOffset(deletedPositions), bufferBytes, bufferCursor, numPositions << 2)
     } else {
+      deletedPositions.rewind()
       var index = 0
       while (index < numPositions) {
-        ColumnEncoding.writeInt(bufferBytes, bufferCursor, deletedPositions(index))
+        ColumnEncoding.writeInt(bufferBytes, bufferCursor, deletedPositions.getInt())
         bufferCursor += 4
         index += 1
       }
     }
+    this.allocator.release(deletedPositions)
+    deletedPositions = null
     buffer
   }
 
   def merge(newValue: ByteBuffer, existingValue: ByteBuffer): ByteBuffer = {
-    deletedPositions = new Array[Int](16)
     var position = 0
 
     val allocator1 = ColumnEncoding.getAllocator(newValue)
+    allocator = allocator1
+    allocatePositions(16 << 2)
     val columnBytes1 = allocator1.baseObject(newValue)
     var cursor1 = allocator1.baseOffset(newValue) + newValue.position()
     val endOffset1 = cursor1 + newValue.remaining()

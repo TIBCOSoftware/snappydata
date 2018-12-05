@@ -39,9 +39,9 @@ import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, 
 
 object StoreUtils {
 
-  val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
-  val REPLICATE = ExternalStoreUtils.REPLICATE
-  val BUCKETS = ExternalStoreUtils.BUCKETS
+  val PARTITION_BY: String = ExternalStoreUtils.PARTITION_BY
+  val REPLICATE: String = ExternalStoreUtils.REPLICATE
+  val BUCKETS: String = ExternalStoreUtils.BUCKETS
   val PARTITIONER = "PARTITIONER"
   val COLOCATE_WITH = "COLOCATE_WITH"
   val REDUNDANCY = "REDUNDANCY"
@@ -371,7 +371,7 @@ object StoreUtils {
 
     if (!isShadowTable) {
       sb.append(parameters.remove(PARTITION_BY).map(v => {
-        val (parClause) = {
+        val parClause = {
           v match {
             case PRIMARY_KEY =>
               if (isRowTable) {
@@ -493,9 +493,17 @@ object StoreUtils {
 
   def getPartitioningColumns(
       parameters: mutable.Map[String, String]): Seq[String] = {
-    parameters.get(PARTITION_BY).map(v => {
-      v.split(",").toSeq.map(a => a.trim)
-    }).getOrElse(Nil)
+    parameters.get(PARTITION_BY) match {
+      case None =>
+        // default to KEY_COLUMNS if present
+        parameters.get(ExternalStoreUtils.KEY_COLUMNS) match {
+          case None => Nil
+          case Some(v) =>
+            parameters.put(PARTITION_BY, v)
+            v.split(",").toSeq.map(a => a.trim)
+        }
+      case Some(v) => v.split(",").toSeq.map(a => a.trim)
+    }
   }
 
   def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {
