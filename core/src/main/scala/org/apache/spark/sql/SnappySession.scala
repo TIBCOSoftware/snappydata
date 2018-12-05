@@ -437,7 +437,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           newUpdateSubQuery = Some(joinDS.logicalPlan)
           Some(tableIdent)
         } else {
-          joinDS.unpersist(blocking = true)
+          dropPutIntoCacheTable(tableIdent)
           None
         }
       } else {
@@ -457,15 +457,17 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+  private def dropPutIntoCacheTable(tableIdent: TableIdentifier): Unit = {
+    UncacheTableCommand(tableIdent, ifExists = false).run(this)
+    dropTable(sessionCatalog.newQualifiedTableName(tableIdent), ifExists = false)
+  }
+
   private[sql] def clearPutInto(): Unit = {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
       case (cachedTable: Option[TableIdentifier], lock) =>
         if (lock != null) lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
-        if (cachedTable.isDefined) {
-          UncacheTableCommand(cachedTable.get, ifExists = false).run(this)
-          dropTable(sessionCatalog.newQualifiedTableName(cachedTable.get), ifExists = false)
-        }
+        if (cachedTable.isDefined) dropPutIntoCacheTable(cachedTable.get)
     }
   }
 
