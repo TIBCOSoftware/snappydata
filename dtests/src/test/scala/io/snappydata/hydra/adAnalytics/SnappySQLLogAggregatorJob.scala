@@ -61,10 +61,10 @@ class SnappySQLLogAggregatorJob extends SnappyStreamingJob {
         " bid double," +
         " cookie string) " +
         " using kafka_stream options(" +
-        " rowConverter 'io.snappydata.adanalytics.AdImpressionToRowsConverter'," +
-        s" kafkaParams 'bootstrap.servers->$brokerList;auto.offset.reset->earliest ;" +
+        " rowConverter 'io.snappydata.hydra.adAnalytics.AdImpressionToRowsConverter'," +
+        s" kafkaParams 'bootstrap.servers->$brokerList;auto.offset.reset->earliest;" +
         "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
-        "value.deserializer->io.snappydata.adanalytics.AdImpressionLogAvroDecoder'," +
+        "value.deserializer->io.snappydata.hydra.adAnalytics.AdImpressionLogAvroDeserializer'," +
         s" subscribe '$kafkaTopic')"
     pw.println(s"Creating stream table using  $sql")
     pw.flush()

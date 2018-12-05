@@ -80,7 +80,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     String filePath = productConfDirPath + sep + "spark-env.sh";
     File file = new File(filePath);
     file.setExecutable(true);
-    String fileContent = "SPARK_DIST_CLASSPATH=" + snappyPocJarPath;
+    String jarLoc = getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
+    String fileContent = "SPARK_DIST_CLASSPATH=" + jarLoc;
     snappyAdAnalyticsTest.writeToFile(fileContent, file,true);
   }
 

@@ -34,6 +34,7 @@ sourceSets.test.java.srcDirs = []
 
 repositories {
     mavenCentral()
+    maven { url 'https://clojars.org/repo' }
 }
 
 ext {
@@ -44,6 +45,7 @@ ext {
 dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
     compile 'org.scala-lang:scala-reflect:' + scalaVersion
+    compile 'com.miguno:kafka-avro-codec_2.10:0.1.1-SNAPSHOT'
 
     compile (project(':snappy-core_' + scalaBinaryVersion)) {
        exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
