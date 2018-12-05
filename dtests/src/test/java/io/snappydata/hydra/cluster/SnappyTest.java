@@ -2803,6 +2803,7 @@ public class SnappyTest implements Serializable {
   }
 
   public void checkSuspectStrings() {
+    String hasOOMEORJVMCrash = checkForJVMCrashOrOOME();
     String checkSuspectOutPut = getCurrentDirPath() + File.separator + "suspectStrings.txt";
     File suspectStringFile = new File(checkSuspectOutPut);
     StringBuilder cmd = new StringBuilder();
@@ -2810,9 +2811,9 @@ public class SnappyTest implements Serializable {
 
     String[] expectedExceptions = SnappyPrms.getExpectedExceptionList();
     if(cycleVms) {
-      List<String> exceptions = Arrays.asList(expectedExceptions);
+      List<String> exceptions = new ArrayList<String>(Arrays.asList(expectedExceptions));
       exceptions.addAll(Arrays.asList(SnappyPrms.getExpectedExceptionListForHA()));
-      expectedExceptions = (String[])exceptions.toArray();
+      expectedExceptions = exceptions.toArray(expectedExceptions);
     }
     for (int i = 0; i < expectedExceptions.length; i++)
       exceptedExcep.append(" | grep -v \"").append(expectedExceptions[i] + "\"");
@@ -2845,8 +2846,36 @@ public class SnappyTest implements Serializable {
 
       }
     }
+    if(hasOOMEORJVMCrash.length()>0){
+      throw new TestException(hasOOMEORJVMCrash);
+    }
   }
 
+
+  public String checkForJVMCrashOrOOME() {
+    StringBuilder msg = new StringBuilder();
+    String oomeOutPut = getCurrentDirPath() + File.separator + "checkOOME.txt";
+    File oomeOutPutFile = new File(oomeOutPut);
+
+    StringBuilder cmd = new StringBuilder();
+    cmd.append("find " + getCurrentDirPath() + " -type f \\( -name \"*.hprof\" \\)");
+    ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd.toString());
+    executeProcess(pb, oomeOutPutFile);
+    if(oomeOutPutFile.length() != 0) {
+      msg.append("There is OOME observed in the test. Please check logs for more details.\n");
+    }
+    cmd.setLength(0);
+    String jvmCrashOutput = getCurrentDirPath() + File.separator + "checkJVMCrash.txt";
+    File jvmCrashOutputFile = new File(jvmCrashOutput);
+    cmd.append("find " + getCurrentDirPath() + " -type f \\( -name \"hs_err*.log\" \\)");
+    pb = new ProcessBuilder("/bin/bash", "-c", cmd.toString());
+    executeProcess(pb, jvmCrashOutputFile);
+    if(jvmCrashOutputFile.length() != 0) {
+      msg.append("There is HOTSPOT error observed in the test. Please check logs for more details" +
+          ". \n");
+    }
+    return msg.toString();
+  }
 
   /**
    * Create and start snappy server.

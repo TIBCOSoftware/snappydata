@@ -185,7 +185,7 @@ object SnappyTestUtils {
           s"${tableType} table.")
       validationFailed = true
     }
-    pw.println(s"${logTime}  Execution completed for query ${queryNum}")
+    pw.println(s"${logTime} Execution completed for query ${queryNum}")
     pw.flush()
     return validationFailed
   }
