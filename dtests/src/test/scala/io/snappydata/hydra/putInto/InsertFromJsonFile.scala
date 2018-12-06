@@ -30,7 +30,7 @@ import scala.util.Random
 
 object InsertFromJsonFile extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-    snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
+   // snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
     val tableName = jobConfig.getString("tableName")
     val fileCnt = jobConfig.getString("fileCnt").toInt
     val fromVal = jobConfig.getString("fromVal").toInt

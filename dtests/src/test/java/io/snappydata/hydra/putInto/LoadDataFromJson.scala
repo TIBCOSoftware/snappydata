@@ -32,7 +32,7 @@ import scala.util.Random
 
 object LoadDataFromJson extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-    snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
+   // snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
     val tableName = jobConfig.getString("tableName")
     val fromVal = jobConfig.getString("fromVal").toInt
     val untilVal = jobConfig.getString("untilVal").toInt
