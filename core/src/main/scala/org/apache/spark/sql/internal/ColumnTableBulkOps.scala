@@ -20,11 +20,12 @@ import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, AttributeSet, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
@@ -71,6 +72,11 @@ object ColumnTableBulkOps {
         val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
         val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
+
+        // project out only the table references from the update sub-query to minimize the cache
+        val allTableRefs = AttributeSet(table.output)
+        updateSubQuery = Project(updateSubQuery.output.filter(a => allTableRefs.contains(a) ||
+            a.name.startsWith(ColumnDelta.mutableKeyNamePrefix)), updateSubQuery)
 
         val insertChild = sparkSession.asInstanceOf[SnappySession].cachePutInto(
           subQuery.statistics.sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
@@ -146,7 +152,7 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+      case LogicalRelation(mutable: MutableRelation, _, _) =>
         val ks = mutable.getPrimaryKeyColumns
         if (ks.isEmpty) {
           throw new AnalysisException(
