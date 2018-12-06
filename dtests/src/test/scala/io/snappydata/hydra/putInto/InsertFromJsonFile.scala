@@ -70,9 +70,8 @@ object InsertFromJsonFile extends SnappySQLJob {
     for (i <- fromVal to untilVal) {
       val myId = globalId.getAndIncrement()
       val df = snSession.sql(s"select avg(id), max(data), last(data2) from ${tableName}" + i +
-          s" where id <> ${myId + i}").collect()
-      df.foreach(println)
-
+          s" where id <> ${myId + i}")
+      df.collect()
     }
   }
 
