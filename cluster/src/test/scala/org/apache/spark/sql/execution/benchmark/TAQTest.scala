@@ -282,6 +282,7 @@ object TAQTest extends Logging with Assertions {
       conf.set("snappydata.store.memory-size", "1200m")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
+    conf.set("spark.memory.fraction", "0.97")
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     if (addOn != null) {
