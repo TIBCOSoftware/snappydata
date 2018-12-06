@@ -67,7 +67,6 @@ abstract class ClusterManagerTestBase(s: String)
     TestUtils.defaultCores.toString)
   bootProps.setProperty("spark.memory.manager",
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
-  bootProps.setProperty("spark.memory.fraction", "0.97")
   bootProps.setProperty("critical-heap-percentage", "95")
   bootProps.setProperty("gemfirexd.max-lock-wait", "60000")
   bootProps.setProperty("member-timeout", "5000")
