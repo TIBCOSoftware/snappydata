@@ -23,17 +23,23 @@ import scala.language.postfixOps
 import com.gemstone.org.jgroups.protocols.AUTH
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.test.dunit.SerializableRunnable
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
 /**
  * Base class for start and stop of LDAP Server
  */
 object ClusterManagerLDAPTestBase {
   val securityProperties: Properties = new Properties()
+  val thriftPort = AvailablePortHelper.getRandomAvailableUDPPort
 }
 
 abstract class ClusterManagerLDAPTestBase(s: String, val adminUser: String = "gemfire10")
     extends ClusterManagerTestBase(s) with Serializable {
+
+  // start embedded thrift server on lead
+  bootProps.setProperty("snappydata.hiveServer.enabled", "true")
+  bootProps.setProperty("hive.server2.thrift.bind.host", "localhost")
+  bootProps.setProperty("hive.server2.thrift.port", ClusterManagerLDAPTestBase.thriftPort.toString)
 
   override def beforeClass(): Unit = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, adminUser,

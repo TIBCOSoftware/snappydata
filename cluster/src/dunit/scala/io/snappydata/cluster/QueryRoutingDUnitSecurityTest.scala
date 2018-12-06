@@ -19,7 +19,7 @@ package io.snappydata.cluster
 
 import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQLException}
 
-import io.snappydata.cluster.QueryRoutingDUnitSecurityTest.thriftPort
+import io.snappydata.cluster.ClusterManagerLDAPTestBase.thriftPort
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
@@ -27,11 +27,6 @@ import org.apache.spark.sql.collection.Utils
 
 class QueryRoutingDUnitSecurityTest(val s: String)
     extends ClusterManagerLDAPTestBase(s) with Logging {
-
-  // start embedded thrift server on lead
-  bootProps.setProperty("snappydata.hiveServer.enabled", "true")
-  bootProps.setProperty("hive.server2.thrift.bind.host", "localhost")
-  bootProps.setProperty("hive.server2.thrift.port", thriftPort.toString)
 
   def testColumnTableRouting(): Unit = {
     val jdbcUser1 = "gemfire1"
@@ -85,6 +80,12 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     } catch {
       case sqle: SQLException if sqle.getSQLState == "08004" => // expected
     }
+    try {
+      DriverManager.getConnection(s"jdbc:hive2://localhost:$thriftPort/$jdbcUser1",
+        null, null)
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "08004" => // expected
+    }
 
     val conn = DriverManager.getConnection(
       s"jdbc:hive2://localhost:$thriftPort/$jdbcUser1", jdbcUser1, jdbcUser1)
@@ -130,8 +131,6 @@ class QueryRoutingDUnitSecurityTest(val s: String)
 }
 
 object QueryRoutingDUnitSecurityTest {
-
-  private val thriftPort = AvailablePortHelper.getRandomAvailableUDPPort
 
   def columnTableRouting(jdbcUser1: String, jdbcUser2: String, tableName: String,
       serverHostPort: Int): Unit = {

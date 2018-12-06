@@ -20,6 +20,7 @@ package org.apache.spark.sql.execution
 import java.sql.SQLException
 import java.util.Properties
 
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
@@ -42,8 +43,8 @@ object SecurityUtils extends Logging {
    */
   def checkCredentials(user: String, passwd: String): Option[String] = {
     val props = new Properties()
-    props.setProperty(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, user)
-    props.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, passwd)
+    props.setProperty(Attribute.USERNAME_ATTR, if (user ne null) user else "")
+    props.setProperty(Attribute.PASSWORD_ATTR, if (passwd ne null) passwd else "")
     val memStore = Misc.getMemStoreBooting
     val result = memStore.getDatabase.getAuthenticationService.authenticate(
       memStore.getDatabaseName, props)
