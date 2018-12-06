@@ -24,7 +24,7 @@ import org.apache.commons.lang.RandomStringUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Success, Try}
 
 case class Test_Table(ID: String, data: String, data2: BigDecimal, APPLICATION_ID: String,
                       ORDERGROUPID: String, PAYMENTADDRESS1: String, PAYMENTADDRESS2: String, PAYMENTCOUNTRY: String,
@@ -46,21 +46,16 @@ object GenerateJsonDataFilesJob extends SnappySQLJob {
     val fileCnt = jobConfig.getString("fileCount").toInt
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val sc = SparkContext.getOrCreate()
-    val sqlContext = SQLContext.getOrCreate(sc)
     Try {
       var numRows = jobConfig.getString("numRows").toLong
       var idNum = jobConfig.getString("idNum").toLong
       import snappySession.implicits._
-
+      val range = numRows - idNum
       val sc = snappySession.sparkContext
       // var idNum: Long = 0
-      var rows = numRows
+      //var rows = numRows
       for (j <- 1 to fileCnt) {
-        val dataRDD = sc.range(idNum, rows).mapPartitions { itr =>
-          println("idNum in range: " + idNum + " numRows: " +
-              numRows + " filecnt = " + j)
-          val rnd = new Random()
-
+        val dataRDD = sc.range(idNum, numRows).mapPartitions { itr =>
           itr.map { id =>
 
             Test_Table((id + 1).toString, RandomStringUtils.random(30, true, false), id * 10.2,
@@ -78,14 +73,15 @@ object GenerateJsonDataFilesJob extends SnappySQLJob {
         var qDF = snappySession.createDataset(dataRDD)
         var cacheDF = qDF.cache()
         cacheDF.write.insertInto("testL")
+        cacheDF.repartition(1).write.json("/data/snappyHydraLogs/kore/insertFile" + range + "_" + j)
+        pw.flush()
         var oldID = idNum
         idNum = numRows + 1
         numRows = numRows + numRows - oldID
         // scalastyle:off println
         println("idNum: " + idNum + " numRows: " +
             numRows + " filecnt = " + j)
-        cacheDF.repartition(1).write.json("/data/snappyHydraLogs/kore/insertFile" + numRows + "_" + j)
-
+        pw.flush()
       }
       pw.close()
 
