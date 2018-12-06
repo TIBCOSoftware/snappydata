@@ -465,9 +465,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] def clearPutInto(): Unit = {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
-      case (cachedTable: Option[TableIdentifier], lock) =>
+      case (cachedTable: Option[_], lock) =>
         if (lock != null) lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
-        if (cachedTable.isDefined) dropPutIntoCacheTable(cachedTable.get)
+        if (cachedTable.isDefined) {
+          dropPutIntoCacheTable(cachedTable.get.asInstanceOf[TableIdentifier])
+        }
     }
   }
 
@@ -2296,9 +2298,8 @@ object SnappySession extends Logging {
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
-    val parsed = parser.parsePlan(sqlText, clearExecutionData = true)
+    val plan = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
-    val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
     val paramsId = parser.sqlParser.getCurrentParamsId
     val key = CachedKey(session, session.getCurrentSchema,
