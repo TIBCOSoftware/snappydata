@@ -448,8 +448,15 @@ abstract class BaseColumnFormatRelation(
         val sql =
           s"CREATE TABLE ${quotedName(tableName)} $schemaExtensions ENABLE CONCURRENCY CHECKS"
         val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
-        logInfo(s"Applying DDL (url=${connProperties.url}; " +
-            s"props=${connProperties.connProps}): $sql")
+        if (isInfoEnabled) {
+          val schemaString = JdbcExtendedUtils.schemaString(schema, connProperties.dialect)
+          val optsString = if (origOptions.nonEmpty) {
+            origOptions.map(p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
+          } else ""
+          logInfo(s"Executing DDL (url=${connProperties.url}; " +
+              s"props=${connProperties.connProps}): CREATE TABLE ${quotedName(tableName)} " +
+              s"$schemaString USING $provider$optsString")
+        }
         if (pass != null) {
           connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
             pass.asInstanceOf[String])
