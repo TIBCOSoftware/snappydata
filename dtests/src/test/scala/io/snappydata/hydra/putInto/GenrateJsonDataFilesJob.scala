@@ -73,7 +73,7 @@ object GenerateJsonDataFilesJob extends SnappySQLJob {
         var cacheDF = qDF.cache()
         cacheDF.write.insertInto("testL")
         cacheDF.repartition(1).write.json("/export/shared/QA_DATA/kr/jsonFilesToInsert/" +
-            range + "_" + j)
+            range + "/" + range + "_" + j)
         pw.flush()
         var oldID = idNum
         idNum = numRows + 1
