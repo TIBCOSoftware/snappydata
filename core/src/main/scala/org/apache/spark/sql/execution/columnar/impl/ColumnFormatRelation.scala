@@ -547,7 +547,7 @@ class ColumnFormatRelation(
     _partitioningColumns,
     _context)
   with ParentRelation with DependentRelation with BulkPutRelation {
-  val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
+  val tableOptions = new CaseInsensitiveMutableHashMap(origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
@@ -557,6 +557,7 @@ class ColumnFormatRelation(
           s"required=${ColumnDelta.mutableKeyNames}")
     }
     val cr = relation.relation.asInstanceOf[ColumnFormatRelation]
+    if (cr.schema.exists(_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))) return relation
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new ColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
@@ -704,7 +705,7 @@ class ColumnFormatRelation(
   }
 
   override def getPutKeys: Option[Seq[String]] = {
-    val keys = _origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
+    val keys = origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
     keys match {
       case Some(x) => Some(x.split(",").map(s => s.trim).toSeq)
       case None => None
@@ -748,6 +749,7 @@ class IndexColumnFormatRelation(
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     val cr = relation.relation.asInstanceOf[IndexColumnFormatRelation]
+    if (cr.schema.exists(_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))) return relation
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new IndexColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable, cr.origOptions,

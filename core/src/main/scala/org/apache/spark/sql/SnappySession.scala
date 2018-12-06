@@ -91,7 +91,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[spark] val id = SnappySession.newId()
 
-  private[this] val putIntoIndex = new AtomicInteger(0)
+  private[this] val tempCacheIndex = new AtomicInteger(0)
 
   new FinalizeSession(this)
 
@@ -428,7 +428,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     var newUpdateSubQuery: Option[LogicalPlan] = None
     try {
       val cachedTable = if (doCache) {
-        val tableName = s"snappyDataInternalTempPutIntoCache${putIntoIndex.incrementAndGet()}"
+        val tableName = s"snappyDataInternalTempPutIntoCache${tempCacheIndex.incrementAndGet()}"
         val tableIdent = new TableIdentifier(tableName)
         // use cache table command to display full plan
         SnappyCacheTableCommand(tableIdent, Some(updateSubQuery), isLazy = false).run(this)
