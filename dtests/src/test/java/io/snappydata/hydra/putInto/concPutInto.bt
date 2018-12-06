@@ -1,5 +1,5 @@
 io/snappydata/hydra/putInto/concPutIntoWithSelectUsingSnappyJobWith30Columns.conf
-  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=3
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
 

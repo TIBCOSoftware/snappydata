@@ -52,16 +52,15 @@ object GenerateJsonDataFilesJob extends SnappySQLJob {
       import snappySession.implicits._
       val range = numRows - idNum
       val sc = snappySession.sparkContext
-      // var idNum: Long = 0
-      //var rows = numRows
-      for (j <- 1 to fileCnt) {
+        for (j <- 1 to fileCnt) {
         val dataRDD = sc.range(idNum, numRows).mapPartitions { itr =>
           itr.map { id =>
 
             Test_Table((id + 1).toString, RandomStringUtils.random(30, true, false), id * 10.2,
-              (id + 1).toString, RandomStringUtils.random(30, true, false), RandomStringUtils.random(30, true, false),
+              (id + 1).toString, RandomStringUtils.random(30, true, false),
               RandomStringUtils.random(30, true, false), RandomStringUtils.random(30, true, false),
               RandomStringUtils.random(30, true, false), RandomStringUtils.random(30, true, false),
+              RandomStringUtils.random(30, true, false),
               RandomStringUtils.random(30, true, false), RandomStringUtils.random(30, true, false),
               RandomStringUtils.random(30, true, false), RandomStringUtils.random(30, true, false),
               RandomStringUtils.random(30, true, false), RandomStringUtils.random(30, true, false),
@@ -73,7 +72,8 @@ object GenerateJsonDataFilesJob extends SnappySQLJob {
         var qDF = snappySession.createDataset(dataRDD)
         var cacheDF = qDF.cache()
         cacheDF.write.insertInto("testL")
-        cacheDF.repartition(1).write.json("/data/snappyHydraLogs/kore/insertFile" + range + "_" + j)
+        cacheDF.repartition(1).write.json("/export/shared/QA_DATA/kr/jsonFilesToInsert/" +
+            range + "_" + j)
         pw.flush()
         var oldID = idNum
         idNum = numRows + 1
