@@ -46,9 +46,8 @@ object ColumnTableBulkOps {
     table.collectFirst {
       case LogicalRelation(mutable: BulkPutRelation, _, _) =>
         val putKeys = mutable.getPutKeys match {
-          case None =>
-            throw new AnalysisException(
-              s"PutInto in a column table requires key column(s) but got empty string")
+          case None => throw new AnalysisException(
+            s"PutInto in a column table requires key column(s) but got empty string")
           case Some(k) => k
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys)
