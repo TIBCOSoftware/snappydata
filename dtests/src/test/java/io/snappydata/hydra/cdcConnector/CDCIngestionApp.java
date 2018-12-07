@@ -28,6 +28,15 @@ public class CDCIngestionApp implements Runnable {
   private int endRange;
   private String endPoint;
 
+  public CDCIngestionApp(int sRange, int eRange, int i, String path, String sqlServerInst, String hostName){
+    threadName = "Thread-" + i;
+    startRange = sRange;
+    endRange = eRange;
+    filePath = path + "/insert" + i + ".sql";
+    sqlServer = sqlServerInst;
+    endPoint = hostName;
+  }
+
   public void run() {
     System.out.println("Running " + threadName);
     try {
@@ -90,13 +99,25 @@ public class CDCIngestionApp implements Runnable {
         String qStr = queryArray.get(i);
         System.out.println("Query = " + qStr);
         System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
-        for (int j = startRange; j <= endRange; j++) {
-          PreparedStatement ps = conn.prepareStatement(qStr);
-          int KEY_ID = j;
-          ps.setInt(1, KEY_ID);
-          ps.execute();
+        if (qStr.contains("PUT INTO")) {
+          for (int j = startRange; j <= endRange; j++) {
+            String newStr;
+            if (qStr.contains("?"))
+              newStr = qStr.replace("?", Integer.toString(j));
+            else
+              newStr = qStr;
+            System.out.println("The new query String is " + newStr);
+            conn.createStatement().execute(newStr);
+          }
+        } else {
+          for (int j = startRange; j <= endRange; j++) {
+            PreparedStatement ps = conn.prepareStatement(qStr);
+            int KEY_ID = j;
+            ps.setInt(1, KEY_ID);
+            ps.execute();
+          }
+          System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
         }
-        System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
       }
       System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables");
     } catch (Exception e) {
@@ -158,23 +179,18 @@ public class CDCIngestionApp implements Runnable {
     }
   }
 
-  public void runIngestionApp(Integer sRange, Integer eRange, Integer thCnt, String path, String sqlServerInst, String hostName) {
-    ExecutorService executor = Executors.newFixedThreadPool(thCnt);
-    for (int i = 1; i <= thCnt; i++) {
-      threadName = "Thread-" + i;
-      startRange = sRange;
-      endRange = eRange;
-      filePath = path + "/insert" + i + ".sql";
-      sqlServer = sqlServerInst;
-      endPoint = hostName;
+  public static void runIngestionApp(int sRange, int eRange, int thnCnt, String path, String sqlServerInst, String hostName) {
+    ExecutorService executor = Executors.newFixedThreadPool(thnCnt);
+    for (int i = 1; i <= thnCnt; i++) {
+      String threadName = "Thread-" + i;
       System.out.println("Creating " + threadName);
-      executor.execute(this);
+      executor.execute(new CDCIngestionApp(sRange, eRange, i,path, sqlServerInst, hostName));
     }
     executor.shutdown();
     try {
       executor.awaitTermination(3600, TimeUnit.SECONDS);
     } catch (InterruptedException ie) {
-      Log.getLogWriter().info("Got Exception while waiting for all threads to complete populate" +
+      System.out.println("Got Exception while waiting for all threads to complete populate" +
           " tasks");
     }
   }
@@ -188,8 +204,7 @@ public class CDCIngestionApp implements Runnable {
       String sqlServerInstance = args[4];
       String hostname = args[5];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
-      CDCIngestionApp obj = new CDCIngestionApp();
-      obj.runIngestionApp(sRange, eRange, threadCnt, insertQPAth, sqlServerInstance, hostname);
+      runIngestionApp(sRange, eRange, threadCnt, insertQPAth, sqlServerInstance, hostname);
     } catch (Exception e) {
       System.out.println("Caught exception in main " + e.getMessage());
     } finally {

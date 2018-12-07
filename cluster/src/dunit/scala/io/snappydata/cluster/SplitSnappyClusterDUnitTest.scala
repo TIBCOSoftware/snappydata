@@ -310,6 +310,8 @@ class SplitSnappyClusterDUnitTest(s: String)
     assert(!rs.next())
     rs.close()
 
+    stmt.execute("drop schema if exists anonymous")
+
     stmt.close()
     conn.close()
   }
