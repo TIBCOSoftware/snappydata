@@ -25,8 +25,12 @@ object SnappyMemoryUtils {
     *
     * @return
     */
-  def isCriticalUp(): Boolean =
-    Option(GemFireStore.getBootingInstance).exists(_.thresholdListener.isCritical)
+  def isCriticalUp(): Boolean = {
+    GemFireStore.getBootingInstance match {
+      case null => false
+      case store => store.thresholdListener().isCritical
+    }
+  }
 
 
   /**
@@ -34,7 +38,10 @@ object SnappyMemoryUtils {
     *
     * @return
     */
-  def isEvictionUp: Boolean =
-    Option(GemFireStore.getBootingInstance).exists(_.thresholdListener.isEviction)
-
+  def isEvictionUp: Boolean = {
+    GemFireStore.getBootingInstance match {
+      case null => false
+      case store => store.thresholdListener().isEviction
+    }
+  }
 }
