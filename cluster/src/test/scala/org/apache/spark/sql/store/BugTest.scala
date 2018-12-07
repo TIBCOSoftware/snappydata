@@ -462,6 +462,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         " b.longtext "
     snappy.sql(q)
     snappy.sql(s" CREATE OR REPLACE VIEW v2 as $q")
+    snappy.sql("select count(*) from v2").collect()
 
     stmt.execute("drop view v3")
     stmt.execute("drop view v2")
