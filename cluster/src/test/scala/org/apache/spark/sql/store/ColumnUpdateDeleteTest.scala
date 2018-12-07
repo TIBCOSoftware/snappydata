@@ -23,7 +23,7 @@ import io.snappydata.cluster.PreparedQueryRoutingSingleNodeSuite
 
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
-import org.apache.spark.sql.{Row, SnappySession}
+import org.apache.spark.sql.SnappySession
 
 /**
  * Tests for updates/deletes on column table.
@@ -40,7 +40,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     stopAll()
   }
 
-  override protected def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+  override protected def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
     val conf = new SparkConf()
     conf.setIfMissing("spark.master", "local[*]")
         .setAppName(getClass.getName)
