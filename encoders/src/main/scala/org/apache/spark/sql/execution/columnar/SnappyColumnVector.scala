@@ -19,7 +19,7 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
 
   var rowOrdinal = 0
   var currentNullCount = 0
-  var nextNullPosition = 0
+  var nextNullPosition = columnDecoder.getNextNullPosition
 
   private val arrayOfBytes = if (byteBuffer == null || byteBuffer.isDirect) {
     null
@@ -32,33 +32,37 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def hasNull: Boolean = {
-    var hasNull = true
-    nextNullPosition = columnDecoder.getNextNullPosition
-    if (rowOrdinal < nextNullPosition ||
-        (rowOrdinal == nextNullPosition + 1 &&
-            rowOrdinal < incrementAndGetNextNullPosition) ||
-        (rowOrdinal != nextNullPosition && ((currentNullCount =
-            columnDecoder.numNulls(arrayOfBytes, rowOrdinal, currentNullCount)) == 0 ||
-            rowOrdinal != columnDecoder.getNextNullPosition))) {
-      hasNull = false
-    }
-    rowOrdinal = rowOrdinal + 1
-    hasNull
+    columnDecoder.hasNulls
   }
 
+  @inline
   private def incrementAndGetNextNullPosition : Int = {
     currentNullCount = currentNullCount + 1
     nextNullPosition = columnDecoder.findNextNullPosition(
       arrayOfBytes, nextNullPosition, currentNullCount)
     nextNullPosition
   }
-  override def numNulls(): Int = {
-    // TODO:PS:Review what will be the numNulls here.
-   // columnDecoder.numNulls(arrayOfBytes, rowOrdinal, columnDecoder.getNextNullPosition)
+
+  @inline
+  private def setAndGetCurrentNullCount: Int = {
+    currentNullCount = columnDecoder.numNulls(arrayOfBytes, rowOrdinal, currentNullCount)
     currentNullCount
   }
 
+  override def numNulls(): Int = {
+    columnDecoder.numNulls(arrayOfBytes, rowOrdinal, currentNullCount)
+  }
+
   override def isNullAt(rowId: Int): Boolean = {
+    var hasNull = true
+    if (rowOrdinal < nextNullPosition ||
+        (rowOrdinal == nextNullPosition + 1 &&
+            rowOrdinal < incrementAndGetNextNullPosition) ||
+        (rowOrdinal != nextNullPosition && (setAndGetCurrentNullCount == 0 ||
+            rowOrdinal != columnDecoder.getNextNullPosition))) {
+      hasNull = false
+    }
+    rowOrdinal = rowOrdinal + 1
     hasNull
   }
 
