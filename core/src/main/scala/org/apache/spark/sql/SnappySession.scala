@@ -444,7 +444,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private def dropPutIntoCacheTable(tableIdent: TableIdentifier): Unit = {
     UncacheTableCommand(tableIdent, ifExists = false).run(this)
-    dropTable(sessionCatalog.newQualifiedTableName(tableIdent), ifExists = false)
+    dropTable(tableIdent, ifExists = false, isView = false)
   }
 
   private[sql] def clearPutInto(): Unit = {
