@@ -493,13 +493,21 @@ object StoreUtils {
 
     // Use a new parser instance since parser may itself invoke DataSource.resolveRelation.
     val parser = session.snappyParser.newInstance()
-    parameters.get(KEY_COLUMNS) match {
+    val keyColumns = parameters.get(KEY_COLUMNS) match {
+      case None => Nil
       case Some(k) =>
-        val keyCols = k.split(",").map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
+        val keyCols = k.split(",").map(parser.parseSQLOnly(_, parser.parseIdentifier.run())).toList
         parameters.put(KEY_COLUMNS, keyCols.mkString(","))
-      case None =>
+        keyCols
     }
     parameters.get(PARTITION_BY) match {
+      case None =>
+        // default to KEY_COLUMNS if present
+        if (keyColumns.isEmpty) Nil
+        else {
+          parameters.put(PARTITION_BY, keyColumns.mkString(","))
+          keyColumns
+        }
       case Some(p) if p.trim.equalsIgnoreCase(PRIMARY_KEY) =>
         parameters.put(PARTITION_BY, PRIMARY_KEY)
         PRIMARY_KEY :: Nil
@@ -507,7 +515,6 @@ object StoreUtils {
         val partCols = p.split(",").map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
         parameters.put(PARTITION_BY, partCols.mkString(","))
         partCols
-      case None => Nil
     }
   }
 

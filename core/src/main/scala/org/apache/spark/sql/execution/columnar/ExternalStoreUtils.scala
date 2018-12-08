@@ -85,6 +85,11 @@ object ExternalStoreUtils {
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COMPRESSION_CODEC = "COMPRESSION"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
+
+  // inbuilt basic table properties
+  final val PARTITION_BY = "PARTITION_BY"
+  final val REPLICATE = "REPLICATE"
+  final val BUCKETS = "BUCKETS"
   final val KEY_COLUMNS = "KEY_COLUMNS"
 
   // these two are obsolete column table properties only for backward compatibility
@@ -533,10 +538,6 @@ object ExternalStoreUtils {
       col += 1
     }
   }
-
-  final val PARTITION_BY = "PARTITION_BY"
-  final val REPLICATE = "REPLICATE"
-  final val BUCKETS = "BUCKETS"
 
   def getAndSetTotalPartitions(session: SnappySession,
       parameters: mutable.Map[String, String],

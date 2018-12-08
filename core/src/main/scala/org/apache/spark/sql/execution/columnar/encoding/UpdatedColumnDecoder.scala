@@ -134,4 +134,9 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   final def getStringDictionary: StringDictionary = null
 
   final def readDictionaryIndex: Int = -1
+
+  def close(): Unit = {
+    if (delta1 ne null) delta1.close()
+    if (delta2 ne null) delta2.close()
+  }
 }
