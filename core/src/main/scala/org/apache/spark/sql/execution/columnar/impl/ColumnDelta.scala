@@ -98,12 +98,16 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           // ignore if either of the buffers is empty (old placeholder of 4 bytes
           // while UnsafeRow based data can never be less than 8 bytes)
           if (existingBuffer.limit() <= 4 || newBuffer.limit() <= 4) {
-            oldColValue
+            // returned value should be the original and not oldColValue which may be a temp copy
+            oldValue
           } else {
             val merged = mergeStats(existingBuffer, newBuffer, schema)
             if (merged ne null) {
               new ColumnFormatValue(merged, oldColValue.compressionCodecId, isCompressed = false)
-            } else oldColValue
+            } else {
+              // returned value should be the original and not oldColValue which may be a temp copy
+              oldValue
+            }
           }
         } else {
           val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1

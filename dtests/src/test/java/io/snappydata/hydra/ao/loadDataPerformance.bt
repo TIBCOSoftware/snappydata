@@ -1,0 +1,24 @@
+io/snappydata/hydra/ao/loadDataUsingDataFrameFromCSV.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="/export/shared/QA_DATA/ao_data" tableName="MeterReadings"
+
+io/snappydata/hydra/ao/loadDataUsingDataFrameFromParquet.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="/export/shared/QA_DATA/ao_data" tableName="MeterReadings"
+
+io/snappydata/hydra/ao/loadDataUsingExternalTableFromCSV.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="/export/shared/QA_DATA/ao_data" tableName="MeterReadings"
+
+io/snappydata/hydra/ao/loadDataUsingExternalTableFromParquet.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="/export/shared/QA_DATA/ao_data" tableName="MeterReadings"
+

@@ -32,9 +32,11 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.Property
+import io.snappydata.{Property, SnappyTableStatsProviderService}
 
+import org.apache.spark.SparkEnv
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
@@ -49,6 +51,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types.{BooleanType, NullType, StringType, StructField, StructType}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
 case class CreateTableUsingCommand(
@@ -337,16 +340,30 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
       case None => session.catalog.cacheTable(tableIdent.quotedString)
       case Some(lp) =>
         val df = Dataset.ofRows(session, lp)
+        val isOffHeap = SnappyContext.getClusterMode(sparkSession.sparkContext) match {
+          case _: ThinClientConnectorMode =>
+            SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
+          case _ =>
+            try {
+              SnappyTableStatsProviderService.getService.getMembersStatsFromService.
+                  values.forall(member => !member.isDataServer ||
+                  (member.getOffHeapMemorySize > 0))
+            }
+            catch {
+              case _: Throwable => false
+            }
+        }
+
         if (isLazy) {
           df.createTempView(tableIdent.quotedString)
-          df.persist()
+          if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
         } else {
           session.sessionState.enableExecutionCache = true
           // Get the actual QueryExecution used by InMemoryRelation so that
           // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
           val cachedExecution = try {
             df.createTempView(tableIdent.quotedString)
-            df.persist()
+            if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
             session.sessionState.getExecution(df.logicalPlan)
           } finally {
             session.sessionState.enableExecutionCache = false

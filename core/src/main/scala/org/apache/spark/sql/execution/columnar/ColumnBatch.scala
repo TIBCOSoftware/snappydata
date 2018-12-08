@@ -39,7 +39,7 @@ import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.{Logging, TaskContext}
+import org.apache.spark.{Logging, TaskContext, TaskContextImpl, TaskKilledException}
 
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte], deltaIndexes: Array[Int])
@@ -53,9 +53,11 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected[this] final var hasNextValue: Boolean = rs ne null
 
-  if (context ne null) {
-    val partitionId = context.partitionId()
-    context.addTaskCompletionListener { _ =>
+  protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]
+
+  if (taskContext ne null) {
+    val partitionId = taskContext.partitionId
+    taskContext.addTaskCompletionListener { _ =>
       logDebug(s"closed connection for task from listener $partitionId")
       close()
     }
@@ -65,6 +67,10 @@ abstract class ResultSetIterator[A](conn: Connection,
     if (doMove && hasNextValue) {
       doMove = false
       hasNextValue = false
+      // check for task killed before moving to next element
+      if ((taskContext ne null) && taskContext.isInterrupted()) {
+        throw new TaskKilledException
+      }
       hasNextValue = moveNext()
       hasNextValue
     } else {
@@ -131,15 +137,15 @@ object ColumnBatchIterator {
 final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     bucketIds: java.util.Set[Integer], projection: Array[Int],
     fullScan: Boolean, context: TaskContext)
-    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
+    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds, context) {
 
   if (region ne null) {
     assert(!region.getEnableOffHeapMemory,
       s"Unexpected buffer iterator call for off-heap $region")
   }
 
-  if (context ne null) {
-    context.addTaskCompletionListener(_ => close())
+  if (taskContext ne null) {
+    taskContext.addTaskCompletionListener(_ => close())
   }
 
   protected[sql] var currentVal: ByteBuffer = _

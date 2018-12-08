@@ -425,8 +425,15 @@ abstract class BaseColumnFormatRelation(
         val sql =
           s"CREATE TABLE ${quotedName(tableName)} $schemaExtensions ENABLE CONCURRENCY CHECKS"
         val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
-        logInfo(s"Applying DDL (url=${connProperties.url}; " +
-            s"props=${connProperties.connProps}): $sql")
+        if (isInfoEnabled) {
+          val schemaString = JdbcExtendedUtils.schemaString(schema, connProperties.dialect)
+          val optsString = if (origOptions.nonEmpty) {
+            origOptions.map(p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
+          } else ""
+          logInfo(s"Executing DDL (url=${connProperties.url}; " +
+              s"props=${connProperties.connProps}): CREATE TABLE ${quotedName(tableName)} " +
+              s"$schemaString USING $provider$optsString")
+        }
         if (pass != null) {
           connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
             pass.asInstanceOf[String])
@@ -516,6 +523,7 @@ class ColumnFormatRelation(
       _externalStore,
       _partitioningColumns,
       _context) with BulkPutRelation {
+
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
   override def withKeyColumns(relation: LogicalRelation,
@@ -526,6 +534,7 @@ class ColumnFormatRelation(
           s"required=${ColumnDelta.mutableKeyNames}")
     }
     val cr = relation.relation.asInstanceOf[ColumnFormatRelation]
+    if (cr.schema.exists(_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))) return relation
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new ColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
@@ -678,6 +687,7 @@ class IndexColumnFormatRelation(
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     val cr = relation.relation.asInstanceOf[IndexColumnFormatRelation]
+    if (cr.schema.exists(_.name.startsWith(ColumnDelta.mutableKeyNamePrefix))) return relation
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new IndexColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable, cr.origOptions,
