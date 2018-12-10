@@ -1142,14 +1142,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       isBuiltIn: Boolean,
       query: Option[LogicalPlan] = None): DataFrame = {
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
-    if (isBuiltIn && !providerIsBuiltIn) {
-      throw new AnalysisException(s"Failed to find a builtin provider '$provider'. " +
-          s"Use CREATE EXTERNAL TABLE or createExternalTable API for other providers.")
-    }
     if (!isBuiltIn && providerIsBuiltIn) {
       throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
           s"used for inbuilt provider '$provider'")
     }
+    // check for permissions in the schema which should be done before the session catalog
+    // createTable call since store table will be created by that time
+    val resolvedName = sessionCatalog.resolveTableIdentifier(tableIdent)
+    sessionCatalog.checkSchemaPermission(resolvedName.database.get, resolvedName.table,
+      defaultUser = null, ignoreIfNotExists = true)
+
     val schema = userSpecifiedSchema match {
       case Some(s) =>
         if (query.isDefined) {
@@ -1182,14 +1184,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       }
     }
     val tableDesc = CatalogTable(
-      identifier = tableIdent,
+      identifier = resolvedName,
       tableType = CatalogTableType.EXTERNAL,
       storage = DataSource.buildStorageFormatFromOptions(fullOptions),
       schema = schema,
       provider = Some(provider))
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
-    val df = table(tableIdent)
+    val df = table(resolvedName)
     val relation = df.queryExecution.analyzed.collectFirst {
       case l: LogicalRelation => l.relation
     }
@@ -1309,12 +1311,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   /**
-   * Set current database/schema.
+   * Set current schema for the session.
    *
    * @param schemaName schema name which goes in the catalog
    */
-  def setSchema(schemaName: String): Unit = {
-    sessionCatalog.setCurrentDatabase(schemaName)
+  def setCurrentSchema(schemaName: String): Unit = {
+    sessionCatalog.setCurrentSchema(schemaName)
   }
 
   def getCurrentSchema: String = sessionCatalog.getCurrentSchema
@@ -1837,8 +1839,7 @@ object SnappySession extends Logging {
       (f: => RDD[InternalRow]): (RDD[InternalRow], String, SparkPlanInfo,
       String, SparkPlanInfo, Long, Long, Long) = {
     // Right now the CachedDataFrame is not getting used across SnappySessions
-    val executionId = CachedDataFrame.nextExecutionIdMethod.
-        invoke(SQLExecution).asInstanceOf[Long]
+    val executionId = Utils.nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
     session.sparkContext.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
     val start = System.currentTimeMillis()
     try {

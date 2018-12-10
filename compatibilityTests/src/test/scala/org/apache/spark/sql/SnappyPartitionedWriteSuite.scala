@@ -20,10 +20,4 @@ import org.apache.spark.sql.sources.PartitionedWriteSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyPartitionedWriteSuite extends PartitionedWriteSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "write many partitions",
-    "write many partitions with repeats"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

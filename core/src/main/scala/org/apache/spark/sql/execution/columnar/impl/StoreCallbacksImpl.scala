@@ -116,7 +116,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             dependents.toSeq.flatMap { dep =>
               val (depSchema, depTable) = SnappyExternalCatalog.getTableWithSchema(
                 dep, container.getSchemaName)
-              val metadata = catalog.getCatalogTableMetadata(depSchema, depTable, true)
+              val metadata = catalog.getCatalogTableMetadata(depSchema, depTable)
               if ((metadata ne null) && metadata.tableType == CatalogObjectType.Index.toString) {
                 Some(metadata)
               } else None

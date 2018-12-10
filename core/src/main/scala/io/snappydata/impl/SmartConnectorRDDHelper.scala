@@ -31,7 +31,7 @@ import io.snappydata.thrift.BucketOwners
 import io.snappydata.thrift.internal.ClientPreparedStatement
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
-import org.apache.spark.Partition
+import org.apache.spark.{Logging, Partition}
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
@@ -41,9 +41,7 @@ import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
 
-final class SmartConnectorRDDHelper {
-
-  private var useLocatorURL: Boolean = _
+final class SmartConnectorRDDHelper extends Logging { // SW: remove Logging
 
   def prepareScan(conn: Connection, txId: String, columnTable: String, projection: Array[Int],
       serializedFilters: Array[Byte], partition: SmartExecutorBucketPartition,
@@ -75,22 +73,35 @@ final class SmartConnectorRDDHelper {
     (pstmt, rs)
   }
 
-  def getConnection(connectionProperties: ConnectionProperties,
-      part: SmartExecutorBucketPartition): Connection = {
-    val urlsOfNetServerHost = part.hostList
-    useLocatorURL = SmartConnectorRDDHelper.useLocatorUrl(urlsOfNetServerHost)
-    createConnection(connectionProperties, urlsOfNetServerHost)
+  def getConnectionAndTXId(connProperties: ConnectionProperties,
+      part: SmartExecutorBucketPartition, preferHost: Boolean): (Connection, String) = {
+    SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
+      case null | ("", _) =>
+        createConnection(connProperties, part.hostList, preferHost) -> null
+      case (tx, hostAndUrl) =>
+        // create connection to the same host where TX was started
+        createConnection(connProperties, new ArrayBuffer[(String, String)](1) += hostAndUrl,
+          preferHost) -> tx
+    }
   }
 
-  def createConnection(connProperties: ConnectionProperties,
-      hostList: ArrayBuffer[(String, String)]): Connection = {
-    val localhost = SocketCreator.getLocalHost
+  private def createConnection(connProperties: ConnectionProperties,
+      hostList: IndexedSeq[(String, String)], preferHost: Boolean): Connection = {
+    val useLocatorURL = hostList.isEmpty
     var index = -1
 
     val jdbcUrl = if (useLocatorURL) {
       connProperties.url
+    } else if (hostList.length == 1) {
+      hostList.head._2
     } else {
-      if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
+      val localhost = SocketCreator.getLocalHost
+      val hostOrAddress = if (preferHost) localhost.getHostName else localhost.getHostAddress
+      if (index < 0) index = hostList.indexWhere(_._1.contains(hostOrAddress))
+      if (index < 0) {
+        logError(s"SW:#######: choosing a potentially remote node for " +
+            s"hostList=$hostList myHost=${localhost.getHostAddress}")
+      }
       if (index < 0) index = Random.nextInt(hostList.size)
       hostList(index)._2
     }
@@ -109,8 +120,10 @@ final class SmartConnectorRDDHelper {
       case sqle: SQLException => if (hostList.size == 1 || useLocatorURL) {
         throw sqle
       } else {
-        hostList.remove(index)
-        createConnection(connProperties, hostList)
+        val newHostList = new ArrayBuffer[(String, String)](hostList.length)
+        newHostList ++= hostList
+        newHostList.remove(index)
+        createConnection(connProperties, hostList, preferHost)
       }
     }
   }
@@ -120,27 +133,50 @@ object SmartConnectorRDDHelper {
 
   DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
 
-  var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
-  var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
+  val snapshotTxIdForRead: ThreadLocal[(String, (String, String))] =
+    new ThreadLocal[(String, (String, String))]
+  val snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
+
+  private[this] val urlPrefix: String = Constant.DEFAULT_THIN_CLIENT_URL
+  // no query routing or load-balancing
+  private[this] val urlSuffix: String = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
+      ClientAttribute.LOAD_BALANCE + "=false"
+
+  /**
+   * Get pair of TXId and (host, network server URL) pair.
+   */
+  def getTxIdAndHostUrl(txIdAndHost: String, preferHost: Boolean): (String, (String, String)) = {
+    val index = txIdAndHost.indexOf('@')
+    if (index < 0) {
+      throw new AssertionError(s"Unexpected TXId@HostURL string = $txIdAndHost")
+    }
+    val server = txIdAndHost.substring(index + 1)
+    val hostUrl = getNetUrl(server, preferHost, urlPrefix, urlSuffix, availableNetUrls = null)
+    txIdAndHost.substring(0, index) -> hostUrl
+  }
 
   def getPartitions(bucketToServerList: Array[ArrayBuffer[(String, String)]]): Array[Partition] = {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
+    // choose only one server from the list so that partition routing and connection
+    // creation are attempted on the same server if possible (i.e. should not happen
+    // that routing selected some server but connection create used some other from the list)
+    val numServers = bucketToServerList(0).length
+    val chosenServerIndex = if (numServers > 1) scala.util.Random.nextInt(numServers) else 0
     for (p <- 0 until numPartitions) {
       if (StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT) {
         partitions(p) = new SmartExecutorBucketPartition(p, p,
           bucketToServerList(scala.util.Random.nextInt(numPartitions)))
       } else {
-        partitions(p) = new SmartExecutorBucketPartition(p, p, bucketToServerList(p))
+        val servers = bucketToServerList(p)
+        partitions(p) = new SmartExecutorBucketPartition(p, p,
+          IndexedSeq(if (servers.length <= numServers) servers(chosenServerIndex) else servers(0)))
       }
     }
     partitions
   }
 
-  private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
-    hostList.isEmpty
-
-  private def preferHostName(session: SnappySession): Boolean = {
+  def preferHostName(session: SnappySession): Boolean = {
     // check if Spark executors are using IP addresses or host names
     Utils.executorsListener(session.sparkContext) match {
       case Some(l) =>
@@ -154,25 +190,20 @@ object SmartConnectorRDDHelper {
     }
   }
 
-  private def addNetUrl(netUrls: ArrayBuffer[(String, String)], server: String,
-      preferHost: Boolean, urlPrefix: String, urlSuffix: String,
-      availableNetUrls: UnifiedMap[String, String]): Unit = {
+  private def getNetUrl(server: String, preferHost: Boolean, urlPrefix: String,
+      urlSuffix: String, availableNetUrls: UnifiedMap[String, String]): (String, String) = {
     val hostAddressPort = returnHostPortFromServerString(server)
     val hostName = hostAddressPort._1
     val host = if (preferHost) hostName else hostAddressPort._2
     val netUrl = urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix
-    netUrls += host -> netUrl
-    if (!availableNetUrls.containsKey(host)) {
+    if ((availableNetUrls ne null) && !availableNetUrls.containsKey(host)) {
       availableNetUrls.put(host, netUrl)
     }
+    host -> netUrl
   }
 
   def setBucketToServerMappingInfo(numBuckets: Int, buckets: java.util.List[BucketOwners],
       session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
-    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
-    // no query routing or load-balancing
-    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-        ClientAttribute.LOAD_BALANCE + "=false"
     if (!buckets.isEmpty) {
       // check if Spark executors are using IP addresses or host names
       val preferHost = preferHostName(session)
@@ -189,10 +220,10 @@ object SmartConnectorRDDHelper {
           val secondaries = if (preferPrimaries) Collections.emptyList()
           else bucket.getSecondaries
           val netUrls = new ArrayBuffer[(String, String)](secondaries.size() + 1)
-          addNetUrl(netUrls, primary, preferHost, urlPrefix, urlSuffix, availableNetUrls)
+          netUrls += getNetUrl(primary, preferHost, urlPrefix, urlSuffix, availableNetUrls)
           if (secondaries.size() > 0) {
             for (secondary <- secondaries.asScala) {
-              addNetUrl(netUrls, secondary, preferHost, urlPrefix, urlSuffix, availableNetUrls)
+              netUrls += getNetUrl(secondary, preferHost, urlPrefix, urlSuffix, availableNetUrls)
             }
           }
           allNetUrls(bucketId) = netUrls

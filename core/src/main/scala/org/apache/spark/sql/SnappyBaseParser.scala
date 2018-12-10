@@ -626,5 +626,8 @@ object SnappyParserConsts {
 
   // keywords that are neither reserved nor non-reserved and can be freely
   // used as named strictIdentifier
+  final val CASCADE: Keyword = new Keyword("cascade")
+  final val DATABASE: Keyword = new Keyword("database")
   final val RETURNS: Keyword = new Keyword("returns")
+  final val TEMP: Keyword = new Keyword("temp")
 }

@@ -30,13 +30,12 @@ import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemfireCacheH
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI
 import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
+import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import io.snappydata.thrift._
 import org.apache.log4j.{Level, LogManager}
@@ -44,7 +43,6 @@ import org.apache.log4j.{Level, LogManager}
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogTable}
-import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -81,7 +79,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private val initFuture: Future[_] = {
     // run a task to initialize the hive catalog for the thread
     // Assumption is that this should be outside any lock
-    val q = new CatalogQuery[Unit](INIT, tableName = null, schemaName = null, skipLocks = false)
+    val q = new CatalogQuery[Unit](INIT, tableName = null, schemaName = null)
     catalogQueriesExecutorService.submit(q)
   }
 
@@ -94,7 +92,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   }
 
   override def isColumnTable(schema: String, tableName: String, skipLocks: Boolean): Boolean = {
-    val q = new CatalogQuery[CatalogTable](GET_TABLE, tableName, schema, skipLocks)
+    val q = new CatalogQuery[CatalogTable](GET_TABLE, tableName, schema)
     val table = handleFutureResult(catalogQueriesExecutorService.submit(q))
     (table ne null) && CatalogObjectType.isColumnTable(CatalogObjectType.getTableType(table))
   }
@@ -105,73 +103,71 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       Option(table.getProvider)) == CatalogObjectType.Row
   }
 
-  override def getCatalogTables(skipLocks: Boolean): java.util.List[ExternalTableMetaData] = {
+  override def getCatalogTables: java.util.List[ExternalTableMetaData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
-    if (java.lang.Boolean.TRUE.equals(HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get())) {
+    if (GfxdDataDictionary.SKIP_CATALOG_OPS.get().skipHiveCatalogCalls) {
       return Collections.emptyList()
     }
     val q = new CatalogQuery[Seq[ExternalTableMetaData]](GET_HIVE_TABLES,
-      tableName = null, schemaName = null, skipLocks)
+      tableName = null, schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).asJava
   }
 
-  override def getColumnTableSchemaAsJson(schema: String, tableName: String,
-      skipLocks: Boolean): String = {
-    val q = new CatalogQuery[String](COLUMN_TABLE_SCHEMA, tableName, schema, skipLocks)
+  override def getColumnTableSchemaAsJson(schema: String, tableName: String): String = {
+    val q = new CatalogQuery[String](COLUMN_TABLE_SCHEMA, tableName, schema)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
-  override def getPolicies(skipLocks: Boolean): java.util.List[PolicyTableData] = {
+  override def getPolicies: java.util.List[PolicyTableData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
-    if (java.lang.Boolean.TRUE.equals(HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get())) {
+    if (GfxdDataDictionary.SKIP_CATALOG_OPS.get().skipHiveCatalogCalls) {
       return Collections.emptyList()
     }
     val q = new CatalogQuery[Seq[PolicyTableData]](GET_POLICIES, tableName = null,
-      schemaName = null, skipLocks)
+      schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).asJava
   }
 
-  override def getCatalogTableMetadata(schema: String, tableName: String,
-      skipLocks: Boolean): ExternalTableMetaData = {
-    val q = new CatalogQuery[ExternalTableMetaData](GET_COL_TABLE, tableName, schema, skipLocks)
+  override def getCatalogTableMetadata(schema: String,
+      tableName: String): ExternalTableMetaData = {
+    val q = new CatalogQuery[ExternalTableMetaData](GET_COL_TABLE, tableName, schema)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
   override def fillCatalogMetadata(operation: Int, request: CatalogMetadataRequest,
-      result: CatalogMetadataDetails, skipLocks: Boolean): LocalRegion = {
+      result: CatalogMetadataDetails): LocalRegion = {
     val q = new CatalogQuery[LocalRegion](GET_METADATA,
-      tableName = null, schemaName = null, skipLocks, operation, request, result)
+      tableName = null, schemaName = null, operation, request, result)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
   override def updateCatalogMetadata(operation: Int, request: CatalogMetadataDetails,
-      user: String, skipLocks: Boolean): Unit = {
+      user: String): Unit = {
     val q = new CatalogQuery[Unit](UPDATE_METADATA,
-      tableName = null, schemaName = null, skipLocks, operation, getRequest = null, request, user)
+      tableName = null, schemaName = null, operation, getRequest = null, request, user)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
   override def getCatalogSchemaVersion: Long = externalCatalog.getCatalogSchemaVersion
 
-  override def getAllStoreTablesInCatalog(
-      skipLocks: Boolean): java.util.Map[String, java.util.List[String]] = {
+  override def getAllStoreTablesInCatalog: java.util.Map[String, java.util.List[String]] = {
     val q = new CatalogQuery[Seq[(String, String)]](GET_ALL_TABLES_MANAGED_IN_DD,
-      tableName = null, schemaName = null, skipLocks)
+      tableName = null, schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).groupBy(p => p._1)
         .mapValues(_.map(_._2).asJava).asJava
   }
 
   override def removeTableIfExists(schema: String, table: String, skipLocks: Boolean): Unit = {
-    val q = new CatalogQuery[Unit](REMOVE_TABLE, table, schema, skipLocks)
+    val q = new CatalogQuery[Unit](REMOVE_TABLE, table, schema)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
   override def catalogSchemaName: String = SystemProperties.SNAPPY_HIVE_METASTORE
 
   override def close(): Unit = {
-    val q = new CatalogQuery[Unit](CLOSE_HMC, tableName = null, schemaName = null, skipLocks = true)
+    val q = new CatalogQuery[Unit](CLOSE_HMC, tableName = null, schemaName = null)
     try {
       this.catalogQueriesExecutorService.submit(q).get(5, TimeUnit.SECONDS)
     } catch {
@@ -195,25 +191,11 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   }
 
   private final class CatalogQuery[R](qType: Int, tableName: String, schemaName: String,
-      skipLocks: Boolean, catalogOperation: Int = 0, getRequest: CatalogMetadataRequest = null,
+      catalogOperation: Int = 0, getRequest: CatalogMetadataRequest = null,
       updateRequestOrResult: CatalogMetadataDetails = null, user: String = null)
       extends Callable[R] {
 
-    override def call(): R = {
-      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(java.lang.Boolean.TRUE)
-      try {
-        if (skipLocks) {
-          GfxdDataDictionary.SKIP_LOCKS.set(true)
-        }
-        invoke()
-      } finally {
-        if (skipLocks) {
-          GfxdDataDictionary.SKIP_LOCKS.set(false)
-        }
-      }
-    }
-
-    private def invoke(): R = qType match {
+    override def call(): R = qType match {
       case INIT =>
         // Take read/write lock on metastore. Because of this all the servers
         // will initiate their hive client one by one. This is important as we
@@ -369,7 +351,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val tableType = CatalogObjectType.getTableType(table)
           val compressionCodec = parameters.get(ExternalStoreUtils.COMPRESSION_CODEC) match {
             case None =>
-              if (tableType == CatalogObjectType.Column) Constant.DEFAULT_CODEC else "NA"
+              if (CatalogObjectType.isColumnTable(tableType)) Constant.DEFAULT_CODEC else "NA"
             case Some(c) => c
           }
           val tblDataSourcePath = getDataSourcePath(parameters)
@@ -384,10 +366,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       }
 
       case GET_METADATA =>
-        fillCatalogMetadata(catalogOperation, getRequest, updateRequestOrResult).asInstanceOf[R]
+        readCatalogMetadata(catalogOperation, getRequest, updateRequestOrResult).asInstanceOf[R]
 
       case UPDATE_METADATA =>
-        updateCatalogMetadata(catalogOperation, updateRequestOrResult, user).asInstanceOf[R]
+        writeCatalogMetadata(catalogOperation, updateRequestOrResult, user).asInstanceOf[R]
 
       case CLOSE_HMC => SnappyHiveExternalCatalog.close().asInstanceOf[R]
 
@@ -396,11 +378,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
     override def toString: String = {
       if ((getRequest eq null) && (updateRequestOrResult eq null)) {
-        s"StoreCatalog: queryType = $qType schema = $schemaName table = $tableName " +
-            s"skipLocks = $skipLocks"
+        s"StoreCatalog: queryType = $qType schema = $schemaName table = $tableName"
       } else {
         val request = if (getRequest ne null) getRequest else updateRequestOrResult
-        s"StoreCatalog: operation = $catalogOperation request=$request skipLocks = $skipLocks"
+        s"StoreCatalog: operation = $catalogOperation request=$request"
       }
     }
 
@@ -481,7 +462,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private def partitionSpec(request: CatalogMetadataRequest): Option[TablePartitionSpec] =
     if (request.isSetProperties) Some(request.getProperties.asScala.toMap) else None
 
-  private def fillCatalogMetadata(operation: Int, request: CatalogMetadataRequest,
+  private def readCatalogMetadata(operation: Int, request: CatalogMetadataRequest,
       result: CatalogMetadataDetails): LocalRegion = operation match {
 
     case snappydataConstants.CATALOG_GET_SCHEMA =>
@@ -532,23 +513,6 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       metadata(result.setNames(externalCatalog.listTables(request.getSchemaName,
         pattern(request)).asJava))
 
-    case snappydataConstants.CATALOG_GET_PARTITION =>
-      externalCatalog.getPartitionOption(request.getSchemaName, request.getNameOrPattern,
-        partitionSpec(request).get) match {
-        case None => metadata(result)
-        case Some(partition) => metadata(result.setCatalogPartitions(Collections.singletonList(
-          ConnectorExternalCatalog.convertFromCatalogPartition(partition))))
-      }
-
-    case snappydataConstants.CATALOG_LIST_PARTITION_NAMES =>
-      metadata(result.setNames(externalCatalog.listPartitionNames(request.getSchemaName,
-        request.getNameOrPattern, partitionSpec(request)).asJava))
-
-    case snappydataConstants.CATALOG_LIST_PARTITIONS =>
-      metadata(result.setCatalogPartitions(externalCatalog.listPartitions(request.getSchemaName,
-        request.getNameOrPattern, partitionSpec(request)).map(
-        ConnectorExternalCatalog.convertFromCatalogPartition).asJava))
-
     case snappydataConstants.CATALOG_GET_FUNCTION =>
       try {
         val function = externalCatalog.getFunction(request.getSchemaName, request.getNameOrPattern)
@@ -566,32 +530,39 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       metadata(result.setNames(externalCatalog.listFunctions(request.getSchemaName,
         request.getNameOrPattern).asJava))
 
+    case snappydataConstants.CATALOG_GET_PARTITION =>
+      externalCatalog.getPartitionOption(request.getSchemaName, request.getNameOrPattern,
+        partitionSpec(request).get) match {
+        case None => metadata(result)
+        case Some(partition) => metadata(result.setCatalogPartitions(Collections.singletonList(
+          ConnectorExternalCatalog.convertFromCatalogPartition(partition))))
+      }
+
+    case snappydataConstants.CATALOG_LIST_PARTITION_NAMES =>
+      metadata(result.setNames(externalCatalog.listPartitionNames(request.getSchemaName,
+        request.getNameOrPattern, partitionSpec(request)).asJava))
+
+    case snappydataConstants.CATALOG_LIST_PARTITIONS =>
+      metadata(result.setCatalogPartitions(externalCatalog.listPartitions(request.getSchemaName,
+        request.getNameOrPattern, partitionSpec(request)).map(
+        ConnectorExternalCatalog.convertFromCatalogPartition).asJava))
+
     case _ => throw new IllegalArgumentException(
       s"Unexpected catalog metadata read operation = $operation")
   }
 
-  private def checkSchemaPermission(schema: String, name: String, user: String): Unit = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks ne null) {
-      // allow creating entry for dummy table by anyone
-      if (!(schema.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)
-          && name.equalsIgnoreCase(JdbcExtendedUtils.DUMMY_TABLE_NAME))) {
-        callbacks.checkSchemaPermission(schema, user)
-      }
-    }
-  }
-
   private def getCatalogTableForWrite(request: CatalogMetadataDetails,
-      user: String): CatalogTable = {
+      user: String, ignoreSchemaPermsIfNotExist: Boolean = true): CatalogTable = {
     val tableObj = request.getCatalogTable
     // bucket owners must be null/empty here since it is not part of catalog itself and
     // RelationInfo is neither required nor can be obtained here due to absence of "session"
     assert(tableObj.getBucketOwnersSize == 0, "unexpected bucket owners in updateCatalogMetadata")
-    checkSchemaPermission(tableObj.getSchemaName, tableObj.getTableName, user)
+    checkSchemaPermission(tableObj.getSchemaName, tableObj.getTableName, user,
+      conf = null, ignoreSchemaPermsIfNotExist)
     ConnectorExternalCatalog.convertToCatalogTable(request, session = null)._1
   }
 
-  private def updateCatalogMetadata(operation: Int, request: CatalogMetadataDetails,
+  private def writeCatalogMetadata(operation: Int, request: CatalogMetadataDetails,
       user: String): Unit = operation match {
 
     case snappydataConstants.CATALOG_CREATE_SCHEMA =>
@@ -603,7 +574,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
     case snappydataConstants.CATALOG_DROP_SCHEMA =>
       assert(request.getNamesSize == 1, "DROP SCHEMA: unexpected names = " + request.getNames)
-      externalCatalog.dropDatabase(request.getNames.get(0), request.exists, request.updateFlag)
+      val schema = request.getNames.get(0)
+      checkSchemaPermission(schema, table = "", user, conf = null, request.exists)
+      externalCatalog.dropDatabase(schema, request.exists, request.otherFlags.get(0) != 0)
 
     case snappydataConstants.CATALOG_CREATE_TABLE =>
       assert(request.isSetCatalogTable, "CREATE TABLE: expected catalogTable to be set")
@@ -614,11 +587,28 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       val schema = request.getNames.get(0)
       val table = request.getNames.get(1)
       checkSchemaPermission(schema, table, user)
-      externalCatalog.dropTable(schema, table, request.exists, request.updateFlag)
+      externalCatalog.dropTable(schema, table, request.exists, request.otherFlags.get(0) != 0)
 
     case snappydataConstants.CATALOG_ALTER_TABLE =>
       assert(request.isSetCatalogTable, "ALTER TABLE: expected catalogTable to be set")
       externalCatalog.alterTable(getCatalogTableForWrite(request, user))
+
+    case snappydataConstants.CATALOG_RENAME_TABLE =>
+      assert(request.getNamesSize == 3, "RENAME TABLE: unexpected names = " + request.getNames)
+      val schema = request.getNames.get(0)
+      val oldName = request.getNames.get(1)
+      val newName = request.getNames.get(2)
+      checkSchemaPermission(schema, oldName, user)
+      externalCatalog.renameTable(schema, oldName, newName)
+
+    case snappydataConstants.CATALOG_LOAD_TABLE =>
+      assert(request.getNamesSize == 3, "LOAD TABLE: unexpected names = " + request.getNames)
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      val path = request.getNames.get(2)
+      checkSchemaPermission(schema, table, user)
+      externalCatalog.loadTable(schema, table, path, request.otherFlags.get(0) != 0,
+        request.otherFlags.get(1) != 0)
 
     case snappydataConstants.CATALOG_CREATE_FUNCTION =>
       assert(request.isSetCatalogFunction, "CREATE FUNCTION: expected catalogFunction to be set")
@@ -642,6 +632,62 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       val newName = request.getNames.get(2)
       checkSchemaPermission(schema, newName, user)
       externalCatalog.renameFunction(schema, oldName, newName)
+
+    case snappydataConstants.CATALOG_CREATE_PARTITIONS =>
+      assert(request.getNamesSize == 2, "CREATE PARTITIONS: unexpected names = " + request.getNames)
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      checkSchemaPermission(schema, table, user)
+      externalCatalog.createPartitions(schema, table, request.getCatalogPartitions.asScala.map(
+        ConnectorExternalCatalog.convertToCatalogPartition), request.exists)
+
+    case snappydataConstants.CATALOG_DROP_PARTITIONS =>
+      assert(request.getNamesSize == 2, "DROP PARTITIONS: unexpected names = " + request.getNames)
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      checkSchemaPermission(schema, table, user)
+      externalCatalog.dropPartitions(schema, table, request.getProperties.asScala.map(
+        _.asScala.toMap), request.exists, request.otherFlags.get(0) != 0,
+        request.otherFlags.get(1) != 0)
+
+    case snappydataConstants.CATALOG_ALTER_PARTITIONS =>
+      assert(request.getNamesSize == 2, "ALTER PARTITIONS: unexpected names = " + request.getNames)
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      checkSchemaPermission(schema, table, user)
+      externalCatalog.alterPartitions(schema, table, request.getCatalogPartitions.asScala.map(
+        ConnectorExternalCatalog.convertToCatalogPartition))
+
+    case snappydataConstants.CATALOG_RENAME_PARTITIONS =>
+      assert(request.getNamesSize == 2, "RENAME PARTITIONS: unexpected names = " + request.getNames)
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      checkSchemaPermission(schema, table, user)
+      externalCatalog.renamePartitions(schema, table, request.getProperties.asScala.map(
+        _.asScala.toMap), request.getNewProperties.asScala.map(_.asScala.toMap))
+
+    case snappydataConstants.CATALOG_LOAD_PARTITION =>
+      assert(request.getNamesSize == 3, "LOAD PARTITION: unexpected names = " + request.getNames)
+      assert(request.getPropertiesSize == 1, "LOAD PARTITION: missing properties")
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      val path = request.getNames.get(2)
+      checkSchemaPermission(schema, table, user)
+      externalCatalog.loadPartition(schema, table, path,
+        request.getProperties.get(0).asScala.toMap, request.otherFlags.get(0) != 0,
+        request.otherFlags.get(1) != 0, request.otherFlags.get(2) != 0)
+
+    case snappydataConstants.CATALOG_LOAD_DYNAMIC_PARTITIONS =>
+      assert(request.getNamesSize == 3, "LOAD DYNAMIC PARTITIONS: unexpected names = " +
+          request.getNames)
+      assert(request.getPropertiesSize == 1, "LOAD DYNAMIC PARTITIONS: missing properties")
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      val path = request.getNames.get(2)
+      checkSchemaPermission(schema, table, user)
+      externalCatalog.loadDynamicPartitions(schema, table, path,
+        request.getProperties.get(0).asScala.toMap, request.otherFlags.get(0) != 0,
+        request.otherFlags.get(1), request.otherFlags.get(2) != 0)
 
     case _ => throw new IllegalArgumentException(
       s"Unexpected catalog metadata write operation = $operation, args = $request")

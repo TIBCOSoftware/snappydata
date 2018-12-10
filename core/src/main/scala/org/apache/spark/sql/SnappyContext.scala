@@ -612,7 +612,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param schemaName schema name which goes in the catalog
    */
   def setSchema(schemaName: String): Unit = {
-    snappySession.setSchema(schemaName)
+    snappySession.setCurrentSchema(schemaName)
   }
 
 

@@ -259,7 +259,6 @@ trait SplitClusterDUnitTestObject extends Logging {
     val session = getSnappyContextForConnector(locatorClientPort).snappySession
 
     // clean any existing data
-    TestUtils.dropAllTables(session)
     TestUtils.dropAllSchemas(session)
 
     // first check metadata queries using session and JDBC connection

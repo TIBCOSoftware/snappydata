@@ -25,7 +25,9 @@ import org.apache.spark.sql.SnappySession
 trait SharedSnappySessionContext extends SharedSQLContext {
 
   override protected def createSparkSession: SnappySession = {
-    new TestSnappySession(
-      sparkConf.set("spark.hadoop.fs.file.impl", classOf[DebugFilesystem].getName))
+    val session = new TestSnappySession(sparkConf.set("spark.hadoop.fs.file.impl",
+      classOf[DebugFilesystem].getName))
+    session.setCurrentSchema("default")
+    session
   }
 }

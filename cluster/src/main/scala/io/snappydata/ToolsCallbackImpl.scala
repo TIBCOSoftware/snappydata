@@ -24,7 +24,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, Util}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
@@ -190,6 +190,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           }
           PrivilegeInfo.checkOwnership(userId, sd, sd, dd)
           sd.getAuthorizationId
+        } catch {
+          case se: StandardException => throw Util.generateCsSQLException(se)
         } finally {
           if (contextSet) conn.getTR.restoreContextStack()
         }

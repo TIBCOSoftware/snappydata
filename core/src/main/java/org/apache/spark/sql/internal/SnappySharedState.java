@@ -16,11 +16,11 @@
  */
 package org.apache.spark.sql.internal;
 
-import com.pivotal.gemfirexd.internal.engine.diag.HiveTablesVTI;
 import io.snappydata.sql.catalog.ConnectorExternalCatalog;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.ClusterMode;
+import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.SnappyEmbeddedMode;
 import org.apache.spark.sql.SnappySession;
@@ -29,13 +29,16 @@ import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
 import org.apache.spark.sql.catalyst.catalog.GlobalTempViewManager;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.collection.Utils;
+import org.apache.spark.sql.execution.CacheManager;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.ui.SQLListener;
 import org.apache.spark.sql.execution.ui.SQLTab;
 import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.HiveClientUtil$;
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.ui.SparkUI;
 
 /**
@@ -47,6 +50,11 @@ import org.apache.spark.ui.SparkUI;
 public final class SnappySharedState extends SharedState {
 
   public static String SPARK_DEFAULT_SCHEMA = Utils.toUpperCase(SessionCatalog.DEFAULT_DATABASE());
+
+  /**
+   * Instance of {@link SnappyCacheManager} to enable clearing cached plans.
+   */
+  private final CacheManager snappyCacheManager;
 
   /**
    * The ExternalCatalog implementation used for SnappyData in embedded mode.
@@ -65,6 +73,40 @@ public final class SnappySharedState extends SharedState {
   private final boolean initialized;
 
   private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
+
+  /**
+   * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
+   */
+  private static final class SnappyCacheManager extends CacheManager {
+
+    @Override
+    public void cacheQuery(Dataset<?> query, scala.Option<String> tableName,
+        StorageLevel storageLevel) {
+      super.cacheQuery(query, tableName, storageLevel);
+      // clear plan cache since cached representation can change existing plans
+      ((SnappySession)query.sparkSession()).clearPlanCache();
+    }
+
+    @Override
+    public void uncacheQuery(SparkSession session, LogicalPlan plan, boolean blocking) {
+      super.uncacheQuery(session, plan, blocking);
+      // clear plan cache since cached representation can change existing plans
+      ((SnappySession)session).clearPlanCache();
+    }
+
+    @Override
+    public void recacheByPlan(SparkSession session, LogicalPlan plan) {
+      super.recacheByPlan(session, plan);
+      // clear plan cache since cached representation can change existing plans
+      ((SnappySession)session).clearPlanCache();
+    }
+
+    public void recacheByPath(SparkSession session, String resourcePath) {
+      super.recacheByPath(session, resourcePath);
+      // clear plan cache since cached representation can change existing plans
+      ((SnappySession)session).clearPlanCache();
+    }
+  }
 
   /**
    * Create Snappy's SQL Listener instead of SQLListener
@@ -89,32 +131,24 @@ public final class SnappySharedState extends SharedState {
   private SnappySharedState(SparkContext sparkContext) {
     super(sparkContext);
 
-    Boolean oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get();
-    if (oldFlag != Boolean.TRUE) {
-      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(Boolean.TRUE);
-    }
-    try {
-      // avoid inheritance of activeSession
-      SparkSession.clearActiveSession();
-      ClusterMode clusterMode = SnappyContext.getClusterMode(sparkContext);
-      if (clusterMode instanceof ThinClientConnectorMode) {
-        this.embedCatalog = null;
-      } else {
-        this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
-            sparkContext, sparkContext.conf());
-      }
+    // avoid inheritance of activeSession
+    SparkSession.clearActiveSession();
 
-      // Initialize global temporary view manager with upper-case schema name to match
-      // the convention used by SnappyData.
-      String globalSchemaName = Utils.toUpperCase(super.globalTempViewManager().database());
-      this.globalViewManager = new GlobalTempViewManager(globalSchemaName);
-
-      this.initialized = true;
-    } finally {
-      if (oldFlag != Boolean.TRUE) {
-        HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(oldFlag);
-      }
+    this.snappyCacheManager = new SnappyCacheManager();
+    ClusterMode clusterMode = SnappyContext.getClusterMode(sparkContext);
+    if (clusterMode instanceof ThinClientConnectorMode) {
+      this.embedCatalog = null;
+    } else {
+      this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
+          sparkContext, sparkContext.conf());
     }
+
+    // Initialize global temporary view manager with upper-case schema name to match
+    // the convention used by SnappyData.
+    String globalSchemaName = Utils.toUpperCase(super.globalTempViewManager().database());
+    this.globalViewManager = new GlobalTempViewManager(globalSchemaName);
+
+    this.initialized = true;
   }
 
   public static synchronized SnappySharedState create(SparkContext sparkContext) {
@@ -154,6 +188,16 @@ public final class SnappySharedState extends SharedState {
       // create a new connector catalog instance for connector mode
       // each instance has its own set of credentials for authentication
       return new ConnectorExternalCatalog(session);
+    }
+  }
+
+  @Override
+  public CacheManager cacheManager() {
+    if (this.initialized) {
+      return this.snappyCacheManager;
+    } else {
+      // in super constructor, no harm in returning super's value at this point
+      return super.cacheManager();
     }
   }
 

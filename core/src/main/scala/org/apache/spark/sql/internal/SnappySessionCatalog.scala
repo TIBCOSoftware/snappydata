@@ -22,9 +22,9 @@ import java.net.URL
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
+import io.snappydata.sql.catalog.CatalogObjectType.getTableType
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -34,6 +34,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchPermanentFunctionException}
+import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, SubqueryAlias}
@@ -42,7 +43,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, FindDataSourceTable, LogicalRelation}
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, MutableRelation, RowLevelSecurityRelation}
+import org.apache.spark.sql.sources.{DestroyRelation, MutableRelation, RowLevelSecurityRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
 
@@ -78,7 +79,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   private[this] var skipDefaultSchemas = false
 
   // initialize default schema
-  {
+  val defaultSchemaName: String = {
     var defaultName = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
     if (defaultName.isEmpty) {
       // In smart connector, property name is different.
@@ -88,6 +89,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     defaultName = formatDatabaseName(IdUtil.getUserAuthorizationId(defaultName).replace('-', '_'))
     createSchema(defaultName, ignoreIfExists = true)
     setCurrentDatabase(defaultName)
+    defaultName
   }
 
   final def getCurrentSchema: String = getCurrentDatabase
@@ -279,24 +281,16 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     } else name
   }
 
-  private def checkSchemaPermission(schema: String, table: String, defaultUser: String): String = {
-    val callbacks = ToolsCallbackInit.toolsCallback
-    if (callbacks ne null) {
-      // allow creating entry for dummy table by anyone
-      if (!(schema.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)
-          && table.equalsIgnoreCase(JdbcExtendedUtils.DUMMY_TABLE_NAME))) {
-        val user = if (defaultUser eq null) {
-          snappySession.conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)
-        } else defaultUser
-        callbacks.checkSchemaPermission(schema, user)
-      } else defaultUser
-    } else defaultUser
+  private[sql] def checkSchemaPermission(schema: String, table: String,
+      defaultUser: String, ignoreIfNotExists: Boolean = false): String = {
+    SnappyExternalCatalog.checkSchemaPermission(schema, table, defaultUser,
+      snappySession.conf, ignoreIfNotExists)
   }
 
   protected[sql] def validateSchemaName(schemaName: String, checkForDefault: Boolean): Unit = {
     if (schemaName == globalTempViewManager.database) {
       throw new AnalysisException(s"$schemaName is a system reserved schema for global " +
-          s"temporary tables. You cannot create or set a schema with this name.")
+          s"temporary tables. You cannot create, drop or set a schema with this name.")
     }
     if (checkForDefault && schemaName == SnappyExternalCatalog.SPARK_DEFAULT_SCHEMA) {
       throw new AnalysisException(s"$schemaName is a system reserved schema.")
@@ -307,8 +301,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     name.database.isEmpty && tempTables.contains(formatTableName(name.table))
   }
 
-  /** Same as createDatabase but uses pre-defined defaults for CatalogDatabase. */
-  def createSchema(schemaName: String, ignoreIfExists: Boolean): Unit = {
+  /**
+   * Same as createDatabase but uses pre-defined defaults for CatalogDatabase.
+   * The passed schemaName should already be formatted by a call to [[formatDatabaseName]].
+   */
+  private[sql] def createSchema(schemaName: String, ignoreIfExists: Boolean): Unit = {
+    validateSchemaName(schemaName, checkForDefault = false)
     if (externalCatalog.databaseExists(schemaName)) {
       if (!ignoreIfExists) throw new AnalysisException(s"Schema '$schemaName' already exists")
     } else {
@@ -317,15 +315,74 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
   }
 
+  private[sql] def setCurrentSchema(schema: String): Unit = {
+    val schemaName = formatDatabaseName(schema)
+    if (schemaName != getCurrentSchema) {
+      // create the schema implicitly if not present
+      createSchema(schemaName, ignoreIfExists = true)
+      setCurrentDatabase(schemaName)
+      // invalidate cached plans which could be referring to old current schema
+      snappySession.clearPlanCache()
+    }
+  }
+
   override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit = {
     validateSchemaName(formatDatabaseName(schemaDefinition.name), checkForDefault = false)
     super.createDatabase(schemaDefinition, ignoreIfExists)
   }
 
+  /**
+   * Drop all the objects in a schema. The provided schema must already be formatted
+   * with a call to [[formatDatabaseName]].
+   */
+  def dropAllSchemaObjects(schemaName: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = {
+    if (schemaName == SnappyExternalCatalog.SYS_SCHEMA) {
+      throw new AnalysisException(s"$schemaName is a system reserved schema")
+    }
+
+    if (!externalCatalog.databaseExists(schemaName)) {
+      if (ignoreIfNotExists) return
+      else throw new AnalysisException(s"Schema $schemaName not found")
+    }
+    checkSchemaPermission(schemaName, table = "", defaultUser = null, ignoreIfNotExists)
+
+    if (cascade) {
+      // drop all the tables in order first, dependents followed by others
+      val allTables = externalCatalog.listTables(schemaName).flatMap(
+        table => externalCatalog.getTableOption(schemaName, table))
+      if (allTables.nonEmpty) {
+        val (dependents, others) = allTables.partition(t => t.tableType ==
+            CatalogTableType.VIEW || externalCatalog.getBaseTable(t).isDefined)
+        dependents.foreach(d => snappySession.dropTable(d.identifier, ifExists = true,
+          d.tableType == CatalogTableType.VIEW))
+        // drop streams at last
+        val (streams, tables) = others.partition(getTableType(_) == CatalogObjectType.Stream)
+        tables.foreach(t => snappySession.dropTable(t.identifier.unquotedString, ifExists = true))
+        if (streams.nonEmpty) {
+          streams.foreach(s => snappySession.dropTable(
+            s.identifier.unquotedString, ifExists = true))
+        }
+      }
+
+      // drop all the functions
+      val allFunctions = listFunctions(schemaName)
+      if (allFunctions.nonEmpty) {
+        allFunctions.foreach(f => dropFunction(f._1, ignoreIfNotExists = true))
+      }
+    }
+  }
+
   override def dropDatabase(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
     val schemaName = formatDatabaseName(schema)
+    // user cannot drop own schema
+    if (schemaName == defaultSchemaName) {
+      throw new AnalysisException(s"Cannot drop own schema $schemaName")
+    }
     validateSchemaName(formatDatabaseName(schemaName), checkForDefault = true)
+    dropAllSchemaObjects(schemaName, ignoreIfNotExists, cascade)
+
     super.dropDatabase(schemaName, ignoreIfNotExists, cascade)
   }
 
@@ -339,7 +396,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def listDatabases(): Seq[String] = synchronized {
     if (skipDefaultSchemas) {
       super.listDatabases().filter(s => s != SnappyExternalCatalog.SPARK_DEFAULT_SCHEMA &&
-          s != SnappyExternalCatalog.SYS_SCHEMA)
+          s != SnappyExternalCatalog.SYS_SCHEMA && s != defaultSchemaName)
     } else super.listDatabases()
   }
 
@@ -421,6 +478,14 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     super.dropTable(name, ignoreIfNotExists, purge)
   }
 
+  override def alterTable(table: CatalogTable): Unit = {
+    // first check required permission to alter objects in a schema
+    val schemaName = getSchemaName(table.identifier)
+    checkSchemaPermission(schemaName, table.identifier.table, defaultUser = null)
+
+    super.alterTable(table)
+  }
+
   override def alterTempViewDefinition(name: TableIdentifier,
       viewDefinition: LogicalPlan): Boolean = {
     super.alterTempViewDefinition(addMissingGlobalTempSchema(name), viewDefinition)
@@ -429,8 +494,32 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def getTempViewOrPermanentTableMetadata(name: TableIdentifier): CatalogTable =
     convertCharTypes(super.getTempViewOrPermanentTableMetadata(addMissingGlobalTempSchema(name)))
 
-  override def renameTable(oldName: TableIdentifier, newName: TableIdentifier): Unit =
+  override def renameTable(oldName: TableIdentifier, newName: TableIdentifier): Unit = {
+    // first check required permission to alter objects in a schema
+    val oldSchemaName = getSchemaName(oldName)
+    checkSchemaPermission(oldSchemaName, oldName.table, defaultUser = null)
+    val newSchemaName = getSchemaName(newName)
+    checkSchemaPermission(newSchemaName, newName.table, defaultUser = null)
+
+    // in-built tables don't support rename yet
+    super.getTableMetadataOption(oldName) match {
+      case Some(table) if DDLUtils.isDatasourceTable(table) &&
+          SnappyContext.isBuiltInProvider(table.provider.get) =>
+        throw new UnsupportedOperationException(
+          s"Table $oldName having provider '${table.provider.get}' does not support rename")
+      case _ =>
+    }
     super.renameTable(addMissingGlobalTempSchema(oldName), newName)
+  }
+
+  override def loadTable(table: TableIdentifier, loadPath: String, isOverwrite: Boolean,
+      holdDDLTime: Boolean): Unit = {
+    // first check required permission to alter objects in a schema
+    val schemaName = getSchemaName(table)
+    checkSchemaPermission(schemaName, table.table, defaultUser = null)
+
+    super.loadTable(table, loadPath, isOverwrite, holdDDLTime)
+  }
 
   def createPolicy(
       policyIdent: TableIdentifier,
@@ -554,6 +643,51 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       // `path` is a URL with a scheme
       uri.toURL
     }
+  }
+
+  override def createPartitions(tableName: TableIdentifier, parts: Seq[CatalogTablePartition],
+      ignoreIfExists: Boolean): Unit = {
+    // first check required permission to create objects in a schema
+    val schemaName = getSchemaName(tableName)
+    checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
+
+    super.createPartitions(tableName, parts, ignoreIfExists)
+  }
+
+  override def dropPartitions(tableName: TableIdentifier, specs: Seq[TablePartitionSpec],
+      ignoreIfNotExists: Boolean, purge: Boolean, retainData: Boolean): Unit = {
+    // first check required permission to drop objects in a schema
+    val schemaName = getSchemaName(tableName)
+    checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
+
+    super.dropPartitions(tableName, specs, ignoreIfNotExists, purge, retainData)
+  }
+
+  override def alterPartitions(tableName: TableIdentifier,
+      parts: Seq[CatalogTablePartition]): Unit = {
+    // first check required permission to alter objects in a schema
+    val schemaName = getSchemaName(tableName)
+    checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
+
+    super.alterPartitions(tableName, parts)
+  }
+
+  override def renamePartitions(tableName: TableIdentifier, specs: Seq[TablePartitionSpec],
+      newSpecs: Seq[TablePartitionSpec]): Unit = {
+    // first check required permission to alter objects in a schema
+    val schemaName = getSchemaName(tableName)
+    checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
+
+    super.renamePartitions(tableName, specs, newSpecs)
+  }
+
+  override def loadPartition(table: TableIdentifier, loadPath: String, spec: TablePartitionSpec,
+      isOverwrite: Boolean, holdDDLTime: Boolean, inheritTableSpecs: Boolean): Unit = {
+    // first check required permission to alter objects in a schema
+    val schemaName = getSchemaName(table)
+    checkSchemaPermission(schemaName, table.table, defaultUser = null)
+
+    super.loadPartition(table, loadPath, spec, isOverwrite, holdDDLTime, inheritTableSpecs)
   }
 
   // TODO: SW: clean up function creation to be like Spark with backward compatibility

@@ -119,6 +119,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def AUTHORIZATION: Rule0 = rule { keyword(Consts.AUTHORIZATION) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
   final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
+  final def CASCADE: Rule0 = rule { keyword(Consts.CASCADE) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def CODEGEN: Rule0 = rule { keyword(Consts.CODEGEN) }
@@ -127,6 +128,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
+  final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
@@ -187,6 +189,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
   final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
   final def TBLPROPERTIES: Rule0 = rule { keyword(Consts.TBLPROPERTIES) }
+  final def TEMP: Rule0 = rule { keyword(Consts.TEMP) }
   final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
@@ -385,7 +388,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def globalOrTemporary: Rule1[Boolean] = rule {
-    (GLOBAL ~ push(true)).? ~ TEMPORARY ~> ((g: Any) => g != None)
+    (GLOBAL ~ push(true)).? ~ (TEMPORARY | TEMP) ~> ((g: Any) => g != None)
   }
 
   protected def createView: Rule1[LogicalPlan] = rule {
@@ -452,7 +455,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createSchema: Rule1[LogicalPlan] = rule {
-    CREATE ~ SCHEMA ~ ifNotExists ~ identifier ~ (
+    CREATE ~ (SCHEMA | DATABASE) ~ ifNotExists ~ identifier ~ (
         AUTHORIZATION ~ (
             LDAPGROUP ~ ':' ~ ws ~ identifier ~> ((group: String) => group -> true) |
             identifier ~> ((id: String) => id -> false)
@@ -462,7 +465,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def dropSchema: Rule1[LogicalPlan] = rule {
-    DROP ~ SCHEMA ~ ifExists ~ identifier ~ RESTRICT.? ~> DropSchemaCommand
+    DROP ~ (SCHEMA | DATABASE) ~ ifExists ~ identifier ~ (RESTRICT ~ push(false) |
+        CASCADE ~ push(true)).? ~> ((exists: Boolean, schemaName: String, cascade: Any) =>
+      DropSchemaCommand(schemaName, exists, cascade.asInstanceOf[Option[Boolean]].contains(true)))
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
@@ -633,7 +638,7 @@ abstract class SnappyDDLParser(session: SparkSession)
             functionIdentifier ~> ((extended: Any, name: FunctionIdentifier) =>
           DescribeFunctionCommand(name,
             extended.asInstanceOf[Option[Boolean]].isDefined)) |
-        SCHEMA ~ (EXTENDED ~ push(true)).? ~ identifier ~>
+        (SCHEMA | DATABASE) ~ (EXTENDED ~ push(true)).? ~ identifier ~>
             ((extended: Any, name: String) =>
               DescribeDatabaseCommand(name, extended.asInstanceOf[Option[Boolean]].isDefined)) |
         (EXTENDED ~ push(true)).? ~ tableIdentifier ~>
@@ -667,7 +672,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def set: Rule1[LogicalPlan] = rule {
     SET ~ (
-        CURRENT.? ~ SCHEMA ~ '='.? ~ ws ~ identifier ~>
+        CURRENT.? ~ (SCHEMA | DATABASE) ~ '='.? ~ ws ~ identifier ~>
             ((schemaName: String) => SetSchemaCommand(schemaName)) |
         capture(ANY.*) ~> { (rest: String) =>
           val separatorIndex = rest.indexOf('=')
@@ -757,11 +762,11 @@ abstract class SnappyDDLParser(session: SparkSession)
     }
   }
 
-  final def tableSchema: Rule1[Seq[StructField]] = rule {
+  protected final def tableSchema: Rule1[Seq[StructField]] = rule {
     '(' ~ ws ~ (column + commaSep) ~ ')' ~ ws
   }
 
-  protected final def tableSchemaOpt: Rule1[Option[Seq[StructField]]] = rule {
+  final def tableSchemaOpt: Rule1[Option[Seq[StructField]]] = rule {
     (tableSchema ~> (Some(_)) | ws ~> (() => None)).named("tableSchema") ~ EOI
   }
 

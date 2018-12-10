@@ -17,22 +17,25 @@
 
 package io.snappydata.sql.catalog
 
+import java.sql.SQLException
 import java.util.concurrent.ExecutionException
 
 import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.google.common.util.concurrent.UncheckedExecutionException
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
-import io.snappydata.Property
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
-import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTablePartition, CatalogTableType, ExternalCatalog}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.hive.HiveExternalCatalog
@@ -40,7 +43,7 @@ import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, SnappyContext, SnappyParserConsts, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, RuntimeConfig, SnappyContext, SnappyParserConsts, TableNotFoundException}
 
 trait SnappyExternalCatalog extends ExternalCatalog {
 
@@ -73,7 +76,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
   }
 
   override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
+    throw new UnsupportedOperationException("Schema definitions cannot be altered")
   }
 
   /**
@@ -188,47 +191,8 @@ trait SnappyExternalCatalog extends ExternalCatalog {
   }
 
   override def alterTableSchema(schemaName: String, table: String, schema: StructType): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def renameTable(schema: String, oldName: String, newName: String): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def createPartitions(schema: String, table: String, parts: Seq[CatalogTablePartition],
-      ignoreIfExists: Boolean): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def dropPartitions(schema: String, table: String, parts: Seq[TablePartitionSpec],
-      ignoreIfNotExists: Boolean, purge: Boolean, retainData: Boolean): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def renamePartitions(schema: String, table: String, specs: Seq[TablePartitionSpec],
-      newSpecs: Seq[TablePartitionSpec]): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def alterPartitions(schema: String, table: String,
-      parts: Seq[CatalogTablePartition]): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def loadTable(schema: String, table: String, loadPath: String,
-      isOverwrite: Boolean, holdDDLTime: Boolean): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def loadPartition(schema: String, table: String, loadPath: String,
-      partition: TablePartitionSpec, isOverwrite: Boolean, holdDDLTime: Boolean,
-      inheritTableSpecs: Boolean): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
-  }
-
-  override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
-      partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
-    throw new IllegalStateException("Not expected to be invoked")
+    val catalogTable = getTable(schemaName, table)
+    alterTable(catalogTable.copy(schema = schema))
   }
 
   /**
@@ -323,6 +287,27 @@ object SnappyExternalCatalog {
     val dotIndex = table.indexOf('.')
     if (dotIndex > 0) table.substring(0, dotIndex) -> table.substring(dotIndex + 1)
     else defaultSchema -> table
+  }
+
+  def checkSchemaPermission(schema: String, table: String, defaultUser: String,
+      conf: RuntimeConfig = null, ignoreIfNotExists: Boolean = false): String = {
+    val callbacks = ToolsCallbackInit.toolsCallback
+    if (callbacks ne null) {
+      // allow creating entry for dummy table by anyone
+      if (!(schema.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)
+          && table.equalsIgnoreCase(JdbcExtendedUtils.DUMMY_TABLE_NAME))) {
+        val user = if (defaultUser eq null) {
+          conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)
+        } else defaultUser
+        try {
+          callbacks.checkSchemaPermission(schema, user)
+        } catch {
+          // ignore permission check failure if not present in store and ignoreIfNotExists is set
+          case sqle: SQLException if ignoreIfNotExists &&
+              sqle.getSQLState == SQLState.LANG_SCHEMA_DOES_NOT_EXIST => defaultUser
+        }
+      } else defaultUser
+    } else defaultUser
   }
 }
 

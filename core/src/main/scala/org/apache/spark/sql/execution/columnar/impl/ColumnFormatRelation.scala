@@ -31,6 +31,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -428,10 +429,11 @@ abstract class BaseColumnFormatRelation(
         if (isInfoEnabled) {
           val schemaString = JdbcExtendedUtils.schemaString(schema, connProperties.dialect)
           val optsString = if (origOptions.nonEmpty) {
-            origOptions.map(p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
+            origOptions.filter(p => !Utils.toUpperCase(p._1).startsWith(
+              SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
+              p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
           } else ""
-          logInfo(s"Executing DDL (url=${connProperties.url}; " +
-              s"props=${connProperties.connProps}): CREATE TABLE ${quotedName(tableName)} " +
+          logInfo(s"Executing DDL: CREATE TABLE ${quotedName(tableName)} " +
               s"$schemaString USING $provider$optsString")
         }
         if (pass != null) {

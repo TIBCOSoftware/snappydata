@@ -19,6 +19,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.execution.CoGroupedIteratorSuite
 import org.apache.spark.sql.test.SharedSnappySessionContext
 
-class SnappyCoGroupedIteratorSuite extends CoGroupedIteratorSuite with SharedSnappySessionContext {
-
-}
+class SnappyCoGroupedIteratorSuite extends CoGroupedIteratorSuite with SharedSnappySessionContext
