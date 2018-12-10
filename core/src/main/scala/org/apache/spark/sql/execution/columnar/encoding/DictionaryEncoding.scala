@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 
 import java.nio.ByteBuffer
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{DictionaryMap, LongKey, ObjectHashSet}
@@ -95,7 +96,8 @@ abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
     var index = 0
     Utils.getSQLDataType(dataType) match {
       case StringType =>
-        stringDictionary = new StringDictionary(cursor, numElements)
+        stringDictionary = new StringDictionary(cursor, numElements,
+          GemFireCacheImpl.getCurrentBufferAllocator)
         position = stringDictionary.initialize(columnBytes)
       case IntegerType | DateType =>
         intDictionary = new Array[Int](dictionaryLen)
@@ -120,8 +122,8 @@ abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
   // TODO: PERF: optimize for local index access case by filling
   // in the dictionary array lazily on access
   override def readUTF8String(columnBytes: AnyRef, nonNullPosition: Int): UTF8String =
-  stringDictionary.getString(columnBytes,
-    ColumnEncoding.readShort(columnBytes, baseCursor + (nonNullPosition << 1)))
+    stringDictionary.getString(columnBytes,
+      ColumnEncoding.readShort(columnBytes, baseCursor + (nonNullPosition << 1)))
 
   override final def getStringDictionary: StringDictionary = stringDictionary
 
@@ -133,6 +135,13 @@ abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
 
   override def readLong(columnBytes: AnyRef, nonNullPosition: Int): Long =
     longDictionary(ColumnEncoding.readShort(columnBytes, baseCursor + (nonNullPosition << 1)))
+
+  override def close(): Unit = {
+    if (stringDictionary ne null) {
+      stringDictionary.close()
+      stringDictionary = null
+    }
+  }
 }
 
 abstract class BigDictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
@@ -428,8 +437,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     4L /* dictionary size */ + dictionarySize + numIndexBytes
   }
 
-  override def close(): Unit = {
-    super.close()
+  override private[sql] def close(releaseData: Boolean): Unit = {
+    super.close(releaseData)
     if ((stringMap ne null) && (stringMap.getKeyData ne null)) {
       stringMap.release()
     }
@@ -439,14 +448,21 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   }
 }
 
-final class StringDictionary(baseCursor: Long, positions: Array[Int],
-    strings: Array[UTF8String], numElements: Int) {
+final class StringDictionary(baseCursor: Long, positions: ByteBuffer,
+    strings: Array[UTF8String], allocator: BufferAllocator, numElements: Int) {
 
-  def this(cursor: Long, numElements: Int) = {
+  private[this] val positionsObj =
+    if (positions ne null) allocator.baseObject(positions) else null
+  private[this] val positionsBaseOffset =
+    if (positions ne null) allocator.baseOffset(positions) else 0L
+
+  def this(cursor: Long, numElements: Int, allocator: BufferAllocator) = {
     // for medium/large dictionaries, create objects on the fly rather than store
     // in dictionary to avoid GC issues with long-lived objects (SNAP-1877)
-    this(cursor, if (numElements > 1000) new Array[Int](numElements + 1) else null,
-      if (numElements <= 1000) new Array[UTF8String](numElements + 1) else null, numElements)
+    this(cursor,
+      if (numElements > 1000) allocator.allocate((numElements + 1) << 2, "STRING_DICTIONARY")
+      else null, if (numElements <= 1000) new Array[UTF8String](numElements + 1) else null,
+      allocator, numElements)
   }
 
   def initialize(columnBytes: AnyRef): Long = {
@@ -464,11 +480,13 @@ final class StringDictionary(baseCursor: Long, positions: Array[Int],
     } else {
       val cursor = baseCursor
       while (index < numElements) {
-        positions(index) = intPos + 4
+        Platform.putInt(positionsObj, positionsBaseOffset + (index << 2), intPos + 4)
         val size = ColumnEncoding.readInt(columnBytes, cursor + intPos)
         intPos += size + 4
         index += 1
       }
+      // zero at the last position
+      Platform.putInt(positionsObj, positionsBaseOffset + (index << 2), 0)
       cursor + intPos
     }
   }
@@ -479,7 +497,7 @@ final class StringDictionary(baseCursor: Long, positions: Array[Int],
     if (strings ne null) {
       strings(index)
     } else {
-      val dictionaryPosition = positions(index)
+      val dictionaryPosition = Platform.getInt(positionsObj, positionsBaseOffset + (index << 2))
       // last uninitialized cursor indicates null value
       if (dictionaryPosition != 0) {
         val cursor = baseCursor + dictionaryPosition
@@ -490,6 +508,12 @@ final class StringDictionary(baseCursor: Long, positions: Array[Int],
   }
 
   def size(): Int = numElements
+
+  def close(): Unit = {
+    if (positions ne null) {
+      BufferAllocator.releaseBuffer(positions)
+    }
+  }
 }
 
 private final class LongIndexKey(_l: Long, var index: Int)
