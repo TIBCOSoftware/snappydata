@@ -57,7 +57,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
-import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.command.{ExecutedCommandExec, UncacheTableCommand}
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
@@ -90,6 +90,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * ----------------------- */
 
   private[spark] val id = SnappySession.newId()
+
+  private[this] val tempCacheIndex = new AtomicInteger(0)
 
   new FinalizeSession(this)
 
@@ -414,7 +416,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] def getHashVar(ctx: CodegenContext,
       keyVars: Seq[String]): Option[String] = getContextObject(ctx, "H", keyVars)
 
-  private[sql] def cachePutInto(plan: Option[LogicalPlan], table: String): Boolean = {
+  private[sql] def cachePutInto(doCache: Boolean, updateSubQuery: LogicalPlan,
+      table: String): Option[LogicalPlan] = {
     // first acquire the global lock for putInto
     val lock = SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode => null
@@ -422,43 +425,50 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         PartitionedRegion.getRegionLock("PUTINTO_" + table, GemFireCacheImpl.getExisting)
     }
     if (lock ne null) lock.lock()
-    var hasUpdates = false
+    var newUpdateSubQuery: Option[LogicalPlan] = None
     try {
-      val cachedPlan = plan match {
-        case Some(updateSubQuery) =>
-          val joinDS = new Dataset(this, updateSubQuery, RowEncoder(updateSubQuery.schema))
-          joinDS.persist()
-          if (joinDS.count() > 0) {
-            hasUpdates = true
-            plan
-          } else {
-            joinDS.unpersist(blocking = true)
-            None
-          }
-        case None =>
-          // assume that there are updates
-          hasUpdates = true
+      val cachedTable = if (doCache) {
+        val tableName = s"snappyDataInternalTempPutIntoCache${tempCacheIndex.incrementAndGet()}"
+        val tableIdent = new TableIdentifier(tableName)
+        // use cache table command to display full plan
+        SnappyCacheTableCommand(tableIdent, Some(updateSubQuery), isLazy = false).run(this)
+        val joinDS = this.table(tableIdent)
+        if (joinDS.count() > 0) {
+          newUpdateSubQuery = Some(joinDS.logicalPlan)
+          Some(tableIdent)
+        } else {
+          dropPutIntoCacheTable(tableIdent)
           None
+        }
+      } else {
+        // assume that there are updates
+        newUpdateSubQuery = Some(updateSubQuery)
+        None
       }
-      if (hasUpdates) {
+      if (newUpdateSubQuery.isDefined) {
         // Adding to context after the count operation, as count will clear the context object.
-        addContextObject[(Option[LogicalPlan], PartitionedRegion.RegionLock)](
-          CACHED_PUTINTO_UPDATE_PLAN, cachedPlan -> lock)
+        addContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+          CACHED_PUTINTO_UPDATE_PLAN, cachedTable -> lock)
       }
-      hasUpdates
+      newUpdateSubQuery
     } finally {
       // release lock immediately if no updates are to be done
-      if (!hasUpdates && (lock ne null)) lock.unlock()
+      if (newUpdateSubQuery.isEmpty && (lock ne null)) lock.unlock()
     }
+  }
+
+  private def dropPutIntoCacheTable(tableIdent: TableIdentifier): Unit = {
+    UncacheTableCommand(tableIdent, ifExists = false).run(this)
+    dropTable(sessionCatalog.newQualifiedTableName(tableIdent), ifExists = false)
   }
 
   private[sql] def clearPutInto(): Unit = {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
-      case (cachedPlan: Option[LogicalPlan], lock) =>
+      case (cachedTable: Option[_], lock) =>
         if (lock != null) lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
-        if (cachedPlan.isDefined) {
-          sharedState.cacheManager.uncacheQuery(this, cachedPlan.get, blocking = true)
+        if (cachedTable.isDefined) {
+          dropPutIntoCacheTable(cachedTable.get.asInstanceOf[TableIdentifier])
         }
     }
   }
@@ -2288,9 +2298,8 @@ object SnappySession extends Logging {
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
-    val parsed = parser.parsePlan(sqlText, clearExecutionData = true)
+    val plan = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
-    val plan = if (planCaching) session.sessionState.preCacheRules.execute(parsed) else parsed
     val paramLiterals = parser.sqlParser.getAllLiterals
     val paramsId = parser.sqlParser.getCurrentParamsId
     val key = CachedKey(session, session.getCurrentSchema,

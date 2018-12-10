@@ -38,6 +38,15 @@ Use the following steps to connect Tableau to SnappyData using Thrift Server tha
 	!!! Note
     	The **Sign In** button is disabled if Simba Spark ODBC Driver is not already installed on your system.  To enable it, click the **Download and Install the drivers **link and install Simba Spark ODBC Driver. Now the **Sign in** button is enabled.
 
+!!!Note
+When using **Tableau extract** feature, you may need to configure the following two options if your extracted data set size will be large. 
+
+1) **Set the max result size allowed by Snappydata**: By default, Snappydata will terminate a query whose result exceeds 1GB. You can set spark.driver.MaxResultSize option on the Lead node and bounce your cluster. This option is described here - https://github.com/SnappyDataInc/snappydata/blob/master/docs/configuring_cluster/property_description.md
+
+2) **Configure streaming of result set to Tableau from SnappyData hive server**:  Tableau permits 'initial SQL' to be sent to the server when creating a data source connection as described here - https://onlinehelp.tableau.com/current/pro/desktop/en-us/connect_basic_initialsql.htm. 
+In the Initial SQL window type - set spark.sql.thriftServer.incrementalCollect=true 
+
+
 <a id=odbcdritab></a>
 ## Connect Tableau using SnappyData ODBC Driver
 
