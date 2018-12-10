@@ -68,7 +68,6 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] val taskContext = TaskContext.get()
 
   private[this] val consumer = if (taskContext ne null) {
-    // PS: Refactored the Utils.taskMemoryManager() to SharedUtils.taskMemoryManager()
     new ObjectHashSetMemoryConsumer(SharedUtils.taskMemoryManager(taskContext))
   } else null
 

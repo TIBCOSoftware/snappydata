@@ -98,46 +98,15 @@ object SharedExternalStoreUtils {
 
   }
 
-  // TODO:PS:Review Methods from the ExternalStoreUtils.scala - Duplicate entries
-  // Start-----------
-  private def addProperty(props: mutable.Map[String, String], key: String,
-      default: String): Unit = {
-    if (!props.contains(key)) props.put(key, default)
-  }
-
   private def defaultMaxEmbeddedPoolSize: String =
-    String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
+    SharedExternalStoreUtils.defaultMaxEmbeddedPoolSize
 
   private def defaultMaxExternalPoolSize: String =
-    String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
+    SharedExternalStoreUtils.defaultMaxExternalPoolSize
 
   private def getAllPoolProperties(url: String, driver: String,
       poolProps: Map[String, String], hikariCP: Boolean,
-      isEmbedded: Boolean): Map[String, String] = {
-    // setup default pool properties
-    val props = new mutable.HashMap[String, String]()
-    if (poolProps.nonEmpty) props ++= poolProps
-    if (driver != null && !driver.isEmpty) {
-      addProperty(props, "driverClassName", driver)
-    }
-    val defaultMaxPoolSize = if (isEmbedded) defaultMaxEmbeddedPoolSize
-    else defaultMaxExternalPoolSize
-    if (hikariCP) {
-      props.put("jdbcUrl", url)
-      addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
-      addProperty(props, "minimumIdle", "10")
-      addProperty(props, "idleTimeout", "120000")
-    } else {
-      props.put("url", url)
-      addProperty(props, "maxActive", defaultMaxPoolSize)
-      addProperty(props, "maxIdle", defaultMaxPoolSize)
-      addProperty(props, "initialSize", "4")
-      addProperty(props, "testOnBorrow", "true")
-      // embedded validation check is cheap
-      if (isEmbedded) addProperty(props, "validationInterval", "0")
-      else addProperty(props, "validationInterval", "10000")
-    }
-    props.toMap
-  }
-  // End-----------
+      isEmbedded: Boolean): Map[String, String] =
+    SharedExternalStoreUtils.getAllPoolProperties(url, driver,
+      poolProps, hikariCP, isEmbedded)
 }

@@ -23,12 +23,6 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
 
-/*
- * TODO:PS:Review
- * Shifted from the ColumnBatch.scala it also need to be
- * accessed for V2Connector. Added into the shared encoders
- * module.
- */
 abstract class ResultSetIterator[A](conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext,
     closeConnectionOnResultsClose: Boolean = true)
@@ -106,12 +100,6 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 }
 
-/*
- * TODO:PS:Review
- * Shifted from the ColumnBatch.scala it also need to be
- * accessed for V2Connector. Added into the shared encoders
- * module.
- */
 final class ColumnBatchIteratorOnRS(conn: Connection,
     projection: Array[Int], stmt: Statement, rs: ResultSet,
     context: TaskContext, partitionId: Int)

@@ -28,7 +28,9 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def close(): Unit = {
-    // TODO:PS:Review does any close or cleanup required.
+    // TODO Check for the close operation on the
+    // ColumnVector, whenever the current columnVector
+    // read completed by the upstream spark.
   }
 
   override def hasNull: Boolean = {
