@@ -647,6 +647,22 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assert(!c1s.sameElements(c2s))
     }
 
+    test("nvl2"){
+        query = "SELECT nvl2(NULL, 2, 1)"
+        var sparkDf = sparkSession.sql(s"$query")
+        var snappyDf = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf)
+
+        query = "SELECT nvl2( 9, 3, 1)"
+        sparkDf = sparkSession.sql(s"$query")
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
     test("posexplode"){
         query = "SELECT posexplode(array(10,20))"
         var sparkDf = sparkSession.sql(s"$query")
@@ -1355,6 +1371,40 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
+    }
+
+    test("log10"){
+
+        query = "SELECT log10(10)"
+        var sparkDf = sparkSession.sql(s"$query")
+        var snappyDf = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf)
+
+        query = "SELECT log10(0)"
+        sparkDf = sparkSession.sql(s"$query")
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
+
+        query = "SELECT log10(-2)"
+        sparkDf = sparkSession.sql(s"$query")
+        snappyDf = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf)
+
+        query = "SELECT log10(null)"
+        sparkDf = sparkSession.sql(s"$query")
+        snappyDf = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf)
+
+        // without alias below query throws error
+        query = "SELECT log10(1.2)"
+        sparkDf = sparkSession.sql(s"$query")
+        snappyDf = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf)
+
     }
 
     test("log1p"){
