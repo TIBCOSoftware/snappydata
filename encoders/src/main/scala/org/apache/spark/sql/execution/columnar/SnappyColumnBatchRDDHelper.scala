@@ -1,5 +1,4 @@
 /*
- * TODO COMMENT HERE
  */
 package org.apache.spark.sql.execution.columnar
 
@@ -94,7 +93,8 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
       val field = schema.fields(columnOrdinal - 1)
 
       val columnVector = new SnappyColumnVector(field.dataType, field,
-        batchBuffer, scan_batchNumRows, columnOrdinal)
+        batchBuffer, scan_batchNumRows, columnOrdinal,
+        columnBatchIterator.getDeletedColumnDecoder)
 
       columnVectors(vectorIndex) = columnVector
       vectorIndex = vectorIndex + 1
@@ -211,8 +211,8 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
 
 object SnappyColumnBatchRDDHelper {
 
-  // TODO:PS:Review: Moved here from the SmartConnectorRDDHelper
-  // and replaced all occurances with
+  // Moved here from the SmartConnectorRDDHelper
+  // and replaced all occurrences in the JDBCSourceAsAColumnarStore with
   // the V2ColumnBatchDecoderHeloper.snapshotTxIdForRead wise.
   var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
   var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]

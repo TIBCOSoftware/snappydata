@@ -5,13 +5,14 @@ package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
 
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDecoder, ColumnEncoding}
 import org.apache.spark.sql.types.{DataType, Decimal, StructField}
 import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarArray, ColumnarMap}
 import org.apache.spark.unsafe.types.UTF8String
 
 class SnappyColumnVector(dataType: DataType, structField: StructField,
-    byteBuffer: ByteBuffer, numOfRow: Int, ordinal: Int)
+    byteBuffer: ByteBuffer, numOfRow: Int, ordinal: Int,
+    deletedColumnDecoder: ColumnDeleteDecoder)
     extends ColumnVector(dataType: DataType) {
 
   private val columnDecoder = ColumnEncoding.getColumnDecoder(byteBuffer, structField,
@@ -28,11 +29,20 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def close(): Unit = {
-    // TODO:PS:Review does any close or cleanup required.
+    // TODO: look for the clean up part if any after the
+    // columnVector read completion from upstream spark.
   }
 
   override def hasNull: Boolean = {
     columnDecoder.hasNulls
+  }
+
+  def skipDeletedRows(rowId: Int): Unit = {
+    if (deletedColumnDecoder != null) {
+      while (deletedColumnDecoder.deleted(rowId + rowOrdinal - currentNullCount)) {
+        rowOrdinal = rowOrdinal + 1
+      }
+    }
   }
 
   @inline
@@ -67,31 +77,38 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def getInt(rowId: Int): Int = {
-    columnDecoder.readInt(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readInt(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getBoolean(rowId: Int): Boolean = {
-    columnDecoder.readBoolean(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readBoolean(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getByte(rowId: Int): Byte = {
-    columnDecoder.readByte(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readByte(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getShort(rowId: Int): Short = {
-    columnDecoder.readShort(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readShort(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getLong(rowId: Int): Long = {
-    columnDecoder.readLong(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readLong(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getFloat(rowId: Int): Float = {
-    columnDecoder.readFloat(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readFloat(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getDouble(rowId: Int): Double = {
-    columnDecoder.readDouble(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readDouble(arrayOfBytes, rowId + rowOrdinal- currentNullCount)
   }
 
   override def getArray(rowId: Int): ColumnarArray = {
@@ -119,15 +136,19 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def getDecimal(rowId: Int, precision: Int, scale: Int): Decimal = {
-    columnDecoder.readDecimal(arrayOfBytes, rowId - currentNullCount, precision, scale)
+    skipDeletedRows(rowId)
+    columnDecoder.readDecimal(arrayOfBytes, rowId + rowOrdinal -
+     currentNullCount, precision, scale)
   }
 
   override def getUTF8String(rowId: Int): UTF8String = {
-    columnDecoder.readUTF8String(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readUTF8String(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getBinary(rowId: Int): Array[Byte] = {
-    columnDecoder.readBinary(arrayOfBytes, rowId - currentNullCount)
+    skipDeletedRows(rowId)
+    columnDecoder.readBinary(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
   }
 
   override def getChild(ordinal: Int): ColumnVector = {
