@@ -148,6 +148,8 @@ abstract class SnappyFunSuite
   }
 
   override def beforeAll(): Unit = {
+    log.info("Snappy Config:" + snc.sessionState.conf.getAllConfs.toString())
+
     baseCleanup()
   }
 
