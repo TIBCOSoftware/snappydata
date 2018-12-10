@@ -108,15 +108,15 @@ case class SnappyStoreSink(snappySession: SnappySession,
       }
     }
 
-    val hashAggregateSizeChanged = HashAggregateSize.get(snappySession.sessionState.conf)
+    val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
-    if (hashAggregateSizeChanged) {
+    if (hashAggregateSizeIsDefault) {
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
       sinkCallback.process(snappySession, parameters, batchId, convert(data), posDup)
     } finally {
-      if (hashAggregateSizeChanged) {
+      if (hashAggregateSizeIsDefault) {
         HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
       }
     }
@@ -231,7 +231,6 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         df.groupBy(keyCols.head, keyCols.tail: _*)
             .agg(exprs.head, exprs.tail: _*)
             .select(columns: _*)
-            .select(df.columns.head, df.columns.tail: _*)
       }
       conflatedDf.cache()
     }
