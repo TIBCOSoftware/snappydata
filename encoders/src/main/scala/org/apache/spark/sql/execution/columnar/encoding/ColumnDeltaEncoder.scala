@@ -689,7 +689,8 @@ object DeltaWriter {
              |};
           """.stripMargin
         }
-        // PS: temporary commented it
+        // Commented the debug statement just to avoid migrating [[CodeGeneration]]
+        // class into the encoders module.
         /* CodeGeneration.logDebug(
           s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression") */
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
