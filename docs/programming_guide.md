@@ -5,7 +5,7 @@ All SnappyData managed tables are also accessible as DataFrame and the API exten
 It is therefore recommended that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
 and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). You can also store and manage arbitrary RDDs (or even Spark DataSets) through the implicit or explicit transformation to a DataFrame. While the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](/sql_reference.md).
 
-In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
+In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters.
 Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but it can also be reliably managed on disk.
 
 The following topics are covered in this section:
@@ -23,6 +23,8 @@ The following topics are covered in this section:
 * [Working with Hadoop YARN Cluster Manager](programming_guide/working_with_hadoop_yarn_cluster_manager.md)
 
 * [Using JDBC with SnappyData](programming_guide/using_jdbc_with_snappydata.md)
+
+* [Using SnappyData for any Spark Distribution](/programming_guide/spark_jdbc_connector.md)
 
 * [Multiple Language Binding using Thrift Protocol](programming_guide/multiple_language_binding_using_thrift_protocol.md)
 
