@@ -19,6 +19,8 @@ package org.apache.spark.sql.execution.benchmark
 import java.sql.{Date, DriverManager, Timestamp}
 import java.time.{ZoneId, ZonedDateTime}
 
+import scala.util.Random
+
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
@@ -273,6 +275,8 @@ object TAQTest extends Logging with Assertions {
     System.runFinalization()
   }
 
+  private val random = new Random()
+
   def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
     val cores = math.min(16, Runtime.getRuntime.availableProcessors())
     val conf = new SparkConf()
@@ -283,8 +287,9 @@ object TAQTest extends Logging with Assertions {
       conf.set("snappydata.store.memory-size", "1200m")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
-    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+        .set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+        .set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+        .set("snappydata.sql.planCaching", random.nextBoolean().toString)
     if (addOn != null) {
       addOn(conf)
     }
