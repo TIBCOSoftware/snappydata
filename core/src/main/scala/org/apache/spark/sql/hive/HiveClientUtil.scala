@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -128,8 +128,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
    * meta-store that is configured in the hive-site.xml file.
    */
   private def newClientWithLogSetting(): HiveClient = {
-    val currentLevel = ClientSharedUtils.convertToJavaLogLevel(
-      LogManager.getRootLogger.getLevel)
+    val currentLevel = LogManager.getRootLogger.getLevel
     try {
       ifSmartConn(() => {
         val props = new Properties()
@@ -184,8 +183,7 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {
-      logURL = dbURL + ";default-schema=" + SystemProperties.SNAPPY_HIVE_METASTORE +
-          ";user=" + user.get
+      logURL = dbURL + ";user=" + user.get
       logURL + ";password=" + password.get + ";"
     } else {
       metadataConf.setVar(ConfVars.METASTORE_CONNECTION_USER_NAME,
@@ -290,7 +288,8 @@ private class HiveClientUtil(sparkContext: SparkContext) extends Logging {
             SnappyHiveCatalog.getCommonJDBCSuffix + ";skip-constraint-checks=true",
             Constant.JDBC_EMBEDDED_DRIVER)
       case ThinClientConnectorMode(_, url) =>
-        (url + ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
+        (url + SnappyHiveCatalog.getCommonJDBCSuffix +
+            ";route-query=false;skip-constraint-checks=true;", Constant.JDBC_CLIENT_DRIVER)
     }
   }
 }

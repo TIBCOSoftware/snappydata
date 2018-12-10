@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,6 +31,12 @@ public class SnappyPrms extends BasePrms {
   public static Long sqlScriptNames;
 
   /**
+   * Parameter used to get the user specified script names.
+   * (VectosetValues of Strings) A list of values for script Names to execute.
+   */
+  public static Long scriptNames;
+
+  /**
    * Parameter used to get the user specified data location List for the sql scripts.
    * (VectorsetValues of Strings) A list of values for dataLocation to be replaced in the
    * sql scripts.
@@ -41,6 +47,18 @@ public class SnappyPrms extends BasePrms {
    * Framework will treat its corresponding parameter as " " string in this case.
    */
   public static Long dataLocation;
+
+
+  /**
+   * Parameter used to get the user specified script argument List for the scripts.
+   * (VectorsetValues of Strings) A list of values for scriptArgs for the scripts to be executed in test.
+   * If no arguments are required for script then expected value to be provided for param is :
+   * Empty String : " " in case if user don't want to maintain the sequence.
+   * Or else provide the script that does not require path at the end in list of
+   * scriptNames parameter.
+   * Framework will treat its corresponding parameter as " " string in this case.
+   */
+  public static Long scriptArgs;
 
   /**
    * Parameter used to get the user specified persistence mode List for the sql scripts.
@@ -312,9 +330,31 @@ public class SnappyPrms extends BasePrms {
   public static Long sleepTimeSecsForJobStatus;
 
   /**
+   * (int) how long (seconds) it should wait before restarting the VM
+   */
+  public static Long sleepTimeSecsBeforeRestart;
+
+  /**
+   * (boolean) should the process execute in background
+   */
+
+  public static Long executeInBackground;
+
+  /**
+   * (boolean) whether to test conflation.
+   */
+
+  public static Long isConflationTest;
+
+  /**
    * (int) how long (seconds) it should wait before retrieving server status
    */
   public static Long sleepTimeSecsForMemberStatus;
+
+  /**
+   * (int) number of threads required for concurrent execution of queries/tasks.
+   */
+  public static Long numThreadsForConcExecution;
 
   /**
    * (int) warmUp time in secs for concurrenct queries execution.
@@ -443,18 +483,6 @@ public class SnappyPrms extends BasePrms {
   public static Long serverMemory;
 
   /**
-   * (String) criticalHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * if not provided.
-   */
-  public static Long criticalHeapPercentage;
-
-  /**
-   * (String) evictionHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * of critical-heap-percentage if not provided.
-   */
-  public static Long evictionHeapPercentage;
-
-  /**
    * (String) Memory to be used while starting the Lead process. Defaults to 1GB if not provided.
    */
   public static Long leadMemory;
@@ -535,6 +563,11 @@ public class SnappyPrms extends BasePrms {
   public static Long hasDynamicAppProps;
 
   /**
+   * (Boolean) parameter to pass connectionURL in APP_PROPS required for JDBC connection in snappy job.
+   */
+  public static Long useJDBCConnInSnappyJob;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
@@ -600,6 +633,16 @@ public class SnappyPrms extends BasePrms {
     return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
+  public static int getSleepTimeSecsBeforRestart() {
+    Long key = sleepTimeSecsBeforeRestart;
+    return tasktab().intAt(key, tab().intAt(key, 180));
+  }
+
+  public static boolean executeInBackGround() {
+    Long key = executeInBackground;
+    return tasktab().booleanAt(key, tab().booleanAt(key, true));
+  }
+
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
     return tasktab().intAt(key, tab().intAt(key, 120));
@@ -642,25 +685,6 @@ public class SnappyPrms extends BasePrms {
     if (serverHeapSize == null) return "";
     serverHeapSize = " -heap-size=" + serverHeapSize;
     return serverHeapSize;
-  }
-
-  public static String getCriticalHeapPercentage() {
-    String criticalHeapPercentageString = " -critical-heap-percentage=" + tab().stringAt
-        (criticalHeapPercentage, "90");
-    return criticalHeapPercentageString;
-  }
-
-  public static String calculateDefaultEvictionPercentage() {
-    int criticalHeapPercent = Integer.parseInt(tab().stringAt(criticalHeapPercentage, "90"));
-    int evictionHeapPercent = (criticalHeapPercent * 90) / 100;
-    String evictionHeapPercentString = String.valueOf(evictionHeapPercent);
-    return evictionHeapPercentString;
-  }
-
-  public static String getEvictionHeapPercentage() {
-    String evictionHeapPercentageString = " -eviction-heap-percentage=" + tab().stringAt
-        (evictionHeapPercentage, calculateDefaultEvictionPercentage());
-    return evictionHeapPercentageString;
   }
 
   public static String getLeadMemory() {
@@ -867,8 +891,18 @@ public class SnappyPrms extends BasePrms {
     return snappyLogLevel;
   }
 
+  public static String getLogFileName() {
+    Long key = logFileName;
+    return tasktab().stringAt(key, null);
+  }
+
   public static Vector getSQLScriptNames() {
     Long key = sqlScriptNames;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+  }
+
+  public static Vector getScriptNames() {
+    Long key = scriptNames;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
@@ -894,6 +928,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getDataLocationList() {
     Long key = dataLocation;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getScriptArgs() {
+    Long key = scriptArgs;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
@@ -974,6 +1013,11 @@ public class SnappyPrms extends BasePrms {
 
   public static boolean hasDynamicAppProps() {
     Long key = hasDynamicAppProps;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean useJDBCConnInSnappyJob() {
+    Long key = useJDBCConnInSnappyJob;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

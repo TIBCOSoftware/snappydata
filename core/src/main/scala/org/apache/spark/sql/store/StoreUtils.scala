@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -39,9 +39,9 @@ import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, 
 
 object StoreUtils {
 
-  val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
-  val REPLICATE = ExternalStoreUtils.REPLICATE
-  val BUCKETS = ExternalStoreUtils.BUCKETS
+  val PARTITION_BY: String = ExternalStoreUtils.PARTITION_BY
+  val REPLICATE: String = ExternalStoreUtils.REPLICATE
+  val BUCKETS: String = ExternalStoreUtils.BUCKETS
   val PARTITIONER = "PARTITIONER"
   val COLOCATE_WITH = "COLOCATE_WITH"
   val REDUNDANCY = "REDUNDANCY"
@@ -308,9 +308,8 @@ object StoreUtils {
     partitions
   }
 
-  def removeCachedObjects(sqlContext: SQLContext, table: String,
-      registerDestroy: Boolean = false): Unit = {
-    ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
+  def removeCachedObjects(sqlContext: SQLContext, table: String): Unit = {
+    ExternalStoreUtils.removeCachedObjects(sqlContext, table)
   }
 
   def appendClause(sb: mutable.StringBuilder,
@@ -372,7 +371,7 @@ object StoreUtils {
 
     if (!isShadowTable) {
       sb.append(parameters.remove(PARTITION_BY).map(v => {
-        val (parClause) = {
+        val parClause = {
           v match {
             case PRIMARY_KEY =>
               if (isRowTable) {
@@ -494,9 +493,17 @@ object StoreUtils {
 
   def getPartitioningColumns(
       parameters: mutable.Map[String, String]): Seq[String] = {
-    parameters.get(PARTITION_BY).map(v => {
-      v.split(",").toSeq.map(a => a.trim)
-    }).getOrElse(Nil)
+    parameters.get(PARTITION_BY) match {
+      case None =>
+        // default to KEY_COLUMNS if present
+        parameters.get(ExternalStoreUtils.KEY_COLUMNS) match {
+          case None => Nil
+          case Some(v) =>
+            parameters.put(PARTITION_BY, v)
+            v.split(",").toSeq.map(a => a.trim)
+        }
+      case Some(v) => v.split(",").toSeq.map(a => a.trim)
+    }
   }
 
   def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {

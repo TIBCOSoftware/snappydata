@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -75,6 +75,8 @@ trait RowPutRelation extends DestroyRelation {
 }
 
 trait BulkPutRelation extends DestroyRelation {
+
+  def table: String
 
   def getPutKeys: Option[Seq[String]]
 
@@ -321,27 +323,30 @@ trait IndexableRelation {
 
 @DeveloperApi
 trait AlterableRelation {
+
   /**
-    * Alter's table schema by adding or dropping a provided column
-    * @param tableIdent
-    * @param isAddColumn
-    * @param column
-    */
+   * Alter's table schema by adding or dropping a provided column
+   *
+   * @param tableIdent  Table identifier
+   * @param isAddColumn True if column is to be added else it is to be dropped
+   * @param column      Column to be added or dropped
+   */
   def alterTable(tableIdent: QualifiedTableName,
-                 isAddColumn: Boolean, column: StructField): Unit
+      isAddColumn: Boolean, column: StructField): Unit
 }
 
 trait RowLevelSecurityRelation {
   def isRowLevelSecurityEnabled: Boolean
-  private[sql] val resolvedName: String
+  def resolvedName: String
   def enableOrDisableRowLevelSecurity(tableIdent: QualifiedTableName,
       enableRowLevelSecurity: Boolean)
 }
 
 @DeveloperApi
-trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation{
+trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation {
 
   protected val connFactory: () => Connection
+
   protected def dialect: JdbcDialect
 
   val sqlContext: SQLContext

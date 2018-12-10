@@ -153,11 +153,11 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterDeleteSelects =
-"select * from orders"
+"select * from app.orders"
 "select * from app.order_details"
 "select * from orders"
-"select * from orders"
-"select * from orders"
+"select * from customers"
+"select * from customers"
 "select * from employees"
 "select * from employees"
 "select * from employees"

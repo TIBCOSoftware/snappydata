@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,7 +27,7 @@ import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedExcep
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
 import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, LocalRegion, TXManagerImpl, TXStateInterface}
-import com.gemstone.gemfire.internal.shared.FetchRequest
+import com.gemstone.gemfire.internal.shared.{FetchRequest, SystemProperties}
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -158,7 +158,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   def getInternalTableSchemas: java.util.List[String] = {
     val schemas = new java.util.ArrayList[String](1)
-    schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
+    schemas.add(SystemProperties.SNAPPY_HIVE_METASTORE)
     schemas
   }
 
@@ -420,7 +420,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def registerRelationDestroyForHiveStore(): Unit = {
-    SnappyStoreHiveCatalog.registerRelationDestroy()
+    SnappyStoreHiveCatalog.registerRelationDestroy(None)
   }
 
   def getSnappyTableStats: AnyRef = {

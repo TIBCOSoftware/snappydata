@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -829,9 +829,10 @@ object SnappyContext extends Logging {
   val SAMPLE_SOURCE_CLASS = "org.apache.spark.sql.sampling.DefaultSource"
   val TOPK_SOURCE = "approx_topk"
   val TOPK_SOURCE_CLASS = "org.apache.spark.sql.topk.DefaultSource"
+  // internal provider to indicate a system table/VTI
+  private[sql] val SYSTABLE_SOURCE = "sys"
 
   val FILE_STREAM_SOURCE = "file_stream"
-  val DIRECT_KAFKA_STREAM_SOURCE = "directkafka_stream"
   val KAFKA_STREAM_SOURCE = "kafka_stream"
   val SOCKET_STREAM_SOURCE = "socket_stream"
   val RAW_SOCKET_STREAM_SOURCE = "raw_socket_stream"
@@ -851,8 +852,7 @@ object SnappyContext extends Logging {
     TOPK_SOURCE -> TOPK_SOURCE_CLASS,
     SOCKET_STREAM_SOURCE -> classOf[SocketStreamSource].getCanonicalName,
     FILE_STREAM_SOURCE -> classOf[FileStreamSource].getCanonicalName,
-    KAFKA_STREAM_SOURCE -> classOf[KafkaStreamSource].getCanonicalName,
-    DIRECT_KAFKA_STREAM_SOURCE -> classOf[DirectKafkaStreamSource].getCanonicalName,
+    KAFKA_STREAM_SOURCE -> classOf[DirectKafkaStreamSource].getCanonicalName,
     TWITTER_STREAM_SOURCE -> classOf[TwitterStreamSource].getCanonicalName,
     RAW_SOCKET_STREAM_SOURCE -> classOf[RawSocketStreamSource].getCanonicalName,
     TEXT_SOCKET_STREAM_SOURCE -> classOf[TextSocketStreamSource].getCanonicalName,
@@ -1050,13 +1050,13 @@ object SnappyContext extends Logging {
   }
 
   private def resolveClusterMode(sc: SparkContext): ClusterMode = {
-    val mode = if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+    val mode = if (sc.master.startsWith(Constant.SNAPPY_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
         throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
             " from SnappyData tools package")
       }
       SnappyEmbeddedMode(sc,
-        sc.master.substring(Constant.JDBC_URL_PREFIX.length))
+        sc.master.substring(Constant.SNAPPY_URL_PREFIX.length))
     } else {
       val conf = sc.conf
       Property.Locators.getOption(conf).collectFirst {

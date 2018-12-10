@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,9 +20,12 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
+import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
+import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener}
 import org.apache.spark.sql.execution.row.RowExec
+import org.apache.spark.sql.store.StoreUtils
 
 /**
  * Base class for bulk column table insert, update, put, delete operations.
@@ -36,6 +39,26 @@ trait ColumnExec extends RowExec {
   override def resolvedName: String = externalStore.tableName
 
   protected def delayRollover: Boolean = false
+
+  def keyColumns: Seq[Attribute]
+
+  override def requiredChildDistribution: Seq[Distribution] = {
+    if (partitioned) super.requiredChildDistribution
+    else {
+      // for tables with no partitioning, require partitioning on batchId so that all rows of
+      // a batch are together else it results in very large number of changes for each batch
+      // strewn across all partitions
+      ClusteredDistribution(keyColumns(keyColumns.length - 3) :: Nil) :: Nil
+    }
+  }
+
+  // Require per-partition sort on batchId+ordinal because deltas/deletes are accumulated for
+  // consecutive batchIds+ordinals else it will  be very inefficient for bulk updates/deletes.
+  // BatchId attribute is always third last in the keyColumns while ordinal
+  // (index of row in the batch) is the one before that.
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
+    Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
+      StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
 
   override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName

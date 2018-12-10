@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -120,8 +120,11 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   private val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
-  protected val productDir =
+  override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+
+  protected val currentProductDir: String =
+    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
 
   override def locatorClientPort: Int = { SplitClusterDUnitSecurityTest.locatorNetPort }
 
@@ -156,7 +159,7 @@ class SplitClusterDUnitSecurityTest(s: String)
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
-    SplitClusterDUnitSecurityTest.startSparkCluster(productDir)
+    SplitClusterDUnitSecurityTest.startSparkCluster(sparkProductDir)
   }
 
   def getLdapConf: String = {
@@ -172,7 +175,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
-    SplitClusterDUnitSecurityTest.stopSparkCluster(productDir)
+    SplitClusterDUnitSecurityTest.stopSparkCluster(sparkProductDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
@@ -209,7 +212,17 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, locatorClientPort, props)
+    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, sparkProductDir,
+      locatorClientPort, props)
+  }
+
+  // Test to make sure that stock spark-shell for latest Spark release works with JDBC pool jar
+  def testSparkShellCurrent(): Unit = {
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    SplitClusterDUnitTest.invokeSparkShellCurrent(snappyProductDir, sparkProductDir,
+      currentProductDir, locatorClientPort, props, vm = null /* SparkContext in current VM */)
   }
 
   def testPreparedStatements(): Unit = {
