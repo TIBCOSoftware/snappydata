@@ -17,6 +17,7 @@
 package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
+import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
 import java.sql.DriverManager
@@ -53,6 +54,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
+import org.apache.spark.sql.execution.SQLExecution
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -768,6 +770,24 @@ object Utils {
     }
   }
 
+  /**
+   * Minimum size of block beyond which data will be stored in BlockManager
+   * before being consumed to store data from multiple partitions safely.
+   */
+  private[sql] val MIN_LOCAL_BLOCK_SIZE: Int = 32 * 1024 // 32K
+
+  private[sql] val nextExecutionIdMethod: Method = {
+    val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
+    m.setAccessible(true)
+    m
+  }
+
+  private[sql] val rddPartitionsOffset: Long = {
+    val f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
+    f.setAccessible(true)
+    UnsafeHolder.getUnsafe.objectFieldOffset(f)
+  }
+
   def getJsonGenerator(dataType: DataType, columnName: String,
       writer: java.io.Writer): AnyRef = {
     val schema = StructType(Seq(StructField(columnName, dataType)))
@@ -1054,7 +1074,7 @@ private[spark] class CoGroupExecutorLocalPartition(
 }
 
 final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
-    var hostList: mutable.ArrayBuffer[(String, String)])
+    var hostList: IndexedSeq[(String, String)])
     extends Partition with KryoSerializable {
 
   override def index: Int = _index
@@ -1076,12 +1096,13 @@ final class SmartExecutorBucketPartition(private var _index: Int, private var _b
     _index = input.readVarInt(true)
     _bucketId = input.readVarInt(true)
     val numHosts = input.readVarInt(true)
-    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
+    val hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
     for (_ <- 0 until numHosts) {
       val host = input.readString()
       val url = input.readString()
       hostList += host -> url
     }
+    this.hostList = hostList
   }
 
   override def toString: String =

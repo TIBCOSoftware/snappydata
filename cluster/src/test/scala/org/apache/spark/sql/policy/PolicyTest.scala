@@ -475,7 +475,7 @@ class PolicyTest extends PolicyTestBase {
 
   // return true if a policy exists for a table else false
   private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
-    val policies = Misc.getMemStore.getExternalCatalog.getPolicies(true)
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies()
     val it = policies.listIterator()
     while (it.hasNext) {
       val p = it.next()

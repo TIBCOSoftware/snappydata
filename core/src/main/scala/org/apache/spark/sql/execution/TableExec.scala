@@ -133,9 +133,9 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       val locations = new Array[Seq[String]](numBuckets)
       var i = 0
       relInfo.partitions.foreach(x => {
-          locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].
-          hostList.map(_._1.asInstanceOf[String])
-          i = i + 1
+        locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].
+            hostList.map(_._1.asInstanceOf[String])
+        i = i + 1
       })
       locations
     }

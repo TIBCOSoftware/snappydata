@@ -281,7 +281,8 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   /** Test some queries on the embedded thrift server */
   def testEmbeddedThriftServer(): Unit = {
-    val conn = DriverManager.getConnection(s"jdbc:hive2://localhost:${testObject.thriftPort}/app")
+    val conn = DriverManager.getConnection(s"jdbc:hive2://localhost:${testObject.thriftPort}/app",
+      "app", "app")
     val stmt = conn.createStatement()
 
     stmt.execute("create table testTable100 (id int)")
@@ -309,8 +310,6 @@ class SplitSnappyClusterDUnitTest(s: String)
     rs = stmt.executeQuery("show tables in app")
     assert(!rs.next())
     rs.close()
-
-    stmt.execute("drop schema if exists anonymous")
 
     stmt.close()
     conn.close()

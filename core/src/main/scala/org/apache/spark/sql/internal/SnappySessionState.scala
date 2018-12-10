@@ -1108,13 +1108,14 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     // Add dbtable property for create table. While other routes can add it in
     // SnappySession.createTable, the DataFrameWriter path needs to be handled here.
     case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
+      val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
       // treat saveAsTable with mode=Append as insertInto
-      if (mode == SaveMode.Append && queryOpt.isDefined) {
+      if (mode == SaveMode.Append && queryOpt.isDefined && state.catalog.tableExists(tableIdent)) {
         new Insert(table = UnresolvedRelation(tableDesc.identifier),
           partition = Map.empty, child = queryOpt.get,
           overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
       } else if (SnappyContext.isBuiltInProvider(tableDesc.provider.get)) {
-        val tableName = state.catalog.resolveTableIdentifier(tableDesc.identifier).unquotedString
+        val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
         if (tableName.indexOf(',') != -1) {
           throw new AnalysisException(s"Table '$tableName' cannot contain comma in its name")

@@ -19,6 +19,7 @@ package org.apache.spark.sql.hive
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveConf
@@ -27,6 +28,7 @@ import org.apache.hadoop.hive.conf.HiveConf.ConfVars
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.execution.HiveTableScanExec
+import org.apache.spark.sql.internal.StaticSQLConf.WAREHOUSE_PATH
 import org.apache.spark.sql.{ClusterMode, SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -81,6 +83,12 @@ object HiveClientUtil extends Logging {
 
     initCommonHiveMetaStoreProperties(metadataConf)
 
+    // set warehouse directory as per Spark's default
+    val warehouseDir = sparkConf.get(WAREHOUSE_PATH)
+    sparkConf.set(ConfVars.METASTOREWAREHOUSE.varname, warehouseDir)
+    metadataConf.setVar(ConfVars.METASTOREWAREHOUSE, warehouseDir)
+    logInfo(s"Using Spark warehouse directory: $warehouseDir")
+
     // remove all custom hive settings and add defaults needed for access to in-built meta-store
     val hiveSettings = sparkConf.getAll.filter(_._1.startsWith("spark.sql.hive"))
     if (hiveSettings.nonEmpty) hiveSettings.foreach(k => sparkConf.remove(k._1))
@@ -90,7 +98,14 @@ object HiveClientUtil extends Logging {
     sparkConf.set(HiveUtils.HIVE_METASTORE_SHARED_PREFIXES, Seq(
       "io.snappydata.jdbc", "com.pivotal.gemfirexd.jdbc"))
 
-    SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
+    val skipFlags = GfxdDataDictionary.SKIP_CATALOG_OPS.get()
+    val oldSkipCatalogCalls = skipFlags.skipHiveCatalogCalls
+    skipFlags.skipHiveCatalogCalls = true
+    try {
+      SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
+    } finally {
+      skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
+    }
   }
 
   /**
@@ -99,8 +114,6 @@ object HiveClientUtil extends Logging {
    * which tries booting default derby otherwise (SNAP-1956, SNAP-1961).
    * <p>
    * Should be called after all other properties have been filled in.
-   *
-   * @return the location of hive warehouse (unused but hive creates the directory)
    */
   private def initCommonHiveMetaStoreProperties(metadataConf: SnappyHiveConf): Unit = {
     metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE)

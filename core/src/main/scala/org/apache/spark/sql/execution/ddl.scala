@@ -143,13 +143,15 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
   }
 }
 
-case class DropSchemaCommand(ifExists: Boolean, schemaName: String) extends RunnableCommand {
+case class DropSchemaCommand(schemaName: String, ifExists: Boolean, cascade: Boolean)
+    extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
-    catalog.validateSchemaName(schema, checkForDefault = true)
-    // drop schema in store first
+    // drop from catalog first to cascade drop all objects if required
+    catalog.dropDatabase(schema, ifExists, cascade)
+    // drop the schema from store (no cascade required since catalog drop will take care)
     val checkIfExists = if (ifExists) " IF EXISTS" else ""
     val conn = session.defaultPooledConnection(schema)
     try {
@@ -158,9 +160,6 @@ case class DropSchemaCommand(ifExists: Boolean, schemaName: String) extends Runn
       stmt.close()
     } finally {
       conn.close()
-
-      // drop from catalog in finally block to force cleanup
-      catalog.dropDatabase(schema, ifExists, cascade = false)
     }
     Nil
   }
@@ -276,7 +275,7 @@ case class DropIndexCommand(ifExists: Boolean,
 case class SetSchemaCommand(schemaName: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    sparkSession.asInstanceOf[SnappySession].setSchema(schemaName)
+    sparkSession.asInstanceOf[SnappySession].setCurrentSchema(schemaName)
     Nil
   }
 }
@@ -336,52 +335,52 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
-    plan match {
-      case None => session.catalog.cacheTable(tableIdent.quotedString)
+    val df = plan match {
+      case None => session.table(tableIdent)
       case Some(lp) =>
         val df = Dataset.ofRows(session, lp)
-        val isOffHeap = SnappyContext.getClusterMode(sparkSession.sparkContext) match {
-          case _: ThinClientConnectorMode =>
-            SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
-          case _ =>
-            try {
-              SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-                  values.forall(member => !member.isDataServer ||
-                  (member.getOffHeapMemorySize > 0))
-            }
-            catch {
-              case _: Throwable => false
-            }
+        df.createTempView(tableIdent.quotedString)
+        df
+    }
+    val isOffHeap = SnappyContext.getClusterMode(sparkSession.sparkContext) match {
+      case _: ThinClientConnectorMode =>
+        SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
+      case _ =>
+        try {
+          SnappyTableStatsProviderService.getService.getMembersStatsFromService.
+              values.forall(member => !member.isDataServer ||
+              (member.getOffHeapMemorySize > 0))
         }
+        catch {
+          case _: Throwable => false
+        }
+    }
 
-        if (isLazy) {
-          df.createTempView(tableIdent.quotedString)
-          if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
-        } else {
-          session.sessionState.enableExecutionCache = true
-          // Get the actual QueryExecution used by InMemoryRelation so that
-          // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
-          val cachedExecution = try {
-            df.createTempView(tableIdent.quotedString)
-            if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
-            session.sessionState.getExecution(df.logicalPlan)
-          } finally {
-            session.sessionState.enableExecutionCache = false
-            session.sessionState.clearExecutionCache()
-          }
-          val memoryPlan = df.queryExecution.executedPlan.collectFirst {
-            case plan: InMemoryTableScanExec => plan.relation
-          }.get
-          val cached = new Dataset[Row](session, cachedExecution, df.exprEnc)
-          CachedDataFrame.withCallback(sparkSession, cached, "cache")(_.withNewExecutionId {
-            val start = System.nanoTime()
-            // Dummy op to materialize the cache. This does the minimal job of count on
-            // the actual cached data (RDD[CachedBatch]) to force materialization of cache
-            // while avoiding creation of any new SparkPlan.
-            memoryPlan.cachedColumnBuffers.count()
-            (Unit, System.nanoTime() - start)
-          })
-        }
+    if (isLazy) {
+      if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
+    } else {
+      session.sessionState.enableExecutionCache = true
+      // Get the actual QueryExecution used by InMemoryRelation so that
+      // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
+      val cachedExecution = try {
+        if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
+        session.sessionState.getExecution(df.logicalPlan)
+      } finally {
+        session.sessionState.enableExecutionCache = false
+        session.sessionState.clearExecutionCache()
+      }
+      val memoryPlan = df.queryExecution.executedPlan.collectFirst {
+        case plan: InMemoryTableScanExec => plan.relation
+      }.get
+      val cached = new Dataset[Row](session, cachedExecution, df.exprEnc)
+      CachedDataFrame.withCallback(sparkSession, cached, "cache")(_.withNewExecutionId {
+        val start = System.nanoTime()
+        // Dummy op to materialize the cache. This does the minimal job of count on
+        // the actual cached data (RDD[CachedBatch]) to force materialization of cache
+        // while avoiding creation of any new SparkPlan.
+        memoryPlan.cachedColumnBuffers.count()
+        (Unit, System.nanoTime() - start)
+      })
     }
     Nil
   }

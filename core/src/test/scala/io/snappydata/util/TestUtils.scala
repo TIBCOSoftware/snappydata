@@ -16,9 +16,6 @@
  */
 package io.snappydata.util
 
-import io.snappydata.Constant
-import io.snappydata.sql.catalog.CatalogObjectType._
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
@@ -29,69 +26,38 @@ object TestUtils extends Logging {
 
   def defaultCores: Int = math.min(8, Runtime.getRuntime.availableProcessors())
 
-  def dropAllTables(session: SnappySession): Unit = {
-    val sc = SnappyContext.globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      try {
-        // drop all the stream tables that can have dependents at the end
-        val catalog = session.externalCatalog
-        val allTables = catalog.getAllTables()
-        // collect views and dependents first
-        if (allTables.isEmpty) return
-        val (dependents, others) = allTables.partition(
-          t => catalog.getBaseTable(t).isDefined || getTableType(t) == View)
-        dependents.foreach(d => if (getTableType(d) == View) session.dropView(
-          d.identifier.unquotedString, ifExists = true) else session.dropTable(
-          d.identifier.unquotedString, ifExists = true))
-        // drop streams at last
-        val (streams, tables) = others.partition(getTableType(_) == Stream)
-        tables.foreach(t => session.dropTable(t.identifier.unquotedString, ifExists = true))
-        streams.foreach(s => session.dropTable(s.identifier.unquotedString, ifExists = true))
-      } catch {
-        case t: Throwable =>
-          logError("Failure in dropping table in cleanup", t)
-      }
-    }
-  }
-
-  def dropAllFunctions(session: SnappySession): Unit = {
-    val sc = SnappyContext.globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      try {
-        val catalog = session.sessionState.catalog
-        catalog.listFunctions(Constant.DEFAULT_SCHEMA).map(_._1).foreach { func =>
-          if (func.database.isDefined) {
-            catalog.dropFunction(func, ignoreIfNotExists = false)
-          } else {
-            catalog.dropTempFunction(func.funcName, ignoreIfNotExists = false)
-          }
-        }
-
-        catalog.clearTempTables()
-        catalog.destroyAndRegisterBuiltInFunctionsForTests()
-
-      } catch {
-        case t: Throwable => logError("Failure in dropping function in cleanup", t)
-      }
-
-    }
-  }
-
   def dropAllSchemas(session: SnappySession): Unit = {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
       val catalog = session.sessionCatalog
-      val skipSchemas = Seq("APP", "DEFAULT", "SYS", "SYSIBM")
+      val skipSchemas = Seq(catalog.defaultSchemaName, "DEFAULT", "SYS", "SYSIBM")
       val userSchemas = catalog.listDatabases().filterNot(s => skipSchemas.contains(s.toUpperCase))
       if (userSchemas.nonEmpty) {
         userSchemas.foreach { s =>
           try {
-            session.sql(s"drop schema $s")
+            session.sql(s"drop schema $s cascade")
           } catch {
             case t: Throwable => logError(s"Failure in dropping schema $s in cleanup", t)
           }
         }
       }
+      catalog.dropAllSchemaObjects(catalog.defaultSchemaName,
+        ignoreIfNotExists = true, cascade = true)
+      catalog.dropAllSchemaObjects("DEFAULT", ignoreIfNotExists = true, cascade = true)
+      catalog.clearTempTables()
+    }
+  }
+
+  def resetAllFunctions(session: SnappySession): Unit = {
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null && !sc.isStopped) {
+      try {
+        val catalog = session.sessionState.catalog
+        catalog.destroyAndRegisterBuiltInFunctionsForTests()
+      } catch {
+        case t: Throwable => logError("Failure in dropping function in cleanup", t)
+      }
+
     }
   }
 

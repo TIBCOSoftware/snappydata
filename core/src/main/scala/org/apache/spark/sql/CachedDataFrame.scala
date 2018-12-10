@@ -30,7 +30,7 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
-import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import io.snappydata.Constant
 
@@ -184,7 +184,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       case null => Nil
       case r =>
         // f.set(r, null)
-        UnsafeHolder.getUnsafe.putObject(r, CachedDataFrame.rdd_partitions_, null)
+        Platform.putObjectVolatile(r, Utils.rddPartitionsOffset, null)
         getChildren(r)
     }
     if (children.nonEmpty) {
@@ -564,16 +564,10 @@ object CachedDataFrame
     }
   }
 
-  /**
-   * Minimum size of block beyond which data will be stored in BlockManager
-   * before being consumed to store data from multiple partitions safely.
-   */
-  @transient val MIN_LOCAL_BLOCK_SIZE: Int = 32 * 1024 // 32K
-
   def localBlockStoreResultHandler(rddId: Int, bm: BlockManager)(
       partitionId: Int, data: Array[Byte]): Any = {
     // put in block manager only if result is large
-    if (data.length <= MIN_LOCAL_BLOCK_SIZE) data
+    if (data.length <= Utils.MIN_LOCAL_BLOCK_SIZE) data
     else {
       val blockId = RDDBlockId(rddId, partitionId)
       bm.putBytes(blockId, Utils.newChunkedByteBuffer(Array(ByteBuffer.wrap(
@@ -592,18 +586,6 @@ object CachedDataFrame
       bm.removeBlock(id, tellMaster = false)
       decodeUnsafeRows(numFields, data.array(),
         data.arrayOffset() + data.position(), data.remaining())
-  }
-
-  @transient private[sql] val nextExecutionIdMethod = {
-    val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
-    m.setAccessible(true)
-    m
-  }
-
-  @transient private val rdd_partitions_ = {
-    val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
-    _f.setAccessible(true)
-    UnsafeHolder.getUnsafe.objectFieldOffset(_f)
   }
 
   private[sql] def queryStringShortForm(queryString: String): String = {
@@ -629,7 +611,7 @@ object CachedDataFrame
       // If the execution ID is set in the CDF that means the plan execution has already
       // been done. Use the same execution ID to link this execution to the previous one.
       val executionId = if (currentExecutionId >= 0) currentExecutionId
-      else nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
+      else Utils.nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
       sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
       val startTime = System.currentTimeMillis()
       var endTime = -1L

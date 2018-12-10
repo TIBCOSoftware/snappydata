@@ -61,6 +61,7 @@ object SnappyHiveThriftServer2 extends Logging {
     val currentMetaLevel = metaLogger.getLevel
     rootLogger.setLevel(Level.ERROR)
     metaLogger.setLevel(Level.ERROR)
+    val externalCatalog = SnappyHiveExternalCatalog.getExistingInstance
     val hiveConf = try {
       val executionHive = HiveUtils.newClientForExecution(conf,
         sparkSession.sessionState.newHadoopConf())
@@ -75,8 +76,7 @@ object SnappyHiveThriftServer2 extends Logging {
       if (useHiveSession) serverConf
       else {
         // use internal hive conf adding hive.server2 configurations
-        val conf = SnappyHiveExternalCatalog.getExistingInstance
-            .client().asInstanceOf[HiveClientImpl].conf
+        val conf = externalCatalog.client().asInstanceOf[HiveClientImpl].conf
         val itr = serverConf.iterator()
         while (itr.hasNext) {
           val entry = itr.next()
@@ -92,15 +92,17 @@ object SnappyHiveThriftServer2 extends Logging {
     }
 
     val server = new HiveThriftServer2(SparkSQLEnv.sqlContext)
-    server.init(hiveConf)
-    server.start()
-    getHostPort(server) match {
-      case None => logInfo("Started HiveServer2")
-      case Some((host, port)) => logInfo(s"Started HiveServer2 on $host[$port]")
-    }
-    HiveThriftServer2.listener = new HiveThriftServer2Listener(
-      server, SparkSQLEnv.sqlContext.conf)
-    sc.addSparkListener(HiveThriftServer2.listener)
+    externalCatalog.withHiveExceptionHandling({
+      server.init(hiveConf)
+      server.start()
+      getHostPort(server) match {
+        case None => logInfo("Started HiveServer2")
+        case Some((host, port)) => logInfo(s"Started HiveServer2 on $host[$port]")
+      }
+      HiveThriftServer2.listener = new HiveThriftServer2Listener(
+        server, SparkSQLEnv.sqlContext.conf)
+      sc.addSparkListener(HiveThriftServer2.listener)
+    }, handleDisconnects = false)
     server
   }
 

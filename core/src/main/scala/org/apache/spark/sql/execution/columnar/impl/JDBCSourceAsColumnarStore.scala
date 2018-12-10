@@ -759,17 +759,15 @@ final class SmartConnectorColumnRDD(
 
   private var serializedFilters: Array[Byte] = _
 
+  private var preferHostName = SmartConnectorRDDHelper.preferHostName(session)
+
   override def compute(split: Partition,
       context: TaskContext): Iterator[ByteBuffer] = {
     val helper = new SmartConnectorRDDHelper
     val part = split.asInstanceOf[SmartExecutorBucketPartition]
-    val conn: Connection = helper.getConnection(connProperties, part)
+    val (conn, txId) = helper.getConnectionAndTXId(connProperties, part, preferHostName)
     logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
-    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
-      case "" => null
-      case tx => tx
-    }
     var itr: Iterator[ByteBuffer] = null
     try {
       // fetch all the column blobs pushing down the filters
@@ -850,6 +848,7 @@ final class SmartConnectorColumnRDD(
     StructTypeSerializer.write(kryo, output, schema)
     output.writeVarLong(catalogSchemaVersion, false)
     output.writeBoolean(delayRollover)
+    output.writeBoolean(preferHostName)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -864,6 +863,7 @@ final class SmartConnectorColumnRDD(
     schema = StructTypeSerializer.read(kryo, input, c = null)
     catalogSchemaVersion = input.readVarLong(false)
     delayRollover = input.readBoolean()
+    preferHostName = input.readBoolean()
   }
 }
 
@@ -881,14 +881,19 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
 
 
+  private var preferHostName = SmartConnectorRDDHelper.preferHostName(session)
+
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
       context: TaskContext): Unit = {
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
+    Option(context).foreach(_.addTaskCompletionListener(_ => {
+      val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get match {
+        case null => null
+        case p => p._1
+      }
       logDebug(s"The txid going to be committed is $txId " + tableName)
       // if ((txId ne null) && !txId.equals("null")) {
         val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-        ps.setString(1, if (txId ne null) txId else "")
+        ps.setString(1, if (txId  ne null) txId else "")
         ps.setString(2, if (delayRollover) tableName else "")
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
@@ -901,8 +906,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
   override def computeResultSet(
       thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
     val helper = new SmartConnectorRDDHelper
-    val conn: Connection = helper.getConnection(
-      connProperties, thePart.asInstanceOf[SmartExecutorBucketPartition])
+    val (conn, txId) = helper.getConnectionAndTXId(connProperties,
+      thePart.asInstanceOf[SmartExecutorBucketPartition], preferHostName)
     if (context ne null) {
       val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
@@ -954,7 +959,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
       stmt.setFetchSize(fetchSize.toInt)
     }
 
-    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
     if (thriftConn ne null) {
       stmt.asInstanceOf[ClientPreparedStatement].setSnapshotTransactionId(txId)
     } else if (txId != null) {
@@ -968,15 +972,16 @@ class SmartConnectorRowRDD(_session: SnappySession,
 
     // get the txid which was used to take the snapshot.
     if (!commitTx) {
-      val getSnapshotTXId = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID(?)")
-      getSnapshotTXId.setBoolean(1, delayRollover)
-      val rs = getSnapshotTXId.executeQuery()
+      val getTXIdAndHostUrl = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID_AND_HOSTURL(?)")
+      getTXIdAndHostUrl.setBoolean(1, delayRollover)
+      val rs = getTXIdAndHostUrl.executeQuery()
       rs.next()
-      val txId = rs.getString(1)
+      val txIdAndHostUrl = SmartConnectorRDDHelper.getTxIdAndHostUrl(
+        rs.getString(1), preferHostName)
       rs.close()
-      getSnapshotTXId.close()
-      SmartConnectorRDDHelper.snapshotTxIdForRead.set(txId)
-      logDebug(s"The snapshot tx id is $txId and tablename is $tableName")
+      getTXIdAndHostUrl.close()
+      SmartConnectorRDDHelper.snapshotTxIdForRead.set(txIdAndHostUrl)
+      logDebug(s"The snapshot tx id is $txIdAndHostUrl and tablename is $tableName")
     }
     if (thriftConn ne null) {
       thriftConn.setCommonStatementAttributes(null)
@@ -1006,11 +1011,13 @@ class SmartConnectorRowRDD(_session: SnappySession,
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
     output.writeVarLong(catalogSchemaVersion, false)
+    output.writeBoolean(preferHostName)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
     super.read(kryo, input)
     catalogSchemaVersion = input.readVarLong(false)
+    preferHostName = input.readBoolean()
   }
 }
 

@@ -16,9 +16,9 @@
  */
 package org.apache.spark.sql.test
 
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.internal.{SnappyConf, SnappySessionState}
 import org.apache.spark.sql.{SnappySession, SparkSession}
-import org.apache.spark.sql.internal.{SQLConf, SessionState, SnappyConf, SnappySessionState}
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * A special [[SparkSession]] prepared for testing.
@@ -35,8 +35,10 @@ private[sql] class TestSnappySession(sc: SparkContext) extends SnappySession(sc)
     )
   }
 
+  /*
   TestSQLContext.overrideConfs = TestSQLContext.overrideConfs ++
       Map("spark.sql.sources.default" -> "column")
+  */
 
   def this() {
     this(new SparkConf)

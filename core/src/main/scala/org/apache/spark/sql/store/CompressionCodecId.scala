@@ -31,11 +31,11 @@ object CompressionCodecId extends Enumeration {
   val SNAPPY_ID = 2
 
   // keep below updated with the max ID above
-  val MAX_ID = SNAPPY_ID
+  private val MAX_ID = SNAPPY_ID
 
-  val None = Value(0, "None")
-  val LZ4 = Value(LZ4_ID, "LZ4")
-  val Snappy = Value(SNAPPY_ID, "Snappy")
+  val None: Type = Value(0, "None")
+  val LZ4: Type = Value(LZ4_ID, "LZ4")
+  val Snappy: Type = Value(SNAPPY_ID, "Snappy")
 
   /** the [[CompressionCodecId]] of default compression scheme ([[Constant.DEFAULT_CODEC]]) */
   val DEFAULT: CompressionCodecId.Type = CompressionCodecId.fromName(Constant.DEFAULT_CODEC)

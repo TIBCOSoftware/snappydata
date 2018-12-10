@@ -28,7 +28,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.thrift._
 
-import org.apache.spark.sql.catalyst.analysis.NoSuchPartitionException
+import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchPermanentFunctionException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression}
@@ -106,7 +106,7 @@ class ConnectorExternalCatalog(val session: SnappySession)
   override def dropDatabase(schema: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setNames(Collections.singletonList(schema)).setExists(ignoreIfNotExists)
-        .setUpdateFlag(cascade)
+        .setOtherFlags(Collections.singletonList(flag(cascade)))
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_DROP_SCHEMA, request))
   }
@@ -169,7 +169,7 @@ class ConnectorExternalCatalog(val session: SnappySession)
       purge: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setNames((schema :: table :: Nil).asJava).setExists(ignoreIfNotExists)
-        .setUpdateFlag(purge)
+        .setOtherFlags(Collections.singletonList(flag(purge)))
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_DROP_TABLE, request))
 
@@ -182,6 +182,16 @@ class ConnectorExternalCatalog(val session: SnappySession)
     request.setCatalogTable(ConnectorExternalCatalog.convertFromCatalogTable(table))
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_ALTER_TABLE, request))
+
+    // version stored in RelationInfo will be out-of-date now for all tables so clear everything
+    invalidateCaches(Nil)
+  }
+
+  override def renameTable(schemaName: String, oldName: String, newName: String): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schemaName :: oldName :: newName :: Nil).asJava)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_RENAME_TABLE, request))
 
     // version stored in RelationInfo will be out-of-date now for all tables so clear everything
     invalidateCaches(Nil)
@@ -238,6 +248,93 @@ class ConnectorExternalCatalog(val session: SnappySession)
     request.setSchemaName(schema).setNameOrPattern(pattern)
     withExceptionHandling(connectorHelper.getCatalogMetadata(
       snappydataConstants.CATALOG_LIST_TABLES, request)).getNames.asScala
+  }
+
+  private def flag(b: Boolean): java.lang.Integer = if (b) 1 else 0
+
+  override def loadTable(schema: String, table: String, loadPath: String,
+      isOverwrite: Boolean, holdDDLTime: Boolean): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: table :: loadPath :: Nil).asJava)
+        .setOtherFlags((flag(isOverwrite) :: flag(holdDDLTime) :: Nil).asJava)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_LOAD_TABLE, request))
+
+    invalidateCaches(schema -> table :: Nil)
+  }
+
+  // --------------------------------------------------------------------------
+  // Partitions
+  // --------------------------------------------------------------------------
+
+  override def createPartitions(schema: String, table: String, parts: Seq[CatalogTablePartition],
+      ignoreIfExists: Boolean): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: table :: Nil).asJava).setCatalogPartitions(parts.map(
+      ConnectorExternalCatalog.convertFromCatalogPartition).asJava).setExists(ignoreIfExists)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_CREATE_PARTITIONS, request))
+
+    invalidateCaches(schema -> table :: Nil)
+  }
+
+  override def dropPartitions(schema: String, table: String, parts: Seq[TablePartitionSpec],
+      ignoreIfNotExists: Boolean, purge: Boolean, retainData: Boolean): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: table :: Nil).asJava).setProperties(parts.map(_.asJava).asJava)
+        .setExists(ignoreIfNotExists)
+        .setOtherFlags((flag(purge) :: flag(retainData) :: Nil).asJava)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_DROP_PARTITIONS, request))
+
+    invalidateCaches(schema -> table :: Nil)
+  }
+
+  override def alterPartitions(schema: String, table: String,
+      parts: Seq[CatalogTablePartition]): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: table :: Nil).asJava).setCatalogPartitions(parts.map(
+      ConnectorExternalCatalog.convertFromCatalogPartition).asJava)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_ALTER_PARTITIONS, request))
+
+    invalidateCaches(schema -> table :: Nil)
+  }
+
+  override def renamePartitions(schema: String, table: String, specs: Seq[TablePartitionSpec],
+      newSpecs: Seq[TablePartitionSpec]): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: table :: Nil).asJava).setProperties(specs.map(_.asJava).asJava)
+        .setNewProperties(newSpecs.map(_.asJava).asJava)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_RENAME_PARTITIONS, request))
+
+    invalidateCaches(schema -> table :: Nil)
+  }
+
+  override def loadPartition(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, isOverwrite: Boolean, holdDDLTime: Boolean,
+      inheritTableSpecs: Boolean): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: table :: loadPath :: Nil).asJava)
+        .setProperties(Collections.singletonList(partition.asJava)).setOtherFlags(
+      (flag(isOverwrite) :: flag(holdDDLTime) :: flag(inheritTableSpecs) :: Nil).asJava)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_LOAD_PARTITION, request))
+
+    invalidateCaches(schema -> table :: Nil)
+  }
+
+  override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: table :: loadPath :: Nil).asJava)
+        .setProperties(Collections.singletonList(partition.asJava)).setOtherFlags(
+      (flag(replace) :: Int.box(numDP) :: flag(holdDDLTime) :: Nil).asJava)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_LOAD_DYNAMIC_PARTITIONS, request))
+
+    invalidateCaches(schema -> table :: Nil)
   }
 
   override def getPartition(schema: String, table: String,
@@ -332,7 +429,9 @@ class ConnectorExternalCatalog(val session: SnappySession)
     request.setSchemaName(schema).setNameOrPattern(funcName)
     val result = withExceptionHandling(connectorHelper.getCatalogMetadata(
       snappydataConstants.CATALOG_GET_FUNCTION, request))
-    ConnectorExternalCatalog.convertToCatalogFunction(result.getCatalogFunction)
+    if (result.isSetCatalogFunction) {
+      ConnectorExternalCatalog.convertToCatalogFunction(result.getCatalogFunction)
+    } else throw new NoSuchPermanentFunctionException(schema, funcName)
   }
 
   override def functionExists(schema: String, funcName: String): Boolean = {

@@ -24,15 +24,15 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
-import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.gemstone.gemfire.internal.{GFToSlf4jBridge, LogWriterImpl}
 import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
 import com.pivotal.gemfirexd.Constants
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
-import com.pivotal.gemfirexd.internal.engine.diag.{HiveTablesVTI, SysVTIs}
+import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, RelationInfo, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
@@ -65,6 +65,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyExternalCatalog {
 
   {
+    // fire dummy queries to initialize more components of hive meta-store
+    withHiveExceptionHandling {
+      assert(!client.tableExists(SYS_SCHEMA, "DBS"))
+      assert(!client.functionExists(SYS_SCHEMA, "FUNCS"))
+    }
+
     // Check that global temp view schema should be absent
     val globalSchemaName = Utils.toUpperCase(conf.get(GLOBAL_TEMP_DATABASE))
     if (databaseExists(globalSchemaName)) {
@@ -122,11 +128,13 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   /**
    * Retries on transient disconnect exceptions.
    */
-  private def withHiveExceptionHandling[T](function: => T): T = synchronized {
-    val oldFlag = HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.get
-    if (oldFlag ne java.lang.Boolean.TRUE) {
-      HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(java.lang.Boolean.TRUE)
-    }
+  private[sql] def withHiveExceptionHandling[T](function: => T,
+      handleDisconnects: Boolean = true): T = synchronized {
+    val skipFlags = GfxdDataDictionary.SKIP_CATALOG_OPS.get()
+    val oldSkipCatalogCalls = skipFlags.skipHiveCatalogCalls
+    val oldSkipLocks = skipFlags.skipDDLocks
+    skipFlags.skipHiveCatalogCalls = true
+    skipFlags.skipDDLocks = true
     try {
       function
     } catch {
@@ -139,9 +147,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         function
       case e: InvocationTargetException => throw e.getCause
     } finally {
-      if (oldFlag ne java.lang.Boolean.TRUE) {
-        HiveTablesVTI.SKIP_HIVE_TABLE_CALLS.set(oldFlag)
-      }
+      skipFlags.skipDDLocks = oldSkipLocks
+      skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
     }
   }
 
@@ -421,6 +428,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     registerCatalogSchemaChange(schemaName -> tableName :: Nil)
   }
 
+  override def renameTable(schema: String, oldName: String, newName: String): Unit = {
+    withHiveExceptionHandling(super.renameTable(schema, oldName, newName))
+  }
+
   /**
    * Transform given CatalogTable to final form filling in viewText and other fields
    * using the properties if required.
@@ -573,6 +584,54 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     } else withHiveExceptionHandling(super.listTables(schema, pattern).map(toUpperCase))
   }
 
+  override def loadTable(schema: String, table: String, loadPath: String,
+      isOverwrite: Boolean, holdDDLTime: Boolean): Unit = {
+    withHiveExceptionHandling(super.loadTable(schema, table, loadPath, isOverwrite, holdDDLTime))
+  }
+
+  // --------------------------------------------------------------------------
+  // Partitions
+  // --------------------------------------------------------------------------
+
+  override def createPartitions(schema: String, table: String, parts: Seq[CatalogTablePartition],
+      ignoreIfExists: Boolean): Unit = {
+    withHiveExceptionHandling(super.createPartitions(schema, table, parts, ignoreIfExists))
+  }
+
+  override def dropPartitions(schema: String, table: String, parts: Seq[TablePartitionSpec],
+      ignoreIfNotExists: Boolean, purge: Boolean, retainData: Boolean): Unit = {
+    withHiveExceptionHandling(super.dropPartitions(schema, table, parts, ignoreIfNotExists,
+      purge, retainData))
+  }
+
+  override def renamePartitions(schema: String, table: String, specs: Seq[TablePartitionSpec],
+      newSpecs: Seq[TablePartitionSpec]): Unit = {
+    withHiveExceptionHandling(super.renamePartitions(schema, table, specs, newSpecs))
+  }
+
+  override def alterPartitions(schema: String, table: String,
+      parts: Seq[CatalogTablePartition]): Unit = {
+    withHiveExceptionHandling(super.alterPartitions(schema, table, parts))
+  }
+
+  override def loadPartition(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, isOverwrite: Boolean, holdDDLTime: Boolean,
+      inheritTableSpecs: Boolean): Unit = {
+    withHiveExceptionHandling(super.loadPartition(schema, table, loadPath, partition,
+      isOverwrite, holdDDLTime, inheritTableSpecs))
+  }
+
+  override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
+    withHiveExceptionHandling(super.loadDynamicPartitions(schema, table, loadPath, partition,
+      replace, numDP, holdDDLTime))
+  }
+
+  override def getPartition(schema: String, table: String,
+      spec: TablePartitionSpec): CatalogTablePartition = {
+    withHiveExceptionHandling(super.getPartition(schema, table, spec))
+  }
+
   override def getPartitionOption(schema: String, table: String,
       spec: TablePartitionSpec): Option[CatalogTablePartition] = {
     withHiveExceptionHandling(super.getPartitionOption(schema, table, spec))
@@ -583,19 +642,14 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     withHiveExceptionHandling(super.listPartitionNames(schema, table, partialSpec))
   }
 
-  override def listPartitionsByFilter(schema: String, table: String,
-      predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
-    withHiveExceptionHandling(super.listPartitionsByFilter(schema, table, predicates))
-  }
-
-  override def getPartition(schema: String, table: String,
-      spec: TablePartitionSpec): CatalogTablePartition = {
-    withHiveExceptionHandling(super.getPartition(schema, table, spec))
-  }
-
   override def listPartitions(schema: String, table: String,
       partialSpec: Option[TablePartitionSpec] = None): Seq[CatalogTablePartition] = {
     withHiveExceptionHandling(super.listPartitions(schema, table, partialSpec))
+  }
+
+  override def listPartitionsByFilter(schema: String, table: String,
+      predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
+    withHiveExceptionHandling(super.listPartitionsByFilter(schema, table, predicates))
   }
 
   // --------------------------------------------------------------------------
@@ -705,8 +759,6 @@ object SnappyHiveExternalCatalog {
     }
     try {
       instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
-      // fire a dummy query to initialize more components of hive meta-store
-      assert(instance.getTableOption(SystemProperties.SNAPPY_HIVE_METASTORE, "DBS").isEmpty)
     } finally {
       logger.setLevel(previousLevel)
       log4jLogger.setLevel(log4jLevel)
@@ -724,7 +776,7 @@ object SnappyHiveExternalCatalog {
 
   def close(): Unit = synchronized {
     if (instance ne null) {
-      instance.closeHive()
+      instance.withHiveExceptionHandling(instance.closeHive(), handleDisconnects = false)
       instance = null
     }
   }

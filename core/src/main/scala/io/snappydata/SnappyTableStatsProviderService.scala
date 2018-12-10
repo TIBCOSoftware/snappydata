@@ -43,6 +43,7 @@ import io.snappydata.sql.catalog.CatalogObjectType
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
@@ -201,7 +202,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         log.debug(e.getMessage, e)
     }
 
-    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables(true).asScala
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables.asScala
 
     val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
       try {
@@ -231,9 +232,12 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
         val tableName = rs.getTableName
-        tableTypesMap.get(tableName) match {
-          case Some(t) if t == CatalogObjectType.Column.toString => rs.setColumnTable(true)
+        try tableTypesMap.get(tableName) match {
+          case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
+            Utils.toUpperCase(t))) => rs.setColumnTable(true)
           case _ => rs.setColumnTable(false)
+        } catch {
+          case _: Exception => rs.setColumnTable(false)
         }
         rs
       })
