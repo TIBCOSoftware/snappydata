@@ -14,25 +14,24 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.externalstore
+package org.apache.spark.sql
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.math.BigDecimal
 import java.nio.file.{Files, Paths}
+import java.sql.{Date, Timestamp}
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.sql.{Date, Timestamp}
 
 import scala.io.Source
 import scala.language.postfixOps
-import java.nio.file.Paths
+
 import io.snappydata.SnappyFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.NorthWindDUnitTest.writeToFile
 import org.apache.spark.sql.types._
-import org.apache.spark.Logging
-import org.apache.spark.sql.{DataFrame, Row, SnappyContext, SparkSession}
 
 class SQLFunctionsTestSuite extends SnappyFunSuite
     with Logging
@@ -302,16 +301,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assert(numLines == numRows, s"\nFor $queryNum result count mismatch " +
             s"observed: Expected=$numRows, Got=$numLines")
         pw.flush()
-        /* val snFile: String = snappyFile.toString
-        val spFile: String = sparkFile.toString
-
-        val snPathToFile = Paths.get(snFile)
-        val spPathToFile = Paths.get(spFile)
+        val snFile: String = snappyFile.toString + ".0"
+        val spFile: String = sparkFile.toString + ".0"
         println("Query executed successfully" + snFile + " " + spFile)
-        Files.delete(snPathToFile)
+        Files.delete(Paths.get(snFile))
         println(snappyFile.toString + " file deleted")
-        Files.delete(spPathToFile)
-        println(sparkFile.toString + " file deleted") */
+        Files.delete(Paths.get(spFile))
+        println(sparkFile.toString + " file deleted")
 
     }
 
@@ -323,26 +319,27 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         query = "select abs(1)"
-        var sparkDf1 = sparkSession.sql(s"$query")
+        sparkDf = sparkSession.sql(s"$query")
         var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
         val c1s = snappyDf.columns
         val c2s = snappyDf1.columns
         assert(!c1s.sameElements(c2s))
-        validateResult(sparkDf1, snappyDf1)
 
 
         // without alias throws error
-        query = "select abs(1.1) as res"
+        query = "select abs(1.1)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "select abs(-1.1) as res"
+        query = "select abs(-1.1)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "select abs(0.0) as res"
+        query = "select abs(0.0)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -351,26 +348,34 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("coalesce"){
         // without alias throwing error
-        query = "SELECT COALESCE(NULL,NULL,NULL,'abc',NULL,'Example.com') as res"
+        query = "SELECT COALESCE(NULL,NULL,NULL,'abc',NULL,'Example.com')"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT COALESCE(NULL, 1, 2, 'abc')as res"
+        query = "SELECT COALESCE(NULL, 1, 2, 'abc')"
+        sparkDf = sparkSession.sql(s"$query")
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+
+
+        // val c1s = snappyDf.columns
+        // val c2s = snappyDf1.columns
+        // assert(!c1s.sameElements(c2s))
+
+
+        query = "SELECT COALESCE(1, 2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-
-        query = "SELECT COALESCE(1, 2) as res"
+        query = "SELECT COALESCE(NULL, NULL)" // throws error
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
-
-        query = "SELECT COALESCE(NULL, NULL) as res" // throws error
-        sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        // assertQueryFullResultSet(snc, query, query, 1,
+        //    "coalesce_q3", " ", pw, sparkSession)
 
     }
 
@@ -378,26 +383,30 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         // without alias throws error for all query
 
         // On snappy shell for below query throws error
-        // snappy> select cast('NaN' as double) as res;
+        // snappy> select cast('NaN' as double);
         // ERROR 22003: (SQLState=22003 Severity=20000)
         // (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-0)
         // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
-        query = "select cast('NaN' as double) as res"
+        query = "select cast('NaN' as double)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT CAST(25.65 AS varchar(12)) as res"
+        query = "SELECT CAST(25.65 AS varchar(12))"
+        sparkDf = sparkSession.sql(s"$query")
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
+
+        query = "SELECT cast('10' as int)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT cast('10' as int) as res"
-        sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
-
-        query = "SELECT CAST('2017-08-25' AS date) as res"
+        query = "SELECT CAST('2017-08-25' AS date)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -429,11 +438,16 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT greatest(0, NULL)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("if"){
+        // without alias throws error
         query = "SELECT if(1 < 2, 'a', 'b')"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -441,8 +455,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT if(0 < NULL, 'a', 'b')"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("inline"){
@@ -453,21 +471,29 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT inline(array(struct(1), struct(2)))"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("isnan"){
         // without alias throws error for below query
-        query = "SELECT isnan(cast('NaN' as double)) as res"
+        query = "SELECT isnan(cast('NaN' as double))"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
         query = "SELECT isnan(123)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("ifnull"){
@@ -478,8 +504,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT ifnull(2, 3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("isnull"){
@@ -489,10 +519,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error for below query
-        query = "SELECT isnull('abc') as res"
+        query = "SELECT isnull('abc')"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT isnull(null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -507,10 +541,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error for below query
-        query = "SELECT isnotnull('abc') as res"
+        query = "SELECT isnotnull('abc')"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT isnotnull(null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -526,13 +564,17 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT least(null, 9, 3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("nanvl"){
         // without alias throws error for all below query
-        query = "SELECT nanvl(cast('NaN' as double), 123) as res"
+        query = "SELECT nanvl(cast('NaN' as double), 123)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -542,16 +584,20 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         // ERROR 22003: (SQLState=22003 Severity=20000)
         // (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-0)
         // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
-        query = "SELECT nanvl(cast('NaN' as double), cast('NaN' as double)) as res"
+        query = "SELECT nanvl(cast('NaN' as double), cast('NaN' as double))"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         // snappy> SELECT nanvl('NaN','NaN');
         // ERROR 22003: (SQLState=22003 Severity=20000)
         // (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-0)
         // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
-        query = "SELECT nanvl('NaN','NaN') as res"
+        query = "SELECT nanvl('NaN','NaN')"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -566,8 +612,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT nullif( 9, 3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT nullif( 9, 9, 4)"
         sparkDf = sparkSession.sql(s"$query")
@@ -589,8 +639,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT nvl( 9, 3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("posexplode"){
@@ -611,8 +665,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf.show()
 
         query = "select rand(null)"
-        snappyDf = snc.sql(s"$query")
-        snappyDf.show()
+        var snappyDf1 = snc.sql(s"$query")
+        snappyDf1.show()
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         // Throws error on snappy shell as well as in test
         // snappy> select rand(0);
@@ -644,8 +702,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf.show()
 
         query = "select randn(null)"
-        snappyDf = snc.sql(s"$query")
-        snappyDf.show()
+        var snappyDf1 = snc.sql(s"$query")
+        snappyDf1.show()
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         // Throws error on snappy shell as well as in test
         // snappy> select randn(0);
@@ -687,8 +749,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         // details of the SQL syntax supported by your server.
         query = "SELECT stack(2, 1, 2, 3, 4)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("when"){
@@ -699,8 +765,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT case when 2<1 then 1 else 2 end"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("acos"){
@@ -716,8 +786,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT acos(1)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT acos(-1)"
         sparkDf = sparkSession.sql(s"$query")
@@ -735,7 +809,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT acos(2.2) as res"
+        query = "SELECT acos(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -754,8 +828,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
        // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
        query = "SELECT asin(2)"
        sparkDf = sparkSession.sql(s"$query")
-       snappyDf = snc.sql(s"$query")
-       validateResult(sparkDf, snappyDf)
+       var snappyDf1 = snc.sql(s"$query")
+       validateResult(sparkDf, snappyDf1)
+
+       val c1s = snappyDf.columns
+       val c2s = snappyDf1.columns
+       assert(!c1s.sameElements(c2s))
 
        query = "SELECT asin(-2)"
        sparkDf = sparkSession.sql(s"$query")
@@ -768,7 +846,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
        validateResult(sparkDf, snappyDf)
 
        // without alias throws error
-       query = "SELECT asin(2.2) as res"
+       query = "SELECT asin(2.2)"
        sparkDf = sparkSession.sql(s"$query")
        snappyDf = snc.sql(s"$query")
        validateResult(sparkDf, snappyDf)
@@ -782,8 +860,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
        query = "SELECT atan(2)"
        sparkDf = sparkSession.sql(s"$query")
-       snappyDf = snc.sql(s"$query")
-       validateResult(sparkDf, snappyDf)
+       var snappyDf1 = snc.sql(s"$query")
+       validateResult(sparkDf, snappyDf1)
+
+       val c1s = snappyDf.columns
+       val c2s = snappyDf1.columns
+       assert(!c1s.sameElements(c2s))
 
        query = "SELECT atan(-2)"
        sparkDf = sparkSession.sql(s"$query")
@@ -796,7 +878,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
        validateResult(sparkDf, snappyDf)
 
        // without alias throws error
-       query = "SELECT atan(2.2) as res"
+       query = "SELECT atan(2.2)"
        sparkDf = sparkSession.sql(s"$query")
        snappyDf = snc.sql(s"$query")
        validateResult(sparkDf, snappyDf)
@@ -810,8 +892,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT atan2(2, 3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT atan2(2, null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -819,7 +905,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT atan2(2.2, 3) as res"
+        query = "SELECT atan2(2.2, 3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -833,8 +919,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT bin(-13)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT bin(null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -842,7 +932,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error in test
-        query = "SELECT bin(13.3) as res"
+        query = "SELECT bin(13.3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -851,17 +941,21 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("bround"){
 
         // without alias throws errors for below queries
-        query = "SELECT bround(2.5, 0) as res"
+        query = "SELECT bround(2.5, 0)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT bround(2.5, 3) as res"
+        query = "SELECT bround(2.5, 3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
 
-        query = "SELECT bround(2.5, null) as res"
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
+
+        query = "SELECT bround(2.5, null)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -881,8 +975,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT cbrt(0)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT cbrt(null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -890,7 +988,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws errors for below query
-        query = "SELECT cbrt(27.0) as res"
+        query = "SELECT cbrt(27.0)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -898,15 +996,19 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("ceil"){
         // without alias throws errors for below query
-        query = "SELECT ceil(-0.1) as res"
+        query = "SELECT ceil(-0.1)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
         query = "SELECT ceil(5)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT ceil(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -921,15 +1023,19 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("ceiling"){
         // without alias throws error for below query
-        query = "SELECT ceiling(-0.1) as res"
+        query = "SELECT ceiling(-0.1)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
         query = "SELECT ceiling(5)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT ceiling(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -951,8 +1057,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT cos(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT cos(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -965,7 +1075,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT cos(2.2) as res"
+        query = "SELECT cos(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -980,8 +1090,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT cosh(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT cosh(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -994,7 +1108,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT cosh(2.2) as res"
+        query = "SELECT cosh(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1003,35 +1117,43 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("conv"){
 
         // without alias throws errors for below queries
-        query = "SELECT conv('100', 2, 10) as res"
+        query = "SELECT conv('100', 2, 10)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT conv(-10, 16, -10) as res"
+        query = "SELECT conv(-10, 16, -10)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
 
     test("degrees"){
         // without alias throws errors for below queries
-        query = "SELECT degrees(3.141592653589793) as res"
+        query = "SELECT degrees(3.141592653589793)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT degrees(6.283185307179586 ) as res"
+        query = "SELECT degrees(6.283185307179586 )"
+        sparkDf = sparkSession.sql(s"$query")
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
+
+        query = "SELECT degrees(null)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT degrees(null) as res"
-        sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
-
-        query = "SELECT degrees(0) as res"
+        query = "SELECT degrees(0)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1052,8 +1174,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT exp(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT exp(null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1069,8 +1195,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT expm1(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT expm1(null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1087,8 +1217,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT floor(null)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT floor(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1096,7 +1230,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query only throws error
-        query = "SELECT floor(-0.1) as res"
+        query = "SELECT floor(-0.1)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1110,8 +1244,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT factorial(-5)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT factorial(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1133,8 +1271,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT hex(0)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT hex(null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1142,7 +1284,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query throws error
-        query = "SELECT hex('Spark SQL') as res"
+        query = "SELECT hex('Spark SQL')"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1159,8 +1301,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT hypot(7,8)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT hypot(0,0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1187,8 +1333,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT log(10,1000)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT log(10,0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1201,7 +1351,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT log(10, 1000.234) as res"
+        query = "SELECT log(10, 1000.234)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1216,8 +1366,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT log1p(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT log1p(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1225,7 +1379,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query throws error
-        query = "SELECT log1p(1.2) as res"
+        query = "SELECT log1p(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1244,8 +1398,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT log2(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT log2(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1253,7 +1411,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query throws error
-        query = "SELECT log2(1.2) as res"
+        query = "SELECT log2(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1272,8 +1430,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT ln(1)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT ln(-1)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1281,7 +1443,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query throws error
-        query = "SELECT ln(1.2) as res"
+        query = "SELECT ln(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1300,8 +1462,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT negative(1)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT negative(-1)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1314,12 +1480,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below both query throws error
-        query = "SELECT negative(1.2) as res"
+        query = "SELECT negative(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT negative(-1.2) as res"
+        query = "SELECT negative(-1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1341,8 +1507,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT pmod(-10,3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT pmod(0,3)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1355,7 +1525,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query throws error
-        query = "SELECT pmod(1.2,3) as res"
+        query = "SELECT pmod(1.2,3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1369,8 +1539,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT positive(1)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT positive(-1)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1383,12 +1557,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below both query throws error
-        query = "SELECT positive(1.2) as res"
+        query = "SELECT positive(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT positive(-1.2) as res"
+        query = "SELECT positive(-1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1403,8 +1577,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT pow(-10,3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT pow(0,3)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1417,7 +1595,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query throws error
-        query = "SELECT pow(1.2,3) as res"
+        query = "SELECT pow(1.2,3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1431,8 +1609,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT power(-10,3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT power(0,3)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1445,7 +1627,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias below query throws error
-        query = "SELECT power(1.2,3) as res"
+        query = "SELECT power(1.2,3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1454,15 +1636,19 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("radians"){
 
         // without alias only below query throws error
-        query = "SELECT radians(360.0) as res"
+        query = "SELECT radians(360.0)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
         query = "SELECT radians(180)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT radians(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1476,15 +1662,20 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("rint"){
-        query = "SELECT rint(12.3456) as res"
+        // without alias throws error
+        query = "SELECT rint(12.3456)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT rint(-12.3456) as res"
+        query = "SELECT rint(-12.3456)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT rint(180)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1504,17 +1695,21 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("round"){
 
-        query = "SELECT round(2.5, 0) as res"
+        query = "SELECT round(2.5, 0)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT round(2.5, 3) as res"
+        query = "SELECT round(2.5, 3)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
 
-        query = "SELECT round(2.5, null) as res"
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
+
+        query = "SELECT round(2.5, null)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1534,8 +1729,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT shiftleft(0, 1)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT shiftleft(null, null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1543,12 +1742,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT shiftleft(2.2, 2) as res"
+        query = "SELECT shiftleft(2.2, 2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT shiftleft(2.2, 0) as res"
+        query = "SELECT shiftleft(2.2, 0)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1563,8 +1762,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT shiftright(0, 1)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT shiftright(null, null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1572,12 +1775,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT shiftright(2.2, 2) as res"
+        query = "SELECT shiftright(2.2, 2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT shiftright(2.2, 0) as res"
+        query = "SELECT shiftright(2.2, 0)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1592,8 +1795,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT shiftrightunsigned(0, 1)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT shiftrightunsigned(null, null)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1601,12 +1808,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT shiftrightunsigned(2.2, 2) as res"
+        query = "SELECT shiftrightunsigned(2.2, 2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT shiftrightunsigned(2.2, 0) as res"
+        query = "SELECT shiftrightunsigned(2.2, 0)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1620,8 +1827,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT sign(-40)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT sign(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1634,7 +1845,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT sign(-4.20) as res"
+        query = "SELECT sign(-4.20)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1648,8 +1859,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT signum(-40)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT signum(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1662,7 +1877,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT signum(-4.20) as res"
+        query = "SELECT signum(-4.20)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1676,8 +1891,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT sin(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT sin(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1690,7 +1909,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT sin(2.2) as res"
+        query = "SELECT sin(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1704,8 +1923,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT sinh(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT sinh(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1718,7 +1941,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT sinh(2.2) as res"
+        query = "SELECT sinh(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1726,20 +1949,27 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("str_to_map"){
 
-        // throws below error without alias
-        // cannot resolve '`str_to_map(a, ,, :)`' given input columns: [str_to_map('a', ,, :)];;
-        // and after providing alias throws another error
-        // Cannot have map type columns in DataFrame which calls set
-        // operations(intersect, except, etc.), but the type of column res is map<string,string>;;
-       query = "SELECT str_to_map('a:1,b:2,c:3', ',', ':') as res"
+        query = "SELECT str_to_map(null)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT str_to_map('a')"
+        // throws below error
+        // Cannot have map type columns in DataFrame which calls set
+        // operations(intersect, except, etc.), but the type of column res is map<string,string>;;
+       query = "SELECT str_to_map('a:1,b:2,c:3', ',', ':')"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
+
+        query = "SELECT str_to_map('a')"
+        sparkDf = sparkSession.sql(s"$query")
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT str_to_map('-1.2:a')"
         sparkDf = sparkSession.sql(s"$query")
@@ -1766,8 +1996,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
         query = "SELECT sqrt(-4)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT sqrt(0)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1780,7 +2014,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT sqrt(4.4) as res"
+        query = "SELECT sqrt(4.4)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1795,8 +2029,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT tan(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT tan(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1809,13 +2047,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT tan(2.2) as res"
+        query = "SELECT tan(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT tan(-2.2) as res"
+        query = "SELECT tan(-2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1830,8 +2068,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT tanh(2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT tanh(-2)"
         sparkDf = sparkSession.sql(s"$query")
@@ -1844,13 +2086,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT tanh(2.2) as res"
+        query = "SELECT tanh(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT tanh(-2.2) as res"
+        query = "SELECT tanh(-2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1863,10 +2105,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT 1.2+3+(4.5+2) as res"
+        query = "SELECT 1.2+3+(4.5+2)"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT 0+0"
         sparkDf = sparkSession.sql(s"$query")
@@ -1887,8 +2133,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT 0-0"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT 0-null"
         sparkDf = sparkSession.sql(s"$query")
@@ -1896,7 +2146,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT 1.2-3-(4.5-2) as res"
+        query = "SELECT 1.2-3-(4.5-2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1910,8 +2160,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT 0*0"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT 0*null"
         sparkDf = sparkSession.sql(s"$query")
@@ -1919,7 +2173,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT 1.2*3*(4.5*2) as res"
+        query = "SELECT 1.2*3*(4.5*2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1933,8 +2187,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT 0/0"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT 0/null"
         sparkDf = sparkSession.sql(s"$query")
@@ -1942,7 +2200,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT 4.5/2 as res"
+        query = "SELECT 4.5/2"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1956,8 +2214,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
         query = "SELECT 0%0"
         sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         query = "SELECT 0%null"
         sparkDf = sparkSession.sql(s"$query")
@@ -1965,7 +2227,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // without alias throws error
-        query = "SELECT 4.5%2 as res"
+        query = "SELECT 4.5%2"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
@@ -1994,9 +2256,16 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
             "count_q1", "RowTable", pw, sparkSession)
 
         sparkQuery = "SELECT count(intcol) from sparktable"
-        snappyQuery = "SELECT count(intcol) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        var snappyQuery1 = "SELECT count(intcol) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
             "count_q2", "RowTable", pw, sparkSession)
+
+        var snappyDf = snc.sql(s"$snappyQuery")
+        var snappyDf1 = snc.sql(s"$snappyQuery1")
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         sparkQuery = "SELECT count(distinct(intcol)) from sparktable"
         snappyQuery = "SELECT count(distinct(intcol)) from rowtable"
@@ -2026,9 +2295,16 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
             "first_q1", "RowTable", pw, sparkSession)
 
         sparkQuery = "SELECT first(stringcol, true) from sparktable"
-        snappyQuery = "SELECT first(stringcol, true) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        var snappyQuery1 = "SELECT first(stringcol, true) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
             "first_q2", "RowTable", pw, sparkSession)
+
+        var snappyDf = snc.sql(s"$snappyQuery")
+        var snappyDf1 = snc.sql(s"$snappyQuery1")
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         sparkQuery = "SELECT first(stringcol) from sparktable"
         snappyQuery = "SELECT first(stringcol) from columntable"
@@ -2051,9 +2327,16 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         //  org.apache.spark.sql.AnalysisException:
         // The second argument of First should be a boolean literal.;;
         sparkQuery = "SELECT first_value(stringcol, true) from sparktable"
-        snappyQuery = "SELECT first_value(stringcol, true) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        var snappyQuery1 = "SELECT first_value(stringcol, true) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
             "first_value_q2", "RowTable", pw, sparkSession)
+
+        var snappyDf = snc.sql(s"$snappyQuery")
+        var snappyDf1 = snc.sql(s"$snappyQuery1")
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         sparkQuery = "SELECT first_value(stringcol) from sparktable"
         snappyQuery = "SELECT first_value(stringcol) from columntable"
@@ -2076,9 +2359,16 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
             "last_q1", "RowTable", pw, sparkSession)
 
         sparkQuery = "SELECT last(stringcol, true) from sparktable"
-        snappyQuery = "SELECT last(stringcol, true) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        var snappyQuery1 = "SELECT last(stringcol, true) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
             "last_q2", "RowTable", pw, sparkSession)
+
+        var snappyDf = snc.sql(s"$snappyQuery")
+        var snappyDf1 = snc.sql(s"$snappyQuery1")
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         sparkQuery = "SELECT last(stringcol) from sparktable"
         snappyQuery = "SELECT last(stringcol) from columntable"
@@ -2104,9 +2394,16 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         // Syntax error or analysis exception:
         // The second argument of First should be a boolean literal.;;
         sparkQuery = "SELECT last_value(stringcol, true) from sparktable"
-        snappyQuery = "SELECT last_value(stringcol, true) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        var snappyQuery1 = "SELECT last_value(stringcol, true) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
             "last_value_q2", "RowTable", pw, sparkSession)
+
+        var snappyDf = snc.sql(s"$snappyQuery")
+        var snappyDf1 = snc.sql(s"$snappyQuery1")
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
 
         sparkQuery = "SELECT last_value(stringcol) from sparktable"
         snappyQuery = "SELECT last_value(stringcol) from columntable"
@@ -2122,7 +2419,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
             "last_value_q4", "ColumnTable", pw, sparkSession)
     }
 
-    test("max"){
+    test("max") {
         var sparkQuery = "SELECT max(intcol) from sparktable"
         var snappyQuery = "SELECT max(intcol) from rowtable"
         assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
@@ -2161,16 +2458,16 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("length"){
         var sparkQuery = "SELECT length(stringcol) from sparktable"
         var snappyQuery = "SELECT length(stringcol) from columntable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "length_q1", "ColumnTable", pw, sparkSession)
 
         sparkQuery = "SELECT length(stringcol) from sparktable"
         snappyQuery = "SELECT length(stringcol) from rowTable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "length_q1", "RowTable", pw, sparkSession)
 
         // without alias throws error
-        query = "SELECT length('Spark SQL') as res"
+        query = "SELECT length('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
@@ -2179,22 +2476,22 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("lower"){
         var sparkQuery = "SELECT lower(stringcol) from sparktable"
         var snappyQuery = "SELECT lower(stringcol) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "lower_q1", "RowTable", pw, sparkSession)
 
         sparkQuery = "SELECT lower(stringcol) from sparktable"
         snappyQuery = "SELECT lower(stringcol) from columnTable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "lower_q2", "ColumnTable", pw, sparkSession)
 
         // without alias throws error
-        query = "SELECT lower('Spark SQL') as res"
+        query = "SELECT lower('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
         // without alias throws error
-        query = "SELECT lower('abcABC123@#$%^&') as res"
+        query = "SELECT lower('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
@@ -2204,22 +2501,22 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("lcase"){
         var sparkQuery = "SELECT lcase(stringcol) from sparktable"
         var snappyQuery = "SELECT lcase(stringcol) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "lcase_q1", "RowTable", pw, sparkSession)
 
         sparkQuery = "SELECT lcase(stringcol) from sparktable"
         snappyQuery = "SELECT lcase(stringcol) from columnTable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "lcase_q2", "ColumnTable", pw, sparkSession)
 
         // without alias throws error
-        query = "SELECT lcase('Spark SQL') as res"
+        query = "SELECT lcase('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
         // without alias throws error
-        query = "SELECT lcase('abcABC123@#$%^&') as res"
+        query = "SELECT lcase('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
@@ -2228,22 +2525,22 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("upper"){
         var sparkQuery = "SELECT upper(stringcol) from sparktable"
         var snappyQuery = "SELECT upper(stringcol) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "upper_q1", "RowTable", pw, sparkSession)
 
         sparkQuery = "SELECT upper(stringcol) from sparktable"
         snappyQuery = "SELECT upper(stringcol) from columnTable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "upper_q2", "ColumnTable", pw, sparkSession)
 
         // without alias throws error
-        query = "SELECT upper('Spark SQL') as res"
+        query = "SELECT upper('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
         // without alias throws error
-        query = "SELECT upper('abcABC123@#$%^&') as res"
+        query = "SELECT upper('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
@@ -2252,26 +2549,52 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     test("ucase"){
         var sparkQuery = "SELECT ucase(stringcol) from sparktable"
         var snappyQuery = "SELECT ucase(stringcol) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "ucase_q1", "RowTable", pw, sparkSession)
 
         sparkQuery = "SELECT ucase(stringcol) from sparktable"
         snappyQuery = "SELECT ucase(stringcol) from columnTable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "ucase_q2", "ColumnTable", pw, sparkSession)
 
         // without alias throws error
-        query = "SELECT ucase('Spark SQL') as res"
+        query = "SELECT ucase('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
         // without alias throws error
-        query = "SELECT ucase('abcABC123@#$%^&') as res"
+        query = "SELECT ucase('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
+    }
+
+    test("sort_array"){
+
+        // throws below error
+        // ERROR 42000: (SQLState=42000 Severity=20000) (Server=localhost/127.0.0.1[1528]
+        // Thread=ThriftProcessor-0) Syntax error or analysis exception:
+        // cannot resolve 'sort_array(array('b', 'd', 'c', 'a'), true)' due to
+        // data type mismatch: Sort order in second argument requires a boolean literal.;;
+        // 'Project [unresolvedalias(sort_array(array(ParamLiteral:0,1#1,b
+        // , ParamLiteral:1,1#1,d, ParamLiteral:2,1#1,c,
+        // ParamLiteral:3,1#1,a), ParamLiteral:4,1#4,true), None)]
+        // +- OneRowRelation$
+        query = "SELECT sort_array(array('b', 'd', 'c', 'a'))"
+        var sparkDf = sparkSession.sql(s"$query")
+        var snappyDf = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf)
+
+        query = "SELECT sort_array(array('b', 'd', 'c', 'a'), true) as res"
+        sparkDf = sparkSession.sql(s"$query")
+        var snappyDf1 = snc.sql(s"$query")
+        validateResult(sparkDf, snappyDf1)
+
+        val c1s = snappyDf.columns
+        val c2s = snappyDf1.columns
+        assert(!c1s.sameElements(c2s))
     }
     
     
