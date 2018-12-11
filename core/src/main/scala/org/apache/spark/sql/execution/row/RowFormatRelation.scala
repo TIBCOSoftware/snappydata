@@ -20,7 +20,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
@@ -28,12 +28,12 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
@@ -45,7 +45,6 @@ import org.apache.spark.sql.store.CodeGeneration
 class RowFormatRelation(
     _connProperties: ConnectionProperties,
     _table: String,
-    preservePartitions: Boolean,
     _mode: SaveMode,
     _userSpecifiedString: String,
     _parts: Array[Partition],
@@ -69,14 +68,7 @@ class RowFormatRelation(
   private final lazy val putStr = JdbcExtendedUtils.getInsertOrPutString(
     table, schema, putInto = true)
 
-  @transient private lazy val relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = {
-    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.externalCatalog.getRelationInfo(resolvedName, rowTable = true)
-  }
-
-  override protected def relationInfo: RelationInfo = relationInfoAndRegion._1
-
-  override def region: LocalRegion = relationInfoAndRegion._2.get
+  override protected def withoutUserSchema: Boolean = userSpecifiedString.isEmpty
 
   override def numBuckets: Int = relationInfo.numBuckets
 

@@ -263,11 +263,8 @@ class LeadImpl extends ServerImpl with Lead
         case Some(p) =>
           // set the password back and remove after initialization
           SparkCallbacks.setSparkConf(sc, passwordKey, p)
-          try {
-            SnappyContext(sc)
-          } finally {
-            SparkCallbacks.setSparkConf(sc, passwordKey, value = null)
-          }
+          SnappyContext(sc)
+          SparkCallbacks.setSparkConf(sc, passwordKey, value = null)
 
         case _ => SnappyContext(sc)
       }

@@ -56,7 +56,6 @@ import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils.toUpperCase
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{AnalysisException, _}
 import org.apache.spark.{SparkConf, SparkException}
 
@@ -473,12 +472,13 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     }
   }
 
-  override def getRelationInfo(qualifiedTableName: String,
+  override def getRelationInfo(schema: String, table: String,
       rowTable: Boolean): (RelationInfo, Option[LocalRegion]) = {
-    if (qualifiedTableName.startsWith(SYS_SCHEMA_DOT)) {
+    if (schema == SYS_SCHEMA) {
       RelationInfo(1, isPartitioned = false) -> None
     } else {
-      val r = Misc.getRegionForTable(qualifiedTableName, true).asInstanceOf[LocalRegion]
+      val r = Misc.getRegion(Misc.getRegionPath(schema, table, null),
+        true, false).asInstanceOf[LocalRegion]
       val indexCols = if (rowTable) {
         GfxdSystemProcedures.getIndexColumns(r).asScala.toArray
       } else EMPTY_STRING_ARRAY
@@ -512,7 +512,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val tableDefinition = CatalogTable(
       identifier = TableIdentifier(policyName, Some(schemaName)),
       tableType = CatalogTableType.EXTERNAL,
-      schema = StructType(Nil),
+      schema = EMPTY_SCHEMA,
       provider = Some("policy"),
       storage = CatalogStorageFormat(
         locationUri = None,
@@ -742,9 +742,8 @@ object SnappyHiveExternalCatalog {
       close()
     }
 
-    // TODO: SW: check logging in a secure cluster normally and via smart connector on shell
-    // Reduce log level to warning during hive client initialization
-    // as it generates hundreds of line of logs which are of no use.
+    // Reduce log level to error during hive client initialization
+    // as it generates hundreds of lines of logs which are of no use.
     // Once the initialization is done, restore the logging level.
     val logger = Misc.getI18NLogWriter.asInstanceOf[GFToSlf4jBridge]
     val previousLevel = logger.getLevel
@@ -754,8 +753,8 @@ object SnappyHiveExternalCatalog {
     val reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL ||
         previousLevel == LogWriterImpl.INFO_LEVEL
     if (reduceLog) {
-      logger.setLevel(LogWriterImpl.WARNING_LEVEL)
-      log4jLogger.setLevel(Level.WARN)
+      logger.setLevel(LogWriterImpl.ERROR_LEVEL)
+      log4jLogger.setLevel(Level.ERROR)
     }
     try {
       instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)

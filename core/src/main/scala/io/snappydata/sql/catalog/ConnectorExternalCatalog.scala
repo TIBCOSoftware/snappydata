@@ -21,6 +21,7 @@ import java.util.Collections
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.google.common.cache.{Cache, CacheBuilder}
@@ -34,8 +35,8 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils.EMPTY_STRING_ARRAY
+import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.{SnappySession, TableNotFoundException}
@@ -77,17 +78,28 @@ class ConnectorExternalCatalog(val session: SnappySession)
   }
 
   override def invalidateCaches(relations: Seq[(String, String)]): Unit = {
-    if (relations.isEmpty) invalidateAll()
-    else relations.foreach(ConnectorExternalCatalog.cachedCatalogTables.invalidate)
+    // invalidation of a single table can result in all cached RelationInfo being
+    // out of date due to lower schema version, so always invalidate all
+    invalidateAll()
     // there is no version update in this call here, rather only the caches are cleared
     RefreshMetadata.executeLocal(RefreshMetadata.UPDATE_CATALOG_SCHEMA_VERSION, args = null)
   }
 
   override def invalidate(name: (String, String)): Unit = {
-    ConnectorExternalCatalog.cachedCatalogTables.invalidate(name)
+    // invalidation of a single table can result in all cached RelationInfo being
+    // out of date due to lower schema version, so always invalidate all
+    invalidateAll()
   }
 
   override def invalidateAll(): Unit = {
+    // invalidate all the RelationInfo objects inside as well as the cache itself
+    val iter = ConnectorExternalCatalog.cachedCatalogTables.asMap().values().iterator()
+    while (iter.hasNext) {
+      iter.next()._2 match {
+        case Some(info) => info.invalid = true
+        case None =>
+      }
+    }
     ConnectorExternalCatalog.cachedCatalogTables.invalidateAll()
   }
 
@@ -216,12 +228,14 @@ class ConnectorExternalCatalog(val session: SnappySession)
     }
   }
 
-  override def getRelationInfo(qualifiedTableName: String,
+  override def getRelationInfo(schema: String, table: String,
       rowTable: Boolean): (RelationInfo, Option[LocalRegion]) = {
-    if (qualifiedTableName.startsWith(SnappyExternalCatalog.SYS_SCHEMA_DOT)) {
-      RelationInfo(1, isPartitioned = false) -> None
+    if (schema == SnappyExternalCatalog.SYS_SCHEMA) {
+      // SYS tables are treated as single partition replicated tables visible
+      // from all executors using the JDBC connection
+      RelationInfo(1, isPartitioned = false, partitions = Array(
+        new SmartExecutorBucketPartition(0, 0, ArrayBuffer.empty))) -> None
     } else {
-      val (schema, table) = SnappyExternalCatalog.getTableWithSchema(qualifiedTableName, "")
       assert(schema.length > 0)
       ConnectorExternalCatalog.getRelationInfo(schema -> table, catalog = this) match {
         case None => throw new TableNotFoundException(schema, table, Some(new RuntimeException(
@@ -503,6 +517,14 @@ object ConnectorExternalCatalog extends Logging {
         if (tableObj.isSetRowCount) Some(tableObj.getRowCount) else None,
         colStats, tableObj.isBroadcastable))
     } else None
+    val bucketOwners = tableObj.getBucketOwners
+    // remove partitioning columns from CatalogTable for row/column tables
+    val partitionCols = if (bucketOwners.isEmpty) Utils.EMPTY_STRING_ARRAY
+    else {
+      val cols = tableObj.getPartitionColumns
+      tableObj.setPartitionColumns(Collections.emptyList())
+      toArray(cols)
+    }
     val table = CatalogTable(identifier, tableType, ConnectorExternalCatalog
         .convertToCatalogStorage(storage, storageProps), schema, Option(tableObj.getProvider),
       tableObj.getPartitionColumns.asScala, bucketSpec, tableObj.getOwner, tableObj.createTime,
@@ -517,7 +539,6 @@ object ConnectorExternalCatalog extends Logging {
       return table -> None
     }
     val catalogSchemaVersion = request.getCatalogSchemaVersion
-    val bucketOwners = tableObj.getBucketOwners
     if (bucketOwners.isEmpty) {
       // external tables (with source as csv, parquet etc.)
       table -> Some(RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY, EMPTY_STRING_ARRAY,
@@ -527,7 +548,6 @@ object ConnectorExternalCatalog extends Logging {
       val indexCols = toArray(tableObj.getIndexColumns)
       val pkCols = toArray(tableObj.getPrimaryKeyColumns)
       if (bucketCount > 0) {
-        val partitionCols = toArray(tableObj.getPartitionColumns)
         val allNetUrls = SmartConnectorRDDHelper.setBucketToServerMappingInfo(
           bucketCount, bucketOwners, session)
         val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
@@ -679,4 +699,7 @@ case class RelationInfo(numBuckets: Int,
     pkCols: Array[String] = Utils.EMPTY_STRING_ARRAY,
     partitions: Array[org.apache.spark.Partition] = Array.empty,
     catalogSchemaVersion: Long = -1) {
+
+  @transient
+  @volatile var invalid: Boolean = _
 }

@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
@@ -128,8 +128,11 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
   private def getInputRDDsForConnector(
       inputRDDs: Seq[RDD[InternalRow]]): Seq[RDD[InternalRow]] = {
     def preferredLocations(table: String): Array[Seq[String]] = {
-      val catalog = sqlContext.sparkSession.asInstanceOf[SnappySession].externalCatalog
-      val relInfo = catalog.getRelationInfo(table, rowTable = false)._1
+      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(table,
+        conn = null, Some(session))
+      val relInfo = session.externalCatalog.getRelationInfo(schemaName, tableName,
+        isRowTable = false)._1
       val locations = new Array[Seq[String]](numBuckets)
       var i = 0
       relInfo.partitions.foreach(x => {

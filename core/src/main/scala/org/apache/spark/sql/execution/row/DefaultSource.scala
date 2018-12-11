@@ -101,7 +101,6 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schemaString $ddlExtension"
-    val preservePartitions = parameters.remove("preservepartitions")
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(session), parameters)
 
@@ -109,7 +108,6 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     var success = false
     val relation = new RowFormatRelation(connProperties,
       fullTableName,
-      preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
       Array[Partition](JDBCPartition(null, 0)),
@@ -117,8 +115,8 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       session.sqlContext)
     try {
       logDebug(s"Trying to create table $fullTableName")
-      val outputTableName = relation.createTable(mode)
-      logDebug(s"Successfully created the table $outputTableName")
+      relation.createTable(mode)
+      logDebug(s"Successfully created the table ${relation.resolvedName}")
       success = true
       relation
     } finally {

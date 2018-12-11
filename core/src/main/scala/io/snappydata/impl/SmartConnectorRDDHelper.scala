@@ -41,7 +41,7 @@ import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
 
-final class SmartConnectorRDDHelper extends Logging { // SW: remove Logging
+final class SmartConnectorRDDHelper {
 
   def prepareScan(conn: Connection, txId: String, columnTable: String, projection: Array[Int],
       serializedFilters: Array[Byte], partition: SmartExecutorBucketPartition,
@@ -86,7 +86,7 @@ final class SmartConnectorRDDHelper extends Logging { // SW: remove Logging
   }
 
   private def createConnection(connProperties: ConnectionProperties,
-      hostList: IndexedSeq[(String, String)], preferHost: Boolean): Connection = {
+      hostList: Seq[(String, String)], preferHost: Boolean): Connection = {
     val useLocatorURL = hostList.isEmpty
     var index = -1
 
@@ -98,10 +98,6 @@ final class SmartConnectorRDDHelper extends Logging { // SW: remove Logging
       val localhost = SocketCreator.getLocalHost
       val hostOrAddress = if (preferHost) localhost.getHostName else localhost.getHostAddress
       if (index < 0) index = hostList.indexWhere(_._1.contains(hostOrAddress))
-      if (index < 0) {
-        logError(s"SW:#######: choosing a potentially remote node for " +
-            s"hostList=$hostList myHost=${localhost.getHostAddress}")
-      }
       if (index < 0) index = Random.nextInt(hostList.size)
       hostList(index)._2
     }
@@ -170,7 +166,9 @@ object SmartConnectorRDDHelper {
       } else {
         val servers = bucketToServerList(p)
         partitions(p) = new SmartExecutorBucketPartition(p, p,
-          IndexedSeq(if (servers.length <= numServers) servers(chosenServerIndex) else servers(0)))
+          if (servers.isEmpty) Nil
+          else if (servers.length >= numServers) servers(chosenServerIndex) :: Nil
+          else servers(0) :: Nil)
       }
     }
     partitions
