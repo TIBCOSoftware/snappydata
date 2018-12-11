@@ -258,10 +258,17 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   /**
    * Lookup relation and resolve to a LogicalRelation if not a temporary view.
    */
+  final def resolveRelationWithAlias(tableIdent: TableIdentifier): LogicalPlan = {
+    // resolve the relation right away with alias around
+    new FindDataSourceTable(snappySession)(lookupRelation(tableIdent))
+  }
+
+  /**
+   * Lookup relation and resolve to a LogicalRelation if not a temporary view.
+   */
   final def resolveRelation(tableIdent: TableIdentifier): LogicalPlan = {
     // resolve the relation right away
-    new FindDataSourceTable(snappySession)(lookupRelation(tableIdent)
-        .asInstanceOf[SubqueryAlias].child)
+    resolveRelationWithAlias(tableIdent).asInstanceOf[SubqueryAlias].child
   }
 
   // NOTE: Many of the overrides below are due to SnappyData allowing absence of
