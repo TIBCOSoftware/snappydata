@@ -229,36 +229,60 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     }
   }
 
-  test("Double exists") {
+  private def getUpdateCount(df: DataFrame, tableType: String): Long = {
+    // row table execution without keys is done directly on store that returns integer counts
+    if (tableType == "row") df.collect().map(_.getInt(0)).sum
+    else df.collect().map(_.getLong(0)).sum
+  }
+
+  test("Double exists and update exists sub-query") {
     val snc = new SnappySession(sc)
-    snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row ")
-    snc.sql("create table r2(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row")
+    for (tableType <- Seq("row", "column")) {
+      snc.sql("create table r1(col1 INT, col2 STRING, col3 String, col4 Int)" +
+          s" using $tableType")
+      snc.sql("create table r2(col1 INT, col2 STRING, col3 String, col4 Int)" +
+          s" using $tableType")
+      snc.sql("create table r3(col1 INT, col2 STRING, col3 String, col4 Int)" +
+          s" using $tableType")
 
-    snc.sql("create table r3(col1 INT, col2 STRING, col3 String, col4 Int)" +
-        " using row")
+      snc.insert("r1", Row(1, "1", "1", 100))
+      snc.insert("r1", Row(2, "2", "2", 2))
+      snc.insert("r1", Row(4, "4", "4", 4))
+      snc.insert("r1", Row(7, "7", "7", 4))
 
-    snc.insert("r1", Row(1, "1", "1", 100))
-    snc.insert("r1", Row(2, "2", "2", 2))
-    snc.insert("r1", Row(4, "4", "4", 4))
-    snc.insert("r1", Row(7, "7", "7", 4))
+      snc.insert("r2", Row(1, "1", "1", 1))
+      snc.insert("r2", Row(2, "2", "2", 2))
+      snc.insert("r2", Row(3, "3", "3", 3))
 
-    snc.insert("r2", Row(1, "1", "1", 1))
-    snc.insert("r2", Row(2, "2", "2", 2))
-    snc.insert("r2", Row(3, "3", "3", 3))
+      snc.insert("r3", Row(1, "1", "1", 1))
+      snc.insert("r3", Row(2, "2", "2", 2))
+      snc.insert("r3", Row(4, "4", "4", 4))
 
-    snc.insert("r3", Row(1, "1", "1", 1))
-    snc.insert("r3", Row(2, "2", "2", 2))
-    snc.insert("r3", Row(4, "4", "4", 4))
+      val df = snc.sql("select * from r1 where " +
+          "(exists (select col1 from r2 where r2.col1=r1.col1) " +
+          "or exists(select col1 from r3 where r3.col1=r1.col1))")
 
-    val df = snc.sql("select * from r1 where " +
-        "(exists (select col1 from r2 where r2.col1=r1.col1) " +
-        "or exists(select col1 from r3 where r3.col1=r1.col1))")
+      df.collect()
+      checkAnswer(df, Seq(Row(1, "1", "1", 100),
+        Row(2, "2", "2", 2), Row(4, "4", "4", 4)))
 
-    df.collect()
-    checkAnswer(df, Seq(Row(1, "1", "1", 100),
-      Row(2, "2", "2", 2), Row(4, "4", "4", 4) ))
+      var updateSql = "update r1 set col1 = 100 where exists " +
+          s"(select 1 from r1 t where t.col1 = r1.col1 and t.col1 = 4)"
+      assert(getUpdateCount(snc.sql(updateSql), tableType) == 1)
+      assert(getUpdateCount(snc.sql(updateSql), tableType) == 0)
+
+      updateSql = "update r1 set col1 = 200 where exists " +
+          s"(select 1 from r2 t where t.col1 = r1.col1 and t.col1 = 2)"
+      assert(getUpdateCount(snc.sql(updateSql), tableType) == 1)
+      assert(getUpdateCount(snc.sql(updateSql), tableType) == 0)
+
+      checkAnswer(snc.sql("select * from r1"), Seq(Row(1, "1", "1", 100),
+        Row(200, "2", "2", 2), Row(100, "4", "4", 4), Row(7, "7", "7", 4)))
+
+      snc.sql("drop table r1")
+      snc.sql("drop table r2")
+      snc.sql("drop table r3")
+    }
   }
 
   test("SNAP-2387") {

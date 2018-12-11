@@ -660,13 +660,11 @@ class IndexColumnFormatRelation(
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionState.catalog
     catalog.resolveRelation(session.tableIdentifier(baseTableName)) match {
-      case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
-        cr
+      case LogicalRelation(cr: ColumnFormatRelation, _, _) => cr
       case _ =>
         throw new UnsupportedOperationException("Index scan other than Column table unsupported")
     }
   }
-
 }
 
 object ColumnFormatRelation extends Logging with StoreCallback {

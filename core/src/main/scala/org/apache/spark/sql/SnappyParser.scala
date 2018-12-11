@@ -1090,7 +1090,7 @@ class SnappyParser(session: SnappySession)
         (FROM ~ relations).? ~ (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
         ((t: TableIdentifier, updateExprs: Seq[(UnresolvedAttribute, Expression)],
             relations: Any, whereExpr: Any) => {
-          val table = session.sessionCatalog.resolveRelation(t)
+          val table = session.sessionCatalog.resolveRelationWithAlias(t)
           val base = relations match {
             case Some(plan) => plan.asInstanceOf[LogicalPlan]
             case _ => table
