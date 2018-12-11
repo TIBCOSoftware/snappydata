@@ -4,21 +4,16 @@ package org.apache.spark.sql.execution.columnar
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
-import java.util.{Collections, Properties}
+import java.sql.{Connection, PreparedStatement, ResultSet}
+import java.util.Collections
 
-import scala.collection.immutable.HashMap
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 
 import io.snappydata.Constant
 import io.snappydata.thrift.internal.ClientPreparedStatement
 
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
-import org.apache.spark.sql.row.SnappyStoreClientDialect
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
+import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarBatch}
 
@@ -80,8 +75,7 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
       scan_deltaStatsRow.getInt(0)
     } else 0
     scan_batchNumRows = scan_batchNumFullRows + scan_batchNumDeltaRows
-    // scalastyle:off
-//    println (s" scan_batchNumRows : $scan_batchNumRows ")
+    scan_batchNumRows = scan_batchNumRows - columnBatchIterator.getDeletedRowCount
 
     // Construct ColumnBatch and return
     val columnVectors = new Array[ColumnVector](projection.length)
@@ -194,7 +188,7 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
         val bucketSet = Collections.singleton(Int.box(bucketId))
         clientStmt.setLocalExecutionBucketIds(bucketSet, columnTable, true)
         clientStmt.setMetadataVersion(relDestroyVersion)
-      // TODO: Transaction Handling temprary commented.
+      // TODO: Transaction Handling temporary commented.
       // clientStmt.setSnapshotTransactionId(txId)
       case _ =>
         pstmt.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +

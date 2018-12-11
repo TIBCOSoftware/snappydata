@@ -103,10 +103,10 @@ object SharedExternalStoreUtils {
     if (!props.contains(key)) props.put(key, default)
   }
 
-  def defaultMaxEmbeddedPoolSize: String =
+  private def defaultMaxEmbeddedPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 16))
 
-  def defaultMaxExternalPoolSize: String =
+  private def defaultMaxExternalPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
   def getAllPoolProperties(url: String, driver: String,

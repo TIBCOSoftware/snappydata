@@ -100,12 +100,6 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 }
 
-/*
- * TODO:PS:Review
- * Shifted from the ColumnBatch.scala it also need to be
- * accessed for V2Connector. Added into the shared encoders
- * module.
- */
 final class ColumnBatchIteratorOnRS(conn: Connection,
     projection: Array[Int], stmt: Statement, rs: ResultSet,
     context: TaskContext, partitionId: Int)

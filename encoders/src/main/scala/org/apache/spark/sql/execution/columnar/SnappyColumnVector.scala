@@ -18,9 +18,9 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   private val columnDecoder = ColumnEncoding.getColumnDecoder(byteBuffer, structField,
     ColumnEncoding.identityLong)
 
-  var rowOrdinal = 0
   var currentNullCount = 0
-  var nextNullPosition = columnDecoder.getNextNullPosition
+  var currentDeletedCount = 0
+  var nextNullPosition = 0
 
   private val arrayOfBytes = if (byteBuffer == null || byteBuffer.isDirect) {
     null
@@ -29,8 +29,9 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   override def close(): Unit = {
-    // TODO: look for the clean up part if any after the
-    // columnVector read completion from upstream spark.
+    // TODO Check for the close operation on the
+    // ColumnVector, whenever the current columnVector
+    // finished reading by the upstream spark.
   }
 
   override def hasNull: Boolean = {
@@ -39,8 +40,8 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
 
   def skipDeletedRows(rowId: Int): Unit = {
     if (deletedColumnDecoder != null) {
-      while (deletedColumnDecoder.deleted(rowId + rowOrdinal - currentNullCount)) {
-        rowOrdinal = rowOrdinal + 1
+      while (deletedColumnDecoder.deleted(rowId + currentDeletedCount - currentNullCount)) {
+        currentDeletedCount = currentDeletedCount + 1
       }
     }
   }
@@ -54,61 +55,63 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
   }
 
   @inline
-  private def setAndGetCurrentNullCount: Int = {
-    currentNullCount = columnDecoder.numNulls(arrayOfBytes, rowOrdinal, currentNullCount)
+  private def setAndGetCurrentNullCount(rowId: Int) : Int = {
+    currentNullCount = columnDecoder.numNulls(arrayOfBytes,
+      (rowId + currentDeletedCount),
+      currentNullCount)
     currentNullCount
   }
 
   override def numNulls(): Int = {
-    columnDecoder.numNulls(arrayOfBytes, rowOrdinal, currentNullCount)
+    currentNullCount
   }
 
   override def isNullAt(rowId: Int): Boolean = {
     var hasNull = true
-    if (rowOrdinal < nextNullPosition ||
-        (rowOrdinal == nextNullPosition + 1 &&
-            rowOrdinal < incrementAndGetNextNullPosition) ||
-        (rowOrdinal != nextNullPosition && (setAndGetCurrentNullCount == 0 ||
-            rowOrdinal != columnDecoder.getNextNullPosition))) {
+    nextNullPosition = columnDecoder.getNextNullPosition
+    if (rowId < nextNullPosition ||
+        (rowId == nextNullPosition + 1 &&
+            rowId < incrementAndGetNextNullPosition) ||
+        (rowId != nextNullPosition && (setAndGetCurrentNullCount(rowId) == 0 ||
+            rowId != columnDecoder.getNextNullPosition))) {
       hasNull = false
     }
-    rowOrdinal = rowOrdinal + 1
     hasNull
   }
 
   override def getInt(rowId: Int): Int = {
     skipDeletedRows(rowId)
-    columnDecoder.readInt(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readInt(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getBoolean(rowId: Int): Boolean = {
     skipDeletedRows(rowId)
-    columnDecoder.readBoolean(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readBoolean(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getByte(rowId: Int): Byte = {
     skipDeletedRows(rowId)
-    columnDecoder.readByte(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readByte(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getShort(rowId: Int): Short = {
     skipDeletedRows(rowId)
-    columnDecoder.readShort(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readShort(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getLong(rowId: Int): Long = {
     skipDeletedRows(rowId)
-    columnDecoder.readLong(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readLong(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getFloat(rowId: Int): Float = {
     skipDeletedRows(rowId)
-    columnDecoder.readFloat(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readFloat(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getDouble(rowId: Int): Double = {
     skipDeletedRows(rowId)
-    columnDecoder.readDouble(arrayOfBytes, rowId + rowOrdinal- currentNullCount)
+    columnDecoder.readDouble(arrayOfBytes, rowId + currentDeletedCount- currentNullCount)
   }
 
   override def getArray(rowId: Int): ColumnarArray = {
@@ -137,18 +140,18 @@ class SnappyColumnVector(dataType: DataType, structField: StructField,
 
   override def getDecimal(rowId: Int, precision: Int, scale: Int): Decimal = {
     skipDeletedRows(rowId)
-    columnDecoder.readDecimal(arrayOfBytes, rowId + rowOrdinal -
+    columnDecoder.readDecimal(arrayOfBytes, rowId + currentDeletedCount -
      currentNullCount, precision, scale)
   }
 
   override def getUTF8String(rowId: Int): UTF8String = {
     skipDeletedRows(rowId)
-    columnDecoder.readUTF8String(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readUTF8String(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getBinary(rowId: Int): Array[Byte] = {
     skipDeletedRows(rowId)
-    columnDecoder.readBinary(arrayOfBytes, rowId + rowOrdinal - currentNullCount)
+    columnDecoder.readBinary(arrayOfBytes, rowId + currentDeletedCount - currentNullCount)
   }
 
   override def getChild(ordinal: Int): ColumnVector = {
