@@ -328,7 +328,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assert(!c1s.sameElements(c2s))
 
 
-        // without alias throws error
+        //  ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`abs(1.1)`' given input columns: [abs(1.1)];;
         query = "select abs(1.1)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -347,7 +348,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("coalesce"){
-        // without alias throwing error
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`coalesce(CAST(NULL AS STRING), CAST(NULL AS STRING),
+        // CAST(NULL AS STRING), CAST(abc AS STRING), CAST(NULL AS STRING),
+        // CAST(Example.com AS STRING))`' given input columns: [coalesce(CAST(NULL AS STRING),
+        // CAST(NULL AS STRING), CAST(NULL AS STRING), CAST(abc AS STRING),
+        // CAST(NULL AS STRING), CAST(Example.com AS STRING))];;
         query = "SELECT COALESCE(NULL,NULL,NULL,'abc',NULL,'Example.com')"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -370,17 +376,21 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        query = "SELECT COALESCE(NULL, NULL)" // throws error
-        sparkDf = sparkSession.sql(s"$query")
-        snappyDf = snc.sql(s"$query")
-        validateResult(sparkDf, snappyDf)
-        // assertQueryFullResultSet(snc, query, query, 1,
-        //    "coalesce_q3", " ", pw, sparkSession)
+        //  with validateResult(sparkDf, snappyDf) throws error
+        query = "SELECT COALESCE(NULL, NULL)"
+        // sparkDf = sparkSession.sql(s"$query")
+        // snappyDf = snc.sql(s"$query")
+        // validateResult(sparkDf, snappyDf)
+        assertQueryFullResultSet(snc, query, query, 1,
+        "coalesce_q3", " ", pw, sparkSession)
 
     }
 
     test("cast"){
-        // without alias throws error for all query
+        // ERROR: below all queries throws error
+        // org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`CAST(NaN AS DOUBLE)`'
+        // given input columns: [CAST('NaN' AS DOUBLE)];;
 
         // On snappy shell for below query throws error
         // snappy> select cast('NaN' as double);
@@ -447,7 +457,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("if"){
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`(IF((1 < 2), a, b))`'
+        // given input columns: [(IF((1 < 2), 'a', 'b'))];;
         query = "SELECT if(1 < 2, 'a', 'b')"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -480,7 +492,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("isnan"){
-        // without alias throws error for below query
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`isnan(CAST(NaN AS DOUBLE))`'
+        // given input columns: [isnan(CAST('NaN' AS DOUBLE))];;
         query = "SELECT isnan(cast('NaN' as double))"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -518,7 +532,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error for below query
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`(abc IS NULL)`' given input columns: [('abc' IS NULL)];;
         query = "SELECT isnull('abc')"
         sparkDf = sparkSession.sql(s"$query")
         var snappyDf1 = snc.sql(s"$query")
@@ -540,7 +555,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error for below query
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`(abc IS NOT NULL)`'
+        // given input columns: [('abc' IS NOT NULL)];;
         query = "SELECT isnotnull('abc')"
         sparkDf = sparkSession.sql(s"$query")
         var snappyDf1 = snc.sql(s"$query")
@@ -573,7 +590,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("nanvl"){
-        // without alias throws error for all below query
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`nanvl(CAST(NaN AS DOUBLE), CAST(123 AS DOUBLE))`'
+        // given input columns: [nanvl(CAST('NaN' AS DOUBLE), CAST(123 AS DOUBLE))];;
         query = "SELECT nanvl(cast('NaN' as double), 123)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -824,7 +843,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`ACOS(CAST(2.2 AS DOUBLE))`' given input columns: [ACOS(CAST(2.2 AS DOUBLE))];;
         query = "SELECT acos(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -861,7 +881,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
        snappyDf = snc.sql(s"$query")
        validateResult(sparkDf, snappyDf)
 
-       // without alias throws error
+       // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+       // '`ASIN(CAST(2.2 AS DOUBLE))`' given input columns: [ASIN(CAST(2.2 AS DOUBLE))];;
        query = "SELECT asin(2.2)"
        sparkDf = sparkSession.sql(s"$query")
        snappyDf = snc.sql(s"$query")
@@ -893,7 +914,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
        snappyDf = snc.sql(s"$query")
        validateResult(sparkDf, snappyDf)
 
-       // without alias throws error
+       // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+       // '`ATAN(CAST(2.2 AS DOUBLE))`' given input columns: [ATAN(CAST(2.2 AS DOUBLE))];;
        query = "SELECT atan(2.2)"
        sparkDf = sparkSession.sql(s"$query")
        snappyDf = snc.sql(s"$query")
@@ -920,7 +942,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`ATAN2(CAST(2.2 AS DOUBLE), CAST(3 AS DOUBLE))`' given input columns:
+        // [ATAN2(CAST(2.2 AS DOUBLE), CAST(3 AS DOUBLE))];;
         query = "SELECT atan2(2.2, 3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -947,7 +971,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error in test
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`bin(CAST(13.3 AS BIGINT))`' given input columns: [bin(CAST(13.3 AS BIGINT))];;
         query = "SELECT bin(13.3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -956,7 +981,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("bround"){
 
-        // without alias throws errors for below queries
+        // ERROR: below all queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`bround(2.5, 0)`' given input columns: [bround(2.5, 0)];;
+        // 'Project ['bround(2.5, 0)]
         query = "SELECT bround(2.5, 0)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1003,7 +1031,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws errors for below query
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`CBRT(CAST(27.0 AS DOUBLE))`' given input columns: [CBRT(CAST(27.0 AS DOUBLE))];;
         query = "SELECT cbrt(27.0)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1011,7 +1040,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("ceil"){
-        // without alias throws errors for below query
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`CEIL(-0.1)`' given input columns: [CEIL(-0.1)];;
+        // 'Project ['CEIL(-0.1)]
         query = "SELECT ceil(-0.1)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1038,7 +1069,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("ceiling"){
-        // without alias throws error for below query
+        // ERROR:  org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`CEIL(-0.1)`' given input columns: [CEIL(-0.1)];;
+        // 'Project ['CEIL(-0.1)]
         query = "SELECT ceiling(-0.1)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1090,7 +1123,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`COS(CAST(2.2 AS DOUBLE))`' given input columns: [COS(CAST(2.2 AS DOUBLE))];;
         query = "SELECT cos(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1123,7 +1157,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`COSH(CAST(2.2 AS DOUBLE))`' given input columns: [COSH(CAST(2.2 AS DOUBLE))];;
         query = "SELECT cosh(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1132,7 +1167,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("conv"){
 
-        // without alias throws errors for below queries
+        // ERROR: below all queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`conv(100, 2, 10)`' given input columns: [conv('100', 2, 10)];;
         query = "SELECT conv('100', 2, 10)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1149,7 +1186,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("degrees"){
-        // without alias throws errors for below queries
+        // ERROR: below all queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`DEGREES(CAST(3.141592653589793 AS DOUBLE))`' given input columns:
+        // [DEGREES(CAST(3.141592653589793 AS DOUBLE))];;
         query = "SELECT degrees(3.141592653589793)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1245,7 +1285,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query only throws error
+        // ERROR:  org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`FLOOR(-0.1)`' given input columns: [FLOOR(-0.1)];;
+        // 'Project ['FLOOR(-0.1)]
         query = "SELECT floor(-0.1)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1299,7 +1341,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`hex(Spark SQL)`' given input columns: [hex('Spark SQL')];;
+        // 'Project ['hex(Spark SQL)]
         query = "SELECT hex('Spark SQL')"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1366,7 +1410,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`LOG(CAST(10 AS DOUBLE), CAST(1000.234 AS DOUBLE))`'
+        // given input columns: [LOG(CAST(10 AS DOUBLE), CAST(1000.234 AS DOUBLE))];;
         query = "SELECT log(10, 1000.234)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1399,7 +1445,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`LOG10(CAST(1.2 AS DOUBLE))`' given input columns: [LOG10(CAST(1.2 AS DOUBLE))];;
         query = "SELECT log10(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1428,7 +1475,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`LOG1P(CAST(1.2 AS DOUBLE))`' given input columns: [LOG1P(CAST(1.2 AS DOUBLE))];;
         query = "SELECT log1p(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1460,7 +1508,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`LOG2(CAST(1.2 AS DOUBLE))`' given input columns: [LOG2(CAST(1.2 AS DOUBLE))];;
         query = "SELECT log2(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1492,7 +1541,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`LOG(CAST(1.2 AS DOUBLE))`' given input columns: [LOG(CAST(1.2 AS DOUBLE))];;
         query = "SELECT ln(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1529,7 +1579,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below both query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`(- 1.2)`' given input columns: [(- 1.2)];;
         query = "SELECT negative(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1574,7 +1625,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`pmod(CAST(1.2 AS DECIMAL(11,1)), CAST(CAST(3 AS DECIMAL(10,0))
+        // AS DECIMAL(11,1)))`' given input columns:
+        // [pmod(CAST(1.2 AS DECIMAL(11,1)), CAST(CAST(3 AS DECIMAL(10,0)) AS DECIMAL(11,1)))];;
         query = "SELECT pmod(1.2,3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1606,7 +1660,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below both query throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`(+ 1.2)`' given input columns: [(+ 1.2)];;
+        // 'Project ['(+ 1.2)]
         query = "SELECT positive(1.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1644,7 +1700,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR:  org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`POWER(CAST(1.2 AS DOUBLE), CAST(3 AS DOUBLE))`'
+        // given input columns: [POWER(CAST(1.2 AS DOUBLE), CAST(3 AS DOUBLE))];;
         query = "SELECT pow(1.2,3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1676,7 +1734,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias below query throws error
+        // ERROR:  org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`POWER(CAST(1.2 AS DOUBLE), CAST(3 AS DOUBLE))`'
+        // given input columns: [POWER(CAST(1.2 AS DOUBLE), CAST(3 AS DOUBLE))];;
         query = "SELECT power(1.2,3)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1685,7 +1745,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("radians"){
 
-        // without alias only below query throws error
+        // ERROR: below all queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`RADIANS(CAST(360.0 AS DOUBLE))`' given input columns:
+        // [RADIANS(CAST(360.0 AS DOUBLE))];;
         query = "SELECT radians(360.0)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1712,7 +1775,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
 
     test("rint"){
-        // without alias throws error
+        // ERROR: below all queries throws error:
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`ROUND(CAST(12.3456 AS DOUBLE))`' given input columns:
+        // [ROUND(CAST(12.3456 AS DOUBLE))];;
         query = "SELECT rint(12.3456)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1745,6 +1811,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     test("round"){
 
+        // ERROR: below all queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`round(2.5, 0)`' given input columns: [round(2.5, 0)];;
+        // 'Project ['round(2.5, 0)]
         query = "SELECT round(2.5, 0)"
         var sparkDf = sparkSession.sql(s"$query")
         var snappyDf = snc.sql(s"$query")
@@ -1791,7 +1861,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`shiftleft(CAST(2.2 AS INT), 2)`' given input columns:
+        // [shiftleft(CAST(2.2 AS INT), 2)];;
         query = "SELECT shiftleft(2.2, 2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1824,7 +1897,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`shiftright(CAST(2.2 AS INT), 2)`' given input columns:
+        // [shiftright(CAST(2.2 AS INT), 2)];;
         query = "SELECT shiftright(2.2, 2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1857,7 +1933,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`shiftrightunsigned(CAST(2.2 AS INT), 2)`' given input columns:
+        // [shiftrightunsigned(CAST(2.2 AS INT), 2)];;
         query = "SELECT shiftrightunsigned(2.2, 2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1894,7 +1973,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`SIGNUM(CAST(-4.20 AS DOUBLE))`' given input columns:
+        // [SIGNUM(CAST(-4.20 AS DOUBLE))];;
         query = "SELECT sign(-4.20)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1926,7 +2007,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`SIGNUM(CAST(-4.20 AS DOUBLE))`' given input columns:
+        // [SIGNUM(CAST(-4.20 AS DOUBLE))];;
         query = "SELECT signum(-4.20)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1958,7 +2041,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`SIN(CAST(2.2 AS DOUBLE))`' given input columns:
+        // [SIN(CAST(2.2 AS DOUBLE))];;
         query = "SELECT sin(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -1990,7 +2075,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`SINH(CAST(2.2 AS DOUBLE))`' given input columns:
+        // [SINH(CAST(2.2 AS DOUBLE))];;
         query = "SELECT sinh(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2005,8 +2092,10 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         validateResult(sparkDf, snappyDf)
 
         // throws below error
+        // org.apache.spark.sql.AnalysisException:
         // Cannot have map type columns in DataFrame which calls set
-        // operations(intersect, except, etc.), but the type of column res is map<string,string>;;
+        // operations(intersect, except, etc.), but the type of
+        // column str_to_map(CAST(NULL AS STRING), ,, :) is map<string,string>;;
        query = "SELECT str_to_map('a:1,b:2,c:3', ',', ':')"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2063,7 +2152,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`SQRT(CAST(4.4 AS DOUBLE))`' given input columns:
+        // [SQRT(CAST(4.4 AS DOUBLE))];;
         query = "SELECT sqrt(4.4)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2096,13 +2187,15 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`TAN(CAST(2.2 AS DOUBLE))`' given input columns:
+        // [TAN(CAST(2.2 AS DOUBLE))];;
         query = "SELECT tan(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
         query = "SELECT tan(-2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2135,13 +2228,15 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`TANH(CAST(2.2 AS DOUBLE))`' given input columns:
+        // [TANH(CAST(2.2 AS DOUBLE))];;
         query = "SELECT tanh(2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
         query = "SELECT tanh(-2.2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2154,7 +2249,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         var snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`((CAST(1.2 AS DECIMAL(12,1)) + CAST(CAST(3 AS DECIMAL(10,0))
+        // AS DECIMAL(12,1))) + (CAST(4.5 AS DECIMAL(12,1)) +
+        // CAST(CAST(2 AS DECIMAL(10,0)) AS DECIMAL(12,1))))`'
+        // given input columns: [((CAST(1.2 AS DECIMAL(12,1)) +
+        // CAST(CAST(3 AS DECIMAL(10,0)) AS DECIMAL(12,1))) +
+        // (CAST(4.5 AS DECIMAL(12,1)) + CAST(CAST(2 AS DECIMAL(10,0))
+        // AS DECIMAL(12,1))))];;
         query = "SELECT 1.2+3+(4.5+2)"
         sparkDf = sparkSession.sql(s"$query")
         var snappyDf1 = snc.sql(s"$query")
@@ -2195,7 +2297,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`((CAST(1.2 AS DECIMAL(12,1)) - CAST(CAST(3 AS DECIMAL(10,0))
+        // AS DECIMAL(12,1))) - (CAST(4.5 AS DECIMAL(12,1)) -
+        // CAST(CAST(2 AS DECIMAL(10,0)) AS DECIMAL(12,1))))`'
+        // given input columns: [((CAST(1.2 AS DECIMAL(12,1)) -
+        // CAST(CAST(3 AS DECIMAL(10,0)) AS DECIMAL(12,1))) -
+        // (CAST(4.5 AS DECIMAL(12,1)) - CAST(CAST(2 AS DECIMAL(10,0))
+        // AS DECIMAL(12,1))))];;
         query = "SELECT 1.2-3-(4.5-2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2222,7 +2331,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`((CAST(1.2 AS DECIMAL(11,1)) *
+        // CAST(CAST(3 AS DECIMAL(10,0)) AS DECIMAL(11,1))) *
+        // (CAST(4.5 AS DECIMAL(11,1)) * CAST(CAST(2 AS DECIMAL(10,0))
+        // AS DECIMAL(11,1))))`' given input columns: [((CAST(1.2 AS DECIMAL(11,1))
+        // * CAST(CAST(3 AS DECIMAL(10,0)) AS DECIMAL(11,1))) *
+        // (CAST(4.5 AS DECIMAL(11,1)) * CAST(CAST(2 AS DECIMAL(10,0))
+        // AS DECIMAL(11,1))))];;
         query = "SELECT 1.2*3*(4.5*2)"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2249,7 +2365,11 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`(CAST(4.5 AS DECIMAL(11,1)) /
+        // CAST(CAST(2 AS DECIMAL(10,0)) AS DECIMAL(11,1)))`'
+        // given input columns: [(CAST(4.5 AS DECIMAL(11,1)) /
+        // CAST(CAST(2 AS DECIMAL(10,0)) AS DECIMAL(11,1)))];;
         query = "SELECT 4.5/2"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2276,7 +2396,11 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyDf = snc.sql(s"$query")
         validateResult(sparkDf, snappyDf)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`(CAST(4.5 AS DECIMAL(11,1)) %
+        // CAST(CAST(2 AS DECIMAL(10,0)) AS DECIMAL(11,1)))`'
+        // given input columns: [(CAST(4.5 AS DECIMAL(11,1)) %
+        // CAST(CAST(2 AS DECIMAL(10,0)) AS DECIMAL(11,1)))];;
         query = "SELECT 4.5%2"
         sparkDf = sparkSession.sql(s"$query")
         snappyDf = snc.sql(s"$query")
@@ -2516,7 +2640,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "length_q1", "RowTable", pw, sparkSession)
 
-        // without alias throws error
+        // ERROR: org.apache.spark.sql.AnalysisException:
+        // cannot resolve '`length(Spark SQL)`'
+        // given input columns: [length('Spark SQL')];;
         query = "SELECT length('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
@@ -2534,13 +2660,15 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "lower_q2", "ColumnTable", pw, sparkSession)
 
-        // without alias throws error
+        // ERROR: below both query throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`lower(Spark SQL)`' given input columns:
+        // [lower('Spark SQL')];;
         query = "SELECT lower('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
-        // without alias throws error
         query = "SELECT lower('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
@@ -2559,13 +2687,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "lcase_q2", "ColumnTable", pw, sparkSession)
 
-        // without alias throws error
+        // ERROR: below both query throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`lower(Spark SQL)`' given input columns: [lower('Spark SQL')];;
         query = "SELECT lcase('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
-        // without alias throws error
         query = "SELECT lcase('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
@@ -2583,13 +2712,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "upper_q2", "ColumnTable", pw, sparkSession)
 
-        // without alias throws error
+        // ERROR: below both query throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`upper(Spark SQL)`' given input columns: [upper('Spark SQL')];;
         query = "SELECT upper('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
-        // without alias throws error
         query = "SELECT upper('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
@@ -2607,13 +2737,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
             "ucase_q2", "ColumnTable", pw, sparkSession)
 
-        // without alias throws error
+        // ERROR: below both query throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`upper(Spark SQL)`' given input columns: [upper('Spark SQL')];;
         query = "SELECT ucase('Spark SQL')"
         var sparkDF = sparkSession.sql(s"$query")
         var snappyDF = snc.sql(s"$query")
         validateResult(sparkDF, snappyDF)
 
-        // without alias throws error
         query = "SELECT ucase('abcABC123@#$%^&')"
         sparkDF = sparkSession.sql(s"$query")
         snappyDF = snc.sql(s"$query")
@@ -2646,6 +2777,314 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         val c2s = snappyDf1.columns
         assert(!c1s.sameElements(c2s))
     }
-    
-    
+
+    test("collect_list"){
+        var sparkQuery = "SELECT collect_list(stringcol) from sparktable"
+        var snappyQuery = "SELECT collect_list(stringcol) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_list_q1", "RowTable", pw, sparkSession)
+
+        sparkQuery = "SELECT collect_list(stringcol) from sparktable"
+        snappyQuery = "SELECT collect_list(stringcol) from columnTable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_list_q2", "ColumnTable", pw, sparkSession)
+
+        sparkQuery = "SELECT collect_list(stringcol) from sparktable"
+        snappyQuery = "SELECT collect_list(stringcol) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_list_q1", "RowTable", pw, sparkSession)
+
+        sparkQuery = "SELECT collect_list(stringcol) from sparktable"
+        snappyQuery = "SELECT collect_list(stringcol) from columnTable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_list_q2", "ColumnTable", pw, sparkSession)
+    }
+
+    test("collect_set"){
+        var sparkQuery = "SELECT collect_set(stringcol) from sparktable"
+        var snappyQuery = "SELECT collect_set(stringcol) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_set_q1", "RowTable", pw, sparkSession)
+
+        sparkQuery = "SELECT collect_set(stringcol) from sparktable"
+        snappyQuery = "SELECT collect_set(stringcol) from columnTable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_set_q2", "ColumnTable", pw, sparkSession)
+
+        sparkQuery = "SELECT collect_set(intcol) from sparktable"
+        snappyQuery = "SELECT collect_set(intcol) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_set_q1", "RowTable", pw, sparkSession)
+
+        sparkQuery = "SELECT collect_set(intcol) from sparktable"
+        snappyQuery = "SELECT collect_set(intcol) from columnTable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
+            "collect_set_q2", "ColumnTable", pw, sparkSession)
+
+    }
+
+    test("concat"){
+        var sparkQuery = "SELECT concat(stringcol,intcol) from sparktable"
+        var snappyQuery = "SELECT concat(stringcol,intcol) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
+            "concat_q1", "RowTable", pw, sparkSession)
+
+        sparkQuery = "SELECT concat(stringcol,intcol) from sparktable"
+        snappyQuery = "SELECT concat(stringcol,intcol) from columnTable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
+            "concat_q2", "ColumnTable", pw, sparkSession)
+
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`concat(Spark, SQL)`' given input columns: [concat('Spark', 'SQL')];;
+        query = "SELECT concat('Spark', 'SQL')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT concat('Spark', 123)"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("concat_ws"){
+        var sparkQuery = "SELECT concat_ws(' ',stringcol,intcol) from sparktable"
+        var snappyQuery = "SELECT concat_ws(' ',stringcol,intcol) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
+            "concat_ws_q1", "RowTable", pw, sparkSession)
+
+        sparkQuery = "SELECT concat_ws(' ',stringcol,intcol) from sparktable"
+        snappyQuery = "SELECT concat_ws(' ',stringcol,intcol) from columnTable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
+            "concat_ws_q2", "ColumnTable", pw, sparkSession)
+
+        // ERROR: org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`concat_ws( , Spark, SQL)`' given input columns:
+        // [concat_ws(' ', 'Spark', 'SQL')];;
+        query = "SELECT concat_ws(' ','Spark', 'SQL')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT concat_ws(' ','Spark', 123)"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("elt"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`elt(1, Spark, sql)`' given input columns:
+        // [elt(1, 'Spark', 'sql')];;
+        query = "SELECT elt(1,'Spark','sql')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT elt(2,'Spark', 123)"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("find_in_set"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`find_in_set(c, abc,b,ab,c,def)`' given input columns:
+        // [find_in_set('c', 'abc,b,ab,c,def')];;
+        query = "SELECT find_in_set('c','abc,b,ab,c,def')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT find_in_set(1, '2,3,1')"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("format_number"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`format_number(12332.123456, 4)`' given input columns:
+        // [format_number(12332.123456, 4)];;
+        query = "SELECT format_number(12332.123456, 4)"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT format_number(12332.123456, 1)"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("format_string"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`format_string(Hello World %d %s, 100, days)`'
+        // given input columns: [format_string('Hello World %d %s', 100, 'days')];;
+        query = "SELECT format_string('Hello World %d %s', 100, 'days')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT format_string('Hello World %d', 10)"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("initcap"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`instr(SparkSQL, SQL)`' given input columns:
+        // [instr('SparkSQL', 'SQL')];;
+        query = "SELECT initcap('sPark sql')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT initcap('ssssPark sql')"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("instr"){
+        // ERROR : below both queries throws error
+        query = "SELECT instr('SparkSQL', 'SQL')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT instr('123abcABC', 'ab')"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("levenshtein"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`levenshtein(kitten, sitting)`' given input columns:
+        // [levenshtein('kitten', 'sitting')];;
+        query = "SELECT levenshtein('kitten', 'sitting')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT levenshtein('Snappy', 'Spark')"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("locate"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`locate(bar, foobarbar, 5)`' given input columns:
+        // [locate('bar', 'foobarbar', 5)];;
+        query = "SELECT locate('bar', 'foobarbar', 5)"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT locate('abc', 'defghrih', 2)"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("lpad"){
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`lpad(hi, 5, ??)`' given input columns: [lpad('hi', 5, '??')];;
+        query = "SELECT lpad('hi', 5, '??')"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT lpad('hi', 1, '??')"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+    test("add_months"){
+        var sparkQuery = "SELECT add_months(datecol,1) from sparktable"
+        var snappyQuery = "SELECT add_months(datecol,1) from rowtable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
+            "concat_ws_q1", "RowTable", pw, sparkSession)
+
+        sparkQuery = "SELECT add_months(datecol,1) from sparktable"
+        snappyQuery = "SELECT add_months(datecol,1) from columnTable"
+        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
+            "concat_ws_q2", "ColumnTable", pw, sparkSession)
+
+        // ERROR : below both queries throws error
+        // org.apache.spark.sql.AnalysisException: cannot resolve
+        // '`add_months(CAST(2016-08-31 AS DATE), 1)`' given input columns:
+        // [add_months(CAST('2016-08-31' AS DATE), 1)];;
+        query = "SELECT add_months('2016-08-31', 1)"
+        var sparkDF = sparkSession.sql(s"$query")
+        var snappyDF = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF)
+
+        query = "SELECT add_months('2016-08-31', 0)"
+        sparkDF = sparkSession.sql(s"$query")
+        var snappyDF1 = snc.sql(s"$query")
+        validateResult(sparkDF, snappyDF1)
+
+        val c1s = snappyDF.columns
+        val c2s = snappyDF1.columns
+        assert(!c1s.sameElements(c2s))
+    }
+
+
 }
