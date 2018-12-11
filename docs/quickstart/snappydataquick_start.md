@@ -1,4 +1,4 @@
-# SnappyData Quick Start Guide
+# SnappyData Cluster SQL Tutorial
  
 In this section, you will get a quick tour to start a SnappyData cluster and try out the basic features and functionalities. The following items are covered in this guide:
 
@@ -46,7 +46,6 @@ SnappyData Leader pid: 9370 status: running
 
 ```
 
-For more details, refer to [Starting SnappyData Cluster](/howto/start_snappy_cluster.md). 
 You can connect to [Snappy SQL shell](#connectsnappyshell) and run the `select id, kind, netservers from sys.members;` query to view the cluster members.
 
 		./bin/snappy
