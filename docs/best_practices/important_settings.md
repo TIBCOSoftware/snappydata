@@ -134,17 +134,15 @@ Set in the **conf/locators**, **conf/leads**, and **conf/servers** file.
 <a id=oomerrorhandle> </a>
 ### Handling Out-of-Memory Error in SnappyData Cluster
 
-When the SnappyData cluster faces an Out-Of-Memory (OOM) situation, it may not function appropriately, and the JVM cannot create a new process to execute the kill command upon OOM. See [JDK-8027434](https://bugs.openjdk.java.net/browse/JDK-8027434).</br> However, JVM uses the **fork()** system call to execute the kill command. This system call can fail for large JVMs due to memory overcommit limits in the operating system. </br>Therefore, to solve such issues in SnappyData, `JVMKill` is used which has much smaller memory requirements.
+When the SnappyData cluster faces an Out-Of-Memory (OOM) situation, it may not function appropriately, and the JVM cannot create a new process to execute the kill command upon OOM. See [JDK-8027434](https://bugs.openjdk.java.net/browse/JDK-8027434).</br> However, JVM uses the **fork()** system call to execute the kill command. This system call can fail for large JVMs due to memory overcommit limits in the operating system. Therefore, to solve such issues in SnappyData, **jvmkill** is used which has much smaller memory requirements.
 
-`jvmkill` is a simple JVMTI agent that forcibly terminates the JVM when it is unable to allocate memory or create a thread. It is also essential for reliability purposes because an OOM error can often leave the JVM in an inconsistent state. Whereas, terminating the JVM allows it to be restarted by an external process manager. </br>A common alternative to this agent is to use the `-XX:OnOutOfMemoryError` JVM argument to execute a `kill -9` command. 
+**jvmkill** is a simple JVMTI agent that forcibly terminates the JVM when it is unable to allocate memory or create a thread. It is also essential for reliability purposes because an OOM error can often leave the JVM in an inconsistent state. Whereas, terminating the JVM allows it to be restarted by an external process manager. </br>A common alternative to this agent is to use the `-XX:OnOutOfMemoryError` JVM argument to execute a `kill -9` command. **jvmkill** is applied by default to all the nodes in a SnappyData cluster, that is the server, lead, and locator nodes. The **jvmkill** agent is useful in a smart connector as well as in a local mode too.
 
 Optionally when using the `-XX:+HeapDumpOnOutOfMemoryError` option, you can specify the timeout period for scenarios when the heap dump takes an unusually long time or hangs up. This option can be specified in the configuration file for leads, locators, or servers respectively. For example:` -snappydata.onCriticalHeapDumpTimeoutSeconds=10`
 
-`jvmkill` agent issues a **SIGTERM** signal initially and waits for a default period of 30 seconds. Thereby allowing for graceful shutdown before issuing a **SIGKILL** if the PID is still running. </br>You can also set the environment variable JVMKILL_SLEEP_SECONDS to set the timeout period. For example: `export JVMKILL_SLEEP_SECONDS=10`
+**jvmkill** agent issues a **SIGTERM** signal initially and waits for a default period of 30 seconds. Thereby allowing for graceful shutdown before issuing a **SIGKILL** if the PID is still running. You can also set the environment variable JVMKILL_SLEEP_SECONDS to set the timeout period. For example: `export JVMKILL_SLEEP_SECONDS=10`
 
-`jvmkill` is applied by default to all the nodes in a SnappyData cluster, that is the server, lead, and locator nodes. 
-
-`jvmkill` is verified on centos6 and Mac OSX versions. For running SnappyData on any other versions, you can recompile the **lib** files by running the `snappyHome/aqp/src/main/cpp/io/snappydata/build.sh` script. This script replaces the **lib** file located at the following path:
+**jvmkill** is verified on centos6 and Mac OSX versions. For running SnappyData on any other versions, you can recompile the **lib** files by running the `snappyHome/aqp/src/main/cpp/io/snappydata/build.sh` script. This script replaces the **lib** file located at the following path:
 
 *	**For Linux **
 	*agentPath snappyHome/jars/libgemfirexd.so*
@@ -152,7 +150,6 @@ Optionally when using the `-XX:+HeapDumpOnOutOfMemoryError` option, you can spec
 *	**For Mac**
 	*agentPath snappyHome/jars/libgemfirexd.dylib*
 
-The `jvmkill` agent is useful in a smart connector as well as in a local mode too.
 
 <a id="codegenerationtokenization"></a>
 ## Code Generation and Tokenization
