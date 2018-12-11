@@ -72,7 +72,8 @@ abstract class BaseColumnFormatRelation(
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
     val partitioningColumns: Seq[String],
-    _context: SQLContext)
+    _context: SQLContext,
+    _relationInfo: (RelationInfo, Option[LocalRegion]))
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
     with PartitionedDataSourceScan
@@ -90,14 +91,14 @@ abstract class BaseColumnFormatRelation(
   override lazy val (schemaName: String, tableName: String) =
     JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
 
-  @transient private lazy val relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = {
-    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.externalCatalog.getRelationInfo(resolvedName, rowTable = false)
+  if (_relationInfo eq null) {
+    refreshTableSchema(invalidateCached = false, fetchFromStore = false)
+  } else {
+    _schema = userSchema
+    _relationInfoAndRegion = _relationInfo
   }
 
-  private def relationInfo: RelationInfo = relationInfoAndRegion._1
-
-  override def region: LocalRegion = relationInfoAndRegion._2.get
+  override protected def withoutUserSchema: Boolean = userSchema.isEmpty
 
   override def numBuckets: Int = relationInfo.numBuckets
 
@@ -351,34 +352,6 @@ abstract class BaseColumnFormatRelation(
     }
   }
 
-  def createTable(mode: SaveMode): Unit = {
-    val conn = connFactory()
-    try {
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
-        dialect, sqlContext)
-      if (tableExists) {
-        mode match {
-          case SaveMode.Ignore => return
-          case SaveMode.ErrorIfExists =>
-            throw new AnalysisException(s"Table '$table' already exists. SaveMode: ErrorIfExists.")
-          case SaveMode.Overwrite =>
-            // truncate the table and return
-            truncate()
-            return
-          case _ =>
-        }
-      } else if (schema.isEmpty) {
-        // empty schema is sent by DefaultSource's RelationProvider implementation to indicate
-        // no schema was specified which will only work if table already exists
-        throw new TableNotFoundException(schemaName, tableName)
-      }
-    } finally {
-      conn.commit()
-      conn.close()
-    }
-    createActualTables(table, externalStore)
-  }
-
   /**
    * Table definition: create table columnTable (
    * id varchar(36) not null, partitionId integer, numRows integer not null, data blob)
@@ -386,8 +359,7 @@ abstract class BaseColumnFormatRelation(
    * each for a column. The data column for the base entry will contain the stats.
    * id for the base entry would be the uuid while for column entries it would be uuid_colName.
    */
-  private def createExternalTableForColumnBatches(tableName: String,
-      externalStore: ExternalStore): Unit = {
+  private def createExternalTableForColumnBatches(tableName: String, conn: Connection): Unit = {
     require(tableName != null && tableName.length > 0,
       "createExternalTableForColumnBatches: expected non-empty table name")
 
@@ -404,69 +376,48 @@ abstract class BaseColumnFormatRelation(
     val colocationClause = s"COLOCATE WITH (${quotedName(table)})"
     val encoderClause = s"ENCODER '${classOf[ColumnFormatEncoder].getName}'"
 
-    // if the numRows or other columns are ever changed here, then change
+    // if numRows or other columns are ever changed here, then change
     // the hardcoded positions in insert and PartitionedPhysicalRDD.CT_*
-    createTable(externalStore,
+    createTable(conn,
       s"""create table ${quotedName(tableName)} (uuid bigint not null,
         partitionId integer, columnIndex integer, data blob, $primaryKey)
         $partitionStrategy $colocationClause $encoderClause
-        $concurrency $ddlExtensionForShadowTable""",
-      tableName, dropIfExists = false)
+        $concurrency $ddlExtensionForShadowTable""", tableName)
   }
 
-  private def createActualTables(tableName: String,
-      externalStore: ExternalStore): Unit = {
-    // Create the table if the table didn't exist.
-    var conn: Connection = null
-    try {
-      conn = connFactory()
-      val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
-        dialect, sqlContext)
-      if (!tableExists) {
-        val sql =
-          s"CREATE TABLE ${quotedName(tableName)} $schemaExtensions ENABLE CONCURRENCY CHECKS"
-        val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
-        if (isInfoEnabled) {
-          val schemaString = JdbcExtendedUtils.schemaString(schema, connProperties.dialect)
-          val optsString = if (origOptions.nonEmpty) {
-            origOptions.filter(p => !Utils.toUpperCase(p._1).startsWith(
-              SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
-              p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
-          } else ""
-          logInfo(s"Executing DDL: CREATE TABLE ${quotedName(tableName)} " +
-              s"$schemaString USING $provider$optsString")
-        }
-        if (pass != null) {
-          connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
-            pass.asInstanceOf[String])
-        }
-        JdbcExtendedUtils.executeUpdate(sql, conn)
-        // setting table created to true here as cleanup
-        // in case of failed creation does a exists check.
-        tableCreated = true
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(tableName,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
-        }
-        createExternalTableForColumnBatches(externalColumnTableName,
-          externalStore)
-      }
-    } catch {
-      case sqle: java.sql.SQLException =>
-        if (sqle.getMessage.contains("No suitable driver found")) {
-          throw new java.sql.SQLException(s"${sqle.getMessage}\n" +
-              "Ensure that the 'driver' option is set appropriately and " +
-              "the driver jars available (--jars option in spark-submit).",
-            sqle.getSQLState)
-        } else {
-          throw sqle
-        }
-    } finally {
-      if (conn != null) {
-        conn.commit()
-        conn.close()
-      }
+  override protected def createActualTables(conn: Connection): Unit = {
+    val sql =
+      s"CREATE TABLE ${quotedName(resolvedName)} $schemaExtensions ENABLE CONCURRENCY CHECKS"
+    val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+    if (isInfoEnabled) {
+      val schemaString = JdbcExtendedUtils.schemaString(userSchema, connProperties.dialect)
+      val optsString = if (origOptions.nonEmpty) {
+        origOptions.filter(p => !Utils.toUpperCase(p._1).startsWith(
+          SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
+          p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
+      } else ""
+      logInfo(s"Executing DDL: CREATE TABLE ${quotedName(resolvedName)} " +
+          s"$schemaString USING $provider$optsString ; (url=${connProperties.url}; " +
+          s"props=${connProperties.connProps})")
     }
+    if (pass != null) {
+      connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+        pass.asInstanceOf[String])
+    }
+    JdbcExtendedUtils.executeUpdate(sql, conn)
+    // setting table created to true here as cleanup
+    // in case of failed creation does a exists check.
+    tableCreated = true
+    dialect match {
+      case d: JdbcExtendedDialect => d.initializeTable(resolvedName,
+        sqlContext.conf.caseSensitiveAnalysis, conn)
+    }
+    createExternalTableForColumnBatches(externalColumnTableName, conn)
+    // store schema will miss complex types etc, so use the user-provided one
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    session.externalCatalog.invalidate(schemaName -> tableName)
+    _schema = userSchema
+    _relationInfoAndRegion = null
   }
 
   /**
@@ -513,7 +464,8 @@ class ColumnFormatRelation(
     _origOptions: Map[String, String],
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
-    _context: SQLContext)
+    _context: SQLContext,
+    _relationInfo: (RelationInfo, Option[LocalRegion]) = null)
     extends BaseColumnFormatRelation(
       _table,
       _provider,
@@ -524,7 +476,8 @@ class ColumnFormatRelation(
       _origOptions,
       _externalStore,
       _partitioningColumns,
-      _context) with BulkPutRelation {
+      _context,
+      _relationInfo) with BulkPutRelation {
 
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
 
@@ -540,7 +493,8 @@ class ColumnFormatRelation(
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new ColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable,
-      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext)
+      cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
+      _relationInfoAndRegion)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
       expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
@@ -671,7 +625,8 @@ class IndexColumnFormatRelation(
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
-    baseTableName: String)
+    baseTableName: String,
+    _relationInfo: (RelationInfo, Option[LocalRegion]) = null)
     extends BaseColumnFormatRelation(
       _table,
       _provider,
@@ -682,7 +637,8 @@ class IndexColumnFormatRelation(
       _origOptions,
       _externalStore,
       _partitioningColumns,
-      _context) {
+      _context,
+      _relationInfo) {
 
   def baseTable: Option[String] = Some(baseTableName)
 
@@ -693,7 +649,8 @@ class IndexColumnFormatRelation(
     val schema = StructType(cr.schema ++ ColumnDelta.mutableKeyFields)
     val newRelation = new IndexColumnFormatRelation(cr.table, cr.provider,
       cr.mode, schema, cr.schemaExtensions, cr.ddlExtensionForShadowTable, cr.origOptions,
-      cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName)
+      cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName,
+      _relationInfoAndRegion)
     newRelation.delayRollover = true
     relation.copy(relation = newRelation,
       expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))

@@ -491,8 +491,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
             // a query during drop table from client can show region as destroyed here which
             // is indicated by a lack of catalog schema version in the result
             try {
-              val (relationInfo, regionOpt) = externalCatalog.getRelationInfo(
-                table.identifier.unquotedString, !CatalogObjectType.isColumnTable(tableType))
+              val (relationInfo, regionOpt) = externalCatalog.getRelationInfo(table.database,
+                table.identifier.identifier, !CatalogObjectType.isColumnTable(tableType))
               tableObj.setPartitionColumns(columnList(relationInfo.partitioningCols))
               tableObj.setIndexColumns(columnList(relationInfo.indexCols))
               tableObj.setPrimaryKeyColumns(columnList(relationInfo.pkCols))

@@ -1074,7 +1074,7 @@ private[spark] class CoGroupExecutorLocalPartition(
 }
 
 final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
-    var hostList: IndexedSeq[(String, String)])
+    var hostList: Seq[(String, String)])
     extends Partition with KryoSerializable {
 
   override def index: Int = _index

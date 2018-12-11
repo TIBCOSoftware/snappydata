@@ -18,7 +18,10 @@ package org.apache.spark.sql.sources
 
 import java.sql.Connection
 
-import io.snappydata.sql.catalog.SnappyExternalCatalog
+import scala.collection.JavaConverters._
+
+import com.gemstone.gemfire.internal.cache.LocalRegion
+import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
@@ -28,9 +31,10 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JDBCRDD}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
-import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.{StructField, StructType}
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -299,44 +303,49 @@ trait RowLevelSecurityRelation {
 }
 
 @DeveloperApi
-trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation {
+trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelSecurityRelation {
 
   protected val connFactory: () => Connection
 
   protected def dialect: JdbcDialect
 
+  def connProperties: ConnectionProperties
+
+  protected def isRowTable: Boolean
+
   val sqlContext: SQLContext
   val table: String
+
   override def enableOrDisableRowLevelSecurity(tableIdent: TableIdentifier,
       enableRowLevelSecurity: Boolean): Unit = {
-      val conn = connFactory()
-      try {
-        val tableExists = JdbcExtendedUtils.tableExists(tableIdent.unquotedString,
-          conn, dialect, sqlContext)
-        val sql = if (enableRowLevelSecurity) {
-          s"""alter table ${quotedName(table)} enable row level security"""
-        } else {
-          s"""alter table ${quotedName(table)} disable row level security"""
-        }
-        if (tableExists) {
-          JdbcExtendedUtils.executeUpdate(sql, conn)
-        } else {
-          throw new AnalysisException(s"table $table does not exist.")
-        }
-      } catch {
-        case se: java.sql.SQLException =>
-          if (se.getMessage.contains("No suitable driver found")) {
-            throw new AnalysisException(s"${se.getMessage}\n" +
-                "Ensure that the 'driver' option is set appropriately and " +
-                "the driver jars available (--jars option in spark-submit).")
-          } else {
-            throw se
-          }
-      } finally {
-        conn.commit()
-        conn.close()
+    val conn = connFactory()
+    try {
+      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.unquotedString,
+        conn, dialect, sqlContext)
+      val sql = if (enableRowLevelSecurity) {
+        s"""alter table ${quotedName(table)} enable row level security"""
+      } else {
+        s"""alter table ${quotedName(table)} disable row level security"""
       }
+      if (tableExists) {
+        JdbcExtendedUtils.executeUpdate(sql, conn)
+      } else {
+        throw new AnalysisException(s"table $table does not exist.")
+      }
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw se
+        }
+    } finally {
+      conn.commit()
+      conn.close()
     }
+  }
 
   def isRowLevelSecurityEnabled: Boolean = {
     val conn = connFactory()
@@ -358,7 +367,83 @@ trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation {
     }
   }
 
+  protected[this] var _schema: StructType = _
+  @transient protected[this] var _relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = _
 
+  protected def refreshTableSchema(invalidateCached: Boolean, fetchFromStore: Boolean): Unit = {
+    // Schema here must match the RelationInfo obtained from catalog.
+    // If the schema has changed (in smart connector) then execution should throw an exception
+    // leading to a retry or a CatalogStaleException to fail the operation.
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    if (invalidateCached) session.externalCatalog.invalidate(schemaName -> tableName)
+    _relationInfoAndRegion = null
+    if (fetchFromStore) {
+      _schema = JDBCRDD.resolveTable(new JDBCOptions(
+        connProperties.url, table, connProperties.connProps.asScala.toMap))
+    } else {
+      session.externalCatalog.getTableOption(schemaName, tableName) match {
+        case None => _schema = SnappyExternalCatalog.EMPTY_SCHEMA
+        case Some(t) => _schema = t.schema; assert(relationInfoAndRegion ne null)
+      }
+    }
+  }
+
+  override def schema: StructType = _schema
+
+  protected def relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = {
+    if ((_relationInfoAndRegion eq null) || _relationInfoAndRegion._1.invalid) {
+      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      _relationInfoAndRegion = session.externalCatalog.getRelationInfo(
+        schemaName, tableName, isRowTable)
+    }
+    _relationInfoAndRegion
+  }
+
+  protected def withoutUserSchema: Boolean
+
+  def relationInfo: RelationInfo = relationInfoAndRegion._1
+
+  def region: LocalRegion = relationInfoAndRegion._2.get
+
+  protected def createActualTables(connection: Connection): Unit
+
+  def createTable(mode: SaveMode): Unit = {
+    var tableExists = true
+    var conn: Connection = null
+    try {
+      // if no user-schema has been provided then expect the table to exist
+      if (withoutUserSchema) {
+        if (schema.isEmpty) {
+          // refresh schema and try again
+          refreshTableSchema(invalidateCached = true, fetchFromStore = false)
+          if (schema.isEmpty) throw new TableNotFoundException(schemaName, tableName)
+        }
+      } else {
+        conn = connFactory()
+        tableExists = JdbcExtendedUtils.tableExists(resolvedName, conn, dialect, sqlContext)
+      }
+      if (tableExists) mode match {
+        case SaveMode.ErrorIfExists => throw new AnalysisException(
+          s"Table '$resolvedName' already exists. SaveMode: ErrorIfExists.")
+        case SaveMode.Overwrite =>
+          // truncate the table and return
+          truncate()
+        case _ =>
+      } else createActualTables(conn)
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and the driver jars " +
+              "available (deploy jars in SnappyData cluster or --jars option in spark-submit).")
+        } else throw se
+    } finally {
+      if ((conn ne null) && !conn.isClosed) {
+        conn.commit()
+        conn.close()
+      }
+    }
+  }
 }
 
 /**

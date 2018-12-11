@@ -155,6 +155,8 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
                 result
               } catch {
                 case t: Throwable if isConnectorCatalogStaleException(t, session) =>
+                  session.externalCatalog.invalidateAll()
+                  SnappySession.clearAllCache()
                   throw catalogStaleFailure(t, session)
               } finally if (!isCatalogStale) {
                 session.sessionState.disableStoreOptimizations = false

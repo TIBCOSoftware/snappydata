@@ -18,8 +18,9 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import scala.collection.JavaConverters._
+
 import io.snappydata.SnappyTableStatsProviderService
-import io.snappydata.sql.catalog.RelationInfo
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -77,21 +78,11 @@ abstract case class JDBCMutableRelation(
 
   val driver: String = Utils.registerDriverUrl(connProperties.url)
 
-  protected final def dialect: JdbcDialect = connProperties.dialect
+  override protected final def dialect: JdbcDialect = connProperties.dialect
 
-  import scala.collection.JavaConverters._
+  override protected final def isRowTable: Boolean = true
 
-  protected var _schema: StructType = _
-
-  override final def schema: StructType = {
-    if (_schema eq null) {
-      _schema = JDBCRDD.resolveTable(
-        new JDBCOptions(connProperties.url, table, connProperties.connProps.asScala.toMap))
-    }
-    _schema
-  }
-
-  override def resolvedName: String = table
+  override final def resolvedName: String = table
 
   override val (schemaName: String, tableName: String) =
     JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
@@ -107,69 +98,30 @@ abstract case class JDBCMutableRelation(
 
   def isPartitioned: Boolean
 
-  protected def relationInfo: RelationInfo
-
   override protected final val connFactory: () => Connection =
     JdbcUtils.createConnectionFactory(new JDBCOptions(connProperties.url, table,
       connProperties.connProps.asScala.toMap))
 
-  def createTable(mode: SaveMode): String = {
-    var conn: Connection = null
-    try {
-      conn = connFactory()
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
-        dialect, sqlContext)
-      if (tableExists) {
-        mode match {
-          case SaveMode.Ignore => return resolvedName
-          case SaveMode.ErrorIfExists =>
-            throw new AnalysisException(s"Table '$table' already exists. SaveMode: ErrorIfExists.")
-          case SaveMode.Overwrite =>
-            // truncate the table if possible
-            val truncate = dialect match {
-              case d: JdbcExtendedDialect => d.truncateTable(table)
-              case _ => s"TRUNCATE TABLE $table"
-            }
-            JdbcExtendedUtils.executeUpdate(truncate, conn)
-          case _ =>
-        }
-      }
-      // Create the table if the table didn't exist.
-      if (!tableExists) {
-        if (userSpecifiedString.isEmpty) throw new TableNotFoundException(schemaName, tableName)
-        // quote the table name e.g. for reserved keywords or special chars
-        val sql = s"CREATE TABLE ${quotedName(table)} $userSpecifiedString"
-        val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
-        logInfo(s"Applying DDL (url=${connProperties.url}; " +
-            s"props=${connProperties.connProps}): $sql")
-        if (pass != null) {
-          connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
-            pass.asInstanceOf[String])
-        }
-        JdbcExtendedUtils.executeUpdate(sql, conn)
-        tableCreated = true
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(table,
-            sqlContext.conf.caseSensitiveAnalysis, conn)
-          case _ => // Do Nothing
-        }
-      }
-    } catch {
-      case sqle: java.sql.SQLException =>
-        if (sqle.getMessage.contains("No suitable driver found")) {
-          throw new AnalysisException(s"${sqle.getMessage}\n" +
-              "Ensure that the 'driver' option is set appropriately and " +
-              "the driver jars available (--jars option in spark-submit).")
-        } else {
-          throw sqle
-        }
-    } finally {
-      if (conn != null) {
-        conn.commit()
-        conn.close()
-      }
+  refreshTableSchema(invalidateCached = false, fetchFromStore = false)
+
+  override protected def createActualTables(conn: Connection): Unit = {
+    // quote the table name e.g. for reserved keywords or special chars
+    val sql = s"CREATE TABLE ${quotedName(resolvedName)} $userSpecifiedString"
+    val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+    logInfo(s"Applying DDL (url=${connProperties.url}; " +
+        s"props=${connProperties.connProps}): $sql")
+    if (pass != null) {
+      connProperties.connProps.setProperty(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+        pass.asInstanceOf[String])
     }
-    resolvedName
+    JdbcExtendedUtils.executeUpdate(sql, conn)
+    tableCreated = true
+    dialect match {
+      case d: JdbcExtendedDialect => d.initializeTable(resolvedName,
+        sqlContext.conf.caseSensitiveAnalysis, conn)
+      case _ => // Do Nothing
+    }
+    refreshTableSchema(invalidateCached = true, fetchFromStore = true)
   }
 
   override def buildUnsafeScan(requiredColumns: Array[String],
@@ -394,14 +346,12 @@ abstract case class JDBCMutableRelation(
     try {
       val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
       val fullTableName = session.sessionCatalog.resolveTableIdentifier(tableIdent).unquotedString
-      val tableExists = JdbcExtendedUtils.tableExists(fullTableName,
-        conn, dialect, sqlContext)
 
       val sql = constructSQL(session.sessionCatalog.resolveTableIdentifier(
         indexIdent).unquotedString, fullTableName, indexColumns, options)
 
       // Create the Index if the table exists.
-      if (tableExists) {
+      if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
       } else {
         throw new AnalysisException(s"Base table $table does not exist.")
@@ -450,8 +400,6 @@ abstract case class JDBCMutableRelation(
       isAddColumn: Boolean, column: StructField): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.unquotedString,
-        conn, dialect, sqlContext)
       val sql = if (isAddColumn) {
         val nullable = if (column.nullable) "" else " NOT NULL"
         s"""alter table ${quotedName(table)}
@@ -459,12 +407,12 @@ abstract case class JDBCMutableRelation(
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }
-      if (tableExists) {
+      if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
-        // clear the schema to enable refresh in subsequent schema() calls
-        _schema = null
+        // refresh the schema in the relation object
+        refreshTableSchema(invalidateCached = true, fetchFromStore = true)
       } else {
-        throw new AnalysisException(s"table $table does not exist.")
+        throw new TableNotFoundException(schemaName, tableName)
       }
     } catch {
       case se: java.sql.SQLException =>

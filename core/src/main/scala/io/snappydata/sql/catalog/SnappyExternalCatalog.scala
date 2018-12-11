@@ -135,8 +135,8 @@ trait SnappyExternalCatalog extends ExternalCatalog {
   /**
    * Get RelationInfo for given table with underlying region in embedded mode.
    */
-  def getRelationInfo(qualifiedTableName: String,
-      rowTable: Boolean): (RelationInfo, Option[LocalRegion])
+  def getRelationInfo(schema: String, table: String,
+      isRowTable: Boolean): (RelationInfo, Option[LocalRegion])
 
   def getDependents(schema: String, table: String, includeTypes: Seq[CatalogObjectType.Type] = Nil,
       excludeTypes: Seq[CatalogObjectType.Type] = Nil): Seq[CatalogTable] = {
@@ -202,7 +202,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
   def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] = {
     listDatabases().flatMap(schema =>
       if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
-      else listTables(schema).map(table => getTable(schema, table)))
+      else listTables(schema).flatMap(table => getTableOption(schema, table)))
   }
 
   /**
@@ -242,7 +242,6 @@ trait SnappyExternalCatalog extends ExternalCatalog {
 
 object SnappyExternalCatalog {
   val SYS_SCHEMA: String = "SYS"
-  val SYS_SCHEMA_DOT: String = SYS_SCHEMA + '.'
   val MEMBERS_VTI: String = "MEMBERS"
   val SPARK_DEFAULT_SCHEMA: String = SnappySharedState.SPARK_DEFAULT_SCHEMA
 
@@ -266,6 +265,8 @@ object SnappyExternalCatalog {
   val BASETABLE_PROPERTY = "BASETABLE"
   val SCHEMADDL_PROPERTY = "SCHEMADDL"
   val INDEXED_TABLE = "INDEXED_TABLE"
+
+  val EMPTY_SCHEMA: StructType = StructType(Nil)
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
 

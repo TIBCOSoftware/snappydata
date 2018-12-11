@@ -48,8 +48,8 @@ import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
-import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
@@ -510,7 +510,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             (if (connProperties.hikariCP) "jdbcUrl" else "url")
 
         val catalog = snappySession.externalCatalog
-        val relationInfo = catalog.getRelationInfo(rowBuffer, rowTable = false)._1
+        val (rowSchema, rowTable) = JdbcExtendedUtils.getTableWithSchema(rowBuffer,
+          conn = null, Some(snappySession))
+        val relationInfo = catalog.getRelationInfo(rowSchema, rowTable, isRowTable = false)._1
         new SmartConnectorColumnRDD(snappySession, tableName, projection, filters,
           ConnectionProperties(connProperties.url,
             connProperties.driver, connProperties.dialect, poolProps,
@@ -879,7 +881,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
     _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
-
 
   private var preferHostName = SmartConnectorRDDHelper.preferHostName(session)
 

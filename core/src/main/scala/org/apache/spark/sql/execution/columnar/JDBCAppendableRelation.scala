@@ -47,7 +47,7 @@ abstract case class JDBCAppendableRelation(
     override val table: String,
     provider: String,
     mode: SaveMode,
-    override val schema: StructType,
+    userSchema: StructType,
     origOptions: Map[String, String],
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext) extends BaseRelation
@@ -66,14 +66,15 @@ abstract case class JDBCAppendableRelation(
 
   private[sql] var tableCreated: Boolean = _
 
-  protected final val connProperties: ConnectionProperties =
-    externalStore.connProperties
+  override final def connProperties: ConnectionProperties = externalStore.connProperties
+
+  override protected final def isRowTable: Boolean = false
 
   override protected final val connFactory: () => Connection = JdbcUtils
       .createConnectionFactory(new JDBCOptions(connProperties.url,
         table, connProperties.connProps.asScala.toMap))
 
-  override def resolvedName: String = table
+  override final def resolvedName: String = table
 
   protected var delayRollover = false
 
@@ -160,31 +161,19 @@ abstract case class JDBCAppendableRelation(
     }
   }
 
-  def createTable(externalStore: ExternalStore, tableStr: String,
-      tableName: String, dropIfExists: Boolean): Unit = {
-
-      externalStore.tryExecute(tableName) { conn =>
-        if (dropIfExists) {
-          JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
-            ifExists = true)
-        }
-        val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
-          dialect, sqlContext)
-        if (!tableExists) {
-          val pass = connProperties.connProps.remove(Attribute.PASSWORD_ATTR)
-          logInfo(s"Applying DDL (url=${connProperties.url}; " +
-              s"props=${connProperties.connProps}): $tableStr")
-          if (pass != null) {
-            connProperties.connProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
-          }
-          JdbcExtendedUtils.executeUpdate(tableStr, conn)
-          dialect match {
-            case d: JdbcExtendedDialect => d.initializeTable(tableName,
-              sqlContext.conf.caseSensitiveAnalysis, conn)
-            case _ => // do nothing
-          }
-        }
-      }
+  protected def createTable(conn: Connection, tableStr: String, tableName: String): Unit = {
+    val pass = connProperties.connProps.remove(Attribute.PASSWORD_ATTR)
+    logInfo(s"Applying DDL (url=${connProperties.url}; " +
+        s"props=${connProperties.connProps}): $tableStr")
+    if (pass != null) {
+      connProperties.connProps.setProperty(Attribute.PASSWORD_ATTR, pass.asInstanceOf[String])
+    }
+    JdbcExtendedUtils.executeUpdate(tableStr, conn)
+    dialect match {
+      case d: JdbcExtendedDialect => d.initializeTable(tableName,
+        sqlContext.conf.caseSensitiveAnalysis, conn)
+      case _ => // do nothing
+    }
   }
 
   def flushRowBuffer(): Unit = {
