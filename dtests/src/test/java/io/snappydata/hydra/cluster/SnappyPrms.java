@@ -645,12 +645,12 @@ public class SnappyPrms extends BasePrms {
 
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
-    return tasktab().intAt(key, tab().intAt(key, 120));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static int getSleepTimeSecsForMemberStatus() {
     Long key = sleepTimeSecsForMemberStatus;
-    return tasktab().intAt(key, tab().intAt(key, 30));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static String getExecutorCores() {
