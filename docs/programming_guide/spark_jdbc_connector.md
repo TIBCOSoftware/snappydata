@@ -1,4 +1,4 @@
-# Using SnappyData for Any Spark Distribution
+# Using SnappyData for any Spark Distribution
 
 The **snappydata-jdbc Spark **package adds extensions to Spark’s inbuilt JDBC data source provider to work better with SnappyData. This allows SnappyData to be treated as a regular JDBC data source with all versions of Spark which are greater or equal to 2.1, while also providing speed to direct SnappyData embedded cluster for many types of queries.
 
@@ -22,7 +22,7 @@ The following extensions are used to implement the Spark JDBC Connector:
 
 *	**snappy**</br>An implicit for DataFrameWriter named **snappy** simplifies the bulk writes. Therefore a write operation such as **session.write.jdbc()** becomes **session.write.snappy()** with the difference that JDBC URL, driver, and connection properties are auto-configured using session properties if possible.
 
-Refer the instructions [here](../howto/using_snappydata_for_any_spark_dist.md) to set up the Spark JDBC connector and use SnappyData with any Spark distribution.
+Refer the instructions [here](../howto/using_snappydata_for_any_spark_dist.md) to set up the Spark JDBC connector and to start using SnappyData with any Spark distribution.
 
 ## Spark JDBC Extension Versus Current Spark APIs
 
