@@ -229,9 +229,9 @@ public class DeployPkgDeployJar extends SnappyTest {
      * then on restart package / jar should be automatically installed
      * @since 1.0.2.1
      */
-    public static void HydraTask_deployPkgAndNiceKillLeadNode() {
+    public static void HydraTask_deployPkgLocallyAndNiceKillLeadNode() {
         deployPkgJars = new DeployPkgDeployJar();
-        deployPkgJars.deployPkgAndNiceKillLeadNode();
+        deployPkgJars.deployPkgLocallyAndNiceKillLeadNode();
     }
 
     /**
@@ -239,9 +239,20 @@ public class DeployPkgDeployJar extends SnappyTest {
      * then on restart package / jar should be automatically installed
      * @since 1.0.2.1
      */
-    public static void HydraTask_deployPkgAndMeanKillLeadNode() {
+    public static void HydraTask_deployPkgLocallyAndMeanKillLeadNode() {
         deployPkgJars = new DeployPkgDeployJar();
-        deployPkgJars.deployPkgAndMeanKillLeadNode();
+        deployPkgJars.deployPkgLocallyAndMeanKillLeadNode();
+    }
+
+
+    /**
+     * This method start the deployment (Global deployment - deploy package command) and kill the lead node (NICE kill)
+     * then on switch over the lead node job should executed successfully.
+     * @since 1.0.2.1
+     */
+    public static void HydraTask_deployPkgAndNiceKillLeadNode() {
+        deployPkgJars = new DeployPkgDeployJar();
+        deployPkgJars.deployPkgAndNiceKillLeadNode();
     }
 
     /**
@@ -955,7 +966,7 @@ public class DeployPkgDeployJar extends SnappyTest {
     /**
      * This method deploy the package globally (deploy package command) and run the snappy job
      * which convert the csv data (result of running sql queries) and to JSON data using
-     * google gson libraries.
+     * google gson libraries. We read the CSV data and stored it in AVRO format and read the AVRO data and run the SQL Queries.
      * @since 1.0.2.1
      */
     private  void deployPkgCSVToJSON_SnappyJob() {
@@ -964,7 +975,6 @@ public class DeployPkgDeployJar extends SnappyTest {
         final String listPkgCmd = "list packages;";
         boolean isListPkg;
         final String pkgCoordinates = "'com.google.code.gson:gson:2.8.5,com.databricks:spark-avro_2.11:4.0.0'";
-        //final String pkgCoordinates =  "'com.databricks:spark-avro_2.11:4.0.0'";
         final String path = " path ";
         final String alias = " GoogleGSONAndAvro ";
         Statement st;
@@ -1001,15 +1011,107 @@ public class DeployPkgDeployJar extends SnappyTest {
         }finally {
             closeConnection(conn);
         }
-
     }
 
+    /**
+     * In this method we deploy the package globally (deploy package command).
+     * While Snappy job is running we perform the NICE kill of lead node.
+     * On Switch over of lead node, Snappy job should be executed successfully.
+     * @since 1.0.2.1
+     */
+    private void deployPkgAndNiceKillLeadNode() {
+        Connection conn;
+        String deployPkgCmd;
+        final String listPkgCmd = "list packages;";
+        boolean isListPkg;
+        final String pkgCoordinates = "'com.google.code.gson:gson:2.8.5,com.databricks:spark-avro_2.11:4.0.0'";
+        final String path = " path ";
+        final String alias = " GoogleGSONAndAvro ";
+        Statement st = null;
+        ResultSet rs;
+        Vector snappyJobClassName = SnappyPrms.getSnappyJobClassNames();
+        String userAppProperties = SnappyPrms.getCommaSepAPPProps();
+        String userAppName = SnappyPrms.getUserAppName();
+        String thirdParty_Pkgs_repos = "";
+        boolean isDeploy = SnappyPrms.isDeployPkg();
+        String userAppJar = SnappyPrms.getUserAppJar();
+
+        conn = getJDBCConnection();
+        ExecutorService es = Executors.newFixedThreadPool(2);
+
+        try {
+            Log.getLogWriter().info("deployPkgCSVToJSON started, deploying Google GSON Package..." );
+            deployPkgCmd = "deploy package" + alias + pkgCoordinates + path + "'" + userHomeDir + "/TPC'";
+            Log.getLogWriter().info("deploy package command is : " + deployPkgCmd);
+            conn.createStatement().execute(deployPkgCmd);
+            st = conn.createStatement();
+            if(st.execute(listPkgCmd)) {
+                rs = st.getResultSet();
+                while(rs.next()) {
+                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                }
+            }
+        }catch(SQLException se) {
+            Log.getLogWriter().info("CSVToJSON conversion Exception while deploying : " + se.getMessage());
+        }
+
+        Runnable executeJob = () -> {
+            String returnValue = "";
+            String[] memberValue;
+            Log.getLogWriter().info("Start the snappy Job and waiting to switch over from secondary to primary lead..., Thread Sleeping...");
+            try {
+
+                Thread.sleep(40000);
+                executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
+                        userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy, userAppJar);
+           }
+            catch(InterruptedException e) {
+                Log.getLogWriter().info("Exception in Lead HA NICE KILL globally deploy package is :" + e.getMessage());
+            }
+        };
+
+        Runnable killLead = () -> {
+            Log.getLogWriter().info("Killing the primary lead node...");
+            SnappyTest.HydraTask_cycleLeadVM();
+        };
+
+        es.submit(killLead);
+        es.submit(executeJob);
+
+        try {
+            Log.getLogWriter().info("Sleeping for " + 300000 + " millis before executor service shut down");
+            Thread.sleep(300000);
+            es.shutdown();
+            es.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgLocallyAndNiceKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+        }
+
+        try {
+            st.clearBatch();
+            Log.getLogWriter().info("Executing undeploy : " + "undeploy " + alias.trim());
+            conn.createStatement().execute("undeploy " + alias.trim());
+            st = conn.createStatement();
+            if(st.execute(listPkgCmd)) {
+                Log.getLogWriter().info("list package command.....");
+                rs = st.getResultSet();
+                while (rs.next()) {
+                    Log.getLogWriter().info(rs.getString("alias") + "|" + rs.getString("coordinate") + "|" + rs.getString("isPackage"));
+                }
+            }
+
+        }catch(SQLException se) {
+            Log.getLogWriter().info("CSVToJSON conversion Exception while undeploying : " + se.getMessage());
+        }finally {
+            closeConnection(conn);
+        }
+    }
 
     /**
      *
      * @since 1.0.2.1
      */
-    private  void deployPkgAndNiceKillLeadNode() {
+    private  void deployPkgLocallyAndNiceKillLeadNode() {
         Vector snappyJobClassName = SnappyPrms.getSnappyJobClassNames();
         String userAppProperties = SnappyPrms.getCommaSepAPPProps();
         String userAppName = SnappyPrms.getUserAppName();
@@ -1064,13 +1166,13 @@ public class DeployPkgDeployJar extends SnappyTest {
                         }
                     }
                     boolean jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
-                            userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                            userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy, "");
                     Log.getLogWriter().info("DeployPkgDeployJar -> SnappyJobStatus : " + jobStatus);
                     if(jobStatus == false) {
                         Log.getLogWriter().info("Resubmit the snappy job again...");
                         Thread.sleep(12000);
                         jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
-                                userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                                userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy, "");
                     }
                 }
                 catch(InterruptedException e){
@@ -1088,14 +1190,14 @@ public class DeployPkgDeployJar extends SnappyTest {
             es.shutdown();
             es.awaitTermination(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndNiceKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgLocallyAndNiceKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
         }
     }
 
     /**
      * @since 1.0.2.1
      */
-    private void deployPkgAndMeanKillLeadNode() {
+    private void deployPkgLocallyAndMeanKillLeadNode() {
         Vector snappyJobClassName = SnappyPrms.getSnappyJobClassNames();
         String userAppProperties = SnappyPrms.getCommaSepAPPProps();
         String userAppName = SnappyPrms.getUserAppName();
@@ -1153,13 +1255,13 @@ public class DeployPkgDeployJar extends SnappyTest {
                     }
                 }
                 boolean jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
-                        userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                        userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy, "");
                 Log.getLogWriter().info("DeployPkgDeployJar -> SnappyJobStatus : " + jobStatus);
                 if(jobStatus == false) {
                     Log.getLogWriter().info("Resubmit the snappy job again...");
                     Thread.sleep(12000);
                     jobStatus = executeSnappyJobUsingJobScript(snappyJobClassName, "snappyJobResult_" + System.currentTimeMillis() + ".log",
-                            userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy);
+                            userAppProperties,userAppName,thirdParty_Pkgs_repos,isDeploy, "");
                     if(conn != null)
                         closeConnection(conn);
                 }
@@ -1177,7 +1279,7 @@ public class DeployPkgDeployJar extends SnappyTest {
             es.shutdown();
             es.awaitTermination(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            throw new TestException("Exception occurred while waiting for the snappy deployPkgAndNiceKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
+            throw new TestException("Exception occurred while waiting for the snappy deployPkgLocallyAndNiceKillLeadNode job process execution." + "\nError Message:" + e.getMessage());
         }
     }
 }

@@ -16,22 +16,6 @@
  */
 package io.snappydata.hydra.cluster;
 
-import java.io.*;
-import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.rmi.RemoteException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
@@ -52,6 +36,22 @@ import sql.SQLPrms;
 import sql.dmlStatements.DMLStmtIF;
 import sql.sqlutil.DMLStmtsFactory;
 import util.*;
+
+import java.io.*;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.rmi.RemoteException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class SnappyTest implements Serializable {
 
@@ -2362,7 +2362,7 @@ public class SnappyTest implements Serializable {
      */
     //FIXME : Hydra Execution do not give any response for statements like SnappyPrms.getCommaSepAPPProps()
     //FIXME : or SnappyPrms.getCommaSepAPPProps().isEmpty() if executed from Executor Framework. Need to Check Why ?
-    protected boolean executeSnappyJobUsingJobScript(Vector jobClassNames, String logFileName, String appPropeties, String appName, String pkg_repos,boolean bDeployPkg) {
+    protected boolean executeSnappyJobUsingJobScript(Vector jobClassNames, String logFileName, String appPropeties, String appName, String pkg_repos,boolean bDeployPkg, String userAppJar) {
         Log.getLogWriter().info("Overloaded executeSnappyJobUsingJobScript() method...");
         String snappyJobScript = getScriptLocation("snappy-job.sh");
         Log.getLogWriter().info("snappyJobScript : " + snappyJobScript);
@@ -2371,7 +2371,7 @@ public class SnappyTest implements Serializable {
         File logFile = null;
         String confString = "";
         boolean retry;
-        userAppJar = SnappyPrms.getUserAppJar();
+        //userAppJar = SnappyPrms.getUserAppJar();
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
         leadHost = getLeadHost();
         String leadPort = getLeadPort();
@@ -2400,7 +2400,8 @@ public class SnappyTest implements Serializable {
                 Log.getLogWriter().info("size : " + jobClassNames.size());
 
                 cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-                        " --app-name " +  appName + " --class " + userJob + " --app-jar " + snappyTest.getUserAppJarLocation(userAppJar, jarPath);
+                        " --app-name " +  appName + " --class " + userJob + " --app-jar "
+                            + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + confString;
                 Log.getLogWriter().info("Command is if Deploypkg = false : " + cmd);
 
 //                if(!(SnappyPrms.getCommaSepAPPProps().isEmpty())) {

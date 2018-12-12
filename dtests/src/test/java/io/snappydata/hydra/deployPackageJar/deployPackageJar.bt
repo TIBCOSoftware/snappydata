@@ -19,6 +19,7 @@ io/snappydata/hydra/deployPackageJar/deployPackageWithSnappyJob.conf
   xmlFileLocation="$GEMFIRE/../../../dtests/src/resources/scripts/deployPackageJar/books.xml"
 */
 
+/*
 io/snappydata/hydra/deployPackageJar/deployPackageCSVToJSONSnappyJob.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -28,17 +29,27 @@ io/snappydata/hydra/deployPackageJar/deployPackageCSVToJSONSnappyJob.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
+*/
 
+io/snappydata/hydra/deployPackageJar/deployPackageLeadHANiceKill.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  numRowsValidation = true
+  fullResultSetValidation = true
+  isSmokeRun = false
 
 /*
-io/snappydata/hydra/deployPackageJar/deployPackageJarLeadHANiceKill.conf
+io/snappydata/hydra/deployPackageJar/deployPackageLocallyLeadHAMeanKill.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
   xmlFileLocation="$GEMFIRE/../../../dtests/src/resources/scripts/deployPackageJar/books.xml"
 
-io/snappydata/hydra/deployPackageJar/deployPackageJarLeadHAMeanKill.conf
+io/snappydata/hydra/deployPackageJar/deployPackageLocallyLeadHANiceKill.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
