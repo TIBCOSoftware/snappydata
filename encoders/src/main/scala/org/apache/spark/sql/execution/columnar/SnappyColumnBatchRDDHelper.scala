@@ -12,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 import io.snappydata.Constant
 import io.snappydata.thrift.internal.ClientPreparedStatement
 
-import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarBatch}
@@ -64,12 +64,22 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
     // Initialize next columnBatch
     val scan_colNextBytes = columnBatchIterator.next()
 
+    /*
+    // Construct ColumnBatch and return
+    val columnVectors = new Array[ColumnVector](projection.length)
+
+    // scan_buffer_initialization
+    var vectorIndex = 0
+    for (columnOrdinal <- columnOrdinals){ */
     // Calculate the number of row in the current batch
     val numStatsColumns = ColumnStatsSchema.numStatsColumns(schema.length)
     val scan_statsRow = org.apache.spark.sql.collection.SharedUtils
         .toUnsafeRow(scan_colNextBytes, numStatsColumns)
+
+    val deltaStatsDecoder = columnBatchIterator.getCurrentDeltaStats
     val scan_deltaStatsRow = org.apache.spark.sql.collection.SharedUtils.
-        toUnsafeRow(columnBatchIterator.getCurrentDeltaStats, numStatsColumns)
+        toUnsafeRow(deltaStatsDecoder, numStatsColumns)
+
     val scan_batchNumFullRows = scan_statsRow.getInt(0)
     val scan_batchNumDeltaRows = if (scan_deltaStatsRow != null) {
       scan_deltaStatsRow.getInt(0)
@@ -86,9 +96,16 @@ class SnappyColumnBatchRDDHelper(tableName: String, projection: StructType,
       batchBuffer = columnBatchIterator.getColumnLob(columnOrdinal - 1)
       val field = schema.fields(columnOrdinal - 1)
 
+      val columnDecoder = ColumnEncoding.getColumnDecoder(batchBuffer, field,
+        ColumnEncoding.identityLong)
+
+      val columnUpdatedDecoder = columnBatchIterator
+          .getUpdatedColumnDecoder(columnDecoder, field, columnOrdinal - 1)
+
       val columnVector = new SnappyColumnVector(field.dataType, field,
-        batchBuffer, scan_batchNumRows, columnOrdinal,
-        columnBatchIterator.getDeletedColumnDecoder)
+        batchBuffer, scan_batchNumRows,
+        columnOrdinal, columnDecoder,
+        columnBatchIterator.getDeletedColumnDecoder, columnUpdatedDecoder)
 
       columnVectors(vectorIndex) = columnVector
       vectorIndex = vectorIndex + 1
