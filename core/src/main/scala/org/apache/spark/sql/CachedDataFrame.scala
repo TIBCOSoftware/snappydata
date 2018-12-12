@@ -271,7 +271,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     var didPrepare = false
     try {
       didPrepare = prepareForCollect()
-      CachedDataFrame.withCallback(snappySession, this, name)(action)
+      CachedDataFrame.withCallback(snappySession, this, queryExecution, name)(action)
     } finally {
       endCollect(didPrepare)
     }
@@ -796,15 +796,15 @@ object CachedDataFrame
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
    */
-  def withCallback[U](session: SparkSession, df: DataFrame, name: String)
-      (action: DataFrame => (U, Long)): U = {
+  def withCallback[U](session: SparkSession, df: DataFrame, queryExecution: QueryExecution,
+      name: String)(action: DataFrame => (U, Long)): U = {
     try {
       val (result, elapsed) = action(df)
-      session.listenerManager.onSuccess(name, df.queryExecution, elapsed)
+      session.listenerManager.onSuccess(name, queryExecution, elapsed)
       result
     } catch {
       case e: Exception =>
-        session.listenerManager.onFailure(name, df.queryExecution, e)
+        session.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
   }

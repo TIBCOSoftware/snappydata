@@ -430,11 +430,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       val cachedTable = if (doCache) {
         val tableName = s"snappyDataInternalTempPutIntoCache${tempCacheIndex.incrementAndGet()}"
         val tableIdent = new TableIdentifier(tableName)
+        val cacheCommandString = if (currentKey ne null) s"CACHE FOR (${currentKey.sqlText})"
+        else s"CACHE FOR (PUT INTO $table <plan>)"
         // use cache table command to display full plan
-        SnappyCacheTableCommand(tableIdent, Some(updateSubQuery), isLazy = false).run(this)
-        val joinDS = this.table(tableIdent)
-        if (joinDS.count() > 0) {
-          newUpdateSubQuery = Some(joinDS.logicalPlan)
+        val count = SnappyCacheTableCommand(tableIdent, cacheCommandString, Some(updateSubQuery),
+          isLazy = false).run(this).head.getLong(0)
+        if (count > 0) {
+          newUpdateSubQuery = Some(this.table(tableIdent).logicalPlan)
           Some(tableIdent)
         } else {
           dropPutIntoCacheTable(tableIdent)
@@ -2297,6 +2299,7 @@ object SnappySession extends Logging {
   def getPlanCache: Cache[CachedKey, CachedDataFrame] = planCache
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
+    session.sparkContext.setJobDescription(sqlText)
     val parser = session.sessionState.sqlParser
     val plan = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
