@@ -45,12 +45,12 @@ import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, NoSuchTableException, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, OverwriteOptions, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -430,11 +430,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       val cachedTable = if (doCache) {
         val tableName = s"snappyDataInternalTempPutIntoCache${tempCacheIndex.incrementAndGet()}"
         val tableIdent = new TableIdentifier(tableName)
+        val cacheCommandString = if (currentKey ne null) s"CACHE FOR (${currentKey.sqlText})"
+        else s"CACHE FOR (PUT INTO $table <plan>)"
         // use cache table command to display full plan
-        SnappyCacheTableCommand(tableIdent, Some(updateSubQuery), isLazy = false).run(this)
-        val joinDS = this.table(tableIdent)
-        if (joinDS.count() > 0) {
-          newUpdateSubQuery = Some(joinDS.logicalPlan)
+        val count = SnappyCacheTableCommand(tableIdent, cacheCommandString, Some(updateSubQuery),
+          isLazy = false).run(this).head.getLong(0)
+        if (count > 0) {
+          newUpdateSubQuery = Some(this.table(tableIdent).logicalPlan)
           Some(tableIdent)
         } else {
           dropPutIntoCacheTable(tableIdent)
@@ -2163,7 +2165,12 @@ object SnappySession extends Logging {
     // Right now the CachedDataFrame is not getting used across SnappySessions
     val executionId = CachedDataFrame.nextExecutionIdMethod.
       invoke(SQLExecution).asInstanceOf[Long]
-    session.sparkContext.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
+    val executionIdStr = java.lang.Long.toString(executionId)
+    val context = session.sparkContext
+    val localProperties = context.getLocalProperties
+    localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
+    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, sqlText)
+    localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
     val start = System.currentTimeMillis()
     try {
       // get below two with original "ParamLiteral(" tokens that will be replaced
@@ -2174,14 +2181,16 @@ object SnappySession extends Logging {
       val postQueryExecutionStr = replaceParamLiterals(queryExecutionStr, paramLiterals, paramsId)
       val postQueryPlanInfo = PartitionedPhysicalScan.updatePlanInfo(queryPlanInfo,
         paramLiterals, paramsId)
-      session.sparkContext.listenerBus.post(SparkListenerSQLPlanExecutionStart(
+      context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
       val rdd = f
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
           executionId, start, System.currentTimeMillis())
     } finally {
-      session.sparkContext.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, null)
+      localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
+      localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
+      localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
     }
   }
 
@@ -2190,8 +2199,8 @@ object SnappySession extends Logging {
     val (executedPlan, withFallback) = getExecutedPlan(qe.executedPlan)
     var planCaching = session.planCaching
 
-    val (cachedRDD, execution, origExecutionString, origPlanInfo, executionString, planInfo,
-    rddId, noSideEffects, executionId, planStartTime, planEndTime) = executedPlan match {
+    val (cachedRDD, execution, origExecutionString, origPlanInfo, executionString, planInfo, rddId,
+    noSideEffects, executionId, planStartTime: Long, planEndTime: Long) = executedPlan match {
       case _: ExecutedCommandExec | _: ExecutePlan =>
         // TODO add caching for point updates/deletes; a bit of complication
         // because getPlan will have to do execution with all waits/cleanups
@@ -2211,8 +2220,16 @@ object SnappySession extends Logging {
         // different Command types will post their own plans in toRdd evaluation
         val isCommand = executedPlan.isInstanceOf[ExecutedCommandExec]
         var rdd = if (isCommand) qe.toRdd else null
+        // don't post separate plan for CTAS since it already has posted one for the insert
+        val postGUIPlans = if (isCommand) executedPlan.asInstanceOf[ExecutedCommandExec].cmd match {
+          case c: CreateMetastoreTableUsingSelect if c.provider == SnappyParserConsts.ROW_SOURCE ||
+              c.provider == SnappyParserConsts.COLUMN_SOURCE => false
+          case _: SnappyCacheTableCommand => false
+          case _ => true
+        } else true
         // post final execution immediately (collect for these plans will post nothing)
-        CachedDataFrame.withNewExecutionId(session, sqlText, sqlText, executionStr, planInfo) {
+        CachedDataFrame.withNewExecutionId(session, sqlText, sqlText, executionStr, planInfo,
+          postGUIPlans = postGUIPlans) {
           // create new LogicalRDD plan so that plan does not get re-executed
           // (e.g. just toRdd is not enough since further operators like show will pass
           //   around the LogicalPlan and not the executedPlan; it works for plans using
