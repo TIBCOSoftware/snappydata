@@ -1,7 +1,5 @@
 # Data Types
 
-**WORK IN PROGRESS - OUTDATED CONTENT**
-
 The SQL type system determines the compile-time and runtime type of an expression. Each type has a certain range of permissible values that can be assigned to a column or value of that type.
 
 The special value NULL, denotes an unassigned or missing value of any of the types (columns that have been assigned as non-nullable using NOT NULL clause or the primary key columns cannot have a NULL value). The supported types are given below.
@@ -108,8 +106,17 @@ select length(data) from blob_data where id = 100;
 <a id="boolean"></a>
 ## BOOLEAN
 
+The data type representing `Boolean` values. This is equivalent to Java's `boolean` primitive type.
+
 <a id="byte"></a>
 ## BYTE
+
+The data type representing `Byte` values. It is an 8-bit signed integer (equivalent to Java's `byte` primitive type).
+
+|                                      |                                              |
+|--------------------------------------|----------------------------------------------|
+| Minimum value                  | java.lang.Byte.MIN_VALUE                             |
+| Maximum value | java.lang.Byte.MAX_VALUE |
 
 <a id="char"></a>
 ## CHAR
@@ -290,10 +297,14 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 <a id="long"></a>
 
 ## LONG
-
-
 <a id="map"></a>
-- [MAP](#map)
+
+The data type representing `Long` values. It's a 64-bit signed integer (equivalent to Java's `long` primitive type).
+
+|                      |                                            |
+|----------------------|--------------------------------------------|
+| Minimum value   | java.lang.Long.MIN_VALUE                          |
+|    Maximum value   | java.lang.Long.MAX_VALUE |
 
 !!! Note
 	Supported only for column tables
@@ -346,6 +357,8 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 
 <a id="string"></a>
 ## STRING
+
+The data type representing `String` values. A String encoded in UTF-8 as an Array[Byte], which can be used for comparison search.
 
 <a id="timestamp"></a>
 ## TIMESTAMP

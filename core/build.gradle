@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,8 +16,8 @@
  */
 
 plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.1'
-  id 'de.undercouch.download' version '3.3.0'
+  id 'com.github.johnrengelman.shadow' version '2.0.4'
+  id 'de.undercouch.download' version '3.4.3'
 }
 
 apply plugin: 'scala'
@@ -28,7 +28,7 @@ sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
                                   'src/dunit/java', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
-sourceSets.test.java.srcDirs = [ ]
+sourceSets.test.java.srcDirs = []
 
 def osName = org.gradle.internal.os.OperatingSystem.current()
 
@@ -92,6 +92,7 @@ dependencies {
     compile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion
     testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }
+  compile project(":snappy-jdbc_${scalaBinaryVersion}")
 
   compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.4") {
     exclude(group: 'org.scala-lang', module: 'scala-library')
@@ -119,6 +120,7 @@ dependencies {
   testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
 
+  testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -130,10 +132,6 @@ if (rootProject.hasProperty('enablePublish')) {
   artifacts {
     archives packageScalaDocs, packageSources
   }
-}
-
-testClasses.doLast {
-  copyTestsCommonResources(buildDir)
 }
 
 scalaTest {
@@ -148,43 +146,54 @@ scalaTest {
   }
 }
 
-task downloadApacheSparkDist(type: de.undercouch.gradle.tasks.download.Download) {
-  outputs.files "${sparkProductDir}.tgz"
+def downloadApacheSparkDist(String ver, String distName, String prodDir) {
+  return tasks.create("downloadApache${ver}SparkDist", Download) {
+    outputs.files "${prodDir}.tgz"
 
-  src "http://archive.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
-  dest sparkDistDir
-  onlyIfNewer true
+    src "http://archive.apache.org/dist/spark/spark-${ver}/${distName}.tgz"
+    dest sparkDistDir
+    onlyIfNewer true
 
-  doFirst {
-    mkdir(sparkDistDir)
+    doFirst {
+      mkdir(sparkDistDir)
+    }
   }
 }
 
-task getApacheSparkDist {
-  dependsOn downloadApacheSparkDist
+def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
+  return tasks.create("getApacheSpark${ver}Dist") {
+    dependsOn downloadApacheSparkDist(ver, distName, prodDir)
 
-  outputs.files "${sparkProductDir}.tgz", "${sparkProductDir}/README.md"
+    outputs.files "${prodDir}.tgz", "${prodDir}/README.md"
 
-  doLast {
-    if (osName.isWindows()) {
-      copy {
-        from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
-        into sparkDistDir
-      }
-    } else {
-      // gradle tarTree does not preserve symlinks (GRADLE-2844)
-      exec {
-        executable 'tar'
-        args 'xzf', "${sparkDistName}.tgz"
-        workingDir = sparkDistDir
+    doLast {
+      if (osName.isWindows()) {
+        copy {
+          from tarTree(resources.gzip("${sparkDistDir}/${distName}.tgz"))
+          into sparkDistDir
+        }
+      } else {
+        // gradle tarTree does not preserve symlinks (GRADLE-2844)
+        exec {
+          executable 'tar'
+          args 'xzf', "${distName}.tgz"
+          workingDir = sparkDistDir
+        }
       }
     }
   }
 }
 
+task getApacheSparkDist {
+  dependsOn taskGetApacheSparkDist(sparkVersion, sparkDistName, sparkProductDir)
+  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
+}
+
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
+// SplitClusterDUnitSecurityTest.testSnappyStreamingJob needs cluster tests
+dunitSecurityTest.dependsOn ":snappy-cluster_${scalaBinaryVersion}:testClasses"
 check.dependsOn test, scalaTest, dunitTest
 if (rootProject.hasProperty('snappydata.enterprise')) {
   check.dependsOn dunitSecurityTest

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -809,6 +809,8 @@ object SnappyUnifiedMemoryManager extends Logging {
       math.max(getMaxHeapMemory / 20, 100L * 1024L * 1024L))
   }
 
+  private val DEFAULT_MEMORY_FRACTION = 0.85
+
   private val DEFAULT_EVICTION_FRACTION = 0.8
 
   private val DEFAULT_STORAGE_FRACTION = 0.5
@@ -855,7 +857,7 @@ object SnappyUnifiedMemoryManager extends Logging {
           DistributionConfig.MEMORY_SIZE_NAME, "0b")
       if (size == 0) {
         // try with additional "spark." prefix
-        size = conf.getSizeAsBytes("spark." + Constant.STORE_PROPERTY_PREFIX +
+        size = conf.getSizeAsBytes(Constant.SPARK_STORE_PREFIX +
             DistributionConfig.MEMORY_SIZE_NAME, "0b")
       }
       if (size > 0) {
@@ -961,8 +963,9 @@ object SnappyUnifiedMemoryManager extends Logging {
     }
 
     val usableMemory = systemMemory - reservedMemory
-    // add a cushion for GC before CRITICAL_UP is reached
-    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.97)
+    // add a cushion for GC before CRITICAL_UP is reached and for temporary buffers
+    // used by various components
+    val memoryFraction = conf.getDouble("spark.memory.fraction", DEFAULT_MEMORY_FRACTION)
     (usableMemory * memoryFraction).toLong
   }
 }

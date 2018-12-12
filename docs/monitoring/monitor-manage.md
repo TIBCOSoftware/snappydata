@@ -49,7 +49,7 @@ ID                            |HOST     |KIND             |STATUS |THRIFTSERVERS
 3 rows selected
 ```
 
-Data store members host data in the cluster, while accessor members do not host data. This role is determined by the `host-data` boot property. If a cluster contains only a single data store, its KIND is listed as "datastore(loner)."
+Data store members host data in the cluster, while accessor members do not host data. This role is determined by the `host-data` boot property. If a cluster contains only a single data store, its KIND is listed as "loner".
 
 ## Table and Data Storage Information
 

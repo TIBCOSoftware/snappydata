@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -34,9 +34,9 @@ import scala.reflect.io.Path
  * bin/run-example snappydata.StructuredStreamingCDCExample
  * </pre>
  * <p></p>
- * To run this on your local machine, you need to first run a Netcat server
+ * To run this on your local machine, you need to first run a Netcat server <br>
  * `$ nc -lk 9999`
- *
+ * <p>
  * Sample input data:
  * {{{
  * 1,user1,23,0

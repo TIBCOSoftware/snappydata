@@ -296,7 +296,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   def freeStorageMemory(): Unit = {
     assert(longLived, "Method valid for only long lived hashsets")
-    SparkEnv.get.memoryManager.releaseStorageMemory(totalSize, MemoryMode.ON_HEAP)
+    val sparkEnv = SparkEnv.get
+    if (sparkEnv ne null) {
+      sparkEnv.memoryManager.releaseStorageMemory(totalSize, MemoryMode.ON_HEAP)
+    }
   }
 }
 
