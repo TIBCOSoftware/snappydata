@@ -1492,6 +1492,17 @@ class ColumnTableTest
       case Failure(error) => // Do nothing
     }
   }
+
+  test("Test for SNAP_2512"){
+    var snSession = new SnappySession(snc.sparkContext)
+    snSession.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
+    snSession.sql("insert into t1 values(1,'aa')")
+    snSession.sql("insert into t1 values(2,'bb')")
+    snSession.sql("create view v1 as select id from t1")
+    snSession.sql("drop view if exists v2")
+    snSession.sql("drop view if exists v1")
+    snSession.sql("drop view if exists v1")
+  }
 }
 
 case class Record(id: Int, data: Employee)
