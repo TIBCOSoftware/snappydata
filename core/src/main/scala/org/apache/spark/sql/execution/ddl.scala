@@ -34,7 +34,6 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.{Property, SnappyTableStatsProviderService}
 
-import org.apache.spark.SparkEnv
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
@@ -50,9 +49,10 @@ import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCo
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
-import org.apache.spark.sql.types.{BooleanType, NullType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
+import org.apache.spark.{SparkContext, SparkEnv}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -322,11 +322,14 @@ case class SnappyStreamingActionsCommand(action: Int,
  * Alternative to Spark's CacheTableCommand that shows the plan being cached
  * in the GUI rather than count() plan for InMemoryRelation.
  */
-case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
+case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: String,
     plan: Option[LogicalPlan], isLazy: Boolean) extends RunnableCommand {
 
   require(plan.isEmpty || tableIdent.database.isEmpty,
     "Schema name is not allowed in CACHE TABLE AS SELECT")
+
+  override def output: Seq[Attribute] = AttributeReference(
+    "batchCount", LongType)() :: Nil
 
   override protected def innerChildren: Seq[QueryPlan[_]] = plan match {
     case None => Nil
@@ -342,47 +345,60 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
         df.createTempView(tableIdent.quotedString)
         df
     }
-    val isOffHeap = SnappyContext.getClusterMode(sparkSession.sparkContext) match {
-      case _: ThinClientConnectorMode =>
-        SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
-      case _ =>
-        try {
-          SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-              values.forall(member => !member.isDataServer ||
-              (member.getOffHeapMemorySize > 0))
+    val isOffHeap = {
+      { // avoids indentation change
+        SnappyContext.getClusterMode(sparkSession.sparkContext) match {
+          case _: ThinClientConnectorMode =>
+            SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
+          case _ =>
+            try {
+              SnappyTableStatsProviderService.getService.getMembersStatsFromService.
+                  values.forall(member => !member.isDataServer ||
+                  (member.getOffHeapMemorySize > 0))
+            }
+            catch {
+              case _: Throwable => false
+            }
         }
-        catch {
-          case _: Throwable => false
-        }
+      }
     }
 
     if (isLazy) {
       if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
+      Nil
     } else {
-      session.sessionState.enableExecutionCache = true
-      // Get the actual QueryExecution used by InMemoryRelation so that
-      // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
-      val cachedExecution = try {
-        if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
-        session.sessionState.getExecution(df.logicalPlan)
+      val localProperties = session.sparkContext.getLocalProperties
+      val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryString)
+      try {
+        session.sessionState.enableExecutionCache = true
+        // Get the actual QueryExecution used by InMemoryRelation so that
+        // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
+        val cachedExecution = try {
+          if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
+          session.sessionState.getExecution(df.logicalPlan)
+        } finally {
+          session.sessionState.enableExecutionCache = false
+          session.sessionState.clearExecutionCache()
+        }
+        val memoryPlan = df.queryExecution.executedPlan.collectFirst {
+          case plan: InMemoryTableScanExec => plan.relation
+        }.get
+        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
+        Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
+          CachedDataFrame.withNewExecutionId(session, queryString, queryString,
+            cachedExecution.toString(), planInfo)({
+            val start = System.nanoTime()
+            // Dummy op to materialize the cache. This does the minimal job of count on
+            // the actual cached data (RDD[CachedBatch]) to force materialization of cache
+            // while avoiding creation of any new SparkPlan.
+            memoryPlan.cachedColumnBuffers.count()
+            (Unit, System.nanoTime() - start)
+          }))._2) :: Nil
       } finally {
-        session.sessionState.enableExecutionCache = false
-        session.sessionState.clearExecutionCache()
+        localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, previousJobDescription)
       }
-      val memoryPlan = df.queryExecution.executedPlan.collectFirst {
-        case plan: InMemoryTableScanExec => plan.relation
-      }.get
-      val cached = new Dataset[Row](session, cachedExecution, df.exprEnc)
-      CachedDataFrame.withCallback(sparkSession, cached, "cache")(_.withNewExecutionId {
-        val start = System.nanoTime()
-        // Dummy op to materialize the cache. This does the minimal job of count on
-        // the actual cached data (RDD[CachedBatch]) to force materialization of cache
-        // while avoiding creation of any new SparkPlan.
-        memoryPlan.cachedColumnBuffers.count()
-        (Unit, System.nanoTime() - start)
-      })
     }
-    Nil
   }
 }
 
