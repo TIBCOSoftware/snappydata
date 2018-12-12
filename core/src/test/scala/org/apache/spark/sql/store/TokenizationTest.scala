@@ -18,11 +18,11 @@ package org.apache.spark.sql.store
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.core.{Data, TestData2}
+import io.snappydata.core.{Data, LocalSparkConf, TestData2}
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.Logging
+import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{DynamicInSet, ParamLiteral}
 import org.apache.spark.sql.internal.SQLConf
@@ -45,6 +45,11 @@ class TokenizationTest
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
     super.beforeAll()
+  }
+
+  override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
+    val newConf = LocalSparkConf.newConf(addOn)
+    newConf.set("snappydata.sql.planCaching", "true")
   }
 
   override def afterAll(): Unit = {
@@ -441,7 +446,7 @@ class TokenizationTest
         })
       }
 
-      assert(cacheMap.size() == 1)
+      assert(SnappySession.getPlanCache.asMap().size() == 1)
       newSession.clear()
       newSession2.clear()
       cacheMap.clear()
