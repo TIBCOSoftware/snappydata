@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 
-import org.apache.spark.SparkEnv
+import org.apache.spark.{SparkContext, SparkEnv}
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
@@ -41,7 +41,7 @@ import org.apache.spark.sql.execution.command.{CreateViewCommand, DescribeTableC
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.types.{BooleanType, MetadataBuilder, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{BooleanType, LongType, MetadataBuilder, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
@@ -353,11 +353,14 @@ case class CreateSnappyViewCommand(name: TableIdentifier,
  * Alternative to Spark's CacheTableCommand that shows the plan being cached
  * in the GUI rather than count() plan for InMemoryRelation.
  */
-case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
+case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: String,
     plan: Option[LogicalPlan], isLazy: Boolean) extends RunnableCommand {
 
   require(plan.isEmpty || tableIdent.database.isEmpty,
     "Schema name is not allowed in CACHE TABLE AS SELECT")
+
+  override def output: Seq[Attribute] = AttributeReference(
+    "batchCount", LongType)() :: Nil
 
   override protected def innerChildren: Seq[QueryPlan[_]] = plan match {
     case None => Nil
@@ -366,54 +369,67 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
-    plan match {
-      case None => session.catalog.cacheTable(tableIdent.quotedString)
+    val df = plan match {
+      case None => session.table(tableIdent)
       case Some(lp) =>
         val df = Dataset.ofRows(session, lp)
-        val isOffHeap = SnappyContext.getClusterMode(sparkSession.sparkContext) match {
+        df.createTempView(tableIdent.quotedString)
+        df
+    }
+    val isOffHeap = {
+      { // avoids indentation change
+        SnappyContext.getClusterMode(sparkSession.sparkContext) match {
           case _: ThinClientConnectorMode =>
             SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
           case _ =>
             try {
               SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-                  values.forall(member => (!member.isDataServer ||
-                  (member.getOffHeapMemorySize > 0)))
+                  values.forall(member => !member.isDataServer ||
+                  (member.getOffHeapMemorySize > 0))
             }
             catch {
               case _: Throwable => false
             }
         }
+      }
+    }
 
-        if (isLazy) {
-          df.createTempView(tableIdent.quotedString)
+    if (isLazy) {
+      if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
+      Nil
+    } else {
+      val previousJobDescription = session.sparkContext.getLocalProperty(
+        SparkContext.SPARK_JOB_DESCRIPTION)
+      session.sparkContext.setJobDescription(queryString)
+      try {
+        session.sessionState.enableExecutionCache = true
+        // Get the actual QueryExecution used by InMemoryRelation so that
+        // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
+        val cachedExecution = try {
           if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
-        } else {
-          session.sessionState.enableExecutionCache = true
-          // Get the actual QueryExecution used by InMemoryRelation so that
-          // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
-          val cachedExecution = try {
-            df.createTempView(tableIdent.quotedString)
-            if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
-            session.sessionState.getExecution(df.logicalPlan)
-          } finally {
-            session.sessionState.enableExecutionCache = false
-            session.sessionState.clearExecutionCache()
-          }
-          val memoryPlan = df.queryExecution.executedPlan.collectFirst {
-            case plan: InMemoryTableScanExec => plan.relation
-          }.get
-          val cached = new Dataset[Row](session, cachedExecution, df.exprEnc)
-          CachedDataFrame.withCallback(sparkSession, cached, "cache")(_.withNewExecutionId {
+          session.sessionState.getExecution(df.logicalPlan)
+        } finally {
+          session.sessionState.enableExecutionCache = false
+          session.sessionState.clearExecutionCache()
+        }
+        val memoryPlan = df.queryExecution.executedPlan.collectFirst {
+          case plan: InMemoryTableScanExec => plan.relation
+        }.get
+        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
+        Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
+          CachedDataFrame.withNewExecutionId(session, queryString, queryString,
+            cachedExecution.toString(), planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
             // while avoiding creation of any new SparkPlan.
             memoryPlan.cachedColumnBuffers.count()
             (Unit, System.nanoTime() - start)
-          })
-        }
+          }))._2) :: Nil
+      } finally {
+        session.sparkContext.setJobDescription(previousJobDescription)
+      }
     }
-    Nil
   }
 }
 
