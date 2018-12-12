@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,6 +23,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.sources.{BaseRelation, DataSourceRegister}
+import org.apache.spark.sql.streaming.DirectKafkaStreamRelation.{STARTING_OFFSETS_PROP, partitionOffsetMethod}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.{ConsumerStrategies, KafkaUtils, LocationStrategies}
@@ -44,6 +45,8 @@ object DirectKafkaStreamRelation{
     val clazz = Utils.classForName("org.apache.spark.sql.kafka010.JsonUtils")
     clazz.getMethod("partitionOffsets", classOf[String])
   }
+
+  private val STARTING_OFFSETS_PROP = "startingOffsets"
 }
 
 final class DirectKafkaStreamRelation(
@@ -64,9 +67,10 @@ final class DirectKafkaStreamRelation(
   private val preferredHosts = LocationStrategies.PreferConsistent
   private val startingOffsets = getStartingOffsets
 
-  private def getStartingOffsets = {
-    DirectKafkaStreamRelation.partitionOffsetMethod.invoke(null, options("startingOffsets"))
+  private def getStartingOffsets = options.get(STARTING_OFFSETS_PROP) match {
+    case Some(offsets) => partitionOffsetMethod.invoke(null, offsets)
         .asInstanceOf[Map[TopicPartition, Long]]
+    case None => Map.empty[TopicPartition, Long]
   }
 
   override protected def createRowStream(): DStream[InternalRow] = {

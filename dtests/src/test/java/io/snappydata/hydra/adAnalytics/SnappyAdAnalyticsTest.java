@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -33,6 +34,8 @@ import hydra.TestConfig;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
+import io.snappydata.hydra.streaming_sink.StringMessageProducer;
+import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import org.apache.commons.io.FileUtils;
 import util.TestException;
 
@@ -331,7 +334,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_restartLeadVMWithStreaming(){
     HydraTask_cycleLeadVM();
-    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
+    try { Thread.sleep(180000); } catch (InterruptedException ie) {}
     HydraTask_executeSnappyStreamingJob();
   }
 
@@ -368,10 +371,24 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     return true;
   }
 
+  /* Generator and Publisher for StringMessageProducer
+  */
+  public static void HydraTask_generateAndPublishMethod() {
+    String[] appProps = null;
+    if (SnappyPrms.getCommaSepAPPProps() != null) {
+      appProps = SnappyPrms.getCommaSepAPPProps().split(",");
+    }
+    String[] appProps1 = Arrays.copyOf(appProps, appProps.length + 3);
+    appProps1[appProps.length] = "" + TestConfig.tasktab().booleanAt(SnappyPrms.isConflationTest,
+        false);
+    appProps1[appProps.length + 1] = "" + DerbyTestUtils.hasDerbyServer;
+    appProps1[appProps.length + 2] = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
+    StringMessageProducer.generateAndPublish(appProps1);
+  }
+
   /**
    * Start generating and publishing logs to Kafka
    */
-
   public static void HydraTask_generateAndPublish() {
     snappyAdAnalyticsTest.generateAndPublish(SnappyPrms.getSnappyStreamingJobClassNames());
   }
@@ -385,14 +402,15 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       for (int j = 0; j < appProps.length; j++)
         APP_PROPS = APP_PROPS + " " + appProps[j];
     }
+    boolean hasDerby = false;
     String brokerList = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
-    APP_PROPS = APP_PROPS + " " + brokerList;
+    APP_PROPS += " " + hasDerby + " " + brokerList;
     for (int i = 0; i < generatorAndPublisher.size(); i++) {
       String dest = kafkaLogDir + sep + "generatorAndPublisher" + getMyTid() + "_" + i + ".log";
       File logFile = new File(dest);
       String processName= (String)generatorAndPublisher.elementAt(i);
-      String command = "java -cp .:" + userJarPath + ":" + productDir + "jars/* " +
-          processName + " " + APP_PROPS + " > " + logFile;
+      String command = "java -cp .:" + userJarPath + ":" + getStoreTestsJar() + ":" + productDir +
+          "jars/* " +  processName + " " + APP_PROPS + " > " + logFile;
       if(SnappyPrms.executeInBackGround())
         command = "nohup " + command + " & ";
       Log.getLogWriter().info("Executing cmd : " + command);
@@ -404,8 +422,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_calculateStreamingTime(){
     List<String> tableName = SnappyPrms.getTableList();
-    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
-    snappyAdAnalyticsTest.calculateStreamingTime(tableName.get(0),expectedRows.get(0));
+    List<String> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.calculateStreamingTime(tableName.get(0),Integer.parseInt(expectedRows.get(0)));
   }
 
   public void calculateStreamingTime(String tableName, int expectedRows){
@@ -423,8 +441,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       while (!allConsumed) {
         ResultSet rs = conn.createStatement().executeQuery("select count(*) from " + tableName);
         while (rs.next()) {
-          numRows = rs.getInt("1");
+          numRows = rs.getInt(1);
         }
+        Log.getLogWriter().info("Number of records returned are : " + numRows);
         if (numRows == expectedRows) {
           allConsumed = true;
           endTime = System.currentTimeMillis();
@@ -439,8 +458,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
   public static void HydraTask_assertStreaming(){
     List<String> tableName = SnappyPrms.getTableList();
-    List<Integer> expectedRows = SnappyPrms.getNumRowsList();
-    snappyAdAnalyticsTest.assertStreaming(tableName.get(0),expectedRows.get(0));
+    List<String> expectedRows = SnappyPrms.getNumRowsList();
+    snappyAdAnalyticsTest.assertStreaming(tableName.get(0),Integer.parseInt(expectedRows.get(0)));
   }
 
   public void assertStreaming(String tableName, int expectedRows){
@@ -454,7 +473,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     try {
       ResultSet rs= conn.createStatement().executeQuery("select count(*) from " + tableName);
       while(rs.next()) {
-        numRows = rs.getInt("1");
+        numRows = rs.getInt(1);
       }
       if(numRows != expectedRows){
         throw new TestException("Streaming app didnot consume all the data for " + tableName +

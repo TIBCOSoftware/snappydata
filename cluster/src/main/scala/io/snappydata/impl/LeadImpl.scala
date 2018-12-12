@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -52,6 +52,7 @@ import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
@@ -64,7 +65,7 @@ class LeadImpl extends ServerImpl with Lead
 
   private val bootProperties = new Properties()
 
-  private var notifyStatusChange: ((FabricService.State) => Unit) = _
+  private var notifyStatusChange: FabricService.State => Unit = _
 
   @volatile private var servicesStarted: Boolean = _
 
@@ -77,6 +78,10 @@ class LeadImpl extends ServerImpl with Lead
   private var remoteInterpreterServerObj: Any = _
 
   var urlclassloader: ExtendibleURLClassLoader = _
+
+  private def setPropertyIfAbsent(props: Properties, name: String, value: => String): Unit = {
+    if (!props.containsKey(name)) props.setProperty(name, value)
+  }
 
   @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
@@ -101,12 +106,13 @@ class LeadImpl extends ServerImpl with Lead
         }
       } else if (!propName.startsWith(SNAPPY_PREFIX) &&
           !propName.startsWith(JOBSERVER_PREFIX) &&
-          !propName.startsWith("zeppelin.")) {
+          !propName.startsWith("zeppelin.") &&
+          !propName.startsWith("hive.")) {
         bootProperties.setProperty(STORE_PREFIX + propName, bootProperties.getProperty(propName))
         bootProperties.remove(propName)
       }
     }
-    // next the system properties that can override above
+    // next the system properties that cannot override above
     val sysProps = System.getProperties
     val sysPropNames = sysProps.stringPropertyNames().iterator()
     while (sysPropNames.hasNext) {
@@ -114,17 +120,20 @@ class LeadImpl extends ServerImpl with Lead
       if (sysPropName.startsWith(SPARK_PREFIX)) {
         if (sysPropName.startsWith(SPARK_SNAPPY_PREFIX)) {
           // remove the "spark." prefix for uniformity (e.g. when looking up a property)
-          bootProperties.setProperty(sysPropName.substring(SPARK_PREFIX.length),
+          setPropertyIfAbsent(bootProperties, sysPropName.substring(SPARK_PREFIX.length),
             sysProps.getProperty(sysPropName))
         } else {
-          bootProperties.setProperty(sysPropName, sysProps.getProperty(sysPropName))
+          setPropertyIfAbsent(bootProperties, sysPropName, sysProps.getProperty(sysPropName))
         }
-      } else if (sysPropName.startsWith(SNAPPY_PREFIX)) {
-        bootProperties.setProperty(sysPropName, sysProps.getProperty(sysPropName))
+      } else if (sysPropName.startsWith(SNAPPY_PREFIX) ||
+          sysPropName.startsWith(JOBSERVER_PREFIX) ||
+          sysPropName.startsWith("zeppelin.") ||
+          sysPropName.startsWith("hive.")) {
+        setPropertyIfAbsent(bootProperties, sysPropName, sysProps.getProperty(sysPropName))
       }
     }
 
-    // add default lead properties
+    // add default lead properties that cannot be overridden
     val serverGroupsProp = STORE_PREFIX + Attribute.SERVER_GROUPS
     val groups = bootProperties.getProperty(serverGroupsProp) match {
       case null => LeadImpl.LEADER_SERVERGROUP
@@ -221,12 +230,13 @@ class LeadImpl extends ServerImpl with Lead
       logInfo("About to send profile update after initialization completed.")
       ServerGroupUtils.sendUpdateProfile()
 
+      val startHiveServer = Property.HiveServerEnabled.get(conf)
       var jobServerWait = false
       var confFile: Array[String] = null
       var jobServerConfig: Config = null
       var startupString: String = null
       if (Property.JobServerEnabled.get(conf)) {
-        jobServerWait = Property.JobServerWaitForInit.get(conf)
+        jobServerWait = startHiveServer || Property.JobServerWaitForInit.get(conf)
         confFile = conf.getOption("jobserver.configFile") match {
           case None => Array[String]()
           case Some(c) => Array(c)
@@ -262,6 +272,17 @@ class LeadImpl extends ServerImpl with Lead
       // start the service to gather table statistics
       SnappyTableStatsProviderService.start(sc, url = null)
 
+      if (startHiveServer) {
+        val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
+        val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
+        val sessionKind = if (useHiveSession) "session=hive" else "session=snappy"
+        SnappyHiveThriftServer2.getHostPort(hiveService) match {
+          case None => addStartupMessage(s"Started hive thrift server ($sessionKind)")
+          case Some((host, port)) =>
+            addStartupMessage(s"Started hive thrift server ($sessionKind) on: $host[$port]")
+        }
+      }
+
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
 
@@ -274,7 +295,7 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       if (jobServerWait) {
-        // mark RUNNING after job server and zeppelin initialization if so configured
+        // mark RUNNING after job server, hive server and zeppelin initialization if so configured
         markLauncherRunning(if (startupString ne null) s"Started $startupString" else null)
       }
     }
@@ -367,7 +388,7 @@ class LeadImpl extends ServerImpl with Lead
     }
   }
 
-  private def markRunning() = {
+  private def markRunning(): Unit = {
     if (GemFireXDUtils.TraceFabricServiceBoot) {
       logInfo("Accepting RUNNING notification")
     }
@@ -376,7 +397,7 @@ class LeadImpl extends ServerImpl with Lead
     servicesStarted = true
   }
 
-  private def markLauncherRunning(message: String): Unit = {
+  private def addStartupMessage(message: String): Unit = {
     if ((message ne null) && !message.isEmpty) {
       val launcher = CacheServerLauncher.getCurrentInstance
       if (launcher ne null) {
@@ -388,6 +409,10 @@ class LeadImpl extends ServerImpl with Lead
         }
       }
     }
+  }
+
+  private def markLauncherRunning(message: String): Unit = {
+    addStartupMessage(message)
     notifyRunningInLauncher(Status.RUNNING)
   }
 
@@ -429,6 +454,7 @@ class LeadImpl extends ServerImpl with Lead
     } catch {
       case _: CacheClosedException =>
     }
+    SnappyHiveThriftServer2.close()
     val sc = SnappyContext.globalSparkContext
     if (sc != null) sc.stop()
     servicesStarted = false
@@ -504,7 +530,7 @@ class LeadImpl extends ServerImpl with Lead
     conf
   }
 
-  protected[snappydata] def notifyOnStatusChange(f: (FabricService.State) => Unit): Unit =
+  protected[snappydata] def notifyOnStatusChange(f: FabricService.State => Unit): Unit =
     this.notifyStatusChange = f
 
   @throws[Exception]
@@ -528,7 +554,7 @@ class LeadImpl extends ServerImpl with Lead
       SnappyAuthenticator.auth = new SnappyAuthenticator {
 
         override def authenticate(userPass: Option[UserPass]): Future[Option[AuthInfo]] = {
-          Future { checkCredentials(userPass) }
+          Future(checkCredentials(userPass))
         }
 
         def checkCredentials(userPass: Option[UserPass]): Option[AuthInfo] = {
@@ -714,8 +740,8 @@ class ExtendibleURLClassLoader(parent: ClassLoader)
 
 object LeadImpl {
 
-  val SPARKUI_PORT = 5050
-  val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
+  val SPARKUI_PORT: Int = 5050
+  val LEADER_SERVERGROUP: String = ServerGroupUtils.LEADER_SERVERGROUP
 
   def invokeLeadStart(conf: SparkConf): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]

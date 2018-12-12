@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,12 +23,13 @@ import javax.sql.DataSource
 import com.pivotal.gemfirexd.Attribute
 import com.zaxxer.hikari.util.PropertyElf
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.GemFireXDBaseDialect
-import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 
+import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+
+import org.apache.spark.sql.SnappyDataBaseDialect
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
@@ -139,7 +140,7 @@ object ConnectionPool {
     val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
     val conn = ds.getConnection
     dialect match {
-      case _: GemFireXDBaseDialect =>
+      case _: SnappyDataBaseDialect =>
         conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
 
       case _ =>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,6 +25,7 @@ import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import io.snappydata.Property
+import io.snappydata.Property.HashAggregateSize
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
@@ -33,13 +34,12 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
-import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -52,24 +52,39 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, WindowLogicalPlan}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
 
-class SnappySessionState(snappySession: SnappySession)
-    extends SessionState(snappySession) {
-
+class SnappySessionState(val snappySession: SnappySession)
+    extends SessionState(snappySession) with SnappyStrategies {
   self =>
 
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
+  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
+    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
+    case _ => Nil
+  }
+
   protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
 
   private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
+
+  override lazy val streamingQueryManager: StreamingQueryManager = {
+    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
+    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
+    // implies that Snappydata aggregation optimisation will be turned off for any usage of
+    // this session including non-streaming queries.
+
+    HashAggregateSize.set(snappySession.sessionState.conf, "-1")
+    new StreamingQueryManager(snappySession)
+  }
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -129,20 +144,9 @@ class SnappySessionState(snappySession: SnappySession)
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
 
-  /**
-   * A set of basic analysis rules required to be run before plan caching to allow
-   * for proper analysis before ParamLiterals are marked as "tokenized". For example,
-   * grouping or ordering expressions used in projections will need to be resolved
-   * here so that ParamLiterals are considered as equal based of value and not position.
-   */
-  private[sql] lazy val preCacheRules: RuleExecutor[LogicalPlan] = new RuleExecutor[LogicalPlan] {
-    override val batches: Seq[Batch] = Batch("Resolution", Once,
-      ResolveAggregationExpressions :: Nil: _*) :: Nil
-  }
-
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
     override def batches: Seq[Batch] = {
-      implicit val ss = snappySession
+      implicit val ss: SnappySession = snappySession
       var insertedSnappyOpts = 0
       val modified = super.batches.map {
         case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
@@ -292,7 +296,7 @@ class SnappySessionState(snappySession: SnappySession)
         case _ if Property.ForceLinkPartitionsToBuckets.get(conf) =>
           // always create one partition per bucket
           snappySession.linkPartitionsToBuckets(flag = true)
-        case j: Join if !JoinStrategy.isLocalJoin(j) =>
+        case j: Join if !JoinStrategy.isReplicatedJoin(j) =>
           // disable for the entire query for consistency
           snappySession.linkPartitionsToBuckets(flag = true)
         case _: InsertIntoTable | _: TableMutationPlan |
@@ -313,6 +317,10 @@ class SnappySessionState(snappySession: SnappySession)
    */
   private[spark] val leaderPartitions = new ConcurrentHashMap[PartitionedRegion,
       Array[Partition]](16, 0.7f, 1)
+
+  @volatile private[sql] var enableExecutionCache: Boolean = _
+  protected final lazy val executionCache =
+    new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
 
   /**
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
@@ -423,8 +431,8 @@ class SnappySessionState(snappySession: SnappySession)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
-        case  (_: BypassRowLevelSecurity | _: Update | _: Delete |
-               _: DeleteFromTable | _: PutIntoTable) => plan
+        case _: BypassRowLevelSecurity | _: Update | _: Delete |
+             _: DeleteFromTable | _: PutIntoTable => plan
 
         // TODO: Asif: Bypass row level security filter apply if the command
         // is of type RunnableCommad. Later if it turns out any data operation
@@ -504,7 +512,7 @@ class SnappySessionState(snappySession: SnappySession)
                   || (projs.length == 1 && projs.head.isInstanceOf[Star])))) {
             boolsArray(allProjectionBool) = false
           }
-          case (_: GlobalLimit | _: LocalLimit) => boolsArray(alreadyProcessed_bool) = true
+          case _: GlobalLimit | _: LocalLimit => boolsArray(alreadyProcessed_bool) = true
           case _: org.apache.spark.sql.catalyst.plans.logical.Filter =>
             boolsArray(filter_bool) = true
           case _ =>
@@ -615,7 +623,7 @@ class SnappySessionState(snappySession: SnappySession)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
-          val allReferences = newChild.references ++
+          val allReferences = newChild.references ++ AttributeSet(updateAttrs) ++
               AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
           u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
             keyColumns = keyAttrs.map(_.toAttribute),
@@ -672,9 +680,6 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def planner: DefaultPlanner = new DefaultPlanner(snappySession, conf,
-    experimentalMethods.extraStrategies)
-
   protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
@@ -696,10 +701,29 @@ class SnappySessionState(snappySession: SnappySession)
     }
   }
 
-  override def executePlan(plan: LogicalPlan): QueryExecution = {
+  override final def executePlan(plan: LogicalPlan): QueryExecution = {
+    snappyStrategies
     clearExecutionData()
-    newQueryExecution(plan)
+    beforeExecutePlan(plan)
+    val qe = newQueryExecution(plan)
+    if (enableExecutionCache) executionCache.put(plan, qe)
+    qe
   }
+
+  private lazy val snappyStrategies = {
+    val storeOptimizedRules: Seq[Strategy] =
+      Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
+
+    experimentalMethods.extraStrategies = experimentalMethods.extraStrategies ++
+        Seq(SnappyStrategies, StoreStrategy, StreamQueryStrategy) ++ storeOptimizedRules
+  }
+
+  protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
+  }
+
+  private[sql] def getExecution(plan: LogicalPlan): QueryExecution = executionCache.get(plan)
+
+  private[sql] def clearExecutionCache(): Unit = executionCache.clear()
 
   private[spark] def prepareExecution(plan: SparkPlan): SparkPlan = {
     queryPreparations(topLevel = false).foldLeft(plan) {
@@ -1087,27 +1111,6 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-class DefaultPlanner(val session: SnappySession, conf: SQLConf,
-    extraStrategies: Seq[Strategy])
-    extends SparkPlanner(session.sparkContext, conf, extraStrategies)
-        with SnappyStrategies {
-
-  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
-    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
-    case _ => Nil
-  }
-
-  private val storeOptimizedRules: Seq[Strategy] =
-    Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
-
-  override def strategies: Seq[Strategy] =
-    Seq(SnappyStrategies,
-      StoreStrategy, StreamQueryStrategy) ++
-        storeOptimizedRules ++
-        super.strategies
-}
-
 private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
@@ -1153,39 +1156,28 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
     // ResolveRelations, no such special rule has been added for PUT
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(dr: DeletableRelation, _, _) =>
-          def comp(a: Attribute, targetCol: String): Boolean = a match {
-            case ref: AttributeReference => targetCol.equals(ref.name.toUpperCase)
-          }
-
-          val expectedOutput = l.output
-          if (!child.output.forall(a => expectedOutput.exists(e => comp(a, e.name.toUpperCase)))) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same column name(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          l match {
-            case LogicalRelation(ps: PartitionedDataSourceScan, _, _) =>
-              if (!ps.partitionColumns.forall(a => child.output.exists(e =>
-                comp(e, a.toUpperCase)))) {
-                throw new AnalysisException(s"${child.output.mkString(",")}" +
-                    s" columns in the WHERE clause of the DELETE FROM statement must " +
-                    s"have all the parititioning column(s) ${ps.partitionColumns.mkString(",")}.")
-              }
-            case _ =>
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
-
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
-          val expectedOutput = l.output
-          if (child.output.length != expectedOutput.length) {
-            throw new AnalysisException(s"$l requires that the query in the " +
-                "WHERE clause of the DELETE FROM statement " +
-                "generates the same number of column(s) as in its schema but found " +
-                s"${child.output.mkString(",")} instead.")
-          }
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, child)
+
+          val keyColumns = dr.getPrimaryKeyColumns
+          val childOutput = keyColumns.map(col =>
+            child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"$l requires that the query in the " +
+                  "WHERE clause of the DELETE FROM statement " +
+                  s"must have all the key column(s) ${keyColumns.mkString(",")} but found " +
+                  s"${child.output.mkString(",")} instead.")
+            })
+
+          val expectedOutput = keyColumns.map(col =>
+            l.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
+              case Some(a: Attribute) => a
+              case _ => throw new AnalysisException(s"The target table must contain all the" +
+                  s" key column(s) ${keyColumns.mkString(",")}. " +
+                  s"Actual schema: ${l.output.mkString(",")}")
+            })
+
+          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, Project(childOutput, child))
+
         case _ => d
       }
 
@@ -1419,102 +1411,6 @@ object LikeEscapeSimplification {
   }
 }
 
-/**
- * Rule to "normalize" ParamLiterals for the case of aggregation expression being used
- * in projection. Specifically the ParamLiterals from aggregations need to be replaced
- * into projection so that latter can be resolved successfully in plan execution
- * because ParamLiterals will match expression only by position and not value at the
- * time of execution. This rule is useful only before plan caching after parsing.
- *
- * See Spark's PhysicalAggregation rule for more details.
- */
-object ResolveAggregationExpressions extends Rule[LogicalPlan] {
-
-  private val identityGet: Expression => Expression = identity
-  private val toNamedExpression: (NamedExpression, Expression) => NamedExpression =
-    (_, e) => e.asInstanceOf[NamedExpression]
-
-  private val sortOrderGet: SortOrder => Expression = order => order.child
-  private val toSortOrder: (SortOrder, Expression) => SortOrder =
-    (order, e) => if (order.child eq e) order else order.copy(child = e)
-
-  private def useValueEquality[T](exprs: Seq[T], valueEquals: Boolean,
-      getExpr: T => Expression): Unit = {
-    exprs.foreach(getExpr(_).transform {
-      case p: ParamLiteral =>
-        if (valueEquals) {
-          // mark tokenized for consistent hashCode in canonicalized for semanticEquals
-          p.tokenized = true
-          p.positionIndependent = true
-          p.valueEquals = true
-        } else p.valueEquals = false
-        p
-    })
-  }
-
-  private def copyParamLiterals[T](groupingExpressions: Seq[Expression],
-      resultExpressions: Seq[T], getExpr: T => Expression,
-      getResult: (T, Expression) => T): Seq[T] = {
-    useValueEquality(groupingExpressions, valueEquals = true, identityGet)
-    useValueEquality(resultExpressions, valueEquals = true, getExpr)
-    // Replace any ParamLiterals in the original resultExpressions with any matching ones
-    // in groupingExpressions matching on the value like a Literal rather than position.
-    val newResultExpressions = resultExpressions.map { expr =>
-      getResult(expr, {
-        getExpr(expr).transformDown {
-          case e: AggregateExpression => e
-          case expression =>
-            groupingExpressions.collectFirst {
-              case p: ParamLiteral if (p ne expression) && p.equals(expression) =>
-                // ensure newLiteral != p so that it is replaced in tree
-                expression.asInstanceOf[ParamLiteral].valueEquals = false
-                p.valueEquals = false
-                p
-              case e if e.semanticEquals(expression) =>
-                // collect ParamLiterals from grouping expressions and apply
-                // to result expressions in the same order
-                val literals = new ArrayBuffer[ParamLiteral](2)
-                e.transformDown {
-                  case p: ParamLiteral => literals += p; p
-                }
-                if (literals.nonEmpty) {
-                  val iter = literals.iterator
-                  expression.transformDown {
-                    case p: ParamLiteral =>
-                      val newLiteral = iter.next()
-                      assert(newLiteral.equals(p))
-                      assert(p.tokenized)
-                      assert(newLiteral.tokenized)
-                      // ensure newLiteral != p so that it is replaced in tree
-                      p.valueEquals = false
-                      newLiteral.valueEquals = false
-                      newLiteral
-                  }
-                } else expression
-            } match {
-              case Some(e) => e
-              case _ => expression
-            }
-        }
-      })
-    }
-    useValueEquality(groupingExpressions, valueEquals = false, identityGet)
-    useValueEquality(newResultExpressions, valueEquals = false, getExpr)
-    newResultExpressions
-  }
-
-  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-    case Aggregate(groupingExpressions, resultExpressions, child) =>
-      val newResultExpressions = copyParamLiterals(groupingExpressions, resultExpressions,
-        identityGet, toNamedExpression)
-      Aggregate(groupingExpressions, newResultExpressions, child)
-
-    case Sort(order, global, a@Aggregate(groupingExpressions, _, _)) =>
-      val newOrder = copyParamLiterals(groupingExpressions, order, sortOrderGet, toSortOrder)
-      Sort(newOrder, global, a)
-  }
-}
-
 case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
 }
@@ -1536,4 +1432,7 @@ class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
     case 0 => child
     case 1 => hints
   }
+
+  override def simpleString: String =
+    s"LogicalPlanWithHints[hints = $hints; child = ${child.simpleString}]"
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -113,7 +113,7 @@ class BlockManagerIdListener(sc: SparkContext)
   override def onApplicationEnd(msg: SparkListenerApplicationEnd): Unit =
     SnappyContext.clearBlockIds()
 
-  private def handleNewExecutorJoin(bid: BlockManagerId) = {
+  private def handleNewExecutorJoin(bid: BlockManagerId): Unit = {
     val uris = SnappySession.getJarURIs
     Utils.mapExecutors[Unit](sc, () => {
       ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
