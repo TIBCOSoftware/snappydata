@@ -1143,8 +1143,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       r.insertableRelation(child.output) match {
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
-          val relation = LogicalRelation(br,
-            l.expectedOutputAttributes, l.catalogTable)
+          val relation = LogicalRelation(br, catalogTable = l.catalogTable)
           castAndRenameChildOutputForPut(i.copy(table = relation),
             relation.output, br, null, child)
         case None =>
