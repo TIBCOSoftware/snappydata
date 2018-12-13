@@ -21,6 +21,7 @@ import java.sql.Connection
 import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 
 import org.apache.spark.annotation.DeveloperApi
@@ -391,7 +392,8 @@ trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelS
   override def schema: StructType = _schema
 
   protected def relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = {
-    if ((_relationInfoAndRegion eq null) || _relationInfoAndRegion._1.invalid) {
+    if (((_relationInfoAndRegion eq null) || _relationInfoAndRegion._1.invalid) &&
+        (sqlContext ne null)) {
       val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
       _relationInfoAndRegion = session.externalCatalog.getRelationInfo(
         schemaName, tableName, isRowTable)
@@ -403,7 +405,17 @@ trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelS
 
   def relationInfo: RelationInfo = relationInfoAndRegion._1
 
-  def region: LocalRegion = relationInfoAndRegion._2.get
+  @transient lazy val region: LocalRegion = {
+    val relationInfoAndRegion = this.relationInfoAndRegion
+    var lr = if (relationInfoAndRegion ne null) relationInfoAndRegion._2 match {
+      case None => null
+      case Some(r) => r
+    } else null
+    if (lr eq null) {
+      lr = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
+    }
+    lr
+  }
 
   protected def createActualTables(connection: Connection): Unit
 

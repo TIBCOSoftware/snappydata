@@ -143,7 +143,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     getDependents(schema, getTable(schema, table).properties, includeTypes, excludeTypes)
   }
 
-  protected def getDependents(schema: String, properties: Map[String, String],
+  def getDependents(schema: String, properties: Map[String, String],
       includeTypes: Seq[CatalogObjectType.Type],
       excludeTypes: Seq[CatalogObjectType.Type]): Seq[CatalogTable] = {
     val allDependents = SnappyExternalCatalog.getDependents(properties)

@@ -279,7 +279,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
    * SnappyData allows the schema for global temporary views to be optional so this method
    * adds it to TableIdentifier if required so that super methods can be invoked directly.
    */
-  private def addMissingGlobalTempSchema(name: TableIdentifier): TableIdentifier = {
+  protected def addMissingGlobalTempSchema(name: TableIdentifier): TableIdentifier = {
     if (name.database.isEmpty) {
       val tableName = formatTableName(name.table)
       if (globalTempViewManager.get(tableName).isDefined) {
@@ -434,11 +434,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   }
 
   override def getTableMetadata(name: TableIdentifier): CatalogTable = {
-    convertCharTypes(super.getTableMetadata(addMissingGlobalTempSchema(name)))
+    convertCharTypes(super.getTableMetadata(name))
   }
 
   override def getTableMetadataOption(name: TableIdentifier): Option[CatalogTable] = {
-    super.getTableMetadataOption(addMissingGlobalTempSchema(name)) match {
+    super.getTableMetadataOption(name) match {
       case None => None
       case Some(table) => Some(convertCharTypes(table))
     }
@@ -447,10 +447,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def dropTable(tableIdent: TableIdentifier, ignoreIfNotExists: Boolean,
       purge: Boolean): Unit = synchronized {
     val name = addMissingGlobalTempSchema(tableIdent)
-    val schema = getSchemaName(name)
-    val table = formatTableName(name.table)
 
-    if (!isTemporaryTable(tableIdent)) {
+    if (isTemporaryTable(name)) {
+      dropTemporaryTable(name)
+    } else {
+      val schema = getSchemaName(name)
+      val table = formatTableName(name.table)
       checkSchemaPermission(schema, table, defaultUser = null)
       // resolve the table and destroy underlying storage if possible
       externalCatalog.getTableOption(schema, table) match {
@@ -484,6 +486,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
     super.dropTable(name, ignoreIfNotExists, purge)
   }
+
+  protected def dropTemporaryTable(tableIdent: TableIdentifier): Unit = {}
 
   override def alterTable(table: CatalogTable): Unit = {
     // first check required permission to alter objects in a schema
