@@ -18,17 +18,20 @@ package io.snappydata.hydra.security;
 
 import hydra.Log;
 import hydra.RemoteTestModule;
+import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import javolution.io.Struct;
 import util.TestException;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -41,10 +44,62 @@ public class SnappySecurityTest extends SnappyTest {
   public static Boolean isAuthorized = false;
   public static String adminUser = "user1";
   public static String unAuthUser = "user5";
+  public static SnappySecurityTest snappySecurityTest;
+  public static String secureBootProp = "";
 
 
   public static void HydraTask_runQuery() throws SQLException {
     runQuery();
+  }
+
+  public static void HydraTask_startLdapServer() {
+    if (snappySecurityTest == null) {
+      snappySecurityTest = new SnappySecurityTest();
+    }
+    snappySecurityTest.startLdapServer();
+  }
+
+  public void startLdapServer() {
+    String ldapScriptPath = SnappyCDCPrms.getDataLocation();
+    if (snappyTest == null) {
+      snappyTest = new SnappyTest();
+    }
+    try {
+      String dest = getCurrentDirPath() + File.separator + "ldapServerStart.log";
+      String propFile = getCurrentDirPath() + File.separator + "../../../secureBootProp.log";
+      File ldapServerFile = new File(dest);
+      File secureBootPropFile = new File(propFile);
+      if (!ldapServerFile.exists()) {
+        String cmd = "nohup " + ldapScriptPath + "/start-ldap-server.sh " + ldapScriptPath + "/auth.ldif > " + ldapServerFile + " & ";
+        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+        snappyTest.executeProcess(pb, ldapServerFile);
+      }
+      Thread.sleep(30000); //wait until the ldapserver starts.
+
+      String cmd1 = "grep Boot " + dest;
+      ProcessBuilder pb1 = new ProcessBuilder("/bin/bash", "-c", cmd1);
+      snappyTest.executeProcess(pb1, secureBootPropFile);
+    } catch (InterruptedException ex) {
+    }
+  }
+
+  public static String getSecureBootProp() {
+    try {
+      File log = new File(".");
+      String propFile = log.getCanonicalPath() + File.separator + "../../../secureBootProp.log";
+      File secureBootPropFile = new File(propFile);
+      FileInputStream fis = new FileInputStream(secureBootPropFile);
+      BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+      String str;
+      while ((str = br.readLine()) != null) {
+        secureBootProp = str.split(" = ")[1];
+      }
+    }
+    catch (IOException io){
+      Log.getLogWriter().info("Caught IO exception in startLdapServer method " + io.getMessage());
+    }
+    Log.getLogWriter().info("The secureBootProps in getSecureBootProp method are " + secureBootProp);
+    return secureBootProp;
   }
 
   public static void HydraTask_getClientConnection() throws SQLException {
