@@ -81,6 +81,11 @@ public class SnappySecurityPrms extends SnappyPrms{
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
+  public static boolean getIsSecurity() {
+    Long key = isSecurity;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static boolean getIsJoinQuery() {
     Long key = isJoinQuery;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
