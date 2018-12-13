@@ -18,12 +18,17 @@ package io.snappydata.hydra.cdcConnector
 
 import java.io.{BufferedReader, File, FileNotFoundException, FileReader, IOException}
 import java.sql.{Connection, DriverManager, ResultSet}
+import java.util
 import java.util.ArrayList
 
 import scala.sys.process._
+
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.hydra.SnappyHydraTestRunner
 import io.snappydata.test.dunit.AvailablePortHelper
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.{IOFileFilter, TrueFileFilter, WildcardFileFilter}
+
 import org.apache.spark.sql.collection.Utils
 
 class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
@@ -39,7 +44,6 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         if (snappyHome == null) {
             throw new Exception("SNAPPY_HOME should be set as an environment variable")
         }
-        // snappyHome = "/Users/smahajan/snappydata/build-artifacts/scala-2.11/snappy"
         homeDir = System.getProperty("user.home")
         testDir = s"$snappyHome/../../../dtests/src/resources/scripts/cdcConnector"
         appJar = s"$snappyHome/../../../snappy-poc/cdc/target/cdc-test-0.0.1.jar"
@@ -61,15 +65,71 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
     def setDMLMaxChunkSize(size: Long): Unit = {
         GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
     }
+
+    protected def getUserAppJarLocation(jarName: String, jarPath: String): String = {
+        var userAppJarPath: String = null
+        if (new File(jarName).exists) jarName
+        else {
+            val baseDir: File = new File(jarPath)
+            try {
+                val filter: IOFileFilter = new WildcardFileFilter(jarName)
+                val files: util.List[File] = FileUtils.listFiles(baseDir, filter,
+                    TrueFileFilter.INSTANCE).asInstanceOf[util.List[File]]
+                println("Jar file found: " + util.Arrays.asList(files))
+                import scala.collection.JavaConverters._
+                for (file1: File <- files.asScala) {
+                    if (!file1.getAbsolutePath.contains("/work/") ||
+                        !file1.getAbsolutePath.contains("/scala-2.10/")){
+                        userAppJarPath = file1.getAbsolutePath
+                    }
+
+                }
+            } catch {
+                case e: Exception =>
+                    println("Unable to find " + jarName
+                        + " jar at " + jarPath + " location.")
+            }
+            userAppJarPath
+        }
+    }
+    
+    def truncateSqlTable(): Unit = {
+
+        // scalastyle:off classforname Class.forName
+        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver")
+        val conn = DriverManager.getConnection(
+            "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433;DatabaseName=testdatabase",
+            "sqldb", "snappydata#msft1")
+        conn.createStatement().execute("delete from [testdatabase].[dbo].[ADJUSTMENT] " +
+            "where adj_id >= 95000010061 and adj_id <= 950000100110")
+        Thread.sleep(50000)
+        conn.createStatement().execute("truncate table testdatabase.cdc.dbo_ADJUSTMENT_CT")
+        val sqlDF = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id >= 95000010061 and adj_id <= 950000100110")
+        if (sqlDF.next) System.out.println("FAILURE : The result set should have been empty")
+        else System.out.println("SUCCESS : The result set is empty as expected")
+        println("Deleted rows from key 95000010061 to 950000100110")
+        println("Truncated cdc table")
+    }
+    
     def before(): Unit = {
+        truncateSqlTable()
+        
        (snappyHome + "/sbin/snappy-start-all.sh").!!
         println("Started snappy cluster")
+
         var filePath = s"$testDir/testCases/createTable.sql"
         var dataLocation = s"$snappyHome/../../../snappy-connectors/" +
             s"jdbc-stream-connector/build-artifacts/scala-2.11/libs"
+        val connectorJar = getUserAppJarLocation("snappydata-jdbc-stream-connector_2.11-*.jar",
+            dataLocation)
+
         val command = "/bin/snappy run -file=" + filePath +
-            " -param:dataLocation=" + dataLocation + " -param:homeDirLocation=" + homeDir +
+            " -param:dataLocation=" + connectorJar + " -param:homeDirLocation=" + snappyHome +
         " -client-port=1527" + " -client-bind-address=localhost"
+
         (snappyHome + command).!!
 
         println("Table created and jar deployed")
@@ -83,6 +143,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
             "cdc_source_connection.properties " +
             s"--app-jar $appJar " +
             "--lead localhost:8090"
+
         (snappyHome + jobCommand).!!
         println("Job started")
     }
@@ -91,16 +152,11 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         println("Stopped snappy cluster")
     }
 
-    def getSnappyConnection: Connection = {
-
-            println("Getting connection")
-            // scalastyle:off classforname Class.forName
+    def getSqlServerConnection: Connection = {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver")
-            println("Clas.forname    ")
             val conn = DriverManager.getConnection(
                 "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433;DatabaseName=testdatabase",
                 "sqldb", "snappydata#msft1")
-            println("Got connection" + conn.isClosed)
             conn
     }
 
@@ -161,49 +217,42 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         DriverManager.getConnection("jdbc:snappydata:thrift://localhost[1527]")
     }
     def performValidation(sqlResultSet: ResultSet, snappyResultSet: ResultSet): Unit = {
-        try {
-            val resultMetaData = sqlResultSet.getMetaData
-            val columnCnt = resultMetaData.getColumnCount
-            val snappyMetadata = snappyResultSet.getMetaData
-            val snappyColCnt = snappyMetadata.getColumnCount
-            var sqlRowsCnt = 0
-            while(sqlResultSet.next()){
-                sqlRowsCnt = sqlRowsCnt + 1
-            }
-            var snappyRowsCnt = 0
-            while(snappyResultSet.next()){
-                snappyRowsCnt = snappyRowsCnt + 1
-            }
-            sqlResultSet.beforeFirst()
-            snappyResultSet.beforeFirst()
-            println("Row cnt of snappy and sql table is = " + snappyRowsCnt + " " + sqlRowsCnt)
-            println("Column cnt of snappy and sql table is = " + snappyColCnt + " " + columnCnt)
-            if (snappyRowsCnt.equals(sqlRowsCnt)) {
-                while (sqlResultSet.next()) {
-                    snappyResultSet.next()
-                    for (i <- 1 to columnCnt) {
-                        if (sqlResultSet.getObject(i).equals(snappyResultSet.getObject(i))) {
-                            println("match " + sqlResultSet.getObject(i) + " "
-                                + snappyResultSet.getObject(i))
-                        }
-                        else {
-                            println("not match" + sqlResultSet.getObject(i)
-                                + " " + snappyResultSet.getObject(i))
-                        }
+
+        val resultMetaData = sqlResultSet.getMetaData
+        val columnCnt = resultMetaData.getColumnCount
+        val snappyMetadata = snappyResultSet.getMetaData
+        val snappyColCnt = snappyMetadata.getColumnCount
+        var sqlRowsCnt = 0
+        while(sqlResultSet.next()){
+            sqlRowsCnt = sqlRowsCnt + 1
+        }
+        var snappyRowsCnt = 0
+        while(snappyResultSet.next()){
+            snappyRowsCnt = snappyRowsCnt + 1
+        }
+        sqlResultSet.beforeFirst()
+        snappyResultSet.beforeFirst()
+        println("Row cnt of snappy and sql table is = " + snappyRowsCnt + " " + sqlRowsCnt)
+        println("Column cnt of snappy and sql table is = " + snappyColCnt + " " + columnCnt)
+        if (snappyRowsCnt.equals(sqlRowsCnt)) {
+            while (sqlResultSet.next()) {
+                snappyResultSet.next()
+                for (i <- 1 to columnCnt) {
+                    if (sqlResultSet.getObject(i).equals(snappyResultSet.getObject(i))) {
+                        println("match " + sqlResultSet.getObject(i) + " "
+                            + snappyResultSet.getObject(i))
+                    }
+                    else {
+                        throw new Exception("not match" + sqlResultSet.getObject(i)
+                            + " " + snappyResultSet.getObject(i))
                     }
                 }
             }
-            else {
-                println("Row cnt of snappy and sql table is = "
-                    + snappyRowsCnt + " " + sqlRowsCnt + " not matching")
-            }
         }
-        catch {
-            case e: Exception => {
-                System.out.println("Caught exception " + e.getMessage)
-            }
+        else {
+            throw new Exception("Row cnt of snappy and sql table is = "
+                + snappyRowsCnt + " " + sqlRowsCnt + " not matching")
         }
-
     }
 
     test("Test for insert,update,delete and insert happening " +
@@ -211,10 +260,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase1.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -230,10 +279,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         
         val queryString = s"$testDir/testCases/testCase2.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -250,10 +299,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase3.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -271,10 +320,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase4.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -292,10 +341,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase5.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -313,10 +362,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase6.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -334,10 +383,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase7.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY
         ).executeQuery("select * from ADJUSTMENT " +
@@ -355,10 +404,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase8.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -376,10 +425,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase9.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -395,10 +444,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase10.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -416,10 +465,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase11.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -437,10 +486,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase12.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -458,10 +507,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase13.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -479,10 +528,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase14.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -499,10 +548,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase15.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -519,10 +568,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase16.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -539,10 +588,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase17.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -559,10 +608,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase18.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -579,10 +628,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase19.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -596,10 +645,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase20.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -613,10 +662,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase21.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -630,10 +679,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase22.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -647,10 +696,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase23.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100103;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
@@ -671,10 +720,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase24.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100105;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
@@ -695,10 +744,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase25.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -721,10 +770,10 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
 
         val queryString = s"$testDir/testCases/testCase26.sql"
         val qArr = getQuery(queryString)
-        val conn = getSnappyConnection
+        val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(50000)
+        Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +

@@ -18,5 +18,5 @@ VLD_FRM_DT TIMESTAMP NOT NULL,
 VLD_TO_DT TIMESTAMP,
 SRC_SYS_REF_ID VARCHAR(10) NOT NULL,
 SRC_SYS_REC_ID VARCHAR(150)) USING column OPTIONS(partition_by 'BILL_ENT_ID',buckets '32',key_columns 'CLIENT_ID,BILL_ENT_ID,ADJ_ID' ) ;
-deploy jar jdbc1 ':dataLocation/snappydata-jdbc-stream-connector_2.11-0.9.2.jar';
-deploy jar sjdbc1 ':homeDirLocation/.m2/repository/com/microsoft/sqlserver/sqljdbc4/4.0/sqljdbc4-4.0.jar';
+deploy jar jdbc1 ':dataLocation';
+deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0' repos 'http://clojars.org/repo/' path ':homeDirLocation/sqljdbcJar';
