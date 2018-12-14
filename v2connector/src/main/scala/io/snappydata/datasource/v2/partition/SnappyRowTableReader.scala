@@ -29,6 +29,7 @@ import io.snappydata.thrift.internal.ClientStatement
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.execution.columnar.SharedExternalStoreUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.v2.reader.DataReader
 import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarBatch}
@@ -61,8 +62,10 @@ class SnappyRowTableReader(val bucketId: Int,
     // (each element in hostsAndURLs ArrayBuffer is in the form of a tuple (host, jdbcURL))
     val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
         bucketToServerMapping.get(bucketId)
-    val connectionURL = hostsAndURLs(0)._2
-    DriverManager.getConnection(connectionURL)
+//    val connectionURL = hostsAndURLs(0)._2
+//    DriverManager.getConnection(connectionURL)
+    val connProperties = SharedExternalStoreUtils.connectionProperties(hostsAndURLs)
+    SharedExternalStoreUtils.getConnection(connProperties, hostsAndURLs)
   }
 
   private def setLocalBucketScan(): Unit = {
