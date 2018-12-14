@@ -7,7 +7,7 @@ create table testL1 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '1000');
 
 DROP TABLE IF EXISTS testL2;
 create table testL2 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -16,7 +16,7 @@ create table testL2 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '64', COLUMN_MAX_DELTA_ROWS '1500', EVICTION_BY 'none');
 
 DROP TABLE IF EXISTS testL3;
 create table testL3 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -25,7 +25,7 @@ create table testL3 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '32', REDUNDANCY '2', COLUMN_MAX_DELTA_ROWS '1400');
 
 DROP TABLE IF EXISTS testL4;
 create table testL4 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -34,7 +34,7 @@ create table testL4 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '118', COLUMN_MAX_DELTA_ROWS '1300');
 
 DROP TABLE IF EXISTS testL5;
 create table testL5 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -43,7 +43,7 @@ create table testL5 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '111', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '1200', EVICTION_BY 'none');
 
 DROP TABLE IF EXISTS testL6;
 create table testL6 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -52,7 +52,7 @@ create table testL6 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '16', REDUNDANCY '2', COLUMN_MAX_DELTA_ROWS '1100');
 
 DROP TABLE IF EXISTS testL7;
 create table testL7 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -61,7 +61,7 @@ create table testL7 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '384', COLUMN_MAX_DELTA_ROWS '900', EVICTION_BY 'none');
 
 DROP TABLE IF EXISTS testL8;
 create table testL8 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -70,7 +70,7 @@ create table testL8 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '256', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '800');
 
 DROP TABLE IF EXISTS testL9;
 create table testL9 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -79,7 +79,7 @@ create table testL9 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '96', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '700');
 
 DROP TABLE IF EXISTS testL10;
 create table testL10 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -88,7 +88,7 @@ create table testL10 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '2', COLUMN_MAX_DELTA_ROWS '6000', EVICTION_BY 'none');
 
 DROP TABLE IF EXISTS testL11;
 create table testL11 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -97,7 +97,7 @@ create table testL11 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '256', COLUMN_MAX_DELTA_ROWS '3000');
 
 DROP TABLE IF EXISTS testL12;
 create table testL12 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -106,7 +106,7 @@ create table testL12 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '64', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '600', EVICTION_BY 'none');
 
 DROP TABLE IF EXISTS testL13;
 create table testL13 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -115,7 +115,7 @@ create table testL13 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '384', REDUNDANCY '2', COLUMN_MAX_DELTA_ROWS '400');
 
 DROP TABLE IF EXISTS testL14;
 create table testL14 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -124,7 +124,7 @@ create table testL14 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '196', COLUMN_MAX_DELTA_ROWS '4000');
 
 DROP TABLE IF EXISTS testL15;
 create table testL15 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -133,7 +133,7 @@ create table testL15 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '3000', EVICTION_BY 'none');
 
 DROP TABLE IF EXISTS testL16;
 create table testL16 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -142,7 +142,7 @@ create table testL16 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '64', REDUNDANCY '2', COLUMN_MAX_DELTA_ROWS '300');
 
 DROP TABLE IF EXISTS testL17;
 create table testL17 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -151,7 +151,7 @@ create table testL17 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '384', REDUNDANCY '2', COLUMN_MAX_DELTA_ROWS '2000');
 
 DROP TABLE IF EXISTS testL18;
 create table testL18 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -160,7 +160,7 @@ create table testL18 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '32', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '200', EVICTION_BY 'none');
 
 DROP TABLE IF EXISTS testL19;
 create table testL19 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -169,7 +169,7 @@ create table testL19 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', COLUMN_MAX_DELTA_ROWS '500');
 
 DROP TABLE IF EXISTS testL20;
 create table testL20 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -178,7 +178,4 @@ create table testL20 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-
-
+using column options (key_columns 'id,APPLICATION_ID', BUCKETS '123', REDUNDANCY '1', COLUMN_MAX_DELTA_ROWS '1000', EVICTION_BY 'none');

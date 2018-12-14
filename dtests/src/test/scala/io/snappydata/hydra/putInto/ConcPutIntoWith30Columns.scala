@@ -34,18 +34,19 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
     // val numThreads = jobConfig.getString("numThreadsForConcExecution").toInt
-      val blockSize = jobConfig.getString("blockSize").toLong
-      val stepSize = jobConfig.getString("stepSize").toLong
+    val blockSize = jobConfig.getString("blockSize").toLong
+    val stepSize = jobConfig.getString("stepSize").toLong
     val tableName = jobConfig.getString("tableName")
+    val totalTaskTime = jobConfig.getString("totalTaskTime").toLong
     // val fileCnt = jobConfig.getString("fileCnt").toInt
-  /*  val fromVal = jobConfig.getString("fromVal").toInt
-    val untilVal = jobConfig.getString("untilVal").toInt
-    val filePath = jobConfig.getString("jsonFile")
-*/    val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true))
+    /*  val fromVal = jobConfig.getString("fromVal").toInt
+      val untilVal = jobConfig.getString("untilVal").toInt
+      val filePath = jobConfig.getString("jsonFile")
+  */ val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true))
     Try {
-       runTasksWithChangingRangeForPutInto(snSession, blockSize, stepSize, tableName)
+      runTasksWithChangingRangeForPutInto(snSession, blockSize, stepSize, tableName, totalTaskTime)
       // doInsert(snSession, stepSize, blockSize, tableName, fileCnt)
-    //   loadDataFromJsonFile(snSession, filePath, tableName, fromVal, untilVal)
+      //   loadDataFromJsonFile(snSession, filePath, tableName, fromVal, untilVal)
       // insertFromJsonFile(snSession, filePath, tableName, fromVal, untilVal, fileCnt)
       /* runTasksWithChangingRangeForPutInto(snSession, 100000L, 10000L)
       runTasksWithChangingRangeForPutInto(snSession, 150000L, 20000L)
@@ -63,7 +64,7 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
   }
 
   def insertFromJsonFile(snSession: SnappySession, file: String, tableName: String,
-      fromVal: Int, untilVal: Int, fileCnt: Int): Unit = {
+                         fromVal: Int, untilVal: Int, fileCnt: Int): Unit = {
     // scalastyle:off println
     var rnd = Random.nextInt(fileCnt)
     if (rnd == 0) {
@@ -78,59 +79,59 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
   }
 
   def loadDataFromJsonFile(snSession: SnappySession, file: String, tableName: String,
-      fromVal: Int, untilVal: Int): Unit = {
-      for (i <- fromVal to untilVal) {
+                           fromVal: Int, untilVal: Int): Unit = {
+    for (i <- fromVal to untilVal) {
       val jsonDF = snSession.read.json(file)
       jsonDF.write.putInto(tableName + i)
     }
   }
 
- /* def doInsert(snSession: SnappySession, startRange:
-  Long, endRange: Long, tableName: String, fileCnt: Int): Unit = {
-    var newStarRange = startRange
-    var newEndRange = endRange
-    for (j <- 1 to fileCnt) {
-      snSession.sql(s"DROP TABLE IF EXISTS ${tableName} ")
-      snSession.sql(s"create table ${tableName} (id string NOT NULL, data string," +
-          s" data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string," +
-          s" PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string," +
-          s" PAYMENTSTATUS string, PAYMENTRESULT string, PAYMENTZIP string," +
-          s" PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string," +
-          s" PAYMENTCHANNEL string, PAYMENTCITY string, PAYMENTSTATECODE string," +
-          s"PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string," +
-          s"PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string," +
-          s" PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string," +
-          s" PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string," +
-          s" CLIENT_ID string, CUSTOMERID string) using column options" +
-          s" (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1')")
-      for (i <- newStarRange until newEndRange) {
-        snSession.sql(s"insert into ${tableName} select ${i}, " +
-            s"'biggerDataForInsertsIntoTheTable1_' || ${i}, ${i} * 10.2 ," +
-            s" 'APPLICATION_ID_' || ${i}, " +
-            "'ORDERGROUPID_' || 'id', 'PAYMENTADDRESS1' ||'id', 'PAYMENTADDRESS2' ||'id'," +
-            " 'PAYMENTCOUNTRY' ||'id'," +
-            " 'PAYMENTSTATUS' ||'id', 'PAYMENTRESULT' ||'id', 'PAYMENTZIP' ||'id'," +
-            " 'PAYMENTSETUP' ||'id'," +
-            " 'PROVIDER_RESPONSE_DETAILS' ||'id', 'PAYMENTAMOUNT' ||'id'," +
-            " 'PAYMENTCHANNEL' ||'id', " +
-            " 'PAYMENTCITY' ||'id', 'PAYMENTSTATECODE' ||'id', 'PAYMENTSETDOWN' ||'id',  " +
-            " 'PAYMENTREFNUMBER' ||'id', 'PAYMENTST' ||'id', " +
-            "  '', '', '', '', '', '', '', '', '', '' ")
-      }
-      newStarRange = startRange + newEndRange
-      newEndRange = newStarRange + endRange
-      // scalastyle:off println
-      println("FinalStart range = " + newStarRange + " FinalEnd Range = " +
-          newEndRange + " filecnt = " + j)
-      val df = snSession.table(tableName)
-      df.repartition(1).write.json("/export/shared/QA_DATA/jsonFile/insertFile"
-          + endRange + "_" + j)
+  /* def doInsert(snSession: SnappySession, startRange:
+   Long, endRange: Long, tableName: String, fileCnt: Int): Unit = {
+     var newStarRange = startRange
+     var newEndRange = endRange
+     for (j <- 1 to fileCnt) {
+       snSession.sql(s"DROP TABLE IF EXISTS ${tableName} ")
+       snSession.sql(s"create table ${tableName} (id string NOT NULL, data string," +
+           s" data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string," +
+           s" PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string," +
+           s" PAYMENTSTATUS string, PAYMENTRESULT string, PAYMENTZIP string," +
+           s" PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string," +
+           s" PAYMENTCHANNEL string, PAYMENTCITY string, PAYMENTSTATECODE string," +
+           s"PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string," +
+           s"PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string," +
+           s" PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string," +
+           s" PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string," +
+           s" CLIENT_ID string, CUSTOMERID string) using column options" +
+           s" (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1')")
+       for (i <- newStarRange until newEndRange) {
+         snSession.sql(s"insert into ${tableName} select ${i}, " +
+             s"'biggerDataForInsertsIntoTheTable1_' || ${i}, ${i} * 10.2 ," +
+             s" 'APPLICATION_ID_' || ${i}, " +
+             "'ORDERGROUPID_' || 'id', 'PAYMENTADDRESS1' ||'id', 'PAYMENTADDRESS2' ||'id'," +
+             " 'PAYMENTCOUNTRY' ||'id'," +
+             " 'PAYMENTSTATUS' ||'id', 'PAYMENTRESULT' ||'id', 'PAYMENTZIP' ||'id'," +
+             " 'PAYMENTSETUP' ||'id'," +
+             " 'PROVIDER_RESPONSE_DETAILS' ||'id', 'PAYMENTAMOUNT' ||'id'," +
+             " 'PAYMENTCHANNEL' ||'id', " +
+             " 'PAYMENTCITY' ||'id', 'PAYMENTSTATECODE' ||'id', 'PAYMENTSETDOWN' ||'id',  " +
+             " 'PAYMENTREFNUMBER' ||'id', 'PAYMENTST' ||'id', " +
+             "  '', '', '', '', '', '', '', '', '', '' ")
+       }
+       newStarRange = startRange + newEndRange
+       newEndRange = newStarRange + endRange
+       // scalastyle:off println
+       println("FinalStart range = " + newStarRange + " FinalEnd Range = " +
+           newEndRange + " filecnt = " + j)
+       val df = snSession.table(tableName)
+       df.repartition(1).write.json("/export/shared/QA_DATA/jsonFile/insertFile"
+           + endRange + "_" + j)
 
-    }
-  } */
+     }
+   } */
 
   def runTasksWithChangingRangeForPutInto(snSession: SnappySession, blockSize:
-  Long, stepSize: Long, tableName: String): Unit = {
+  Long, stepSize: Long, tableName: String, totalTaskTime: Long): Unit = {
     val globalId = new AtomicInteger()
     val doPut = () => Future {
       val myId = globalId.getAndIncrement()
@@ -151,18 +152,22 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
         df.repartition(1).write.json("/export/shared/QA_DATA/jsonFile/" + stepSize)
       }
     }
-       val doQuery = () => Future {
-         val myId = globalId.getAndIncrement()
-         for (i <- 0 until 10000000) {
-           snSession.sql(s"select avg(id), max(data), last(data2) from ${tableName} " +
-               s"where id <> ${myId + i}")
-         }
-       }
+    val doQuery = () => Future {
+      val myId = globalId.getAndIncrement()
+      val randomInt = new Random().nextInt(32767)
+      val startTime = System.currentTimeMillis
+      val endTime = startTime + totalTaskTime * 1000
+      do {
+        snSession.sql(s"select avg(id), max(data), last(data2) from ${tableName} " +
+            s"where id <> ${myId + randomInt}")
+      } while (endTime > System.currentTimeMillis);
+
+    }
     val putTasks = Array.fill(1)(doPut())
-     val queryTasks = Array.fill(1)(doQuery())
+    val queryTasks = Array.fill(1)(doQuery())
 
     putTasks.foreach(Await.result(_, Duration.Inf))
-     queryTasks.foreach(Await.result(_, Duration.Inf))
+    queryTasks.foreach(Await.result(_, Duration.Inf))
   }
 
   def saveDataAsJson(snSession: SnappySession): Unit = {
