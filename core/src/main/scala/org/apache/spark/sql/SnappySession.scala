@@ -1203,8 +1203,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def addBaseTableOption(baseTable: Option[TableIdentifier],
       options: Map[String, String]): Map[String, String] = baseTable match {
-    case Some(s) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY ->
-        sessionCatalog.resolveTableIdentifier(s).unquotedString)
+    case Some(t) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY -> t.unquotedString)
     case _ => options
   }
 

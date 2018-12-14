@@ -255,36 +255,15 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   // --------------------------------------------------------------------------
 
   private def addDependentToBase(name: (String, String), dependent: String): Unit = {
-    val baseTable = withHiveExceptionHandling(client.getTable(name._1, name._2))
-    val dependents = baseTable.properties.get(DEPENDENT_RELATIONS) match {
-      case None => dependent
-      case Some(deps) => deps + "," + dependent
-    }
-    withHiveExceptionHandling(client.alterTable(baseTable.copy(properties =
-        baseTable.properties + (DEPENDENT_RELATIONS -> dependents)))
-    )
-  }
-
-  private def removeDependentFromBase(name: (String, String),
-      dependent: String): Unit = withHiveExceptionHandling {
-    val baseTable = withHiveExceptionHandling(client.getTable(name._1, name._2))
-    baseTable.properties.get(DEPENDENT_RELATIONS) match {
-      case None =>
-      case Some(deps) =>
-        val dependents = deps.split(",")
-        val removeIndex = dependents.indexOf(dependent)
-        if (removeIndex != -1) withHiveExceptionHandling {
-          if (dependents.length == 1) {
-            client.alterTable(baseTable.copy(properties = baseTable.properties -
-                DEPENDENT_RELATIONS))
-          } else {
-            val newDependents = dependents.indices.collect {
-              case i if i != removeIndex => dependents(i)
-            }.mkString(",")
-            client.alterTable(baseTable.copy(properties = baseTable.properties +
-                (DEPENDENT_RELATIONS -> newDependents)))
-          }
+    withHiveExceptionHandling(client.getTableOption(name._1, name._2)) match {
+      case None => // ignore, can be a temporary table
+      case Some(baseTable) =>
+        val dependents = baseTable.properties.get(DEPENDENT_RELATIONS) match {
+          case None => dependent
+          case Some(deps) => deps + "," + dependent
         }
+        withHiveExceptionHandling(client.alterTable(baseTable.copy(properties =
+            baseTable.properties + (DEPENDENT_RELATIONS -> dependents))))
     }
   }
 
@@ -316,6 +295,32 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       catalogTable = catalogTable.copy(properties = props.toMap)
     }
     catalogTable
+  }
+
+  private def removeDependentFromBase(name: (String, String),
+      dependent: String): Unit = withHiveExceptionHandling {
+    withHiveExceptionHandling(client.getTableOption(name._1, name._2)) match {
+      case None => // ignore, can be a temporary table
+      case Some(baseTable) =>
+        baseTable.properties.get(DEPENDENT_RELATIONS) match {
+          case None =>
+          case Some(deps) =>
+            val dependents = deps.split(",")
+            val removeIndex = dependents.indexOf(dependent)
+            if (removeIndex != -1) withHiveExceptionHandling {
+              if (dependents.length == 1) {
+                client.alterTable(baseTable.copy(properties = baseTable.properties -
+                    DEPENDENT_RELATIONS))
+              } else {
+                val newDependents = dependents.indices.collect {
+                  case i if i != removeIndex => dependents(i)
+                }.mkString(",")
+                client.alterTable(baseTable.copy(properties = baseTable.properties +
+                    (DEPENDENT_RELATIONS -> newDependents)))
+              }
+            }
+        }
+    }
   }
 
   override def createTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {

@@ -86,10 +86,10 @@ abstract class SnappyFunSuite
 
   def getOrCreate(sc: SparkContext): SnappyContext = {
     val gnc = cachedContext
-    if (gnc != null) gnc
+    if (gnc ne null) gnc
     else synchronized {
       val gnc = cachedContext
-      if (gnc != null) gnc
+      if (gnc ne null) gnc
       else {
         cachedContext = SnappyContext(sc)
         cachedContext

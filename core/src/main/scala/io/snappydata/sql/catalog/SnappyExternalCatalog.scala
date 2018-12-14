@@ -34,6 +34,7 @@ import io.snappydata.{Constant, Property}
 import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog}
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -210,9 +211,11 @@ trait SnappyExternalCatalog extends ExternalCatalog {
    */
   def getBaseTable(tableDefinition: CatalogTable): Option[String] = {
     tableDefinition.properties.get(BASETABLE_PROPERTY) match {
-      case None => tableDefinition.storage.properties.get(BASETABLE_PROPERTY) match {
+      case None =>
+        val params = new CaseInsensitiveMap(tableDefinition.storage.properties)
+        params.get(BASETABLE_PROPERTY) match {
         // older released didn't have base table entry for indexes
-        case None => tableDefinition.storage.properties.get(INDEXED_TABLE)
+        case None => params.get(INDEXED_TABLE)
         case s => s
       }
       case s => s
