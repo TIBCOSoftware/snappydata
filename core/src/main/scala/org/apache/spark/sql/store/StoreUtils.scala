@@ -493,9 +493,17 @@ object StoreUtils {
 
   def getPartitioningColumns(
       parameters: mutable.Map[String, String]): Seq[String] = {
-    parameters.get(PARTITION_BY).map(v => {
-      v.split(",").toSeq.map(a => a.trim)
-    }).getOrElse(Nil)
+    parameters.get(PARTITION_BY) match {
+      case None =>
+        // default to KEY_COLUMNS if present
+        parameters.get(ExternalStoreUtils.KEY_COLUMNS) match {
+          case None => Nil
+          case Some(v) =>
+            parameters.put(PARTITION_BY, v)
+            v.split(",").toSeq.map(a => a.trim)
+        }
+      case Some(v) => v.split(",").toSeq.map(a => a.trim)
+    }
   }
 
   def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {

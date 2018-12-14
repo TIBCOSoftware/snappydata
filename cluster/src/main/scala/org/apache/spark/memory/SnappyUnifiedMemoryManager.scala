@@ -809,6 +809,8 @@ object SnappyUnifiedMemoryManager extends Logging {
       math.max(getMaxHeapMemory / 20, 100L * 1024L * 1024L))
   }
 
+  private val DEFAULT_MEMORY_FRACTION = 0.85
+
   private val DEFAULT_EVICTION_FRACTION = 0.8
 
   private val DEFAULT_STORAGE_FRACTION = 0.5
@@ -961,8 +963,9 @@ object SnappyUnifiedMemoryManager extends Logging {
     }
 
     val usableMemory = systemMemory - reservedMemory
-    // add a cushion for GC before CRITICAL_UP is reached
-    val memoryFraction = conf.getDouble("spark.memory.fraction", 0.97)
+    // add a cushion for GC before CRITICAL_UP is reached and for temporary buffers
+    // used by various components
+    val memoryFraction = conf.getDouble("spark.memory.fraction", DEFAULT_MEMORY_FRACTION)
     (usableMemory * memoryFraction).toLong
   }
 }

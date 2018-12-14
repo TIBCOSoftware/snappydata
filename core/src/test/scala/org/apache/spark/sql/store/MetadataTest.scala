@@ -201,7 +201,8 @@ object MetadataTest extends Assertions {
       StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2, p._3)))))
     val expectedDefaultSchemas = List("APP", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
       "SYS", "SYSCAT", "SYSCS_DIAG", "SYSCS_UTIL", "SYSFUN", "SYSIBM", "SYSPROC", "SYSSTAT")
-    assert(rs.length === expectedDefaultSchemas.length)
+    assert(rs.length === expectedDefaultSchemas.length,
+      s"Got ${rs.map(_.getString(1)).mkString(", ")}")
     assert(rs.map(_.getString(1)).sorted === expectedDefaultSchemas)
 
     ds = executeSQL("select * from sys.sysTables where tableSchemaName = 'SYS'")

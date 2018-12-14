@@ -93,6 +93,11 @@ object ExternalStoreUtils {
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
   // internal properties stored as hive table parameters
   final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
+
+  // inbuilt basic table properties
+  final val PARTITION_BY = "PARTITION_BY"
+  final val REPLICATE = "REPLICATE"
+  final val BUCKETS = "BUCKETS"
   final val KEY_COLUMNS = "KEY_COLUMNS"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
@@ -554,10 +559,6 @@ object ExternalStoreUtils {
       col += 1
     }
   }
-
-  final val PARTITION_BY = "PARTITION_BY"
-  final val REPLICATE = "REPLICATE"
-  final val BUCKETS = "BUCKETS"
 
   def getAndSetTotalPartitions(sparkContext: Option[SparkContext],
       parameters: mutable.Map[String, String],

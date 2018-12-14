@@ -37,13 +37,12 @@ import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
-import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -146,17 +145,6 @@ class SnappySessionState(val snappySession: SnappySession)
       getExtendedResolutionRules(this)
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
-
-  /**
-   * A set of basic analysis rules required to be run before plan caching to allow
-   * for proper analysis before ParamLiterals are marked as "tokenized". For example,
-   * grouping or ordering expressions used in projections will need to be resolved
-   * here so that ParamLiterals are considered as equal based of value and not position.
-   */
-  private[sql] lazy val preCacheRules: RuleExecutor[LogicalPlan] = new RuleExecutor[LogicalPlan] {
-    override val batches: Seq[Batch] = Batch("Resolution", Once,
-      ResolveAggregationExpressions :: Nil: _*) :: Nil
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -638,7 +626,7 @@ class SnappySessionState(val snappySession: SnappySession)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
-          val allReferences = newChild.references ++
+          val allReferences = newChild.references ++ AttributeSet(updateAttrs) ++
               AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
           u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
             keyColumns = keyAttrs.map(_.toAttribute),
@@ -1437,102 +1425,6 @@ object LikeEscapeSimplification {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
     case l@Like(left, Literal(pattern, StringType)) =>
       simplifyLike(null, l, left, pattern.toString)
-  }
-}
-
-/**
- * Rule to "normalize" ParamLiterals for the case of aggregation expression being used
- * in projection. Specifically the ParamLiterals from aggregations need to be replaced
- * into projection so that latter can be resolved successfully in plan execution
- * because ParamLiterals will match expression only by position and not value at the
- * time of execution. This rule is useful only before plan caching after parsing.
- *
- * See Spark's PhysicalAggregation rule for more details.
- */
-object ResolveAggregationExpressions extends Rule[LogicalPlan] {
-
-  private val identityGet: Expression => Expression = identity
-  private val toNamedExpression: (NamedExpression, Expression) => NamedExpression =
-    (_, e) => e.asInstanceOf[NamedExpression]
-
-  private val sortOrderGet: SortOrder => Expression = order => order.child
-  private val toSortOrder: (SortOrder, Expression) => SortOrder =
-    (order, e) => if (order.child eq e) order else order.copy(child = e)
-
-  private def useValueEquality[T](exprs: Seq[T], valueEquals: Boolean,
-      getExpr: T => Expression): Unit = {
-    exprs.foreach(getExpr(_).transform {
-      case p: ParamLiteral =>
-        if (valueEquals) {
-          // mark tokenized for consistent hashCode in canonicalized for semanticEquals
-          p.tokenized = true
-          p.positionIndependent = true
-          p.valueEquals = true
-        } else p.valueEquals = false
-        p
-    })
-  }
-
-  private def copyParamLiterals[T](groupingExpressions: Seq[Expression],
-      resultExpressions: Seq[T], getExpr: T => Expression,
-      getResult: (T, Expression) => T): Seq[T] = {
-    useValueEquality(groupingExpressions, valueEquals = true, identityGet)
-    useValueEquality(resultExpressions, valueEquals = true, getExpr)
-    // Replace any ParamLiterals in the original resultExpressions with any matching ones
-    // in groupingExpressions matching on the value like a Literal rather than position.
-    val newResultExpressions = resultExpressions.map { expr =>
-      getResult(expr, {
-        getExpr(expr).transformDown {
-          case e: AggregateExpression => e
-          case expression =>
-            groupingExpressions.collectFirst {
-              case p: ParamLiteral if (p ne expression) && p.equals(expression) =>
-                // ensure newLiteral != p so that it is replaced in tree
-                expression.asInstanceOf[ParamLiteral].valueEquals = false
-                p.valueEquals = false
-                p
-              case e if e.semanticEquals(expression) =>
-                // collect ParamLiterals from grouping expressions and apply
-                // to result expressions in the same order
-                val literals = new ArrayBuffer[ParamLiteral](2)
-                e.transformDown {
-                  case p: ParamLiteral => literals += p; p
-                }
-                if (literals.nonEmpty) {
-                  val iter = literals.iterator
-                  expression.transformDown {
-                    case p: ParamLiteral =>
-                      val newLiteral = iter.next()
-                      assert(newLiteral.equals(p))
-                      assert(p.tokenized)
-                      assert(newLiteral.tokenized)
-                      // ensure newLiteral != p so that it is replaced in tree
-                      p.valueEquals = false
-                      newLiteral.valueEquals = false
-                      newLiteral
-                  }
-                } else expression
-            } match {
-              case Some(e) => e
-              case _ => expression
-            }
-        }
-      })
-    }
-    useValueEquality(groupingExpressions, valueEquals = false, identityGet)
-    useValueEquality(newResultExpressions, valueEquals = false, getExpr)
-    newResultExpressions
-  }
-
-  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-    case Aggregate(groupingExpressions, resultExpressions, child) =>
-      val newResultExpressions = copyParamLiterals(groupingExpressions, resultExpressions,
-        identityGet, toNamedExpression)
-      Aggregate(groupingExpressions, newResultExpressions, child)
-
-    case Sort(order, global, a@Aggregate(groupingExpressions, _, _)) =>
-      val newOrder = copyParamLiterals(groupingExpressions, order, sortOrderGet, toSortOrder)
-      Sort(newOrder, global, a)
   }
 }
 

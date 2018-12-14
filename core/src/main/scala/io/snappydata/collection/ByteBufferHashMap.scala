@@ -73,7 +73,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   if (keyData eq null) {
     val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
     // clear the key data
-    allocator.clearPostAllocate(buffer)
+    allocator.clearPostAllocate(buffer, 0)
     keyData = new ByteBufferData(buffer, allocator)
   }
   if (valueData eq null) {
@@ -203,7 +203,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     val newCapacity = OpenHashSet.checkCapacity(_capacity << 1)
     val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
     // clear the key data
-    allocator.clearPostAllocate(newKeyBuffer)
+    allocator.clearPostAllocate(newKeyBuffer, 0)
     val newKeyData = new ByteBufferData(newKeyBuffer, allocator)
     val newKeyObject = newKeyData.baseObject
     val newKeyBaseOffset = newKeyData.baseOffset
