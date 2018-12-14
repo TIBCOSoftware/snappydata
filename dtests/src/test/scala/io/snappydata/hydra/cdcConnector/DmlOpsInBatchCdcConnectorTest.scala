@@ -96,20 +96,24 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
     def truncateSqlTable(): Unit = {
 
         // scalastyle:off classforname Class.forName
+
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver")
         val conn = DriverManager.getConnection(
             "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433;DatabaseName=testdatabase",
             "sqldb", "snappydata#msft1")
         conn.createStatement().execute("delete from [testdatabase].[dbo].[ADJUSTMENT] " +
-            "where adj_id >= 95000010061 and adj_id <= 950000100110")
+            "where (adj_id between 95000010061 and 950000100110)")
         Thread.sleep(50000)
         conn.createStatement().execute("truncate table testdatabase.cdc.dbo_ADJUSTMENT_CT")
+
         val sqlDF = conn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010061 and adj_id <= 950000100110")
+                "where (adj_id between 95000010061 and 950000100110)")
+
         if (sqlDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected")
+
         println("Deleted rows from key 95000010061 to 950000100110")
         println("Truncated cdc table")
     }
@@ -216,6 +220,33 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         Utils.classForName(driver).newInstance
         DriverManager.getConnection("jdbc:snappydata:thrift://localhost[1527]")
     }
+
+    def collectData(queryPath: String, query1: String,
+        snappyQuery: String, sqlQuery: String): Unit = {
+
+        println("Execute queries and print results")
+        val qArr = getQuery(queryPath)
+        val conn = getSqlServerConnection
+        val snappyconn = getANetConnection(1527)
+        executeQueries(qArr, conn)
+        Thread.sleep(15000)
+        var rs = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(query1)
+        while(!rs.next()){
+            rs = snappyconn.createStatement(
+                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
+                executeQuery(query1)
+        }
+        val snappyDF = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery(snappyQuery)
+        val sqlResultSet = conn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
+            .executeQuery(sqlQuery)
+        performValidation(sqlResultSet, snappyDF)
+
+    }
+
     def performValidation(sqlResultSet: ResultSet, snappyResultSet: ResultSet): Unit = {
 
         val resultMetaData = sqlResultSet.getMetaData
@@ -259,369 +290,230 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         "sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase1.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010061;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-                .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010061;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010061 and descr = 'iTT';"
+        val snQuery = "select * from ADJUSTMENT where adj_id = 95000010061;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] where adj_id = 95000010061;"
+
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert,delete and insert happening sequentially on same key in one batch"){
         
         val queryString = s"$testDir/testCases/testCase2.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010062;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-                .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010062;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010062 and descr = 'iTT';"
+        val snQuery = "select * from ADJUSTMENT where adj_id = 95000010062;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] where adj_id = 95000010062;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert,delete and insert happening sequentially on two keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase3.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010063 and adj_id <= 95000010064 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010063 and adj_id <= 95000010064 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010063" +
+            " and 95000010064) and descr = 'iTT';"
+        val snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010063 and 95000010064) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+            "where (adj_id between 95000010063 and 95000010064) order by adj_id;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert,delete,insert and update " +
         "happening sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase4.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010065;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-                .executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010065;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010065 and descr = 'iTTT';"
+        val snQuery = "select * from ADJUSTMENT where adj_id = 95000010065;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+            "where adj_id = 95000010065;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for multiple inserts,deletes and " +
         "inserts happening sequentially on keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase5.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010066 and adj_id <= 95000010067 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010066 and adj_id <= 95000010067 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010066" +
+            " and 95000010067) and descr = 'iTT';"
+        val snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010066 and 95000010067) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where (adj_id between 95000010066 and 95000010067) order by adj_id;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for multiple inserts,deletes,inserts " +
         "and updates happening sequentially on keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase6.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010068 and adj_id <= 95000010069 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010068 and adj_id <= 95000010069 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010068" +
+            " and 95000010069) and descr = 'iTTT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010068 and 95000010069) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where (adj_id between 95000010068 and 95000010069) order by adj_id;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert,delete,insert and update " +
         "happening sequentially on same key having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase7.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY
-        ).executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010070;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010070;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010070 and descr = 'iTTT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where adj_id = 95000010070;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id = 95000010070;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert,delete and insert happening " +
         "sequentially on same key having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase8.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010071;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010071;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010071 and descr = 'iTT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where adj_id = 95000010071;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id = 95000010071;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for multiple inserts,deletes and inserts " +
         "happening sequentially on keys having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase9.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010072 and adj_id <= 95000010073 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010072 and adj_id <= 95000010073 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010072" +
+            " and 95000010073) and descr = 'iTT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010072 and 95000010073) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where (adj_id between 95000010072 and 95000010073) order by adj_id;"
+
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert and update happening sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase10.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010074;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010074;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010074 and descr = 'iTTT';"
+        val snQuery = "select * from ADJUSTMENT " +
+            "where adj_id = 95000010074;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id = 95000010074;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert and update happening sequentially" +
         " on same key having diff lsn in one batch"){
 
         val queryString = s"$testDir/testCases/testCase11.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010075;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010075;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010075 and descr = 'iTTT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where adj_id = 95000010075;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id = 95000010075;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for insert update,delete,insert and " +
         "update happening sequentially on same key in one batch"){
 
         val queryString = s"$testDir/testCases/testCase12.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010076;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010076;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010076 and descr = 'iTTTy';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where adj_id = 95000010076;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id = 95000010076;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for multiple inserts,deletes,inserts and " +
         "updates happening sequentially on diff keys in one batch"){
 
         val queryString = s"$testDir/testCases/testCase13.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010077 and adj_id <= 95000010080 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010077 and adj_id <= 95000010080 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010077" +
+            " and 95000010080) and descr = 'iTTTs';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010077 and 95000010080) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where (adj_id between 95000010077 and 95000010080) order by adj_id;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for multiple inserts,updates,deletes,inserts " +
         "and updates happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase14.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010081 and adj_id <= 95000010084 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010081 and adj_id <= 95000010084 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010081" +
+            " and 95000010084) and descr = 'iTTTs';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010081 and 95000010084) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where (adj_id between 95000010081 and 95000010084) order by adj_id;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for multiple inserts and updates happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase15.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010085 and adj_id <= 95000010088 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010085 and adj_id <= 95000010088 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010085" +
+            " and 95000010088) and descr = 'iTTTz';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010085 and 95000010088) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where (adj_id between 95000010085 and 95000010088) order by adj_id;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for multiple inserts happening sequentially in one batch"){
 
         val queryString = s"$testDir/testCases/testCase16.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010089 and adj_id <= 95000010092 order by adj_id;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id >= 95000010089 and adj_id <= 95000010092 order by adj_id;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where (adj_id between 95000010089" +
+            " and 95000010092) and descr = 'iT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where (adj_id between 95000010089 and 95000010092) order by adj_id;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where (adj_id between 95000010089 and 95000010092) order by adj_id;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for single insert in one batch"){
 
         val queryString = s"$testDir/testCases/testCase17.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010093;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010093;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010093 and descr = 'iT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where adj_id = 95000010093;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id = 95000010093;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for single update in one batch"){
 
         val queryString = s"$testDir/testCases/testCase18.sql"
-        val qArr = getQuery(queryString)
-        val conn = getSqlServerConnection
-        val snappyconn = getANetConnection(1527)
-        executeQueries(qArr, conn)
-        Thread.sleep(35000)
-        val snappyDF = snappyconn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
-            .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id = 95000010093;")
-        val sqlResultSet = conn.createStatement(
-            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
-            executeQuery("select * from [testdatabase].[dbo].[ADJUSTMENT] " +
-                "where adj_id = 95000010093;")
-        performValidation(sqlResultSet, snappyDF)
+        val query1 = "select descr from ADJUSTMENT where adj_id = 95000010093 and descr = 'iTTTzT';"
+        var snQuery = "select * from ADJUSTMENT " +
+            "where adj_id = 95000010093;"
+        val sqlQuery = "select * from [testdatabase].[dbo].[ADJUSTMENT] " +
+                "where adj_id = 95000010093;"
 
+        collectData(queryString, query1, snQuery, sqlQuery)
     }
 
     test("Test for single delete in one batch"){
@@ -631,7 +523,7 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        Thread.sleep(15000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -648,11 +540,11 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        Thread.sleep(15000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010094 and adj_id <= 95000010097 order by adj_id;")
+            "where (adj_id between 95000010094 and 95000010097) order by adj_id;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected")
 
@@ -665,11 +557,11 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        Thread.sleep(15000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 95000010098 and adj_id <= 950000100100 order by adj_id;")
+            "where (adj_id between 95000010098 and 950000100100) order by adj_id;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected")
 
@@ -682,11 +574,11 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        Thread.sleep(15000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
-            "where adj_id >= 950000100101 and adj_id <= 950000100102 order by adj_id;")
+            "where (adj_id between 950000100101 and 950000100102) order by adj_id;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected")
 
@@ -699,11 +591,19 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        // Thread.sleep(35000)
         val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100103;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected for 950000100103")
+        val query = "select descr from ADJUSTMENT where adj_id = 950000100104 and descr = 'iT';"
+        var rs = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(query)
+        while(!rs.next()){
+            rs = snappyconn.createStatement(
+                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
+                executeQuery(query)
+        }
         val snappyDF1 = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -723,11 +623,19 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        Thread.sleep(15000)
         val snappyDF = snappyconn.createStatement().executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100105;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected for 950000100105")
+        val query = "select descr from ADJUSTMENT where adj_id = 950000100106 and descr = 'iTTTz';"
+        var rs = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(query)
+        while(!rs.next()){
+            rs = snappyconn.createStatement(
+                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
+                executeQuery(query)
+        }
         val snappyDF1 = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -747,13 +655,21 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        Thread.sleep(15000)
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
             "where adj_id = 950000100107;")
         if (snappyDF.next) System.out.println("FAILURE : The result set should have been empty")
         else System.out.println("SUCCESS : The result set is empty as expected for 950000100107")
+        val query = "select descr from ADJUSTMENT where adj_id = 950000100108 and descr = 'iTTTzy';"
+        var rs = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(query)
+        while(!rs.next()){
+            rs = snappyconn.createStatement(
+                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
+                executeQuery(query)
+        }
         val snappyDF1 = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
@@ -773,7 +689,17 @@ class DmlOpsInBatchCdcConnectorTest extends SnappyHydraTestRunner {
         val conn = getSqlServerConnection
         val snappyconn = getANetConnection(1527)
         executeQueries(qArr, conn)
-        Thread.sleep(35000)
+        // Thread.sleep(35000)
+        val query = "select descr from ADJUSTMENT where adj_id = 950000100109" +
+            " and POST_DT = '2016-05-10' and DESCR = 'iTTyt'" +
+            " and SRC_SYS_REF_ID = '90' and SRC_SYS_REC_ID = '890';"
+        var rs = snappyconn.createStatement(
+            ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(query)
+        while(!rs.next()){
+            rs = snappyconn.createStatement(
+                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).
+                executeQuery(query)
+        }
         val snappyDF = snappyconn.createStatement(
             ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)
             .executeQuery("select * from ADJUSTMENT " +
