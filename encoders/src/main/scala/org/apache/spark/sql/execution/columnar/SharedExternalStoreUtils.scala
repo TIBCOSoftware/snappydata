@@ -98,8 +98,6 @@ object SharedExternalStoreUtils {
 
   }
 
-  // TODO:PS:Review Methods from the ExternalStoreUtils.scala - Duplicate entries
-  // Start-----------
   private def addProperty(props: mutable.Map[String, String], key: String,
       default: String): Unit = {
     if (!props.contains(key)) props.put(key, default)
@@ -111,7 +109,7 @@ object SharedExternalStoreUtils {
   private def defaultMaxExternalPoolSize: String =
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
-  private def getAllPoolProperties(url: String, driver: String,
+  def getAllPoolProperties(url: String, driver: String,
       poolProps: Map[String, String], hikariCP: Boolean,
       isEmbedded: Boolean): Map[String, String] = {
     // setup default pool properties
@@ -139,5 +137,4 @@ object SharedExternalStoreUtils {
     }
     props.toMap
   }
-  // End-----------
 }

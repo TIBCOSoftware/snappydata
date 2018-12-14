@@ -18,11 +18,8 @@ package org.apache.spark.sql.collection
 
 import java.nio.ByteBuffer
 
-import scala.collection.mutable
 import scala.language.existentials
 
-import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.esotericsoftware.kryo.io.{Input, Output}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
@@ -36,6 +33,21 @@ import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.Platform
 
 object SharedUtils {
+
+  def taskMemoryManager(context: TaskContext): TaskMemoryManager = context.taskMemoryManager()
+
+  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
+    if (buffer eq null) return null
+    val row = new UnsafeRow(numColumns)
+    if (buffer.isDirect) {
+      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
+          buffer.position(), buffer.remaining())
+    } else {
+      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
+          buffer.arrayOffset() + buffer.position(), buffer.remaining())
+    }
+    row
+  }
 
   def getAllExecutorsMemoryStatus(
       sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
@@ -59,10 +71,6 @@ object SharedUtils {
   final def isLoner(sc: SparkContext): Boolean =
     (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
-  // TODO:PS:Review Methods from the StoreCallbacksImpl added here
-  // just avoid migrating whole class into the
-  // this shared project. 1. acquireStorageMemory, 2. releaseStorageMemory
-  // -Start
   def acquireStorageMemory(objectName: String, numBytes: Long,
       buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
     val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
@@ -82,23 +90,4 @@ object SharedUtils {
     MemoryManagerCallback.memoryManager.
         releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
-  // -End
-
-  // TODO:PS:Review Copied function from the package org.apache.spark.sql.collection.Utils
-  // -Start
-  def taskMemoryManager(context: TaskContext): TaskMemoryManager = context.taskMemoryManager()
-
-  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
-    if (buffer eq null) return null
-    val row = new UnsafeRow(numColumns)
-    if (buffer.isDirect) {
-      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), buffer.remaining())
-    } else {
-      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
-          buffer.arrayOffset() + buffer.position(), buffer.remaining())
-    }
-    row
-  }
-  // -End
 }

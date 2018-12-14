@@ -12,11 +12,6 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.SnappyDataBaseDialect
 import org.apache.spark.sql.jdbc.JdbcDialects
 
-/*
- * TODO:PS:Review SnappyStoreClientDialect class added here from
- * the SnappyStoreDialect.scala file.
- */
-
 /**
  * Default dialect for GemFireXD >= 1.4.0.
  * Contains specific type conversions to and from Spark SQL catalyst types.

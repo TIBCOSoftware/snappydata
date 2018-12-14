@@ -107,9 +107,6 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   def this() = this(-1L, -1, -1)
 
   override def getNumColumnsInTable(columnTableName: String): Int = {
-    // PS: Refactored the method call, making a direct call
-    // GemFireContainer.getRowBufferTableName(..)  instead of
-    // val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
     val bufferTable = GemFireContainer.getRowBufferTableName(columnTableName)
     GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
   }

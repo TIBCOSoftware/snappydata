@@ -204,7 +204,6 @@ object MemoryManagerCallback extends Logging {
       }
     } else
     */
-    // PS: Refactored a acquireStorageMemory(..) into SharedUtils and calling it.
     if (!allocator.isDirect && !SharedUtils.acquireStorageMemory(
       owner, size, buffer = null, offHeap = false, shouldEvict = true)) {
       throw LocalRegion.lowMemoryException(null, size)
@@ -215,7 +214,6 @@ object MemoryManagerCallback extends Logging {
   /** release and accounting for byte buffer allocated by [[allocateExecutionMemory]] */
   def releaseExecutionMemory(buffer: ByteBuffer, owner: String): Unit = {
     if (buffer.hasArray) {
-      // PS: Refactored a releaseStorageMemory(..) into SharedUtils and calling it.
       SharedUtils.releaseStorageMemory(owner, buffer.capacity(), offHeap = false)
     }
   }
