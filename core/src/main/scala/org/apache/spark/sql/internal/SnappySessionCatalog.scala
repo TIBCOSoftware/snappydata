@@ -466,6 +466,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
             throw new AnalysisException(s"Object $schema.$table cannot be dropped because of " +
                 s"dependent objects: ${dependents.map(_.identifier.unquotedString).mkString(",")}")
           }
+          // remove from temporary base table if applicable
+          dropFromTemporaryBaseTable(metadata)
           metadata.provider match {
             case Some(provider) if provider != DDLUtils.HIVE_PROVIDER =>
               val relation = try {
@@ -488,6 +490,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   }
 
   protected def dropTemporaryTable(tableIdent: TableIdentifier): Unit = {}
+
+  protected def dropFromTemporaryBaseTable(table: CatalogTable): Unit = {}
 
   override def alterTable(table: CatalogTable): Unit = {
     // first check required permission to alter objects in a schema
