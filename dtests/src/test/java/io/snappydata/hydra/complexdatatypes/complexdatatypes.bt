@@ -1,4 +1,4 @@
-io/snappydata/hydra/complexdatatypes/arraytype.conf
+io/snappydata/hydra/complexdatatypes/complexdatatypes.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
