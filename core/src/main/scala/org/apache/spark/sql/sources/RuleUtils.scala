@@ -22,6 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.sql.catalog.CatalogObjectType
 
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedFunction, UnresolvedGenerator, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.CatalogTable
@@ -55,7 +56,8 @@ object RuleUtils extends PredicateHelper {
       case l@LogicalRelation(p: PartitionedDataSourceScan, _, _) =>
         val (schemaName, table) = JdbcExtendedUtils.getTableWithSchema(
           p.table, null, Some(snappySession))
-        (l.asInstanceOf[LogicalPlan], catalog.externalCatalog.getDependents(schemaName, table)
+        (l.asInstanceOf[LogicalPlan], catalog.externalCatalog.getDependentsFromProperties(
+          schemaName, table, includeTypes = CatalogObjectType.Index :: Nil)
             .flatMap(getIndex(catalog, _)))
     }
   }

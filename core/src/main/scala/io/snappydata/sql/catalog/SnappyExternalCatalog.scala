@@ -139,12 +139,43 @@ trait SnappyExternalCatalog extends ExternalCatalog {
   def getRelationInfo(schema: String, table: String,
       isRowTable: Boolean): (RelationInfo, Option[LocalRegion])
 
-  def getDependents(schema: String, table: String, includeTypes: Seq[CatalogObjectType.Type] = Nil,
-      excludeTypes: Seq[CatalogObjectType.Type] = Nil): Seq[CatalogTable] = {
-    getDependents(schema, getTable(schema, table).properties, includeTypes, excludeTypes)
+  /**
+   * Get all the dependent objects for a given catalog object.
+   */
+  def getDependents(schema: String, table: String,
+      catalogTable: CatalogTable, includeTypes: Seq[CatalogObjectType.Type],
+      excludeTypes: Seq[CatalogObjectType.Type]): Seq[CatalogTable] = {
+    // for older releases having TABLETYPE property, use full scan else use dependent relations
+    if (catalogTable.properties.contains(TABLETYPE_PROPERTY)) {
+      val fullTableName = s"$schema.$table"
+      getAllTables().filter { t =>
+        val tableType = CatalogObjectType.getTableType(t)
+        val include = if (includeTypes.nonEmpty) includeTypes.contains(tableType)
+        else if (excludeTypes.nonEmpty) !excludeTypes.contains(tableType) else true
+        include && (getBaseTable(t) match {
+          case Some(b) if b.equalsIgnoreCase(fullTableName) => true
+          case _ => false
+        })
+      }
+    } else {
+      // search in the dependent relations property of catalog
+      getDependentsFromProperties(schema, catalogTable.properties, includeTypes, excludeTypes)
+    }
   }
 
-  def getDependents(schema: String, properties: Map[String, String],
+  /**
+   * Get all the dependent objects for a given catalog object. Note that this does not check
+   * for older releases that may lack appropriate catalog entries for dependent relations.
+   * Use [[getDependents]] for cases where that might be possible.
+   */
+  def getDependentsFromProperties(schema: String, table: String,
+      includeTypes: Seq[CatalogObjectType.Type] = Nil,
+      excludeTypes: Seq[CatalogObjectType.Type] = Nil): Seq[CatalogTable] = {
+    getDependentsFromProperties(schema, getTable(schema, table).properties,
+      includeTypes, excludeTypes)
+  }
+
+  protected def getDependentsFromProperties(schema: String, properties: Map[String, String],
       includeTypes: Seq[CatalogObjectType.Type],
       excludeTypes: Seq[CatalogObjectType.Type]): Seq[CatalogTable] = {
     val allDependents = SnappyExternalCatalog.getDependents(properties)
@@ -187,7 +218,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
           t.properties(PolicyProperties.targetTable).equalsIgnoreCase(fullTableName))
     } else {
       // search policies in the dependent relations
-      getDependents(schema, properties, CatalogObjectType.Policy :: Nil, Nil)
+      getDependentsFromProperties(schema, properties, CatalogObjectType.Policy :: Nil, Nil)
     }
   }
 
@@ -215,10 +246,10 @@ trait SnappyExternalCatalog extends ExternalCatalog {
         val params = new CaseInsensitiveMap(tableDefinition.storage.properties)
         params.get(BASETABLE_PROPERTY) match {
         // older released didn't have base table entry for indexes
-        case None => params.get(INDEXED_TABLE)
-        case s => s
+        case None => params.get(INDEXED_TABLE).map(Utils.toUpperCase)
+        case Some(t) => Some(Utils.toUpperCase(t))
       }
-      case s => s
+      case Some(t) => Some(Utils.toUpperCase(t))
     }
   }
 
