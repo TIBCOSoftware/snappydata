@@ -396,7 +396,11 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
             (Unit, System.nanoTime() - start)
           }))._2) :: Nil
       } finally {
-        localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, previousJobDescription)
+        if (previousJobDescription ne null) {
+          localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, previousJobDescription)
+        } else {
+          localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
+        }
       }
     }
   }

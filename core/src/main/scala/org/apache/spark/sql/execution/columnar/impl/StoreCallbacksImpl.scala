@@ -38,7 +38,9 @@ import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.internal.iapi.error.{PublicAPI, StandardException}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, Util}
+import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
@@ -542,6 +544,41 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def refreshPolicies(ldapGroup: String): Unit = {
     SnappyHiveExternalCatalog.getExistingInstance.refreshPolicies(ldapGroup)
+  }
+
+  override def checkSchemaPermission(schema: String, currentUser: String): String = {
+    val ms = Misc.getMemStoreBootingNoThrow
+    val userId = IdUtil.getUserAuthorizationId(currentUser)
+    if (ms ne null) {
+      var conn: EmbedConnection = null
+      if (ms.isSnappyStore && Misc.isSecurityEnabled) {
+        var contextSet = false
+        try {
+          val dd = ms.getDatabase.getDataDictionary
+          conn = GemFireXDUtils.getTSSConnection(false, true, false)
+          conn.getTR.setupContextStack()
+          contextSet = true
+          val sd = dd.getSchemaDescriptor(
+            schema, conn.getLanguageConnection.getTransactionExecute, false)
+          if (sd eq null) {
+            if (schema.equalsIgnoreCase(userId) ||
+                schema.equalsIgnoreCase(userId.replace('-', '_'))) {
+              if (ms.tableCreationAllowed()) return userId
+              throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
+                schema, schema)
+            } else {
+              throw StandardException.newException(SQLState.LANG_SCHEMA_DOES_NOT_EXIST, schema)
+            }
+          }
+          PrivilegeInfo.checkOwnership(userId, sd, sd, dd)
+          sd.getAuthorizationId
+        } catch {
+          case se: StandardException => throw Util.generateCsSQLException(se)
+        } finally {
+          if (contextSet) conn.getTR.restoreContextStack()
+        }
+      } else userId
+    } else userId
   }
 }
 

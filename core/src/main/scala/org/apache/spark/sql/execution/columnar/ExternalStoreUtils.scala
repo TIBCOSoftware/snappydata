@@ -107,12 +107,6 @@ object ExternalStoreUtils {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
   }
 
-  def lookupName(tableName: String, schema: String): String = {
-    if (tableName.indexOf('.') <= 0) {
-      schema + '.' + tableName
-    } else tableName
-  }
-
   private def addProperty(props: mutable.Map[String, String], key: String,
       default: String): Unit = {
     if (!props.contains(key)) props.put(key, default)
