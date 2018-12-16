@@ -130,10 +130,14 @@ class MapType extends SnappySQLJob{
       "MAP('english',52.3),MAP('computer',67.9),MAP('music',69.9),MAP('history',66.8)")
 
     snc.sql(Q1)
+    // scalastyle:off println
+    println("snc Q1:" + snc.sql(Q1).show)
     snc.sql(Q2)
     snc.sql(Q3)
     snc.sql(Q4)
     snc.sql(Q5)
+    // scalastyle:off println
+    println("snc Q5: " + snc.sql(Q5).show)
     snc.sql(Q6)
 
     /* --- Spark Job --- */
@@ -176,10 +180,14 @@ class MapType extends SnappySQLJob{
       "MAP('english',52.3),MAP('computer',67.9),MAP('music',69.9),MAP('history',66.8)")
 
     spark.sql(Q1)
+    // scalastyle:off println
+    println("spark : Q1" + spark.sql(Q1).show)
     spark.sql(Q2)
     spark.sql(Q3)
     spark.sql(Q4)
     spark.sql(Q5)
+    // scalastyle:off println
+    println("spark : Q5" + spark.sql(Q5).show)
     spark.sql(Q6)
 
     /* --- Verification --- */
