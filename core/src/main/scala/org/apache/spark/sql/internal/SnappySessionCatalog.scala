@@ -461,7 +461,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
         case Some(metadata) =>
           // fail if there are any existing dependents except policies
           val dependents = externalCatalog.getDependents(schema, table,
-            excludeTypes = CatalogObjectType.Policy :: Nil)
+            externalCatalog.getTable(schema, table), Nil, CatalogObjectType.Policy :: Nil)
           if (dependents.nonEmpty) {
             throw new AnalysisException(s"Object $schema.$table cannot be dropped because of " +
                 s"dependent objects: ${dependents.map(_.identifier.unquotedString).mkString(",")}")
