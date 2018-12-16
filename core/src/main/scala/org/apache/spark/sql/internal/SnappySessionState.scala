@@ -35,7 +35,6 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.catalog.CatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
@@ -119,7 +118,8 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
-    new PreprocessTable(this) ::
+    AnalyzeCreateTable(snappySession) ::
+        new PreprocessTable(this) ::
         ResolveRelationsExtended ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
@@ -1141,6 +1141,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
     _, _), _, child, _, _) if l.resolved && child.resolved =>
       r.insertableRelation(child.output) match {
+        case Some(ir) if r eq ir => i
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
           val relation = LogicalRelation(br, catalogTable = l.catalogTable)
@@ -1205,73 +1206,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
 
     // other cases handled like in PreprocessTableInsertion
     case i@InsertIntoTable(table, _, child, _, _)
-      if table.resolved && child.resolved => table match {
-      case relation: CatalogRelation =>
-        val metadata = relation.catalogTable
-        preProcess(i, relation = null, metadata.identifier.quotedString,
-          metadata.partitionColumnNames)
-      case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
-        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preProcess(i, h, tblName, h.partitionSchema.map(_.name))
-      case LogicalRelation(ir: InsertableRelation, _, identifier) =>
-        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preProcess(i, ir, tblName, Nil)
-      case _ => i
-    }
-  }
-
-  private def preProcess(
-      insert: InsertIntoTable,
-      relation: BaseRelation,
-      tblName: String,
-      partColNames: Seq[String]): InsertIntoTable = {
-
-    // val expectedColumns = insert
-
-    val normalizedPartSpec = PartitioningUtils.normalizePartitionSpec(
-      insert.partition, partColNames, tblName, conf.resolver)
-
-    val expectedColumns = {
-      val staticPartCols = normalizedPartSpec.filter(_._2.isDefined).keySet
-      insert.table.output.filterNot(a => staticPartCols.contains(a.name))
-    }
-
-    if (expectedColumns.length != insert.child.schema.length) {
-      throw new AnalysisException(
-        s"Cannot insert into table $tblName because the number of columns are different: " +
-            s"need ${expectedColumns.length} columns, " +
-            s"but query has ${insert.child.schema.length} columns.")
-    }
-    if (insert.partition.nonEmpty) {
-      // the query's partitioning must match the table's partitioning
-      // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
-      val samePartitionColumns =
-      if (conf.caseSensitiveAnalysis) {
-        insert.partition.keySet == partColNames.toSet
-      } else {
-        insert.partition.keySet.map(_.toLowerCase) == partColNames.map(_.toLowerCase).toSet
-      }
-      if (!samePartitionColumns) {
-        throw new AnalysisException(
-          s"""
-             |Requested partitioning does not match the table $tblName:
-             |Requested partitions: ${insert.partition.keys.mkString(",")}
-             |Table partitions: ${partColNames.mkString(",")}
-           """.stripMargin)
-      }
-      castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
-
-//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-//        child)).getOrElse(insert)
-    } else {
-      // All partition columns are dynamic because because the InsertIntoTable
-      // command does not explicitly specify partitioning columns.
-      castAndRenameChildOutput(insert, expectedColumns)
-          .copy(partition = partColNames.map(_ -> None).toMap)
-//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-//        child)).getOrElse(insert).copy(partition = partColNames
-//          .map(_ -> None).toMap)
-    }
+      if table.resolved && child.resolved => PreprocessTableInsertion(conf).apply(i)
   }
 
   /**
@@ -1314,30 +1249,6 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
         child)).asInstanceOf[T]
-    }
-  }
-
-  private def castAndRenameChildOutput(
-      insert: InsertIntoTable,
-      expectedOutput: Seq[Attribute]): InsertIntoTable = {
-    val newChildOutput = expectedOutput.zip(insert.child.output).map {
-      case (expected, actual) =>
-        if (expected.dataType.sameType(actual.dataType) &&
-            expected.name == actual.name &&
-            expected.metadata == actual.metadata) {
-          actual
-        } else {
-          // Renaming is needed for handling the following cases like
-          // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
-          // 2) Target tables have column metadata
-          Alias(Cast(actual, expected.dataType), expected.name)(
-            explicitMetadata = Option(expected.metadata))
-        }
-    }
-
-    if (newChildOutput == insert.child.output) insert
-    else {
-      insert.copy(child = Project(newChildOutput, insert.child))
     }
   }
 }
