@@ -19,4 +19,4 @@ VLD_TO_DT TIMESTAMP,
 SRC_SYS_REF_ID VARCHAR(10) NOT NULL,
 SRC_SYS_REC_ID VARCHAR(150)) USING column OPTIONS(partition_by 'BILL_ENT_ID',buckets '32',key_columns 'CLIENT_ID,BILL_ENT_ID,ADJ_ID' ) ;
 deploy jar jdbc1 ':dataLocation';
-deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0' repos 'http://clojars.org/repo/' path ':homeDirLocation/sqljdbcJar';
+deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0' repos 'http://clojars.org/repo/' path ':homeDirLocation/work/sqljdbcJar';
