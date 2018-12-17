@@ -55,7 +55,7 @@ import org.apache.spark.streaming.Duration
 
 
 /**
- * Holds all session-specific state in a given [[SnappySession]].
+ * Holds all session-specific state for a given [[SnappySession]].
  */
 class SnappySessionState(val snappySession: SnappySession)
     extends SessionState(snappySession) with SnappyStrategies {
