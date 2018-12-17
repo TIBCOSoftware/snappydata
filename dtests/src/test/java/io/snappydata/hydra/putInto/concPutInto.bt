@@ -1,9 +1,4 @@
-io/snappydata/hydra/putInto/concPutIntoWithSelectUsingSnappyJobWith30Columns.conf
-  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=3
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-
-/* io/snappydata/hydra/putInto/concPutIntoWithSelect.conf
+io/snappydata/hydra/putInto/concPutIntoWithSelect.conf
   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -39,4 +34,3 @@ io/snappydata/hydra/putInto/putIntoWithOverlappingKeys.conf
   threadCnt=4
   insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/overLappingKeys"
   selectQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/selectOps.sql"
-*/
