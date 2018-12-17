@@ -148,7 +148,7 @@ class SnappyStreamingContext protected[spark](
   def registerStreamTables(): Unit = {
     // register dummy output transformations for the stream tables
     // so that the streaming context starts
-    snappySession.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](
+    snappySession.snappySessionState.catalog.getDataSourceRelations[StreamBaseRelation](
       CatalogObjectType.Stream).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 

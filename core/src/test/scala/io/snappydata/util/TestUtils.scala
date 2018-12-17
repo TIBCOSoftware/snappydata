@@ -52,7 +52,7 @@ object TestUtils extends Logging {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
       try {
-        val catalog = session.sessionState.catalog
+        val catalog = session.snappySessionState.catalog
         catalog.destroyAndRegisterBuiltInFunctionsForTests()
       } catch {
         case t: Throwable => logError("Failure in dropping function in cleanup", t)

@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.internal;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import io.snappydata.sql.catalog.ConnectorExternalCatalog;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
 import org.apache.spark.SparkContext;
@@ -37,7 +39,7 @@ import org.apache.spark.sql.execution.ui.SQLListener;
 import org.apache.spark.sql.execution.ui.SQLTab;
 import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.HiveClientUtil$;
-import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
+import org.apache.spark.sql.hive.HiveExternalCatalog;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.ui.SparkUI;
 
@@ -59,7 +61,7 @@ public final class SnappySharedState extends SharedState {
   /**
    * The ExternalCatalog implementation used for SnappyData in embedded mode.
    */
-  private final SnappyHiveExternalCatalog embedCatalog;
+  private final HiveExternalCatalog embedCatalog;
 
   /**
    * Overrides to use upper-case "database" name as assumed by SnappyData
@@ -71,6 +73,9 @@ public final class SnappySharedState extends SharedState {
    * Used to skip initializing meta-store in super's constructor.
    */
   private final boolean initialized;
+
+  @GuardedBy("this")
+  private SharedState hiveState;
 
   private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
 
@@ -173,6 +178,21 @@ public final class SnappySharedState extends SharedState {
   }
 
   /**
+   * Private constructor for getting Spark's hive state while sharing the
+   * global temp views and cache
+   */
+  private SnappySharedState(SparkContext sparkContext,
+      CacheManager cacheManager, GlobalTempViewManager globalViewManager) {
+    super(sparkContext);
+
+    this.snappyCacheManager = cacheManager;
+    this.embedCatalog = (HiveExternalCatalog)externalCatalog();
+    this.globalViewManager = globalViewManager;
+
+    this.initialized = true;
+  }
+
+  /**
    * Returns the global external hive catalog embedded mode, while in smart
    * connector mode returns a new instance of external catalog since it
    * may need credentials of the current user to be able to make meta-data
@@ -180,10 +200,10 @@ public final class SnappySharedState extends SharedState {
    */
   public SnappyExternalCatalog getExternalCatalogInstance(SnappySession session) {
     if (!this.initialized) {
-      throw new IllegalStateException("getExternalCatalogInstance unexpected invocation " +
+      throw new IllegalStateException("getExternalCatalogInstance: unexpected invocation " +
           "from within SnappySharedState constructor");
     } else if (this.embedCatalog != null) {
-      return this.embedCatalog;
+      return (SnappyExternalCatalog)this.embedCatalog;
     } else {
       // create a new connector catalog instance for connector mode
       // each instance has its own set of credentials for authentication
@@ -218,6 +238,31 @@ public final class SnappySharedState extends SharedState {
     } else {
       // in super constructor, no harm in returning super's value at this point
       return super.globalTempViewManager();
+    }
+  }
+
+  /**
+   * Create a Spark hive shared state while sharing the global temp view and cache managers.
+   */
+  public synchronized SharedState getHiveSharedState() {
+    if (this.hiveState != null) return this.hiveState;
+
+    if (!this.initialized) {
+      throw new IllegalStateException("getHiveSharedState: unexpected invocation " +
+          "from within SnappySharedState constructor");
+    }
+    final SparkContext context = sparkContext();
+    final String catalogImpl = context.conf().get(CATALOG_IMPLEMENTATION, null);
+    context.conf().set(CATALOG_IMPLEMENTATION, "hive");
+    try {
+      return (this.hiveState = new SnappySharedState(context,
+          this.snappyCacheManager, this.globalViewManager));
+    } finally {
+      if (catalogImpl != null) {
+        context.conf().set(CATALOG_IMPLEMENTATION, catalogImpl);
+      } else {
+        context.conf().remove(CATALOG_IMPLEMENTATION);
+      }
     }
   }
 }

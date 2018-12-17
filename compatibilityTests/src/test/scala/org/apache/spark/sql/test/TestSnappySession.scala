@@ -16,7 +16,8 @@
  */
 package org.apache.spark.sql.test
 
-import org.apache.spark.sql.internal.{SnappyConf, SnappySessionState}
+import org.apache.spark.sql.hive.SnappySessionState
+import org.apache.spark.sql.internal.SnappyConf
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 

@@ -133,6 +133,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
           // fallback to Spark plan for code-generation exception
           session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
             case Some(exec) =>
+              val sessionState = session.snappySessionState
               if (!isCatalogStale) {
                 val msg = new StringBuilder
                 var cause = t
@@ -143,7 +144,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
                 }
                 logInfo(s"SnappyData code generation failed due to $msg." +
                     s" Falling back to Spark plans.")
-                session.sessionState.disableStoreOptimizations = true
+                sessionState.disableStoreOptimizations = true
               }
               try {
                 val plan = exec().executedPlan.transform {
@@ -159,7 +160,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
                   SnappySession.clearAllCache()
                   throw catalogStaleFailure(t, session)
               } finally if (!isCatalogStale) {
-                session.sessionState.disableStoreOptimizations = false
+                sessionState.disableStoreOptimizations = false
               }
             case None => throw t
           }

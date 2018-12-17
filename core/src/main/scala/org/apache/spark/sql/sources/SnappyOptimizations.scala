@@ -35,13 +35,15 @@ import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+import org.apache.spark.sql.internal.SnappySessionCatalog
+
 
 /**
  * Replace table with index hint
  */
 case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
 
-  private def catalog = snappySession.sessionState.catalog
+  private val catalog: SnappySessionCatalog = snappySession.snappySessionState.catalog
 
   private def analyzer = snappySession.sessionState.analyzer
 

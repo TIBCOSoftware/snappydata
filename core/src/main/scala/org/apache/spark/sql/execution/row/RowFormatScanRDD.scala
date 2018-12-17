@@ -337,8 +337,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     }
 
     region match {
-      case Some(pr: PartitionedRegion) => session.sessionState.getTablePartitions(pr)
-      case Some(dr: CacheDistributionAdvisee) => session.sessionState.getTablePartitions(dr)
+      case Some(pr: PartitionedRegion) => session.snappySessionState.getTablePartitions(pr)
+      case Some(dr: CacheDistributionAdvisee) => session.snappySessionState.getTablePartitions(dr)
       // system table/VTI is shown as a replicated table having a single partition
       case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
     }
