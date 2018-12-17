@@ -208,6 +208,11 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.parser.traceError",
     "Property to enable detailed rule tracing for parse errors", Some(false))
 
+  val EnableHiveSupport: SQLValue[Boolean] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.enableHiveSupport", "Property on SnappySession to " +
+        "enable external hive meta-store support as configured using SparkConf and hive-site.xml",
+    Some(false))
+
   val EnableExperimentalFeatures: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}enable-experimental-features",
     "SQLConf property that enables snappydata experimental features like distributed index " +

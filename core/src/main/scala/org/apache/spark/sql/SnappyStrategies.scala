@@ -39,7 +39,8 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{JoinQueryPlanning, LogicalPlanWithHints, SQLConf, SnappySessionState}
+import org.apache.spark.sql.hive.SnappySessionState
+import org.apache.spark.sql.internal.{JoinQueryPlanning, LogicalPlanWithHints, SQLConf}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -798,7 +799,7 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     // or if the plan is not a top-level one e.g. a subquery or inside
     // CollectAggregateExec (only top-level plan will catch and retry
     //   with disabled optimizations)
-    if (!topLevel || session.sessionState.disableStoreOptimizations) plan
+    if (!topLevel || session.snappySessionState.disableStoreOptimizations) plan
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan

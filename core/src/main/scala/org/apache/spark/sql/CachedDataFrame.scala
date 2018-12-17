@@ -210,7 +210,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   }
 
   private def setPoolForExecution(): Unit = {
-    var pool = snappySession.sessionState.conf.activeSchedulerPool
+    var pool = snappySession.snappySessionState.conf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
     if (isLowLatencyQuery && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
@@ -255,7 +255,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       prepared = false
       // reset the pool
       if (isLowLatencyQuery) {
-        val pool = snappySession.sessionState.conf.activeSchedulerPool
+        val pool = snappySession.snappySessionState.conf.activeSchedulerPool
         snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       }
       // clear the shuffle dependencies asynchronously after the execution.

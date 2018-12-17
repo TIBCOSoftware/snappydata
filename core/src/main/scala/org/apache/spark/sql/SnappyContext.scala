@@ -48,8 +48,8 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand}
-import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
-import org.apache.spark.sql.internal.{SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.hive.{SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.internal.{SessionState, SnappySharedState}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -96,7 +96,9 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   override def newSession(): SnappyContext =
     snappySession.newSession().snappyContext
 
-  override def sessionState: SnappySessionState = snappySession.sessionState
+  override def sessionState: SessionState = snappySession.sessionState
+
+  def snappySessionState: SnappySessionState = snappySession.snappySessionState
 
   def clear(): Unit = {
     snappySession.clear()
