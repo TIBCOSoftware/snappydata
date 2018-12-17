@@ -69,7 +69,7 @@ class SnappySessionState(val snappySession: SnappySession)
     case _ => Nil
   }
 
-  protected val snappySharedState: SnappySharedState =
+  protected[hive] val snappySharedState: SnappySharedState =
     snappySession.sharedState.asInstanceOf[SnappySharedState]
 
   override lazy val streamingQueryManager: StreamingQueryManager = {
@@ -780,8 +780,19 @@ class HiveConditionalRule(rule: HiveSessionState => Rule[LogicalPlan], state: Sn
 class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: SnappySessionState)
     extends Strategy {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-    if (state.snappySession.enableHiveSupport) {
-      strategy(state.hiveState.planner.asInstanceOf[HiveStrategies])(plan)
+    val session = state.snappySession
+    if (session.enableHiveSupport) {
+      // some strategies like DataSinks read the session state and expect it to be
+      // HiveSessionState so switch it before invoking the strategy and restore at the end
+      val hiveState = state.hiveState
+      session.setSessionState(hiveState)
+      session.setSharedState(state.snappySharedState.getHiveSharedState)
+      try {
+        strategy(hiveState.planner.asInstanceOf[HiveStrategies])(plan)
+      } finally {
+        session.setSessionState(state)
+        session.setSharedState(state.snappySharedState)
+      }
     } else planLater(plan) :: Nil
   }
 }
