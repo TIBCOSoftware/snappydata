@@ -42,7 +42,7 @@ class StructType extends SnappySQLJob{
     val spark : SparkSession = SparkSession.builder().getOrCreate()
     val sc : SparkContext = SparkContext.getOrCreate()
     def getCurrentDirectory : String = new File(".").getCanonicalPath()
-    val outputFile = "ValidateArrayType" + "_" + "column" +
+    val outputFile = "ValidateStructType" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val sqlContext = SQLContext.getOrCreate(sc)

@@ -150,6 +150,5 @@ class ArraysOfStructType extends SnappySQLJob{
     spark.sql("DROP TABLE IF EXISTS TW.TwoWheeler")
     snc.sql("DROP SCHEMA TW")
     spark.sql("DROP SCHEMA TW")
-
   }
 }
