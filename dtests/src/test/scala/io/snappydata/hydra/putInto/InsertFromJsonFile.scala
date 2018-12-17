@@ -36,14 +36,15 @@ object InsertFromJsonFile extends SnappySQLJob {
     val fromVal = jobConfig.getString("fromVal").toInt
     val untilVal = jobConfig.getString("untilVal").toInt
     val filePath = jobConfig.getString("jsonFile")
-    val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true))
+    val maxResultWaitSec = jobConfig.getString("maxResultWaitSec").toLong
+    val pw = new PrintWriter(new FileOutputStream(new File("InsertFromJsonFileJob.out"), true))
     Try {
       insertFromJsonFile(snSession, filePath, tableName, fromVal, untilVal, fileCnt)
-      doSelectQueries(snSession, tableName, fromVal, untilVal)
+      doSelectQueries(snSession, tableName, fromVal, untilVal, maxResultWaitSec)
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${NWTestJob.getCurrentDirectory}/ConcurrentPutIntoJob.out"
+        s"See ${NWTestJob.getCurrentDirectory}/InsertFromJsonFileJob.out"
       case Failure(e) => pw.close();
         throw e;
     }
@@ -65,14 +66,17 @@ object InsertFromJsonFile extends SnappySQLJob {
   }
 
   def doSelectQueries(snSession: SnappySession, tableName: String,
-                      fromVal: Int, untilVal: Int): Unit = {
+                      fromVal: Int, untilVal: Int, maxResultWaitSec: Long): Unit = {
     val globalId = new AtomicInteger()
-    for (i <- fromVal to untilVal) {
+    val randomInt = new Random().nextInt(32767)
+    val startTime = System.currentTimeMillis
+    val endTime = startTime + maxResultWaitSec * 1000
+    do {
       val myId = globalId.getAndIncrement()
-      val df = snSession.sql(s"select avg(id), max(data), last(data2) from ${tableName}" + i +
-          s" where id <> ${myId + i}")
+      val df = snSession.sql(s"select avg(id), max(data), last(data2) from ${tableName} " +
+          s"where id <> ${myId + randomInt}")
       df.collect()
-    }
+    } while (endTime > System.currentTimeMillis);
   }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()

@@ -37,14 +37,14 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
     val blockSize = jobConfig.getString("blockSize").toLong
     val stepSize = jobConfig.getString("stepSize").toLong
     val tableName = jobConfig.getString("tableName")
-    val totalTaskTime = jobConfig.getString("totalTaskTime").toLong
+    val maxResultWaitSec = jobConfig.getString("maxResultWaitSec").toLong
     // val fileCnt = jobConfig.getString("fileCnt").toInt
     /*  val fromVal = jobConfig.getString("fromVal").toInt
       val untilVal = jobConfig.getString("untilVal").toInt
       val filePath = jobConfig.getString("jsonFile")
-  */ val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true))
+  */ val pw = new PrintWriter(new FileOutputStream(new File("ConcPutIntoWith30ColumnsJob.out"), true))
     Try {
-      runTasksWithChangingRangeForPutInto(snSession, blockSize, stepSize, tableName, totalTaskTime)
+      runTasksWithChangingRangeForPutInto(snSession, blockSize, stepSize, tableName, maxResultWaitSec)
       // doInsert(snSession, stepSize, blockSize, tableName, fileCnt)
       //   loadDataFromJsonFile(snSession, filePath, tableName, fromVal, untilVal)
       // insertFromJsonFile(snSession, filePath, tableName, fromVal, untilVal, fileCnt)
@@ -131,7 +131,7 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
    } */
 
   def runTasksWithChangingRangeForPutInto(snSession: SnappySession, blockSize:
-  Long, stepSize: Long, tableName: String, totalTaskTime: Long): Unit = {
+  Long, stepSize: Long, tableName: String, maxResultWaitSec: Long): Unit = {
     val globalId = new AtomicInteger()
     val doPut = () => Future {
       val myId = globalId.getAndIncrement()
@@ -156,7 +156,7 @@ object ConcPutIntoWith30Columns extends SnappySQLJob {
       val myId = globalId.getAndIncrement()
       val randomInt = new Random().nextInt(32767)
       val startTime = System.currentTimeMillis
-      val endTime = startTime + totalTaskTime * 1000
+      val endTime = startTime + maxResultWaitSec * 1000
       do {
         snSession.sql(s"select avg(id), max(data), last(data2) from ${tableName} " +
             s"where id <> ${myId + randomInt}")

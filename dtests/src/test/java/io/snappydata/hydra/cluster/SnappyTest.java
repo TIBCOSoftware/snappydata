@@ -53,6 +53,8 @@ import sql.dmlStatements.DMLStmtIF;
 import sql.sqlutil.DMLStmtsFactory;
 import util.*;
 
+import static hydra.Prms.maxResultWaitSec;
+
 public class SnappyTest implements Serializable {
 
   private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
@@ -94,6 +96,7 @@ public class SnappyTest implements Serializable {
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
+  public static long maxResultWaitSecs = TestConfig.tab().longAt(maxResultWaitSec);
   private static Boolean logDirExists = false;
   private static Boolean doneCopying = false;
   protected static Boolean doneRandomizing = false;
@@ -2209,6 +2212,9 @@ public class SnappyTest implements Serializable {
           String primaryLocatorHost = getPrimaryLocatorHost();
           String primaryLocatorPort = getPrimaryLocatorPort();
           APP_PROPS = "\"" + APP_PROPS + ",primaryLocatorHost=" + primaryLocatorHost + ",primaryLocatorPort=" + primaryLocatorPort + "\"";
+        }
+        if (SnappyPrms.isLongRunningJob()) {
+          APP_PROPS = "\"" + APP_PROPS + ",maxResultWaitSec=" + maxResultWaitSecs + "\"";
         }
         if (SnappyPrms.hasDynamicAppProps()) {
           String dmlProps = dynamicAppProps.get(getMyTid());
