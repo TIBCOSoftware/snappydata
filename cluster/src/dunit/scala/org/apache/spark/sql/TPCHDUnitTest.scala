@@ -442,7 +442,7 @@ object TPCHUtils extends Logging {
       snc,
       isResultCollection,
       isSnappy,
-      0,
+      threadNumber = 1,
       isDynamic,
       warmup,
       runsForAverage,
