@@ -17,22 +17,17 @@
 package io.snappydata.hydra.putInto
 
 import java.io.{File, FileOutputStream, PrintWriter}
-import java.util.concurrent.atomic.AtomicInteger
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northwind.NWTestJob
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
-import org.apache.spark.sql.snappy._
-import scala.util.Random
 
 object LoadDataFromJson extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-   // snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
+    // snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
     val tableName = jobConfig.getString("tableName")
     val fromVal = jobConfig.getString("fromVal").toInt
     val untilVal = jobConfig.getString("untilVal").toInt
@@ -50,7 +45,7 @@ object LoadDataFromJson extends SnappySQLJob {
   }
 
   def loadDataFromJsonFile(snSession: SnappySession, file: String, tableName: String,
-      fromVal: Int, untilVal: Int): Unit = {
+                           fromVal: Int, untilVal: Int): Unit = {
     for (i <- fromVal to untilVal) {
       val jsonDF = snSession.read.json(file)
       jsonDF.write.putInto(tableName + i)

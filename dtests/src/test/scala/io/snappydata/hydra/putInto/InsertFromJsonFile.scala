@@ -30,7 +30,7 @@ import scala.util.Random
 
 object InsertFromJsonFile extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-   // snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
+    // snSession.sql("set snappydata.cache.putIntoInnerJoinResultSize=10GB")
     val tableName = jobConfig.getString("tableName")
     val fileCnt = jobConfig.getString("fileCnt").toInt
     val fromVal = jobConfig.getString("fromVal").toInt
@@ -38,9 +38,9 @@ object InsertFromJsonFile extends SnappySQLJob {
     val filePath = jobConfig.getString("jsonFile")
     val pw = new PrintWriter(new FileOutputStream(new File("ConcurrentPutIntoJob.out"), true))
     Try {
-         insertFromJsonFile(snSession, filePath, tableName, fromVal, untilVal, fileCnt)
-         doSelectQueries(snSession, tableName, fromVal, untilVal)
-         pw.close()
+      insertFromJsonFile(snSession, filePath, tableName, fromVal, untilVal, fileCnt)
+      doSelectQueries(snSession, tableName, fromVal, untilVal)
+      pw.close()
     } match {
       case Success(v) => pw.close()
         s"See ${NWTestJob.getCurrentDirectory}/ConcurrentPutIntoJob.out"
@@ -50,7 +50,7 @@ object InsertFromJsonFile extends SnappySQLJob {
   }
 
   def insertFromJsonFile(snSession: SnappySession, file: String, tableName: String,
-      fromVal: Int, untilVal: Int, fileCnt: Int): Unit = {
+                         fromVal: Int, untilVal: Int, fileCnt: Int): Unit = {
     // scalastyle:off println
     var rnd = Random.nextInt(fileCnt)
     if (rnd == 0) {
@@ -65,7 +65,7 @@ object InsertFromJsonFile extends SnappySQLJob {
   }
 
   def doSelectQueries(snSession: SnappySession, tableName: String,
-      fromVal: Int, untilVal: Int): Unit = {
+                      fromVal: Int, untilVal: Int): Unit = {
     val globalId = new AtomicInteger()
     for (i <- fromVal to untilVal) {
       val myId = globalId.getAndIncrement()
