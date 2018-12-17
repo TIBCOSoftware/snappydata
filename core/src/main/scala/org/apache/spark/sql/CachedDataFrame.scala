@@ -277,7 +277,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     var didPrepare = false
     try {
       didPrepare = prepareForCollect()
-      CachedDataFrame.withCallback(snappySession, this, name)(action)
+      CachedDataFrame.withCallback(snappySession, this, queryExecution, name)(action)
     } finally {
       endCollect(didPrepare)
     }
@@ -625,24 +625,28 @@ object CachedDataFrame
    *
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
-  def withNewExecutionId[T](snappySession: SnappySession,
-      queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
-      queryPlanInfo: SparkPlanInfo, currentExecutionId: Long = -1L,
-      planStartTime: Long = -1L, planEndTime: Long = -1L)(body: => T): (T, Long) = {
+  def withNewExecutionId[T](snappySession: SnappySession, queryShortForm: String,
+      queryLongForm: String, queryExecutionStr: String, queryPlanInfo: SparkPlanInfo,
+      currentExecutionId: Long = -1L, planStartTime: Long = -1L, planEndTime: Long = -1L,
+      postGUIPlans: Boolean = true)(body: => T): (T, Long) = {
     val sc = snappySession.sparkContext
-    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+    val localProperties = sc.getLocalProperties
+    val oldExecutionId = localProperties.getProperty(SQLExecution.EXECUTION_ID_KEY)
     if (oldExecutionId eq null) {
       // If the execution ID is set in the CDF that means the plan execution has already
       // been done. Use the same execution ID to link this execution to the previous one.
       val executionId = if (currentExecutionId >= 0) currentExecutionId
       else nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
-      sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
+      val executionIdStr = java.lang.Long.toString(executionId)
+      localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryLongForm)
+      localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+
       val startTime = System.currentTimeMillis()
       var endTime = -1L
       try {
-        snappySession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
-          executionId, queryShortForm, queryLongForm, queryExecutionStr,
-          queryPlanInfo, startTime))
+        if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionStart(executionId,
+          queryShortForm, queryLongForm, queryExecutionStr, queryPlanInfo, startTime))
         val result = body
         endTime = System.currentTimeMillis()
         (result, endTime - startTime)
@@ -655,10 +659,11 @@ object CachedDataFrame
           endTime -= (startTime - planEndTime)
         }
         // add the time of plan execution to the end time.
-        snappySession.sparkContext.listenerBus.post(SparkListenerSQLExecutionEnd(
-          executionId, endTime))
+        if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
 
-        sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, null)
+        localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
+        localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
+        localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
       }
     } else {
       // Don't support nested `withNewExecutionId`.
@@ -802,15 +807,15 @@ object CachedDataFrame
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
    */
-  def withCallback[U](session: SparkSession, df: DataFrame, name: String)
-      (action: DataFrame => (U, Long)): U = {
+  def withCallback[U](session: SparkSession, df: DataFrame, queryExecution: QueryExecution,
+      name: String)(action: DataFrame => (U, Long)): U = {
     try {
       val (result, elapsed) = action(df)
-      session.listenerManager.onSuccess(name, df.queryExecution, elapsed)
+      session.listenerManager.onSuccess(name, queryExecution, elapsed)
       result
     } catch {
       case e: Exception =>
-        session.listenerManager.onFailure(name, df.queryExecution, e)
+        session.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
   }

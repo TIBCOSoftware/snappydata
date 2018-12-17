@@ -698,7 +698,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     CACHE ~ (LAZY ~ push(true)).? ~ TABLE ~ tableIdentifier ~
         (AS ~ query).? ~> ((isLazy: Any, tableIdent: TableIdentifier,
         plan: Any) => SnappyCacheTableCommand(tableIdent,
-      plan.asInstanceOf[Option[LogicalPlan]],
+      input.sliceString(0, input.length), plan.asInstanceOf[Option[LogicalPlan]],
       isLazy.asInstanceOf[Option[Boolean]].isDefined))
   }
 
