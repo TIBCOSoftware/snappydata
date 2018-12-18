@@ -131,6 +131,7 @@ object HiveClientUtil extends Logging {
     setDefaultPath(metadataConf, ConfVars.SCRATCHDIR, "./hive")
     metadataConf.setVar(ConfVars.HADOOPFS, "file:///")
     metadataConf.set("datanucleus.connectionPool.testSQL", "VALUES(1)")
+
     // ensure no other Hive instance is alive for this thread but also
     // set the system properties because this can initialize Hive static
     // instance that will try to boot default derby otherwise
@@ -140,9 +141,11 @@ object HiveClientUtil extends Logging {
       val name = propertyNames.next()
       System.setProperty(name, props.getProperty(name))
     }
+
     // set integer properties after the system properties have been used by
     // Hive static initialization so that these never go into system properties
-    // every session has own hive client, so a small pool
+
+    // a small pool of connections for the shared hive client
     // metadataConf.set("datanucleus.connectionPool.maxPoolSize", "4");
     // metadataConf.set("datanucleus.connectionPool.minPoolSize", "0");
     metadataConf.set("datanucleus.connectionPool.maxActive", "4")
