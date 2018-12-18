@@ -36,11 +36,10 @@ public abstract class SessionBase extends SparkSession {
 
   private transient volatile SessionState snappySessionState;
 
-  private transient SharedState snappySharedState;
+  private transient volatile SharedState snappySharedState;
 
   public SessionBase(SparkContext sc) {
     super(sc);
-    this.snappySharedState = SnappyContext$.MODULE$.sharedState(sc);
   }
 
   /**
@@ -50,14 +49,10 @@ public abstract class SessionBase extends SparkSession {
   @Override
   public SessionState sessionState() {
     SessionState sessionState = this.snappySessionState;
-    if (sessionState != null) {
-      return sessionState;
-    }
+    if (sessionState != null) return sessionState;
     synchronized (this) {
       sessionState = this.snappySessionState;
-      if (sessionState != null) {
-        return sessionState;
-      }
+      if (sessionState != null) return sessionState;
       scala.Option<Class<?>> sessionStateClass = SnappySession$.MODULE$.aqpSessionStateClass();
       if (sessionStateClass.isEmpty()) {
         sessionState = this.snappySessionState = new SnappySessionState((SnappySession)this);
@@ -88,7 +83,13 @@ public abstract class SessionBase extends SparkSession {
    */
   @Override
   public SharedState sharedState() {
-    return this.snappySharedState;
+    SharedState sharedState = this.snappySharedState;
+    if (sharedState != null) return sharedState;
+    synchronized (this) {
+      sharedState = this.snappySharedState;
+      return sharedState != null ? sharedState
+          : (this.snappySharedState = SnappyContext$.MODULE$.sharedState(sparkContext()));
+    }
   }
 
   public void setSharedState(SharedState sharedState) {
