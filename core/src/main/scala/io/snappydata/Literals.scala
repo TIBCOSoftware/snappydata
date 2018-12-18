@@ -29,6 +29,7 @@ object StreamingConstants {
   val STREAM_QUERY_ID = "streamqueryid"
   val SINK_CALLBACK = "sinkcallback"
   val CONFLATION = "conflation"
+  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
 
   object EventType {
     val INSERT = 0

@@ -355,6 +355,8 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
 final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: DataType, _pos: Int)
     extends ParamLiteral(_value, _dataType, _pos, execId = param.execId) {
 
+  assert(!param.isInstanceOf[RefParamLiteral])
+
   private[sql] def referenceEquals(p: ParamLiteral): Boolean = {
     if (param eq p) {
       // Check that value and dataType should also be equal at this point.
@@ -423,57 +425,67 @@ trait ParamLiteralHolder {
 
   private[sql] final def getCurrentParamsId: Int = paramListId
 
+  /**
+   * Find existing ParamLiteral with given value and DataType. This should
+   * never return a RefParamLiteral.
+   */
   private def findExistingParamLiteral(value: Any, dataType: DataType,
-      numConstants: Int): ParamLiteral = {
+      numConstants: Int): Option[ParamLiteral] = {
     // for size >= 4 use a lookup map to search for same constant else linear search
     if (numConstants >= 4) {
       if (paramConstantMap eq null) {
         // populate the map while checking for a match
         paramConstantMap = UnifiedMap.newMap(8)
         var i = 0
-        var existing: ParamLiteral = null
+        var existing: Option[ParamLiteral] = None
         while (i < numConstants) {
-          val param = parameterizedConstants(i)
-          if ((existing eq null) && dataType == param.dataType && value == param.value) {
-            existing = param
+          parameterizedConstants(i) match {
+            case _: RefParamLiteral => // skip
+            case param =>
+              if (existing.isEmpty && dataType == param.dataType && value == param.value) {
+                existing = Some(param)
+              }
+              paramConstantMap.put(param.dataType -> param.value, param)
           }
-          paramConstantMap.put(param.dataType -> param.value, param)
           i += 1
         }
         existing
-      } else paramConstantMap.get(dataType -> value)
+      } else Option(paramConstantMap.get(dataType -> value))
     } else {
       var i = 0
       while (i < numConstants) {
-        val param = parameterizedConstants(i)
-        if (dataType == param.dataType && value == param.value) {
-          return param
+        parameterizedConstants(i) match {
+          case _: RefParamLiteral => // skip
+          case param =>
+            if (dataType == param.dataType && value == param.value) {
+              return Some(param)
+            }
         }
         i += 1
       }
-      null
+      None
     }
   }
 
   private[sql] final def addParamLiteralToContext(value: Any,
       dataType: DataType): ParamLiteral = {
     val numConstants = parameterizedConstants.length
-    val existing = findExistingParamLiteral(value, dataType, numConstants)
-    if (existing ne null) {
-      // Add to paramelizedConstants list so that its position can be updated
-      // if required (e.g. if a ParamLiteral is reverted to a Literal for
-      //   functions that require so as in SnappyParserConsts.FOLDABLE_FUNCTIONS)
-      // In addition RefParamLiteral maintains its own copy of value to avoid updating
-      // the referenced ParamLiteral's value by functions like ROUND, so that needs to
-      // be changed too when a plan with updated tokens is created.
-      val ref = new RefParamLiteral(existing, value, dataType, numConstants)
-      parameterizedConstants += ref
-      ref
-    } else {
-      val p = ParamLiteral(value, dataType, numConstants, paramListId)
-      parameterizedConstants += p
-      if (paramConstantMap ne null) paramConstantMap.put(dataType -> value, p)
-      p
+    findExistingParamLiteral(value, dataType, numConstants) match {
+      case None =>
+        val p = ParamLiteral(value, dataType, numConstants, paramListId)
+        parameterizedConstants += p
+        if (paramConstantMap ne null) paramConstantMap.put(dataType -> value, p)
+        p
+      case Some(existing) =>
+        // Add to parameterizedConstants list so that its position can be updated
+        // if required (e.g. if a ParamLiteral is reverted to a Literal for
+        //   functions that require so as in SnappyParserConsts.FOLDABLE_FUNCTIONS)
+        // In addition RefParamLiteral maintains its own copy of value to avoid updating
+        // the referenced ParamLiteral's value by functions like ROUND, so that needs to
+        // be changed too when a plan with updated tokens is created.
+        val ref = new RefParamLiteral(existing, value, dataType, numConstants)
+        parameterizedConstants += ref
+        ref
     }
   }
 
