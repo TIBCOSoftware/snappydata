@@ -34,7 +34,6 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
-import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
 
@@ -43,7 +42,7 @@ import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializ
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.execution.columnar.{SnappyColumnBatchRDDHelper, _}
+import org.apache.spark.sql.execution.columnar.{SmartConnectorRDDHelper, SnappyColumnBatchRDDHelper, _}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
@@ -136,7 +135,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               Array(conn, null)
             }
           case _ =>
-            val txId = SnappyColumnBatchRDDHelper.snapshotTxIdForWrite.get
+            val txId = SmartConnectorRDDHelper.snapshotTxIdForWrite.get
             if (txId == null) {
               logDebug(s"Going to start the transaction on server on conn $conn ")
               val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID(?,?)")
@@ -145,7 +144,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               startAndGetSnapshotTXId.execute()
               val txid = startAndGetSnapshotTXId.getString(2)
               startAndGetSnapshotTXId.close()
-              SnappyColumnBatchRDDHelper.snapshotTxIdForWrite.set(txid)
+              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(txid)
               logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
               Array(conn, txid)
             } else {
@@ -185,9 +184,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             }
             finally {
               ps.close()
-              // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-              // V2ColumnBatchDecoderHelper
-              SnappyColumnBatchRDDHelper.snapshotTxIdForWrite.set(null)
+              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Committed $txId the transaction on server ")
             }
         }
@@ -222,9 +219,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               logDebug(s"The transaction ID being rolled back is $txId")
             }, () => {
               if (ps ne null) ps.close()
-              // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-              // V2ColumnBatchDecoderHelper
-              SnappyColumnBatchRDDHelper.snapshotTxIdForWrite.set(null)
+              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
             })
         }
@@ -779,9 +774,7 @@ final class SmartConnectorColumnRDD(
     val conn: Connection = helper.getConnection(connProperties, part)
     logDebug(s"Scan for $tableName, Partition index = ${part.index}, bucketId = ${part.bucketId}")
     val partitionId = part.bucketId
-    // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-    // V2ColumnBatchDecoderHelper
-    val txId = SnappyColumnBatchRDDHelper.snapshotTxIdForRead.get() match {
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get() match {
       case "" => null
       case tx => tx
     }
@@ -790,7 +783,7 @@ final class SmartConnectorColumnRDD(
       // fetch all the column blobs pushing down the filters
       val (statement, rs) = helper.prepareScan(conn, txId,
         tableName, projection,
-        serializedFilters, part, relDestroyVersion)
+        serializedFilters, part.bucketId, relDestroyVersion, true)
       itr = new ColumnBatchIteratorOnRS(conn, projection, statement, rs,
         context, partitionId)
     } finally {
@@ -805,9 +798,7 @@ final class SmartConnectorColumnRDD(
           ps.executeUpdate()
           logDebug(s"The txid being committed is $txId")
           ps.close()
-          // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-          // V2ColumnBatchDecoderHelper
-          SnappyColumnBatchRDDHelper.snapshotTxIdForRead.set(null)
+          SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
           logDebug(s"closed connection for task from listener $partitionId")
           try {
             conn.close()
@@ -902,9 +893,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
       context: TaskContext): Unit = {
     Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
-      // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-      // V2ColumnBatchDecoderHelper
-      val txId = SnappyColumnBatchRDDHelper.snapshotTxIdForRead.get
+      val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
       logDebug(s"The txid going to be committed is $txId " + tableName)
       // if ((txId ne null) && !txId.equals("null")) {
         val ps = conn.get.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
@@ -913,9 +902,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
-      // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-      // V2ColumnBatchDecoderHelper
-      SnappyColumnBatchRDDHelper.snapshotTxIdForRead.set(null)
+      SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
       // }
     }))
   }
@@ -969,16 +956,14 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
-      ExternalStoreUtils.setStatementParameters(stmt, args)
+      SharedExternalStoreUtils.setStatementParameters(stmt, args)
     }
     val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }
 
-    // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-    // V2ColumnBatchDecoderHelper
-    val txId = SnappyColumnBatchRDDHelper.snapshotTxIdForRead.get
+    val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get
     if (thriftConn ne null) {
       stmt.asInstanceOf[ClientPreparedStatement].setSnapshotTransactionId(txId)
     } else if (txId != null) {
@@ -999,9 +984,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       val txId = rs.getString(1)
       rs.close()
       getSnapshotTXId.close()
-      // TODO:PS:Review Updated reference SmartConnectorRDDHelper to
-      // V2ColumnBatchDecoderHelper
-      SnappyColumnBatchRDDHelper.snapshotTxIdForRead.set(txId)
+      SmartConnectorRDDHelper.snapshotTxIdForRead.set(txId)
       logDebug(s"The snapshot tx id is $txId and tablename is $tableName")
     }
     if (thriftConn ne null) {

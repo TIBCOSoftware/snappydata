@@ -26,11 +26,11 @@ import scala.collection.mutable
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
-import io.snappydata.impl.SmartConnectorRDDHelper
 import org.apache.hadoop.hive.ql.metadata.Table
 
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.columnar.SmartConnectorRDDHelper
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, RelationInfo, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -281,18 +281,19 @@ class SmartConnectorHelper(snappySession: SnappySession) extends Logging {
         case None => Array.empty[String]
       }
 
+      val partitionHost = org.apache.spark.sql.collection.Utils.preferHostName(snappySession)
       if (bucketCount > 0) {
         val partitionCols = getMetaDataStmt.getString(4).split(":")
         val bucketToServerMappingStr = getMetaDataStmt.getString(6)
         val allNetUrls = SmartConnectorRDDHelper.setBucketToServerMappingInfo(
-          bucketToServerMappingStr, snappySession)
+          bucketToServerMappingStr, partitionHost)
         val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
         (t, RelationInfo(bucketCount, isPartitioned = true, partitionCols.toSeq,
           indexCols, pkCols, partitions, embdClusterRelDestroyVersion))
       } else {
         val replicaToNodesInfo = getMetaDataStmt.getString(6)
         val allNetUrls = SmartConnectorRDDHelper.setReplicasToServerMappingInfo(
-          replicaToNodesInfo, snappySession)
+          replicaToNodesInfo, partitionHost)
         val partitions = SmartConnectorRDDHelper.getPartitions(allNetUrls)
         (t, RelationInfo(1, isPartitioned = false, Nil, indexCols, pkCols,
           partitions, embdClusterRelDestroyVersion))

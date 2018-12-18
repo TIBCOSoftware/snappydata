@@ -796,6 +796,20 @@ object Utils {
   }
 
   def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
+
+  def preferHostName(session: SnappySession): Boolean = {
+    // check if Spark executors are using IP addresses or host names
+    Utils.executorsListener(session.sparkContext) match {
+      case Some(l) =>
+        val preferHost = l.activeStorageStatusList.collectFirst {
+          case status if status.blockManagerId.executorId != "driver" =>
+            val host = status.blockManagerId.host
+            host.indexOf('.') == -1 && host.indexOf("::") == -1
+        }
+        preferHost.isDefined && preferHost.get
+      case _ => false
+    }
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -1007,41 +1021,6 @@ private[spark] class CoGroupExecutorLocalPartition(
     s"CoGroupExecutorLocalPartition($index, $blockId)"
 
   override def hashCode(): Int = idx
-}
-
-final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
-    var hostList: mutable.ArrayBuffer[(String, String)])
-    extends Partition with KryoSerializable {
-
-  override def index: Int = _index
-
-  def bucketId: Int = _bucketId
-
-  override def write(kryo: Kryo, output: Output): Unit = {
-    output.writeVarInt(_index, true)
-    output.writeVarInt(_bucketId, true)
-    val numHosts = hostList.length
-    output.writeVarInt(numHosts, true)
-    for ((host, url) <- hostList) {
-      output.writeString(host)
-      output.writeString(url)
-    }
-  }
-
-  override def read(kryo: Kryo, input: Input): Unit = {
-    _index = input.readVarInt(true)
-    _bucketId = input.readVarInt(true)
-    val numHosts = input.readVarInt(true)
-    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
-    for (_ <- 0 until numHosts) {
-      val host = input.readString()
-      val url = input.readString()
-      hostList += host -> url
-    }
-  }
-
-  override def toString: String =
-    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {

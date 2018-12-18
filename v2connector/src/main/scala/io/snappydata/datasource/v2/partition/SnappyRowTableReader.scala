@@ -22,13 +22,13 @@ import java.util.Collections
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.datasource.v2.ConnectorUtils
 import io.snappydata.datasource.v2.driver.{QueryConstructs, SnappyTableMetaData}
 import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.ClientStatement
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.execution.columnar.SharedExternalStoreUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.v2.reader.DataReader
 import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarBatch}
@@ -97,7 +97,8 @@ class SnappyRowTableReader(val bucketId: Int,
 
     preparedStatement = conn.prepareStatement(sqlText)
     if (queryConstructs.whereClauseArgs ne null) {
-      ConnectorUtils.setStatementParameters(preparedStatement, queryConstructs.whereClauseArgs)
+      SharedExternalStoreUtils.setStatementParameters(preparedStatement,
+        queryConstructs.whereClauseArgs)
     }
     resultSet = preparedStatement.executeQuery()
   }

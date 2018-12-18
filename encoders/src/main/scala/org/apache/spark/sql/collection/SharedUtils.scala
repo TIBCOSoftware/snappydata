@@ -18,8 +18,11 @@ package org.apache.spark.sql.collection
 
 import java.nio.ByteBuffer
 
+import scala.collection.mutable
 import scala.language.existentials
 
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.esotericsoftware.kryo.io.{Input, Output}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
@@ -90,4 +93,53 @@ object SharedUtils {
     MemoryManagerCallback.memoryManager.
         releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
+
+  /** for testing only (a long convoluted name chosen deliberately) */
+  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = java.lang.Boolean.getBoolean(
+    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT")
+
+  /**
+   * TODO: check SmartConnectorRDDHelper for implementation
+   * NOTE: JavaDoc for DataReaderFactory.preferredLocations says
+   * that preferredLocations should return host name, so currently
+   * this returns true
+   */
+  def preferHostName(): Boolean = {
+    true
+  }
+}
+
+final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
+    var hostList: mutable.ArrayBuffer[(String, String)])
+    extends Partition with KryoSerializable {
+
+  override def index: Int = _index
+
+  def bucketId: Int = _bucketId
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    output.writeVarInt(_index, true)
+    output.writeVarInt(_bucketId, true)
+    val numHosts = hostList.length
+    output.writeVarInt(numHosts, true)
+    for ((host, url) <- hostList) {
+      output.writeString(host)
+      output.writeString(url)
+    }
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    _index = input.readVarInt(true)
+    _bucketId = input.readVarInt(true)
+    val numHosts = input.readVarInt(true)
+    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
+    for (_ <- 0 until numHosts) {
+      val host = input.readString()
+      val url = input.readString()
+      hostList += host -> url
+    }
+  }
+
+  override def toString: String =
+    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }

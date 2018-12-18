@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, PreparedStatement, Types}
+import java.sql.Connection
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
@@ -493,37 +493,6 @@ object ExternalStoreUtils {
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))
     })
-  }
-
-  def setStatementParameters(stmt: PreparedStatement,
-      row: mutable.ArrayBuffer[Any]): Unit = {
-    var col = 1
-    val len = row.length
-    while (col <= len) {
-      val colVal = row(col - 1)
-      if (colVal != null) {
-        colVal match {
-          case s: String => stmt.setString(col, s)
-          case i: Int => stmt.setInt(col, i)
-          case l: Long => stmt.setLong(col, l)
-          case d: Double => stmt.setDouble(col, d)
-          case f: Float => stmt.setFloat(col, f)
-          case s: Short => stmt.setInt(col, s)
-          case b: Byte => stmt.setInt(col, b)
-          case b: Boolean => stmt.setBoolean(col, b)
-          case b: Array[Byte] => stmt.setBytes(col, b)
-          case ts: java.sql.Timestamp => stmt.setTimestamp(col, ts)
-          case d: java.sql.Date => stmt.setDate(col, d)
-          case t: java.sql.Time => stmt.setTime(col, t)
-          case d: Decimal => stmt.setBigDecimal(col, d.toJavaBigDecimal)
-          case bd: java.math.BigDecimal => stmt.setBigDecimal(col, bd)
-          case _ => stmt.setObject(col, colVal)
-        }
-      } else {
-        stmt.setNull(col, Types.NULL)
-      }
-      col += 1
-    }
   }
 
   final val PARTITION_BY = "PARTITION_BY"

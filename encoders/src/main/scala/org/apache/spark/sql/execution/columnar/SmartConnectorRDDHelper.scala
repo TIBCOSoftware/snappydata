@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.impl
+package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import java.util.Collections
@@ -30,23 +30,24 @@ import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.thrift.internal.ClientPreparedStatement
 
 import org.apache.spark.Partition
-import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
+import org.apache.spark.sql.collection.{SharedUtils, SmartExecutorBucketPartition}
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.store.StoreUtils
 
 final class SmartConnectorRDDHelper {
 
   private var useLocatorURL: Boolean = _
 
   def prepareScan(conn: Connection, txId: String, columnTable: String, projection: Array[Int],
-      serializedFilters: Array[Byte], partition: SmartExecutorBucketPartition,
-      relDestroyVersion: Int): (PreparedStatement, ResultSet) = {
-    val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?, 1)")
+      serializedFilters: Array[Byte], bucketId: Int,
+      relDestroyVersion: Int, useKryoSerializer: Boolean): (PreparedStatement, ResultSet) = {
+    val pstmt = if (useKryoSerializer) {
+      conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?, 1)")
+    } else {
+      conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?, 0)")
+    }
     pstmt.setString(1, columnTable)
     pstmt.setString(2, projection.mkString(","))
     // serialize the filters
@@ -57,13 +58,13 @@ final class SmartConnectorRDDHelper {
     }
     pstmt match {
       case clientStmt: ClientPreparedStatement =>
-        val bucketSet = Collections.singleton(Int.box(partition.bucketId))
+        val bucketSet = Collections.singleton(Int.box(bucketId))
         clientStmt.setLocalExecutionBucketIds(bucketSet, columnTable, true)
         clientStmt.setMetadataVersion(relDestroyVersion)
         clientStmt.setSnapshotTransactionId(txId)
       case _ =>
         pstmt.execute("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(" +
-            s"'$columnTable', '${partition.bucketId}', $relDestroyVersion)")
+            s"'$columnTable', '${bucketId}', $relDestroyVersion)")
         if (txId ne null) {
           pstmt.execute(s"call sys.USE_SNAPSHOT_TXID('$txId')")
         }
@@ -97,7 +98,7 @@ final class SmartConnectorRDDHelper {
     val executorProps = connProperties.executorConnProps
     executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
     // setup pool properties
-    val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
+    val props = SharedExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
       connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
@@ -116,13 +117,16 @@ final class SmartConnectorRDDHelper {
 
 object SmartConnectorRDDHelper {
 
+  var snapshotTxIdForRead: ThreadLocal[String] = new ThreadLocal[String]
+  var snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
+
   DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
 
   def getPartitions(bucketToServerList: Array[ArrayBuffer[(String, String)]]): Array[Partition] = {
     val numPartitions = bucketToServerList.length
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
-      if (StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT) {
+      if (SharedUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT) {
         partitions(p) = new SmartExecutorBucketPartition(p, p,
           bucketToServerList(scala.util.Random.nextInt(numPartitions)))
       } else {
@@ -135,29 +139,14 @@ object SmartConnectorRDDHelper {
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
     hostList.isEmpty
 
-  private def preferHostName(session: SnappySession): Boolean = {
-    // check if Spark executors are using IP addresses or host names
-    Utils.executorsListener(session.sparkContext) match {
-      case Some(l) =>
-        val preferHost = l.activeStorageStatusList.collectFirst {
-          case status if status.blockManagerId.executorId != "driver" =>
-            val host = status.blockManagerId.host
-            host.indexOf('.') == -1 && host.indexOf("::") == -1
-        }
-        preferHost.isDefined && preferHost.get
-      case _ => false
-    }
-  }
 
   def setBucketToServerMappingInfo(bucketToServerMappingStr: String,
-      session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
+      preferHost: Boolean): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
         ClientAttribute.LOAD_BALANCE + "=false"
     if (bucketToServerMappingStr != null) {
-      // check if Spark executors are using IP addresses or host names
-      val preferHost = preferHostName(session)
       val arr: Array[String] = bucketToServerMappingStr.split(":")
       var orphanBuckets: ArrayBuffer[Int] = null
       val noOfBuckets = arr(0).toInt
@@ -207,9 +196,7 @@ object SmartConnectorRDDHelper {
   }
 
   def setReplicasToServerMappingInfo(replicaNodesStr: String,
-      session: SnappySession): Array[ArrayBuffer[(String, String)]] = {
-    // check if Spark executors are using IP addresses or host names
-    val preferHost = preferHostName(session)
+      preferHost: Boolean): Array[ArrayBuffer[(String, String)]] = {
     val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +

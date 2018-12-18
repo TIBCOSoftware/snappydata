@@ -3,7 +3,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, SQLException}
+import java.sql.{Connection, PreparedStatement, SQLException, Types}
 import java.util.Properties
 
 import scala.collection.immutable.HashMap
@@ -14,6 +14,7 @@ import scala.util.Random
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
+import org.apache.spark.sql.types.Decimal
 
 object SharedExternalStoreUtils {
 
@@ -136,5 +137,36 @@ object SharedExternalStoreUtils {
       else addProperty(props, "validationInterval", "10000")
     }
     props.toMap
+  }
+
+  def setStatementParameters(stmt: PreparedStatement,
+      row: mutable.ArrayBuffer[Any]): Unit = {
+    var col = 1
+    val len = row.length
+    while (col <= len) {
+      val colVal = row(col - 1)
+      if (colVal != null) {
+        colVal match {
+          case s: String => stmt.setString(col, s)
+          case i: Int => stmt.setInt(col, i)
+          case l: Long => stmt.setLong(col, l)
+          case d: Double => stmt.setDouble(col, d)
+          case f: Float => stmt.setFloat(col, f)
+          case s: Short => stmt.setInt(col, s)
+          case b: Byte => stmt.setInt(col, b)
+          case b: Boolean => stmt.setBoolean(col, b)
+          case b: Array[Byte] => stmt.setBytes(col, b)
+          case ts: java.sql.Timestamp => stmt.setTimestamp(col, ts)
+          case d: java.sql.Date => stmt.setDate(col, d)
+          case t: java.sql.Time => stmt.setTime(col, t)
+          case d: Decimal => stmt.setBigDecimal(col, d.toJavaBigDecimal)
+          case bd: java.math.BigDecimal => stmt.setBigDecimal(col, bd)
+          case _ => stmt.setObject(col, colVal)
+        }
+      } else {
+        stmt.setNull(col, Types.NULL)
+      }
+      col += 1
+    }
   }
 }

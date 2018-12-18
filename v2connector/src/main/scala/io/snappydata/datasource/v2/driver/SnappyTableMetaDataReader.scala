@@ -21,8 +21,10 @@ import java.sql.{CallableStatement, DriverManager}
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Constant
-import io.snappydata.datasource.v2.{ConnectorUtils, V2Constants}
+import io.snappydata.datasource.v2.V2Constants
 
+import org.apache.spark.sql.collection.SharedUtils
+import org.apache.spark.sql.execution.columnar.SmartConnectorRDDHelper
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.types.{DataType, StructType}
 
@@ -89,10 +91,12 @@ final class SnappyTableMetaDataReader {
       // this returns list of all servers on which replicated table exists
       val bucketToServerMappingString = getV2MetaDataStmt.getString(6)
       val bucketToServerMapping = if (bucketCount > 0) {
-        Option(ConnectorUtils.setBucketToServerMappingInfo(bucketToServerMappingString))
+        Option(SmartConnectorRDDHelper.setBucketToServerMappingInfo(bucketToServerMappingString,
+          SharedUtils.preferHostName()))
       }
       else {
-        Option(ConnectorUtils.setReplicasToServerMappingInfo(bucketToServerMappingString))
+        Option(SmartConnectorRDDHelper.setReplicasToServerMappingInfo(bucketToServerMappingString,
+          SharedUtils.preferHostName()))
       }
 
       SnappyTableMetaData(tableName, schema, storageType, bucketCount,
