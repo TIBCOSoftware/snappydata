@@ -420,10 +420,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   /**
    * Create catalog object for a BaseRelation backed by a Region in store or GemFire.
    *
-   * This method is to be used for pre-entry into the catalog during a CTAS query
+   * This method is to be used for pre-entry into the catalog during a CTAS execution
    * for the inserts to proceed (which themselves may require the catalog entry
-   *   so that cannot be delayed to the end). The GemFire provider uses it in
-   * a special way to update the options stored for the catalog entry.
+   * on executors). The GemFire provider uses it in a special way to update
+   * the options stored for the catalog entry.
    */
   private[sql] def createTableForBuiltin(fullTableName: String, provider: String,
       schema: StructType, options: Map[String, String], ignoreIfExists: Boolean): Unit = {

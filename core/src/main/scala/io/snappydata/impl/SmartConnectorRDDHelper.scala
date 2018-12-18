@@ -31,7 +31,7 @@ import io.snappydata.thrift.BucketOwners
 import io.snappydata.thrift.internal.ClientPreparedStatement
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
-import org.apache.spark.{Logging, Partition}
+import org.apache.spark.Partition
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
