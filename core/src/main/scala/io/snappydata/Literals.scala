@@ -130,6 +130,10 @@ object Property extends Enumeration {
   val PlanCacheSize: SparkValue[Int] = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
     s"Number of query plans that will be cached.", Some(3000))
 
+  val CatalogCacheSize: SparkValue[Int] = Val[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.catalogCacheSize",
+    s"Number of catalog tables whose meta-data will be cached.", Some(2000))
+
   val ColumnBatchSize: SQLValue[String] = SQLVal[String](
     s"${Constant.PROPERTY_PREFIX}column.batchSize",
     "The default size of blocks to use for storage in SnappyData column " +

@@ -131,7 +131,7 @@ dependencies {
   }
 
   testCompile project(':dunit')
-  testCompile 'it.unimi.dsi:fastutil:8.1.1'
+  testCompile 'it.unimi.dsi:fastutil:8.2.2'
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {

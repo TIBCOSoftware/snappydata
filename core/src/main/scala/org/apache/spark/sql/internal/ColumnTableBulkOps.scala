@@ -178,8 +178,7 @@ object ColumnTableBulkOps {
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
       schema: StructType, resolvedName: String, putInto: Boolean): Int = {
     val session = sparkSession.asInstanceOf[SnappySession]
-    val sessionState = session.sessionState
-    val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
+    val tableIdent = session.tableIdentifier(resolvedName)
     val encoder = RowEncoder(schema)
     val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
       rows.map(encoder.toRow)), schema)

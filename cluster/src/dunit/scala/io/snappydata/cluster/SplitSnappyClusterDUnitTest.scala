@@ -281,7 +281,8 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   /** Test some queries on the embedded thrift server */
   def testEmbeddedThriftServer(): Unit = {
-    val conn = DriverManager.getConnection(s"jdbc:hive2://localhost:${testObject.thriftPort}/app")
+    val conn = DriverManager.getConnection(s"jdbc:hive2://localhost:${testObject.thriftPort}/app",
+      "app", "app")
     val stmt = conn.createStatement()
 
     stmt.execute("create table testTable100 (id int)")
@@ -310,8 +311,6 @@ class SplitSnappyClusterDUnitTest(s: String)
     assert(!rs.next())
     rs.close()
 
-    stmt.execute("drop schema if exists anonymous")
-
     stmt.close()
     conn.close()
   }
@@ -329,11 +328,10 @@ object SplitSnappyClusterDUnitTest
   }
 
   def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
-    val catalog = SnappySession.getOrCreate(SnappyContext.globalSparkContext).
-        sessionCatalog
-    val t = catalog.newQualifiedTableName(tableName)
+    val session = new SnappySession(SnappyContext.globalSparkContext)
+    val catalog = session.sessionCatalog
     try {
-      catalog.getCachedHiveTable(t)
+      catalog.lookupRelation(session.tableIdentifier(tableName))
       assert(assertion = false, s"Table $tableName should not exist in the " +
           s"cached Hive catalog")
     } catch {
@@ -720,7 +718,7 @@ object SplitSnappyClusterDUnitTest
     val count3 = snc.sql("select * from CUSTOMER_TEMP").count()
     assert(count3 == 750, s"Expected 750 rows. Actual rows = $count3")
     val catalog = snc.snappySession.sessionCatalog
-    assert(catalog.isLocalTemporaryView(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
+    assert(catalog.isTemporaryTable(snc.snappySession.tableIdentifier("CUSTOMER_TEMP")))
     snc.sql("DROP TABLE CUSTOMER_TEMP")
   }
 
