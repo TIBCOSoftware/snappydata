@@ -61,8 +61,10 @@ class SnappyRowTableReader(val bucketId: Int,
     // (each element in hostsAndURLs ArrayBuffer is in the form of a tuple (host, jdbcURL))
     val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
         bucketToServerMapping.get(bucketId)
-    val connectionURL = hostsAndURLs(0)._2
-    DriverManager.getConnection(connectionURL)
+//    val connectionURL = hostsAndURLs(0)._2
+//    DriverManager.getConnection(connectionURL)
+    val connProperties = SharedExternalStoreUtils.connectionProperties(hostsAndURLs)
+    SharedExternalStoreUtils.getConnection(connProperties, hostsAndURLs)
   }
 
   private def setLocalBucketScan(): Unit = {

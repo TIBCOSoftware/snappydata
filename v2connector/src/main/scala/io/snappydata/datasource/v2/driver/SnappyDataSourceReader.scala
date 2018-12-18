@@ -67,7 +67,13 @@ abstract class SnappyDataSourceReader(options: DataSourceOptions,
   override def pruneColumns(requiredSchema: StructType): Unit = {
     // called by the engine to set projected columns so that our implementation can use those.
     // Implementation should return these in readSchema()
-    if (requiredSchema.length > 0) projectedColumns = Option(requiredSchema)
+    projectedColumns = if (requiredSchema.length > 0) {
+      Option(requiredSchema)
+    } else {
+      // for count(column) kind of queries
+      val f = tableMetaData.schema.fields(0)
+      Option(StructType(Seq(f)))
+    }
   }
 
   /**
