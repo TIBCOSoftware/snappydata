@@ -46,7 +46,7 @@ class AllMixedTypes extends SnappySQLJob{
              "FROM T20.TwentyTwenty WHERE Roll[1] = 'WicketKeeper' GROUP BY name"
     val Q3 = "SELECT name, LastThreeMatchPerformance[2] AS RunsScoredinLastMatch, " +
              "Profile.Matches,Profile.SR,Profile.Runs " +
-             "FROM T20.TwentyTwenty WHERE Profile.Runs >= 1000"
+             "FROM T20.TwentyTwenty WHERE Profile.Runs >= 1000 ORDER BY Profile.Runs DESC"
     val Q4 = "SELECT COUNT(*) AS AllRounder FROM T20.TwentyTwenty WHERE Roll[2] = 'AllRounder'"
     val Q5 = "SELECT name, Profile.SR,Profile.Runs FROM T20.TwentyTwenty ORDER BY Profile.SR DESC"
 

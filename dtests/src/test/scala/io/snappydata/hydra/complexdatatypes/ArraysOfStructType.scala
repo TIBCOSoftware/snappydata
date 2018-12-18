@@ -44,7 +44,7 @@ class ArraysOfStructType extends SnappySQLJob{
     val Q2 = "SELECT brand FROM TW.TwoWheeler " +
       "WHERE BikeInfo[0].type = 'Scooter'"
     val Q3 = "SELECT brand,BikeInfo[0].cc FROM TW.TwoWheeler " +
-      "WHERE BikeInfo[0].cc >= 149.0 "
+      "WHERE BikeInfo[0].cc >= 149.0 ORDER BY BikeInfo[0].cc DESC"
     val Q4 = "SELECT brand,COUNT(BikeInfo[0].type) FROM TW.TwoWheeler " +
       "WHERE BikeInfo[0].type = 'Cruiser' GROUP BY brand"
     val Q5 = "SELECT brand, BikeInfo[0].type AS Style, BikeInfo[0].instock AS Available " +
@@ -53,7 +53,7 @@ class ArraysOfStructType extends SnappySQLJob{
     /* --- Snappy Job --- */
     snc.sql("CREATE SCHEMA TW")
 
-    snc.sql("CREATE TABLE TW.TwoWheeler " +
+    snc.sql("CREATE TABLE IF NOT EXISTS TW.TwoWheeler " +
       "(brand String, " +
       "BikeInfo ARRAY< STRUCT <type:String,cc:Double,noofgears:BigInt,instock:Boolean>>) " +
       "USING column")
@@ -96,7 +96,7 @@ class ArraysOfStructType extends SnappySQLJob{
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA TW")
 
-    spark.sql("CREATE TABLE TW.TwoWheeler " +
+    spark.sql("CREATE TABLE IF NOT EXISTS TW.TwoWheeler " +
       "(brand String, " +
       "BikeInfo ARRAY< STRUCT <type:String,cc:Double,noofgears:BigInt,instock:Boolean>>) " +
       "USING PARQUET")

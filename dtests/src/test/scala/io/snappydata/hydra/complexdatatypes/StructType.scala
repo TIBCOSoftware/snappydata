@@ -50,7 +50,7 @@ class StructType extends SnappySQLJob{
     /* --- Snappy Job --- */
     snc.sql("CREATE SCHEMA CR")
 
-    snc.sql("CREATE TABLE CR.CricketRecord(name String, " +
+    snc.sql("CREATE TABLE IF NOT EXISTS CR.CricketRecord(name String, " +
       "TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>) USING column")
 
     snc.sql("INSERT INTO CR.CricketRecord " +
@@ -86,7 +86,7 @@ class StructType extends SnappySQLJob{
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA CR")
 
-    spark.sql("CREATE TABLE CR.CricketRecord(name String, " +
+    spark.sql("CREATE TABLE IF NOT EXISTS CR.CricketRecord(name String, " +
       "TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>) USING PARQUET")
 
     spark.sql("INSERT INTO CR.CricketRecord " +
