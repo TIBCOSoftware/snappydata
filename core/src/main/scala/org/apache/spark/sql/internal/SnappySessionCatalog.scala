@@ -25,6 +25,7 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.CatalogObjectType.getTableType
+import io.snappydata.sql.catalog.SnappyExternalCatalog.{DBTABLE_PROPERTY, getTableWithSchema}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -445,6 +446,26 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     createSchema(schemaName, ignoreIfExists = true)
 
     super.createTable(table, ignoreIfExists)
+  }
+
+  /**
+   * Create catalog object for a BaseRelation backed by a Region in store or GemFire.
+   *
+   * This method is to be used for pre-entry into the catalog during a CTAS execution
+   * for the inserts to proceed (which themselves may require the catalog entry
+   * on executors). The GemFire provider uses it in a special way to update
+   * the options stored for the catalog entry.
+   */
+  private[sql] def createTableForBuiltin(fullTableName: String, provider: String,
+      schema: StructType, options: Map[String, String], ignoreIfExists: Boolean): Unit = {
+    assert(CatalogObjectType.isTableBackedByRegion(SnappyContext.getProviderType(provider)) ||
+        CatalogObjectType.isGemFireProvider(provider))
+    val (schemaName, tableName) = getTableWithSchema(fullTableName, getCurrentSchema)
+    assert(schemaName.length > 0)
+    val catalogTable = CatalogTable(new TableIdentifier(tableName, Some(schemaName)),
+      CatalogTableType.EXTERNAL, DataSource.buildStorageFormatFromOptions(
+        options + (DBTABLE_PROPERTY -> fullTableName)), schema, Some(provider))
+    createTable(catalogTable, ignoreIfExists)
   }
 
   private def convertCharTypes(table: CatalogTable): CatalogTable = {

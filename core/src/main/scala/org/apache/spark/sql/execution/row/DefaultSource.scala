@@ -72,8 +72,9 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       // Need to create a catalog entry before insert since it will read the catalog
       // on the servers to determine table properties like compression etc.
       // SnappyExternalCatalog will alter the definition for final entry if required.
-      session.sessionCatalog.externalCatalog.createTableForRegion(relation.resolvedName,
-        getClass.getCanonicalName, relation.schema, relation.origOptions)
+      session.sessionCatalog.createTableForBuiltin(relation.resolvedName,
+        getClass.getCanonicalName, relation.schema, relation.origOptions,
+        mode != SaveMode.ErrorIfExists)
       // SaveMode.Overwrite already taken care by createTable to truncate
       relation.insert(data, overwrite = false)
       success = true

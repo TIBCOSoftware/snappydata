@@ -38,7 +38,6 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.hive.HiveExternalCatalog
 import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.policy.PolicyProperties
@@ -78,20 +77,6 @@ trait SnappyExternalCatalog extends ExternalCatalog {
 
   override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
     throw new UnsupportedOperationException("Schema definitions cannot be altered")
-  }
-
-  /**
-   * Create catalog table object for a BaseRelation backed by a Region in store.
-   */
-  def createTableForRegion(fullTableName: String, provider: String, schema: StructType,
-      options: Map[String, String]): Unit = {
-    assert(CatalogObjectType.isTableBackedByRegion(SnappyContext.getProviderType(provider)))
-    val (schemaName, tableName) = getTableWithSchema(fullTableName, defaultSchema = "")
-    assert(schemaName.length > 0)
-    val catalogTable = CatalogTable(new TableIdentifier(tableName, Some(schemaName)),
-      CatalogTableType.EXTERNAL, DataSource.buildStorageFormatFromOptions(
-        options + (DBTABLE_PROPERTY -> fullTableName)), schema, Some(provider))
-    createTable(catalogTable, ignoreIfExists = false)
   }
 
   override def getTable(schema: String, table: String): CatalogTable = {
@@ -389,6 +374,11 @@ object CatalogObjectType extends Enumeration {
 
   def isTableBackedByRegion(tableType: CatalogObjectType.Type): Boolean = {
     tableType == Row || isColumnTable(tableType)
+  }
+
+  def isGemFireProvider(provider: String): Boolean = {
+    val providerLowerCase = Utils.toLowerCase(provider)
+    providerLowerCase == "gemfire" || providerLowerCase.endsWith(".gemfire.defaultsource")
   }
 
   def isPolicy(table: CatalogTable): Boolean = {

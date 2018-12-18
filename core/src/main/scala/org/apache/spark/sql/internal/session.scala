@@ -413,12 +413,14 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     // SnappySession.createTable, the DataFrameWriter path needs to be handled here.
     case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
       val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
+      val provider = tableDesc.provider.get
       // treat saveAsTable with mode=Append as insertInto
       if (mode == SaveMode.Append && queryOpt.isDefined && state.catalog.tableExists(tableIdent)) {
         new Insert(table = UnresolvedRelation(tableDesc.identifier),
           partition = Map.empty, child = queryOpt.get,
           overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
-      } else if (SnappyContext.isBuiltInProvider(tableDesc.provider.get)) {
+      } else if (SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)) {
         val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
         if (tableName.indexOf(',') != -1) {
@@ -426,8 +428,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
         }
         var newOptions = tableDesc.storage.properties +
             (SnappyExternalCatalog.DBTABLE_PROPERTY -> tableName)
-        if (CatalogObjectType.isColumnTable(SnappyContext.getProviderType(
-          tableDesc.provider.get))) {
+        if (CatalogObjectType.isColumnTable(SnappyContext.getProviderType(provider))) {
           // add default batchSize and maxDeltaRows options for column tables
           if (!newOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
             newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->

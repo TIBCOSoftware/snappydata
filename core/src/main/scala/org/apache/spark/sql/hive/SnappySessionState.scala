@@ -793,6 +793,6 @@ class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: Snapp
         session.setSessionState(state)
         session.setSharedState(state.snappySharedState)
       }
-    } else planLater(plan) :: Nil
+    } else Nil
   }
 }
