@@ -260,7 +260,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       case Some(baseTable) =>
         val dependents = baseTable.properties.get(DEPENDENT_RELATIONS) match {
           case None => dependent
-          case Some(deps) => deps + "," + dependent
+          case Some(deps) =>
+            // add only if it doesn't exist
+            if (deps.split(",").contains(dependent)) return
+            else deps + "," + dependent
         }
         withHiveExceptionHandling(client.alterTable(baseTable.copy(properties =
             baseTable.properties + (DEPENDENT_RELATIONS -> dependents))))
@@ -305,16 +308,14 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         baseTable.properties.get(DEPENDENT_RELATIONS) match {
           case None =>
           case Some(deps) =>
-            val dependents = deps.split(",")
-            val removeIndex = dependents.indexOf(dependent)
-            if (removeIndex != -1) withHiveExceptionHandling {
-              if (dependents.length == 1) {
+            // remove all instances in case there are multiple coming from older releases
+            val dependents = deps.split(",").toSet
+            if (dependents.contains(dependent)) withHiveExceptionHandling {
+              if (dependents.size == 1) {
                 client.alterTable(baseTable.copy(properties = baseTable.properties -
                     DEPENDENT_RELATIONS))
               } else {
-                val newDependents = dependents.indices.collect {
-                  case i if i != removeIndex => dependents(i)
-                }.mkString(",")
+                val newDependents = (dependents - dependent).mkString(",")
                 client.alterTable(baseTable.copy(properties = baseTable.properties +
                     (DEPENDENT_RELATIONS -> newDependents)))
               }
@@ -325,6 +326,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
   override def createTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {
     val catalogTable = addViewProperties(tableDefinition)
+    var ifExists = ignoreIfExists
     // Add dependency on base table if required. This is done before actual table
     // entry so that if there is a cluster failure between the two steps, then
     // table will still not be in catalog and base table will simply ignore
@@ -335,26 +337,29 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       addDependentToBase(refreshRelations.head, dependent)
     }
 
+    val isGemFireTable = catalogTable.provider.isDefined &&
+        CatalogObjectType.isGemFireProvider(catalogTable.provider.get)
     // for tables with backing region using CTAS to create, the catalog entry has already been
     // made before to enable inserts, so alter it with the final definition here
-    if (!ignoreIfExists &&
-        CatalogObjectType.isTableBackedByRegion(CatalogObjectType.getTableType(catalogTable))) {
+    if (!ifExists && (CatalogObjectType.isTableBackedByRegion(
+      CatalogObjectType.getTableType(catalogTable)) || isGemFireTable)) {
       withHiveExceptionHandling {
         val schemaName = catalogTable.database
         val tableName = catalogTable.identifier.table
         if (client.tableExists(schemaName, tableName)) {
-          // This is definitely the case of CTAS. With CTAS ignoreIfExists is always false at this
+          // This is the case of CTAS or GemFire. With CTAS ignoreIfExists is always false at this
           // point and any non-CTAS case with ignoreIfExists=false would have failed much earlier
           // when creating the backing region since table already exists for the Some(.) case.
           // Recreate the catalog table because final properties may be slightly different.
-          client.dropTable(schemaName, tableName, ignoreIfNotExists = true, purge = false)
+          if (isGemFireTable) ifExists = true
+          else client.dropTable(schemaName, tableName, ignoreIfNotExists = true, purge = false)
           invalidate(schemaName -> tableName)
         }
       }
     }
 
     try {
-      withHiveExceptionHandling(super.createTable(catalogTable, ignoreIfExists))
+      withHiveExceptionHandling(super.createTable(catalogTable, ifExists))
     } catch {
       case _: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)

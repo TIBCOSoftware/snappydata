@@ -1116,7 +1116,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
           partition = Map.empty, child = queryOpt.get,
           overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
       } else if (SnappyContext.isBuiltInProvider(provider) ||
-          Utils.toLowerCase(provider).contains("gemfire")) {
+          CatalogObjectType.isGemFireProvider(provider)) {
         val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
         if (tableName.indexOf(',') != -1) {
