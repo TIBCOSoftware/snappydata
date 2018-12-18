@@ -77,7 +77,9 @@ object HiveClientUtil extends Logging {
         SystemProperties.SNAPPY_HIVE_METASTORE)
       dbURL
     }
-    logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
+    if (SnappyHiveExternalCatalog.getInstance eq null) {
+      logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
+    }
     metadataConf.setVar(ConfVars.METASTORECONNECTURLKEY, secureDbURL)
     metadataConf.setVar(ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
@@ -87,7 +89,6 @@ object HiveClientUtil extends Logging {
     val warehouseDir = sparkConf.get(WAREHOUSE_PATH)
     sparkConf.set(ConfVars.METASTOREWAREHOUSE.varname, warehouseDir)
     metadataConf.setVar(ConfVars.METASTOREWAREHOUSE, warehouseDir)
-    logInfo(s"Using Spark warehouse directory: $warehouseDir")
 
     // remove all custom hive settings and add defaults needed for access to in-built meta-store
     val hiveSettings = sparkConf.getAll.filter(_._1.startsWith("spark.sql.hive"))
