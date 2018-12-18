@@ -17,7 +17,6 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
-import java.util.concurrent.ConcurrentHashMap
 import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable
@@ -25,7 +24,7 @@ import scala.collection.mutable
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
-import io.snappydata.collection.ObjectObjectHashMap
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
@@ -418,7 +417,7 @@ trait ParamLiteralHolder {
   @transient
   private final val parameterizedConstants = new mutable.ArrayBuffer[ParamLiteral](4)
   @transient
-  private final var paramConstantMap: ObjectObjectHashMap[(DataType, Any), ParamLiteral] = _
+  private final var paramConstantMap: UnifiedMap[(DataType, Any), ParamLiteral] = _
   @transient
   protected final var paramListId = 0
 
@@ -436,7 +435,7 @@ trait ParamLiteralHolder {
     if (numConstants >= 4) {
       if (paramConstantMap eq null) {
         // populate the map while checking for a match
-        paramConstantMap = ObjectObjectHashMap.withExpectedSize(8)
+        paramConstantMap = UnifiedMap.newMap(8)
         var i = 0
         var existing: Option[ParamLiteral] = None
         while (i < numConstants) {
@@ -637,7 +636,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
   override def nullable: Boolean = hset.exists(_.nullable)
 
   @transient private lazy val (hashSet, hasNull) = {
-    val m = new ConcurrentHashMap[AnyRef, AnyRef](hset.length)
+    val m = new java.util.HashMap[AnyRef, AnyRef](hset.length)
     var hasNull = false
     for (e <- hset) {
       val v = e.eval(null).asInstanceOf[AnyRef]
@@ -651,7 +650,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
   }
 
   protected override def nullSafeEval(value: Any): Any = {
-    if (hashSet.contains(value)) {
+    if (hashSet.containsKey(value)) {
       true
     } else if (hasNull) {
       null
@@ -661,8 +660,9 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
   }
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    // JDK8 ConcurrentHashMap consistently clocks fastest for gets among all
-    val setName = classOf[ConcurrentHashMap[AnyRef, AnyRef]].getName
+    // JDK8 HashMap consistently clocks fastest for gets at small/medium sizes
+    // over scala maps, Fastutil/Koloboke and others.
+    val setName = classOf[java.util.HashMap[AnyRef, AnyRef]].getName
     val exprClass = classOf[Expression].getName
     val elements = new Array[AnyRef](hset.length)
     val childGen = child.genCode(ctx)
@@ -686,7 +686,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     ctx.addMutableState(setName, hsetTerm,
       s"""
          |Object[] $elementsTerm = (Object[])references[$idx];
-         |$hsetTerm = new $setName($elementsTerm.length, 0.7f, 1);
+         |$hsetTerm = new $setName($elementsTerm.length, 0.7f);
          |for (int $idxTerm = 0; $idxTerm < $elementsTerm.length; $idxTerm++) {
          |  Object e = $elementsTerm[$idxTerm];
          |  if (e instanceof $exprClass) e = (($exprClass)e).eval(null);

@@ -154,7 +154,7 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
 
         // Query the topk structure for the popular hashtags of last two seconds
         List<Row> result = snsc.snappySession().queryApproxTSTopK("topktable",
-            System.currentTimeMillis() - 2000, System.currentTimeMillis())
+            System.currentTimeMillis() - 2000, System.currentTimeMillis(), -1)
             .collectAsList();
 
         printResult(result, pw);

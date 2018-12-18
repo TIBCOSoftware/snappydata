@@ -20,12 +20,4 @@ import org.apache.spark.sql.execution.OptimizeMetadataOnlyQuerySuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyOptimizeMetadataOnlyQuerySuite extends OptimizeMetadataOnlyQuerySuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "Aggregate expression is partition columns",
-    "Distinct aggregate function on partition columns",
-    "Distinct on partition columns",
-    "Aggregate function on partition columns which have same result w or w/o DISTINCT keyword"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
