@@ -32,7 +32,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, TableNotFoundException}
 
 /**
  * Tests for meta-data queries using Spark SQL.
@@ -464,7 +464,7 @@ object MetadataTest extends Assertions {
       rs = executeSQL("show columns in sysTables from app").collect()
       fail("Expected error due to non-existent table")
     } catch {
-      case _: NoSuchTableException => // expected
+      case _: NoSuchTableException | _: TableNotFoundException => // expected
       case se: SQLException if se.getSQLState == "42000" => // expected
     }
     try {
