@@ -119,8 +119,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (caseSensitiveAnalysis) name else Utils.toUpperCase(name)
   }
 
-  protected def schemaNotFoundException(schema: String): AnalysisException =
-    new AnalysisException(s"Schema '$schema' not found")
+  protected def schemaNotFoundException(schema: String): AnalysisException = {
+    if (snappySession.enableHiveSupport) {
+      new AnalysisException(s"Schema or database '$schema' not found")
+    } else new AnalysisException(s"Schema '$schema' not found")
+  }
 
   /** API to get primary key or Key Columns of a SnappyData table */
   def getKeyColumns(table: String): Seq[Column] = getKeyColumnsAndPositions(table).map(_._1)
@@ -933,7 +936,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     } catch {
       case _: NoSuchFunctionException if snappySession.enableHiveSupport =>
         // lookup in external hive catalog
-      hiveSessionCatalog.lookupFunction(name, children)
+        hiveSessionCatalog.lookupFunction(name, children)
     } finally {
       SnappyExternalCatalog.currentFunctionIdentifier.set(null)
       currentDb = currentSchema
