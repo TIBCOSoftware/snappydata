@@ -698,10 +698,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   override def listTables(schema: String, pattern: String): Seq[TableIdentifier] = {
     if (snappySession.enableHiveSupport) {
-      (super.listTables(schema).toSet ++
+      (super.listTables(schema, pattern).toSet ++
           hiveSessionCatalog.listTables(schema, pattern).map(id => TableIdentifier(
             formatTableName(id.table), id.database.map(formatDatabaseName))).toSet).toSeq
-    } else super.listTables(schema)
+    } else super.listTables(schema, pattern)
   }
 
   override def refreshTable(name: TableIdentifier): Unit = {
