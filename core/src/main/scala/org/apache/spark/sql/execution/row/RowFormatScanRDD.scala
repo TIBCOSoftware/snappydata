@@ -206,7 +206,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
-        ps.setInt(3, -1)
+        ps.setLong(3, -1)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -243,7 +243,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
 
   def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+    Option(context).foreach(_.addTaskCompletionListener(_ => {
       val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
         // if rollover was marked as delayed, then do the rollover before commit

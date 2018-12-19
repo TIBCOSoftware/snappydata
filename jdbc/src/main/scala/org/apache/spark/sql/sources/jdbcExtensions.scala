@@ -75,16 +75,6 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
 object JdbcExtendedUtils extends Logging {
 
-  // "dbtable" lower case since some other code including Spark's depends on it
-  val DBTABLE_PROPERTY = "dbtable"
-
-  val SCHEMADDL_PROPERTY = "SCHEMADDL"
-  val ALLOW_EXISTING_PROPERTY = "ALLOWEXISTING"
-  val BASETABLE_PROPERTY = "BASETABLE"
-
-  // internal properties will be stored as Hive table parameters
-  val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
-
   val DUMMY_TABLE_NAME: String = "SYSDUMMY1"
   val DUMMY_TABLE_QUALIFIED_NAME: String = "SYSIBM." + DUMMY_TABLE_NAME
 
@@ -135,7 +125,8 @@ object JdbcExtendedUtils extends Logging {
   }
 
   /**
-   * Compute the schema string for this RDD.
+   * Compute the schema string for this RDD. This is different from JdbcUtils.schemaString
+   * in having its own getJdbcType that can honour metadata for VARCHAR/CHAR types.
    */
   def schemaString(schema: StructType, dialect: JdbcDialect): String = {
     val sb = new StringBuilder()
@@ -148,9 +139,9 @@ object JdbcExtendedUtils extends Logging {
   }
 
   def addSplitProperty(value: String, propertyName: String,
-      options: SMap[String, String]): SMap[String, String] = {
+      options: SMap[String, String], threshold: Int): SMap[String, String] = {
     // split the string into parts for size limitation in hive metastore table
-    val parts = value.grouped(3500).toSeq
+    val parts = value.grouped(threshold).toSeq
     val opts = options match {
       case m: mutable.Map[String, String] => m
       case _ =>
@@ -183,21 +174,22 @@ object JdbcExtendedUtils extends Logging {
   }
 
   def getTableWithSchema(table: String, conn: Connection,
-      session: Option[() => SparkSession] = None): (String, String) = {
+      session: Option[SparkSession]): (String, String) = {
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
       table.substring(0, dotIndex)
     } else session match {
       case None => conn.getSchema
       // get the current schema
-      case Some(s) => s().catalog.currentDatabase
+      case Some(s) => s.catalog.currentDatabase
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
-    (schemaName, tableName)
+    // hive meta-store is case-insensitive
+    (toUpperCase(schemaName), toUpperCase(tableName))
   }
 
-  private def getTableMetadataResultSet(table: String, conn: Connection): ResultSet = {
-    val (schemaName, tableName) = getTableWithSchema(table, conn)
+  private def getTableMetadataResultSet(schemaName: String, tableName: String,
+      conn: Connection): ResultSet = {
     // using the JDBC meta-data API
     conn.getMetaData.getTables(null, schemaName, tableName, null)
   }
@@ -247,10 +239,11 @@ object JdbcExtendedUtils extends Logging {
     } else Nil
   }
 
-  def tableExistsInMetaData(table: String, conn: Connection, skipType: String = ""): Boolean = {
+  def tableExistsInMetaData(schemaName: String, tableName: String,
+      conn: Connection, skipType: String = ""): Boolean = {
     try {
       // using the JDBC meta-data API
-      val rs = getTableMetadataResultSet(table, conn)
+      val rs = getTableMetadataResultSet(schemaName, tableName, conn)
       if (skipType.isEmpty) {
         rs.next()
       } else {
@@ -282,7 +275,8 @@ object JdbcExtendedUtils extends Logging {
 
       case _ =>
         try {
-          tableExistsInMetaData(table, conn)
+          val (schemaName, tableName) = getTableWithSchema(table, conn, None)
+          tableExistsInMetaData(schemaName, tableName, conn)
         } catch {
           case NonFatal(_) =>
             val stmt = conn.createStatement()
@@ -311,7 +305,7 @@ object JdbcExtendedUtils extends Logging {
 
   def isRowLevelSecurityEnabled(table: String, conn: Connection, dialect: JdbcDialect,
       context: SQLContext): Boolean = {
-    val (schemaName, tableName) = getTableWithSchema(table, conn)
+    val (schemaName, tableName) = getTableWithSchema(table, conn, None)
     val q = s"select 1 from sys.systables s where s.tablename = '$tableName' and " +
         s" s.tableschemaname = '$schemaName' and s.rowlevelsecurityenabled = true "
     conn.createStatement().executeQuery(q).next()
@@ -340,7 +334,8 @@ object JdbcExtendedUtils extends Logging {
 
   /** get the table name in SQL quoted form e.g. "APP"."TABLE1" */
   def quotedName(table: String, escapeQuotes: Boolean = false): String = {
-    val (schema, tableName) = getTableWithSchema(table, null)
+    // always expect fully qualified name
+    val (schema, tableName) = getTableWithSchema(table, conn = null, None)
     if (escapeQuotes) {
       val sb = new java.lang.StringBuilder(schema.length + tableName.length + 9)
       sb.append("\\\"").append(schema).append("\\\".\\\"")

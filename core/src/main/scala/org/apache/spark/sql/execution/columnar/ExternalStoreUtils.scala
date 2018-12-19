@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -29,18 +30,16 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
-import org.apache.hadoop.hive.metastore.api.FieldSchema
-import org.apache.hadoop.hive.ql.metadata.Table
 
+import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
-import org.apache.spark.sql.catalyst.parser.{CatalystSqlParser, ParseException}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
@@ -48,14 +47,12 @@ import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
-import org.apache.spark.sql.sources.{BaseRelation, ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.sources.{ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.util.{Utils => SparkUtils}
-import org.apache.spark.{SparkContext, SparkException}
 
 /**
  * Utility methods used by external storage layers.
@@ -84,21 +81,20 @@ object ExternalStoreUtils {
 
   final val INDEX_TYPE = "INDEX_TYPE"
   final val INDEX_NAME = "INDEX_NAME"
-  final val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
-  final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
-  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
   final val COMPRESSION_CODEC = "COMPRESSION"
   final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
-  // internal properties stored as hive table parameters
-  final val USER_SPECIFIED_SCHEMA = "USER_SCHEMA"
 
   // inbuilt basic table properties
   final val PARTITION_BY = "PARTITION_BY"
   final val REPLICATE = "REPLICATE"
   final val BUCKETS = "BUCKETS"
   final val KEY_COLUMNS = "KEY_COLUMNS"
+
+  // these two are obsolete column table properties only for backward compatibility
+  final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
+  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
@@ -109,12 +105,6 @@ object ExternalStoreUtils {
   def registerBuiltinDrivers(): Unit = {
     DriverRegistry.register(Constant.JDBC_EMBEDDED_DRIVER)
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
-  }
-
-  def lookupName(tableName: String, schema: String): String = {
-    if (tableName.indexOf('.') <= 0) {
-      schema + '.' + tableName
-    } else tableName
   }
 
   private def addProperty(props: mutable.Map[String, String], key: String,
@@ -190,10 +180,13 @@ object ExternalStoreUtils {
   }
 
   def removeInternalProps(parameters: mutable.Map[String, String]): String = {
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val dbtableProp = SnappyExternalCatalog.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    // obsolete property but has to be removed when recovering from old meta-stores
+    parameters.remove("ALLOWEXISTING")
+    // remove the "path" property added by Spark hive catalog
+    parameters.remove("path")
     parameters.remove("serialization.format")
     table
   }
@@ -221,23 +214,20 @@ object ExternalStoreUtils {
     new GranteeIterator(grantees.asJava, null, true, -1, -1, -1, null, null).asScala
   }
 
-  def defaultStoreURL(sparkContext: Option[SparkContext]): String = {
-    sparkContext match {
-      case None => Constant.DEFAULT_EMBEDDED_URL +
-          ";host-data=false;mcast-port=0;internal-connection=true"
+  def defaultStoreURL(sparkContext: Option[SparkContext]): String = sparkContext match {
+    case None => defaultStoreURL(SnappyContext.getClusterMode(SnappyContext.globalSparkContext))
+    case Some(sc) => defaultStoreURL(SnappyContext.getClusterMode(sc))
+  }
 
-      case Some(sc) =>
-        SnappyContext.getClusterMode(sc) match {
-          case SnappyEmbeddedMode(_, _) =>
-            // Already connected to SnappyData in embedded mode.
-            Constant.DEFAULT_EMBEDDED_URL +
-                ";host-data=false;mcast-port=0;internal-connection=true"
-          case ThinClientConnectorMode(_, url) =>
-            url + ";route-query=false;internal-connection=true"
-          case LocalMode(_, url) =>
-            Constant.DEFAULT_EMBEDDED_URL + ";" + url + ";internal-connection=true"
-        }
-    }
+  def defaultStoreURL(clusterMode: ClusterMode): String = clusterMode match {
+    case null | SnappyEmbeddedMode(_, _) =>
+      // Already connected to SnappyData in embedded mode.
+      Constant.DEFAULT_EMBEDDED_URL +
+          ";host-data=false;mcast-port=0;internal-connection=true"
+    case ThinClientConnectorMode(_, url) =>
+      url + ";route-query=false;internal-connection=true"
+    case LocalMode(_, url) =>
+      Constant.DEFAULT_EMBEDDED_URL + ";" + url + ";internal-connection=true"
   }
 
   def isLocalMode(sparkContext: SparkContext): Boolean = {
@@ -401,32 +391,14 @@ object ExternalStoreUtils {
     }
   }
 
-  /**
-   * Create a [[DataSource]] for an external DataSource schema DDL
-   * string specification.
-   */
-  def externalResolvedDataSource(
-      snappySession: SnappySession,
-      schemaString: String,
-      provider: String,
-      mode: SaveMode,
-      options: Map[String, String],
-      data: Option[LogicalPlan] = None): BaseRelation = {
-    val dataSource = DataSource(snappySession, className = provider)
-    val clazz: Class[_] = dataSource.providingClass
-    val relation = clazz.newInstance() match {
-
-      case dataSource: ExternalSchemaRelationProvider =>
-        // add schemaString as separate property for Hive persistence
-        dataSource.createRelation(snappySession.snappyContext, mode,
-          new CaseInsensitiveMap(JdbcExtendedUtils.addSplitProperty(
-            schemaString, JdbcExtendedUtils.SCHEMADDL_PROPERTY, options).toMap),
-          schemaString, data)
-
-      case _ => throw new AnalysisException(
-        s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
+  /** check if the DataSource implements ExternalSchemaRelationProvider */
+  def isExternalSchemaRelationProvider(provider: String): Boolean = {
+    try {
+      classOf[ExternalSchemaRelationProvider].isAssignableFrom(
+        DataSource.lookupDataSource(provider))
+    } catch {
+      case NonFatal(_) => false
     }
-    relation
   }
 
   // This should match JDBCRDD.compileFilter for best performance
@@ -519,13 +491,14 @@ object ExternalStoreUtils {
    * @param columns  - The list of desired columns
    * @return A Catalyst schema corresponding to columns in the given order.
    */
-  def pruneSchema(fieldMap: Map[String, StructField],
+  def pruneSchema(fieldMap: scala.collection.Map[String, StructField],
       columns: Array[String]): StructType = {
     new StructType(columns.map { col =>
-      fieldMap.getOrElse(col, fieldMap.getOrElse(col,
-        throw new AnalysisException("Cannot resolve " +
+      fieldMap.get(col) match {
+        case None => throw new AnalysisException("Cannot resolve " +
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
-      ))
+        case Some(f) => f
+      }
     })
   }
 
@@ -560,7 +533,7 @@ object ExternalStoreUtils {
     }
   }
 
-  def getAndSetTotalPartitions(sparkContext: Option[SparkContext],
+  def getAndSetTotalPartitions(session: SnappySession,
       parameters: mutable.Map[String, String],
       forManagedTable: Boolean, forColumnTable: Boolean = true,
       forSampleTable: Boolean = false): Int = {
@@ -642,43 +615,29 @@ object ExternalStoreUtils {
     (ctx, cleanedSource)
   }
 
-  def getExternalStoreOnExecutor(parameters: java.util.Map[String, String],
+  def getExternalStoreOnExecutor(parameters: mutable.Map[String, String],
       partitions: Int, tableName: String, schema: StructType): ExternalStore = {
     val connProperties: ConnectionProperties =
-      ExternalStoreUtils.validateAndGetAllProps(None, parameters.asScala)
+      ExternalStoreUtils.validateAndGetAllProps(None, parameters)
     new JDBCSourceAsColumnarStore(connProperties, partitions, tableName, schema)
   }
 
-  // taken from HiveClientImpl.fromHiveColumn
-  def fromHiveColumn(hc: FieldSchema): StructField = {
-    val columnType = try {
-      CatalystSqlParser.parseDataType(hc.getType)
-    } catch {
-      case e: ParseException =>
-        throw new SparkException("Cannot recognize hive type string: " + hc.getType, e)
-    }
+  def getTableSchema(schemaAsJson: String): StructType = StructType.fromString(schemaAsJson)
 
-    val metadata = new MetadataBuilder().putString(HIVE_TYPE_STRING, hc.getType).build()
-    val field = StructField(
-      name = hc.getName,
-      dataType = columnType,
-      nullable = true,
-      metadata = metadata)
-    Option(hc.getComment).map(field.withComment).getOrElse(field)
-  }
-
-  def getTableSchema(table: Table): StructType = {
-    getTableSchema(table.getParameters.asScala).getOrElse {
-      // Try to get from hive schema that separates partition columns from schema.
-      val partCols = table.getPartCols.asScala.map(fromHiveColumn)
-      StructType(table.getCols.asScala.map(fromHiveColumn) ++ partCols)
+  /**
+   * Get the table schema from CatalogTable.properties if present.
+   */
+  def getTableSchema(props: Map[String, String], forView: Boolean): Option[StructType] = {
+    (if (forView) {
+      JdbcExtendedUtils.readSplitProperty(SnappyExternalCatalog.SPLIT_VIEW_SCHEMA, props) match {
+        case None => JdbcExtendedUtils.readSplitProperty(SnappyExternalCatalog.TABLE_SCHEMA, props)
+        case s => s
+      }
+    } else JdbcExtendedUtils.readSplitProperty(SnappyExternalCatalog.TABLE_SCHEMA, props)) match {
+      case Some(s) => Some(StructType.fromString(s))
+      case None => None
     }
   }
-
-  def getTableSchema(
-      tableProps: scala.collection.Map[String, String]): Option[StructType] =
-    JdbcExtendedUtils.readSplitProperty(SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP,
-      tableProps).map(StructType.fromString)
 
   def getColumnMetadata(schema: StructType): java.util.List[ExternalTableMetaData.Column] = {
     schema.toList.map { f =>
