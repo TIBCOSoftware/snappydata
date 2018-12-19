@@ -350,7 +350,7 @@ class SnappySessionState(val snappySession: SnappySession)
       try {
         catalog.lookupRelation(u.tableIdentifier, u.alias)
       } catch {
-        case _: NoSuchTableException =>
+        case _: TableNotFoundException | _: NoSuchTableException =>
           u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
       }
     }
