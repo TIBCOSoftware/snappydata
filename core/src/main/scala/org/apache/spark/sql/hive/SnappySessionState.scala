@@ -82,21 +82,43 @@ class SnappySessionState(val snappySession: SnappySession)
     new StreamingQueryManager(snappySession)
   }
 
-  protected[hive] lazy val hiveState: HiveSessionState = {
+  private[sql] lazy val hiveState: HiveSessionState = {
     // switch the shared state to that of hive temporarily
     snappySession.setSharedState(snappySharedState.getHiveSharedState)
     try {
       val state = new HiveSessionState(snappySession)
-      // initialize lazy members
-      state.metadataHive
-      val hiveCatalog = state.catalog
-      // set current database if a non-default one has been set in this session
-      val currentSchema = catalog.getCurrentSchema
-      if (currentSchema != catalog.defaultSchemaName) {
-        hiveCatalog.setCurrentDatabase(currentSchema)
+      snappySession.setSessionState(state)
+      try {
+        // initialize lazy members
+        state.metadataHive
+        val hiveCatalog = state.catalog
+        // set current database if a non-default one has been set in this session
+        val currentSchema = catalog.getCurrentSchema
+        if (currentSchema != catalog.defaultSchemaName) {
+          hiveCatalog.setCurrentDatabase(currentSchema)
+        }
+        state
+      } finally {
+        snappySession.setSessionState(this)
       }
-      state
     } finally {
+      snappySession.setSharedState(snappySharedState)
+    }
+  }
+
+  /**
+   * Execute a method switching the session and shared states in the session to external hive.
+   * Rules, Strategies and catalog lookups into the external hive meta-store may need to switch
+   * since session/shared states may be read from the session dynamically inside the body of
+   * given function that will expect it to be the external hive ones.
+   */
+  private[sql] def withHiveState[T](f: => T): T = {
+    snappySession.setSharedState(snappySharedState.getHiveSharedState)
+    snappySession.setSessionState(hiveState)
+    try {
+      f
+    } finally {
+      snappySession.setSessionState(this)
       snappySession.setSharedState(snappySharedState)
     }
   }
@@ -346,7 +368,7 @@ class SnappySessionState(val snappySession: SnappySession)
    * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
    */
   object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
-    def getTable(u: UnresolvedRelation): LogicalPlan = {
+    private def getTable(u: UnresolvedRelation): LogicalPlan = {
       try {
         catalog.lookupRelation(u.tableIdentifier, u.alias)
       } catch {
@@ -358,6 +380,8 @@ class SnappySessionState(val snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case d@DeleteFromTable(u: UnresolvedRelation, _) =>
+        d.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
         d.copy(query = EliminateSubqueryAliases(getTable(u)))
     }
@@ -773,7 +797,11 @@ class SnappySessionState(val snappySession: SnappySession)
 class HiveConditionalRule(rule: HiveSessionState => Rule[LogicalPlan], state: SnappySessionState)
     extends Rule[LogicalPlan] {
   override def apply(plan: LogicalPlan): LogicalPlan = {
-    if (state.snappySession.enableHiveSupport) rule(state.hiveState)(plan) else plan
+    // Parquet/Orc conversion rules will indirectly read the session state from the session
+    // so switch to it and restore at the end
+    if (state.snappySession.enableHiveSupport) state.withHiveState {
+      rule(state.hiveState)(plan)
+    } else plan
   }
 }
 
@@ -781,18 +809,10 @@ class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: Snapp
     extends Strategy {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     val session = state.snappySession
-    if (session.enableHiveSupport) {
-      // some strategies like DataSinks read the session state and expect it to be
-      // HiveSessionState so switch it before invoking the strategy and restore at the end
-      val hiveState = state.hiveState
-      session.setSessionState(hiveState)
-      session.setSharedState(state.snappySharedState.getHiveSharedState)
-      try {
-        strategy(hiveState.planner.asInstanceOf[HiveStrategies])(plan)
-      } finally {
-        session.setSessionState(state)
-        session.setSharedState(state.snappySharedState)
-      }
+    // some strategies like DataSinks read the session state and expect it to be
+    // HiveSessionState so switch it before invoking the strategy and restore at the end
+    if (session.enableHiveSupport) state.withHiveState {
+      strategy(state.hiveState.planner.asInstanceOf[HiveStrategies])(plan)
     } else Nil
   }
 }

@@ -426,6 +426,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     externalCatalog.getDatabase(schemaName)
   }
 
+  override def databaseExists(schema: String): Boolean = {
+    super.databaseExists(schema) ||
+        (snappySession.enableHiveSupport && hiveSessionCatalog.databaseExists(schema))
+  }
+
   override def listDatabases(): Seq[String] = synchronized {
     if (skipDefaultSchemas) {
       listAllDatabases().filter(s => s != SnappyExternalCatalog.SPARK_DEFAULT_SCHEMA &&
@@ -491,6 +496,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
         case _ => field
       }
     })) else table
+  }
+
+  override def tableExists(name: TableIdentifier): Boolean = {
+    super.tableExists(name) ||
+        (snappySession.enableHiveSupport && hiveSessionCatalog.tableExists(name))
   }
 
   override def getTableMetadata(name: TableIdentifier): CatalogTable = {
@@ -674,7 +684,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
             val table = externalCatalog.getTableOption(schemaName, tableName) match {
               case None =>
                 if (snappySession.enableHiveSupport) {
-                  return hiveSessionCatalog.lookupRelation(name, alias)
+                  // lookupRelation uses HiveMetastoreCatalog that looks up the session state and
+                  // catalog from the session every time so use withHiveState to switch the catalog
+                  val state = snappySession.snappySessionState
+                  state.withHiveState {
+                    return state.hiveSessionCatalog.lookupRelation(name, alias)
+                  }
                 } else throw new TableNotFoundException(schemaName, tableName)
               case Some(t) => t
             }
@@ -896,6 +911,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     createSchema(schemaName, ignoreIfExists = true)
 
     super.createFunction(funcDefinition, ignoreIfExists)
+  }
+
+  override def functionExists(name: FunctionIdentifier): Boolean = {
+    super.functionExists(name) ||
+        (snappySession.enableHiveSupport && hiveSessionCatalog.functionExists(name))
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {

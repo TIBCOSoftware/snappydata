@@ -21,13 +21,7 @@ import javax.annotation.concurrent.GuardedBy;
 import io.snappydata.sql.catalog.ConnectorExternalCatalog;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
 import org.apache.spark.SparkContext;
-import org.apache.spark.sql.ClusterMode;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.SnappyContext;
-import org.apache.spark.sql.SnappyEmbeddedMode;
-import org.apache.spark.sql.SnappySession;
-import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.ThinClientConnectorMode;
+import org.apache.spark.sql.*;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
 import org.apache.spark.sql.catalyst.catalog.GlobalTempViewManager;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
@@ -133,30 +127,48 @@ public final class SnappySharedState extends SharedState {
     }
   }
 
-  private SnappySharedState(SparkContext sparkContext) {
+  /**
+   * Private constructor that allows sharing the global temp views and cache.
+   */
+  private SnappySharedState(SparkContext sparkContext, CacheManager cacheManager,
+      HiveExternalCatalog externalCatalog, GlobalTempViewManager globalViewManager) {
     super(sparkContext);
 
     // avoid inheritance of activeSession
     SparkSession.clearActiveSession();
 
-    this.snappyCacheManager = new SnappyCacheManager();
-    ClusterMode clusterMode = SnappyContext.getClusterMode(sparkContext);
-    if (clusterMode instanceof ThinClientConnectorMode) {
-      this.embedCatalog = null;
+    this.snappyCacheManager = cacheManager == null ? new SnappyCacheManager() : cacheManager;
+    if (externalCatalog == null) {
+      ClusterMode clusterMode = SnappyContext.getClusterMode(sparkContext);
+      if (clusterMode instanceof ThinClientConnectorMode) {
+        this.embedCatalog = null;
+      } else {
+        this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
+            sparkContext, sparkContext.conf());
+      }
     } else {
-      this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
-          sparkContext, sparkContext.conf());
+      this.embedCatalog = externalCatalog;
     }
 
-    // Initialize global temporary view manager with upper-case schema name to match
-    // the convention used by SnappyData.
-    String globalSchemaName = Utils.toUpperCase(super.globalTempViewManager().database());
-    this.globalViewManager = new GlobalTempViewManager(globalSchemaName);
+    if (globalViewManager == null) {
+      // Initialize global temporary view manager with upper-case schema name to match
+      // the convention used by SnappyData.
+      String globalSchemaName = Utils.toUpperCase(super.globalTempViewManager().database());
+      this.globalViewManager = new GlobalTempViewManager(globalSchemaName);
+    } else {
+      this.globalViewManager = globalViewManager;
+    }
 
     this.initialized = true;
   }
 
-  public static synchronized SnappySharedState create(SparkContext sparkContext) {
+  public static SnappySharedState create(SparkContext sparkContext) {
+    return create(sparkContext, null, null, null);
+  }
+
+  private static synchronized SnappySharedState create(SparkContext sparkContext,
+      CacheManager cacheManager, HiveExternalCatalog externalCatalog,
+      GlobalTempViewManager globalViewManager) {
     // force in-memory catalog to avoid initializing external hive catalog at this point
     final String catalogImpl = sparkContext.conf().get(CATALOG_IMPLEMENTATION, null);
     // there is a small thread-safety issue in that if multiple threads
@@ -166,7 +178,8 @@ public final class SnappySharedState extends SharedState {
 
     createListenerAndUI(sparkContext);
 
-    final SnappySharedState sharedState = new SnappySharedState(sparkContext);
+    final SnappySharedState sharedState = new SnappySharedState(sparkContext,
+        cacheManager, externalCatalog, globalViewManager);
 
     // reset the catalog implementation to original
     if (catalogImpl != null) {
@@ -175,21 +188,6 @@ public final class SnappySharedState extends SharedState {
       sparkContext.conf().remove(CATALOG_IMPLEMENTATION);
     }
     return sharedState;
-  }
-
-  /**
-   * Private constructor for getting Spark's hive state while sharing the
-   * global temp views and cache
-   */
-  private SnappySharedState(SparkContext sparkContext,
-      CacheManager cacheManager, GlobalTempViewManager globalViewManager) {
-    super(sparkContext);
-
-    this.snappyCacheManager = cacheManager;
-    this.embedCatalog = (HiveExternalCatalog)externalCatalog();
-    this.globalViewManager = globalViewManager;
-
-    this.initialized = true;
   }
 
   /**
@@ -251,18 +249,19 @@ public final class SnappySharedState extends SharedState {
       throw new IllegalStateException("getHiveSharedState: unexpected invocation " +
           "from within SnappySharedState constructor");
     }
+    // if there is already an instance of SparkSession with hive support created then use
+    // its session state since it will already have booted the meta-store database and
+    // re-initialization will fail for default embedded derby
     final SparkContext context = sparkContext();
-    final String catalogImpl = context.conf().get(CATALOG_IMPLEMENTATION, null);
-    context.conf().set(CATALOG_IMPLEMENTATION, "hive");
-    try {
-      return (this.hiveState = new SnappySharedState(context,
-          this.snappyCacheManager, this.globalViewManager));
-    } finally {
-      if (catalogImpl != null) {
-        context.conf().set(CATALOG_IMPLEMENTATION, catalogImpl);
-      } else {
-        context.conf().remove(CATALOG_IMPLEMENTATION);
-      }
+    final scala.Option<SparkSession> existing = SparkSession$.MODULE$.getDefaultSession();
+    final HiveExternalCatalog hiveCatalog;
+    if (existing.isDefined() &&
+        existing.get().sharedState().externalCatalog() instanceof HiveExternalCatalog) {
+      hiveCatalog = (HiveExternalCatalog)existing.get().sharedState().externalCatalog();
+    } else {
+      hiveCatalog = new HiveExternalCatalog(context.conf(), context.hadoopConfiguration());
     }
+    return (this.hiveState = create(context, this.snappyCacheManager, hiveCatalog,
+        this.globalViewManager));
   }
 }
