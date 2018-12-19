@@ -29,6 +29,9 @@ class StructType extends SnappySQLJob{
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
 
+    // scalastyle:off println
+    println("Struct Type Job started...")
+
     val Q1 = "SELECT name, TestRecord.Runs, TestRecord.Avg FROM CR.CricketRecord " +
       "ORDER BY TestRecord.Runs DESC"
     val Q2 = "SELECT SUM(TestRecord.Runs) AS TotalRuns FROM CR.CricketRecord"

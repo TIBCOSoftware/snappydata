@@ -29,6 +29,9 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
 
+    // scalastyle:off println
+    println("ArraysofStringInMapAsValue Type Job started...")
+
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().getOrCreate()
     val sc : SparkContext = SparkContext.getOrCreate()
@@ -45,8 +48,6 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
     val Q3 = "SELECT country, value FROM FamousPeopleView WHERE key = 'Authors'"
 
     /* --- Snappy Job --- */
-    // scalastyle:off println
-    println("Started the ArraysOfStringInMapAsValue job...")
     snc.sql("CREATE SCHEMA FP")
     snc.sql("CREATE TABLE IF NOT EXISTS FP.FamousPeople(country String, " +
                      "celebrities MAP<String,Array<String>>) USING column")

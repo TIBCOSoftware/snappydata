@@ -29,6 +29,9 @@ class ArrayType extends SnappySQLJob {
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
 
+    // scalastyle:off println
+    println("ArraysType Job started...")
+
     val Q1 : String = "SELECT * FROM ST.Student ORDER BY rollno"
     val Q2 : String = "SELECT rollno, marks[0] AS Maths, marks[1] AS Science," +
                       "marks[2] AS English,marks[3] AS Computer, marks[4] AS Music, marks[5] " +

@@ -28,6 +28,9 @@ class MapType extends SnappySQLJob{
 
   override def runSnappyJob(snappySession : SnappySession, jobConfig: Config): Any = {
 
+    // scalastyle:off println
+    println("Map Type Job started...")
+
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().getOrCreate()
     val sc : SparkContext = SparkContext.getOrCreate()
@@ -130,13 +133,11 @@ class MapType extends SnappySQLJob{
       "MAP('english',52.3),MAP('computer',67.9),MAP('music',69.9),MAP('history',66.8)")
 
     snc.sql(Q1)
-    // scalastyle:off println
     println("snc Q1:" + snc.sql(Q1).show)
     snc.sql(Q2)
     snc.sql(Q3)
     snc.sql(Q4)
     snc.sql(Q5)
-    // scalastyle:off println
     println("snc Q5: " + snc.sql(Q5).show)
     snc.sql(Q6)
 
@@ -180,19 +181,18 @@ class MapType extends SnappySQLJob{
       "MAP('english',52.3),MAP('computer',67.9),MAP('music',69.9),MAP('history',66.8)")
 
     spark.sql(Q1)
-    // scalastyle:off println
     println("spark : Q1" + spark.sql(Q1).show)
     spark.sql(Q2)
     spark.sql(Q3)
     spark.sql(Q4)
     spark.sql(Q5)
-    // scalastyle:off println
     println("spark : Q5" + spark.sql(Q5).show)
     spark.sql(Q6)
 
     /* --- Verification --- */
 
-//    SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
+    // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
+    // SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
     SnappyTestUtils.assertQueryFullResultSet(snc, Q2, "Q2", "column", pw, sqlContext)
     SnappyTestUtils.assertQueryFullResultSet(snc, Q3, "Q3", "column", pw, sqlContext)
     SnappyTestUtils.assertQueryFullResultSet(snc, Q4, "Q4", "column", pw, sqlContext)
