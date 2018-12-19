@@ -26,7 +26,6 @@ import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
 import org.apache.spark.executor.InputMetrics
-import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException}
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
@@ -441,7 +440,7 @@ object MetadataTest extends Assertions {
     try {
       rs = executeSQL("show tables in sysibm").collect()
     } catch {
-      case _: NoSuchDatabaseException => rs = Array.empty
+      case ae: AnalysisException if ae.getMessage().contains("Schema 'SYSIBM'") => rs = Array.empty
       case se: SQLException if se.getSQLState == "42000" => rs = Array.empty
     }
     assert(rs.length === 0)
@@ -464,7 +463,7 @@ object MetadataTest extends Assertions {
       rs = executeSQL("show columns in sysTables from app").collect()
       fail("Expected error due to non-existent table")
     } catch {
-      case _: NoSuchTableException | _: TableNotFoundException => // expected
+      case _: TableNotFoundException => // expected
       case se: SQLException if se.getSQLState == "42000" => // expected
     }
     try {

@@ -34,7 +34,7 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchDatabaseException, NoSuchFunctionException, NoSuchPartitionException, NoSuchPermanentFunctionException}
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchFunctionException, NoSuchPartitionException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, ExpressionInfo}
@@ -118,6 +118,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   def formatName(name: String): String = {
     if (caseSensitiveAnalysis) name else Utils.toUpperCase(name)
   }
+
+  protected def schemaNotFoundException(schema: String): AnalysisException =
+    new AnalysisException(s"Schema '$schema' not found")
 
   /** API to get primary key or Key Columns of a SnappyData table */
   def getKeyColumns(table: String): Seq[Column] = getKeyColumnsAndPositions(table).map(_._1)
@@ -359,7 +362,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
     if (!externalCatalog.databaseExists(schemaName)) {
       if (ignoreIfNotExists) return
-      else throw new AnalysisException(s"Schema $schemaName not found")
+      else throw schemaNotFoundException(schemaName)
     }
     checkSchemaPermission(schemaName, table = "", defaultUser = null, ignoreIfNotExists)
 
@@ -410,12 +413,14 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   }
 
   override def getDatabaseMetadata(schema: String): CatalogDatabase = {
-    try {
-      super.getDatabaseMetadata(schema)
-    } catch {
-      case _: NoSuchDatabaseException if snappySession.enableHiveSupport =>
+    val schemaName = formatDatabaseName(schema)
+    if (!databaseExists(schemaName)) {
+      if (snappySession.enableHiveSupport) {
+        if (!hiveSessionCatalog.databaseExists(schema)) throw schemaNotFoundException(schema)
         hiveSessionCatalog.getDatabaseMetadata(schema)
+      } else throw schemaNotFoundException(schema)
     }
+    externalCatalog.getDatabase(schemaName)
   }
 
   override def listDatabases(): Seq[String] = synchronized {
@@ -697,6 +702,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   }
 
   override def listTables(schema: String, pattern: String): Seq[TableIdentifier] = {
+    val schemaName = formatDatabaseName(schema)
+    if (schemaName != globalTempViewManager.database &&
+        !externalCatalog.databaseExists(schemaName)) {
+      throw schemaNotFoundException(schema)
+    }
     if (snappySession.enableHiveSupport) {
       (super.listTables(schema, pattern).toSet ++
           hiveSessionCatalog.listTables(schema, pattern).map(id => TableIdentifier(
@@ -869,7 +879,6 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
           externalCatalog.getFunction(schemaName, qualifiedName.funcName)
         } catch {
           case _: AnalysisException => failFunctionLookup(qualifiedName.funcName)
-          case _: NoSuchPermanentFunctionException => failFunctionLookup(qualifiedName.funcName)
         }
         removeFromFuncJars(catalogFunction, qualifiedName)
       case _ =>
