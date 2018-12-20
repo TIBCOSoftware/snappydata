@@ -23,7 +23,6 @@ class SnappyDataFrameReaderWriterSuite
         with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "column nullability and comment - write and then read",
     "saveAsTable with mode Append should not fail if the table not exists but a same-name temp view exist",
     "saveAsTable with mode Append should not fail if the table already exists and a same-name temp view exist",
     "saveAsTable with mode ErrorIfExists should not fail if the table not exists but a same-name temp view exist",

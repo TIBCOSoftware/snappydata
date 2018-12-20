@@ -70,7 +70,7 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
     }
   }
 
-  private[this] val field = schema.fields.find(Utils.fieldName(_)
+  private[this] val field = schema.fields.find(_.name
       .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
     s"Field $column does not exist in $table with schema=$schema."))
 
@@ -267,7 +267,7 @@ final class StructValidatingConverter(struct: StructType,
   private[this] var allIdentityConverters = true
   private[this] val converters = struct.map { f =>
     val converter = ValidatingConverter(f.dataType, table,
-      s"$column.${Utils.fieldName(f)}")
+      s"$column.${f.name}")
     if (allIdentityConverters &&
         !converter.isInstanceOf[IdentityValidatingConverter]) {
       allIdentityConverters = false

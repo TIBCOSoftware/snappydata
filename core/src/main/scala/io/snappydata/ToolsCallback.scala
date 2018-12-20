@@ -67,10 +67,8 @@ trait ToolsCallback {
   def getLeadClassLoader(): URLClassLoader
 
   /**
-   *
-   * @param schema
-   * @param currentOwner
-   * @return the schema owner, can be ldap group
+   * Check permission to write to given schema for a user. Returns the normalized user or
+   * LDAP group name of the schema owner (or passed user itself if security is disabled).
    */
-  def checkSchemaPermission(schema: String, currentOwner: String): String
+  def checkSchemaPermission(schema: String, currentUser: String): String
 }
