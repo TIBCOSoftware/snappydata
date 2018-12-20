@@ -29,6 +29,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant._
 import io.snappydata.Property
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
@@ -1050,6 +1051,24 @@ class QueryRoutingDUnitTest(val s: String)
       stmt.execute("drop table parentT")
       stmt.close()
       conn.close()
+    }
+  }
+
+  def test_SNAP_2707(): Unit = {
+    val expectedSqlState: String = SQLState.PUTINTO_OP_DISALLOWED_ON_COLUMN_TABLES
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    var conn = getANetConnection(netPort1)
+    var stmt = conn.createStatement()
+    stmt.execute("drop table if exists t1")
+    stmt.execute("create table t1(id integer) using column options(key_columns 'id')")
+    try {
+        stmt.execute("put into t1 values(999)")
+        assert(false, "query should have failed as put into" +
+            " operation on column table is not allowed")
+    } catch {
+        case sq: SQLException if expectedSqlState.
+            startsWith(sq.getSQLState) => // expected
     }
   }
 
