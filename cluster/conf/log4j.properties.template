@@ -112,7 +112,6 @@ log4j.logger.parquet=ERROR
 log4j.logger.org.apache.hadoop.io.compress=WARN
 log4j.logger.spark.jobserver.LocalContextSupervisorActor=WARN
 log4j.logger.spark.jobserver.JarManager=WARN
-log4j.logger.org.apache.spark.sql.hive.HiveClientUtil=WARN
 log4j.logger.org.datanucleus=ERROR
 # Task logger created in SparkEnv
 log4j.logger.org.apache.spark.Task=WARN
