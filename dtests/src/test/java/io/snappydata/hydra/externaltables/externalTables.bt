@@ -7,3 +7,14 @@ io/snappydata/hydra/externaltables/externalTablesWithAPI.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
+
+io/snappydata/hydra/externaltables/externalTablesWithSQL.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  tableType="External"
+  numRowsValidation = true
+  fullResultSetValidation = true
+  isSmokeRun = false
