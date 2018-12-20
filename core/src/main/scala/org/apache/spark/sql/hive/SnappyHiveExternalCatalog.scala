@@ -463,7 +463,15 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         case None => table.copy(identifier = tableIdent, viewText = viewText,
           viewOriginalText = viewOriginalText)
       }
-    } else table.copy(identifier = tableIdent)
+    } else table.provider match {
+      // add dbtable property which is not present in old releases
+      case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)) &&
+          !table.storage.properties.contains(DBTABLE_PROPERTY) =>
+        table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
+            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
+      case _ => table.copy(identifier = tableIdent)
+    }
   }
 
   override protected def getCachedCatalogTable(schema: String, table: String): CatalogTable = {
