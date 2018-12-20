@@ -84,19 +84,14 @@ class SnappySessionState(val snappySession: SnappySession)
 
   private[sql] lazy val hiveState: HiveSessionState = {
     // switch the shared state to that of hive temporarily
-    snappySession.setSharedState(snappySharedState.getHiveSharedState)
+    snappySession.setSharedState(snappySharedState.getOrCreateHiveSharedState)
     try {
       val state = new HiveSessionState(snappySession)
       snappySession.setSessionState(state)
       try {
         // initialize lazy members
         state.metadataHive
-        val hiveCatalog = state.catalog
-        // set current database if a non-default one has been set in this session
-        val currentSchema = catalog.getCurrentSchema
-        if (currentSchema != catalog.defaultSchemaName) {
-          hiveCatalog.setCurrentDatabase(currentSchema)
-        }
+        state.catalog
         state
       } finally {
         snappySession.setSessionState(this)
@@ -113,7 +108,7 @@ class SnappySessionState(val snappySession: SnappySession)
    * given function that will expect it to be the external hive ones.
    */
   private[sql] def withHiveState[T](f: => T): T = {
-    snappySession.setSharedState(snappySharedState.getHiveSharedState)
+    snappySession.setSharedState(snappySharedState.getOrCreateHiveSharedState)
     snappySession.setSessionState(hiveState)
     try {
       f

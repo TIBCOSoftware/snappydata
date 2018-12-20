@@ -216,11 +216,8 @@ trait SnappyExternalCatalog extends ExternalCatalog {
    * Get all the tables in the catalog skipping given schema names. By default
    * the inbuilt SYS schema is skipped.
    */
-  def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] = {
-    listDatabases().flatMap(schema =>
-      if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
-      else listTables(schema).flatMap(table => getTableOption(schema, table)))
-  }
+  def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] =
+    SnappyExternalCatalog.getAllTables(this, skipSchemas)
 
   /**
    * Check for baseTable in both properties and storage.properties (older releases used a mix).
@@ -286,6 +283,7 @@ object SnappyExternalCatalog {
   val INDEXED_TABLE = "INDEXED_TABLE"
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
+  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd).*".r
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
 
@@ -328,6 +326,16 @@ object SnappyExternalCatalog {
         }
       } else defaultUser
     } else defaultUser
+  }
+
+  /**
+   * Get all the tables in the catalog skipping given schema names. By default
+   * the inbuilt SYS schema is skipped.
+   */
+  def getAllTables(catalog: ExternalCatalog, skipSchemas: Seq[String]): Seq[CatalogTable] = {
+    catalog.listDatabases().flatMap(schema =>
+      if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
+      else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
   }
 }
 

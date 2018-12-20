@@ -242,11 +242,11 @@ public final class SnappySharedState extends SharedState {
   /**
    * Create a Spark hive shared state while sharing the global temp view and cache managers.
    */
-  public synchronized SharedState getHiveSharedState() {
+  public synchronized SharedState getOrCreateHiveSharedState() {
     if (this.hiveState != null) return this.hiveState;
 
     if (!this.initialized) {
-      throw new IllegalStateException("getHiveSharedState: unexpected invocation " +
+      throw new IllegalStateException("getOrCreateHiveSharedState: unexpected invocation " +
           "from within SnappySharedState constructor");
     }
     // if there is already an instance of SparkSession with hive support created then use
@@ -263,5 +263,9 @@ public final class SnappySharedState extends SharedState {
     }
     return (this.hiveState = create(context, this.snappyCacheManager, hiveCatalog,
         this.globalViewManager));
+  }
+
+  public synchronized SharedState getHiveSharedState() {
+    return this.hiveState;
   }
 }

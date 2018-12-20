@@ -94,7 +94,7 @@ dependencies {
   }
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
 
-  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.4") {
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.5") {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')

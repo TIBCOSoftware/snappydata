@@ -1133,6 +1133,8 @@ object SnappyContext extends Logging {
     }
   }
 
+  def getSharedState: SnappySharedState = _sharedState
+
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       stopSnappyContext()

@@ -129,6 +129,8 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
   final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
+  final def DATABASES: Rule0 = rule { keyword(Consts.DATABASES) }
+  final def DBPROPERTIES: Rule0 = rule { keyword(Consts.DBPROPERTIES) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
@@ -160,6 +162,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def LIST: Rule0 = rule { keyword(Consts.LIST) }
+  final def LOCATION: Rule0 = rule { keyword(Consts.LOCATION) }
   final def MEMBERS: Rule0 = rule { keyword(Consts.MEMBERS) }
   final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
@@ -455,7 +458,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def createSchema: Rule1[LogicalPlan] = rule {
-    CREATE ~ (SCHEMA | DATABASE) ~ ifNotExists ~ identifier ~ (
+    CREATE ~ SCHEMA ~ ifNotExists ~ identifier ~ (
         AUTHORIZATION ~ (
             LDAPGROUP ~ ':' ~ ws ~ identifier ~> ((group: String) => group -> true) |
             identifier ~> ((id: String) => id -> false)
@@ -465,9 +468,24 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def dropSchema: Rule1[LogicalPlan] = rule {
-    DROP ~ (SCHEMA | DATABASE) ~ ifExists ~ identifier ~ (RESTRICT ~ push(false) |
-        CASCADE ~ push(true)).? ~> ((exists: Boolean, schemaName: String, cascade: Any) =>
-      DropSchemaCommand(schemaName, exists, cascade.asInstanceOf[Option[Boolean]].contains(true)))
+    DROP ~ (SCHEMA ~ push(false) | DATABASE ~ push(true)) ~ ifExists ~ identifier ~
+        (RESTRICT ~ push(false) | CASCADE ~ push(true)).? ~> ((isDb: Boolean,
+        exists: Boolean, schemaName: String, cascade: Any) => DropSchemaOrDbCommand(
+      schemaName, exists, cascade.asInstanceOf[Option[Boolean]].contains(true), isDb))
+  }
+
+  protected def createDatabase: Rule1[LogicalPlan] = rule {
+    CREATE ~ DATABASE ~ ifNotExists ~ identifier ~ (COMMENT ~ stringLiteral).? ~
+        (LOCATION ~ stringLiteral).? ~ (WITH ~ DBPROPERTIES ~ options).? ~> {
+      (notExists: Boolean, dbName: String, comment: Any, path: Any, properties: Any) =>
+        val props = properties.asInstanceOf[Option[Map[String, String]]]
+        CreateDatabaseCommand(dbName, notExists, path.asInstanceOf[Option[String]],
+          comment.asInstanceOf[Option[String]], if (props.isEmpty) Map.empty else props.get)
+    }
+  }
+
+  protected def alterDatabase: Rule1[LogicalPlan] = rule {
+    ALTER ~ DATABASE ~ identifier ~ SET ~ DBPROPERTIES ~ options ~> AlterDatabasePropertiesCommand
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
@@ -775,7 +793,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def option: Rule1[(String, String)] = rule {
-    optionKey ~ ('=' ~ ws).? ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
+    optionKey ~ (("==" | '=') ~ ws).? ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
   }
 
   protected final def options: Rule1[Map[String, String]] = rule {
@@ -786,7 +804,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def ddl: Rule1[LogicalPlan] = rule {
     createTable | describe | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView | alterView | createSchema | dropSchema |
-    alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
+    createDatabase | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTable | createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | passThrough
   }
