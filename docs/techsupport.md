@@ -9,7 +9,7 @@ The following channels are monitored for comments/questions:
 
 * [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata)![Stackoverflow](http://i.imgur.com/LPIdp12.png)
 
-* [Slack](https://snappydata-public.slack.com)![Slack](http://i.imgur.com/h3sc6GM.png)
+* [Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)
 
 * [Gitter](https://gitter.im/SnappyDataInc/snappydata) ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
 
