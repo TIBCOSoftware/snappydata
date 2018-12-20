@@ -24,8 +24,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.Property
 import io.snappydata.Property.HashAggregateSize
+import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
@@ -33,22 +35,20 @@ import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.catalog.CatalogRelation
-import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
-import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.execution.command.{DDLUtils, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
-import org.apache.spark.sql.hive.{SnappyConnectorCatalog, SnappySharedState, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
@@ -62,7 +62,6 @@ import org.apache.spark.{Partition, SparkConf}
 
 class SnappySessionState(val snappySession: SnappySession)
     extends SessionState(snappySession) with SnappyStrategies {
-  self =>
 
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
@@ -74,8 +73,6 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
-
-  private[internal] lazy val metadataHive = snappySharedState.metadataHive().newSession()
 
   override lazy val streamingQueryManager: StreamingQueryManager = {
     // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
@@ -121,10 +118,11 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
-    new PreprocessTableInsertOrPut(conf) ::
+    AnalyzeCreateTable(snappySession) ::
+        new PreprocessTable(this) ::
+        ResolveRelationsExtended ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
-        ResolveRelationsExtended ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
         ResolveQueryHints(snappySession) ::
         RowLevelSecurity ::
@@ -143,17 +141,6 @@ class SnappySessionState(val snappySession: SnappySession)
       getExtendedResolutionRules(this)
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
-
-  /**
-   * A set of basic analysis rules required to be run before plan caching to allow
-   * for proper analysis before ParamLiterals are marked as "tokenized". For example,
-   * grouping or ordering expressions used in projections will need to be resolved
-   * here so that ParamLiterals are considered as equal based of value and not position.
-   */
-  private[sql] lazy val preCacheRules: RuleExecutor[LogicalPlan] = new RuleExecutor[LogicalPlan] {
-    override val batches: Seq[Batch] = Batch("Resolution", Once,
-      ResolveAggregationExpressions :: Nil: _*) :: Nil
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -343,7 +330,7 @@ class SnappySessionState(val snappySession: SnappySession)
         catalog.lookupRelation(u.tableIdentifier, u.alias)
       } catch {
         case _: NoSuchTableException =>
-          u.failAnalysis(s"Table not found: ${u.tableName}")
+          u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
       }
     }
 
@@ -442,6 +429,9 @@ class SnappySessionState(val snappySession: SnappySession)
     Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
+      val memStore = GemFireStore.getBootingInstance
+      if ((memStore eq null) || !memStore.isRLSEnabled) return plan
+
       plan match {
         case _: BypassRowLevelSecurity | _: Update | _: Delete |
              _: DeleteFromTable | _: PutIntoTable => plan
@@ -500,7 +490,7 @@ class SnappySessionState(val snappySession: SnappySession)
 
     def limitExternalDataFetch(plan: LogicalPlan): Int = {
       // if plan is pure select with or without limit , has GemFireRelation,
-      // no Filter , no GroupBy, no Aggregate then applu rule and is not a CreateTable
+      // no Filter , no GroupBy, no Aggregate then apply rule and is not a CreateTable
       // or a CreateView
       // TODO: Deal with View
 
@@ -545,8 +535,7 @@ class SnappySessionState(val snappySession: SnappySession)
   case class AnalyzeMutableOperations(sparkSession: SparkSession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
-    private def getKeyAttributes(table: LogicalPlan,
-        child: LogicalPlan,
+    private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
         plan: LogicalPlan): (Seq[NamedExpression], LogicalPlan, LogicalRelation) = {
       var tableName = ""
       val keyColumns = table.collectFirst {
@@ -557,7 +546,7 @@ class SnappySessionState(val snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return (Nil, DMLExternalTable(catalog.newQualifiedTableName(
+                return (Nil, DMLExternalTable(snappySession.tableIdentifier(
                   mutable.table), lr, currentKey.sqlText), lr)
               case _ =>
                 throw new AnalysisException(
@@ -635,7 +624,7 @@ class SnappySessionState(val snappySession: SnappySession)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
-          val allReferences = newChild.references ++
+          val allReferences = newChild.references ++ AttributeSet(updateAttrs) ++
               AttributeSet(newUpdateExprs.flatMap(_.references)) ++ AttributeSet(keyAttrs)
           u.copy(child = Project(newChild.output.filter(allReferences.contains), newChild),
             keyColumns = keyAttrs.map(_.toAttribute),
@@ -651,9 +640,9 @@ class SnappySessionState(val snappySession: SnappySession)
           d.copy(child = Project(keyAttrs, newChild),
             keyColumns = keyAttrs.map(_.toAttribute))
         }
-      case d@DeleteFromTable(_, child) if child.resolved =>
+      case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
         ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
-      case p@PutIntoTable(_, child) if child.resolved =>
+      case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
         ColumnTableBulkOps.transformPutPlan(sparkSession, p)
     }
 
@@ -667,32 +656,19 @@ class SnappySessionState(val snappySession: SnappySession)
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog: SnappyStoreHiveCatalog = {
-    SnappyContext.getClusterMode(snappySession.sparkContext) match {
-      case ThinClientConnectorMode(_, _) =>
-        new SnappyConnectorCatalog(
-          snappySharedState.snappyCatalog(),
-          snappySession,
-          metadataHive,
-          snappySession.sharedState.globalTempViewManager,
-          functionResourceLoader,
-          functionRegistry,
-          conf,
-          newHadoopConf())
-      case _ =>
-        new SnappyStoreHiveCatalog(
-          snappySharedState.snappyCatalog(),
-          snappySession,
-          metadataHive,
-          snappySession.sharedState.globalTempViewManager,
-          functionResourceLoader,
-          functionRegistry,
-          conf,
-          newHadoopConf())
-    }
+  override lazy val catalog: SnappySessionCatalog = {
+    new SnappySessionCatalog(
+      snappySharedState.getExternalCatalogInstance(snappySession),
+      snappySession,
+      snappySession.sharedState.globalTempViewManager,
+      functionResourceLoader,
+      functionRegistry,
+      conf,
+      newHadoopConf())
   }
 
-  protected[sql] def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq(
+  protected[sql] def queryPreparations(
+      topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq[Rule[SparkPlan]](
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
     EnsureRequirements(snappySession.sessionState.conf),
@@ -714,7 +690,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   override final def executePlan(plan: LogicalPlan): QueryExecution = {
-    snappyStrategies
+    initSnappyStrategies
     clearExecutionData()
     beforeExecutePlan(plan)
     val qe = newQueryExecution(plan)
@@ -722,7 +698,7 @@ class SnappySessionState(val snappySession: SnappySession)
     qe
   }
 
-  private lazy val snappyStrategies = {
+  private lazy val initSnappyStrategies: Unit = {
     val storeOptimizedRules: Seq[Strategy] =
       Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
@@ -852,8 +828,8 @@ class SnappyConf(@transient val session: SnappySession)
 
     case Property.Tokenize.name =>
       value match {
-        case Some(boolVal) => SnappySession.tokenize = boolVal.toString.toBoolean
-        case None => SnappySession.tokenize = Property.Tokenize.defaultValue.get
+        case Some(boolVal) => session.tokenize = boolVal.toString.toBoolean
+        case None => session.tokenize = Property.Tokenize.defaultValue.get
       }
       session.clearPlanCache()
 
@@ -1123,17 +1099,53 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
-    extends Rule[LogicalPlan] {
+private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule[LogicalPlan] {
+
+  private def conf: SQLConf = state.conf
+
   def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+
+    // Add dbtable property for create table. While other routes can add it in
+    // SnappySession.createTable, the DataFrameWriter path needs to be handled here.
+    case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
+      val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
+      val provider = tableDesc.provider.get
+      // treat saveAsTable with mode=Append as insertInto
+      if (mode == SaveMode.Append && queryOpt.isDefined && state.catalog.tableExists(tableIdent)) {
+        new Insert(table = UnresolvedRelation(tableDesc.identifier),
+          partition = Map.empty, child = queryOpt.get,
+          overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
+      } else if (SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)) {
+        val tableName = tableIdent.unquotedString
+        // dependent tables are stored as comma-separated so don't allow comma in table name
+        if (tableName.indexOf(',') != -1) {
+          throw new AnalysisException(s"Table '$tableName' cannot contain comma in its name")
+        }
+        var newOptions = tableDesc.storage.properties +
+            (SnappyExternalCatalog.DBTABLE_PROPERTY -> tableName)
+        if (CatalogObjectType.isColumnTable(SnappyContext.getProviderType(provider))) {
+          // add default batchSize and maxDeltaRows options for column tables
+          if (!newOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
+            newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
+                ExternalStoreUtils.defaultColumnMaxDeltaRows(state.snappySession).toString)
+          }
+          if (!newOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
+            newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
+                ExternalStoreUtils.defaultColumnBatchSize(state.snappySession).toString)
+          }
+        }
+        c.copy(tableDesc.copy(storage = tableDesc.storage.copy(properties = newOptions)))
+      } else c
+
     // Check for SchemaInsertableRelation first
     case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
     _, _), _, child, _, _) if l.resolved && child.resolved =>
       r.insertableRelation(child.output) match {
+        case Some(ir) if r eq ir => i
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
-          val relation = LogicalRelation(br,
-            l.expectedOutputAttributes, l.catalogTable)
+          val relation = LogicalRelation(br, catalogTable = l.catalogTable)
           castAndRenameChildOutputForPut(i.copy(table = relation),
             relation.output, br, null, child)
         case None =>
@@ -1195,80 +1207,13 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
 
     // other cases handled like in PreprocessTableInsertion
     case i@InsertIntoTable(table, _, child, _, _)
-      if table.resolved && child.resolved => table match {
-      case relation: CatalogRelation =>
-        val metadata = relation.catalogTable
-        preProcess(i, relation = null, metadata.identifier.quotedString,
-          metadata.partitionColumnNames)
-      case LogicalRelation(h: HadoopFsRelation, _, identifier) =>
-        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preProcess(i, h, tblName, h.partitionSchema.map(_.name))
-      case LogicalRelation(ir: InsertableRelation, _, identifier) =>
-        val tblName = identifier.map(_.identifier.quotedString).getOrElse("unknown")
-        preProcess(i, ir, tblName, Nil)
-      case _ => i
-    }
-  }
-
-  private def preProcess(
-      insert: InsertIntoTable,
-      relation: BaseRelation,
-      tblName: String,
-      partColNames: Seq[String]): InsertIntoTable = {
-
-    // val expectedColumns = insert
-
-    val normalizedPartSpec = PartitioningUtils.normalizePartitionSpec(
-      insert.partition, partColNames, tblName, conf.resolver)
-
-    val expectedColumns = {
-      val staticPartCols = normalizedPartSpec.filter(_._2.isDefined).keySet
-      insert.table.output.filterNot(a => staticPartCols.contains(a.name))
-    }
-
-    if (expectedColumns.length != insert.child.schema.length) {
-      throw new AnalysisException(
-        s"Cannot insert into table $tblName because the number of columns are different: " +
-            s"need ${expectedColumns.length} columns, " +
-            s"but query has ${insert.child.schema.length} columns.")
-    }
-    if (insert.partition.nonEmpty) {
-      // the query's partitioning must match the table's partitioning
-      // this is set for queries like: insert into ... partition (one = "a", two = <expr>)
-      val samePartitionColumns =
-      if (conf.caseSensitiveAnalysis) {
-        insert.partition.keySet == partColNames.toSet
-      } else {
-        insert.partition.keySet.map(_.toLowerCase) == partColNames.map(_.toLowerCase).toSet
-      }
-      if (!samePartitionColumns) {
-        throw new AnalysisException(
-          s"""
-             |Requested partitioning does not match the table $tblName:
-             |Requested partitions: ${insert.partition.keys.mkString(",")}
-             |Table partitions: ${partColNames.mkString(",")}
-           """.stripMargin)
-      }
-      castAndRenameChildOutput(insert.copy(partition = normalizedPartSpec), expectedColumns)
-
-//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-//        child)).getOrElse(insert)
-    } else {
-      // All partition columns are dynamic because because the InsertIntoTable
-      // command does not explicitly specify partitioning columns.
-      castAndRenameChildOutput(insert, expectedColumns)
-          .copy(partition = partColNames.map(_ -> None).toMap)
-//      expectedColumns.map(castAndRenameChildOutput(insert, _, relation, null,
-//        child)).getOrElse(insert).copy(partition = partColNames
-//          .map(_ -> None).toMap)
-    }
+      if table.resolved && child.resolved => PreprocessTableInsertion(conf).apply(i)
   }
 
   /**
    * If necessary, cast data types and rename fields to the expected
    * types and names.
    */
-  // TODO: do we really need to rename?
   def castAndRenameChildOutputForPut[T <: LogicalPlan](
       plan: T,
       expectedOutput: Seq[Attribute],
@@ -1305,30 +1250,6 @@ private[sql] final class PreprocessTableInsertOrPut(conf: SQLConf)
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
         child)).asInstanceOf[T]
-    }
-  }
-
-  private def castAndRenameChildOutput(
-      insert: InsertIntoTable,
-      expectedOutput: Seq[Attribute]): InsertIntoTable = {
-    val newChildOutput = expectedOutput.zip(insert.child.output).map {
-      case (expected, actual) =>
-        if (expected.dataType.sameType(actual.dataType) &&
-            expected.name == actual.name &&
-            expected.metadata == actual.metadata) {
-          actual
-        } else {
-          // Renaming is needed for handling the following cases like
-          // 1) Column names/types do not match, e.g., INSERT INTO TABLE tab1 SELECT 1, 2
-          // 2) Target tables have column metadata
-          Alias(Cast(actual, expected.dataType), expected.name)(
-            explicitMetadata = Option(expected.metadata))
-        }
-    }
-
-    if (newChildOutput == insert.child.output) insert
-    else {
-      insert.copy(child = Project(newChildOutput, insert.child))
     }
   }
 }
@@ -1420,102 +1341,6 @@ object LikeEscapeSimplification {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
     case l@Like(left, Literal(pattern, StringType)) =>
       simplifyLike(null, l, left, pattern.toString)
-  }
-}
-
-/**
- * Rule to "normalize" ParamLiterals for the case of aggregation expression being used
- * in projection. Specifically the ParamLiterals from aggregations need to be replaced
- * into projection so that latter can be resolved successfully in plan execution
- * because ParamLiterals will match expression only by position and not value at the
- * time of execution. This rule is useful only before plan caching after parsing.
- *
- * See Spark's PhysicalAggregation rule for more details.
- */
-object ResolveAggregationExpressions extends Rule[LogicalPlan] {
-
-  private val identityGet: Expression => Expression = identity
-  private val toNamedExpression: (NamedExpression, Expression) => NamedExpression =
-    (_, e) => e.asInstanceOf[NamedExpression]
-
-  private val sortOrderGet: SortOrder => Expression = order => order.child
-  private val toSortOrder: (SortOrder, Expression) => SortOrder =
-    (order, e) => if (order.child eq e) order else order.copy(child = e)
-
-  private def useValueEquality[T](exprs: Seq[T], valueEquals: Boolean,
-      getExpr: T => Expression): Unit = {
-    exprs.foreach(getExpr(_).transform {
-      case p: ParamLiteral =>
-        if (valueEquals) {
-          // mark tokenized for consistent hashCode in canonicalized for semanticEquals
-          p.tokenized = true
-          p.positionIndependent = true
-          p.valueEquals = true
-        } else p.valueEquals = false
-        p
-    })
-  }
-
-  private def copyParamLiterals[T](groupingExpressions: Seq[Expression],
-      resultExpressions: Seq[T], getExpr: T => Expression,
-      getResult: (T, Expression) => T): Seq[T] = {
-    useValueEquality(groupingExpressions, valueEquals = true, identityGet)
-    useValueEquality(resultExpressions, valueEquals = true, getExpr)
-    // Replace any ParamLiterals in the original resultExpressions with any matching ones
-    // in groupingExpressions matching on the value like a Literal rather than position.
-    val newResultExpressions = resultExpressions.map { expr =>
-      getResult(expr, {
-        getExpr(expr).transformDown {
-          case e: AggregateExpression => e
-          case expression =>
-            groupingExpressions.collectFirst {
-              case p: ParamLiteral if (p ne expression) && p.equals(expression) =>
-                // ensure newLiteral != p so that it is replaced in tree
-                expression.asInstanceOf[ParamLiteral].valueEquals = false
-                p.valueEquals = false
-                p
-              case e if e.semanticEquals(expression) =>
-                // collect ParamLiterals from grouping expressions and apply
-                // to result expressions in the same order
-                val literals = new ArrayBuffer[ParamLiteral](2)
-                e.transformDown {
-                  case p: ParamLiteral => literals += p; p
-                }
-                if (literals.nonEmpty) {
-                  val iter = literals.iterator
-                  expression.transformDown {
-                    case p: ParamLiteral =>
-                      val newLiteral = iter.next()
-                      assert(newLiteral.equals(p))
-                      assert(p.tokenized)
-                      assert(newLiteral.tokenized)
-                      // ensure newLiteral != p so that it is replaced in tree
-                      p.valueEquals = false
-                      newLiteral.valueEquals = false
-                      newLiteral
-                  }
-                } else expression
-            } match {
-              case Some(e) => e
-              case _ => expression
-            }
-        }
-      })
-    }
-    useValueEquality(groupingExpressions, valueEquals = false, identityGet)
-    useValueEquality(newResultExpressions, valueEquals = false, getExpr)
-    newResultExpressions
-  }
-
-  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-    case Aggregate(groupingExpressions, resultExpressions, child) =>
-      val newResultExpressions = copyParamLiterals(groupingExpressions, resultExpressions,
-        identityGet, toNamedExpression)
-      Aggregate(groupingExpressions, newResultExpressions, child)
-
-    case Sort(order, global, a@Aggregate(groupingExpressions, _, _)) =>
-      val newOrder = copyParamLiterals(groupingExpressions, order, sortOrderGet, toSortOrder)
-      Sort(newOrder, global, a)
   }
 }
 

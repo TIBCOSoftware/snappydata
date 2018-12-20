@@ -290,7 +290,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
       // Because we only convert In to InSet in Optimizer when there are more than certain
       // items. So it is possible we still get an In expression here that needs to be pushed down.
-      case expressions.In(a: Attribute, list) if !list.exists(!TokenLiteral.isConstant(_)) =>
+      case expressions.In(a: Attribute, list) if list.forall(TokenLiteral.isConstant) =>
         val hSet = list.map(e => e.eval(EmptyRow))
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
         Some(sources.In(a.name, hSet.toArray.map(toScala)))

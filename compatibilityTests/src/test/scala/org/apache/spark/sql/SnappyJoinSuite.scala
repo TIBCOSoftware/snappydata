@@ -26,10 +26,6 @@ class SnappyJoinSuite extends JoinSuite
     "join operator selection",
     "broadcasted hash join operator selection",
     "broadcasted hash outer join operator selection",
-    "inner join where, one match per row",
-    "inner join ON, one match per row",
-    "left outer join",
-    "right outer join",
     "broadcasted existence join operator selection",
     "cross join with broadcast",
     "cross join detection"

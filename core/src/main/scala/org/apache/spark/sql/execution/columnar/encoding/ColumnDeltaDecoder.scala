@@ -134,4 +134,6 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
 
   @inline def readStruct(numFields: Int): InternalRow =
     realDecoder.readStruct(deltaBytes, numFields, nonNullPosition)
+
+  @inline def close(): Unit = realDecoder.close()
 }

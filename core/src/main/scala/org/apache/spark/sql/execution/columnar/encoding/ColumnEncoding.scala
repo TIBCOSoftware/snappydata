@@ -166,6 +166,12 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
   def readStruct(columnBytes: AnyRef, numFields: Int,
       nonNullPosition: Int): InternalRow =
     throw new UnsupportedOperationException(s"readStruct for $toString")
+
+  /**
+   * Close and relinquish all resources of this encoder.
+   * The encoder may no longer be usable after this call.
+   */
+  def close(): Unit = {}
 }
 
 trait ColumnEncoder extends ColumnEncoding {
@@ -708,8 +714,14 @@ trait ColumnEncoder extends ColumnEncoding {
    * Close and relinquish all resources of this encoder.
    * The encoder may no longer be usable after this call.
    */
-  def close(): Unit = {
-    clearSource(newSize = 0, releaseData = true)
+  def close(): Unit = close(releaseData = true)
+
+  /**
+   * Close and relinquish all resources of this encoder.
+   * The encoder may no longer be usable after this call.
+   */
+  private[sql] def close(releaseData: Boolean): Unit = {
+    clearSource(newSize = 0, releaseData)
   }
 
   protected[sql] def getNumNullWords: Int
@@ -744,6 +756,11 @@ object ColumnEncoding {
 
   private[columnar] val encodingClassName = s"${classOf[ColumnEncoding].getName}$$.MODULE$$"
 
+  private[columnar] val NULLS_OWNER = "NULL_WORDS"
+
+  /**
+   * Return true if the platform byte-order is little-endian and false otherwise.
+   */
   val littleEndian: Boolean = ByteOrder.nativeOrder == ByteOrder.LITTLE_ENDIAN
 
   val allDecoders: Array[(AnyRef, Long, StructField, (AnyRef, Long) => Long,
@@ -1169,38 +1186,42 @@ trait NotNullEncoder extends ColumnEncoder {
 
 trait NullableEncoder extends NotNullEncoder {
 
-  protected final var maxNulls: Long = _
-  protected final var nullWords: Array[Long] = _
-  protected final var initialNumWords: Int = _
+  protected[this] final var maxNulls: Long = _
+  protected[this] final var nullWords: ByteBuffer = _
+  protected[this] final var nullWordsObj: AnyRef = _
+  protected[this] final var nullWordsBaseOffset: Long = _
+  protected[this] final var initialNumWords: Int = _
+
+  @inline private[this] final def nullWordAt(index: Int): Long =
+    Platform.getLong(nullWordsObj, nullWordsBaseOffset + (index << 3))
 
   private def trimmedNumNullWords: Int = {
-    val nullWords = this.nullWords
-    var numWords = nullWords.length
-    while (numWords > 0 && nullWords(numWords - 1) == 0L) numWords -= 1
+    var numWords = nullWords.limit() >> 3
+    while (numWords > 0 && nullWordAt(numWords - 1) == 0L) numWords -= 1
     numWords
+  }
+
+  private def setNullWords(buffer: ByteBuffer, clearFromPosition: Int): Unit = {
+    nullWords = buffer
+    allocator.clearPostAllocate(buffer, clearFromPosition)
+    nullWordsObj = allocator.baseObject(nullWords)
+    nullWordsBaseOffset = allocator.baseOffset(nullWords)
   }
 
   override protected[sql] def getNumNullWords: Int = trimmedNumNullWords
 
   override protected[sql] def initializeNulls(initSize: Int): Int = {
-    if (nullWords eq null) {
-      val numWords = math.max(1, calculateBitSetWidthInBytes(initSize) >>> 3)
-      maxNulls = numWords.toLong << 6L
-      nullWords = new Array[Long](numWords)
-      initialNumWords = numWords
-      numWords
+    var numWords = 0
+    if (nullWords ne null) {
+      numWords = nullWords.limit() >> 3
+      BufferAllocator.releaseBuffer(nullWords)
     } else {
-      val numWords = nullWords.length
-      maxNulls = numWords.toLong << 6L
-      initialNumWords = numWords
-      // clear the words
-      var i = 0
-      while (i < numWords) {
-        if (nullWords(i) != 0L) nullWords(i) = 0L
-        i += 1
-      }
-      numWords
+      numWords = math.max(1, calculateBitSetWidthInBytes(initSize) >>> 3)
     }
+    maxNulls = numWords.toLong << 6L
+    setNullWords(allocator.allocate(numWords << 3, ColumnEncoding.NULLS_OWNER), 0)
+    initialNumWords = numWords
+    numWords
   }
 
   override def nullCount: Int = {
@@ -1208,7 +1229,7 @@ trait NullableEncoder extends NotNullEncoder {
     var i = 0
     val numWords = trimmedNumNullWords
     while (i < numWords) {
-      sum += java.lang.Long.bitCount(nullWords(i))
+      sum += java.lang.Long.bitCount(nullWordAt(i))
       i += 1
     }
     sum
@@ -1218,27 +1239,26 @@ trait NullableEncoder extends NotNullEncoder {
 
   override def writeIsNull(position: Int): Unit = {
     if (position < maxNulls) {
-      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, position)
+      BitSet.set(nullWordsObj, nullWordsBaseOffset, position)
     } else {
       // expand
-      val oldNulls = nullWords
-      val oldLen = trimmedNumNullWords
+      val limit = nullWords.limit()
+      val oldLen = limit >> 3
       // ensure that position fits (SNAP-1760)
-      val newLen = math.max(oldNulls.length << 1, (position >> 6) + 1)
-      nullWords = new Array[Long](newLen)
+      val newLen = math.max((oldLen * 3) >> 1, (position >> 6) + 1)
+      setNullWords(allocator.expand(nullWords, (newLen - oldLen) << 3,
+        ColumnEncoding.NULLS_OWNER), limit)
       maxNulls = newLen.toLong << 6L
-      if (oldLen > 0) System.arraycopy(oldNulls, 0, nullWords, 0, oldLen)
-      BitSet.set(nullWords, Platform.LONG_ARRAY_OFFSET, position)
+      BitSet.set(nullWordsObj, nullWordsBaseOffset, position)
     }
   }
 
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = {
     var writeCursor = cursor
-    val nullWords = this.nullWords
     var index = 0
     while (index < numWords) {
-      ColumnEncoding.writeLong(columnBytes, writeCursor, nullWords(index))
+      ColumnEncoding.writeLong(columnBytes, writeCursor, nullWordAt(index))
       writeCursor += 8
       index += 1
     }
@@ -1301,5 +1321,13 @@ trait NullableEncoder extends NotNullEncoder {
       writeNulls(newColumnBytes, position, numWords)
       newColumnData
     }
+  }
+
+  override def close(): Unit = {
+    if (nullWords ne null) {
+      BufferAllocator.releaseBuffer(nullWords)
+      nullWords = null
+    }
+    close(releaseData = true)
   }
 }

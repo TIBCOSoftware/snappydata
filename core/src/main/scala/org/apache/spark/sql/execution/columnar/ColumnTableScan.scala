@@ -55,7 +55,7 @@ import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal,
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext, TaskKilledException}
+import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -283,6 +283,7 @@ private[sql] final case class ColumnTableScan(
       classOf[StructType].getName)
     val columnBufferInit = new StringBuilder
     val bufferInitCode = new StringBuilder
+    val closeDecoders = new StringBuilder
     val reservoirRowFetch =
       s"""
          |$stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
@@ -341,9 +342,10 @@ private[sql] final case class ColumnTableScan(
       val updatedDecoder = s"${decoder}Updated"
       val updatedDecoderLocal = s"${decoder}UpdatedLocal"
       val numNullsVar = s"${decoder}NumNulls"
-      val buffer = ctx.freshName("buffer")
+      val buffer = s"${decoder}Buffer"
       val bufferVar = s"${buffer}Object"
       val initBufferFunction = s"${buffer}Init"
+      val closeDecoderFunction = s"${decoder}Close"
       if (isWideSchema) {
         ctx.addMutableState("Object", bufferVar, "")
       }
@@ -395,6 +397,19 @@ private[sql] final case class ColumnTableScan(
            |}
         """.stripMargin)
       columnBufferInit.append(s"$initBufferFunction();\n")
+
+      ctx.addNewFunction(closeDecoderFunction,
+        s"""
+           |private void $closeDecoderFunction() {
+           |  if ($decoder != null) {
+           |    $decoder.close();
+           |  }
+           |  if ($updatedDecoder != null) {
+           |    $updatedDecoder.close();
+           |  }
+           |}
+        """.stripMargin)
+      closeDecoders.append(s"$closeDecoderFunction();\n")
 
       if (isWideSchema) {
         if (bufferInitCode.length > 1024) {
@@ -522,6 +537,7 @@ private[sql] final case class ColumnTableScan(
         }"""
     }
     val nextBatch = ctx.freshName("nextBatch")
+    val closeDecodersFunction = ctx.freshName("closeAllDecoders")
     val switchSRR = if (isForSampleReservoirAsRegion) {
       // triple switch between rowInputSRR, rowInput, colInput
       s"""
@@ -541,12 +557,11 @@ private[sql] final case class ColumnTableScan(
       """.stripMargin
     } else ""
 
-    val getContext = Utils.genTaskContextFunction(ctx)
-    val taskKilledClass = classOf[TaskKilledException].getName
     ctx.addNewFunction(nextBatch,
       s"""
          |private boolean $nextBatch() throws Exception {
          |  if ($buffers != null) return true;
+         |  $closeDecodersFunction();
          |  // get next batch or row (latter for non-batch source iteration)
          |  if ($input == null) return false;
          |  if (!$input.hasNext()) {
@@ -567,10 +582,6 @@ private[sql] final case class ColumnTableScan(
          |    $numBatchRows = 1;
          |    $incrementNumRowsSnippet
          |  } else {
-         |    // check for task cancellation before start of processing of a new batch
-         |    if ($getContext() != null && $getContext().isInterrupted()) {
-         |      throw new $taskKilledClass();
-         |    }
          |    $batchInit
          |    $deletedCount = $colInput.getDeletedRowCount();
          |    $incrementBatchOutputRows
@@ -579,6 +590,12 @@ private[sql] final case class ColumnTableScan(
          |  }
          |  $batchIndex = 0;
          |  return true;
+         |}
+      """.stripMargin)
+    ctx.addNewFunction(closeDecodersFunction,
+      s"""
+         |private void $closeDecodersFunction() {
+         |  ${closeDecoders.toString()}
          |}
       """.stripMargin)
 
@@ -815,7 +832,7 @@ object ColumnTableScan extends Logging {
     def statsFor(a: Attribute): ColumnStatsSchema = columnBatchStatsMap(a)
 
     def filterInList(l: Seq[Expression]): Boolean =
-      l.length <= 200 && !l.exists(!TokenLiteral.isConstant(_))
+      l.length <= 200 && l.forall(TokenLiteral.isConstant)
 
     // Returned filter predicate should return false iff it is impossible
     // for the input expression to evaluate to `true' based on statistics
