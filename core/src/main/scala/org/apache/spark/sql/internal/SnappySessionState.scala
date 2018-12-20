@@ -24,9 +24,13 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.Property.HashAggregateSize
+import io.snappydata.{Constant, Property}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -841,6 +845,20 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
 
     case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
+
+    case Constant.TRIGGER_AUTHENTICATION => value match {
+      case Some(boolVal) if boolVal.toString.toBoolean =>
+        if ((Misc.getMemStoreBootingNoThrow ne null) && Misc.isSecurityEnabled) {
+          SecurityUtils.checkCredentials(getConfString(
+            com.pivotal.gemfirexd.Attribute.USERNAME_ATTR),
+            getConfString(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)) match {
+            case None => // success
+            case Some(failure) =>
+              throw Util.generateCsSQLException(SQLState.NET_CONNECT_AUTH_FAILED, failure)
+          }
+        }
+      case _ =>
+    }
 
     case _ => // ignore others
   }

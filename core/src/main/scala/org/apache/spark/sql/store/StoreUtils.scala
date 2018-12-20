@@ -328,7 +328,7 @@ object StoreUtils {
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
         v match {
-          case PRIMARY_KEY => ""
+          case _ if v.trim().equalsIgnoreCase(PRIMARY_KEY) => ""
           case _ =>
             val schemaFields = Utils.schemaFields(schema)
             val cols = v.split(",") map (_.trim)
@@ -369,7 +369,7 @@ object StoreUtils {
       sb.append(parameters.remove(PARTITION_BY).map(v => {
         val parClause = {
           v match {
-            case PRIMARY_KEY =>
+            case _ if v.trim().equalsIgnoreCase(PRIMARY_KEY) =>
               if (isRowTable) {
                 s"sparkhash $PRIMARY_KEY"
               } else {
@@ -384,8 +384,8 @@ object StoreUtils {
       else s"$GEM_PARTITION_BY COLUMN ($ROWID_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
-        case PRIMARY_KEY => throw Utils.analysisException("Column table " +
-            "cannot be partitioned on PRIMARY KEY as no primary key")
+        case v if v.trim().equalsIgnoreCase(PRIMARY_KEY) => throw Utils.analysisException(
+          "Column table cannot be partitioned on PRIMARY KEY as no primary key")
         case _ =>
       }
     }
