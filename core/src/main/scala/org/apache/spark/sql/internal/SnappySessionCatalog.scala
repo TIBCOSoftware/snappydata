@@ -18,9 +18,11 @@ package org.apache.spark.sql.internal
 
 import java.io.File
 import java.net.URL
+import java.sql.SQLException
 
 import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
@@ -326,15 +328,70 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   /**
    * Same as createDatabase but uses pre-defined defaults for CatalogDatabase.
    * The passed schemaName should already be formatted by a call to [[formatDatabaseName]].
+   * This will never try to create a database in external hive meta-store.
    */
-  private[sql] def createSchema(schemaName: String, ignoreIfExists: Boolean): Unit = {
+  def createSchema(schemaName: String, ignoreIfExists: Boolean,
+      authId: Option[(String, Boolean)] = None): Unit = {
     validateSchemaName(schemaName, checkForDefault = false)
+
+    // create schema in catalog first
     if (externalCatalog.databaseExists(schemaName)) {
       if (!ignoreIfExists) throw new AnalysisException(s"Schema '$schemaName' already exists")
     } else {
-      createDatabase(CatalogDatabase(schemaName, s"User $schemaName schema",
+      super.createDatabase(CatalogDatabase(schemaName, s"User $schemaName schema",
         getDefaultDBPath(schemaName), Map.empty), ignoreIfExists)
     }
+
+    // then in store if catalog was successful
+    createStoreSchema(schemaName, ignoreIfExists, authId)
+  }
+
+  private def createStoreSchema(schema: String, ignoreIfExists: Boolean,
+      authId: Option[(String, Boolean)]): Unit = {
+    val authClause = authId match {
+      case None => ""
+      case Some((id, false)) => s""" AUTHORIZATION "$id""""
+      case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
+    }
+    val conn = snappySession.defaultPooledConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
+      stmt.close()
+    } catch {
+      case se: SQLException if ignoreIfExists && se.getSQLState == "X0Y68" => // ignore
+      case err: Error if SystemFailure.isJVMFailureError(err) =>
+        SystemFailure.initiateFailure(err)
+        // If this ever returns, rethrow the error. We're poisoned
+        // now, so don't let this thread continue.
+        throw err
+      case t: Throwable =>
+        // drop from catalog
+        dropSchema(schema, ignoreIfNotExists = true, cascade = false)
+        // Whenever you catch Error or Throwable, you must also
+        // check for fatal JVM error (see above).  However, there is
+        // _still_ a possibility that you are dealing with a cascading
+        // error condition, so you also need to check to see if the JVM
+        // is still usable:
+        SystemFailure.checkFailure()
+        throw t
+    } finally {
+      conn.close()
+    }
+  }
+
+  override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit = {
+    val schemaName = formatDatabaseName(schemaDefinition.name)
+    validateSchemaName(schemaName, checkForDefault = false)
+
+    // create in catalog first
+    super.createDatabase(schemaDefinition, ignoreIfExists)
+    if (snappySession.enableHiveSupport) {
+      hiveSessionCatalog.createDatabase(schemaDefinition, ignoreIfExists)
+    }
+
+    // then in store if catalog was successful
+    createStoreSchema(schemaName, ignoreIfExists, authId = None)
   }
 
   private[sql] def setCurrentSchema(schema: String): Unit = {
@@ -342,15 +399,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (schemaName != getCurrentSchema) {
       // create the schema implicitly if not present
       createSchema(schemaName, ignoreIfExists = true)
-      setCurrentDatabase(schemaName)
       // invalidate cached plans which could be referring to old current schema
       snappySession.clearPlanCache()
     }
-  }
-
-  override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit = {
-    validateSchemaName(formatDatabaseName(schemaDefinition.name), checkForDefault = false)
-    super.createDatabase(schemaDefinition, ignoreIfExists)
+    setCurrentDatabase(schemaName)
   }
 
   /**
@@ -395,7 +447,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  override def dropDatabase(schema: String, ignoreIfNotExists: Boolean,
+  def dropSchema(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
     val schemaName = formatDatabaseName(schema)
     // user cannot drop own schema
@@ -406,12 +458,43 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     dropAllSchemaObjects(schemaName, ignoreIfNotExists, cascade)
 
     super.dropDatabase(schemaName, ignoreIfNotExists, cascade)
+
+    // drop the schema from store (no cascade required since catalog drop will take care)
+    val checkIfExists = if (ignoreIfNotExists) " IF EXISTS" else ""
+    val conn = snappySession.defaultPooledConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
+      stmt.close()
+    } finally {
+      conn.close()
+    }
+  }
+
+  override def dropDatabase(schema: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = {
+    dropSchema(schema, ignoreIfNotExists, cascade)
+    if (snappySession.enableHiveSupport) {
+      hiveSessionCatalog.dropDatabase(schema, ignoreIfNotExists, cascade)
+    }
+  }
+
+  override def alterDatabase(dbDefinition: CatalogDatabase): Unit = {
+    super.alterDatabase(dbDefinition)
+    // also set in hive catalog if present
+    if (snappySession.enableHiveSupport) {
+      hiveSessionCatalog.alterDatabase(dbDefinition)
+    }
   }
 
   override def setCurrentDatabase(schema: String): Unit = {
     val schemaName = formatDatabaseName(schema)
     validateSchemaName(schemaName, checkForDefault = false)
     super.setCurrentDatabase(schemaName)
+    // also set in hive catalog if present
+    if (snappySession.enableHiveSupport) {
+      hiveSessionCatalog.setCurrentDatabase(schema)
+    }
     externalCatalog.setCurrentDatabase(schemaName)
   }
 
@@ -499,15 +582,16 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   }
 
   override def tableExists(name: TableIdentifier): Boolean = {
-    super.tableExists(name) ||
-        (snappySession.enableHiveSupport && hiveSessionCatalog.tableExists(name))
+    super.tableExists(name) || (snappySession.enableHiveSupport &&
+        hiveSessionCatalog.tableExists(resolveTableIdentifier(name)))
   }
 
   override def getTableMetadata(name: TableIdentifier): CatalogTable = {
     super.getTableMetadataOption(name) match {
       case None =>
-        if (snappySession.enableHiveSupport) hiveSessionCatalog.getTableMetadata(name)
-        else throw new TableNotFoundException(getSchemaName(name), name.table)
+        if (snappySession.enableHiveSupport && databaseExists(getSchemaName(name))) {
+          hiveSessionCatalog.getTableMetadata(resolveTableIdentifier(name))
+        } else throw new TableNotFoundException(getSchemaName(name), name.table)
       case Some(table) => convertCharTypes(table)
     }
   }
@@ -515,8 +599,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def getTableMetadataOption(name: TableIdentifier): Option[CatalogTable] = {
     super.getTableMetadataOption(name) match {
       case None =>
-        if (snappySession.enableHiveSupport) hiveSessionCatalog.getTableMetadataOption(name)
-        else None
+        if (snappySession.enableHiveSupport && databaseExists(getSchemaName(name))) {
+          hiveSessionCatalog.getTableMetadataOption(resolveTableIdentifier(name))
+        } else None
       case Some(table) => Some(convertCharTypes(table))
     }
   }
@@ -687,10 +772,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
                   // lookupRelation uses HiveMetastoreCatalog that looks up the session state and
                   // catalog from the session every time so use withHiveState to switch the catalog
                   val state = snappySession.snappySessionState
-                  state.withHiveState {
-                    return state.hiveSessionCatalog.lookupRelation(name, alias)
+                  if (state.hiveSessionCatalog.databaseExists(schemaName)) state.withHiveState {
+                    return state.hiveSessionCatalog.lookupRelation(
+                      new TableIdentifier(tableName, Some(schemaName)), alias)
                   }
-                } else throw new TableNotFoundException(schemaName, tableName)
+                }
+                throw new TableNotFoundException(schemaName, tableName)
               case Some(t) => t
             }
             if (table.tableType == CatalogTableType.VIEW) {
@@ -725,7 +812,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
         !externalCatalog.databaseExists(schemaName)) {
       throw schemaNotFoundException(schema)
     }
-    if (snappySession.enableHiveSupport) {
+    if (snappySession.enableHiveSupport && hiveSessionCatalog.databaseExists(schema)) {
       (super.listTables(schema, pattern).toSet ++
           hiveSessionCatalog.listTables(schema, pattern).map(id => TableIdentifier(
             formatTableName(id.table), id.database.map(formatDatabaseName))).toSet).toSeq
@@ -810,7 +897,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       spec: TablePartitionSpec): CatalogTablePartition = {
     if (snappySession.enableHiveSupport) {
       try {
-        super.getPartition(tableName, spec)
+        super.getPartition(resolveTableIdentifier(tableName), spec)
       } catch {
         case _: NoSuchPartitionException => hiveSessionCatalog.getPartition(tableName, spec)
       }
@@ -819,24 +906,27 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   override def listPartitionNames(tableName: TableIdentifier,
       partialSpec: Option[TablePartitionSpec] = None): Seq[String] = {
-    if (snappySession.enableHiveSupport) {
-      (super.listPartitionNames(tableName, partialSpec).toSet ++
+    if (snappySession.enableHiveSupport &&
+        hiveSessionCatalog.databaseExists(getSchemaName(tableName))) {
+      (super.listPartitionNames(resolveTableIdentifier(tableName), partialSpec).toSet ++
           hiveSessionCatalog.listPartitionNames(tableName, partialSpec).toSet).toSeq
     } else super.listPartitionNames(tableName, partialSpec)
   }
 
   override def listPartitions(tableName: TableIdentifier,
       partialSpec: Option[TablePartitionSpec]): Seq[CatalogTablePartition] = {
-    if (snappySession.enableHiveSupport) {
-      (super.listPartitions(tableName, partialSpec).toSet ++
+    if (snappySession.enableHiveSupport &&
+        hiveSessionCatalog.databaseExists(getSchemaName(tableName))) {
+      (super.listPartitions(resolveTableIdentifier(tableName), partialSpec).toSet ++
           hiveSessionCatalog.listPartitions(tableName, partialSpec).toSet).toSeq
     } else super.listPartitions(tableName, partialSpec)
   }
 
   override def listPartitionsByFilter(tableName: TableIdentifier,
       predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
-    if (snappySession.enableHiveSupport) {
-      (super.listPartitionsByFilter(tableName, predicates).toSet ++
+    if (snappySession.enableHiveSupport &&
+        hiveSessionCatalog.databaseExists(getSchemaName(tableName))) {
+      (super.listPartitionsByFilter(resolveTableIdentifier(tableName), predicates).toSet ++
           hiveSessionCatalog.listPartitionsByFilter(tableName, predicates).toSet).toSeq
     } else super.listPartitionsByFilter(tableName, predicates)
   }
@@ -915,7 +1005,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   override def functionExists(name: FunctionIdentifier): Boolean = {
     super.functionExists(name) ||
-        (snappySession.enableHiveSupport && hiveSessionCatalog.functionExists(name))
+        (snappySession.enableHiveSupport && hiveSessionCatalog.databaseExists(
+          getSchemaName(name)) && hiveSessionCatalog.functionExists(name))
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
@@ -954,7 +1045,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     try {
       super.lookupFunction(name, children)
     } catch {
-      case _: NoSuchFunctionException if snappySession.enableHiveSupport =>
+      case _: NoSuchFunctionException if snappySession.enableHiveSupport &&
+          hiveSessionCatalog.databaseExists(getSchemaName(name)) =>
         // lookup in external hive catalog
         hiveSessionCatalog.lookupFunction(name, children)
     } finally {
@@ -972,7 +1064,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     try {
       super.lookupFunctionInfo(name)
     } catch {
-      case _: NoSuchFunctionException if snappySession.enableHiveSupport =>
+      case _: NoSuchFunctionException if snappySession.enableHiveSupport &&
+          hiveSessionCatalog.databaseExists(getSchemaName(name)) =>
         // lookup in external hive catalog
         hiveSessionCatalog.lookupFunctionInfo(name)
     } finally {
@@ -984,7 +1077,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     try {
       super.getFunctionMetadata(name)
     } catch {
-      case _: NoSuchFunctionException if snappySession.enableHiveSupport =>
+      case _: NoSuchFunctionException if snappySession.enableHiveSupport &&
+          hiveSessionCatalog.databaseExists(getSchemaName(name)) =>
         // lookup in external hive catalog
         hiveSessionCatalog.getFunctionMetadata(name)
     }
@@ -992,7 +1086,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   override def listFunctions(schema: String,
       pattern: String): Seq[(FunctionIdentifier, String)] = {
-    if (snappySession.enableHiveSupport) {
+    if (snappySession.enableHiveSupport && hiveSessionCatalog.databaseExists(schema)) {
       (super.listFunctions(schema, pattern).toSet ++
           hiveSessionCatalog.listFunctions(schema, pattern).toSet).toSeq
     } else super.listFunctions(schema, pattern)

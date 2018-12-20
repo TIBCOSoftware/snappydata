@@ -20,7 +20,6 @@ package org.apache.spark.sql.execution
 import java.io.File
 import java.lang
 import java.nio.file.{Files, Paths}
-import java.sql.SQLException
 import java.util.Map.Entry
 import java.util.function.Consumer
 
@@ -104,63 +103,20 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
-
-    // create schema in catalog first
-    catalog.createSchema(schema, ifNotExists)
-
-    // next in store if catalog was successful
-    val authClause = authId match {
-      case None => ""
-      case Some((id, false)) => s""" AUTHORIZATION "$id""""
-      case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
-    }
-    val conn = session.defaultPooledConnection(schema)
-    try {
-      val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
-      stmt.close()
-    } catch {
-      case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
-      case err: Error if SystemFailure.isJVMFailureError(err) =>
-        SystemFailure.initiateFailure(err)
-        // If this ever returns, rethrow the error. We're poisoned
-        // now, so don't let this thread continue.
-        throw err
-      case t: Throwable =>
-        // drop from catalog
-        catalog.dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
-        // Whenever you catch Error or Throwable, you must also
-        // check for fatal JVM error (see above).  However, there is
-        // _still_ a possibility that you are dealing with a cascading
-        // error condition, so you also need to check to see if the JVM
-        // is still usable:
-        SystemFailure.checkFailure()
-        throw t
-    } finally {
-      conn.close()
-    }
+    catalog.createSchema(schema, ifNotExists, authId)
     Nil
   }
 }
 
-case class DropSchemaCommand(schemaName: String, ifExists: Boolean, cascade: Boolean)
-    extends RunnableCommand {
+case class DropSchemaOrDbCommand(schemaName: String, ifExists: Boolean, cascade: Boolean,
+    isDb: Boolean) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
     // drop from catalog first to cascade drop all objects if required
-    catalog.dropDatabase(schema, ifExists, cascade)
-    // drop the schema from store (no cascade required since catalog drop will take care)
-    val checkIfExists = if (ifExists) " IF EXISTS" else ""
-    val conn = session.defaultPooledConnection(schema)
-    try {
-      val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
-      stmt.close()
-    } finally {
-      conn.close()
-    }
+    if (isDb) catalog.dropDatabase(schema, ifExists, cascade) // drop from hive too
+    else catalog.dropSchema(schema, ifExists, cascade)
     Nil
   }
 }
