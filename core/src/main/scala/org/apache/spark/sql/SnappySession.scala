@@ -1898,6 +1898,8 @@ object SnappySession extends Logging {
         var rdd = if (isCommand) qe.toRdd else null
         // don't post separate plan for CTAS since it already has posted one for the insert
         val postGUIPlans = if (isCommand) executedPlan.asInstanceOf[ExecutedCommandExec].cmd match {
+          case c: CreateTableUsingCommand if c.query.isDefined && CatalogObjectType
+              .isTableBackedByRegion(SnappyContext.getProviderType(c.provider)) => false
           case c: CreateDataSourceTableAsSelectCommand if CatalogObjectType.isTableBackedByRegion(
             CatalogObjectType.getTableType(c.table)) => false
           case _: SnappyCacheTableCommand => false

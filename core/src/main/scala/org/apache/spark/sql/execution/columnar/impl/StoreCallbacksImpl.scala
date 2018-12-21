@@ -133,7 +133,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
           }
-          val batchCreator = new ColumnBatchCreator(pr,
+          val batchCreator = new ColumnBatchCreator(pr, tableName,
             ColumnFormatRelation.columnBatchTableName(tableName), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)
