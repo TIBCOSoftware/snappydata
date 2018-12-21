@@ -80,7 +80,7 @@ trait ConnectorExternalCatalog {
     ConnectorExternalCatalog.cachedCatalogTables.invalidateAll()
   }
 
-  def close(): Unit = connectorHelper.close()
+  def close(): Unit = synchronized(connectorHelper.close())
 }
 
 object ConnectorExternalCatalog extends Logging {

@@ -47,8 +47,6 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
     JdbcUtils.createConnectionFactory(jdbcOptions)()
   }
 
-  private val getJarsStmtString = "call sys.GET_DEPLOYED_JARS(?)"
-
   private lazy val getCatalogMetaDataStmt: CallableStatement =
     conn.prepareCall("call sys.GET_CATALOG_METADATA(?, ?, ?)")
 
@@ -56,7 +54,7 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
     conn.prepareCall("call sys.UPDATE_CATALOG_METADATA(?, ?)")
 
   {
-    val stmt = conn.prepareCall(getJarsStmtString)
+    val stmt = conn.prepareCall("call sys.GET_DEPLOYED_JARS(?)")
     val sc = session.sparkContext
     if ((sc ne null) && System.getProperty("pull-deployed-jars", "true").toBoolean) {
       try {

@@ -47,7 +47,7 @@ import org.apache.spark.sql.{SnappyContext, SparkSession, TableNotFoundException
 class SmartConnectorExternalCatalog(override val session: SparkSession)
     extends SnappyExternalCatalog with ConnectorExternalCatalog {
 
-  override val jdbcUrl: String = SnappyContext.getClusterMode(session.sparkContext)
+  override def jdbcUrl: String = SnappyContext.getClusterMode(session.sparkContext)
       .asInstanceOf[ThinClientConnectorMode].url
 
   override def invalidate(name: (String, String)): Unit = {
@@ -123,7 +123,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
       snappydataConstants.CATALOG_LIST_SCHEMAS, request)).getNames.asScala
   }
 
-  override def setCurrentDatabase(schema: String): Unit = {
+  override def setCurrentDatabase(schema: String): Unit = synchronized {
     connectorHelper.setCurrentSchema(schema)
   }
 
