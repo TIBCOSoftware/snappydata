@@ -286,6 +286,7 @@ object SnappyExternalCatalog {
   val INDEXED_TABLE = "INDEXED_TABLE"
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
+  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd).*".r
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
 

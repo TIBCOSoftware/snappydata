@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.impl
+package io.snappydata.sql.catalog
 
 import java.sql.SQLException
 import java.util.Collections
@@ -36,13 +36,12 @@ import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
-import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import io.snappydata.thrift._
 import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -257,9 +256,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
         for (table <- externalCatalog.getAllTables()) {
           val tableType = CatalogObjectType.getTableType(table)
           if (tableType != CatalogObjectType.Row && tableType != CatalogObjectType.Policy) {
-            val storageProperties = table.storage.properties
-            val tblDataSourcePath = getDataSourcePath(storageProperties)
-            val driverClass = storageProperties.get("driver") match {
+            val parameters = new CaseInsensitiveMutableHashMap[String](table.storage.properties)
+            val tblDataSourcePath = getDataSourcePath(parameters, table.storage)
+            val driverClass = parameters.get("driver") match {
               case None => ""
               case Some(c) => c
             }
@@ -354,7 +353,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
               if (CatalogObjectType.isColumnTable(tableType)) Constant.DEFAULT_CODEC else "NA"
             case Some(c) => c
           }
-          val tblDataSourcePath = getDataSourcePath(parameters)
+          val tblDataSourcePath = getDataSourcePath(parameters, table.storage)
           val driverClass = parameters.get("driver") match {
             case None => ""
             case Some(c) => c
@@ -434,13 +433,26 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       }
     }
 
-    private def getDataSourcePath(properties: scala.collection.Map[String, String]): String = {
+    private def getDataSourcePath(properties: scala.collection.Map[String, String],
+        storage: CatalogStorageFormat): String = {
       properties.get("path") match {
         case Some(p) if !p.isEmpty => p
-        // for external connectors like GemFire
-        case _ => properties.get("region.path") match {
-          case None => ""
-          case Some(p) => p
+        case _ => properties.get("region.path") match { // for external GemFire connector
+          case Some(p) if !p.isEmpty => p
+          case _ => properties.get("url") match { // jdbc
+            case Some(p) if !p.isEmpty =>
+              // mask the password if present
+              val url = SnappyExternalCatalog.PASSWORD_MATCH.replaceAllIn(p, "xxx")
+              // add dbtable if present
+              properties.get(SnappyExternalCatalog.DBTABLE_PROPERTY) match {
+                case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
+                case _ => url
+              }
+            case _ => storage.locationUri match { // fallback to locationUri
+              case None => ""
+              case Some(l) => l
+            }
+          }
         }
       }
     }
