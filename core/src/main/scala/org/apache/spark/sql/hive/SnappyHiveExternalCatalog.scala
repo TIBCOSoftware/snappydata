@@ -34,7 +34,7 @@ import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
-import io.snappydata.sql.catalog.{CatalogObjectType, RelationInfo, SnappyExternalCatalog}
+import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.http.annotation.GuardedBy
@@ -104,12 +104,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         }
       }
     }
-    CacheBuilder.newBuilder().maximumSize(cacheSize).build(cacheLoader)
+    CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize).build(cacheLoader)
   }
 
   /** A cache of SQL data source tables that are missing in catalog. */
   protected val nonExistentTables: Cache[(String, String), java.lang.Boolean] = {
-    CacheBuilder.newBuilder().maximumSize(cacheSize).build()
+    CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize).build()
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
@@ -463,7 +463,15 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         case None => table.copy(identifier = tableIdent, viewText = viewText,
           viewOriginalText = viewOriginalText)
       }
-    } else table.copy(identifier = tableIdent)
+    } else table.provider match {
+      // add dbtable property which is not present in old releases
+      case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)) &&
+          !table.storage.properties.contains(DBTABLE_PROPERTY) =>
+        table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
+            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
+      case _ => table.copy(identifier = tableIdent)
+    }
   }
 
   override protected def getCachedCatalogTable(schema: String, table: String): CatalogTable = {

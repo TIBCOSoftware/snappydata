@@ -17,7 +17,6 @@
 package io.snappydata.cluster
 
 import java.net.InetAddress
-import java.sql.DriverManager
 import java.util.Properties
 
 import scala.language.postfixOps
@@ -49,11 +48,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   override val stopNetServersInTearDown = false
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
-
-  // start embedded thrift server on lead
-  bootProps.setProperty("snappydata.hiveServer.enabled", "true")
-  bootProps.setProperty("hive.server2.thrift.bind.host", "localhost")
-  bootProps.setProperty("hive.server2.thrift.port", testObject.thriftPort.toString)
 
   override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -278,49 +272,12 @@ class SplitSnappyClusterDUnitTest(s: String)
       StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
     }
   }
-
-  /** Test some queries on the embedded thrift server */
-  def testEmbeddedThriftServer(): Unit = {
-    val conn = DriverManager.getConnection(s"jdbc:hive2://localhost:${testObject.thriftPort}/app",
-      "app", "app")
-    val stmt = conn.createStatement()
-
-    stmt.execute("create table testTable100 (id int)")
-    var rs = stmt.executeQuery("show tables")
-    assert(rs.next())
-    assert(rs.getString(1) == "APP")
-    assert(rs.getString(2) == "TESTTABLE100")
-    assert(!rs.getBoolean(3)) // isTemporary
-    assert(!rs.next())
-    rs.close()
-
-    rs = stmt.executeQuery("select count(*) from testTable100")
-    assert(rs.next())
-    assert(rs.getLong(1) == 0)
-    assert(!rs.next())
-    rs.close()
-    stmt.execute("insert into testTable100 select id from range(10000)")
-    rs = stmt.executeQuery("select count(*) from testTable100")
-    assert(rs.next())
-    assert(rs.getLong(1) == 10000)
-    assert(!rs.next())
-    rs.close()
-
-    stmt.execute("drop table testTable100")
-    rs = stmt.executeQuery("show tables in app")
-    assert(!rs.next())
-    rs.close()
-
-    stmt.close()
-    conn.close()
-  }
 }
 
 object SplitSnappyClusterDUnitTest
     extends SplitClusterDUnitTestObject with Logging {
 
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-  private val thriftPort = locatorNetPort + 101
 
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc

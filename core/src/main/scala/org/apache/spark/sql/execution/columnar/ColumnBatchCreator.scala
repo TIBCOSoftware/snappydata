@@ -37,7 +37,8 @@ import org.apache.spark.sql.types._
 
 final class ColumnBatchCreator(
     bufferRegion: PartitionedRegion,
-    val tableName: String, // internal column table name
+    val tableName: String,
+    val columnTableName: String,
     val schema: StructType,
     val externalStore: ExternalStore,
     val compressionCodec: String) extends Logging {
@@ -50,7 +51,7 @@ final class ColumnBatchCreator(
     try {
       val store = if (dependents.isEmpty) externalStore else {
         connectedExternalStore = externalStore.getConnectedExternalStore(
-          tableName, onExecutor = true)
+          columnTableName, onExecutor = true)
         val indexStatements = dependents.map(ColumnFormatRelation
             .getIndexUpdateStruct(_, connectedExternalStore))
         connectedExternalStore.withDependentAction { _ =>
@@ -82,12 +83,12 @@ final class ColumnBatchCreator(
         val gen = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
             dataRDD = null, numBuckets = -1, partitionColumns = Nil,
-            partitionColumnAliases = Nil, baseRelation = null, caseSensitive = true)
+            partitionColumnAliases = Nil, tableName, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
           val insertPlan = ColumnInsertExec(tableScan, Nil, Nil,
             numBuckets = -1, isPartitioned = false, None,
-            (-bufferRegion.getColumnBatchSize, -1, compressionCodec), tableName,
+            (-bufferRegion.getColumnBatchSize, -1, compressionCodec), columnTableName,
             onExecutor = true, schema, store, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD semantics
@@ -107,7 +108,7 @@ final class ColumnBatchCreator(
         val batchIdRef = references(references.length - 1).asInstanceOf[Int]
         references(batchIdRef) = batchID
         references(batchIdRef + 1) = bucketID
-        references(batchIdRef + 2) = tableName
+        references(batchIdRef + 2) = columnTableName
         // no harm in passing a references array with an extra element at end
         val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
         iter.init(bucketID, Array(execRows.asInstanceOf[Iterator[InternalRow]]))
@@ -133,13 +134,13 @@ final class ColumnBatchCreator(
    */
   def createColumnBatchBuffer(columnBatchSize: Int,
       columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
-    val gen = CodeGeneration.compileCode(tableName + ".BUFFER", schema.fields, () => {
+    val gen = CodeGeneration.compileCode(columnTableName + ".BUFFER", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc
       val insertPlan = ColumnInsertExec(bufferPlan, Nil, Nil,
         numBuckets = -1, isPartitioned = false, None, (columnBatchSize, -1, compressionCodec),
-        tableName, onExecutor = true, schema, externalStore,
+        columnTableName, onExecutor = true, schema, externalStore,
         useMemberVariables = true)
       // now generate the code with the help of WholeStageCodegenExec
       // this is only used for local code generation while its RDD semantics

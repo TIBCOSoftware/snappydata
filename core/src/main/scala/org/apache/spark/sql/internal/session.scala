@@ -21,8 +21,11 @@ import java.util.Properties
 
 import scala.reflect.{ClassTag, classTag}
 
-import io.snappydata.Property
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -34,8 +37,8 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command.DDLUtils
-import org.apache.spark.sql.execution.datasources
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation, PreprocessTableInsertion}
+import org.apache.spark.sql.execution.{SecurityUtils, datasources}
 import org.apache.spark.sql.hive.SnappySessionState
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources._
@@ -145,6 +148,20 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
 
     case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
+
+    case Constant.TRIGGER_AUTHENTICATION => value match {
+      case Some(boolVal) if boolVal.toString.toBoolean =>
+        if ((Misc.getMemStoreBootingNoThrow ne null) && Misc.isSecurityEnabled) {
+          SecurityUtils.checkCredentials(getConfString(
+            com.pivotal.gemfirexd.Attribute.USERNAME_ATTR),
+            getConfString(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)) match {
+            case None => // success
+            case Some(failure) =>
+              throw Util.generateCsSQLException(SQLState.NET_CONNECT_AUTH_FAILED, failure)
+          }
+        }
+      case _ =>
+    }
 
     case _ => // ignore others
   }
