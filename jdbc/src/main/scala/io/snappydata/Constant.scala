@@ -75,6 +75,9 @@ object Constant {
   // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 5000
 
+  /** Special property to trigger authentication by SnappyConf. */
+  val TRIGGER_AUTHENTICATION = "snappydata.auth.trigger"
+
   // Internal Column table store schema
   final val SHADOW_SCHEMA_NAME = SystemProperties.SHADOW_SCHEMA_NAME
 

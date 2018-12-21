@@ -35,6 +35,7 @@ import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SmartConnectorRDDHelper
+import io.snappydata.sql.catalog.SmartConnectorHelper
 import io.snappydata.thrift.StatementAttrs
 import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
 
@@ -135,7 +136,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               Array(conn, null)
             }
           case _ =>
-            val txId = SmartConnectorRDDHelper.snapshotTxIdForWrite.get
+            val txId = SmartConnectorHelper.snapshotTxIdForWrite.get
             if (txId == null) {
               logDebug(s"Going to start the transaction on server on conn $conn ")
               val startAndGetSnapshotTXId = conn.prepareCall(s"call sys.START_SNAPSHOT_TXID(?,?)")
@@ -144,7 +145,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               startAndGetSnapshotTXId.execute()
               val txid = startAndGetSnapshotTXId.getString(2)
               startAndGetSnapshotTXId.close()
-              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(txid)
+              SmartConnectorHelper.snapshotTxIdForWrite.set(txid)
               logDebug(s"The snapshot tx id is $txid and tablename is $tableName")
               Array(conn, txid)
             } else {
@@ -184,7 +185,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             }
             finally {
               ps.close()
-              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(null)
+              SmartConnectorHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Committed $txId the transaction on server ")
             }
         }
@@ -219,7 +220,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               logDebug(s"The transaction ID being rolled back is $txId")
             }, () => {
               if (ps ne null) ps.close()
-              SmartConnectorRDDHelper.snapshotTxIdForWrite.set(null)
+              SmartConnectorHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
             })
         }
@@ -761,7 +762,7 @@ final class SmartConnectorColumnRDD(
 
   private var serializedFilters: Array[Byte] = _
 
-  private var preferHostName = SmartConnectorRDDHelper.preferHostName(session)
+  private var preferHostName = SmartConnectorHelper.preferHostName(session)
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[ByteBuffer] = {
@@ -789,7 +790,7 @@ final class SmartConnectorColumnRDD(
           ps.executeUpdate()
           logDebug(s"The txid being committed is $txId")
           ps.close()
-          SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
+          SmartConnectorHelper.snapshotTxIdForRead.set(null)
           logDebug(s"closed connection for task from listener $partitionId")
           try {
             conn.close()
@@ -882,12 +883,12 @@ class SmartConnectorRowRDD(_session: SnappySession,
       pushProjections = true, useResultSet = true, _connProperties,
     _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
 
-  private var preferHostName = SmartConnectorRDDHelper.preferHostName(session)
+  private var preferHostName = SmartConnectorHelper.preferHostName(session)
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
       context: TaskContext): Unit = {
     Option(context).foreach(_.addTaskCompletionListener(_ => {
-      val txId = SmartConnectorRDDHelper.snapshotTxIdForRead.get match {
+      val txId = SmartConnectorHelper.snapshotTxIdForRead.get match {
         case null => null
         case p => p._1
       }
@@ -899,7 +900,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
         ps.executeUpdate()
         logDebug(s"The txid being committed is $txId")
         ps.close()
-        SmartConnectorRDDHelper.snapshotTxIdForRead.set(null)
+        SmartConnectorHelper.snapshotTxIdForRead.set(null)
       // }
     }))
   }
@@ -977,11 +978,11 @@ class SmartConnectorRowRDD(_session: SnappySession,
       getTXIdAndHostUrl.setBoolean(1, delayRollover)
       val rs = getTXIdAndHostUrl.executeQuery()
       rs.next()
-      val txIdAndHostUrl = SmartConnectorRDDHelper.getTxIdAndHostUrl(
+      val txIdAndHostUrl = SmartConnectorHelper.getTxIdAndHostUrl(
         rs.getString(1), preferHostName)
       rs.close()
       getTXIdAndHostUrl.close()
-      SmartConnectorRDDHelper.snapshotTxIdForRead.set(txIdAndHostUrl)
+      SmartConnectorHelper.snapshotTxIdForRead.set(txIdAndHostUrl)
       logDebug(s"The snapshot tx id is $txIdAndHostUrl and tablename is $tableName")
     }
     if (thriftConn ne null) {
