@@ -370,7 +370,7 @@ class QueryTest extends SnappyFunSuite {
         SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValue.get)
       df = session.sql(query)
       plan = df.queryExecution.executedPlan
-      // exactly one broadcast of test2 is expected
+      // exactly one broadcast of test1 or test2 is expected
       val broadcasts = plan.collect {
         case e: BroadcastExchangeExec => e
       }
