@@ -34,7 +34,7 @@ import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
-import io.snappydata.sql.catalog.{CatalogObjectType, RelationInfo, SnappyExternalCatalog}
+import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.http.annotation.GuardedBy
@@ -104,12 +104,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         }
       }
     }
-    CacheBuilder.newBuilder().maximumSize(cacheSize).build(cacheLoader)
+    CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize).build(cacheLoader)
   }
 
   /** A cache of SQL data source tables that are missing in catalog. */
   protected val nonExistentTables: Cache[(String, String), java.lang.Boolean] = {
-    CacheBuilder.newBuilder().maximumSize(cacheSize).build()
+    CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize).build()
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
