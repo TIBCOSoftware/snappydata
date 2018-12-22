@@ -321,7 +321,7 @@ object StoreUtils {
 
   val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
 
-  def getPrimaryKeyClause(parameters: mutable.Map[String, String],
+  def getPrimaryKeyClause(parameters: scala.collection.Map[String, String],
       schema: StructType): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
     val stringPKCols = new mutable.ArrayBuffer[StructField](1)
