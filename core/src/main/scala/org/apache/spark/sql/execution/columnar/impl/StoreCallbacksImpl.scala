@@ -536,7 +536,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def getLeadClassLoader: URLClassLoader =
-    ToolsCallbackInit.toolsCallback.getLeadClassLoader()
+    ToolsCallbackInit.toolsCallback.getLeadClassLoader
 
   override def clearSessionCache(onlyQueryPlanCache: Boolean = false): Unit = {
     SnappySession.clearAllCache(onlyQueryPlanCache)
