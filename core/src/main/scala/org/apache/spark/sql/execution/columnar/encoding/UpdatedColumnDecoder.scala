@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -134,4 +134,9 @@ abstract class UpdatedColumnDecoderBase(decoder: ColumnDecoder, field: StructFie
   final def getStringDictionary: StringDictionary = null
 
   final def readDictionaryIndex: Int = -1
+
+  def close(): Unit = {
+    if (delta1 ne null) delta1.close()
+    if (delta2 ne null) delta2.close()
+  }
 }

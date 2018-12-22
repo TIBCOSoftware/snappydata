@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -35,24 +35,23 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
-import org.apache.hive.service.cli.thrift.ThriftCLIService
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
@@ -259,7 +258,7 @@ class LeadImpl extends ServerImpl with Lead
       while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
         Thread.sleep(100)
       }
-      // initialize global context
+      // initialize global state
       password match {
         case Some(p) =>
           // set the password back and remove after initialization
@@ -276,16 +275,11 @@ class LeadImpl extends ServerImpl with Lead
       if (startHiveServer) {
         val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
-        val iter = hiveService.getServices.iterator()
-        while (iter.hasNext) {
-          iter.next() match {
-            case service: ThriftCLIService =>
-              val address = service.getServerIPAddress
-              val port = service.getPortNumber
-              val kind = if (useHiveSession) "hive" else "snappy"
-              addStartupMessage(s"Started hive thrift server (session=$kind) on: $address[$port]")
-            case _ =>
-          }
+        val sessionKind = if (useHiveSession) "session=hive" else "session=snappy"
+        SnappyHiveThriftServer2.getHostPort(hiveService) match {
+          case None => addStartupMessage(s"Started hive thrift server ($sessionKind)")
+          case Some((host, port)) =>
+            addStartupMessage(s"Started hive thrift server ($sessionKind) on: $host[$port]")
         }
       }
 
@@ -567,21 +561,9 @@ class LeadImpl extends ServerImpl with Lead
           userPass match {
             case Some(u) =>
               try {
-                val props = new Properties()
-                props.setProperty(Attribute.USERNAME_ATTR, u.user)
-                props.setProperty(Attribute.PASSWORD_ATTR, u.pass)
-                val memStore = Misc.getMemStoreBooting
-                val result = memStore.getDatabase.getAuthenticationService.authenticate(
-                  memStore.getDatabaseName, props)
-                if (result != null) {
-                  val msg = s"ACCESS DENIED, user [${u.user}]. $result"
-                  if (GemFireXDUtils.TraceAuthentication) {
-                    SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
-                  }
-                  logInfo(msg)
-                  None
-                } else {
-                  Option(new AuthInfo(User(u.user, u.pass)))
+                SecurityUtils.checkCredentials(u.user, u.pass) match {
+                  case None => Option(new AuthInfo(User(u.user, u.pass)))
+                  case _ => None
                 }
               } catch {
                 case t: Throwable => logWarning(s"Failed to authenticate the snappy job. $t")

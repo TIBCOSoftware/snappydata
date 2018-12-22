@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -87,10 +87,8 @@ class TAQTest extends SnappyFunSuite {
     for (_ <- 1 to numRuns) {
       val start = System.nanoTime()
       for (_ <- 1 to numIters) {
-        // val rs = stmt.executeQuery("select * from citi_order where id=1000 " +
-        //    "--GEMFIREXD-PROPERTIES executionEngine=Spark")
-        val rs = stmt.executeQuery("select count(*) from citi_order " +
-            "--GEMFIREXD-PROPERTIES executionEngine=Spark")
+        // val rs = stmt.executeQuery("select * from citi_order where id=1000")
+        val rs = stmt.executeQuery("select count(*) from citi_order")
         var count = 0
         while (rs.next()) {
           count += 1

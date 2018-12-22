@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -41,7 +41,7 @@ buildscript {
   }
   dependencies {
     classpath 'io.snappydata:gradle-scalatest:0.16'
-    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
+    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
     classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
     classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.+'
   }
@@ -129,7 +129,7 @@ allprojects {
     snappyStoreVersion = '1.6.2.1'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.2'
+    zeppelinInterpreterVersion = '0.7.3.4'
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
@@ -139,7 +139,7 @@ allprojects {
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
     sparkJobServerVersion = '0.6.2.8'
-    kolobokeVersion = '1.0.0'
+    eclipseCollectionsVersion = '9.2.0'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -217,7 +217,7 @@ configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/ ||
     inputEncoding = 'UTF-8'
     outputEncoding = 'UTF-8'
     outputFile = "${buildDir}/scalastyle-output.xml"
-    includeTestSourceDirectory = false
+    includeTestSourceDirectory = true
     source = 'src/main/scala'
     testSource = 'src/test/scala'
     failOnViolation = true
@@ -973,12 +973,6 @@ task product(type: Zip) {
     copy {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
-    }
-    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
-    copy {
-      from jdbcProject.shadowJar.destinationDir
-      into "${snappyProductDir}/connectors"
-      include jdbcProject.shadowJar.archiveName
     }
   }
 }

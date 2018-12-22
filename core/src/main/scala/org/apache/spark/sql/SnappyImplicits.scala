@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -76,8 +76,7 @@ object snappy extends Serializable {
      */
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD[U, T](rdd,
-        (_, _, iter) => iter.map(cleanF))
+      new MapPartitionsPreserveRDD[U, T](rdd, (_, _, iter) => iter.map(cleanF))
     }
 
     /**
@@ -146,7 +145,7 @@ object snappy extends Serializable {
 
     def mapPartitionsWithIndexPreserveLocations[U: ClassTag](
         f: (Int, Iterator[T]) => Iterator[U],
-        p: (Int) => Seq[String],
+        p: Int => Seq[String],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
       new PreserveLocationsRDD(rdd,
@@ -201,13 +200,7 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
-          .executedPlan.executeCollect()
-
-      session.getContextObject[LogicalPlan](SnappySession.CACHED_PUTINTO_UPDATE_PLAN).
-          foreach { cachedPlan =>
-            session.sharedState.cacheManager.uncacheQuery(session, cachedPlan, blocking = true)
-          }
+        session.tableIdentifier(tableName)), input)).executedPlan.executeCollect()
     }
 
     def deleteFrom(tableName: String): Unit = {
@@ -218,10 +211,10 @@ object snappy extends Serializable {
       }
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), df.logicalPlan))
-          .executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), df.logicalPlan)).executedPlan.executeCollect()
     }
   }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(session: SnappySession,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -121,14 +121,14 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
     stream.foreachRDD { rdd =>
       allReceived.addAll(Arrays.asList(rdd.map(r => (r.key, r.value)).collect(): _*))
     }
-    ssnc.start()
-    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
+    ssnc.start()
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(allReceived.size === expectedTotal,
         "didn't get expected number of messages, messages:\n" +
             allReceived.asScala.mkString("\n"))
     }
+    ssnc.stop(stopSparkContext = false)
   }
 
   test("Snappy kafka streaming") {
@@ -164,17 +164,16 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
     ssnc.registerCQ("select * from kafkaStream" +
         " window (duration 1 seconds, slide 1 seconds)")
         .foreachDataFrame(_.write.insertInto("snappyTable"))
-    ssnc.start
-    ssnc.awaitTerminationOrTimeout(10 * 1000)
 
+    ssnc.start()
     kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
     kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
     kafkaTestUtils.sendMessages(topic, Array("1"), Some(2))
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(113 == session.sql("select * from snappyTable").count)
     }
+    ssnc.stop(stopSparkContext = false)
   }
-
 
   test("Snappy kafka streaming with custom deserializer") {
 
@@ -211,12 +210,11 @@ class SnappyStreamingKafkaSuite extends SnappyFunSuite with Eventually
     ssnc.registerCQ("select * from kafkaStream" +
         " window (duration 1 seconds, slide 1 seconds)")
         .foreachDataFrame(_.write.insertInto("snappyTable"))
-    ssnc.start
-    ssnc.awaitTerminationOrTimeout(10 * 1000)
-
+    ssnc.start()
     eventually(timeout(100000.milliseconds), interval(1000.milliseconds)) {
       assert(101 == session.sql("select * from snappyTable").count)
     }
+    ssnc.stop(stopSparkContext = false)
   }
 }
 

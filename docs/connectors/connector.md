@@ -7,7 +7,7 @@ There is built-in support for many data sources as well as data formats. Data ca
 !!!Attention
 	This section currently only details the advanced connectors that SnappyData introduced. Please refer to the [howto](../howto.md) section for a brief description about working with [external data sources](../howto/load_data_into_snappydata_tables.md) and [some examples](../howto/load_data_from_external_data_stores.md). 
 
-SnappyData 1.0.2 provides a utility to deploy third party connectors using the SQL 'Deploy' command. Refer [Deployment of Third Party Connectors](/connectors/deployment_dependency_jar.md)
+SnappyData 1.0.2.1 provides a utility to deploy third party connectors using the SQL 'Deploy' command. Refer [Deployment of Third Party Connectors](/connectors/deployment_dependency_jar.md)
 
 For more information see:
 

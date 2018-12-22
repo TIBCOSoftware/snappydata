@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,6 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.store.MetadataTest
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession}
 
@@ -787,8 +786,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val message = intercept[AnalysisException] {
       df2.write.deleteFrom("col_table")
     }.getMessage
-    assert(message.contains("requires that the query in the WHERE clause of the DELETE FROM " +
-        "statement must have all the key column(s)"))
+    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
   }
 
   test("Bug - SNAP-2157") {
@@ -894,8 +892,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
       df2.write.deleteFrom("row_table")
     }.getMessage
 
-    assert(message.contains("requires that the query in the WHERE clause of " +
-        "the DELETE FROM statement must have all the key column(s)"))
+    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
   }
 
   test("Delete From SQL using JDBC: row tables") {

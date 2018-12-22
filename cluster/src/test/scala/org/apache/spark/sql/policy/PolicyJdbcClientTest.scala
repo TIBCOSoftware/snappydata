@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -430,15 +430,15 @@ class PolicyJdbcClientTest extends PolicyTestBase {
         "POLICYFOR", "APPLYTO", "FILTER", "OWNER")
       val expectedResults = Map("TESTPOLICY1" -> (tableOwner.toUpperCase,
           colTableName.toUpperCase.substring(colTableName.indexOf('.') + 1),
-          "SELECT", "CURRENT_USER", "ID > 10",
+          "select", "current_user", "id > 10",
           tableOwner.toUpperCase),
         "TESTPOLICY2" -> (tableOwner.toUpperCase,
             rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
-            "SELECT", "CURRENT_USER", "ID < 30",
+            "select", "current_user", "id < 30",
             tableOwner.toUpperCase),
         "TESTPOLICY3" -> (tableOwner.toUpperCase,
             rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
-            "SELECT", "CURRENT_USER", "ID < 70",
+            "select", "current_user", "id < 70",
             tableOwner.toUpperCase)
       )
 
@@ -620,7 +620,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
 
   // return true if a policy exists for a table else false
   private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
-    val policies = Misc.getMemStore.getExternalCatalog.getPolicies(true)
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies()
     val it = policies.listIterator()
     while (it.hasNext) {
       val p = it.next()

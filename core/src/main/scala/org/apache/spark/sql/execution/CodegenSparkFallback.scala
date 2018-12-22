@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,11 +24,12 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import org.codehaus.commons.compiler.CompileException
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMode}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.internal.CodeGenerationException
+import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMode}
 
 /**
  * Catch exceptions in code generation of SnappyData plans and fallback
@@ -75,12 +76,11 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
     }
     if (!isSmartConnectorMode) return false
 
-    // search for any janino or code generation exception
     var cause = t
     do {
       cause match {
         case sqle: SQLException
-          if SQLState.SNAPPY_RELATION_DESTROY_VERSION_MISMATCH.equals(sqle.getSQLState) =>
+          if SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(sqle.getSQLState) =>
           return true
         case e: Error =>
           if (SystemFailure.isJVMFailureError(e)) {
@@ -94,6 +94,14 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
       cause = cause.getCause
     } while (cause ne null)
     false
+  }
+
+  private def catalogStaleFailure(cause: Throwable, session: SnappySession): Exception = {
+    logWarning(s"SmartConnector catalog is not up to date. " +
+        s"Please reconstruct the Dataset and retry the operation")
+    new CatalogStaleException("Smart connector catalog is out of date due to " +
+        "table schema change (DROP/CREATE/ALTER operation). " +
+        "Please reconstruct the Dataset and retry the operation", cause)
   }
 
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
@@ -110,36 +118,47 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
         val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
 
-        if (isConnectorCatalogStaleException(t, session)) {
-          logWarning(s"SmartConnector catalog is not upto date. " +
-              s"Please reconstruct the dataframe and retry the operation")
-          session.sessionCatalog.invalidateAll()
+        val isCatalogStale = isConnectorCatalogStaleException(t, session)
+        if (isCatalogStale) {
+          session.externalCatalog.invalidateAll()
           SnappySession.clearAllCache()
-          throw new CatalogStaleException("Smart connector catalog is " +
-              "not upto date due to table schema " +
-              "change (DROP/CREATE/ALTER operation). " +
-              "Please reconstruct the dataframe and retry the operation", t)
-        } else if (isCodeGenerationException(t)) {
-          // fallback to Spark plan
+          // fail immediate for insert/update/delete, else retry entire query
+          val action = plan.find {
+            case _: ExecutePlan | _: ExecutedCommandExec => true
+            case _ => false
+          }
+          if (action.isDefined) throw catalogStaleFailure(t, session)
+        }
+        if (isCatalogStale || isCodeGenerationException(t)) {
+          // fallback to Spark plan for code-generation exception
           session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
             case Some(exec) =>
-              val msg = new StringBuilder
-              var cause = t
-              while (cause ne null) {
-                if (msg.nonEmpty) msg.append(" => ")
-                msg.append(cause)
-                cause = cause.getCause
+              if (!isCatalogStale) {
+                val msg = new StringBuilder
+                var cause = t
+                while (cause ne null) {
+                  if (msg.nonEmpty) msg.append(" => ")
+                  msg.append(cause)
+                  cause = cause.getCause
+                }
+                logInfo(s"SnappyData code generation failed due to $msg." +
+                    s" Falling back to Spark plans.")
+                session.sessionState.disableStoreOptimizations = true
               }
-              logInfo(s"SnappyData code generation failed due to $msg." +
-                  s" Falling back to Spark plans.")
-              session.sessionState.disableStoreOptimizations = true
               try {
-                val plan = exec().executedPlan
+                val plan = exec().executedPlan.transform {
+                  case CodegenSparkFallback(p) => p
+                }
                 val result = f(plan)
                 // update child for future executions
                 child = plan
                 result
-              } finally {
+              } catch {
+                case t: Throwable if isConnectorCatalogStaleException(t, session) =>
+                  session.externalCatalog.invalidateAll()
+                  SnappySession.clearAllCache()
+                  throw catalogStaleFailure(t, session)
+              } finally if (!isCatalogStale) {
                 session.sessionState.disableStoreOptimizations = false
               }
             case None => throw t

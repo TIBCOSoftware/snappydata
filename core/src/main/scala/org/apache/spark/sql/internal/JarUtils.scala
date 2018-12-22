@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
 
-import org.apache.spark.{Logging, SparkFiles}
+import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.util.MutableURLClassLoader

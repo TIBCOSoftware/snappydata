@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -341,9 +341,20 @@ public class SnappyPrms extends BasePrms {
   public static Long executeInBackground;
 
   /**
+   * (boolean) whether to test conflation.
+   */
+
+  public static Long isConflationTest;
+
+  /**
    * (int) how long (seconds) it should wait before retrieving server status
    */
   public static Long sleepTimeSecsForMemberStatus;
+
+  /**
+   * (int) number of threads required for concurrent execution of queries/tasks.
+   */
+  public static Long numThreadsForConcExecution;
 
   /**
    * (int) warmUp time in secs for concurrenct queries execution.
@@ -472,18 +483,6 @@ public class SnappyPrms extends BasePrms {
   public static Long serverMemory;
 
   /**
-   * (String) criticalHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * if not provided.
-   */
-  public static Long criticalHeapPercentage;
-
-  /**
-   * (String) evictionHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * of critical-heap-percentage if not provided.
-   */
-  public static Long evictionHeapPercentage;
-
-  /**
    * (String) Memory to be used while starting the Lead process. Defaults to 1GB if not provided.
    */
   public static Long leadMemory;
@@ -564,6 +563,16 @@ public class SnappyPrms extends BasePrms {
   public static Long hasDynamicAppProps;
 
   /**
+   * (Boolean) parameter to pass connectionURL in APP_PROPS required for JDBC connection in snappy job.
+   */
+  public static Long useJDBCConnInSnappyJob;
+
+  /**
+   * (Boolean) parameter to pass maxResultWaitSec in APP_PROPS required for long running job termination.
+   */
+  public static Long isLongRunningJob;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
@@ -641,12 +650,12 @@ public class SnappyPrms extends BasePrms {
 
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
-    return tasktab().intAt(key, tab().intAt(key, 120));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static int getSleepTimeSecsForMemberStatus() {
     Long key = sleepTimeSecsForMemberStatus;
-    return tasktab().intAt(key, tab().intAt(key, 30));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static String getExecutorCores() {
@@ -681,25 +690,6 @@ public class SnappyPrms extends BasePrms {
     if (serverHeapSize == null) return "";
     serverHeapSize = " -heap-size=" + serverHeapSize;
     return serverHeapSize;
-  }
-
-  public static String getCriticalHeapPercentage() {
-    String criticalHeapPercentageString = " -critical-heap-percentage=" + tab().stringAt
-        (criticalHeapPercentage, "90");
-    return criticalHeapPercentageString;
-  }
-
-  public static String calculateDefaultEvictionPercentage() {
-    int criticalHeapPercent = Integer.parseInt(tab().stringAt(criticalHeapPercentage, "90"));
-    int evictionHeapPercent = (criticalHeapPercent * 90) / 100;
-    String evictionHeapPercentString = String.valueOf(evictionHeapPercent);
-    return evictionHeapPercentString;
-  }
-
-  public static String getEvictionHeapPercentage() {
-    String evictionHeapPercentageString = " -eviction-heap-percentage=" + tab().stringAt
-        (evictionHeapPercentage, calculateDefaultEvictionPercentage());
-    return evictionHeapPercentageString;
   }
 
   public static String getLeadMemory() {
@@ -1028,6 +1018,16 @@ public class SnappyPrms extends BasePrms {
 
   public static boolean hasDynamicAppProps() {
     Long key = hasDynamicAppProps;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean useJDBCConnInSnappyJob() {
+    Long key = useJDBCConnInSnappyJob;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean isLongRunningJob() {
+    Long key = isLongRunningJob;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

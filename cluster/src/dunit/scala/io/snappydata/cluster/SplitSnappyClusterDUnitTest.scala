@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,6 @@
 package io.snappydata.cluster
 
 import java.net.InetAddress
-import java.sql.DriverManager
 import java.util.Properties
 
 import scala.language.postfixOps
@@ -49,11 +48,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   override val stopNetServersInTearDown = false
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
-
-  // start embedded thrift server on lead
-  bootProps.setProperty("snappydata.hiveServer.enabled", "true")
-  bootProps.setProperty("hive.server2.thrift.bind.host", "localhost")
-  bootProps.setProperty("hive.server2.thrift.port", testObject.thriftPort.toString)
 
   override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -278,48 +272,12 @@ class SplitSnappyClusterDUnitTest(s: String)
       StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
     }
   }
-
-  /** Test some queries on the embedded thrift server */
-  def testEmbeddedThriftServer(): Unit = {
-    val conn = DriverManager.getConnection(s"jdbc:hive2://localhost:${testObject.thriftPort}/app")
-    val stmt = conn.createStatement()
-
-    stmt.execute("create table testTable100 (id int)")
-    var rs = stmt.executeQuery("show tables")
-    assert(rs.next())
-    assert(rs.getString(1) == "APP")
-    assert(rs.getString(2) == "TESTTABLE100")
-    assert(!rs.getBoolean(3)) // isTemporary
-    assert(!rs.next())
-    rs.close()
-
-    rs = stmt.executeQuery("select count(*) from testTable100")
-    assert(rs.next())
-    assert(rs.getLong(1) == 0)
-    assert(!rs.next())
-    rs.close()
-    stmt.execute("insert into testTable100 select id from range(10000)")
-    rs = stmt.executeQuery("select count(*) from testTable100")
-    assert(rs.next())
-    assert(rs.getLong(1) == 10000)
-    assert(!rs.next())
-    rs.close()
-
-    stmt.execute("drop table testTable100")
-    rs = stmt.executeQuery("show tables in app")
-    assert(!rs.next())
-    rs.close()
-
-    stmt.close()
-    conn.close()
-  }
 }
 
 object SplitSnappyClusterDUnitTest
     extends SplitClusterDUnitTestObject with Logging {
 
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-  private val thriftPort = locatorNetPort + 101
 
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc
@@ -327,11 +285,10 @@ object SplitSnappyClusterDUnitTest
   }
 
   def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
-    val catalog = SnappySession.getOrCreate(SnappyContext.globalSparkContext).
-        sessionCatalog
-    val t = catalog.newQualifiedTableName(tableName)
+    val session = new SnappySession(SnappyContext.globalSparkContext)
+    val catalog = session.sessionCatalog
     try {
-      catalog.getCachedHiveTable(t)
+      catalog.lookupRelation(session.tableIdentifier(tableName))
       assert(assertion = false, s"Table $tableName should not exist in the " +
           s"cached Hive catalog")
     } catch {
@@ -718,7 +675,7 @@ object SplitSnappyClusterDUnitTest
     val count3 = snc.sql("select * from CUSTOMER_TEMP").count()
     assert(count3 == 750, s"Expected 750 rows. Actual rows = $count3")
     val catalog = snc.snappySession.sessionCatalog
-    assert(catalog.isLocalTemporaryView(catalog.newQualifiedTableName("CUSTOMER_TEMP")))
+    assert(catalog.isTemporaryTable(snc.snappySession.tableIdentifier("CUSTOMER_TEMP")))
     snc.sql("DROP TABLE CUSTOMER_TEMP")
   }
 

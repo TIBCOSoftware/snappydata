@@ -78,7 +78,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] var objectSize = -1L
   private[this] var totalSize = 0L
 
-  private[this] var _capacity = OpenHashSet.nextPowerOf2(initialCapacity)
+  private[this] var _capacity = Utils.nextPowerOf2(initialCapacity)
   private[this] var _size = 0
   private[this] var _growThreshold = (loadFactor * _capacity).toInt
 
@@ -246,7 +246,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     acquireMemory(valSize)
     totalSize += valSize
 
-    val newCapacity = OpenHashSet.checkCapacity(capacity << 1)
+    val newCapacity = Utils.checkCapacity(capacity << 1)
     val newData = newArray(newCapacity)
     val newMask = newCapacity - 1
 
@@ -296,7 +296,10 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   def freeStorageMemory(): Unit = {
     assert(longLived, "Method valid for only long lived hashsets")
-    SparkEnv.get.memoryManager.releaseStorageMemory(totalSize, MemoryMode.ON_HEAP)
+    val sparkEnv = SparkEnv.get
+    if (sparkEnv ne null) {
+      sparkEnv.memoryManager.releaseStorageMemory(totalSize, MemoryMode.ON_HEAP)
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -55,16 +55,58 @@ class TokenizationTest
   }
 
   before {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
   }
 
   after {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = false
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     SnappySession.clearAllCache()
     snc.dropTable(s"$table", ifExists = true)
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
     snc.dropTable(s"$colTableName", ifExists = true)
+  }
+
+  test("SNAP-2712") {
+    val r1 = snc.sql("select substr(soundex('laxtaxmax'), 1, 3), soundex('tax') from values 1 = 1")
+    val c1s = r1.columns
+    val arr1 = r1.collect()
+    val r2 = snc.sql("select substr(soundex('laxtaxmax'), 2, 5), soundex('tax') from values 1 = 1")
+    val arr2 = r2.collect()
+    val c2s = r2.columns
+    assert(!c1s.sameElements(c2s))
+    assert(!arr1.sameElements(arr2))
+    assert (arr1(0).getString(0) === "L23")
+    assert (arr1(0).getString(1) === "T200")
+    assert (arr2(0).getString(0) === "232")
+    assert (arr2(0).getString(1) === "T200")
+
+    // Only substr
+    val r3 = snc.sql("select substr('suoertest', 0, 5) from values 1 = 1")
+    val c3s = r3.columns
+    val arr3 = r3.collect()
+    val r4 = snc.sql("select substr('supertest', 0, 5) from values 1 = 1")
+    val c4s = r4.columns
+    val arr4 = r4.collect()
+    assert(!c3s.sameElements(c4s))
+    assert(!arr3.sameElements(arr4))
+    assert (arr3(0).getString(0) === "suoer")
+    assert (arr4(0).getString(0) === "super")
+
+    val r5 = snc.sql("select levenshtein('supriya','swati')")
+    val c5s = r5.columns
+    val arr5 = r5.collect()
+    val r6 = snc.sql("select levenshtein('swati','swati')")
+    val c6s = r6.columns
+    val arr6 = r6.collect()
+    val r7 = snc.sql("select levenshtein('swati','sonal')")
+    val c7s = r7.columns
+    val arr7 = r7.collect()
+    assert(!c5s.sameElements(c6s) && !c5s.sameElements(c7s))
+    assert(!arr5.sameElements(arr6) && !arr5.sameElements(arr7))
+    assert (arr5(0).getInt(0) === 5)
+    assert (arr6(0).getInt(0) === 0)
+    assert (arr7(0).getInt(0) === 4)
   }
 
   test("SNAP-2031 tpcds") {
@@ -261,6 +303,7 @@ class TokenizationTest
 
     // check caching for non-code generated JsonTuple
 
+    // RDDScanExec plans are not considered for plan caching
     checkAnswer(snc.sql(
       """
         |SELECT json_tuple(json, 'f1', 'f2')
@@ -277,7 +320,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("value2", "10") :: Nil)
 
-    assert(cacheMap.size() == 2)
+    assert(cacheMap.size() == 0)
 
     checkAnswer(snc.sql(
       """
@@ -290,7 +333,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("10") :: Nil)
 
-    assert(cacheMap.size() == 4)
+    assert(cacheMap.size() == 0)
   }
 
   test("SNAP-2566") {
@@ -580,40 +623,6 @@ class TokenizationTest
     logInfo("Successful")
   }
 
-  ignore("Test tokenize for all data types") {
-    val numRows = 10
-    createAllTypeTableAndPoupulateData(numRows, s"$all_typetable")
-
-    try {
-      val q = (0 until numRows).zipWithIndex.map { case (_, i) =>
-        s"select * from $all_typetable where s = 'abc$i'"
-      }
-      val start = System.currentTimeMillis()
-      q.zipWithIndex.foreach  { case (x, i) =>
-        var result = snc.sql(x).collect()
-        assert(result.length === 1)
-        result.foreach( r => {
-          assert(r.get(0) == i && r.get(4) == s"abc$i")
-        })
-      }
-      val end = System.currentTimeMillis()
-
-      // snc.sql(s"select * from $table where a = 1200").collect()
-      // println("Time taken = " + (end - start))
-
-      val cacheMap = SnappySession.getPlanCache.asMap()
-      assert( cacheMap.size() == 1)
-      val x = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].sqlText
-      assert(x.equals(q(0)))
-      snc.sql(s"drop table $all_typetable")
-    } finally {
-      snc.sql("set spark.sql.caseSensitive = false")
-      snc.sql("set schema = APP")
-    }
-
-    logInfo("Successful")
-  }
-
   test("Test tokenize for sub-queries") {
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     snc.sql(s"set spark.sql.crossJoin.enabled=true")
@@ -878,7 +887,9 @@ class TokenizationTest
     var res2 = df.collect()
     val r2 = normalizeRow(res2)
     assert(!r1.sameElements(r2))
-    // assert( SnappySession.getPlanCache.asMap().size() == 1)
+
+    // no caching of broadcast plans
+    assert(cacheMap.size() == 0)
 
     // check for out of order collects on two queries that are cached
     var query1 = "select avg(taxiin + taxiout) avgTaxiTime, count(*) numFlights, " +

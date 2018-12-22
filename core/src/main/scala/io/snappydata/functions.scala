@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,6 +20,7 @@ package io.snappydata
 import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -28,7 +29,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, ExpressionInfo, LeafExpression, Nondeterministic}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.{DataType, StringType}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
@@ -117,7 +117,7 @@ object SnappyDataFunctions {
   def getDSID(connProps: ConnectionProperties): String = connProps match {
     case null => Misc.getMyId.getId
     case _ =>
-      val conn = ConnectionUtil.getPooledConnection(SnappyStoreHiveCatalog.SYS_SCHEMA,
+      val conn = ConnectionUtil.getPooledConnection(SnappyExternalCatalog.SYS_SCHEMA,
         new ConnectionConf(connProps))
       try {
         val stmt = conn.createStatement()

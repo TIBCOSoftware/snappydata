@@ -47,6 +47,8 @@ dependencies {
 
   testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
       configuration: 'testOutput')
+  testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion,
+      configuration: 'testOutput')
   testCompile project(':dunit')
 
   compile (project(':snappy-core_' + scalaBinaryVersion)) {

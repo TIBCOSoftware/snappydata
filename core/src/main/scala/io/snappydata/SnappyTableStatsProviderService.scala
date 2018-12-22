@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import java.util.function.{BiFunction, Predicate, Function => JFunction}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -42,7 +42,9 @@ import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
-import io.snappydata.collection.{ObjectObjectHashMap, OpenHashSet}
+import io.snappydata.sql.catalog.CatalogObjectType
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.InternalRow
@@ -87,7 +89,8 @@ object SnappyTableStatsProviderService {
     service
   }
 
-  var suspendCacheInvalidation = false
+  // only for testing
+  var TEST_SUSPEND_CACHE_INVALIDATION = false
 }
 
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
@@ -139,8 +142,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val itr = memStats.iterator()
 
-      val members = ObjectObjectHashMap.withExpectedSize[String,
-          MemberStatistics](8)
+      val members = new UnifiedMap[String, MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
@@ -161,18 +163,18 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         if (memberStats == null) {
           memberStats = new MemberStatistics(memMap)
           if (dssUUID != null) {
-            members.justPut(dssUUID.toString, memberStats)
+            members.put(dssUUID.toString, memberStats)
           }
         } else {
           memberStats.updateMemberStatistics(memMap)
           if (dssUUID != null) {
-            members.justPut(dssUUID.toString, memberStats)
+            members.put(dssUUID.toString, memberStats)
           }
         }
 
         memberStats.setStatus("Running")
       }
-      membersInfo ++= members.asScala
+      membersInfo ++= mapAsScalaMapConverter(members).asScala
       // mark members no longer running as stopped
       existingMembers.filterNot(members.containsKey).foreach(m =>
         membersInfo(m).setStatus("Stopped"))
@@ -206,15 +208,15 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         log.debug(e.getMessage, e)
     }
 
-    val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables.asScala
 
     val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
       try {
         // External Tables
         hiveTables.collect {
-          case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
-            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-              table.externalStore, table.dataSourcePath, table.driverClass)
+          case table if table.tableType == CatalogObjectType.External.toString =>
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.schema,
+              table.shortProvider, table.externalStore, table.dataSourcePath, table.driverClass)
         }
       } catch {
         case NonFatal(e) =>
@@ -228,16 +230,19 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       // Return updated tableSizeInfo
       // Map to hold hive table type against table names as keys
       val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
-      hiveTables.foreach { ht =>
-        val key = ht.schema.toString + '.' + ht.entityName
-        tableTypesMap.put(key.toUpperCase, ht.tableType)
-      }
+      hiveTables.foreach(ht => {
+        val key = ht.schema.toString + "." + ht.entityName
+        tableTypesMap.put(key, ht.tableType)
+      })
 
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
         val tableName = rs.getTableName
-        tableTypesMap.get(tableName.toUpperCase) match {
-          case Some(t) if t.equalsIgnoreCase("COLUMN") => rs.setColumnTable(true)
+        try tableTypesMap.get(tableName) match {
+          case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
+            Utils.toUpperCase(t))) => rs.setColumnTable(true)
           case _ => rs.setColumnTable(false)
+        } catch {
+          case _: Exception => rs.setColumnTable(false)
         }
         rs
       })
@@ -303,7 +308,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             val maxDeltaRows = pr.getColumnMaxDeltaRows
             var smallBucketRegion: BucketRegion = null
-            val smallBatchBuckets = new OpenHashSet[BucketRegion](2)
+            val smallBatchBuckets = new UnifiedSet[BucketRegion](2)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[RegionEntry]
@@ -354,7 +359,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
    * Check if row buffers are large and have not been touched for a while
    * then roll it over into the column table
    */
-  private val rolloverRowBuffersTask = new JFunction[PartitionedRegion, Future[Unit]] {
+  // noinspection TypeAnnotation
+  private[this] val rolloverRowBuffersTask = new JFunction[PartitionedRegion, Future[Unit]] {
 
     private def testBucket(br: BucketRegion, maxDeltaRows: Int, minModTime: Long): Boolean = {
       val bucketSize = br.getRegionSize
@@ -372,12 +378,12 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         }
         val minModTime = pr.getCache.cacheTimeMillis() - delayMillis
         // minimize object creation in usual case with explicit iteration (rather than asScala)
-        var rolloverBuckets: OpenHashSet[BucketRegion] = null
+        var rolloverBuckets: UnifiedSet[BucketRegion] = null
         val iter = localPrimaries.iterator()
         while (iter.hasNext) {
           val br = iter.next()
           if (testBucket(br, maxDeltaRows, minModTime) && !br.isLockededForMaintenance) {
-            if (rolloverBuckets eq null) rolloverBuckets = new OpenHashSet[BucketRegion]()
+            if (rolloverBuckets eq null) rolloverBuckets = new UnifiedSet[BucketRegion]()
             rolloverBuckets.add(br)
           }
         }
@@ -409,13 +415,19 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
    * to exceed minimal size that would have pushed them into row buffers),
    * or a time-based flush that tolerates small sized column batches due to
    * [[rolloverRowBuffersTask]] or a forced flush of even smaller size for sample tables.
+   *
+   * The ColumnBatchIterator is passed the stats row entry. Rest all the columns, including
+   * delta/delete are looked up by the iterator (see ColumnFormatStatsIterator.getColumnValue)
+   * when the generated code asks for them. Hence this will be same as iterating batches in
+   * ColumnTableScan that will return merged entries with deltas/deletes applied.
+   * The ColumnInsert is tied to output of this hence will create a combined merged batch.
    */
   private def mergeSmallColumnBatches(pr: PartitionedRegion, container: GemFireContainer,
       metaData: ExternalTableMetaData, smallBatchBuckets: mutable.Set[BucketRegion]): Unit = {
     mergeTasks.computeIfAbsent(pr, new JFunction[PartitionedRegion, Future[Unit]] {
       override def apply(pr: PartitionedRegion): Future[Unit] = {
         val cache = pr.getGemFireCache
-        implicit val executionContext = Utils.executionContext(cache)
+        implicit val executionContext: ExecutionContext = Utils.executionContext(cache)
         Future(Utils.withExceptionHandling({
           val tableName = container.getQualifiedTableName
           val schema = Utils.getTableSchema(metaData)
