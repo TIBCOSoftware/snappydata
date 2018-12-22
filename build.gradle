@@ -403,7 +403,7 @@ subprojects {
           rootProject.property('dunit.single') : null
     }
     if (single == null || single.length() == 0) {
-      def dunitTests = fileTree(dir: testClassesDir,
+      def dunitTests = fileTree(dir: testClassesDirs,
           includes: ['**/*DUnitTest.class', '**/*DUnit.class'],
           excludes: ['**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class'])
       FileTree includeTestFiles = dunitTests
