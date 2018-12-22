@@ -116,7 +116,6 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
 
     val partitions = ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true)
-    val partitioningColumns = StoreUtils.getAndSetPartitioningAndKeyColumns(session, parameters)
 
     val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
@@ -134,6 +133,8 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
         } else field
       })
     }
+    val partitioningColumns = StoreUtils.getAndSetPartitioningAndKeyColumns(session,
+      schema, parameters)
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = false, isShadowTable = false)
