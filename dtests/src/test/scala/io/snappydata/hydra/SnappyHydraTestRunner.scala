@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -42,7 +42,7 @@ class SnappyHydraTestRunner extends SnappyTestRunner {
   def searchExceptions(logDir: File): Unit = {
     val c1 = s"grep -r Exception $logDir"
     val c2 = "grep -v  java.net.BindException"
-    val c3 = "egrep -v (NoSuchObjectException|NucleusObjectNotFoundException)"
+    val c3 = "egrep -v (NoSuchObjectException|NucleusObjectNotFoundException|StateManager)"
     val c4 = "grep -v RegionDestroyedException"
     val c5 = "grep -v statArchive.gfs"
     val c6 = "grep -v DistributedSystemDisconnectedException"

@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.mutable
 
-import com.gemstone.gnu.trove.TLongArrayList
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -76,11 +76,11 @@ object SnappyMetrics {
    */
   def stringValue(metricType: String, values: Any): String = {
     if (metricType.startsWith(SPLIT_SUM_METRIC)) {
-      val valueList = values.asInstanceOf[mutable.ArrayBuffer[TLongArrayList]]
+      val valueList = values.asInstanceOf[mutable.ArrayBuffer[LongArrayList]]
       val numberFormat = NumberFormat.getIntegerInstance(Locale.US)
       valueList.collect {
-        case l if l ne null => numberFormat.format(l.toNativeArray.sum)
+        case l if l ne null => numberFormat.format(l.toArray.sum)
       }.mkString("|")
-    } else SQLMetrics.stringValue(metricType, values.asInstanceOf[TLongArrayList].toNativeArray)
+    } else SQLMetrics.stringValue(metricType, values.asInstanceOf[LongArrayList].toArray)
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -45,6 +45,20 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
   private def createPageTitleNode(title: String): Seq[Node] = {
     <div id="AutoUpdateErrorMsgContainer">
       <div id="AutoUpdateErrorMsg">
+      </div>
+    </div>
+    <div id="autorefreshswitch-container">
+      <div id="autorefreshswitch-holder">
+        <div class="onoffswitch">
+          <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox"
+                 id="myonoffswitch" checked="checked" />
+          <label class="onoffswitch-label" for="myonoffswitch" data-toggle="tooltip" title=""
+                 data-original-title="ON/OFF Switch for Auto Update of Statistics">
+            <span class="onoffswitch-inner"></span>
+            <span class="onoffswitch-switch"></span>
+          </label>
+        </div>
+        <div id="autorefreshswitch-label">Auto Refresh:</div>
       </div>
     </div>
     <div class="row-fluid">

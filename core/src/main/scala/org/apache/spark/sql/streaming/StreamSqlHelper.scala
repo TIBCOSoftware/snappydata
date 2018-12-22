@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,13 +18,10 @@ package org.apache.spark.sql.streaming
 
 import scala.reflect.runtime.universe.TypeTag
 
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.{InternalRow, JavaTypeInference}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{AnalysisException, Row}
@@ -33,14 +30,6 @@ import org.apache.spark.streaming.api.java.JavaDStream
 import org.apache.spark.streaming.dstream.DStream
 
 object StreamSqlHelper {
-
-  def registerRelationDestroy(): Unit = {
-    try {
-      SnappyStoreHiveCatalog.registerRelationDestroy(relation = None)
-    } catch {
-      case e: Exception if GemFireXDUtils.retryToBeDone(e) => // ignore if node going down
-    }
-  }
 
   def clearStreams(): Unit = {
     StreamBaseRelation.clearStreams()
@@ -58,7 +47,7 @@ object StreamSqlHelper {
 
   def getSchemaDStream(ssc: SnappyStreamingContext, tableName: String): SchemaDStream = {
     val catalog = ssc.snappySession.sessionState.catalog
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    catalog.resolveRelation(ssc.snappySession.tableIdentifier(tableName)) match {
       case LogicalRelation(sr: StreamPlan, _, _) => new SchemaDStream(ssc,
         LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(ssc))
       case _ =>

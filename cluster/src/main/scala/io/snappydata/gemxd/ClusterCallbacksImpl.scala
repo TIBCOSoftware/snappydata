@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,9 +27,10 @@ import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
+import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
+
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
@@ -66,9 +67,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getDriverURL: String = {
     SnappyClusterManager.cm.map(_.schedulerBackend) match {
-      case Some(x) if x ne null =>
-        logInfo(s"returning driverUrl=${x.driverUrl}")
-        x.driverUrl
+      case Some(backend) if backend ne null =>
+        val driverUrl = backend.driverUrl
+        if ((driverUrl ne null) && !driverUrl.isEmpty) {
+          logInfo(s"returning driverUrl=$driverUrl")
+        }
+        driverUrl
       case _ => null
     }
   }
@@ -130,12 +134,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def setLeadClassLoader(): Unit = {
     val instance = ServiceManager.currentFabricServiceInstance
     instance match {
-      case li: LeadImpl => {
+      case li: LeadImpl =>
         val loader = li.urlclassloader
         if (loader != null) {
           Thread.currentThread().setContextClassLoader(loader)
         }
-      }
       case _ =>
     }
   }

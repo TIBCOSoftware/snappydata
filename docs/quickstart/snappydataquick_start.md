@@ -1,24 +1,52 @@
-# SnappyData in 15 Minutes
+# SnappyData Cluster SQL Tutorial
  
 In this section, you will get a quick tour to start a SnappyData cluster and try out the basic features and functionalities. The following items are covered in this guide:
 
 *	[Start SnappyData Cluster](#st_snappy_cluster)
+
 *	[Check SnappyData Cluster Status](#stats_cluster)
+
 *	[Connect/Disconnect SnappyData Shell](#connectsnappyshell)
+
 *	[Create Tables](#create_tab)
+
 *	[Create Tables and Import Data Using quickstart Scripts](#quickstartscript)
+
 *	[Create a Column Table using an External Table](#createcoltabwithext)
+
+*	[Run Queries](#runqry)
+
 *	[Add Servers to Cluster](#addservercluster)
+
 *	[Rebalance Data on Servers](#rebalancedataonserver)
+
 *	[Stop Cluster](#stop_snappy_cluster)
+
 
 <a id= st_snappy_cluster> </a>
 ## Start SnappyData Cluster
 
-Navigate to the SnappyData product root directory to start the cluster. Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server.
+Navigate to the SnappyData product root directory to start the cluster. Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. 
 
-For more details, refer to [Starting SnappyData Cluster](/howto/start_snappy_cluster.md). 
-You can start the SnappyData shell and run the `select id, kind, netservers from sys.members;` query to view the cluster members.
+```pre
+$./sbin/snappy-start-all.sh
+
+Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
+SnappyData Locator pid: 9086 status: running
+  Distributed system now has 1 members.
+  Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
+Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-server-1/snappyserver.log
+SnappyData Server pid: 9220 status: running
+  Distributed system now has 2 members.
+  Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
+Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-lead-1/snappyleader.log
+SnappyData Leader pid: 9370 status: running
+  Distributed system now has 3 members.
+  Starting job server on: 0.0.0.0[8090]
+
+```
+
+You can connect to [Snappy SQL shell](#connectsnappyshell) and run the `select id, kind, netservers from sys.members;` query to view the cluster members.
 
 		./bin/snappy
 		connect client '127.0.0.1:1527';
@@ -45,42 +73,42 @@ SnappyData Server pid: 9887 status: running
 SnappyData Leader pid: 10468 status: running
 ```
 
-Use [Snappy SQL shell](/use_snappy_shell.md) to connect to the cluster and perform various SQL operations.
+Connect to  [Snappy SQL shell](#connectsnappyshell) to perform various SQL operations.
 
 
-Alternatively , you can access the [SnappyData Pulse](/monitoring/monitoring.md) monitoring tool by entering  [http:`<leadhost>`:5050/dashboard/]() in the web browser.` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Pulse dashboards, after starting a cluster, you can check the status of each of the cluster member.
+Alternatively , you can access the [SnappyData Pulse](/monitoring/monitoring.md) monitoring tool by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Pulse dashboards, after starting a cluster, you can check the status of each of the cluster member.
 
 <a id= connectsnappyshell> </a>
 ## Connect/Disconnect to SnappyData Shell
 After starting the SnappyData cluster, run these commands together to start the SnappyData shell:
 			
-```
+```pre
 ./bin/snappy
 connect client '127.0.0.1:1527';
 ```
-Type **exit** or press **CTRL + C** to disconnect the SnappyData Shell. 
+Type **exit;** or press **CTRL + C** to disconnect the SnappyData Shell.
 
 <a id= create_tab> </a>
 ## Create Tables
 Create a simple table and insert a few rows. By default, if no options are provided, row replicated table is formed. However, you can create tables using the row or column option.  
-
-	CREATE TABLE quicktable (id int generated always as identity, item char(25));`
-	# A table named quicktable is created.  Zero rows inserted/updated/deleted.
-            
-    # Create column table:
-    CREATE TABLE quicktable_col (id int generated always as identity, item char(25)) using column() 
+	
+    # Create a table named quicktable. A replicated row table is formed without/empty options by default.
+	CREATE TABLE quicktable (id int generated always as identity, item char(25));
+	            
+    # Create column table. A column table is created which is partitioned by default.
+    CREATE TABLE  quicktable_col (id int, item varchar(25)) using column options(); 
                       
-    # Create Row table:  
-    create table quicktable_col (id int generated always as identity, item char(25)) using row();
+    # Create partitioned Row table using the partition by options. A partitioned row table is created with partitioning scheme on the 'id' column. 
+    CREATE TABLE quicktable_row (id int generated always as identity, item char(25)) using row options(partition_by 'id');
 			
     # Insert one row into the table.
-    insert into quicktable values (default, 'widget');`
+    INSERT into quicktable values (default, 'widget');
 		
 	# Insert one more row into the table.
-    insert into quicktable values (default, 'gadget');`
+    INSERT into quicktable values (default, 'gadget');
 			
     # View the contents of the table.
-	select * from quicktable;`
+	select * from quicktable;
 	ID         |ITEM                     
 	-------------------------------------
 	2          |gadget                
@@ -105,7 +133,7 @@ SnappyData contains various quickstart scripts that can be used to run some basi
 			
             ./bin/snappy
 			connect client '127.0.0.1:1527';
-    		run 'quickstart/scripts/create_and_load_column_table.sql';
+    		run quickstart/scripts/create_and_load_column_table.sql;
             
             # Use the following command to view the details of the external table. 
 			describe staging_airline;
@@ -155,18 +183,16 @@ SnappyData contains various quickstart scripts that can be used to run some basi
 
 You can also try the following:
 
-```
-# Create and load a row table:
+*	**Create and load a row table:**
 
-run './quickstart/scripts/create_and_load_row_table.sql';
+		run ./quickstart/scripts/create_and_load_row_table.sql;
 
-# View the status of the system:
+*	**View the status of the system:**
 
-run './quickstart/scripts/status_queries.sql'
-```
+		run ./quickstart/scripts/status_queries.sql;
 
 <a id= createcoltabwithext> </a>
-## Create a Column Table using an External Table 
+## Create a Column Table Using an External Table 
 Similarly as the quickstart scripts, you can try to create an external table named staging_airline to load the formatted data from a airlineParquetData file with inferSchema option as true. Later, you can create a column table named airline and pull data from the external table into this table. After pulling in the data, you can check the number of records in the table.
 
 				CREATE EXTERNAL TABLE STAGING_AIRLINE
@@ -218,22 +244,67 @@ Similarly as the quickstart scripts, you can try to create an external table nam
 
         1 row selected
 
-After running these queries, you can check the details of table on the SnappyData Pulse Dashboards. The details of the newly created tables are displayed in the Tables section.
+After running these queries, you can check the table details on the SnappyData Pulse Dashboards. The details of the newly created tables are displayed in the **Tables** section.
 
+![External Table & Tables on Dashboard](../Images/externaltable_scripts.png)
+
+<a id= runqry> </a>
+## Run Queries
+
+You can try a couple of analytical queries as shown:
+
+*	**Query to find the average arrival delay.**
+ 
+```
+select avg(arrdelay) from airline;
+
+avg(ARRDELAY)         
+----------------------
+6.735443              
+
+1 row selected
+
+```
+*	**Query for avg arrival delay of a specific airline.**
+
+```
+select max(arrdelay) from airline where DEST = '';
+
+max(ARRDELAY)
+-------------
+NULL         
+
+1 row selected
+
+```
 <a id= addservercluster> </a>
 ## Add Servers into Cluster
-You can add more than one server to a cluster. To add a new server, you must create a configuration file named **servers** in the conf folder in the the SnappyData home directory. To do so, you can copy the existing template files servers.template and rename it to **servers**.  
-Open this file using a vi editor and add a hostname entry of the additional server and save the file. 
+
+You can add more than one server to a cluster. To add a new server, do the following:
+
+1.	Go to SnappyData home directory.</br>`cd snappydata/build-artifacts/scala-2.11/snappy`
+2.	Create a configuration file named **servers** in the conf folder in the the SnappyData home directory. To do so, you can copy the existing template files **servers.template** and rename it to **servers** as shown:</br>`cp -f conf/servers.template conf/servers`
+3. Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. </br>For example, suppose there is an entry **localhost** in this file for the primary server. You can add an entry **localhost** below this entry for the additional server. The **servers** file should contain the hostnames of the nodes (one per line) where you intend to start the member.
+4. From the SnappyData home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the SnappyData Pulse UI. 
 
 <a id= rebalancedataonserver> </a>
 ## Rebalancing Data on Servers
 
-Further, you can distribute the data among the servers in the cluster. This ensures that each server carries almost equal data. 
+Further, you can distribute the data among the servers in the cluster. This ensures that each server carries almost equal data.
 To balance the data equally on the servers, do the following:
 
-1.	Connect to snappy shell and obtain the jdbc client connection.
-2.	Run the rebalance command.</br>
-		call sys.rebalance_all_buckets();
+1.	Go to SnappyData home directory.</br>`cd snappydata/build-artifacts/scala-2.11/snappy`
+2.	[Connect to snappy shell](#connectsnappyshell) and obtain the jdbc client connection.
+3.	Run the rebalance command.</br> `call sys.rebalance_all_buckets();`
+4.	On SnappyData Pulse UI, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.
+
+	**Before Rebalance**
+    
+    ![After Rebalance](../Images/before_rebalance.png)
+    
+    **After Rebalance**
+    
+	![After Rebalance](../Images/after_rebalance.png)
 
 <a id= stop_snappy_cluster> </a>
 ## Stop the Cluster
@@ -245,5 +316,4 @@ The SnappyData Leader has stopped.
 The SnappyData Server has stopped.
 The SnappyData Locator has stopped.
 ```
-For more details, refer to [Stopping the Cluster](/stop_snappy_cluster.md)
-
+For more details, refer to [Stopping the Cluster](/howto/stop_snappy_cluster.md)

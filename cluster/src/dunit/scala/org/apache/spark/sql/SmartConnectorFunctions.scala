@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -77,6 +77,7 @@ object SmartConnectorFunctions {
 
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
+    snc.snappySession.externalCatalog.invalidateAll()
     val sqlContext = new SparkSession(sc).sqlContext
     val pw = new PrintWriter(new FileOutputStream(
       new File(s"ValidateNWQueries_$tableType.out"), true))

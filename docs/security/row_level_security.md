@@ -5,6 +5,7 @@
 The following topics are covered in this section:
 
 *	[Overview of Row Level Security](#rlsoverview)
+*	[Activating Row Level Security](#actrowlevel)
 *	[Creating a Policy](#createpolicy)
 *	[Enabling Row Level Security](#enablerowlevelsecurity)
 *	[Viewing Policy Details](#viewpolicy)
@@ -14,8 +15,17 @@ The following topics are covered in this section:
 
 <a id= rlsoverview> </a>
 ## Overview of Row Level Security
-Policy is a rule that is implemented by using a filter expression.  In SnappyData, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned by normal queries by data modification commands.
+Policy is a rule that is implemented by using a filter expression.  In SnappyData, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned for normal queries by data modification commands. 
+For [activating this row level security](#actrowlevel), a system property must be added to the configuration files of servers, leads, and locators. 
 To restrict the permissions of a user at row level, [create a simple policy](#createpolicy) for a table that can be applied on a per user basis and then [enable the row level security](#enablerowlevelsecurity) for that table.
+
+<a id= actrowlevel> </a>
+## Activating Row Level Security
+For activating Row Level Security, a system property `-J-Dsnappydata.enable-rls=true` must be added to the configuration files of servers, leads, and locators when you [configure the cluster](/configuring_cluster/configuring_cluster.md). By default this is off.
+If this property is not added, you cannot enable the Row Level Security and an exception is thrown when you attempt to create the policy.
+
+!!! Warning
+	When this property is set to **true**, the Smart Connector access to SnappyData will fail with `java.lang.IllegalStateException: Row level security (snappydata.enable-rls) does not allow smart connector mode` exception.
 
 <a id= createpolicy> </a>
 ## Creating a Policy

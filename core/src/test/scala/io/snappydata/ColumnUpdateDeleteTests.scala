@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -527,12 +527,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     // concurrent updates to different rows but same batches
     val barrier = new CyclicBarrier(concurrency)
     var tasks = Array.tabulate(concurrency)(i => Future {
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
+        waited = true
         res = snappy.sql(s"update updateTable set id = $idUpdate, " +
             s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
             s"where (id % $step) = $i").collect()
@@ -541,6 +543,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))
@@ -552,24 +555,24 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     var res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable1").collect()
-    if (res.length != 0) {
+    if (res.length != 0) { // SW:
       // scalastyle:off println
       println("Failed in updates?")
       // scalastyle:on println
-      Thread.sleep(1000000)
+      Thread.sleep(10000000)
     }
     assert(res.length === 0)
 
     // concurrent deletes
     tasks = Array.tabulate(concurrency)(i => Future {
-      var awaitDone = false
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
-        awaitDone = true
+        waited = true
         res = snappy.sql(
           s"delete from updateTable where (id % $step) = ${step - i - 1}").collect()
         assert(res.map(_.getLong(0)).sum > 0)
@@ -577,7 +580,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
-          if (!awaitDone) barrier.await()
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))
@@ -587,11 +590,11 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable2").collect()
-    if (res.length != 0) {
+    if (res.length != 0) { // SW:
       // scalastyle:off println
       println("Failed in deletes?")
       // scalastyle:on println
-      Thread.sleep(1000000)
+      Thread.sleep(10000000)
     }
     assert(res.length === 0)
 

@@ -24,14 +24,13 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdMessage
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils
 import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils.GetFunctionMembers
-import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.{LocalMode, SnappyContext, SnappyEmbeddedMode}
+import org.apache.spark.sql.{LocalMode, SnappyContext, SnappyEmbeddedMode, SnappySession}
 
 @SerialVersionUID(-46264515900419559L)
 object RefreshMetadata extends Enumeration
@@ -42,7 +41,7 @@ object RefreshMetadata extends Enumeration
   type Type = Value
   // list of various action types possible with this function
   // first argument to the execute() methods should be this
-  val SET_RELATION_DESTROY, FLUSH_ROW_BUFFER, REMOVE_CACHED_OBJECTS, CLEAR_CODEGEN_CACHE,
+  val UPDATE_CATALOG_SCHEMA_VERSION, FLUSH_ROW_BUFFER, REMOVE_CACHED_OBJECTS, CLEAR_CODEGEN_CACHE,
   ADD_URIS_TO_CLASSLOADER = Value
 
   override def getId: String = ID
@@ -74,7 +73,8 @@ object RefreshMetadata extends Enumeration
    */
   def executeOnAll(sc: SparkContext, action: Type, args: Any,
       executeInConnector: Boolean = true): Unit = {
-    SnappyContext.getClusterMode(sc) match {
+    if (sc eq null) executeOnAllEmbedded(action, args)
+    else SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) => executeOnAllEmbedded(action, args)
       case LocalMode(_, _) => executeLocal(action, args)
       case _ => if (executeInConnector) {
@@ -89,14 +89,22 @@ object RefreshMetadata extends Enumeration
 
   def executeLocal(action: Type, args: Any): Unit = {
     action match {
-      case SET_RELATION_DESTROY =>
-        val (version, relation) = args.asInstanceOf[(Int, Option[QualifiedTableName])]
-        val myId = GemFireStore.getMyId
-        if (myId ne null) {
-          val profile = GemFireXDUtils.getGfxdProfile(myId)
-          if (profile ne null) profile.setRelationDestroyVersion(version)
+      case UPDATE_CATALOG_SCHEMA_VERSION =>
+        SnappySession.clearAllCache(onlyQueryPlanCache = true)
+        CodeGeneration.clearAllCache()
+        if (args != null) {
+          val (version, relations) = args.asInstanceOf[(Long, Seq[(String, String)])]
+          // update the version stored in own profile
+          val profile = GemFireXDUtils.getMyProfile(false)
+          if (profile ne null) {
+            profile.updateCatalogSchemaVersion(version)
+          }
+          val catalog = SnappyHiveExternalCatalog.getInstance
+          if (catalog ne null) {
+            if (relations.isEmpty) catalog.invalidateAll()
+            else relations.foreach(catalog.invalidate)
+          }
         }
-        SnappyStoreHiveCatalog.clearCatalog(relation)
       case FLUSH_ROW_BUFFER =>
         GfxdSystemProcedures.flushLocalBuckets(args.asInstanceOf[String], true)
       case REMOVE_CACHED_OBJECTS =>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,8 @@
 package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
+import java.lang.reflect.Method
+import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
 import java.sql.DriverManager
 import java.util.TimeZone
@@ -29,6 +31,7 @@ import scala.reflect.ClassTag
 import scala.util.Sorting
 import scala.util.control.NonFatal
 
+import _root_.io.snappydata.sql.catalog.CatalogObjectType
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.SystemFailure
@@ -37,9 +40,9 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
-import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
@@ -55,20 +58,23 @@ import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
+import org.apache.spark.sql.execution.SQLExecution
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.metric.SQLMetric
-import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
+import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
 
 object Utils extends Logging {
 
+  final val EMPTY_STRING_ARRAY = Array.empty[String]
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
   private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
@@ -127,10 +133,6 @@ object Utils extends Logging {
         s"""$module: Cannot resolve column name "$col" among
             (${cols.mkString(", ")})""")
     }
-  }
-
-  def fieldName(f: StructField): String = {
-    if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
   }
 
   def fieldIndex(relationOutput: Seq[Attribute], columnName: String,
@@ -193,6 +195,25 @@ object Utils extends Logging {
   def resolveQCS(options: SMap[String, Any], fieldNames: Array[String],
       module: String): (Array[Int], Array[String]) = {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
+  }
+
+  // maximum power of 2 less than Integer.MAX_VALUE
+  private val MAX_HASH_CAPACITY = 1 << 30
+
+  def checkCapacity(capacity: Int): Int = {
+    if (capacity > 0 && capacity <= MAX_HASH_CAPACITY) {
+      capacity
+    } else if (capacity == 0) {
+      2
+    } else {
+      throw new IllegalStateException("Capacity (" + capacity +
+          ") can't be more than " + MAX_HASH_CAPACITY + " elements or negative")
+    }
+  }
+
+  def nextPowerOf2(n: Int): Int = {
+    val highBit = Integer.highestOneBit(if (n > 0) n else 2)
+    checkCapacity(if (highBit == n) n else highBit << 1)
   }
 
   def parseInteger(v: Any, module: String, option: String, min: Int = 1,
@@ -277,10 +298,10 @@ object Utils extends Logging {
   private final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
 
   /**
-    * Parse the given time interval value as long milliseconds.
-    *
-    * @see timeIntervalSpec for the allowed string specification
-    */
+   * Parse the given time interval value as long milliseconds.
+   *
+   * @see timeIntervalSpec for the allowed string specification
+   */
   def parseTimeInterval(optV: Any, module: String): Long = {
     optV match {
       case tii: Int => tii.toLong
@@ -431,11 +452,13 @@ object Utils extends Logging {
     }
   }
 
-  def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
+  def parseColumnsAsClob(s: String, session: SnappySession): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
     } else {
-      (false, s.toUpperCase.split(',').toSet)
+      val parser = session.snappyParser
+      (false, s.split(',').map(c => Utils.toUpperCase(parser.parseSQLOnly(
+        c, parser.parseIdentifier.run()))).toSet)
     }
   }
 
@@ -481,7 +504,7 @@ object Utils extends Logging {
    * field is stored (and rendered) as VARCHAR by SnappyStore.
    *
    * @param size the size parameter of the VARCHAR() column type
-   * @param md optional Metadata object to be merged into the result
+   * @param md   optional Metadata object to be merged into the result
    * @return the result Metadata object to use for StructField
    */
   def varcharMetadata(size: Int, md: Metadata): Metadata = {
@@ -519,7 +542,7 @@ object Utils extends Logging {
    * field is stored (and rendered) as CHAR by SnappyStore.
    *
    * @param size the size parameter of the CHAR() column type
-   * @param md optional Metadata object to be merged into the result
+   * @param md   optional Metadata object to be merged into the result
    * @return the result Metadata object to use for StructField
    */
   def charMetadata(size: Int, md: Metadata): Metadata = {
@@ -539,21 +562,17 @@ object Utils extends Logging {
    * @return the result Metadata object to use for StructField
    */
   def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
-    // Put BASE as 'CLOB' so that SnappyStoreHiveCatalog.normalizeSchema() removes these
+    // Put BASE as 'CLOB' so that SnappySessionCatalog.normalizeSchema() removes these
     // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
     // render this field as CLOB.
-    // If we don't add this property here, SnappyStoreHiveCatalog.normalizeSchema() will add one
+    // If we don't add this property here, SnappySessionCatalog.normalizeSchema() will add one
     // on its own and this field would be rendered as VARCHAR.
     new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
         .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
   }
 
-  def schemaFields(schema: StructType): Map[String, StructField] = {
-    Map(schema.fields.flatMap { f =>
-      val name = if (f.metadata.contains("name")) f.metadata.getString("name")
-      else f.name
-      Iterator((name, f))
-    }: _*)
+  def schemaFields(schema: StructType): SMap[String, StructField] = {
+    new CaseInsensitiveMutableHashMap[StructField](schema.fields.map(f => f.name -> f).toMap)
   }
 
   def schemaAttributes(schema: StructType): Seq[AttributeReference] = schema.toAttributes
@@ -561,7 +580,7 @@ object Utils extends Logging {
   def getTableSchema(metadata: ExternalTableMetaData): StructType = {
     // add weightage column for sample tables
     val schema = metadata.schema.asInstanceOf[StructType]
-    if (metadata.tableType == ExternalTableType.Sample.name &&
+    if (metadata.tableType == CatalogObjectType.Sample.toString &&
         schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
       schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
         LongType, nullable = false)
@@ -577,11 +596,11 @@ object Utils extends Logging {
   }
 
   /**
-    * Get the result schema given an optional explicit schema and base table.
-    * In case both are specified, then check compatibility between the two.
-    */
+   * Get the result schema given an optional explicit schema and base table.
+   * In case both are specified, then check compatibility between the two.
+   */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
-      baseTableOpt: Option[String], catalog: SnappyStoreHiveCatalog,
+      baseTableOpt: Option[String], catalog: SnappySessionCatalog,
       asSelect: Boolean, table: String,
       tableType: String): (StructType, Option[LogicalPlan]) = {
     schemaOpt match {
@@ -591,7 +610,7 @@ object Utils extends Logging {
           // should have matching schema
           try {
             val tablePlan = catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTableName))
+              catalog.snappySession.tableIdentifier(baseTableName))
             val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
               (s, Some(tablePlan))
@@ -618,7 +637,7 @@ object Utils extends Logging {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
             val tablePlan = catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTable))
+              catalog.snappySession.tableIdentifier(baseTable))
             (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
             case ae: AnalysisException =>
@@ -638,8 +657,8 @@ object Utils extends Logging {
   }
 
   /**
-    * Register given driver class with Spark's loader.
-    */
+   * Register given driver class with Spark's loader.
+   */
   def registerDriver(driver: String): Unit = {
     try {
       DriverRegistry.register(driver)
@@ -650,8 +669,8 @@ object Utils extends Logging {
   }
 
   /**
-    * Register driver for given JDBC URL and return the driver class name.
-    */
+   * Register driver for given JDBC URL and return the driver class name.
+   */
   def registerDriverUrl(url: String): String = {
     val driver = getDriverClassName(url)
     registerDriver(driver)
@@ -699,9 +718,9 @@ object Utils extends Logging {
     override def get(key: A): Option[B] = map.get(key)
   }
 
-  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): ObjectObjectHashMap[K, V] = {
-    val m = ObjectObjectHashMap.withExpectedSize[K, V](map.size)
-    map.foreach(p => m.justPut(p._1, p._2))
+  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): UnifiedMap[K, V] = {
+    val m = new UnifiedMap[K, V](map.size)
+    map.foreach(p => m.put(p._1, p._2))
     m
   }
 
@@ -747,6 +766,11 @@ object Utils extends Logging {
       }
     }
     conf
+  }
+
+  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader = {
+    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+    new MutableURLClassLoader(urls, parentLoader)
   }
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
@@ -796,6 +820,24 @@ object Utils extends Logging {
           // explicit cast for value to Object is for janino bug
           v => s"(Long)((${classOf[AccumulatorV2[_, _]].getName})$v).value()")
     }
+  }
+
+  /**
+   * Minimum size of block beyond which data will be stored in BlockManager
+   * before being consumed to store data from multiple partitions safely.
+   */
+  private[sql] val MIN_LOCAL_BLOCK_SIZE: Int = 32 * 1024 // 32K
+
+  private[sql] val nextExecutionIdMethod: Method = {
+    val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
+    m.setAccessible(true)
+    m
+  }
+
+  private[sql] val rddPartitionsOffset: Long = {
+    val f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
+    f.setAccessible(true)
+    UnsafeHolder.getUnsafe.objectFieldOffset(f)
   }
 
   def getJsonGenerator(dataType: DataType, columnName: String,
@@ -980,11 +1022,13 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       private[this] var bucket = bucketSet.nextSetBit(0)
 
       override def hasNext: Boolean = bucket >= 0
+
       override def next(): Integer = {
         val b = Int.box(bucket)
         bucket = bucketSet.nextSetBit(bucket + 1)
         b
       }
+
       override def remove(): Unit = throw new UnsupportedOperationException
     }
 
@@ -1059,15 +1103,15 @@ private[spark] case class NarrowExecutorLocalSplitDep(
 }
 
 /**
-  * Stores information about the narrow dependencies used by a StoreRDD.
-  *
-  * @param narrowDep maps to the dependencies variable in the parent RDD:
-  *                  for each one to one dependency in dependencies,
-  *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
-  *                  the partition for that dependency) at the corresponding
-  *                  index. The size of narrowDeps should always be equal to
-  *                  the number of parents.
-  */
+ * Stores information about the narrow dependencies used by a StoreRDD.
+ *
+ * @param narrowDep maps to the dependencies variable in the parent RDD:
+ *                  for each one to one dependency in dependencies,
+ *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
+ *                  the partition for that dependency) at the corresponding
+ *                  index. The size of narrowDeps should always be equal to
+ *                  the number of parents.
+ */
 private[spark] class CoGroupExecutorLocalPartition(
     idx: Int, val blockId: BlockManagerId,
     val narrowDep: Option[NarrowExecutorLocalSplitDep])
@@ -1084,7 +1128,7 @@ private[spark] class CoGroupExecutorLocalPartition(
 }
 
 final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
-    var hostList: mutable.ArrayBuffer[(String, String)])
+    var hostList: Seq[(String, String)])
     extends Partition with KryoSerializable {
 
   override def index: Int = _index
@@ -1106,12 +1150,13 @@ final class SmartExecutorBucketPartition(private var _index: Int, private var _b
     _index = input.readVarInt(true)
     _bucketId = input.readVarInt(true)
     val numHosts = input.readVarInt(true)
-    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
+    val hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
     for (_ <- 0 until numHosts) {
       val host = input.readString()
       val url = input.readString()
       hostList += host -> url
     }
+    this.hostList = hostList
   }
 
   override def toString: String =

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -102,7 +102,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         Data2(s.head.asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
       val dataDF = snContext.createDataFrame(rdd)
 
-      dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+      dataDF.write.format("column").options(props).saveAsTable(tableName)
       tablesToDrop += tableName
     }
 
@@ -161,7 +161,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.createTable(s"$table2", "column", dataDF.schema, props)
     tablesToDrop += table2
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").options(props).saveAsTable(tableName)
     tablesToDrop += tableName
 
     doPrint("Verify index create and drop for various index types")
@@ -301,7 +301,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.createTable(s"$table3", "column", dataDF.schema, props)
     tablesToDrop += table3
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(table1)
+    dataDF.write.format("column").options(props).saveAsTable(table1)
     tablesToDrop += table1
 
     dataDF.write.insertInto(table2)
@@ -379,9 +379,13 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       CreateIndexTest.validateIndex(Seq(index31, index4))(df)
     }
 
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table3 t2 on t1.col2" +
+        s" = t2.col2 and t1.col3 = t2.col3 ") {
+      CreateIndexTest.validateIndex(Seq(index31, index4))(_)
+    }
+
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 /*+ index( ) */ join $table3 t2 on t1.col2" +
         s" = t2.col2 and t1.col3 = t2.col3 ") {
-      // previous query not picking up index.
       CreateIndexTest.validateIndex(Seq.empty, table1, table3)(_)
     }
 
@@ -516,7 +520,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         (props -- Seq("PARTITION_BY") + ("REPLICATE" -> "true")))
       tablesToDrop += rtable6
 
-      dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(table1)
+      dataDF.write.format("column").options(props).saveAsTable(table1)
       tablesToDrop += table1
 
       dataDF.write.insertInto(table2)

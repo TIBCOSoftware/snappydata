@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,8 +18,8 @@ package org.apache.spark.sql.execution.columnar
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.collection.OpenHashSet
 import io.snappydata.{Constant, Property}
+import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.TaskContext
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Exp
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
@@ -45,7 +46,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
       partitionExpressions: Seq[Expression],
-      relation: JDBCAppendableRelation, table: String) = {
+      relation: BaseColumnFormatRelation, table: String) = {
     // TODO: add compression for binary/complex types
     this(child, partitionColumns, partitionExpressions, relation.numBuckets,
       relation.isPartitioned, Some(relation), relation.getColumnBatchParams, table,
@@ -75,9 +76,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   @transient private var encoderArrayTerm: String = _
   @transient private var cursorArrayTerm: String = _
 
-  @transient private var batchIdRef: Int = -1
-
-  @transient private var batchBucketIdTerm: Option[String] = None
+  @transient private[this] var batchIdRef: Int = -1
+  @transient private[this] var batchBucketIdTerm: Option[String] = None
 
   def columnBatchSize: Int = batchParams._1
 
@@ -95,9 +95,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private val (checkFrequency, checkMask) = {
     val batchSize = columnBatchSize
     if (batchSize >= 16 * 1024 * 1024) ("16", "0x0f")
-    else if (batchSize >= 8 * 1024 * 1024)  ("8", "0x07")
-    else if (batchSize >= 4 * 1024 * 1024)  ("4", "0x03")
-    else if (batchSize >= 2 * 1024 * 1024)  ("2", "0x01")
+    else if (batchSize >= 8 * 1024 * 1024) ("8", "0x07")
+    else if (batchSize >= 4 * 1024 * 1024) ("4", "0x03")
+    else if (batchSize >= 2 * 1024 * 1024) ("2", "0x01")
     else ("1", "0x0")
   }
 
@@ -785,7 +785,7 @@ object ColumnWriter {
    * Supported types for which column statistics are maintained and can be used
    * for statistics checks. Excludes DecimalType that should be checked explicitly.
    */
-  val SUPPORTED_STATS_TYPES = new OpenHashSet[DataType](java.util.Arrays.asList(Array(
+  val SUPPORTED_STATS_TYPES = new UnifiedSet[DataType](java.util.Arrays.asList(Array(
     BooleanType, ByteType, ShortType, IntegerType, LongType, DateType, TimestampType,
     StringType, FloatType, DoubleType): _*))
 

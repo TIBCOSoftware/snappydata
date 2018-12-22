@@ -1,7 +1,7 @@
 package io.snappydata.hydra.cdcConnector;
 
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +16,7 @@ package io.snappydata.hydra.cdcConnector;
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -34,14 +35,14 @@ public class CDCPerfSparkJob {
 
   public static Connection getConnection() {
     Connection conn = null;
-     String url = "jdbc:snappydata://" + hostPort;
-      String driver = "io.snappydata.jdbc.ClientDriver";
-      try {
-        Class.forName(driver);
-        conn = DriverManager.getConnection(url);
-      } catch (Exception ex) {
-        System.out.println("Caught exception in getConnection() method" + ex.getMessage());
-      }
+    String url = "jdbc:snappydata://" + hostPort;
+    String driver = "io.snappydata.jdbc.ClientDriver";
+    try {
+      Class.forName(driver);
+      conn = DriverManager.getConnection(url);
+    } catch (Exception ex) {
+      System.out.println("Caught exception in getConnection() method" + ex.getMessage());
+    }
 
     return conn;
   }
@@ -63,7 +64,7 @@ public class CDCPerfSparkJob {
       props.put("username", username);
       props.put("password", password);
       // Connection connection ;
-      System.out.println("username = "+username+ " password = "+ " url = " + url);
+      System.out.println("username = " + username + " password = " + " url = " + url);
       conn = DriverManager.getConnection(url, props);
 
       System.out.println("Got connection" + conn.isClosed());
@@ -73,7 +74,7 @@ public class CDCPerfSparkJob {
     return conn;
   }
 
-  public static HashMap<List<Integer>, Map<String, Long>> runPointLookupQueries(ArrayList<String> qlist, Integer ThreadId) {
+  public static HashMap<List<Integer>, Map<String, Long>> runPointLookupQueries(ArrayList<String> qlist, int startRange, Integer ThreadId) {
     long timeTaken = 0l;
     long startTime;
     long endTime;
@@ -84,15 +85,20 @@ public class CDCPerfSparkJob {
     HashMap<List<Integer>, Map<String, Long>> plTimeListHashMap = new HashMap<>();
     conn = getConnection();
     try {
-      if(qlist.size() == 0)
+      if (qlist.size() == 0)
         System.out.println("The queryList is empty");
       else {
         int queryPos = rnd.nextInt(qlist.size());
         System.out.println(ThreadId + " warm up query = " + qlist.get(queryPos));
+        PreparedStatement ps = conn.prepareStatement(qlist.get(queryPos));
+        Random rnd1 = new Random();
+        int val = rnd1.nextInt(10) + startRange;
 
         // warm up task loop:
         for (int i = 0; i < 100; i++) {  // iterrate each query 100 times.
-          conn.createStatement().executeQuery(qlist.get(queryPos));
+          ps.setInt(1, val);
+          // conn.createStatement().executeQuery(qlist.get(queryPos));
+          ps.executeQuery();
         }
 
         threadname.add(ThreadId);
@@ -114,45 +120,54 @@ public class CDCPerfSparkJob {
     return plTimeListHashMap;
   }
 
-  public static void runMixedQuery(ArrayList<String> qlist,String serverInstance) {
+  public static void runMixedQuery(ArrayList<String> qlist, int startRange, String serverInstance) {
     Connection sqlConn = null;
-    Connection snappyConn ;
+    Connection snappyConn;
     try {
       System.out.println("The hostPort is " + hostPort);
       for (int i = 0; i < qlist.size(); i++) {
         String query = qlist.get(i);
         System.out.println("The query is " + query);
-        if(query.contains("SELECT")){
-          System.out.println("Query contains select");
+        if (query.contains("SELECT")) {
+          System.out.println("Query contains select so getting snappy connection");
           snappyConn = getConnection();
-         // Thread.sleep(5000); // sleep for 5 secs between each select
-          ResultSet rs = snappyConn.createStatement().executeQuery(query);
-          if(rs.next()){
-            System.out.println("FAILURE : The result set should have been empty");
-          }
-          else
-          {
-            System.out.println("SUCCESS : The result set is empty as expected");
-          }
+          Random rd = new Random();
+          PreparedStatement ps = snappyConn.prepareStatement(query);
+          ps.setInt(1, rd.nextInt(startRange) + startRange);
+          ResultSet rs = ps.executeQuery();
+          printResultSetData(rs);
           snappyConn.close();
-        }
-        else
-        {
-          System.out.println("Query contains insert/delete");
+        } else {
+          System.out.println("Query contains insert/delete/update so get sqlServer connection");
           sqlConn = getSqlServerConnection(serverInstance);
-          sqlConn.createStatement().execute(query);
+          if (query.contains("UPDATE")) {
+            Random rd = new Random();
+            PreparedStatement ps = sqlConn.prepareStatement(query);
+            System.out.println("The update query is " + query);
+            ps.setInt(1, rd.nextInt(startRange) + startRange);
+            ps.execute();
+          } else
+            sqlConn.createStatement().execute(query);
         }
       }
     } catch (Exception ex) {
       System.out.println("Exception inside runMixedQuery() method" + ex.getMessage());
-    } finally {
-    /*  try {
-       *//* if(!sqlConn.isClosed())
-          sqlConn.close();*//*
+    }
+  }
 
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }*/
+  public static void printResultSetData(ResultSet rs) {
+    try {
+      while (rs.next()) {
+        ResultSetMetaData md = rs.getMetaData();
+        int colCnt = md.getColumnCount();
+        for (int i = 1; i <= colCnt; i++) {
+          String colVal = rs.getString(i);
+          String colName = md.getColumnName(i);
+          System.out.println("The ColName = " + colName + " ColVal = " + colVal);
+        }
+      }
+    } catch (SQLException ex) {
+      System.out.println("Caught SQL exception in printResultSetData " + ex.getMessage());
     }
   }
 
@@ -165,7 +180,7 @@ public class CDCPerfSparkJob {
       for (int i = 0; i < qlist.size(); i++) {
         System.out.println("The query is " + qlist.get(i));
         PreparedStatement ps = conn.prepareStatement(qlist.get(i));
-      //  ps.setInt(1, (startRange - 1));
+        //  ps.setInt(1, (startRange - 1));
         ps.setInt(1, 1);
         ps.execute();
         System.out.println("successfully executed the query");
@@ -199,7 +214,6 @@ public class CDCPerfSparkJob {
       for (int i = 0; i < 100; i++) {
         ps.executeQuery();
       }
-
       // actuall query execution task
       startTime = System.currentTimeMillis();
       for (int i = 0; i < numItr; i++) {
@@ -272,8 +286,8 @@ public class CDCPerfSparkJob {
             System.out.println("Thread " + iterationIndex + " started");
             try {
               startBarierr.await();
-              if(isMixedQuery) {
-                runMixedQuery(queryList,sqlServerInst);
+              if (isMixedQuery) {
+                runMixedQuery(queryList, startRange, sqlServerInst);
               }
               if (isBulkDelete) {
                 runBulkDelete(queryList, startRange, sqlServerInst);
@@ -286,7 +300,7 @@ public class CDCPerfSparkJob {
                 System.out.println("Thread " + iterationIndex + " finished ");
               }
               if (isPointLookUp)
-                plQryTimeList.add(runPointLookupQueries(queryList, iterationIndex));
+                plQryTimeList.add(runPointLookupQueries(queryList, startRange, iterationIndex));
 
               finishBarierr.countDown(); //current thread finished, send mark
             } catch (InterruptedException e) {

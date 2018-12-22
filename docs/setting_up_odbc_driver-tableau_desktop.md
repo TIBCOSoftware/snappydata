@@ -1,4 +1,4 @@
-# Setting Up SnappyData ODBC Driver and Tableau Desktop
+# Setting Up SnappyData ODBC Driver
 
 <ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
@@ -9,9 +9,9 @@
 
 ## Step 1: Install the SnappyData ODBC Driver
 
-1. [Download the SnappyData 1.0.2 Enterprise Edition](install.md#download-snappydata).
+1. [Download the SnappyData 1.0.2.1 Enterprise Edition](install.md#download-snappydata).
 
-2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.0.zip** file.
+2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.2.zip** file.
 
 3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the  SnappyData ODBC driver.
 
@@ -49,40 +49,4 @@ To create SnappyData DSN from ODBC Data Sources:
 !!! Note
 	Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. 
 
-## Step 3. Install Tableau Desktop (10.1 or Higher)
-
-To install Tableau desktop:
-
-1. [Download Tableau Desktop](https://www.tableau.com/products/desktop).
-
-2. Depending on your Windows installation, download the 32-bit or 64-bit version of the installer.
-
-3. Follow the steps to complete the installation and ensure that you register and activate your product.
-
-## Step 4. Connecting Tableau Desktop to SnappyData Server
-
-When using Tableau with the SnappyData ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file, that is available in the downloaded **snappydata-odbc-1.0.0.zip**.
-
-To connect the Tableau Desktop to the SnappyData Server:
-
-1. Copy the **odbc-snappydata.tdc** file to the <_User_Home_Path_>/Documents/My Tableau Repository/Datasources directory.
-
-2. Open the Tableau Desktop application.
-
-3. On the Start Page,
-
-	a. Under **Connect** > **To a Server**, click **Other Databases (ODBC)**. The Other Databases (ODBC) window is displayed.
-
-	b. In the DSN drop-down list, select the name that you provided for your SnappyData ODBC connection (for example *snappydsn*), and then click **Connect**.
-
-4. When connection to the SnappyData server is established, the **Sign In** option is enabled. Click **Sign In** to log into Tableau.
-
-5. From the **Schema** drop-down list, select a schema. For example, *app*. </br>All tables from the selected schema are listed.
-
-6. Select the required table(s) and drag it to the canvas. A view generated using the selected tables is displayed. </br>If you make changes to the table, click **Update Now** to refresh and view your changes.
-
-7. In the **Worksheets** tab, click **sheet** to start the analysis.</br> 
-
-8. On this screen, you can click and drag a field from the **Dimensions** area to **Rows** or **Columns**.</br> Refer to the Tableau documentation for more information on data visualization.
-
-
+For information about connecting Tableau using SnappyData ODBC Driver, refer to [Connect Tableau using ODBC Driver](./howto/tableauconnect.md#odbcdritab)

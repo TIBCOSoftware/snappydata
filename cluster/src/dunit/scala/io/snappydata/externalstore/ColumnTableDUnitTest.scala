@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -649,7 +649,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def testSNAP1210(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    snc.sql(s"create table t1 using com.databricks.spark.csv options(path " +
+    snc.sql(s"create external table t1 using csv options(path " +
         s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
         s"inferschema 'true', maxCharsPerColumn '4096')")
     snc.sql("select * from t1").printSchema()

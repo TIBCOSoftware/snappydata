@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -67,7 +67,8 @@ trait ToolsCallback {
   def getLeadClassLoader: URLClassLoader
 
   /**
-   * Check whether a user has permission to change the given schema (e.g. add/drop tables)
+   * Check permission to write to given schema for a user. Returns the normalized user or
+   * LDAP group name of the schema owner (or passed user itself if security is disabled).
    *
    * @param schema      the schema name for the permission check
    * @param currentUser the user for the permission check

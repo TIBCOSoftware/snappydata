@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,7 +20,7 @@ import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.core.Data
 
 import org.apache.spark.TaskContext
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.SnappyContext
 
 
 class ConnectionConfDUnitTest(s: String) extends ClusterManagerTestBase(s) {
@@ -31,7 +31,8 @@ class ConnectionConfDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
+    snc.sql("create schema MY_SCHEMA")
+    dataDF.write.format("row").saveAsTable("MY_SCHEMA.MY_TABLE")
 
     val conf = new ConnectionConfBuilder(snc.snappySession).build
 
@@ -46,6 +47,7 @@ class ConnectionConfDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     result.collect().foreach(v => assert(v(0) == 9))
 
     snc.sql("drop table MY_SCHEMA.MY_TABLE" )
+    snc.sql("drop schema my_schema")
 
     println("Successful")
   }

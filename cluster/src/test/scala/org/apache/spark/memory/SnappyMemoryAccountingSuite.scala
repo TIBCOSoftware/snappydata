@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -209,7 +209,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
 
   test("Test accounting for column table with eviction") {
-    val sparkSession = createSparkSession(1, 0, 10000L)
+    val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = Map("PARTITION_BY" -> "col1",
@@ -258,7 +258,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting for recovery of row partitioned tables with lru count & no persistent") {
-    var sparkSession = createSparkSession(1, 0, 100000L)
+    var sparkSession = createSparkSession(1, 0)
     var snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = "OPTIONS (BUCKETS '1', " +
@@ -275,7 +275,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     SnappyContext.globalSparkContext.stop()
     assert(SparkEnv.get == null)
-    sparkSession = createSparkSession(1, 0, 100000L)
+    sparkSession = createSparkSession(1, 0)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 0)
@@ -286,7 +286,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
   test("Test accounting for recovery of row partitioned tables with lru count & persistent") {
     assert(GemFireCacheImpl.getInstance == null)
-    var sparkSession = createSparkSession(1, 0, 100000L)
+    var sparkSession = createSparkSession(1, 0)
     var snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = "OPTIONS (BUCKETS '1', " +
@@ -304,7 +304,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     SnappyContext.globalSparkContext.stop()
 
     assert(SparkEnv.get == null)
-    sparkSession = createSparkSession(1, 0, 100000L)
+    sparkSession = createSparkSession(1, 0)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 5)
@@ -317,7 +317,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
   test("Test accounting for recovery of row replicate tables with lru count & no persistent") {
 
-    var sparkSession = createSparkSession(1, 0, 100000L)
+    var sparkSession = createSparkSession(1, 0)
     var snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', OVERFLOW 'true', PERSISTENCE 'none')"
@@ -330,7 +330,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     SnappyContext.globalSparkContext.stop()
     assert(SparkEnv.get == null)
-    sparkSession = createSparkSession(1, 0, 100000L)
+    sparkSession = createSparkSession(1, 0)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 0)
@@ -341,7 +341,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
   test("Test accounting for recovery of row replicate tables with lru count & persistent") {
     assert(GemFireCacheImpl.getInstance == null)
-    var sparkSession = createSparkSession(1, 0, 100000L)
+    var sparkSession = createSparkSession(1, 0)
     var snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', PERSISTENCE 'SYNCHRONOUS')"
@@ -355,7 +355,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val beforeRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     SnappyContext.globalSparkContext.stop()
     assert(SparkEnv.get == null)
-    sparkSession = createSparkSession(1, 0, 100000L)
+    sparkSession = createSparkSession(1, 0)
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 5)
@@ -392,7 +392,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
 
   test("Test accounting of eviction for row partitioned table with lru heap percent") {
-    val sparkSession = createSparkSession(1, 0, 5000L)
+    val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val options = Map("PARTITION_BY" -> "col1",
@@ -439,7 +439,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting of delete for row partitioned tables") {
-    val sparkSession = createSparkSession(1, 0, 10000L)
+    val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, poptions)
@@ -459,7 +459,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
 
   test("Test Spark Cache") {
-    val sparkSession = createSparkSession(1, 0, 10000L)
+    val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     SparkEnv.get.memoryManager.
@@ -475,7 +475,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting of delete for replicated tables") {
-    val sparkSession = createSparkSession(1, 0, sparkMemory = 12000)
+    val sparkSession = createSparkSession(1, 0, sparkMemory = 1200000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, Map.empty[String, String])
@@ -532,7 +532,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test accounting of drop table for replicated tables") {
-    val sparkSession = createSparkSession(1, 0, sparkMemory = 12000)
+    val sparkSession = createSparkSession(1, 0, sparkMemory = 1200000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     val beforeCreateTable = SparkEnv.get.memoryManager.storageMemoryUsed
@@ -546,7 +546,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("Test storage for column tables with df inserts") {
-    val sparkSession = createSparkSession(1, 0, 100000)
+    val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "column", struct, cwoptions)
@@ -598,7 +598,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
   }
 
   test("CachedDataFrame accounting") {
-    val sparkSession = createSparkSession(1, 1, 1000)
+    val sparkSession = createSparkSession(1, 1)
     // create SnappySession to boot GemFireCache which is required for SnappyUMM
     new SnappySession(sparkSession.sparkContext)
     val fieldTypes: Array[DataType] = Array(LongType, StringType, BinaryType)
@@ -630,7 +630,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
   // Enable test after Sumedh's checkin
   ignore("Test accounting of delete for column partitioned tables") {
-    val sparkSession = createSparkSession(1, 0, 10000L)
+    val sparkSession = createSparkSession(1, 0)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "column", struct, poptions)

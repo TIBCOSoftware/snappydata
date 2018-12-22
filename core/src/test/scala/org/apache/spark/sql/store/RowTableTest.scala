@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,17 +18,15 @@ package org.apache.spark.sql.store
 
 import java.sql.SQLException
 
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
-import io.snappydata.SnappyFunSuite
-import io.snappydata.core.{Data, TRIPDATA}
-
-import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql._
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import scala.util.{Failure, Success, Try}
 
-import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
+import io.snappydata.SnappyFunSuite
+import io.snappydata.core.{Data, TRIPDATA}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import org.apache.spark.sql._
+import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.{IntegerType, StructField}
 
 /**
  * Tests for ROW tables.
@@ -52,14 +50,14 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-
-
-    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
+    snc.sql("create schema my_schema")
+    dataDF.write.format("row").saveAsTable("MY_SCHEMA.MY_TABLE")
     var result = snc.sql("SELECT * FROM MY_SCHEMA.MY_TABLE" )
     var r = result.collect
     println(r.length)
 
     snc.sql("drop table MY_SCHEMA.MY_TABLE" )
+    snc.sql("drop schema MY_SCHEMA")
 
     println("Successful")
   }
@@ -99,7 +97,7 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").options(props).saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
@@ -115,7 +113,7 @@ class RowTableTest
     intercept[AnalysisException] {
       dataDF.write.putInto(tableName)
     }
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").options(props).saveAsTable(tableName)
 
     //Again do putInto, as there is no primary key, all will be appended
     dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).putInto(tableName)
@@ -411,10 +409,10 @@ class RowTableTest
     intercept[TableNotFoundException] {
       snc.sql("alter table non_employee add column age int")
     }
-    intercept[EmbedSQLException] {  // existing column 'age'
+    intercept[SQLException] {  // existing column 'age'
       snc.sql("alter table employee add column age int")
     }
-    intercept[AnalysisException] { // non-existing column
+    intercept[SQLException] { // non-existing column
       snc.sql("alter table employee drop column surname")
     }
     snc.sql("alter table employee add column dateCol date")
@@ -690,7 +688,7 @@ class RowTableTest
   }
 
   test("Test create table from CSV without header- SNAP-1442") {
-    snc.sql(s"create table t1 using com.databricks.spark.csv options(path '${(getClass.getResource("/northwind/regions"+
+    snc.sql(s"create external table t1 using csv options(path '${(getClass.getResource("/northwind/regions"+
       ".csv").getPath)}', header 'true', inferschema 'true')")
     snc.sql("CREATE TABLE t2 (RegionID int, RegionDescription string) USING row OPTIONS(PERSISTENT 'async') AS " +
       "(SELECT RegionID, RegionDescription FROM t1)")

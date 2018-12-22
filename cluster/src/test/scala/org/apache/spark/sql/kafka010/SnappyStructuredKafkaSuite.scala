@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,10 +21,14 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import io.snappydata.SnappyFunSuite
 import org.apache.kafka.common.TopicPartition
+
 import org.apache.spark.sql.functions.{count, window}
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 
 case class Account(accountName: String)
 
@@ -59,13 +63,15 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     import session.implicits._
 
     snc.sql("drop table if exists users")
-    snc.sql("create table users (id int) using column options(key_columns 'id')")
+    snc.sql("create table users (id int, name string) using column options(key_columns 'id')")
 
     val topic = newTopic()
     kafkaTestUtils.createTopic(topic, partitions = 3)
-    kafkaTestUtils.sendMessages(topic, (100 to 200).map(_.toString).toArray, Some(0))
-    kafkaTestUtils.sendMessages(topic, (10 to 20).map(_.toString).toArray, Some(1))
-    kafkaTestUtils.sendMessages(topic, Array("1"), Some(2))
+    kafkaTestUtils.sendMessages(topic,
+      (100 to 200).map(i => i.toString + ",name_" + i).toArray, Some(0))
+    kafkaTestUtils.sendMessages(topic,
+      (10 to 20).map(i => i.toString + ",name_" + i).toArray, Some(1))
+    kafkaTestUtils.sendMessages(topic, Array("1,name_1"), Some(2))
 
     val streamingDF = session
       .readStream
@@ -75,10 +81,15 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .option("startingOffsets", "earliest")
       .load
 
+    implicit val encoder = RowEncoder(snc.table("users").schema)
+
     val streamingQuery = streamingDF
-      .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-      .as[(String, String)]
-      .map(kv => kv._2.toInt)
+        .selectExpr("CAST(value AS STRING)")
+        .as[String]
+        .map(_.split(","))
+        .map(r => {
+          Row(r(0).toInt, r(1))
+        })
       .writeStream
       .format("snappysink")
       .queryName("simple")
@@ -229,7 +240,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     streamingQuery.stop()
   }
 
-  test("streaming DataFrame join to static DataFrame") {
+  test("streaming join to snappy table") {
     import session.implicits._
 
     val rdd = snc.sparkContext.parallelize((15 to 25).map(i => Account(i.toString)))
@@ -252,7 +263,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .option("startingOffsets", "earliest").load
       .selectExpr("CAST(value AS STRING) accountName").as[(String)]
 
-    val streamingQuery = acctStreamingDF.join(dfBlackList, "accountName")
+    val streamingQuery = acctStreamingDF.join(session.table("blacklist"), "accountName")
       .writeStream
       .outputMode("append")
       .format("memory")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,7 +47,7 @@ import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateT
 import org.apache.spark.sql.execution.{IteratorWithMetrics, RDDKryo, SecurityUtils, SnappyMetrics}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -211,7 +211,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
-        ps.setInt(3, -1)
+        ps.setLong(3, -1)
         if (updateOwner ne null) ps.setString(4, updateOwner) else ps.setNull(4, Types.VARCHAR)
         ps.executeUpdate()
       } finally {
@@ -249,7 +249,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
 
   def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+    Option(context).foreach(_.addTaskCompletionListener(_ => {
       val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
         // if rollover was marked as delayed, then do the rollover before commit
@@ -266,8 +266,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   /**
    * Runs the SQL query against the JDBC driver.
    */
-  override def compute(thePart: Partition,
-      context: TaskContext): Iterator[Any] = {
+  override def compute(thePart: Partition, context: TaskContext): Iterator[Any] = {
 
     if (pushProjections) {
       val (conn, stmt, rs) = computeResultSet(thePart, context)
@@ -308,7 +307,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         val txId = if (tx ne null) tx.getTransactionId else null
         // always fault-in for row buffers
         val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId,
-          faultIn = container.isRowBuffer)
+          faultIn = container.isRowBuffer, context)
         if (useResultSet) {
           // row buffer of column table: wrap a result set around the scan
           val dataItr = itr.map(r =>
@@ -458,16 +457,16 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
   }
 }
 
-abstract class PRValuesIterator[T](container: GemFireContainer,
-    region: LocalRegion, bucketIds: java.util.Set[Integer])
-    extends IteratorWithMetrics[T] {
+abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
+    bucketIds: java.util.Set[Integer], context: TaskContext) extends IteratorWithMetrics[T] {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
-  protected final var hasNextValue = true
-  protected final var doMove = true
+  protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]
+  protected[this] final var hasNextValue = true
+  protected[this] final var doMove = true
   // transaction started by row buffer scan should be used here
-  private val tx = TXManagerImpl.getCurrentSnapshotTXState
+  private[this] val tx = TXManagerImpl.getCurrentSnapshotTXState
   private[execution] final val itr = createIterator(container, region, tx)
 
   protected def createIterator(container: GemFireContainer, region: LocalRegion,
@@ -485,6 +484,10 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 
   override final def hasNext: Boolean = {
     if (doMove) {
+      // check for task killed before moving to next element
+      if ((taskContext ne null) && taskContext.isInterrupted()) {
+        throw new TaskKilledException
+      }
       moveNext()
       doMove = false
     }
@@ -493,6 +496,10 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 
   override final def next: T = {
     if (doMove) {
+      // check for task killed before moving to next element
+      if ((taskContext ne null) && taskContext.isInterrupted()) {
+        throw new TaskKilledException
+      }
       moveNext()
     }
     doMove = true
@@ -501,9 +508,9 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], txId: TXId, faultIn: Boolean)
+    bucketIds: java.util.Set[Integer], txId: TXId, faultIn: Boolean, context: TaskContext)
     extends PRValuesIterator[AbstractCompactExecRow](container,
-      region = null, bucketIds) {
+      region = null, bucketIds, context) {
 
   override protected[sql] val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]

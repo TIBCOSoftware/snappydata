@@ -25,11 +25,11 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
-import com.koloboke.function.IntObjPredicate
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetAllExecutorMessage
 import com.pivotal.gemfirexd.internal.engine.sql.execute.GemFireResultSet
-import io.snappydata.collection.IntObjectHashMap
+import org.eclipse.collections.api.block.procedure.Procedure
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -162,7 +162,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
 
   private var currentStatsKey: ColumnFormatKey = _
   private var currentDeltaStats: AnyRef = _
-  private val currentValueMap = IntObjectHashMap.withExpectedSize[AnyRef](8)
+  private val currentValueMap = new IntObjectHashMap[AnyRef](8)
 
   private var remoteBatches: SQLMetric = _
 
@@ -188,10 +188,9 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
 
   private def releaseValues(): Unit = {
     if (currentValueMap.size() > 0) {
-      currentValueMap.forEachWhile(new IntObjPredicate[AnyRef] {
-        override def test(c: Int, v: AnyRef): Boolean = {
+      currentValueMap.forEachValue(new Procedure[AnyRef] {
+        override def value(v: AnyRef): Unit = {
           releaseBuffer(v)
-          true
         }
       })
     }
@@ -215,7 +214,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
       val fetchKeys = fullProjection.map(c =>
         new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c): AnyRef)
       fetchUsingGetAll(fetchKeys).foreach {
-        case (k: ColumnFormatKey, v) => currentValueMap.justPut(k.columnIndex, v)
+        case (k: ColumnFormatKey, v) => currentValueMap.put(k.columnIndex, v)
       }
       if (remoteBatches ne null) remoteBatches.add(1)
     }
