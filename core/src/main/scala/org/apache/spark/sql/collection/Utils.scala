@@ -310,7 +310,7 @@ object Utils {
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
       f: () => Iterator[T], maxTries: Int = 30,
-      blockManagerIds: Seq[BlockManagerId] = Seq.empty): Array[T] = {
+      blockManagerIds: Seq[BlockManagerId] = Nil): Array[T] = {
     val cleanedF = sc.clean(f)
     mapExecutorsWithRetries(sc, (_: TaskContext, _: ExecutorLocalPartition) => cleanedF(),
       blockManagerIds, maxTries)
@@ -319,7 +319,7 @@ object Utils {
   def mapExecutors[T: ClassTag](sc: SparkContext,
       f: (TaskContext, ExecutorLocalPartition) => Iterator[T], maxTries: Int): Array[T] = {
     val cleanedF = sc.clean(f)
-    mapExecutorsWithRetries(sc, cleanedF, Seq.empty[BlockManagerId], maxTries)
+    mapExecutorsWithRetries(sc, cleanedF, Nil, maxTries)
   }
 
   private def mapExecutorsWithRetries[T: ClassTag](sc: SparkContext,

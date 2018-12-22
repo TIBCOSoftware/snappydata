@@ -321,7 +321,7 @@ object StoreUtils {
 
   val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
 
-  def getPrimaryKeyClause(parameters: mutable.Map[String, String],
+  def getPrimaryKeyClause(parameters: scala.collection.Map[String, String],
       schema: StructType): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
     val stringPKCols = new mutable.ArrayBuffer[StructField](1)
@@ -336,7 +336,7 @@ object StoreUtils {
             // since table creation can use case-insensitive in creation
             val normalizedCols = cols.map(Utils.toUpperCase)
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
-              normalizedCols)
+              normalizedCols, columnType = "partition")
 
             var includeInPK = true
             for (field <- prunedSchema.fields if includeInPK) {
@@ -488,7 +488,7 @@ object StoreUtils {
   }
 
   def getAndSetPartitioningAndKeyColumns(session: SnappySession,
-      parameters: mutable.Map[String, String]): Seq[String] = {
+      schema: StructType, parameters: mutable.Map[String, String]): Seq[String] = {
     // parse the PARTITION_BY and KEYCOLUMNS and store the parsed result back in parameters
 
     // Use a new parser instance since parser may itself invoke DataSource.resolveRelation.
@@ -496,9 +496,15 @@ object StoreUtils {
     val keyColumns = parameters.get(KEY_COLUMNS) match {
       case None => Nil
       case Some(k) =>
-        val keyCols = k.split(",").map(parser.parseSQLOnly(_, parser.parseIdentifier.run())).toList
+        if (schema eq null) { // row table
+          throw new AnalysisException(s"$KEY_COLUMNS specified for a row table (use PRIMARY KEY)")
+        }
+        val keyCols = k.split(",").map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
+        // check for validity of columns
+        val schemaFields = Utils.schemaFields(schema)
+        ExternalStoreUtils.pruneSchema(schemaFields, keyCols, "key")
         parameters.put(KEY_COLUMNS, keyCols.mkString(","))
-        keyCols
+        keyCols.toList
     }
     parameters.get(PARTITION_BY) match {
       case None =>

@@ -118,12 +118,12 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     }
   }
 
-  override def getAllGlobalCmnds(): Array[String] = {
+  override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
   }
 
-  override def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]] = {
+  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.entrySet()
   }
@@ -146,7 +146,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     }
   }
 
-  override def getLeadClassLoader(): URLClassLoader = {
+  override def getLeadClassLoader: URLClassLoader = {
     var ret: URLClassLoader = null
     val instance = ServiceManager.currentFabricServiceInstance
     instance match {

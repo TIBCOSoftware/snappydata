@@ -1403,8 +1403,9 @@ class ColumnTableTest
 
     snc.sql("drop table if exists test")
   }
+
   test("Test method for getting key columns of the column tables") {
-    var session = new SnappySession(snc.sparkContext)
+    val session = new SnappySession(snc.sparkContext)
     session.sql("drop table if exists temp1")
     session.sql("drop table if exists temp2")
     session.sql("drop table if exists temp3")
@@ -1419,6 +1420,40 @@ class ColumnTableTest
     session.sql("create table temp4(id1 bigint not null , name1 varchar(10), " +
         "id2 bigint not null, id3 bigint not null) USING column " +
         "OPTIONS(key_columns 'id2,id1,id3' ) ")
+
+    // if key_columns are not present, then CREATE TABLE should fail (SNAP-2790)
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id1', key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    // key_columns with row tables should fail
+    try {
+      session.sql("create table rt1(id1 bigint not null , name1 varchar(10)) " +
+          "USING row OPTIONS(key_columns 'id1')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+        "USING column OPTIONS(partition_by 'id1', key_columns 'id1')")
+    session.sql("drop table ct1")
 
     val res1 = session.sessionCatalog.getKeyColumns("temp1")
     assert(res1.size == 1)
