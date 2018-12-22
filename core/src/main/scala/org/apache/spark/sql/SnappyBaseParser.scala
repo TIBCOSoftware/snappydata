@@ -218,7 +218,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   final def TINYINT: Rule0 = newDataType(Consts.TINYINT)
   final def VARBINARY: Rule0 = newDataType(Consts.VARBINARY)
   final def VARCHAR: Rule0 = newDataType(Consts.VARCHAR)
-
+  def NULL: Rule0
   protected final def fixedDecimalType: Rule1[DataType] = rule {
     (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ commaSep ~ digits ~ ')' ~ ws ~>
         ((precision: String, scale: String) =>
@@ -247,7 +247,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     SMALLINT ~> (() => ShortType) |
     SHORT ~> (() => ShortType) |
     TINYINT ~> (() => ByteType) |
-    BYTE ~> (() => ByteType)
+    BYTE ~> (() => ByteType) |
+    NULL ~> (() => NullType)
+
   }
 
   protected final def charType: Rule1[DataType] = rule {

@@ -19,6 +19,7 @@ package org.apache.spark.sql.hive;
 import javax.annotation.concurrent.GuardedBy;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreInit;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.hive.client.HiveClient;
 
@@ -37,6 +38,7 @@ public abstract class SnappyHiveCatalogBase extends HiveExternalCatalog {
     // initialize with super's hive client but allow this to be recreated
     // in case of transient disconnect exceptions
     this.hiveClient = super.client();
+    HiveMetaStoreInit.initNullType();
   }
 
   @Override

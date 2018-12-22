@@ -22,6 +22,7 @@ import java.sql.{DriverManager, SQLException}
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
+import org.junit.Assert._
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -474,6 +475,40 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     TestUtil.stopNetServer()
 
   }
+
+  test("Bug SNAP-2791 . view projection containing null") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    snappy.sql("drop table if exists test2")
+
+    snappy.sql("create table test2 (col2_1 int, col2_2 int,  col2_3 int, col2_5 string) " +
+        "using column ")
+
+    snappy.sql(" CREATE OR REPLACE VIEW v1 as select col2_1, col2_2, " +
+        "col2_5 as longtext, null as null_col from test2 where col2_3 > -1")
+
+    stmt.execute("insert into test2 values (1,2,3,'test')")
+    val rs = stmt.executeQuery("select * from v1")
+    assertTrue(rs.next())
+    assertEquals(1, rs.getInt(1))
+    assertEquals(2, rs.getInt(2))
+    assertEquals("test", rs.getString(3))
+    rs.getObject(4)
+    assertTrue(rs.wasNull())
+
+
+    stmt.execute("drop view v1")
+    snc.sql("drop table if exists test2")
+
+    conn.close()
+    TestUtil.stopNetServer()
+
+  }
+
+
 
 
 }
