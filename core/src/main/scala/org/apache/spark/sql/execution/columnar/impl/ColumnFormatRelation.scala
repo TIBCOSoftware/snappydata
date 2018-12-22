@@ -251,9 +251,7 @@ abstract class BaseColumnFormatRelation(
     val keyColsOptions = origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
     if (keyColsOptions.isDefined) {
       keyColsOptions.get.split(",")
-    } else {
-      Seq.empty[String]
-    }
+    } else Nil
   }
 
   /**
