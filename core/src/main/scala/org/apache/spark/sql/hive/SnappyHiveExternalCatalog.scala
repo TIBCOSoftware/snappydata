@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.concurrent.ExecutionException
 
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
@@ -145,6 +146,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         }
         function
       case e: InvocationTargetException => throw e.getCause
+      case e: ExecutionException => throw e.getCause
     } finally {
       skipFlags.skipDDLocks = oldSkipLocks
       skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
@@ -479,7 +481,11 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (nonExistentTables.getIfPresent(name) eq java.lang.Boolean.TRUE) {
       throw new TableNotFoundException(schema, table)
     }
-    cachedCatalogTables(name)
+    // need to do the load under a sync block to avoid deadlock due to lock inversion
+    // (sync block and map loader future) so do a get separately first
+    val catalogTable = cachedCatalogTables.getIfPresent(name)
+    if (catalogTable ne null) catalogTable
+    else withHiveExceptionHandling(cachedCatalogTables.get(name))
   }
 
   override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
