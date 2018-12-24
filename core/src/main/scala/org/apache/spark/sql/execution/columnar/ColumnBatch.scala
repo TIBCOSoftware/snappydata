@@ -27,11 +27,11 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.cache.EntryDestroyedException
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, FetchRequest}
-import com.koloboke.function.IntObjPredicate
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import io.snappydata.collection.IntObjectHashMap
 import io.snappydata.thrift.common.BufferedBlob
+import org.eclipse.collections.api.block.procedure.Procedure
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
 import org.apache.spark.memory.MemoryManagerCallback.releaseExecutionMemory
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
@@ -39,7 +39,7 @@ import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.row.PRValuesIterator
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.{Logging, TaskContext}
+import org.apache.spark.{Logging, TaskContext, TaskContextImpl, TaskKilledException}
 
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte], deltaIndexes: Array[Int])
@@ -53,9 +53,11 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected[this] final var hasNextValue: Boolean = rs ne null
 
-  if (context ne null) {
-    val partitionId = context.partitionId()
-    context.addTaskCompletionListener { _ =>
+  protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]
+
+  if (taskContext ne null) {
+    val partitionId = taskContext.partitionId
+    taskContext.addTaskCompletionListener { _ =>
       logDebug(s"closed connection for task from listener $partitionId")
       close()
     }
@@ -65,6 +67,10 @@ abstract class ResultSetIterator[A](conn: Connection,
     if (doMove && hasNextValue) {
       doMove = false
       hasNextValue = false
+      // check for task killed before moving to next element
+      if ((taskContext ne null) && taskContext.isInterrupted()) {
+        throw new TaskKilledException
+      }
       hasNextValue = moveNext()
       hasNextValue
     } else {
@@ -131,15 +137,15 @@ object ColumnBatchIterator {
 final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     bucketIds: java.util.Set[Integer], projection: Array[Int],
     fullScan: Boolean, context: TaskContext)
-    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds) {
+    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds, context) {
 
   if (region ne null) {
     assert(!region.getEnableOffHeapMemory,
       s"Unexpected buffer iterator call for off-heap $region")
   }
 
-  if (context ne null) {
-    context.addTaskCompletionListener(_ => close())
+  if (taskContext ne null) {
+    taskContext.addTaskCompletionListener(_ => close())
   }
 
   protected[sql] var currentVal: ByteBuffer = _
@@ -400,8 +406,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     val buffers = colBuffers
     // not null check in case constructor itself fails due to low memory
     if ((buffers ne null) && buffers.size() > 0) {
-      buffers.forEachWhile(new IntObjPredicate[ByteBuffer] {
-        override def test(col: Int, buffer: ByteBuffer): Boolean = {
+      buffers.forEachValue(new Procedure[ByteBuffer] {
+        override def value(buffer: ByteBuffer): Unit = {
           // release previous set of buffers immediately
           if (buffer ne null) {
             // release from accounting if decompressed buffer
@@ -410,7 +416,6 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
               releaseExecutionMemory(buffer, CompressionUtils.DECOMPRESSION_OWNER)
             }
           }
-          true
         }
       })
       colBuffers = null
@@ -423,7 +428,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     val columnBuffer = getBufferFromBlob(columnBlob)
     if (columnBuffer ne null) {
       // put all the read buffers in "colBuffers" to free on next() or close()
-      colBuffers.justPut(columnIndex, columnBuffer)
+      colBuffers.put(columnIndex, columnBuffer)
       columnIndex match {
         case ColumnFormatEntry.STATROW_COL_INDEX => currentStats = columnBuffer
         case ColumnFormatEntry.DELTA_STATROW_COL_INDEX => currentDeltaStats = columnBuffer
@@ -439,7 +444,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     if (rsHasNext) {
       currentUUID = rs.getLong(1)
       // create a new map instead of clearing old one to help young gen GC
-      colBuffers = IntObjectHashMap.withExpectedSize[ByteBuffer](totalColumns + 1)
+      colBuffers = new IntObjectHashMap[ByteBuffer](totalColumns + 1)
       // keep reading next till its still part of current column batch; if UUID changes
       // then next call to "moveNext" will read from incremented cursor position
       // else all rows may have been read which is indicated by "rsHasNext"

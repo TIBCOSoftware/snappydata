@@ -32,7 +32,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, execution}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession}
 
 /**
  * Tests for meta-data queries using Spark SQL.
@@ -86,15 +86,11 @@ object MetadataTest extends Assertions {
   }
 
   private def checkTableProperties(rs: Array[Row], isRowTable: Boolean): Unit = {
-    val (tableType, provider) = if (isRowTable) {
-      "ROW" -> classOf[execution.row.DefaultSource].getName
-    } else {
-      "COLUMN" -> classOf[execution.columnar.impl.DefaultSource].getName
-    }
     val rsMap = rs.map(r => r.getString(0) -> r.getString(1)).toMap
-    assert(rsMap("EXTERNAL_SNAPPY") === tableType)
-    assert(rsMap("spark.sql.sources.provider") === provider)
-    assert(rsMap("spark.sql.sources.schema.numParts") === "1")
+    assert(!rsMap.contains("EXTERNAL_SNAPPY")) // obsolete property
+    // spark.sql internal properties should all be removed in final display
+    assert(!rsMap.contains("spark.sql.sources.provider"))
+    assert(!rsMap.contains("spark.sql.sources.schema.numParts"))
   }
 
   private val expectedSYSTables = Array("ASYNCEVENTLISTENERS", "GATEWAYRECEIVERS",
@@ -201,7 +197,8 @@ object MetadataTest extends Assertions {
       StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2, p._3)))))
     val expectedDefaultSchemas = List("APP", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
       "SYS", "SYSCAT", "SYSCS_DIAG", "SYSCS_UTIL", "SYSFUN", "SYSIBM", "SYSPROC", "SYSSTAT")
-    assert(rs.length === expectedDefaultSchemas.length)
+    assert(rs.length === expectedDefaultSchemas.length,
+      s"Got ${rs.map(_.getString(1)).mkString(", ")}")
     assert(rs.map(_.getString(1)).sorted === expectedDefaultSchemas)
 
     ds = executeSQL("select * from sys.sysTables where tableSchemaName = 'SYS'")
@@ -403,11 +400,11 @@ object MetadataTest extends Assertions {
     // ----- check DESCRIBE for schema-----
 
     rs = executeSQL("describe schema sys").collect()
-    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System Schema"),
-      Row("Location", "")))
+    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System schema"),
+      Row("Location", "SYS")))
     rs = executeSQL("desc schema extended sys").collect()
-    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System Schema"),
-      Row("Location", ""), Row("Properties", "")))
+    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System schema"),
+      Row("Location", "SYS"), Row("Properties", "")))
 
     // ----- check SHOW TABLES variants -----
     val allSYSTables = (expectedSYSTables ++ expectedVTIs).sorted
@@ -751,7 +748,7 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*ExecutedCommand.*CreateMetastoreTableUsing" +
+    assert(matches(plan, ".*Physical Plan.*ExecutedCommand.*CreateTableUsingCommand" +
         ".*ROWTABLE2.*\\(id int primary key, id2 int\\), row.*"))
 
     // create more tables and repeat the checks

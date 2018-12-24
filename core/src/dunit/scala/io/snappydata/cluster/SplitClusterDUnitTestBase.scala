@@ -259,7 +259,6 @@ trait SplitClusterDUnitTestObject extends Logging {
     val session = getSnappyContextForConnector(locatorClientPort).snappySession
 
     // clean any existing data
-    TestUtils.dropAllTables(session)
     TestUtils.dropAllSchemas(session)
 
     // first check metadata queries using session and JDBC connection
@@ -342,7 +341,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     // select the data from table created in embedded mode
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
-    var expected = Seq.empty[ComplexData]
+    var expected: Seq[ComplexData] = Nil
     // create a table in split mode
     if (isComplex) {
       expected = createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
@@ -434,8 +433,7 @@ trait SplitClusterDUnitTestObject extends Logging {
   }
 
   def selectFromTable(snc: SnappyContext, tableName: String,
-      expectedLength: Int,
-      expected: Seq[ComplexData] = Seq.empty[ComplexData]): Unit = {
+      expectedLength: Int, expected: Seq[ComplexData] = Nil): Unit = {
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
     assert(r.length == expectedLength,

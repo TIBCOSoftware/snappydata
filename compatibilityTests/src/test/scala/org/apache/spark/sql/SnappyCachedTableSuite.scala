@@ -19,13 +19,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyCachedTableSuite extends CachedTableSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "cache temp table",
-    "cache table as select",
-    "SPARK-19765: UNCACHE TABLE should un-cache all cached plans that refer to this table",
-    "'CACHE TABLE' and 'UNCACHE TABLE' SQL statement",
-    "InMemoryRelation statistics"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
