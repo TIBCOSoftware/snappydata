@@ -19,12 +19,15 @@ package org.apache.spark.sql.policy
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
+import com.pivotal.gemfirexd.internal.impl.jdbc.authentication.LDAPAuthenticationSchemeImpl
 import io.snappydata.Constant
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.LeafExpression
+import org.apache.spark.sql.catalyst.expressions.{Expression, LeafExpression, Literal}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
-import org.apache.spark.sql.types.{DataType, StringType}
+import org.apache.spark.sql.catalyst.util.ArrayData
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, StringType}
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -51,7 +54,12 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
 }
 
 
-case class LdapGroupsOfCurrentUser() extends LeafExpression with CodegenFallback {
+case class LdapGroupsOfCurrentUser(includeParentGroups: Expression) extends LeafExpression
+    with CodegenFallback {
+
+  def this() = this(Literal.create(false, BooleanType))
+
+  assert(includeParentGroups.dataType == BooleanType)
   override def foldable: Boolean = true
   override def nullable: Boolean = false
 
@@ -66,8 +74,11 @@ case class LdapGroupsOfCurrentUser() extends LeafExpression with CodegenFallback
       if (owner.isEmpty) Constant.DEFAULT_SCHEMA
       else snappySession.sessionState.catalog.formatDatabaseName(owner))
 
-   // UTF8String.fromString(owner)
 
+   val includeParents = includeParentGroups.eval().asInstanceOf[Boolean]
+   val array = ExternalStoreUtils.getLdapGroupsForUser(owner, includeParents).
+       map(UTF8String.fromString(_))
+    ArrayData.toArrayData(array)
   }
 
   override def prettyName: String = "current_user"
