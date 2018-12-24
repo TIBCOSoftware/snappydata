@@ -81,7 +81,7 @@ case class LdapGroupsOfCurrentUser(includeParentGroups: Expression) extends Leaf
     ArrayData.toArrayData(array)
   }
 
-  override def prettyName: String = "current_user"
+  override def prettyName: String = "current_user_ldap_groups"
 }
 
 object LdapGroupsOfCurrentUser {
