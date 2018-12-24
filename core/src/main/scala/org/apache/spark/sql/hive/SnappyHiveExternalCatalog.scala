@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.concurrent.ExecutionException
 
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
@@ -34,7 +35,7 @@ import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
-import io.snappydata.sql.catalog.{CatalogObjectType, RelationInfo, SnappyExternalCatalog}
+import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.http.annotation.GuardedBy
@@ -104,12 +105,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         }
       }
     }
-    CacheBuilder.newBuilder().maximumSize(cacheSize).build(cacheLoader)
+    CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize).build(cacheLoader)
   }
 
   /** A cache of SQL data source tables that are missing in catalog. */
   protected val nonExistentTables: Cache[(String, String), java.lang.Boolean] = {
-    CacheBuilder.newBuilder().maximumSize(cacheSize).build()
+    CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize).build()
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
@@ -145,6 +146,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         }
         function
       case e: InvocationTargetException => throw e.getCause
+      case e: ExecutionException => throw e.getCause
     } finally {
       skipFlags.skipDDLocks = oldSkipLocks
       skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
@@ -463,7 +465,15 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         case None => table.copy(identifier = tableIdent, viewText = viewText,
           viewOriginalText = viewOriginalText)
       }
-    } else table.copy(identifier = tableIdent)
+    } else table.provider match {
+      // add dbtable property which is not present in old releases
+      case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)) &&
+          !table.storage.properties.contains(DBTABLE_PROPERTY) =>
+        table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
+            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
+      case _ => table.copy(identifier = tableIdent)
+    }
   }
 
   override protected def getCachedCatalogTable(schema: String, table: String): CatalogTable = {
@@ -471,7 +481,11 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (nonExistentTables.getIfPresent(name) eq java.lang.Boolean.TRUE) {
       throw new TableNotFoundException(schema, table)
     }
-    cachedCatalogTables(name)
+    // need to do the load under a sync block to avoid deadlock due to lock inversion
+    // (sync block and map loader future) so do a get separately first
+    val catalogTable = cachedCatalogTables.getIfPresent(name)
+    if (catalogTable ne null) catalogTable
+    else withHiveExceptionHandling(cachedCatalogTables.get(name))
   }
 
   override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
