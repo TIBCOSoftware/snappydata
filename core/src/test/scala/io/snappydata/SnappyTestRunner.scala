@@ -154,7 +154,7 @@ with Logging with Retries {
   }
 
   def Job(jobClass: String, lead: String, jarPath: String,
-      confs: Seq[String] = Seq.empty[String]): Unit = {
+      confs: Seq[String] = Nil): Unit = {
 
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
 
@@ -230,7 +230,7 @@ with Logging with Retries {
 
   def SparkSubmit(name: String, appClass: String,
                   master: Option[String],
-                  confs: Seq[String] = Seq.empty[String],
+                  confs: Seq[String] = Nil,
                   appJar: String): Unit = {
 
     val sparkHost = InetAddress.getLocalHost.getHostName
@@ -246,7 +246,7 @@ with Logging with Retries {
   }
 
   def RunExample(name: String, exampleClas: String,
-                 args: Seq[String] = Seq.empty[String]): Unit = {
+                 args: Seq[String] = Nil): Unit = {
     val argsStr = args.mkString(" ")
     val runExample = s"$snappyHome/bin/run-example $exampleClas $argsStr"
     val (out, err) = executeProcess(name, runExample)

@@ -16,8 +16,8 @@
  */
 package org.apache.spark.sql.internal;
 
-import io.snappydata.sql.catalog.ConnectorExternalCatalog;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
+import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.ClusterMode;
 import org.apache.spark.sql.Dataset;
@@ -187,7 +187,7 @@ public final class SnappySharedState extends SharedState {
     } else {
       // create a new connector catalog instance for connector mode
       // each instance has its own set of credentials for authentication
-      return new ConnectorExternalCatalog(session);
+      return new SmartConnectorExternalCatalog(session);
     }
   }
 
