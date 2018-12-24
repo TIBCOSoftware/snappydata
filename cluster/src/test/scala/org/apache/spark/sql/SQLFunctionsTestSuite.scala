@@ -2456,16 +2456,6 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
         snappyQuery = "SELECT collect_list(stringcol) from columnTable"
         assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
             "collect_list_q2", "ColumnTable", pw, sparkSession)
-
-        sparkQuery = "SELECT collect_list(intcol) from sparktable"
-        snappyQuery = "SELECT collect_list(intcol) from rowtable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-            "collect_list_q3", "RowTable", pw, sparkSession)
-
-        sparkQuery = "SELECT collect_list(intcol) from sparktable"
-        snappyQuery = "SELECT collect_list(intcol) from columnTable"
-        assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-            "collect_list_q4", "ColumnTable", pw, sparkSession)
     }
 
     test("collect_set") {
