@@ -524,7 +524,7 @@ case class DeployCommand(
         val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
         ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
       }
-      Seq.empty[Row]
+      Nil
     } catch {
       case ex: Throwable =>
         ex match {
@@ -544,7 +544,7 @@ case class DeployCommand(
           if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
             throw ex
           }
-          Seq.empty[Row]
+          Nil
         } else {
           throw ex
         }
@@ -579,7 +579,7 @@ case class DeployJarCommand(
       RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
       ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
     }
-    Seq.empty[Row]
+    Nil
   }
 }
 
@@ -591,7 +591,7 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet()
+    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
@@ -626,6 +626,6 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     ToolsCallbackInit.toolsCallback.removePackage(alias)
-    Seq.empty[Row]
+    Nil
   }
 }
