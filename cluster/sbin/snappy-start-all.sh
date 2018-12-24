@@ -36,7 +36,7 @@ fi
 
 BACKGROUND=-bg
 clustermode=
-
+recover=
 while (( "$#" )); do
   param="$1"
   case $param in
@@ -47,23 +47,31 @@ while (( "$#" )); do
     -fg | --foreground)
       BACKGROUND=-fg
     ;;
+    -r  | --recover)
+      recover="-recover"
+    ;;
     rowstore)
       clustermode="rowstore"
     ;;
     *)
     ;;
   esac
-  shift
+shift
 done
 
+if [ ! -z "$clustermode" -a ! -z "$recover" ] ; then
+  echo "recovery is not supported for rowstore mode"
+  exit 1
+fi
 
+# TODO: Why is "$@" there. The args are parsed and shifted above making $@ empty. Isn't it?
 # Start Locators
-"$sbin"/snappy-locators.sh start $clustermode "$@"
+"$sbin"/snappy-locators.sh start $clustermode $recover "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh $BACKGROUND start $clustermode "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND start $clustermode $recover "$@"
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
-  "$sbin"/snappy-leads.sh start
+  "$sbin"/snappy-leads.sh start $recover
 fi

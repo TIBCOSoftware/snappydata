@@ -26,7 +26,6 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
@@ -44,12 +43,12 @@ import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
+import io.snappydata.{Constant, Lead, LocalizedMessages,
+Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService, RecoveryService}
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
-
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
@@ -303,6 +302,10 @@ class LeadImpl extends ServerImpl with Lead
     try {
       internalStart(() => storeProperties)
       Await.result(initServices, Duration.Inf)
+      // If recovery mode then initialize the recovery service
+      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
+        RecoveryService.collectViewsAndRecoverDDLs();
+      }
       // mark status as RUNNING at the end in any case
       markRunning()
     } catch {
