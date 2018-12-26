@@ -18,19 +18,46 @@
 package org.apache.spark.sql.execution
 
 import java.sql.SQLException
+import java.util.Properties
 
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.Authorizer
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, TransactionResourceImpl}
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
 
 /**
  * Common security related calls.
  */
-object SecurityUtils {
+object SecurityUtils extends Logging {
+
+  /**
+   * Check the passed in credentials and return Some[String] if there was a failure
+   * (with the failure message) else None.
+   */
+  def checkCredentials(user: String, passwd: String): Option[String] = {
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, if (user ne null) user else "")
+    props.setProperty(Attribute.PASSWORD_ATTR, if (passwd ne null) passwd else "")
+    val memStore = Misc.getMemStoreBooting
+    val result = memStore.getDatabase.getAuthenticationService.authenticate(
+      memStore.getDatabaseName, props)
+    if (result ne null) {
+      val msg = s"ACCESS DENIED, user [$user]. $result"
+      if (GemFireXDUtils.TraceAuthentication) {
+        SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
+      } else {
+        logInfo(msg)
+      }
+      Some(msg)
+    } else None
+  }
 
   /**
    * Authorize a column/row table operation.

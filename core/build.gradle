@@ -148,7 +148,7 @@ scalaTest {
 
 def downloadApacheSparkDist(String ver, String distName, String prodDir) {
   return tasks.create("downloadApache${ver}SparkDist", Download) {
-    outputs.files "${prodDir}.tgz"
+    outputs.files "${prodDir}.tgz", "${prodDir}/README.md"
 
     src "http://archive.apache.org/dist/spark/spark-${ver}/${distName}.tgz"
     dest sparkDistDir

@@ -901,8 +901,7 @@ trait DynamicQueryGetter extends TPCHBase {
           Seq(args(i), args(i))
         case (_, i) :: _ if i < args.length =>
           Seq(args(i))
-        case _ =>
-          Seq.empty
+        case _ => Nil
       }).toList
     }
 
