@@ -23,39 +23,40 @@ import java.io.PrintWriter
 import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
+
 object SPVATestUtil {
 
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
 
     snc.sql(SPVAQueries.patients_table)
-    SPVAQueries.patients(snc).write.insertInto("spd.patient")
+    SPVAQueries.patients(snc).write.insertInto("patient")
 
     snc.sql(SPVAQueries.encounters_table)
-    SPVAQueries.encounters(snc).write.insertInto("spd.encounters")
+    SPVAQueries.encounters(snc).write.insertInto("encounters")
 
     snc.sql(SPVAQueries.allergies_table)
-    SPVAQueries.allergies(snc).write.insertInto("spd.allergies")
+    SPVAQueries.allergies(snc).write.insertInto("allergies")
 
     snc.sql(SPVAQueries.careplans_table)
-    SPVAQueries.careplans(snc).write.insertInto("spd.careplans")
+    SPVAQueries.careplans(snc).write.insertInto("careplans")
 
     snc.sql(SPVAQueries.conditions_table)
-    SPVAQueries.conditions(snc).write.insertInto("spd.conditions")
+    SPVAQueries.conditions(snc).write.insertInto("conditions")
 
     snc.sql(SPVAQueries.imaging_studies_table)
-    SPVAQueries.imaging_studies(snc).write.insertInto("spd.imaging_studies")
+    SPVAQueries.imaging_studies(snc).write.insertInto("imaging_studies")
 
     snc.sql(SPVAQueries.immunizations_table)
-    SPVAQueries.immunizations(snc).write.insertInto("spd.immunizations")
+    SPVAQueries.immunizations(snc).write.insertInto("immunizations")
 
     snc.sql(SPVAQueries.medications_table)
-    SPVAQueries.medications(snc).write.insertInto("spd.medications")
+    SPVAQueries.medications(snc).write.insertInto("medications")
 
     snc.sql(SPVAQueries.observations_table)
-    SPVAQueries.observations(snc).write.insertInto("spd.observations")
+    SPVAQueries.observations(snc).write.insertInto("observations")
 
     snc.sql(SPVAQueries.procedures_table)
-    SPVAQueries.procedures(snc).write.insertInto("spd.procedures")
+    SPVAQueries.procedures(snc).write.insertInto("procedures")
   }
 
   def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
@@ -63,87 +64,87 @@ object SPVATestUtil {
     snc.sql(SPVAQueries.patients_table + " using row options(PARTITION_BY 'ID', buckets '12', " +
         " redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.encounters_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.allergies_table + " using row options(PARTITION_BY 'PATIENT'," +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.careplans_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.conditions_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.imaging_studies_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.immunizations_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.medications_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.observations_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.procedures_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
 
-    SPVAQueries.patients(snc).write.insertInto("spd.patients")
-    SPVAQueries.encounters(snc).write.insertInto("spd.encounters")
-    SPVAQueries.allergies(snc).write.insertInto("spd.allergies")
-    SPVAQueries.careplans(snc).write.insertInto("spd.careplans")
-    SPVAQueries.conditions(snc).write.insertInto("spd.conditions")
-    SPVAQueries.imaging_studies(snc).write.insertInto("spd.imaging_studies")
-    SPVAQueries.immunizations(snc).write.insertInto("spd.immunizations")
-    SPVAQueries.medications(snc).write.insertInto("spd.medications")
-    SPVAQueries.observations(snc).write.insertInto("spd.observations")
-    SPVAQueries.procedures(snc).write.insertInto("spd.procedures")
+    SPVAQueries.patients(snc).write.insertInto("patients")
+    SPVAQueries.encounters(snc).write.insertInto("encounters")
+    SPVAQueries.allergies(snc).write.insertInto("allergies")
+    SPVAQueries.careplans(snc).write.insertInto("careplans")
+    SPVAQueries.conditions(snc).write.insertInto("conditions")
+    SPVAQueries.imaging_studies(snc).write.insertInto("imaging_studies")
+    SPVAQueries.immunizations(snc).write.insertInto("immunizations")
+    SPVAQueries.medications(snc).write.insertInto("medications")
+    SPVAQueries.observations(snc).write.insertInto("observations")
+    SPVAQueries.procedures(snc).write.insertInto("procedures")
   }
 
   def createAndLoadColumnTables(snc: SnappyContext): Unit = {
 
     snc.sql(SPVAQueries.patients_table + " using column options(PARTITION_BY 'ID', buckets '12', " +
         " redundancy '1', PERSISTENT 'sync', EVICTION_BY 'LRUHEAPPERCENT')")
-    snc.sql(SPVAQueries.encounters_table + " using row options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+    snc.sql(SPVAQueries.encounters_table + " using column options(PARTITION_BY 'PATIENT', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.allergies_table + " using column options(PARTITION_BY 'PATIENT'," +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.careplans_table + " using column options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.conditions_table + " using column options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.imaging_studies_table + " using column options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync'," +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.immunizations_table + " using column options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.medications_table + " using column options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.observations_table + " using column options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
     snc.sql(SPVAQueries.procedures_table + " using column options(PARTITION_BY 'PATIENT', " +
-        " colocate_with 'SPD.PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
+        " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
 
-    SPVAQueries.patients(snc).write.insertInto("spd.patients")
-    SPVAQueries.encounters(snc).write.insertInto("spd.encounters")
-    SPVAQueries.allergies(snc).write.insertInto("spd.allergies")
-    SPVAQueries.careplans(snc).write.insertInto("spd.careplans")
-    SPVAQueries.conditions(snc).write.insertInto("spd.conditions")
-    SPVAQueries.imaging_studies(snc).write.insertInto("spd.imaging_studies")
-    SPVAQueries.immunizations(snc).write.insertInto("spd.immunizations")
-    SPVAQueries.medications(snc).write.insertInto("spd.medications")
-    SPVAQueries.observations(snc).write.insertInto("spd.observations")
-    SPVAQueries.procedures(snc).write.insertInto("spd.procedures")
+    SPVAQueries.patients(snc).write.insertInto("patients")
+    SPVAQueries.encounters(snc).write.insertInto("encounters")
+    SPVAQueries.allergies(snc).write.insertInto("allergies")
+    SPVAQueries.careplans(snc).write.insertInto("careplans")
+    SPVAQueries.conditions(snc).write.insertInto("conditions")
+    SPVAQueries.imaging_studies(snc).write.insertInto("imaging_studies")
+    SPVAQueries.immunizations(snc).write.insertInto("immunizations")
+    SPVAQueries.medications(snc).write.insertInto("medications")
+    SPVAQueries.observations(snc).write.insertInto("observations")
+    SPVAQueries.procedures(snc).write.insertInto("procedures")
   }
 
   def validateQueriesFullResultSet(snc: SnappyContext, tableType: String, pw: PrintWriter,
@@ -276,50 +277,51 @@ object SPVATestUtil {
 
   def dropTables(snc: SnappyContext): Unit = {
     // scalastyle:off println
-    snc.sql("drop table if exists spd.patients")
-    println("spd.patients table dropped successfully.");
-    snc.sql("drop table if exists spd.encounters")
-    println("spd.encounters table dropped successfully.");
-    snc.sql("drop table if exists spd.allergies")
-    println("spd.allergies table dropped successfully.");
-    snc.sql("drop table if exists spd.careplans")
-    println("spd.careplans table dropped successfully.");
-    snc.sql("drop table if exists spd.conditions")
-    println("spd.conditions table dropped successfully.");
-    snc.sql("drop table if exists spd.imaging_studies")
-    println("spd.imaging_studies table dropped successfully.");
-    snc.sql("drop table if exists spd.immunizations")
-    println("spd.immunizations table dropped successfully.");
-    snc.sql("drop table if exists spd.medications")
-    println("spd.medications table dropped successfully.");
-    snc.sql("drop table if exists spd.observations")
-    println("spd.observations table dropped successfully.");
-    snc.sql("drop table if exists spd.procedures")
-    println("spd.procedures table dropped successfully.");
+    snc.sql("drop table if exists patients")
+    println("patients table dropped successfully.")
+    snc.sql("drop table if exists encounters")
+    println("encounters table dropped successfully.")
+    snc.sql("drop table if exists allergies")
+    println("allergies table dropped successfully.")
+    snc.sql("drop table if exists careplans")
+    println("careplans table dropped successfully.")
+    snc.sql("drop table if exists conditions")
+    println("conditions table dropped successfully.")
+    snc.sql("drop table if exists imaging_studies")
+    println("imaging_studies table dropped successfully.")
+    snc.sql("drop table if exists immunizations")
+    println("immunizations table dropped successfully.")
+    snc.sql("drop table if exists medications")
+    println("medications table dropped successfully.")
+    snc.sql("drop table if exists observations")
+    println("observations table dropped successfully.")
+    snc.sql("drop table if exists procedures")
+    println("procedures table dropped successfully.")
     // scalastyle:on println
   }
 
   def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
     // scalastyle:off println
-    SPVAQueries.patients(sqlContext).registerTempTable("spd.patients")
+   // recordDF.write().mode("overwrite").saveAsTable("schemaName.tableName");
+    SPVAQueries.patients(sqlContext).registerTempTable("patients")
     println(s"regions Table created successfully in spark")
-    SPVAQueries.encounters(sqlContext).registerTempTable("spd.encounters")
+    SPVAQueries.encounters(sqlContext).registerTempTable("encounters")
     println(s"categories Table created successfully in spark")
-    SPVAQueries.allergies(sqlContext).registerTempTable("spd.allergies")
+    SPVAQueries.allergies(sqlContext).registerTempTable("allergies")
     println(s"shippers Table created successfully in spark")
-    SPVAQueries.careplans(sqlContext).registerTempTable("spd.careplans")
+    SPVAQueries.careplans(sqlContext).registerTempTable("careplans")
     println(s"employees Table created successfully in spark")
-    SPVAQueries.conditions(sqlContext).registerTempTable("spd.conditions")
+    SPVAQueries.conditions(sqlContext).registerTempTable("conditions")
     println(s"customers Table created successfully in spark")
-    SPVAQueries.imaging_studies(sqlContext).registerTempTable("spd.imaging_studies")
+    SPVAQueries.imaging_studies(sqlContext).registerTempTable("imaging_studies")
     println(s"orders Table created successfully in spark")
-    SPVAQueries.immunizations(sqlContext).registerTempTable("spd.immunizations")
+    SPVAQueries.immunizations(sqlContext).registerTempTable("immunizations")
     println(s"order_details Table created successfully in spark")
-    SPVAQueries.medications(sqlContext).registerTempTable("spd.medications")
+    SPVAQueries.medications(sqlContext).registerTempTable("medications")
     println(s"products Table created successfully in spark")
-    SPVAQueries.observations(sqlContext).registerTempTable("spd.observations")
+    SPVAQueries.observations(sqlContext).registerTempTable("observations")
     println(s"suppliers Table created successfully in spark")
-    SPVAQueries.procedures(sqlContext).registerTempTable("pd.procedures")
+    SPVAQueries.procedures(sqlContext).registerTempTable("procedures")
     println(s"territories Table created successfully in spark")
     // scalastyle:on println
   }
