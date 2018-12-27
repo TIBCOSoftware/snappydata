@@ -731,7 +731,7 @@ object DeltaWriter {
         CodeGeneration.logDebug(
           s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
-          Array.empty[String]).asInstanceOf[DeltaWriterFactory]
+          Utils.EMPTY_STRING_ARRAY).asInstanceOf[DeltaWriterFactory]
       }
     })
 

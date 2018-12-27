@@ -26,6 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
+import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
@@ -33,7 +34,6 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -305,8 +305,7 @@ class ColumnTableTest
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props)
-        .saveAsTable(tableName)
+    dataDF.write.format("column").options(props).saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
@@ -500,8 +499,8 @@ class ColumnTableTest
     val schema = StructType(Array(
       StructField("col_int", IntegerType, false),
       StructField("col_string", StringType, false)))
-    snc.createExternalTable("extTable", "com.databricks.spark.csv",
-      schema, Map.empty[String, String])
+    val codetableFile = getClass.getResource("/airlineCode_Lookup.csv").getPath
+    snc.createExternalTable("extTable", "csv", schema, Map("path" -> codetableFile))
     intercept[AnalysisException] {
       // not supported
       snc.sql("alter table extTable add column age int")
@@ -908,8 +907,7 @@ class ColumnTableTest
         "USING column options()")
 
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props)
-        .saveAsTable("COLUMN_TEST_TABLE10")
+    dataDF.write.format("column").options(props).saveAsTable("COLUMN_TEST_TABLE10")
 
     val count = snc.sql("select * from COLUMN_TEST_TABLE10").count()
     assert(count === 1000)
@@ -1191,7 +1189,6 @@ class ColumnTableTest
 
   test("Test Dropping Colocated column table") {
 
-
     snc.sql("create table ORDER_DETAILS_COL(SINGLE_ORDER_DID BIGINT ," +
         "SYS_ORDER_ID VARCHAR(64)" +
         " ,SYS_ORDER_VER INTEGER ," +
@@ -1209,22 +1206,21 @@ class ColumnTableTest
 
     try {
       snc.sql("DROP TABLE ORDER_DETAILS_COL")
+      fail("Expected drop table to fail due to dependent tables")
     } catch {
-      case e: AnalysisException => {
-        assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_COL;")
+      case e: AnalysisException =>
+        assert(e.getMessage().contains(
+          "APP.ORDER_DETAILS_COL cannot be dropped because of dependent objects"))
         // Execute second time to see we are getting same exception instead of table not found
         try {
           snc.sql("DROP TABLE ORDER_DETAILS_COL")
+          fail("Expected drop table to fail due to dependent tables")
         } catch {
           case e: AnalysisException => {
-            assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
-                "dependent objects: APP.EXEC_DETAILS_COL;")
+            assert(e.getMessage().contains(
+              "APP.ORDER_DETAILS_COL cannot be dropped because of dependent objects"))
           }
-          case t: Throwable => throw new AssertionError(t.getMessage, t)
         }
-      } // Expected Exception hence ignore
-      case _: Throwable => throw new AssertionError
     }
 
     try {
@@ -1259,7 +1255,7 @@ class ColumnTableTest
   }
 
   test("Test create table from CSV without header") {
-    snc.sql(s"create table test1 using com.databricks.spark.csv options(path '${
+    snc.sql(s"create external table test1 using csv options(path '${
       (getClass.getResource
       ("/northwind/orders" +
           ".csv").getPath)
@@ -1407,8 +1403,9 @@ class ColumnTableTest
 
     snc.sql("drop table if exists test")
   }
+
   test("Test method for getting key columns of the column tables") {
-    var session = new SnappySession(snc.sparkContext)
+    val session = new SnappySession(snc.sparkContext)
     session.sql("drop table if exists temp1")
     session.sql("drop table if exists temp2")
     session.sql("drop table if exists temp3")
@@ -1423,6 +1420,40 @@ class ColumnTableTest
     session.sql("create table temp4(id1 bigint not null , name1 varchar(10), " +
         "id2 bigint not null, id3 bigint not null) USING column " +
         "OPTIONS(key_columns 'id2,id1,id3' ) ")
+
+    // if key_columns are not present, then CREATE TABLE should fail (SNAP-2790)
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id1', key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    // key_columns with row tables should fail
+    try {
+      session.sql("create table rt1(id1 bigint not null , name1 varchar(10)) " +
+          "USING row OPTIONS(key_columns 'id1')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+        "USING column OPTIONS(partition_by 'id1', key_columns 'id1')")
+    session.sql("drop table ct1")
 
     val res1 = session.sessionCatalog.getKeyColumns("temp1")
     assert(res1.size == 1)
@@ -1474,23 +1505,28 @@ class ColumnTableTest
     snc.createExternalTable("temp4", "csv",
       Map("path" -> tempPath, "header" -> "true", "inferSchema" -> "true"))
 
-    val res1 = session.sessionCatalog.getTableType("temp1")
+    val res1 = getTableType("temp1", session)
     assert(res1 == "COLUMN")
 
-    val res2 = session.sessionCatalog.getTableType("temp2")
+    val res2 = getTableType("temp2", session)
     assert(res2 == "ROW")
 
-    val res3 = session.sessionCatalog.getTableType("temp3")
+    val res3 = getTableType("temp3", session)
     assert(res3 == "STREAM")
 
-    val res4 = session.sessionCatalog.getTableType("temp4")
+    val res4 = getTableType("temp4", session)
     assert(res4 == "EXTERNAL")
 
-    Try(session.sessionCatalog.getTableType("temp5")) match {
-      case Success(df) => throw new AssertionError(
+    Try(getTableType("temp5", session)) match {
+      case Success(_) => throw new AssertionError(
         "Should not have succedded with incorrect options")
-      case Failure(error) => // Do nothing
+      case Failure(_) => // Do nothing
     }
+  }
+
+  private def getTableType(table: String, session: SnappySession): String = {
+    CatalogObjectType.getTableType(session.externalCatalog.getTable(
+      session.getCurrentSchema, table)).toString
   }
 }
 

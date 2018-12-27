@@ -86,10 +86,10 @@ abstract class SnappyFunSuite
 
   def getOrCreate(sc: SparkContext): SnappyContext = {
     val gnc = cachedContext
-    if (gnc != null) gnc
+    if (gnc ne null) gnc
     else synchronized {
       val gnc = cachedContext
-      if (gnc != null) gnc
+      if (gnc ne null) gnc
       else {
         cachedContext = SnappyContext(sc)
         cachedContext
@@ -140,7 +140,6 @@ abstract class SnappyFunSuite
   protected def baseCleanup(clearStoreToBlockMap: Boolean = true): Unit = {
     try {
       val session = this.snc.snappySession
-      TestUtils.dropAllTables(session)
       TestUtils.dropAllSchemas(session)
     } finally {
       dirCleanup()

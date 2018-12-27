@@ -52,6 +52,12 @@ class ViewTest extends SnappyFunSuite {
     (0 until numRows).map(i => Row(i, "address_" + (i + 1), i + 1))
   }
 
+  private def tableExists(session: SnappySession, name: String): Boolean = {
+    val identifier = session.tableIdentifier(name)
+    session.sessionCatalog.isTemporaryTable(identifier) ||
+        session.sessionCatalog.tableExists(identifier)
+  }
+
   test("temporary view") {
     val session = this.snc.snappySession
 
@@ -66,7 +72,7 @@ class ViewTest extends SnappyFunSuite {
     // check temporary view and its meta-data for column table
     session.sql(s"create temporary view viewOnTable as $viewQuery from $columnTable")
 
-    assert(session.sessionCatalog.tableExists("viewOnTable") === true)
+    assert(tableExists(session, "viewOnTable") === true)
     checkAnswer(session.sql("describe viewOnTable"), viewTempMeta)
     checkAnswer(session.sql("select * from viewOnTable"), expected)
     checkAnswer(session.sql("show views"), showResult)
@@ -75,24 +81,24 @@ class ViewTest extends SnappyFunSuite {
 
     // should not be visible from another session
     val session2 = session.newSession()
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    assert(tableExists(session2, "viewOnTable") === false)
 
     // drop and check unavailability
     session.sql("drop view viewOnTable")
-    assert(session.sessionCatalog.tableExists("viewOnTable") === false)
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    assert(tableExists(session, "viewOnTable") === false)
+    assert(tableExists(session2, "viewOnTable") === false)
 
     // check the same for view on row table
     session.sql(s"create temporary view viewOnTable as $viewQuery from $rowTable")
 
-    assert(session.sessionCatalog.tableExists("viewOnTable") === true)
+    assert(tableExists(session, "viewOnTable") === true)
     checkAnswer(session.sql("describe viewOnTable"), viewTempMeta)
     checkAnswer(session.sql("select * from viewOnTable"), expected)
 
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    assert(tableExists(session2, "viewOnTable") === false)
     session.sql("drop view viewOnTable")
-    assert(session.sessionCatalog.tableExists("viewOnTable") === false)
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    assert(tableExists(session, "viewOnTable") === false)
+    assert(tableExists(session2, "viewOnTable") === false)
 
     session2.close()
   }
@@ -119,12 +125,6 @@ class ViewTest extends SnappyFunSuite {
     checkAnswer(session2.sql("describe global_temp.viewOnTable"), viewTempMeta)
     checkAnswer(session2.sql("select * from viewOnTable"), expected)
 
-    try {
-      session.sql("drop table viewOnTable")
-      fail("expected drop table to fail for view")
-    } catch {
-      case _: AnalysisException => // expected
-    }
     // drop and check unavailability
     session.sql("drop view viewOnTable")
     assert(session.sessionCatalog.getGlobalTempView("viewOnTable").isEmpty)
@@ -157,19 +157,19 @@ class ViewTest extends SnappyFunSuite {
     session.sql(s"create temporary view airlineView using parquet options(path '$hfile')")
     val airlineView = session.table("airlineView")
 
-    assert(session.sessionCatalog.tableExists("airlineView") === true)
+    assert(tableExists(session, "airlineView") === true)
     assert(airlineView.schema === airline.schema)
     checkAnswer(session.sql("select count(*) from airlineView"), Seq(Row(airline.count())))
     assert(airlineView.count() == airline.count())
 
     // should not be visible from another session
     val session2 = session.newSession()
-    assert(session2.sessionCatalog.tableExists("airlineView") === false)
+    assert(tableExists(session2, "airlineView") === false)
 
     // drop and check unavailability
     session.sql("drop table airlineView")
-    assert(session.sessionCatalog.tableExists("airlineView") === false)
-    assert(session2.sessionCatalog.tableExists("airlineView") === false)
+    assert(tableExists(session, "airlineView") === false)
+    assert(tableExists(session2, "airlineView") === false)
 
     session2.close()
   }
@@ -193,14 +193,8 @@ class ViewTest extends SnappyFunSuite {
     assert(session2.sessionCatalog.getGlobalTempView("airlineView").isDefined)
     checkAnswer(session2.sql("select count(*) from airlineView"), Seq(Row(airline.count())))
 
-    try {
-      session.sql("drop table airlineView")
-      fail("expected drop table to fail for view")
-    } catch {
-      case _: AnalysisException => // expected
-    }
     // drop and check unavailability
-    session.sql("drop view airlineView")
+    session.sql("drop table airlineView")
     assert(session.sessionCatalog.getGlobalTempView("airlineView").isEmpty)
     assert(session2.sessionCatalog.getGlobalTempView("airlineView").isEmpty)
 
@@ -223,7 +217,7 @@ class ViewTest extends SnappyFunSuite {
       Row("RANK", "int", null))
     val showResult = Seq(Row("APP", "VIEWONTABLE", false, false))
 
-    assert(session.sessionCatalog.tableExists("viewOnTable") === true)
+    assert(tableExists(session, "viewOnTable") === true)
     checkAnswer(session.sql("describe viewOnTable"), viewMeta)
     checkAnswer(session.sql("select * from viewOnTable"), expectedResult)
     checkAnswer(session.sql("show views"), showResult)
@@ -232,7 +226,7 @@ class ViewTest extends SnappyFunSuite {
 
     // should be visible from another session
     var session2 = session.newSession()
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === true)
+    assert(tableExists(session2, "viewOnTable") === true)
     checkAnswer(session2.sql("describe viewOnTable"), viewMeta)
     checkAnswer(session2.sql("select * from viewOnTable"), expectedResult)
 
@@ -260,7 +254,7 @@ class ViewTest extends SnappyFunSuite {
     }
 
     session2 = new SnappySession(sc)
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === true)
+    assert(tableExists(session2, "viewOnTable") === true)
     checkAnswer(session2.sql("describe viewOnTable"), viewMeta)
     checkAnswer(session2.sql("select * from viewOnTable"), expectedResult)
 
@@ -275,7 +269,7 @@ class ViewTest extends SnappyFunSuite {
     }
     // drop and check unavailability
     session2.sql("drop view viewOnTable")
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    assert(tableExists(session2, "viewOnTable") === false)
     session2.sql("drop table test2205")
 
     // check colocated joins with VIEWs (SNAP-2204)
@@ -299,7 +293,7 @@ class ViewTest extends SnappyFunSuite {
     assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
 
     session2.sql("drop view viewOnTable")
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    assert(tableExists(session2, "viewOnTable") === false)
 
     // next query on a join view
     session2.sql(s"create view viewOnJoin as $query")
@@ -310,6 +304,6 @@ class ViewTest extends SnappyFunSuite {
     assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
 
     session2.sql("drop view viewOnJoin")
-    assert(session2.sessionCatalog.tableExists("viewOnJoin") === false)
+    assert(tableExists(session2, "viewOnJoin") === false)
   }
 }

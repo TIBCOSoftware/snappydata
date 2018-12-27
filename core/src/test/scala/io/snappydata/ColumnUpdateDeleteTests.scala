@@ -377,7 +377,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     var result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.0) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.0) === Nil)
 
     result = session.sql("select UnitPrice from order_details where tid = 6").collect()
     assert(result.length === 1)
@@ -390,10 +390,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(result(0).getDouble(0) == 1.1)
     result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
     result = session.sql("select UnitPrice, tid from order_details").collect()
     assert(result.length === numElements)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
 
 
     session.sql("UPDATE order_details SET UnitPrice = 1.1 WHERE tid <> 11")
@@ -403,10 +403,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(result(0).getDouble(0) == 1.1)
     result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
     result = session.sql("select UnitPrice, tid from order_details").collect()
     assert(result.length === numElements)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
 
     session.sql("drop table order_details")
     session.conf.unset(Property.ColumnBatchSize.name)
@@ -518,12 +518,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     // concurrent updates to different rows but same batches
     val barrier = new CyclicBarrier(concurrency)
     var tasks = Array.tabulate(concurrency)(i => Future {
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
+        waited = true
         res = snappy.sql(s"update updateTable set id = $idUpdate, " +
             s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
             s"where (id % $step) = $i").collect()
@@ -532,6 +534,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))
@@ -547,12 +550,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     // concurrent deletes
     tasks = Array.tabulate(concurrency)(i => Future {
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
+        waited = true
         res = snappy.sql(
           s"delete from updateTable where (id % $step) = ${step - i - 1}").collect()
         assert(res.map(_.getLong(0)).sum > 0)
@@ -560,6 +565,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))
