@@ -54,6 +54,8 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long isSecurity;
 
+  public static Long passFile;
+
   public static Vector getDmlOps() {
     Long key = dmlOperations;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
@@ -64,6 +66,13 @@ public class SnappySecurityPrms extends SnappyPrms{
         (dataLocation, null));
     if (dataLoc == null) return "";
     return dataLoc;
+  }
+
+  public static String getPassFile(){
+    String pwdFile = tasktab().stringAt(passFile, tab().stringAt
+        (passFile, null));
+    if (pwdFile == null) return "";
+    return pwdFile;
   }
 
   public static Vector getSchema() {
