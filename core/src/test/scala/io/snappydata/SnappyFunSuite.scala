@@ -67,7 +67,7 @@ abstract class SnappyFunSuite
     }
   }
 
-  protected def sc(addOn: (SparkConf) => SparkConf): SparkContext = {
+  protected def sc(addOn: SparkConf => SparkConf): SparkContext = {
     val ctx = SnappyContext.globalSparkContext
     if (ctx != null && !ctx.isStopped) {
       ctx
@@ -78,7 +78,7 @@ abstract class SnappyFunSuite
     }
   }
 
-  protected def scWithConf(addOn: (SparkConf) => SparkConf): SparkContext = {
+  protected def scWithConf(addOn: SparkConf => SparkConf): SparkContext = {
     new SparkContext(newSparkConf(addOn))
   }
 
@@ -192,12 +192,6 @@ abstract class SnappyFunSuite
     f.deleteOnExit()
     dirList += fileName
     fileName
-  }
-
-  protected def logStdOut(msg: String): Unit = {
-    // scalastyle:off
-    println(msg)
-    // scalastyle:on
   }
 
   def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit =

@@ -675,7 +675,7 @@ object DeltaWriter {
         val evaluator = new CompilerFactory().newScriptEvaluator()
         evaluator.setClassName("io.snappydata.execute.GeneratedDeltaWriterFactory")
         evaluator.setParentClassLoader(getClass.getClassLoader)
-        evaluator.setDefaultImports(defaultImports)
+        evaluator.setDefaultImports(defaultImports: _*)
 
         val (name, complexType) = dataType match {
           case BooleanType => ("Boolean", "")

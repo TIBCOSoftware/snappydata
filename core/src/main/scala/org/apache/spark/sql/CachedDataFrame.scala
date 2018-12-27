@@ -354,7 +354,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     val (executedPlan, withFallback) = SnappySession.getExecutedPlan(queryExecution.executedPlan)
 
     def execute(): (Iterator[R], Long) = withNewExecutionIdTiming {
-      snappySession.addContextObject(SnappySession.ExecutionKey, () => queryExecution)
 
       def executeCollect(): Array[InternalRow] = {
         if (withFallback ne null) withFallback.executeCollect()
@@ -412,7 +411,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     try {
       withCallback("collect")(_ => execute())
     } finally {
-      snappySession.removeContextObject(SnappySession.ExecutionKey)
       if (!hasLocalCallSite) {
         sc.clearCallSite()
       }
