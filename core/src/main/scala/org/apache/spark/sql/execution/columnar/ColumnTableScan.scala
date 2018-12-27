@@ -83,6 +83,12 @@ private[sql] final case class ColumnTableScan(
 
   override val nodeName: String = "ColumnTableScan"
 
+  override def sameResult(plan: SparkPlan): Boolean = plan match {
+    case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&
+        r.numBuckets == numBuckets && r.schema == schema
+    case _ => false
+  }
+
   @transient private val MAX_SCHEMA_LENGTH = 40
 
   override lazy val outputOrdering: Seq[SortOrder] = {

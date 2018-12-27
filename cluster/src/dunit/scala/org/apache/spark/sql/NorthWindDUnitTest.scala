@@ -49,6 +49,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     super.afterClass()
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
 

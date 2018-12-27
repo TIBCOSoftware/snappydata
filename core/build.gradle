@@ -105,8 +105,8 @@ dependencies {
   compile 'org.twitter4j:twitter4j-stream:4.0.6'
   compile 'org.objenesis:objenesis:2.6'
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
-  compile "com.koloboke:koloboke-api-jdk8:${kolobokeVersion}"
-  compile "com.koloboke:koloboke-impl-common-jdk8:${kolobokeVersion}"
+  compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
+  compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
 
   compileOnly 'com.rabbitmq:amqp-client:3.5.7'
 
@@ -148,7 +148,7 @@ scalaTest {
 
 def downloadApacheSparkDist(String ver, String distName, String prodDir) {
   return tasks.create("downloadApache${ver}SparkDist", Download) {
-    outputs.files "${prodDir}.tgz"
+    outputs.files "${prodDir}.tgz", "${prodDir}/README.md"
 
     src "http://archive.apache.org/dist/spark/spark-${ver}/${distName}.tgz"
     dest sparkDistDir
@@ -205,8 +205,8 @@ shadowJar {
   zip64 = true
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-  // relocate koloboke for possible conflicts with user dependencies
-  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
+  // relocate eclipse collections for possible conflicts with user dependencies
+  relocate 'org.eclipse.collections', 'io.snappydata.org.eclipse.collections'
   // relocate the guava's com.google packages
   relocate 'com.google.common', 'io.snappydata.com.google.common'
 

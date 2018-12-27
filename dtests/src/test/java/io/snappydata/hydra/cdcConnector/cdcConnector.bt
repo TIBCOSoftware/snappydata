@@ -4,7 +4,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-  dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+  dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
   queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/selectOps.sql"
   deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDeleteTemp.sql"
   insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector"
@@ -30,7 +30,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
    D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-   dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+   dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointqueries.sql"
    deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDeleteTemp.sql"
    insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector"
@@ -53,8 +53,8 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
  io/snappydata/hydra/cdcConnector/cdcConnectorMultiSqlServerInstanceTest.conf
    A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-   dataFilesLocationCol="/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data"
-   dataFilesLocationRow="/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data"
+   dataFilesLocationCol="/export/shared/QA_DATA/USER2_Data/Cluster_Data"
+   dataFilesLocationRow="/export/shared/QA_DATA/USER2_Data/RowTable_Data"
    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointLookUpQueries.sql"
    deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
    insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1"
@@ -76,8 +76,8 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
  io/snappydata/hydra/cdcConnector/cdcConnectorLongRunningHAWithMultiSqlServer.conf
    A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-   dataFilesLocationCol="/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data"
-   dataFilesLocationRow="/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data"
+   dataFilesLocationCol="/export/shared/QA_DATA/USER2_Data/Cluster_Data"
+   dataFilesLocationRow="/export/shared/QA_DATA/USER2_Data/RowTable_Data"
    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointLookUpQueries.sql"
    deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
    updateQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/update.sql"
