@@ -771,7 +771,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val result = snContext.sql("select COL1 from " +
         tableName +
         " where COL2 like '%a%'")
-    result.explain(true)
     doPrint("")
     doPrint("=============== RESULTS START ===============")
     result.collect.foreach(doPrint)
@@ -808,17 +807,15 @@ object CreateIndexTest extends SnappyFunSuite {
       val selectRes = snContext.sql(sqlText)
 
       if (withExplain || explainQ) {
-        selectRes.explain(true)
+        // selectRes.explain(true)
       }
 
       validate(selectRes)
 
       if (showResults) {
-        selectRes.show
+        logInfo(selectRes.collect().take(20).mkString("\n"))
       } else {
-        // scalastyle:off println
-        selectRes.collect().take(10).foreach(println)
-        // scalastyle:on println
+        logInfo(selectRes.collect().take(10).mkString("\n"))
       }
 
       selectRes

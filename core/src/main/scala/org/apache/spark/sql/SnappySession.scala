@@ -295,7 +295,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   /**
    * Remove a context object registered using [[addContextObject]].
    */
-  private[sql] def removeContextObject(key: Any): Unit = {
+  private[sql] def removeContextObject(key: Any): Any = {
     contextObjects.remove(key)
   }
 
@@ -1815,8 +1815,8 @@ object SnappySession extends Logging {
   }
 
   def getExecutedPlan(plan: SparkPlan): (SparkPlan, CodegenSparkFallback) = plan match {
-    case cg@CodegenSparkFallback(WholeStageCodegenExec(p)) => (p, cg)
-    case cg@CodegenSparkFallback(p) => (p, cg)
+    case cg@CodegenSparkFallback(WholeStageCodegenExec(p), _) => (p, cg)
+    case cg@CodegenSparkFallback(p, _) => (p, cg)
     case WholeStageCodegenExec(p) => (p, null)
     case _ => (plan, null)
   }

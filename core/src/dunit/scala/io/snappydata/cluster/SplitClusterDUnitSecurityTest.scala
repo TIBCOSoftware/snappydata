@@ -804,7 +804,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   def getJobJar(className: String, packageStr: String = ""): String = {
     val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
-        + s"test/$packageStr")
+        + s"scala/test/$packageStr")
     assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
         s"not found: $dir")
     val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
