@@ -25,7 +25,7 @@ import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.store.{ColumnTableBatchInsertTest, MetadataTest}
+import org.apache.spark.sql.store.ColumnTableBatchInsertTest
 
 class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -707,7 +707,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       val connSession = allSessions.head
       // skip the "isCached" checks with JDBC since session is different for JDBC connection
       ColumnTableBatchInsertTest.testSparkCachingUsingSQL(sc,
-        MetadataTest.resultSetToDataset(connSession, stmt), connSession.catalog.isCached,
+        SnappyFunSuite.resultSetToDataset(connSession, stmt), connSession.catalog.isCached,
         df => connSession.sharedState.cacheManager.lookupCachedData(df).isDefined)
       stmt.close()
     } finally {

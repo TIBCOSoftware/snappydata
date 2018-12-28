@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.{SQLException, Statement}
+import java.sql.SQLException
 import java.util.regex.Pattern
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
@@ -25,14 +25,10 @@ import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
-import org.apache.spark.executor.InputMetrics
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException}
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row}
 
 /**
  * Tests for meta-data queries using Spark SQL.
@@ -117,21 +113,6 @@ object MetadataTest extends Assertions {
     getLongVarcharTuple("ASYNCLISTENERS"), ("GATEWAYENABLED", 0, "BOOLEAN", false),
     getLongVarcharTuple("GATEWAYSENDERS"), ("OFFHEAPENABLED", 0, "BOOLEAN", false),
     ("ROWLEVELSECURITYENABLED", 0, "BOOLEAN", false))
-
-  def resultSetToDataset(session: SnappySession, stmt: Statement)
-      (sql: String): Dataset[Row] = {
-    if (stmt.execute(sql)) {
-      val rs = stmt.getResultSet
-      val schema = JdbcUtils.getSchema(rs, SnappyStoreDialect)
-      val dummyMetrics = new InputMetrics
-      val rows = JdbcUtils.resultSetToSparkInternalRows(rs, schema, dummyMetrics)
-          .map(_.copy()).toSeq
-      session.internalCreateDataFrame(session.sparkContext.makeRDD(rows), schema)
-    } else {
-      implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
-      session.createDataset[Row](Nil)
-    }
-  }
 
   def testSYSTablesAndVTIs(executeSQL: String => Dataset[Row],
       hostName: String = ClientSharedUtils.getLocalHost.getCanonicalHostName,

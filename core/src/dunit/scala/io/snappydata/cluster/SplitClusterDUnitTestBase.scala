@@ -32,7 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
-import io.snappydata.{ColumnUpdateDeleteTests, Constant}
+import io.snappydata.{ColumnUpdateDeleteTests, Constant, SnappyFunSuite}
 import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -296,11 +296,11 @@ trait SplitClusterDUnitTestObject extends Logging {
       netServers, locatorId, locatorNetServer, servers, leadId)
     // next test metadata using JDBC connection
     stmt = jdbcConn.createStatement()
-    MetadataTest.testSYSTablesAndVTIs(MetadataTest.resultSetToDataset(session, stmt),
+    MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
-    MetadataTest.testDescribeShowAndExplain(MetadataTest.resultSetToDataset(session, stmt),
+    MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
       usingJDBC = true)
-    MetadataTest.testDSIDWithSYSTables(MetadataTest.resultSetToDataset(session, stmt),
+    MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
       netServers, locatorId, locatorNetServer, servers, leadId)
 
     stmt.close()
