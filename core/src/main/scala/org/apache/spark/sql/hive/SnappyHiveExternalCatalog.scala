@@ -236,12 +236,13 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def listDatabases(): Seq[String] = {
-    withHiveExceptionHandling(super.listDatabases().map(toUpperCase)) :+ SYS_SCHEMA
+    (withHiveExceptionHandling(super.listDatabases().map(toUpperCase).toSet) + SYS_SCHEMA)
+        .toSeq.sorted
   }
 
   override def listDatabases(pattern: String): Seq[String] = {
-    withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase)) ++
-        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)
+    (withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase).toSet) ++
+        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)).toSeq.sorted
   }
 
   override def setCurrentDatabase(schema: String): Unit = {
