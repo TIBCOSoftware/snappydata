@@ -19,10 +19,12 @@ package io.snappydata.cluster
 import java.sql.{Connection, DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
+import io.snappydata.SnappyFunSuite.resultSetToDataset
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
-import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.store.ViewTest
+import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession}
 
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
@@ -72,12 +74,12 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val conn = getANetConnection(netPort1)
 
     // first fail a statement
-    failCreateTableXD(conn, tableName, true, " row ")
+    failCreateTableXD(conn, tableName, doFail = true, " row ")
 
     createTableXD(conn, tableName, " row ")
     tableMetadataAssertRowTable("APP", tableName)
     // Test create table - error for recreate
-    failCreateTableXD(conn, tableName, false, " row ")
+    failCreateTableXD(conn, tableName, doFail = false, " row ")
 
     // Drop Table and Recreate
     dropTableXD(conn, tableName)
@@ -167,7 +169,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
     val props = bootProps.clone().asInstanceOf[java.util.Properties]
-    props.put("distributed-system-id" , "1")
+    props.put("distributed-system-id", "1")
     props.put("server-groups", "sg1")
 
     val restartServer = new SerializableRunnable() {
@@ -185,7 +187,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     var s = conn.createStatement()
     s.execute(s"CREATE TABLE $tableName (Col1 INT, Col2 INT, Col3 STRING)")
     insertDataXD(conn, tableName)
-    var snc = org.apache.spark.sql.SnappyContext(sc)
+    val snc = org.apache.spark.sql.SnappyContext(sc)
     verifyResultAndSchema(snc, tableName, 3)
 
     s.execute(s"ALTER TABLE $tableName ADD Col4 INT")
@@ -207,21 +209,21 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     s.execute(s"insert into $tableName values (1,1)")
     s.execute(s"ALTER TABLE $tableName add constraint emp_uk unique (Col1)")
     try {
-    s.execute(s"insert into $tableName values (1,1)")
+      s.execute(s"insert into $tableName values (1,1)")
     } catch {
       case sqle: SQLException =>
         if (sqle.getSQLState != "23505" ||
-          !sqle.getMessage.contains("duplicate key value in a unique or" +
-            " primary key constraint or unique index")) {
+            !sqle.getMessage.contains("duplicate key value in a unique or" +
+                " primary key constraint or unique index")) {
           throw sqle
         }
     }
 
     // asynceventlistener
     s.execute("CREATE ASYNCEVENTLISTENER myListener (" +
-      " listenerclass 'com.pivotal.gemfirexd.callbacks.DBSynchronizer'" +
-      " initparams 'org.apache.derby.jdbc.EmbeddedDriver,jdbc:derby:newDB;create=true')" +
-      " server groups(sg1)")
+        " listenerclass 'com.pivotal.gemfirexd.callbacks.DBSynchronizer'" +
+        " initparams 'org.apache.derby.jdbc.EmbeddedDriver,jdbc:derby:newDB;create=true')" +
+        " server groups(sg1)")
 
     s.execute(s"ALTER TABLE $tableName SET ASYNCEVENTLISTENER (myListener) ")
     var rs = s.executeQuery(s"select * from SYS.SYSTABLES where tablename='$tableName'")
@@ -287,7 +289,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     var cnt = 0
     while (rs.next()) {
       cnt += 1
-      rs.getInt(1); rs.getInt(2);
+      rs.getInt(1)
+      rs.getInt(2)
     }
     assert(cnt == 5, cnt)
 
@@ -296,7 +299,9 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     cnt = 0
     while (rs2.next()) {
       cnt += 1
-      rs2.getInt(1); rs2.getInt(2); rs2.getInt(3);
+      rs2.getInt(1)
+      rs2.getInt(2)
+      rs2.getInt(3)
     }
     assert(cnt == 5, cnt)
 
@@ -322,6 +327,36 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     queryDataXD(conn, tableName)
 
     dropTableXD(conn, tableName)
+  }
+
+  def testViews(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val session = new SnappySession(sc)
+    ViewTest.createTables(session)
+
+    def newExecution(): String => Dataset[Row] = {
+      val session = new SnappySession(sc)
+      val conn = getANetConnection(netPort1)
+      val stmt = conn.createStatement()
+      resultSetToDataset(session, stmt)
+    }
+
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    ViewTest.testTemporaryView(resultSetToDataset(session, stmt), newExecution)
+    ViewTest.testGlobalTemporaryView(resultSetToDataset(session, stmt), newExecution)
+    ViewTest.testTemporaryViewUsing(resultSetToDataset(session, stmt), newExecution)
+    ViewTest.testGlobalTemporaryViewUsing(resultSetToDataset(session, stmt), newExecution)
+    ViewTest.testPersistentView(resultSetToDataset(session, stmt), checkPlans = false,
+      newExecution, restartSpark)
+    ViewTest.dropTables(new SnappySession(sc))
+  }
+
+  private def restartSpark(): Unit = {
+    ClusterManagerTestBase.stopAny()
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
   }
 
   def createTableXD(conn: Connection, tableName: String,
@@ -421,7 +456,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       s.execute("CREATE EXTERNAL TABLE airlineRef_temp(Code VARCHAR(25), " +
           "Description VARCHAR(25)) USING parquet OPTIONS()")
     } catch {
-      case e: java.sql.SQLException =>
+      case _: java.sql.SQLException =>
       // println("Exception stack. create. ex=" + e.getMessage +
       //   " ,stack=" + ExceptionUtils.getFullStackTrace(e))
     }
