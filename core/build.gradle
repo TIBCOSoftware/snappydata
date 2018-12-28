@@ -93,6 +93,7 @@ dependencies {
     testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
+  compile project(":snappy-encoders_${scalaBinaryVersion}")
 
   compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.4") {
     exclude(group: 'org.scala-lang', module: 'scala-library')

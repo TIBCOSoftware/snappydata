@@ -65,4 +65,7 @@ final class SerializedArray(_skipBytes: Int = 4)
 
   override def array: Array[Any] =
     throw new UnsupportedOperationException("not supported on SerializedArray")
+
+  def anyNull: Boolean = isAnyNull
+
 }

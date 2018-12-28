@@ -33,14 +33,14 @@ import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.RegionKey
+import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
 import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
 import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 
 import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, memoryManager, releaseExecutionMemory}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
@@ -105,7 +105,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
   def this() = this(-1L, -1, -1)
 
   override def getNumColumnsInTable(columnTableName: String): Int = {
-    val bufferTable = ColumnFormatRelation.getTableName(columnTableName)
+    val bufferTable = GemFireContainer.getRowBufferTableName(columnTableName)
     GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
   }
 
@@ -126,7 +126,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
             if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
                 columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
               val numColumns = ColumnStatsSchema.numStatsColumns(numColumnsInTable)
-              val unsafeRow = Utils.toUnsafeRow(buffer, numColumns)
+              val unsafeRow = SharedUtils.toUnsafeRow(buffer, numColumns)
               unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
             } else {
               val allocator = ColumnEncoding.getAllocator(buffer)
@@ -458,7 +458,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
     try {
       val heapSizeChange = determineHeapSizeChange(newBuffer, oldBuffer)
       if (heapSizeChange > 0) {
-        if (!StoreCallbacksImpl.acquireStorageMemory(context.getFullPath,
+        if (!SharedUtils.acquireStorageMemory(context.getFullPath,
           heapSizeChange, buffer = null, offHeap = false, shouldEvict = true)) {
           throw LocalRegion.lowMemoryException(null, heapSizeChange)
         }
@@ -466,7 +466,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       // release if there has been a reduction in size
       // (due to heap/off-heap transition or compression)
       else if (heapSizeChange < 0) {
-        StoreCallbacksImpl.releaseStorageMemory(context.getFullPath,
+        SharedUtils.releaseStorageMemory(context.getFullPath,
           -heapSizeChange, offHeap = false)
       }
       success = true

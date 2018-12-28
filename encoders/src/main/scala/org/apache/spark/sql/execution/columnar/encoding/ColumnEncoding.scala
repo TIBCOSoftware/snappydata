@@ -25,14 +25,17 @@ import io.snappydata.util.StringUtils
 
 import org.apache.spark.memory.MemoryManagerCallback.memoryManager
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.dsl.expressions
+import org.apache.spark.sql.catalyst.dsl._
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthInBytes
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+
 
 /**
  * Base class for encoding and decoding in columnar form. Memory layout of
@@ -168,8 +171,8 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
     throw new UnsupportedOperationException(s"readStruct for $toString")
 
   /**
-   * Close and relinquish all resources of this encoder.
-   * The encoder may no longer be usable after this call.
+   * Close and relinquish all resources of this decoder.
+   * The decoder may no longer be usable after this call.
    */
   def close(): Unit = {}
 }
@@ -258,7 +261,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def initialize(field: StructField, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long =
-    initialize(Utils.getSQLDataType(field.dataType), field.nullable,
+    initialize(JdbcExtendedUtils.getSQLDataType(field.dataType), field.nullable,
       initSize, withHeader, allocator)
 
   /**
@@ -808,7 +811,7 @@ object ColumnEncoding {
             s"buffer=0x${ClientSharedUtils.toHexString(buffer)}: $t")
     }
     val cursor = allocator.baseOffset(buffer) + buffer.position() + 4
-    val dataType = Utils.getSQLDataType(field.dataType)
+    val dataType = JdbcExtendedUtils.getSQLDataType(field.dataType)
     if (typeId >= allDecoders.length) {
       throw new IllegalStateException(s"Unknown encoding typeId = $typeId " +
           s"for $dataType($field) bytes=0x${ClientSharedUtils.toHexString(buffer)}")
@@ -832,7 +835,7 @@ object ColumnEncoding {
   }
 
   def getColumnEncoder(field: StructField): ColumnEncoder =
-    getColumnEncoder(Utils.getSQLDataType(field.dataType), field.nullable)
+    getColumnEncoder(JdbcExtendedUtils.getSQLDataType(field.dataType), field.nullable)
 
   def getColumnEncoder(dataType: DataType, nullable: Boolean): ColumnEncoder = {
     // TODO: SW: add RunLength by default
@@ -1014,12 +1017,15 @@ object ColumnEncoding {
  */
 case class ColumnStatsSchema(fieldName: String,
     dataType: DataType, nullCountNullable: Boolean) {
-  val lowerBound: AttributeReference = AttributeReference(
-    fieldName + ".lowerBound", dataType)()
-  val upperBound: AttributeReference = AttributeReference(
-    fieldName + ".upperBound", dataType)()
-  val nullCount: AttributeReference = AttributeReference(
-    fieldName + ".nullCount", IntegerType, nullCountNullable)()
+
+  // TODO: verify nullable = false value
+  val lowerBound: AttributeReference = ColumnStatsSchema.newAttributeReference(
+    fieldName + ".lowerBound", dataType, nullable = false)
+  // TODO: verify nullable = false value
+  val upperBound: AttributeReference = ColumnStatsSchema.newAttributeReference(
+    fieldName + ".upperBound", dataType, nullable = false)
+  val nullCount: AttributeReference = ColumnStatsSchema.newAttributeReference(
+    fieldName + ".nullCount", IntegerType, nullCountNullable)
 
   val schema = Seq(lowerBound, upperBound, nullCount)
 
@@ -1030,10 +1036,32 @@ object ColumnStatsSchema {
   val NUM_STATS_PER_COLUMN = 3
   val COUNT_INDEX_IN_SCHEMA = 0
 
-  val COUNT_ATTRIBUTE: AttributeReference = AttributeReference(
-    "batchCount", IntegerType, nullable = false)()
+  val COUNT_ATTRIBUTE: AttributeReference = newAttributeReference("batchCount", IntegerType, nullable = false)
 
   def numStatsColumns(schemaSize: Int): Int = schemaSize * NUM_STATS_PER_COLUMN + 1
+
+  def newAttributeReference(name: String, dataType: DataType, nullable: Boolean): AttributeReference = {
+    (dataType match {
+
+      case booleanType: BooleanType => new expressions.DslSymbol(Symbol(name)).boolean
+      case byteType: ByteType => new expressions.DslSymbol(Symbol(name)).byte
+      case shortType: ShortType => new expressions.DslSymbol(Symbol(name)).short
+      case integerType: IntegerType => new expressions.DslSymbol(Symbol(name)).int
+      case longType: LongType => new expressions.DslSymbol(Symbol(name)).long
+      case doubleType: DoubleType => new expressions.DslSymbol(Symbol(name)).float
+      case floatType: FloatType => new expressions.DslSymbol(Symbol(name)).double
+      case stringType: StringType => new expressions.DslSymbol(Symbol(name)).string
+      case dateType: DateType => new expressions.DslSymbol(Symbol(name)).date
+      case decimalType: DecimalType => new expressions.DslSymbol(Symbol(name)).decimal(decimalType.precision, decimalType.scale)
+      // case DecimalType => new expressions.DslSymbol(Symbol(name)).decimal
+      case timestampType: TimestampType => new expressions.DslSymbol(Symbol(name)).timestamp
+      case binaryType: BinaryType => new expressions.DslSymbol(Symbol(name)).binary
+      case arrayType: ArrayType => new expressions.DslSymbol(Symbol(name)).array(arrayType)
+      case mapType: MapType => new expressions.DslSymbol(Symbol(name)).map(mapType)
+      case structType: StructType => new expressions.DslSymbol(Symbol(name)).struct(structType)
+
+    }).withNullability(nullable)
+  }
 }
 
 trait NotNullDecoder extends ColumnDecoder {
