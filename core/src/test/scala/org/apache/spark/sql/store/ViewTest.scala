@@ -306,16 +306,17 @@ object ViewTest extends Assertions {
       Seq(Row(numElements, 0)))
 
     // test large view
-    val longStr = (1 to 2000).mkString("test data ", "", "")
+    val longStr = (1 to 1000).mkString("test data ", "", "")
     val largeViewStr = (1 to 100).map(i =>
       s"case when $i % 3 == 0 then cast(null as string) else '$longStr[$i]' end as c$i").mkString(
-      "create view largeView as select ", ", ", "")
-    assert(largeViewStr.length > 200000)
-    executeSQL2(largeViewStr).collect()
-    var rs = executeSQL("select * from largeView").collect()
+      "select ", ", ", "")
+    assert(largeViewStr.length > 100000)
+    var rs = executeSQL2(largeViewStr).collect()
+    assert(rs.length == 1)
+    executeSQL2(s"create view largeView as $largeViewStr").collect()
+    rs = executeSQL("select * from largeView").collect()
     assert(rs.length == 1)
 
-    Thread.sleep(10000000)
     // should be available after a restart
     restartSpark()
     executeSQL2 = newExecution()
