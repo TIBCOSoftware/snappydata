@@ -417,8 +417,10 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
-        snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
-          Map.empty[String, String])
+        if ("row".equalsIgnoreCase(tableType)) {
+          snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
+            Map.empty[String, String])
+        }
       case _ =>
     }
 
