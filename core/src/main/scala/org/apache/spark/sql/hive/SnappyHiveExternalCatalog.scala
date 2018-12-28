@@ -140,7 +140,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     } catch {
       case he: Exception if isDisconnectException(he) =>
         // stale JDBC connection
-        closeHive()
+        closeHive(clearCache = false)
         suspendActiveSession {
           hiveClient = hiveClient.newSession()
         }
@@ -236,12 +236,13 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def listDatabases(): Seq[String] = {
-    withHiveExceptionHandling(super.listDatabases().map(toUpperCase)) :+ SYS_SCHEMA
+    (withHiveExceptionHandling(super.listDatabases().map(toUpperCase).toSet) + SYS_SCHEMA)
+        .toSeq.sorted
   }
 
   override def listDatabases(pattern: String): Seq[String] = {
-    withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase)) ++
-        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)
+    (withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase).toSet) ++
+        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)).toSeq.sorted
   }
 
   override def setCurrentDatabase(schema: String): Unit = {
@@ -730,7 +731,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
   override def close(): Unit = {}
 
-  private[hive] def closeHive(): Unit = synchronized {
+  private[hive] def closeHive(clearCache: Boolean): Unit = synchronized {
+    if (clearCache) invalidateAll()
     // Non-isolated client can be closed here directly which is only present in cluster mode
     // using the new property HiveUtils.HIVE_METASTORE_ISOLATION not present in upstream.
     // Isolated loader would require reflection but that case is only in snappy-core
@@ -800,7 +802,8 @@ object SnappyHiveExternalCatalog {
 
   def close(): Unit = synchronized {
     if (instance ne null) {
-      instance.withHiveExceptionHandling(instance.closeHive(), handleDisconnects = false)
+      instance.withHiveExceptionHandling(instance.closeHive(clearCache = true),
+        handleDisconnects = false)
       instance = null
     }
   }
