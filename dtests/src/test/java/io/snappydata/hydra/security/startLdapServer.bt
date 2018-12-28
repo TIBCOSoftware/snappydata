@@ -1,0 +1,3 @@
+io/snappydata/hydra/security/startLdapServer.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  ldapScriptPath="$GEMFIRE/../../../store/ldap-test-server"

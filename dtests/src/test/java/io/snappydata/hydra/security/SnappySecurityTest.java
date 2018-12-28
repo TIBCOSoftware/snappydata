@@ -42,8 +42,8 @@ public class SnappySecurityTest extends SnappyTest {
   private static Integer expectedExceptionCnt = 0;
   private static Integer unExpectedExceptionCnt = 0;
   public static Boolean isAuthorized = false;
-  public static String adminUser = "user1";
-  public static String unAuthUser = "user5";
+  public static String adminUser = "gemfire1";
+  public static String unAuthUser = "gemfire5";
   public static SnappySecurityTest snappySecurityTest;
   public static String secureBootProp = "";
 
@@ -143,7 +143,7 @@ public class SnappySecurityTest extends SnappyTest {
     }
     Log.getLogWriter().info(msg + query);
     try {
-      conn = getSecuredLocatorConnection("user1", "user123");
+      conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
       conn.createStatement().execute(query);
     } catch (SQLException e) {
       Log.getLogWriter().info(" Caught Exception " + e.getMessage());
@@ -170,7 +170,7 @@ public class SnappySecurityTest extends SnappyTest {
           }
           Log.getLogWriter().info(msg + query);
           try {
-            conn = getSecuredLocatorConnection("user1", "user123");
+            conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
             conn.createStatement().execute(query);
           } catch (SQLException e) {
           }
@@ -193,7 +193,7 @@ public class SnappySecurityTest extends SnappyTest {
             String priviligedQ = query + user;
             Log.getLogWriter().info(msg + priviligedQ);
             try {
-              conn = getSecuredLocatorConnection("user1", "user123");
+              conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
               conn.createStatement().execute(priviligedQ);
             } catch (SQLException e) {
             }
@@ -235,7 +235,7 @@ public class SnappySecurityTest extends SnappyTest {
         Log.getLogWriter().info("splitData length is " + splitData.length);
         for (int i = 0; i < splitData.length; i++) {
             if (!(splitData[i] == null) || !(splitData[i].length() == 0)) {
-            String qry = splitData[i].replace("user2", schemaOwner);
+            String qry = splitData[i].replace("gemfire2", schemaOwner);
             queries.add(qry);
           }
         }
@@ -251,27 +251,27 @@ public class SnappySecurityTest extends SnappyTest {
     Boolean isGrant = SnappySecurityPrms.getIsGrant();
     Boolean isPublic = SnappySecurityPrms.getIsPublic();
     switch (user) {
-      case "user1":
+      case "gemfire1":
         runQuery(user, passwd, true);
         break;
-      case "user2":
+      case "gemfire2":
         runQuery(user, passwd, true);
         break;
-      case "user3":
+      case "gemfire3":
         if (isGrant)
           isAuthorized = true;
         else
           isAuthorized = false;
         runQuery(user, passwd, isAuthorized);
         break;
-      case "user4":
+      case "gemfire4":
         if (isGrant)
           isAuthorized = true;
         else
           isAuthorized = false;
         runQuery(user, passwd, isAuthorized);
         break;
-      case "user5" :
+      case "gemfire5" :
         if(isGrant && isPublic)
           isAuthorized = true;
         else
