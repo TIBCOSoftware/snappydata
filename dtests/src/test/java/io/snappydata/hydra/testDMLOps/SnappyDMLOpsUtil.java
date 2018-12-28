@@ -37,6 +37,7 @@ import com.gemstone.gemfire.cache.query.types.ObjectType;
 import hydra.Log;
 import hydra.Prms;
 import hydra.TestConfig;
+import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.commons.lang.ArrayUtils;
@@ -177,7 +178,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void saveTableMetaDataToBB() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       String[] tableNames = SnappySchemaPrms.getTableNames();
       for (String table : tableNames) {
         ResultSet rs = conn.createStatement().executeQuery("select * from " + table);
@@ -209,7 +215,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   protected void createSnappySchemas() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       Log.getLogWriter().info("creating schemas in snappy.");
       createSchemas(conn, false);
       Log.getLogWriter().info("done creating schemas in snappy.");
@@ -246,7 +257,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   protected void createSnappyTables() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       Log.getLogWriter().info("dropping tables in snappy.");
       dropTables(conn); //drop table before creating it
       Log.getLogWriter().info("done dropping tables in snappy");
@@ -383,8 +399,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     int tid = getMyTid();
     dynamicAppProps.put(tid, "dataFilesLocation=" + dataLocation);
     String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
-    executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
-        jarPath, SnappyPrms.getUserAppName());
+    boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    if(!isSecurityEnabled)
+      executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
+          jarPath, SnappyPrms.getUserAppName());
+    else
+      executeSnappyJobUsingJobScript(SnappyPrms.getSnappyJobClassNames(), SnappyPrms.getUserAppName(), logFile);
+
   }
 
   public void loadTablesInDerby(String dataLocation) {
@@ -471,7 +492,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       try {
         Log.getLogWriter().info("Loading data into " + tableName + " using CSV : " +
             csvFilePath);
-        Connection conn = getLocatorConnection(), dConn = null;
+        Connection conn = null, dConn = null;
+        boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+        if(isSecurityEnabled)
+          conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+        else
+          conn = getLocatorConnection();
         if (hasDerbyServer)
           dConn = derbyTestUtils.getDerbyConnection();
         PreparedStatement snappyPS = null, derbyPS = null;
@@ -589,7 +615,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void performInsert() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null;
       String[] dmlTable = SnappySchemaPrms.getDMLTables();
       int rand = new Random().nextInt(dmlTable.length);
@@ -647,7 +678,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void performUpdate() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null; //get the derby connection here
       String updateStmt[] = SnappySchemaPrms.getUpdateStmts();
       int numRows = 0;
@@ -700,7 +736,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void performDelete() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null; //get the derby connection here
       String deleteStmt[] = SnappySchemaPrms.getDeleteStmts();
       int numRows = 0;
@@ -759,7 +800,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void executeQuery() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null;
       String selectStmt[] = SnappySchemaPrms.getSelectStmts();
       ResultSet snappyRS, derbyRS = null;
@@ -954,7 +1000,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     StringBuffer mismatchString = new StringBuffer();
     Connection conn, dConn;
     try {
-      conn = getLocatorConnection();
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+      else
+        conn = getLocatorConnection();
       dConn = derbyTestUtils.getDerbyConnection();
       if (useTid) {
         if (selectStmt.toUpperCase().contains("WHERE"))
@@ -1303,8 +1353,12 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid, "stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
-        executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
+        boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+        if(!isSecurityEnabled)
+          executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
             jarPath, SnappyPrms.getUserAppName());
+        else
+          executeSnappyJobUsingJobScript(SnappyPrms.getSnappyJobClassNames(), SnappyPrms.getUserAppName(), logFile);
       } else { // thin client smart connector mode
         dynamicAppProps.put(tid, "\"" + stmt + "\"" + " " + tid);
         String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
@@ -1351,8 +1405,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid, "stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
-        executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
-            jarPath, SnappyPrms.getUserAppName());
+        boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+        if(!isSecurityEnabled)
+          executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
+              jarPath, SnappyPrms.getUserAppName());
+        else
+          executeSnappyJobUsingJobScript(SnappyPrms.getSnappyJobClassNames(), SnappyPrms.getUserAppName(), logFile);
+
       } else { // thin client smart connector mode
         dynamicAppProps.put(tid, "\"" + stmt + "\"" + " " + tid);
         String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
@@ -1396,8 +1455,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         dynamicAppProps.put(tid, "stmt=\\\"" + insertStmt + "\\\",tableName=" + tableName + "," +
             "tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
-        executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
-            jarPath, SnappyPrms.getUserAppName());
+        boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+        if(!isSecurityEnabled)
+          executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
+              jarPath, SnappyPrms.getUserAppName());
+        else
+          executeSnappyJobUsingJobScript(SnappyPrms.getSnappyJobClassNames(), SnappyPrms.getUserAppName(), logFile);
+
       } else { // thin client smart connector mode
         dynamicAppProps.put(tid, "\"" + insertStmt + "\"" + " " + tid);
         String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
