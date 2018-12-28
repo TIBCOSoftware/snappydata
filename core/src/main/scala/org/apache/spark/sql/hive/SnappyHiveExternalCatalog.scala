@@ -553,7 +553,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
   def refreshPolicies(ldapGroup: String): Unit = {
     val qualifiedLdapGroup = Constants.LDAP_GROUP_PREFIX + ldapGroup
-    getAllTables().foreach { table =>
+    getAllTables().filter(_.provider.map(_.equalsIgnoreCase("policy")).
+        getOrElse(false)).foreach { table =>
       val applyToStr = table.properties(PolicyProperties.policyApplyTo)
       if (applyToStr.nonEmpty) {
         val applyTo = applyToStr.split(",")
