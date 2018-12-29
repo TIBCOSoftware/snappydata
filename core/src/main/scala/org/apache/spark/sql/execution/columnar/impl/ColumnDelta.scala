@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 
@@ -85,12 +86,8 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val newValue = getValueRetain(FetchRequest.DECOMPRESS)
       val newBuffer = newValue.getBuffer
       try {
-        val schema = region.getUserAttribute.asInstanceOf[GemFireContainer]
-            .fetchHiveMetaData(false) match {
-          case null => throw new IllegalStateException(
-            s"Table for region ${region.getFullPath} not found in hive metadata")
-          case m => m.schema.asInstanceOf[StructType]
-        }
+        val schema = Utils.getTableSchema(ExternalStoreUtils.getExternalTableMetaData(
+          region.getFullPath, region.getUserAttribute.asInstanceOf[GemFireContainer]))
         val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
         // TODO: SW: if old value itself is returned, then avoid any put at GemFire layer
         // (perhaps throw some exception that can be caught and ignored in virtualPut)
@@ -300,8 +297,7 @@ object ColumnDelta {
    * Delete entire batch from column store for the batchId and partitionId
    * matching those of given key.
    */
-  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
-      columnTableName: String): Unit = {
+  def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _], numColumns: Int): Unit = {
 
     // delete all the rows with matching batchId
     def destroyKey(key: ColumnFormatKey): Unit = {
@@ -312,7 +308,6 @@ object ColumnDelta {
       }
     }
 
-    val numColumns = key.getNumColumnsInTable(columnTableName)
     // delete the stats rows first
     destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
     destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))

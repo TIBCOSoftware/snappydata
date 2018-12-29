@@ -76,9 +76,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   @transient private var encoderArrayTerm: String = _
   @transient private var cursorArrayTerm: String = _
 
-  @transient private[sql] var batchIdRef = -1
-
-  @transient private var batchBucketIdTerm: Option[String] = None
+  @transient private[this] var batchIdRef: Int = -1
+  @transient private[this] var batchBucketIdTerm: Option[String] = None
 
   def columnBatchSize: Int = batchParams._1
 
@@ -90,13 +89,15 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   override protected def isInsert: Boolean = true
 
+  def getBatchIdRef: Int = batchIdRef
+
   /** Frequency of rows to check for total size exceeding batch size. */
   private val (checkFrequency, checkMask) = {
     val batchSize = columnBatchSize
     if (batchSize >= 16 * 1024 * 1024) ("16", "0x0f")
-    else if (batchSize >= 8 * 1024 * 1024)  ("8", "0x07")
-    else if (batchSize >= 4 * 1024 * 1024)  ("4", "0x03")
-    else if (batchSize >= 2 * 1024 * 1024)  ("2", "0x01")
+    else if (batchSize >= 8 * 1024 * 1024) ("8", "0x07")
+    else if (batchSize >= 4 * 1024 * 1024) ("4", "0x03")
+    else if (batchSize >= 2 * 1024 * 1024) ("2", "0x01")
     else ("1", "0x0")
   }
 

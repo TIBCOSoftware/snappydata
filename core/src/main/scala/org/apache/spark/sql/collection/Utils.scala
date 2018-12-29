@@ -25,13 +25,17 @@ import java.util.TimeZone
 
 import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
+import scala.concurrent.ExecutionContext
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 import scala.util.control.NonFatal
 
+import _root_.io.snappydata.sql.catalog.CatalogObjectType
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.SystemFailure
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -49,7 +53,7 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Expression, GenericRow, UnsafeRow}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
@@ -69,7 +73,7 @@ import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
 
-object Utils {
+object Utils extends Logging {
 
   final val EMPTY_STRING_ARRAY = Array.empty[String]
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
@@ -92,6 +96,33 @@ object Utils {
   def analysisException(msg: String,
       cause: Option[Throwable] = None): AnalysisException =
     new AnalysisException(msg, None, None, None, cause)
+
+  def withExceptionHandling(f: => Unit, doFinally: () => Unit = null): Unit = {
+    try {
+      f
+    } catch {
+      case t: Throwable => logAndThrowException(t)
+    } finally {
+      if (doFinally ne null) doFinally()
+    }
+  }
+
+  def logAndThrowException(t: Throwable): Unit = t match {
+    case e: Error if SystemFailure.isJVMFailureError(e) =>
+      SystemFailure.initiateFailure(e)
+      // If this ever returns, rethrow the error. We're poisoned
+      // now, so don't let this thread continue.
+      throw e
+    case _ =>
+      // Whenever you catch Error or Throwable, you must also
+      // check for fatal JVM error (see above).  However, there is
+      // _still_ a possibility that you are dealing with a cascading
+      // error condition, so you also need to check to see if the JVM
+      // is still usable:
+      SystemFailure.checkFailure()
+      logWarning(t.getMessage, t)
+      throw t
+  }
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
     val colT = toUpperCase(col.trim)
@@ -268,10 +299,10 @@ object Utils {
   private final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
 
   /**
-    * Parse the given time interval value as long milliseconds.
-    *
-    * @see timeIntervalSpec for the allowed string specification
-    */
+   * Parse the given time interval value as long milliseconds.
+   *
+   * @see timeIntervalSpec for the allowed string specification
+   */
   def parseTimeInterval(optV: Any, module: String): Long = {
     optV match {
       case tii: Int => tii.toLong
@@ -413,6 +444,15 @@ object Utils {
   final def isLoner(sc: SparkContext): Boolean =
     (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
+  def executionContext(cache: GemFireCacheImpl): ExecutionContext = {
+    if (cache eq null) scala.concurrent.ExecutionContext.Implicits.global
+    else {
+      val dm = cache.getDistributionManager
+      if (dm.isLoner) scala.concurrent.ExecutionContext.Implicits.global
+      else ExecutionContext.fromExecutorService(dm.getWaitingThreadPool)
+    }
+  }
+
   def parseColumnsAsClob(s: String, session: SnappySession): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
@@ -465,7 +505,7 @@ object Utils {
    * field is stored (and rendered) as VARCHAR by SnappyStore.
    *
    * @param size the size parameter of the VARCHAR() column type
-   * @param md optional Metadata object to be merged into the result
+   * @param md   optional Metadata object to be merged into the result
    * @return the result Metadata object to use for StructField
    */
   def varcharMetadata(size: Int, md: Metadata): Metadata = {
@@ -503,7 +543,7 @@ object Utils {
    * field is stored (and rendered) as CHAR by SnappyStore.
    *
    * @param size the size parameter of the CHAR() column type
-   * @param md optional Metadata object to be merged into the result
+   * @param md   optional Metadata object to be merged into the result
    * @return the result Metadata object to use for StructField
    */
   def charMetadata(size: Int, md: Metadata): Metadata = {
@@ -536,6 +576,18 @@ object Utils {
     new CaseInsensitiveMutableHashMap[StructField](schema.fields.map(f => f.name -> f).toMap)
   }
 
+  def schemaAttributes(schema: StructType): Seq[AttributeReference] = schema.toAttributes
+
+  def getTableSchema(metadata: ExternalTableMetaData): StructType = {
+    // add weightage column for sample tables
+    val schema = metadata.schema.asInstanceOf[StructType]
+    if (metadata.tableType == CatalogObjectType.Sample.toString &&
+        schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+      schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
+        LongType, nullable = false)
+    } else schema
+  }
+
   def getFields(o: Any): Map[String, Any] = {
     val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
       field.setAccessible(true)
@@ -545,9 +597,9 @@ object Utils {
   }
 
   /**
-    * Get the result schema given an optional explicit schema and base table.
-    * In case both are specified, then check compatibility between the two.
-    */
+   * Get the result schema given an optional explicit schema and base table.
+   * In case both are specified, then check compatibility between the two.
+   */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
       baseTableOpt: Option[String], catalog: SnappySessionCatalog,
       asSelect: Boolean, table: String,
@@ -606,8 +658,8 @@ object Utils {
   }
 
   /**
-    * Register given driver class with Spark's loader.
-    */
+   * Register given driver class with Spark's loader.
+   */
   def registerDriver(driver: String): Unit = {
     try {
       DriverRegistry.register(driver)
@@ -618,8 +670,8 @@ object Utils {
   }
 
   /**
-    * Register driver for given JDBC URL and return the driver class name.
-    */
+   * Register driver for given JDBC URL and return the driver class name.
+   */
   def registerDriverUrl(url: String): String = {
     val driver = getDriverClassName(url)
     registerDriver(driver)
@@ -976,11 +1028,13 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       private[this] var bucket = bucketSet.nextSetBit(0)
 
       override def hasNext: Boolean = bucket >= 0
+
       override def next(): Integer = {
         val b = Int.box(bucket)
         bucket = bucketSet.nextSetBit(bucket + 1)
         b
       }
+
       override def remove(): Unit = throw new UnsupportedOperationException
     }
 
@@ -1055,15 +1109,15 @@ private[spark] case class NarrowExecutorLocalSplitDep(
 }
 
 /**
-  * Stores information about the narrow dependencies used by a StoreRDD.
-  *
-  * @param narrowDep maps to the dependencies variable in the parent RDD:
-  *                  for each one to one dependency in dependencies,
-  *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
-  *                  the partition for that dependency) at the corresponding
-  *                  index. The size of narrowDeps should always be equal to
-  *                  the number of parents.
-  */
+ * Stores information about the narrow dependencies used by a StoreRDD.
+ *
+ * @param narrowDep maps to the dependencies variable in the parent RDD:
+ *                  for each one to one dependency in dependencies,
+ *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
+ *                  the partition for that dependency) at the corresponding
+ *                  index. The size of narrowDeps should always be equal to
+ *                  the number of parents.
+ */
 private[spark] class CoGroupExecutorLocalPartition(
     idx: Int, val blockId: BlockManagerId,
     val narrowDep: Option[NarrowExecutorLocalSplitDep])

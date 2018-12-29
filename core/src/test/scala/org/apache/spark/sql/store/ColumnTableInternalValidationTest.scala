@@ -18,6 +18,7 @@ package org.apache.spark.sql.store
 
 import scala.util.Try
 
+import com.gemstone.gemfire.cache.EvictionAlgorithm
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.{Property, SnappyFunSuite}
@@ -68,6 +69,21 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
           "EVICTION_BY 'LRUCOUNT 20')").collect()
     }
     logInfo("Success")
+  }
+
+  test("test eviction for row buffer table") {
+    snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
+        "USING column " +
+        "options " +
+        "(BUCKETS '200'," +
+        "REDUNDANCY '1'," +
+        "EVICTION_BY 'LRUHEAPPERCENT')").collect()
+    val rowBufferTable = s"APP.${tableName.toUpperCase}"
+    val rgn = Misc.getRegionForTable(rowBufferTable, true)
+    assert(rgn.getAttributes.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.LRU_HEAP)
+    val colRgn = Misc.getRegionForTable(
+      ColumnFormatRelation.columnBatchTableName(rowBufferTable), true)
+    assert(colRgn.getAttributes.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.LRU_HEAP)
   }
 
   test("test the shadow table with NOT NULL Column") {

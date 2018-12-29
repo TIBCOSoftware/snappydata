@@ -22,18 +22,19 @@ import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
+import io.snappydata.Constant.{DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL, PROPERTY_PREFIX, SPARK_SNAPPY_PREFIX}
 
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
 trait TableStatsProviderService extends Logging {
 
@@ -44,6 +45,15 @@ trait TableStatsProviderService extends Logging {
   private var indexesInfo = Map.empty[String, SnappyIndexStats]
   protected val membersInfo: mutable.Map[String, MemberStatistics] =
     new ConcurrentHashMap[String, MemberStatistics](8, 0.7f, 1).asScala
+
+  protected[snappydata] lazy val delayMillis: Long = SparkEnv.get match {
+    case null => DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL
+    case env => env.conf.getOption(PROPERTY_PREFIX + "calcTableSizeInterval") match {
+      case None => env.conf.getLong(SPARK_SNAPPY_PREFIX + "calcTableSizeInterval",
+        DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
+      case Some(v) => v.toLong
+    }
+  }
 
   @GuardedBy("this")
   protected var memberStatsFuture: Option[Future[Unit]] = None
@@ -106,6 +116,7 @@ trait TableStatsProviderService extends Logging {
     val future = synchronized(memberStatsFuture match {
       case Some(f) => f
       case None =>
+        implicit val executionContext = Utils.executionContext(Misc.getGemFireCacheNoThrow)
         val f = Future(fillAggregatedMemberStatsOnDemand())
         memberStatsFuture = Some(f)
         f

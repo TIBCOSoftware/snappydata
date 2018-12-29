@@ -29,8 +29,8 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
+import io.snappydata.Constant
 import io.snappydata.thrift.{BucketOwners, CatalogMetadataDetails, CatalogMetadataRequest}
-import io.snappydata.{Constant, Property}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.sql.SparkSession
@@ -227,10 +227,9 @@ object SmartConnectorHelper {
     if (!buckets.isEmpty) {
       // check if Spark executors are using IP addresses or host names
       val preferHost = preferHostName(session)
-      val preferPrimaries = session.conf.getOption(Property.PreferPrimariesInQuery.name) match {
-        case None => Property.PreferPrimariesInQuery.defaultValue.get
-        case Some(p) => p.toBoolean
-      }
+      // preferPrimaries is always true here since the information gets cached
+      // and can be used both for reads and writes (latter should have it as true)
+      val preferPrimaries = true
       var orphanBuckets: ArrayBuffer[Int] = null
       val allNetUrls = new Array[ArrayBuffer[(String, String)]](numBuckets)
       val availableNetUrls = new UnifiedMap[String, String](4)

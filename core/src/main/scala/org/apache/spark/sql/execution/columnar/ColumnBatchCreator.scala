@@ -98,7 +98,7 @@ final class ColumnBatchCreator(
           val references = ctx.references
           // also push the index of batchId reference at the end which can be
           // used by caller to update the reference objects before execution
-          references += insertPlan.batchIdRef
+          references += insertPlan.getBatchIdRef
           (code, references.toArray)
         })
         val references = gen._2.clone()

@@ -25,6 +25,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.sql.catalog.SnappyExternalCatalog
+import org.eclipse.collections.api.block.function.{Function => JFunction}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.Partition
@@ -114,6 +115,15 @@ object StoreUtils {
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
   private[sql] val PROPERTY_PARTITION_BUCKET_LINKED = "linkPartitionsToBuckets"
+
+  private type ServerBucket = (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])
+
+  private[this] val initBucketList: JFunction[Option[BlockAndExecutorId], ServerBucket] =
+    new JFunction[Option[BlockAndExecutorId], ServerBucket] {
+      override def valueOf(blockId: Option[BlockAndExecutorId]): ServerBucket = {
+        blockId -> new mutable.ArrayBuffer[Int]()
+      }
+    }
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -220,8 +230,7 @@ object StoreUtils {
       region: PartitionedRegion, preferPrimaries: Boolean): Array[Partition] = {
 
     val numTotalBuckets = region.getTotalNumberOfBuckets
-    val serverToBuckets = new UnifiedMap[InternalDistributedMember,
-        (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])](4)
+    val serverToBuckets = new UnifiedMap[InternalDistributedMember, ServerBucket](4)
     val adviser = region.getRegionAdvisor
     for (p <- 0 until numTotalBuckets) {
       var prefNode = if (preferPrimaries) region.getOrCreateNodeForBucketWrite(p, null)
@@ -236,22 +245,19 @@ object StoreUtils {
           adviser.getBucketOwners(p).asScala.collectFirst(
             new PartialFunction[InternalDistributedMember, BlockAndExecutorId] {
               private var b: Option[BlockAndExecutorId] = None
+
               override def isDefinedAt(m: InternalDistributedMember): Boolean = {
                 b = SnappyContext.getBlockId(m.canonicalString())
                 b.isDefined
               }
+
               override def apply(m: InternalDistributedMember): BlockAndExecutorId = {
-                prefNode = m; b.get
+                prefNode = m
+                b.get
               }
             })
       }
-      val buckets = serverToBuckets.get(prefNode) match {
-        case null =>
-          val buckets = new mutable.ArrayBuffer[Int]()
-          serverToBuckets.put(prefNode, prefBlockId -> buckets)
-          buckets
-        case b => b._2
-      }
+      val buckets = serverToBuckets.getIfAbsentPutWith(prefNode, initBucketList, prefBlockId)._2
       buckets += p
     }
     // marker array to check that all buckets have been allocated
@@ -454,7 +460,8 @@ object StoreUtils {
       parameters.remove(DISKSTORE) match {
         case Some(v) =>
           if (!isPersistent && !overflow) {
-            throw Utils.analysisException(s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+            throw Utils.analysisException(
+              s"Option '$DISKSTORE' requires '$PERSISTENCE' or '$OVERFLOW' option")
           }
           if (v == GfxdConstants.GFXD_DEFAULT_DISKSTORE_NAME) {
             sb.append(s"'${GfxdConstants.SNAPPY_DEFAULT_DELTA_DISKSTORE}' ")
@@ -468,7 +475,7 @@ object StoreUtils {
       parameters.remove(DISKSTORE).foreach { v =>
         if (isPersistent) sb.append(s"'$v' ")
         else if (!isPersistent && !overflow) throw Utils.analysisException(
-          s"Option '$DISKSTORE' requires '$PERSISTENCE' option")
+          s"Option '$DISKSTORE' requires '$PERSISTENCE' or '$OVERFLOW' option")
       }
     }
     sb.append(parameters.remove(SERVER_GROUPS)

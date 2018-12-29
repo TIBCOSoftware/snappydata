@@ -28,7 +28,6 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
-import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -62,9 +61,6 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         if (!doRun) {
           _url = url
           initializeConnection(Some(sc))
-          // reduce default interval a bit
-          val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
-              "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
           new Timer("SnappyThinConnectorTableStatsProvider", true).schedule(
             new TimerTask {
@@ -78,7 +74,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
                   case e: Exception => logError("SnappyThinConnectorTableStatsProvider", e)
                 }
               }
-            }, delay, delay)
+            }, delayMillis, delayMillis)
         }
       }
     }

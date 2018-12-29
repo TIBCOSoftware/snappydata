@@ -230,7 +230,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] val queryHints = new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
   @transient
-  private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
+  private[sql] val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
+
+  @transient
+  private[sql] var operationContext: Option[OperationContext] = None
 
   @transient
   private[sql] var currentKey: CachedKey = _
@@ -318,8 +321,49 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+  private[sql] def setMutablePlanOwner(qualifiedTableName: String,
+      persist: Boolean): Unit = {
+    if (qualifiedTableName ne null) {
+      if (persist || qualifiedTableName != getMutablePlanTable) {
+        val opContext = operationContext match {
+          case None =>
+            val context = new OperationContext(persist, new UnifiedMap[Any, Any](4))
+            operationContext = Some(context)
+            context.objects
+          case Some(context) => context.persist = persist; context.objects
+        }
+        // use a unique lock owner
+        val lockOwner = s"READ_${SnappySession.MUTABLE_OWNER_PREFIX}_$id.${System.nanoTime()}"
+        opContext.put(SnappySession.MUTABLE_PLAN_TABLE, qualifiedTableName)
+        opContext.put(SnappySession.MUTABLE_PLAN_OWNER, lockOwner)
+      }
+    } else operationContext match {
+      case None =>
+      case Some(context) =>
+        context.objects.remove(SnappySession.MUTABLE_PLAN_TABLE)
+        context.objects.remove(SnappySession.MUTABLE_PLAN_OWNER)
+    }
+  }
+
+  private[sql] def isMutablePlan: Boolean = operationContext match {
+    case None => false
+    case Some(context) => context.objects.containsKey(SnappySession.MUTABLE_PLAN_OWNER)
+  }
+
+  private[sql] def getMutablePlanTable: String = operationContext match {
+    case None => null
+    case Some(context) =>
+      context.objects.get(SnappySession.MUTABLE_PLAN_TABLE).asInstanceOf[String]
+  }
+
+  private[sql] def getMutablePlanOwner: String = operationContext match {
+    case None => null
+    case Some(context) =>
+      context.objects.get(SnappySession.MUTABLE_PLAN_OWNER).asInstanceOf[String]
+  }
+
   def preferPrimaries: Boolean =
-    Property.PreferPrimariesInQuery.get(sessionState.conf)
+    Property.PreferPrimariesInQuery.get(sessionState.conf) || isMutablePlan
 
   private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
     val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
@@ -463,6 +507,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] def clearContext(): Unit = synchronized {
     clearPutInto()
     contextObjects.clear()
+    operationContext match {
+      case Some(context) if !context.persist => operationContext = None
+      case _ =>
+    }
     planCaching = Property.PlanCaching.get(sessionState.conf)
     sqlWarnings = null
   }
@@ -1784,6 +1832,14 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
+  /** internal property to indicate update/delete/putInto execution and table being mutated */
+  private[sql] val MUTABLE_PLAN_TABLE = "snappydata.internal.mutablePlanTable"
+  /** internal property to indicate update/delete/putInto execution and lock owner for the same */
+  private[sql] val MUTABLE_PLAN_OWNER = "snappydata.internal.mutablePlanOwner"
+
+  /** a unique UUID of the node for mutability lock ownership */
+  private[sql] lazy val MUTABLE_OWNER_PREFIX = java.util.UUID.randomUUID().toString
+
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
@@ -1881,6 +1937,7 @@ object SnappySession extends Logging {
         // TODO add caching for point updates/deletes; a bit of complication
         // because getPlan will have to do execution with all waits/cleanups
         // normally done in CachedDataFrame.collectWithHandler/withCallback
+        // also reference objects like "updateOwner" need to be refreshed in every execution
         /*
         val cachedRDD = plan match {
           case p: ExecutePlan => p.child.execute()
@@ -2241,3 +2298,13 @@ object CachedKey {
     new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
   }
 }
+
+/**
+ * Encapsulates a context for an operation which can include possibly multiple
+ * query executions.
+ *
+ * @param persist if true then the context is persisted in the session unless explicitly
+ *                cleared else is cleared at end of plan execution like session context
+ * @param objects key value map of context objects
+ */
+class OperationContext(var persist: Boolean, val objects: UnifiedMap[Any, Any])

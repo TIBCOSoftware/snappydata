@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.row
 
 import java.lang.reflect.Field
-import java.sql.{Connection, ResultSet, Statement}
+import java.sql.{Connection, ResultSet, Statement, Types}
 import java.util.GregorianCalendar
 
 import scala.collection.JavaConverters._
@@ -42,8 +42,9 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{RDDKryo, SecurityUtils}
+import org.apache.spark.sql.execution.{IteratorWithMetrics, RDDKryo, SecurityUtils, SnappyMetrics}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
@@ -66,6 +67,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     @transient protected val region: Option[LocalRegion])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
+  protected var updateOwner: String = _
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
@@ -73,6 +75,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   protected var filterWhereClause: String = _
 
   protected def evaluateWhereClause(): Unit = {
+    if ((session ne null) && tableName == session.getMutablePlanTable) {
+      updateOwner = session.getMutablePlanOwner
+    }
     val numFilters = filters.length
     filterWhereClause = if (numFilters > 0) {
       val sb = new StringBuilder().append(" WHERE ")
@@ -185,11 +190,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     if (context ne null) {
       val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
-        logDebug(s"closed connection for task from listener $partitionId")
+        logDebug(s"closing connection for task from listener $partitionId")
         try {
           conn.commit()
           conn.close()
-          logDebug("closed connection for task " + context.partitionId())
+          logDebug(s"closed connection for task $partitionId partition = $thePart")
         } catch {
           case NonFatal(e) => logWarning("Exception closing connection", e)
         }
@@ -198,7 +203,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
     if (isPartitioned) {
       val ps = conn.prepareStatement(
-        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
+        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION_EX(?, ?, ?, ?)")
       try {
         ps.setString(1, tableName)
         val bucketString = thePart match {
@@ -207,6 +212,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         }
         ps.setString(2, bucketString)
         ps.setLong(3, -1)
+        if (updateOwner ne null) ps.setString(4, updateOwner) else ps.setNull(4, Types.VARCHAR)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -270,6 +276,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       }
       itr
     } else {
+      val container = GemFireXDUtils.getGemFireContainer(tableName, true)
+      val bucketIds = thePart match {
+        case p: MultiBucketExecutorPartition => p.buckets
+        case _ => java.util.Collections.singleton(Int.box(thePart.index))
+      }
       // explicitly check authorization for the case of column table scan
       // !pushProjections && useResultSet means a column table
       if (useResultSet) {
@@ -279,6 +290,12 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
       var tx = txManagerImpl.getTXState
       val startTX = tx eq null
+      // acquire bucket maintenance read lock if required before snapshot gets acquired
+      container.getRegion match {
+        case pr: PartitionedRegion if updateOwner ne null =>
+          GfxdSystemProcedures.lockPrimaryForMaintenance(false, updateOwner, pr, bucketIds)
+        case _ =>
+      }
       if (startTX) {
         tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
           IsolationLevel.SNAPSHOT, null, null)
@@ -286,21 +303,17 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
       // or direct code generation as appropriate
-      val itr = if (isPartitioned && filterWhereClause.isEmpty) {
-        val container = GemFireXDUtils.getGemFireContainer(tableName, true)
-        val bucketIds = thePart match {
-          case p: MultiBucketExecutorPartition => p.buckets
-          case _ => java.util.Collections.singleton(Int.box(thePart.index))
-        }
-
+      val itr: IteratorWithMetrics[_] = if (isPartitioned && filterWhereClause.isEmpty) {
         val txId = if (tx ne null) tx.getTransactionId else null
-        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId, context)
+        // always fault-in for row buffers
+        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId,
+          faultIn = container.isRowBuffer, context)
         if (useResultSet) {
           // row buffer of column table: wrap a result set around the scan
           val dataItr = itr.map(r =>
             if (r.hasByteArrays) r.getRowByteArrays(null) else r.getRowBytes(null): AnyRef).asJava
           val rs = new RawStoreResultSet(dataItr, container, container.getCurrentRowFormatter)
-          new ResultSetTraversal(conn = null, stmt = null, rs, context)
+          new ResultSetTraversal(conn = null, stmt = null, rs, context, Some(itr))
         } else itr
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart, context)
@@ -371,6 +384,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       output.writeVarInt(projection.length, true)
       output.writeInts(projection, true)
     }
+    output.writeString(updateOwner)
     // need connection properties only if computing ResultSet
     if (pushProjections || useResultSet || !isPartitioned || len > 0) {
       ConnectionPropertiesSerializer.write(kryo, output, connProperties)
@@ -404,6 +418,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val numProjections = input.readVarInt(true)
       projection = input.readInts(numProjections, true)
     }
+    updateOwner = input.readString()
     // read connection properties only if computing ResultSet
     if (pushProjections || useResultSet || !isPartitioned || numFilters > 0) {
       connProperties = ConnectionPropertiesSerializer.read(kryo, input)
@@ -417,13 +432,19 @@ class RowFormatScanRDD(@transient val session: SnappySession,
  * This is primarily intended to be used for cleanup.
  */
 final class ResultSetTraversal(conn: Connection,
-    stmt: Statement, val rs: ResultSet, context: TaskContext)
+    stmt: Statement, val rs: ResultSet, context: TaskContext,
+    source: Option[IteratorWithMetrics[_]] = None)
     extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
   lazy val defaultCal: GregorianCalendar =
     ClientSharedData.getDefaultCleanCalendar
 
   override protected def getCurrentValue: Void = null
+
+  override def setMetric(name: String, metric: SQLMetric): Boolean = source match {
+    case Some(s) => s.setMetric(name, metric)
+    case None => false
+  }
 }
 
 final class CompactExecRowIteratorOnRS(conn: Connection,
@@ -437,7 +458,7 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
-    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer], context: TaskContext) extends IteratorWithMetrics[T] {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
@@ -450,12 +471,10 @@ abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalReg
 
   protected def createIterator(container: GemFireContainer, region: LocalRegion,
       tx: TXStateInterface): PRIterator = if (container ne null) {
-    container.getEntrySetIteratorForBucketSet(
-      bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
+    container.getEntrySetIteratorForBucketSet(bucketIds, null, tx, 0,
       false, true).asInstanceOf[PRIterator]
   } else if (region ne null) {
-    region.getDataView(tx).getLocalEntriesIterator(
-      bucketIds.asInstanceOf[java.util.Set[Integer]], false, false, true,
+    region.getDataView(tx).getLocalEntriesIterator(bucketIds, false, false, true,
       region, true).asInstanceOf[PRIterator]
   } else null
 
@@ -489,24 +508,41 @@ abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalReg
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], txId: TXId, context: TaskContext)
+    bucketIds: java.util.Set[Integer], txId: TXId, faultIn: Boolean, context: TaskContext)
     extends PRValuesIterator[AbstractCompactExecRow](container,
       region = null, bucketIds, context) {
 
   override protected[sql] val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
+  private var diskRowsMetric: SQLMetric = _
 
   override protected[sql] def moveNext(): Unit = {
     val itr = this.itr
     while (itr.hasNext) {
-      val rl = itr.next()
+      val rl = itr.next().asInstanceOf[RowLocation]
       val owner = itr.getHostedBucketRegion
-      if (((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) &&
-          RegionEntryUtils.fillRowWithoutFaultInOptimized(container, owner,
-            rl.asInstanceOf[RowLocation], currentVal)) {
-        return
+      val isNonLocalEntry = rl.isInstanceOf[NonLocalRegionEntry]
+      if ((owner ne null) || isNonLocalEntry) {
+        val valueWasNull = !isNonLocalEntry && (diskRowsMetric ne null) && rl.isValueNull
+        if (faultIn) {
+          if (RegionEntryUtils.fillRowFaultInOptimized(container, owner, rl, currentVal)) {
+            if (valueWasNull) diskRowsMetric.add(1)
+            return
+          }
+        } else if (RegionEntryUtils.fillRowWithoutFaultInOptimized(
+          container, owner, rl, currentVal)) {
+          if (valueWasNull) diskRowsMetric.add(1)
+          return
+        }
       }
     }
     hasNextValue = false
+  }
+
+  override def setMetric(name: String, metric: SQLMetric): Boolean = {
+    if (name == SnappyMetrics.NUM_ROWS_DISK) {
+      diskRowsMetric = metric
+      true
+    } else false
   }
 }

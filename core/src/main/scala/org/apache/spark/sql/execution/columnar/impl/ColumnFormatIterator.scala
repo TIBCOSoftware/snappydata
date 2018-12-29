@@ -32,6 +32,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.columnar.encoding.BitSet
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.unsafe.Platform
 
 /**
@@ -46,7 +47,7 @@ import org.apache.spark.unsafe.Platform
  */
 final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int],
     fullScan: Boolean, txState: TXState)
-    extends ClusteredColumnIterator with DiskRegionIterator {
+    extends ClusteredDiskIterator with DiskRegionIterator {
 
   type MapValueIterator =
     CustomEntryConcurrentHashMap[AnyRef, AbstractRegionEntry]#ValueIterator
@@ -60,6 +61,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   private var diskEnumerator: DiskBlockSorter#ReaderIdEnumerator = _
   private var currentDiskBatch: DiskMultiColumnBatch = _
   private var nextDiskBatch: DiskMultiColumnBatch = _
+  private val currentDiskEntryMap = new LongObjectHashMapWithState[AnyRef](16)
 
   /**
    * The current set of in-memory batches being iterated.
@@ -158,7 +160,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       val map = inMemoryBatches.get(inMemoryBatchIndex)
       map.getGlobalState.asInstanceOf[RegionEntry]
     } else if (nextDiskBatch ne null) {
-      if (currentDiskBatch ne null) currentDiskBatch.release()
+      releaseCurrentBatch()
       currentDiskBatch = nextDiskBatch
       nextDiskBatch = diskEnumerator.nextElement().asInstanceOf[DiskMultiColumnBatch]
       currentDiskBatch.getEntry
@@ -172,13 +174,28 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     val column = columnIndex & 0xffffffffL
     if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)
     else if (columnIndex == DELTA_STATROW_COL_INDEX) currentDiskBatch.getDeltaStatsValue
-    else currentDiskBatch.entryMap.get(column)
+    else {
+      currentDiskBatch.fillEntryMap(currentDiskEntryMap, diskBatchesFull,
+        diskBatchesPartial, checkDiskRead)
+      currentDiskEntryMap.get(column)
+    }
   }
 
   override def close(): Unit = {
-    if (currentDiskBatch ne null) {
-      currentDiskBatch.release()
-      currentDiskBatch = null
+    releaseCurrentBatch()
+    currentDiskBatch = null
+  }
+
+  private def releaseCurrentBatch(): Unit = {
+    val entryMap = this.currentDiskEntryMap
+    if (entryMap.size() > 0) {
+      if (GemFireCacheImpl.hasNewOffHeap) entryMap.forEachValue(new Procedure[AnyRef] {
+        override def value(v: AnyRef): Unit = v match {
+          case s: SerializedDiskBuffer => s.release()
+          case _ =>
+        }
+      })
+      entryMap.clear()
     }
   }
 
@@ -317,21 +334,22 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
 
   private var arrayIndex: Int = _
   private var faultIn: Boolean = _
-  private var closing: Boolean = _
   // track delta stats separately since it is required for stats filtering
   // and should not lead to other columns getting read from disk (or worse faulted in)
   private var deltaStatsEntry: RegionEntry = _
 
-  private[impl] lazy val entryMap: LongObjectHashMapWithState[AnyRef] = {
-    if (closing) null
-    else {
+  private[impl] def fillEntryMap(map: LongObjectHashMapWithState[AnyRef],
+      diskBatchesFull: SQLMetric, diskBatchesPartial: SQLMetric, checkDiskRead: Boolean): Unit = {
+    val numEntries = arrayIndex
+    if (map.size() == 0 && numEntries > 0) {
       // read all the entries in this column batch to fault them in or read without
       // fault-in at this point to build the temporary column to value map for this batch
-      val map = new LongObjectHashMapWithState[AnyRef](arrayIndex)
+      // count number of entries on disk if required
+      var numOnDisk = 0
       var i = 0
-      while (i < arrayIndex) {
-        val entry = diskEntries(i)
-        val re = entry.asInstanceOf[RegionEntry]
+      while (i < numEntries) {
+        val re = diskEntries(i).asInstanceOf[RegionEntry]
+        if (checkDiskRead && re.isValueNull) numOnDisk += 1
         val v = if (faultIn) {
           val v = re.getValue(region)
           if (GemFireCacheImpl.hasNewOffHeap) v match {
@@ -344,7 +362,11 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
         i += 1
       }
       diskEntries = null
-      map
+      if (checkDiskRead) {
+        if (numOnDisk == numEntries) {
+          if (diskBatchesFull ne null) diskBatchesFull.add(1)
+        } else if (diskBatchesPartial ne null) diskBatchesPartial.add(1)
+      }
     }
   }
 
@@ -370,13 +392,14 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
   }
 
   def finish(): Unit = {
-    if (arrayIndex > 0) {
+    val numEntries = arrayIndex
+    if (numEntries > 0) {
       // generally small size to sort so will be done efficiently in-place by the normal
       // sorter and hence not using the GemXD TimSort that reuses potentially large arrays
-      java.util.Arrays.sort(diskEntries, 0, arrayIndex, DiskEntryPage.DEPComparator.instance)
+      java.util.Arrays.sort(diskEntries, 0, numEntries, DiskEntryPage.DEPComparator.instance)
       // replace the DiskEntryPage objects with RegionEntry to release the extra memory
       var i = 0
-      while (i < arrayIndex) {
+      while (i < numEntries) {
         val diskEntry = diskEntries(i).asInstanceOf[DiskEntryPage]
         // set the minimum position as the one to be used for this multi-column batch
         if (i == 0) setPosition(diskEntry.getOplogId, diskEntry.getOffset)
@@ -389,25 +412,50 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
   override protected def readEntryValue(): AnyRef = {
     // mark the entryMap for fault-in
     faultIn = true
-    closing = false
     super.readEntryValue()
   }
+}
 
-  private[impl] def release(): Unit = {
-    closing = true
-    val entryMap = this.entryMap
-    if ((entryMap ne null) && entryMap.size() > 0) {
-      if (GemFireCacheImpl.hasNewOffHeap) entryMap.forEachValue(new Procedure[AnyRef] {
-        override def value(v: AnyRef): Unit = {
-          v match {
-            case s: SerializedDiskBuffer => s.release()
-            case _ =>
-          }
-        }
-      })
-      entryMap.clear()
-    }
+/**
+ * A customized iterator for a single bucket of a column table that uses a list of stats rows
+ * to fetch entire batches as required by ColumnTableScan. This does not honour
+ * disk order so should be used only for a small list of rows while other cases
+ * should use the normal <code>ColumnFormatIterator</code>.
+ */
+final class ColumnFormatStatsIterator(bucketRegion: BucketRegion,
+    statsEntries: Iterator[RegionEntry], tx: TXStateInterface)
+    extends ClusteredDiskIterator with DiskRegionIterator {
+
+  try {
+    bucketRegion.checkReadiness()
+  } catch {
+    case e: RegionDestroyedException => if (bucketRegion.isUsedForPartitionedRegionBucket) {
+      bucketRegion.getPartitionedRegion.checkReadiness()
+      throw new BucketNotFoundException(e.getMessage)
+    } else throw e
   }
+
+  private var currentKey: ColumnFormatKey = _
+
+  override def hasNext: Boolean = statsEntries.hasNext
+
+  override def next(): RegionEntry = {
+    val re = statsEntries.next()
+    currentKey = re.getRawKey.asInstanceOf[ColumnFormatKey]
+    assert(currentKey.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX)
+    re
+  }
+
+  override def getColumnValue(columnIndex: Int): AnyRef = {
+    val key = currentKey.withColumnIndex(columnIndex)
+    bucketRegion.get(key, null, false, true, false, null, tx, null, null, false, false)
+  }
+
+  override def initDiskIterator(): Boolean = false
+
+  override def setRegion(region: LocalRegion): Unit = {}
+
+  override def close(): Unit = currentKey = null
 }
 
 final class LongObjectHashMapWithState[V](expectedSize: Int)

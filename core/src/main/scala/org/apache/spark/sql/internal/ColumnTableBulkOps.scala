@@ -16,19 +16,22 @@
  */
 package org.apache.spark.sql.internal
 
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import io.snappydata.Property
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, AttributeSet, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, SparkSession}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, SnappySession, SparkSession, ThinClientConnectorMode}
 
 /**
  * Helper object for PutInto operations for column tables.
@@ -42,9 +45,12 @@ object ColumnTableBulkOps {
     val table = originalPlan.table
     val subQuery = originalPlan.child
     var transFormedPlan: LogicalPlan = originalPlan
+    val session = sparkSession.asInstanceOf[SnappySession]
+    var success = false
+    var tableName: String = null
 
     table.collectFirst {
-      case LogicalRelation(mutable: BulkPutRelation, _, _) =>
+      case LogicalRelation(mutable: BulkPutRelation, _, _) => try {
         val putKeys = mutable.getPutKeys match {
           case None => throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
@@ -52,7 +58,8 @@ object ColumnTableBulkOps {
         }
         val condition = prepareCondition(sparkSession, table, subQuery, putKeys)
 
-        val keyColumns = getKeyColumns(table)
+        val (tName, keyColumns) = getKeyColumns(table)
+        tableName = tName
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
         val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
@@ -65,6 +72,9 @@ object ColumnTableBulkOps {
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
+
+        // set a common lock owner for entire operation
+        session.setMutablePlanOwner(tableName, persist = true)
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
@@ -94,9 +104,52 @@ object ColumnTableBulkOps {
           OverwriteOptions(enabled = false), ifNotExists = false)
 
         transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
+
+        // mark operation context as non-persistent at this point so it gets cleared
+        // after actual execution of transFormedPlan
+        session.operationContext.get.persist = false
+        success = true
+      } finally {
+        if (!success) {
+          val lockOwner = session.getMutablePlanOwner
+          if ((tableName ne null) && (lockOwner ne null)) {
+            releaseBucketMaintenanceLocks(tableName, lockOwner, () => {
+              // lookup catalog and get the properties from column table relation
+              val catalog = session.sessionCatalog
+              val relation = catalog.resolveRelation(session.tableIdentifier(tableName))
+              relation.asInstanceOf[JDBCAppendableRelation].externalStore.connProperties
+            }, session.sparkContext)
+          }
+          session.setMutablePlanOwner(qualifiedTableName = null, persist = false)
+        }
+      }
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
+  }
+
+  def releaseBucketMaintenanceLocks(tableName: String, lockOwner: String,
+      getConnProps: () => ConnectionProperties, sparkContext: SparkContext): Unit = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        // get the connection properties
+        val connProps = getConnProps()
+        val conn = ConnectionPool.getPoolConnection(tableName, connProps.dialect,
+          connProps.poolProps, connProps.connProps, connProps.hikariCP)
+        try {
+          val stmt = conn.prepareCall("call SYS.RELEASE_BUCKET_MAINTENANCE_LOCKS(?,?,?,?)")
+          stmt.setString(1, tableName)
+          stmt.setBoolean(2, false)
+          stmt.setString(3, lockOwner)
+          stmt.setNull(4, java.sql.Types.VARCHAR)
+          stmt.execute()
+          stmt.close()
+        } finally {
+          conn.close()
+        }
+      case _ => GfxdSystemProcedures.releaseBucketMaintenanceLocks(
+        tableName, false, lockOwner, null)
+    }
   }
 
   def validateOp(originalPlan: PutIntoTable) {
@@ -143,9 +196,10 @@ object ColumnTableBulkOps {
     newCondition
   }
 
-  def getKeyColumns(table: LogicalPlan): Set[String] = {
+  def getKeyColumns(table: LogicalPlan): (String, Set[String]) = {
     table.collectFirst {
-      case LogicalRelation(mutable: MutableRelation, _, _) => mutable.getKeyColumns.toSet
+      case LogicalRelation(mutable: MutableRelation, _, _) =>
+        mutable.table -> mutable.getKeyColumns.toSet
     } match {
       case None => throw new AnalysisException(
         s"Update/Delete requires a MutableRelation but got $table")

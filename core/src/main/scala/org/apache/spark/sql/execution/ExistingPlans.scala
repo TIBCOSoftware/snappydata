@@ -30,10 +30,11 @@ import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
+import org.apache.spark.sql.execution.columnar.{ColumnDeleteExec, ColumnPutIntoExec, ColumnTableScan, ColumnUpdateExec, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
+import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
@@ -260,7 +261,34 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     Array.concat(rows: _*)
   }
 
+  private val (mutableTable, lockOwner) = {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    session.getMutablePlanTable match {
+      case null => (null, null)
+      case table => (table, session.getMutablePlanOwner)
+    }
+  }
+
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
+    try {
+      getSideEffectResult
+    } finally {
+      // release locks at the end of update/delete/putInto
+      if ((mutableTable ne null) && (lockOwner ne null)) {
+        ColumnTableBulkOps.releaseBucketMaintenanceLocks(mutableTable, lockOwner, () =>
+          SnappySession.getExecutedPlan(child) match {
+            case (u: ColumnUpdateExec, _) => u.connProps
+            case (d: ColumnDeleteExec, _) => d.connProps
+            case (p: ColumnPutIntoExec, _) =>
+              p.updatePlan.asInstanceOf[ColumnUpdateExec].connProps
+            case _ => throw new IllegalStateException(
+              s"Unexpected plan for ${child.getClass.getName}: $child")
+          }, sparkContext)
+      }
+    }
+  }
+
+  private def getSideEffectResult: Array[InternalRow] = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val sc = session.sparkContext
     val key = session.currentKey

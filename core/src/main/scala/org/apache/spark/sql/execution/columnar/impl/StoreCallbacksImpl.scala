@@ -30,6 +30,7 @@ import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, Extern
 import com.gemstone.gemfire.internal.shared.{FetchRequest, SystemProperties}
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
+import com.google.common.cache.Cache
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -126,15 +127,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           } else Nil
 
           val tableName = container.getQualifiedTableName
-          // add weightage column for sample tables if required
-          var schema = catalogEntry.schema.asInstanceOf[StructType]
-          if (catalogEntry.tableType == CatalogObjectType.Sample.toString &&
-              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
-            schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
-              LongType, nullable = false)
-          }
+          val schema = Utils.getTableSchema(catalogEntry)
           val batchCreator = new ColumnBatchCreator(pr, tableName,
-            ColumnFormatRelation.columnBatchTableName(tableName), schema,
+            ColumnFormatRelation.columnBatchTableName(tableName, None), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)
           batchCreator.createAndStoreBatch(sc, row,
@@ -207,7 +202,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       val lr = Misc.getRegionForTable(columnTable, true).asInstanceOf[LocalRegion]
       val metadata = ExternalStoreUtils.getExternalTableMetaData(columnTable,
         lr.getUserAttribute.asInstanceOf[GemFireContainer], checkColumnStore = true)
-      val schema = metadata.schema.asInstanceOf[StructType].toAttributes
+      val schema = Utils.getTableSchema(metadata).toAttributes
       val filterExprs = if (batchFilters ne null) {
         batchFilters.map(f => translateFilter(f, schema))
       } else null
@@ -533,6 +528,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def clearConnectionPools(): Unit = {
     ConnectionPool.clear()
+  }
+
+  override def clearCodegenCaches(): Unit = {
+    CodeGeneration.clearAllCache()
+    val cacheField = CodeGenerator.getClass.getDeclaredFields.find(_.getName.endsWith("cache")).get
+    cacheField.setAccessible(true)
+    val cache = cacheField.get(CodeGenerator).asInstanceOf[Cache[_, _]]
+    cache.invalidateAll()
   }
 
   override def getLeadClassLoader: URLClassLoader =

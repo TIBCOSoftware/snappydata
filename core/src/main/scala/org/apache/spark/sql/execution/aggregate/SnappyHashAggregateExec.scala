@@ -465,11 +465,11 @@ case class SnappyHashAggregateExec(
         BindReferences.bindReference(e, inputAttrs).genCode(ctx)
       }
       s"""
-       $evaluateKeyVars
-       $evaluateBufferVars
-       $evaluateAggResults
-       ${consume(ctx, resultVars)}
-       """
+        $evaluateKeyVars
+        $evaluateBufferVars
+        $evaluateAggResults
+        ${consume(ctx, resultVars)}
+      """
 
     } else if (modes.contains(Partial) || modes.contains(PartialMerge)) {
       // Combined grouping keys and aggregate values in buffer

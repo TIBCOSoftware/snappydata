@@ -1096,18 +1096,17 @@ object SnappyContext extends Logging {
                 val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds
                 val nonEmpty = deployCmds.length > 0
                 if (nonEmpty) {
-                  logInfo(s"deploycmnds size = ${deployCmds.length}")
-                  deployCmds.foreach(s => logDebug(s"s"))
+                  logInfo(s"Deploy commands size = ${deployCmds.length}")
                 }
                 if (nonEmpty) deployCmds.foreach(d => {
+                  logDebug(s"Deploying: $d")
                   val cmdFields = d.split('|')
                   if (cmdFields.length > 1) {
                     val coordinate = cmdFields(0)
                     val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
                     val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
                     DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
-                  }
-                  else {
+                  } else {
                     // Jars we have
                     DeployJarCommand(null, cmdFields(0), restart = true).run(session)
                   }

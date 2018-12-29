@@ -39,11 +39,70 @@ import org.apache.spark.unsafe.types.UTF8String
  */
 object SnappyDataFunctions {
 
-  val usageStr: String = "_FUNC_() - Returns the unique distributed member" +
-      " ID of the server containing the row."
-
   def registerSnappyFunctions(functionRegistry: FunctionRegistry): Unit = {
-    val info = new ExpressionInfo(DSID.getClass.getCanonicalName, null, "DSID", usageStr, "")
+    var usageStr = ""
+    var extendedStr = ""
+    var info: ExpressionInfo = null
+
+    // below are in-built operators additionally handled in snappydata over spark
+    // which are listed so they can appear in describe function
+
+    // --- BEGIN OPERATORS ---
+
+    usageStr = "expr1 _FUNC_ expr2 - Bitwise left shift `expr1` by `expr2`."
+    extendedStr = """
+      Examples:
+        > SELECT 15 _FUNC_ 2;
+        60
+      """
+    info = new ExpressionInfo("", null, "<<", usageStr, extendedStr)
+
+    usageStr = "expr1 _FUNC_ expr2 - Bitwise arithmetic right shift `expr1` by `expr2`."
+    extendedStr = """
+      Examples:
+        > SELECT 15 _FUNC_ 2;
+        3
+        > SELECT -15 _FUNC_ 2;
+        -4
+      """
+    info = new ExpressionInfo("", null, ">>", usageStr, extendedStr)
+
+    usageStr = "expr1 _FUNC_ expr2 - Bitwise logical right shift `expr1` by `expr2`."
+    extendedStr = """
+      Examples:
+        > SELECT 15 _FUNC_ 2;
+        3
+        > SELECT -15 _FUNC_ 2;
+        1073741820
+      """
+    info = new ExpressionInfo("", null, ">>>", usageStr, extendedStr)
+
+    usageStr = "str1 || str2 - Returns the concatenation of str1 and str2."
+    extendedStr = """
+      Examples:
+        > SELECT 'Spark' _FUNC_ 'SQL';
+        SparkSQL
+      """
+    info = new ExpressionInfo("", null, "||", usageStr, extendedStr)
+
+    // --- END OPERATORS ---
+
+    usageStr = "_FUNC_() - Returns the unique distributed member " +
+        "ID of the server containing the current row being fetched."
+    extendedStr = """
+      Examples:
+        > SELECT _FUNC_, ID FROM RANGE(1, 10);
+        127.0.0.1(25167)<v2>:16171|1
+        127.0.0.1(25167)<v2>:16171|2
+        127.0.0.1(25167)<v2>:16171|3
+        127.0.0.1(25167)<v2>:16171|4
+        127.0.0.1(25078)<v1>:13152|5
+        127.0.0.1(25078)<v1>:13152|6
+        127.0.0.1(25078)<v1>:13152|7
+        127.0.0.1(25078)<v1>:13152|8
+        127.0.0.1(25167)<v2>:16171|9
+      """
+    info = new ExpressionInfo(DSID.getClass.getCanonicalName, null, "DSID", usageStr, extendedStr)
     functionRegistry.registerFunction("DSID", info, _ => DSID())
   }
 

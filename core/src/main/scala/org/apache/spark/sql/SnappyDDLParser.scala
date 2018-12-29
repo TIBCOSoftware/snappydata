@@ -648,6 +648,19 @@ abstract class SnappyDDLParser(session: SparkSession)
     )
   }
 
+  protected def describeFunction: Rule1[LogicalPlan] = rule {
+    DESCRIBE ~ (EXTENDED ~ push(true)).? ~ (functionIdentifier | stringLiteral |
+        capture("==" | "=" | "!=" | "<>" | ">=" | ">>" | ">>>" | ">" | "<=>" | "<=" | "<<" | "<" |
+            "+" | "-" | "*" | "/" | "%" | "~" | "&" | "||" | "|" | "~" |
+            OR | AND | IN | NOT)) ~> { (extended: Any, ident: Any) =>
+      val functionIdent = ident match {
+        case f: FunctionIdentifier => f
+        case s: String => FunctionIdentifier(s, database = None)
+      }
+      DescribeFunctionCommand(functionIdent, extended.asInstanceOf[Option[Boolean]].isDefined)
+    }
+  }
+
   protected def refreshTable: Rule1[LogicalPlan] = rule {
     REFRESH ~ TABLE ~ tableIdentifier ~> RefreshTable
   }

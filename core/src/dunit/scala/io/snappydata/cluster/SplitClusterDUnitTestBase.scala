@@ -209,13 +209,13 @@ trait SplitClusterDUnitTestBase extends Logging {
         // using random bucket assignment for cases like SNAP-2175
         StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = true
         try {
-          ColumnUpdateDeleteTests.testBasicUpdate(session)
-          ColumnUpdateDeleteTests.testDeltaStats(session)
-          ColumnUpdateDeleteTests.testBasicDelete(session)
-          ColumnUpdateDeleteTests.testSNAP1925(session)
-          ColumnUpdateDeleteTests.testSNAP1926(session)
-          ColumnUpdateDeleteTests.testConcurrentOps(session)
-          ColumnUpdateDeleteTests.testSNAP2124(session)
+          ColumnUpdateDeleteTests.testBasicUpdate(session, redundancy = 1)
+          ColumnUpdateDeleteTests.testDeltaStats(session, redundancy = 1)
+          ColumnUpdateDeleteTests.testBasicDelete(session, redundancy = 1)
+          ColumnUpdateDeleteTests.testSNAP1925(session, redundancy = 1)
+          ColumnUpdateDeleteTests.testSNAP1926(session, redundancy = 1)
+          ColumnUpdateDeleteTests.testConcurrentOps(session, redundancy = 1)
+          ColumnUpdateDeleteTests.testSNAP2124(session, redundancy = 1)
         } finally {
           StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
         }

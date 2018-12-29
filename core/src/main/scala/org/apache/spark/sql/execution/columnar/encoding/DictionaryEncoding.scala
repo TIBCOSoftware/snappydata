@@ -20,8 +20,8 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{DictionaryMap, LongKey, ObjectHashSet}
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
@@ -177,7 +177,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   private final var stringMap: DictionaryMap = _
 
   private final var longMap: ObjectHashSet[LongIndexKey] = _
-  private final var longArray: TLongArrayList = _
+  private final var longArray: LongArrayList = _
   private final var isIntMap: Boolean = _
   private final var writeHeader: Boolean = true
 
@@ -232,7 +232,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
         val mapSize = if (longMap ne null) longMap.size
         else math.min(math.max(initSize >>> 1, 128), 1024)
         longMap = new ObjectHashSet[LongIndexKey](mapSize, 0.6, 1, false)
-        longArray = new TLongArrayList(mapSize)
+        longArray = new LongArrayList(mapSize)
         isIntMap = t.isInstanceOf[IntegerType]
     }
     if (withHeader) initializeLimits()
@@ -364,7 +364,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     } else if (isIntMap) {
       var index = 0
       while (index < numDictionaryElements) {
-        val l = longArray.getQuick(index)
+        val l = longArray.get(index)
         ColumnEncoding.writeInt(columnBytes, cursor, l.toInt)
         cursor += 4
         index += 1
@@ -372,7 +372,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     } else {
       var index = 0
       while (index < numDictionaryElements) {
-        val l = longArray.getQuick(index)
+        val l = longArray.get(index)
         ColumnEncoding.writeLong(columnBytes, cursor, l)
         cursor += 8
         index += 1

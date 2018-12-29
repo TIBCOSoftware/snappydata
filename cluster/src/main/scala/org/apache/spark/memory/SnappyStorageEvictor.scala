@@ -36,19 +36,19 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 class SnappyStorageEvictor extends Logging {
 
   private def getAllRegionList(offHeap: Boolean,
-      hasOffHeap: Boolean): ArrayBuffer[LocalRegion] = {
+      hasOffHeap: Boolean, onlyRowBuffers: Boolean): ArrayBuffer[LocalRegion] = {
     val cache = GemFireCacheImpl.getExisting
     val allRegionList = new ArrayBuffer[LocalRegion]()
     val irm: InternalResourceManager = cache.getResourceManager
     for (listener <- irm.getResourceListeners(
       SnappyStorageEvictor.resourceType).asScala) listener match {
       case pr: PartitionedRegion =>
-        if (includePartitionedRegion(pr, offHeap, hasOffHeap)) {
+        if (includePartitionedRegion(pr, offHeap, hasOffHeap, onlyRowBuffers)) {
           allRegionList ++= pr.getDataStore.getAllLocalBucketRegions.asScala
         }
       // no off-heap local regions yet in SnappyData
       case lr: LocalRegion =>
-        if (!offHeap && includeLocalRegion(lr)) {
+        if (!offHeap && !onlyRowBuffers && includeLocalRegion(lr)) {
           allRegionList += lr
         }
       case _ =>
@@ -64,7 +64,8 @@ class SnappyStorageEvictor extends Logging {
   }
 
   @throws(classOf[Exception])
-  def evictRegionData(bytesRequired: Long, offHeap: Boolean): Long = {
+  def evictRegionData(bytesRequired: Long, offHeap: Boolean,
+      onlyRowBuffers: Boolean = false): Long = {
     val cache = GemFireCacheImpl.getInstance()
     if (cache eq null) return 0L
 
@@ -76,7 +77,7 @@ class SnappyStorageEvictor extends Logging {
     val stats = cache.getCachePerfStats
     stats.incEvictorJobsStarted()
     var totalBytesEvicted: Long = 0
-    val regionSet = Random.shuffle(getAllRegionList(offHeap, hasOffHeap))
+    val regionSet = Random.shuffle(getAllRegionList(offHeap, hasOffHeap, onlyRowBuffers))
     val start = CachePerfStats.getStatTime
     try {
       while (regionSet.nonEmpty) {
@@ -119,19 +120,26 @@ class SnappyStorageEvictor extends Logging {
       }
       stats.incEvictorJobsCompleted()
     }
-    totalBytesEvicted
+    // evict row-buffers as the last resort
+    if (!onlyRowBuffers && !offHeap && totalBytesEvicted < bytesRequired) {
+      totalBytesEvicted + evictRegionData(bytesRequired - totalBytesEvicted,
+        offHeap, onlyRowBuffers = true)
+    } else totalBytesEvicted
   }
 
   protected def includePartitionedRegion(region: PartitionedRegion,
-      offHeap: Boolean, hasOffHeap: Boolean): Boolean = {
-    val hasLRU = (region.getEvictionAttributes.getAlgorithm.isLRUHeap
-      && (region.getDataStore != null)
-      && !region.getAttributes.getEnableOffHeapMemory && !region.isRowBuffer())
+      offHeap: Boolean, hasOffHeap: Boolean, onlyRowBuffers: Boolean): Boolean = {
+    var hasLRU = (region.getEvictionAttributes.getAlgorithm.isLRUHeap
+        && (region.getDataStore != null)
+        && !region.getAttributes.getEnableOffHeapMemory)
+    val isRowBuffer = region.isRowBuffer
+    if (onlyRowBuffers) return hasLRU && isRowBuffer
+
+    hasLRU &&= !isRowBuffer
     if (hasOffHeap) {
       // when off-heap is enabled then all column tables use off-heap
-      val regionPath = Misc.getFullTableNameFromRegionPath(region.getFullPath)
-      if (offHeap) hasLRU && ColumnFormatRelation.isColumnTable(regionPath)
-      else hasLRU && !ColumnFormatRelation.isColumnTable(regionPath)
+      hasLRU && offHeap == ColumnFormatRelation.isColumnTable(
+        Misc.getFullTableNameFromRegionPath(region.getFullPath))
     } else {
       assert(!offHeap,
         "unexpected invocation for hasOffHeap=false and offHeap=true")
@@ -141,7 +149,7 @@ class SnappyStorageEvictor extends Logging {
 
   protected def includeLocalRegion(region: LocalRegion): Boolean = {
     (region.getEvictionAttributes.getAlgorithm.isLRUHeap
-      && !region.getAttributes.getEnableOffHeapMemory)
+        && !region.getAttributes.getEnableOffHeapMemory)
   }
 }
 

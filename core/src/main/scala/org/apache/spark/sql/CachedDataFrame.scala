@@ -21,9 +21,8 @@ import java.nio.ByteBuffer
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -32,6 +31,7 @@ import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
 import org.apache.spark._
@@ -62,7 +62,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     shuffleCleanups: Array[Future[Unit]], val rddId: Int, noSideEffects: Boolean,
     val queryHints: java.util.Map[String, String], private[sql] var currentExecutionId: Long,
     private[sql] var planStartTime: Long, private[sql] var planEndTime: Long,
-    val linkPart : Boolean = false)
+    val linkPart: Boolean = false)
     extends Dataset[Row](snappySession, queryExecution, encoder) with Logging {
 
   private[sql] final def isCached: Boolean = cachedRDD ne null
@@ -117,6 +117,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
   private[sql] def startShuffleCleanups(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
+    val cache = Misc.getGemFireCacheNoThrow
     if (numShuffleDeps > 0) {
       sc.cleaner match {
         case Some(cleaner) =>
@@ -124,6 +125,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
           while (i < numShuffleDeps) {
             val shuffleDependency = shuffleDependencies(i)
             // Cleaning the  shuffle artifacts asynchronously
+            implicit val executionContext: ExecutionContext = Utils.executionContext(cache)
             shuffleCleanups(i) = Future {
               cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
             }
@@ -185,7 +187,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def clearPartitions(rdds: Seq[RDD[_]]): Unit = {
     val children = rdds.flatMap {
       case null => Nil
-    case r =>
+      case r =>
         // f.set(r, null)
         Platform.putObjectVolatile(r, Utils.rddPartitionsOffset, null)
         getChildren(r)
@@ -441,10 +443,12 @@ final class AggregatePartialDataIterator(
 
 object CachedDataFrame
     extends ((TaskContext, Iterator[InternalRow]) => PartitionResult)
-    with Serializable with KryoSerializable with Logging {
+        with Serializable with KryoSerializable with Logging {
 
-  @transient @volatile var sparkConf: SparkConf = _
-  @transient @volatile var compressionCodec: String = _
+  @transient
+  @volatile var sparkConf: SparkConf = _
+  @transient
+  @volatile var compressionCodec: String = _
 
   override def write(kryo: Kryo, output: Output): Unit = {}
 

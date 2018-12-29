@@ -69,6 +69,11 @@ trait ToolsCallback {
   /**
    * Check permission to write to given schema for a user. Returns the normalized user or
    * LDAP group name of the schema owner (or passed user itself if security is disabled).
+   *
+   * @param schema      the schema name for the permission check
+   * @param currentUser the user for the permission check
+   * @return if permission is allowed, return the schema owner which can be ldap group
+   *         else this throws an appropriate StandardException
    */
   def checkSchemaPermission(schema: String, currentUser: String): String
 }

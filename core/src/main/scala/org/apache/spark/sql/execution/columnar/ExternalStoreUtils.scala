@@ -656,11 +656,11 @@ object ExternalStoreUtils {
 
   def getExternalTableMetaData(qualifiedTable: String): ExternalTableMetaData = {
     getExternalTableMetaData(qualifiedTable,
-      GemFireXDUtils.getGemFireContainer(qualifiedTable, true), checkColumnStore = false)
+      GemFireXDUtils.getGemFireContainer(qualifiedTable, true))
   }
 
   def getExternalTableMetaData(qualifiedTable: String, container: GemFireContainer,
-      checkColumnStore: Boolean): ExternalTableMetaData = {
+      checkColumnStore: Boolean = false): ExternalTableMetaData = {
     container match {
       case null =>
         throw new IllegalStateException(s"Table $qualifiedTable not found in containers")

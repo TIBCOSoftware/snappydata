@@ -37,7 +37,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectio
 import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.sql.catalog.SmartConnectorHelper
 import io.snappydata.thrift.StatementAttrs
-import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
+import io.snappydata.thrift.internal.{ClientBlob, ClientConnection, ClientStatement}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializerPool, StructTypeSerializer}
@@ -242,7 +242,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
         // check for full batch delete
         if (ColumnDelta.checkBatchDeleted(buffer)) {
-          ColumnDelta.deleteBatch(key, region, columnTableName)
+          ColumnDelta.deleteBatch(key, region, schema.length)
           return
         }
         region.put(key, value)
@@ -345,7 +345,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * during iteration. We are not cleaning up the partial inserts of cached
    * batches for now.
    */
-  private def doSnappyInsertOrPut(region: LocalRegion, batch: ColumnBatch,
+  private def doSnappyInsertOrPut(region: PartitionedRegion, batch: ColumnBatch,
       batchId: Long, partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int): Unit = {
     val deltaUpdate = batch.deltaIndexes ne null
     val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
@@ -366,6 +366,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       }
       // add the stats row
       val key = new ColumnFormatKey(batchId, partitionId, statRowIndex)
+      if (maxDeltaRows >= 0 && maxDeltaRows < region.getColumnMaxDeltaRows) {
+        // log at info level for the case of column batch merges
+        logInfo(s"Putting batch of size = ${batch.numRows} into ${region.getName}: $key")
+      } else {
+        logDebug(s"Putting batch of size = ${batch.numRows} into ${region.getName}: $key")
+      }
       val allocator = Misc.getGemFireCache.getBufferAllocator
       val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
       val value = if (deltaUpdate) {
@@ -913,10 +919,10 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (context ne null) {
       val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
-        logDebug(s"closed connection for task from listener $partitionId")
+        logDebug(s"closing connection for task from listener $partitionId")
         try {
           conn.close()
-          logDebug("closed connection for task " + context.partitionId())
+          logDebug(s"closed connection for task $partitionId partition = $thePart")
         } catch {
           case NonFatal(e) => logWarning("Exception closing connection", e)
         }
@@ -925,34 +931,30 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val bucketPartition = thePart.asInstanceOf[SmartExecutorBucketPartition]
     logDebug(s"Scanning row buffer for $tableName,partId=${bucketPartition.index}," +
         s" bucketId = ${bucketPartition.bucketId}")
-    val statement = conn.createStatement()
-    val thriftConn = statement match {
-      case clientStmt: ClientStatement =>
-        val clientConn = clientStmt.getConnection
-        if (isPartitioned) {
-          clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
-            new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
-            tableName, true).setCatalogVersion(catalogSchemaVersion))
-        } else {
-          clientConn.setCommonStatementAttributes(
-            new StatementAttrs().setCatalogVersion(catalogSchemaVersion))
-        }
-        clientConn
-      case _ => null
+    val statement = conn.createStatement().asInstanceOf[ClientStatement]
+    // get the underlying thrift connection (conn is pool wrapper)
+    val thriftConn = statement.getConnection
+    if (isPartitioned) {
+      thriftConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
+        new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
+        tableName, true).setCatalogVersion(catalogSchemaVersion).setLockOwner(updateOwner))
+    } else {
+      thriftConn.setCommonStatementAttributes(
+        new StatementAttrs().setCatalogVersion(catalogSchemaVersion))
     }
-    if (isPartitioned && (thriftConn eq null)) {
-      val ps = conn.prepareStatement("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
-      ps.setString(1, tableName)
-      val bucketString = bucketPartition.bucketId.toString
-      ps.setString(2, bucketString)
-      ps.setLong(3, catalogSchemaVersion)
-      ps.executeUpdate()
-      ps.close()
+    try {
+      executeQuery(thriftConn, conn, txId)
+    } finally if (isPartitioned) {
+      thriftConn.setCommonStatementAttributes(null)
     }
+  }
+
+  private def executeQuery(thriftConn: ClientConnection,
+      conn: Connection, txId: String): (Connection, Statement, ResultSet) = {
     val sqlText = s"SELECT $columnList FROM ${quotedName(tableName)}$filterWhereClause"
 
     val args = filterWhereArgs
-    val stmt = conn.prepareStatement(sqlText)
+    val stmt = thriftConn.prepareStatement(sqlText)
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args)
     }
@@ -960,21 +962,17 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }
+    stmt.setSnapshotTransactionId(txId)
 
-    if (thriftConn ne null) {
-      stmt.asInstanceOf[ClientPreparedStatement].setSnapshotTransactionId(txId)
-    } else if (txId != null) {
-      if (!txId.isEmpty) {
-        statement.execute(
-          s"call sys.USE_SNAPSHOT_TXID('$txId')")
-      }
-    }
-
+    // TODO: change to use prepareAndExecute but need to fix
+    // the types in ClientPreparedStatement.paramsList which will not
+    // be available before-hand and need to be changed as per parameter values
     val rs = stmt.executeQuery()
 
     // get the txid which was used to take the snapshot.
     if (!commitTx) {
-      val getTXIdAndHostUrl = conn.prepareStatement("values sys.GET_SNAPSHOT_TXID_AND_HOSTURL(?)")
+      val getTXIdAndHostUrl = thriftConn.prepareStatement(
+          "values sys.GET_SNAPSHOT_TXID_AND_HOSTURL(?)")
       getTXIdAndHostUrl.setBoolean(1, delayRollover)
       val rs = getTXIdAndHostUrl.executeQuery()
       rs.next()
@@ -984,9 +982,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
       getTXIdAndHostUrl.close()
       SmartConnectorHelper.snapshotTxIdForRead.set(txIdAndHostUrl)
       logDebug(s"The snapshot tx id is $txIdAndHostUrl and tablename is $tableName")
-    }
-    if (thriftConn ne null) {
-      thriftConn.setCommonStatementAttributes(null)
     }
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)

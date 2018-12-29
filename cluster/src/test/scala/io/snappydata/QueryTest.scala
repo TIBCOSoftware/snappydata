@@ -97,8 +97,16 @@ class QueryTest extends SnappyFunSuite {
 
     val query = "select k, v from t1 inner join t2 where t1.id = t2.k order by k, v"
     val df = session.sql(query)
-    val result1 = df.collect().mkString(" ")
+    var result1 = df.collect().mkString(" ")
     val result2 = spark.sql(query).collect().mkString(" ")
+    if (result1 != result2) {
+      fail(s"Expected result: $result2\nGot: $result1")
+    }
+
+    // force run stats so that small batches have been merged repeatedly
+    SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
+    Thread.sleep(10000)
+    result1 = df.collect().mkString(" ")
     if (result1 != result2) {
       fail(s"Expected result: $result2\nGot: $result1")
     }

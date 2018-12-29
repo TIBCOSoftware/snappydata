@@ -32,6 +32,7 @@ import org.eclipse.collections.api.block.procedure.Procedure
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
+import org.apache.spark.sql.execution.metric.SQLMetric
 
 /**
  * A [[ClusteredColumnIterator]] that fetches entries from a remote bucket.
@@ -163,6 +164,13 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   private var currentDeltaStats: AnyRef = _
   private val currentValueMap = new IntObjectHashMap[AnyRef](8)
 
+  private var remoteBatches: SQLMetric = _
+
+  /**
+   * Set metrics to track remote reads by this iterator.
+   */
+  def setMetric(remoteBatches: SQLMetric): Unit = this.remoteBatches = remoteBatches
+
   private def fetchUsingGetAll(keys: Array[AnyRef]): Seq[(AnyRef, AnyRef)] = {
     val msg = new GetAllExecutorMessage(pr, keys, null, null, null, null,
       null, null, tx, null, false, false)
@@ -208,6 +216,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
       fetchUsingGetAll(fetchKeys).foreach {
         case (k: ColumnFormatKey, v) => currentValueMap.put(k.columnIndex, v)
       }
+      if (remoteBatches ne null) remoteBatches.add(1)
     }
     currentValueMap.get(column)
   }
