@@ -35,7 +35,7 @@ class MiscTest extends SnappyFunSuite with Logging {
     snc.sql("WITH temp_table AS ( SELECT ol_1_int2_id  as col1," +
       " sum(ol_1_int_id) AS col2 FROM table1 GROUP BY ol_1_int2_id)" +
       " SELECT ol_1_int2_id FROM temp_table ," +
-      " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").show
+      " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").collect()
   }
 
   test("Pool test") {

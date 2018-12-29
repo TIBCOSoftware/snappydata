@@ -235,21 +235,19 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     // 208 *10. 208 is the row size + memory overhead
 
     var rows = 0
-    // scalastyle:off
     try {
       for (i <- 1 to 100) {
         val row = Row(100000000, 10000000, 10000000)
-        println(s"RowCount1 = $rows")
+        logInfo(s"RowCount1 = $rows")
         snSession.insert("t1", row)
         rows += 1
-        println(s"RowCount2 = $rows")
+        logInfo(s"RowCount2 = $rows")
       }
     } catch {
       case sqle: SQLException if sqle.getSQLState == "XCL54" =>
-        println(s"RowCount3 in exception = $rows")
+        logInfo(s"RowCount3 in exception = $rows")
         assert(totalEvictedBytes > 0)
     }
-    // scalastyle:on
     SparkEnv.get.memoryManager.
         asInstanceOf[SnappyUnifiedMemoryManager].dropAllObjects(memoryMode)
     val count = snSession.sql("select * from t1").count()

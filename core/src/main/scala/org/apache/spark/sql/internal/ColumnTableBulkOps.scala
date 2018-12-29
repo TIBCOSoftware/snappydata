@@ -76,7 +76,7 @@ object ColumnTableBulkOps {
         // set a common lock owner for entire operation
         session.setMutablePlanOwner(tableName, persist = true)
 
-        val updatePlan = Update(table, updateSubQuery, Seq.empty,
+        val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
         val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
         var analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]

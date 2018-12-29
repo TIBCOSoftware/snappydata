@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import io.snappydata.Constant
+import io.snappydata.{Constant, Property}
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 
 import org.apache.spark.rdd.RDD
@@ -523,8 +523,13 @@ class ColumnFormatRelation(
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): DataFrame = {
 
-    val parameters = new CaseInsensitiveMutableHashMap(options)
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    // only allow if experimental-features are enabled
+    if (!Property.EnableExperimentalFeatures.get(session.sessionState.conf)) {
+      throw new UnsupportedOperationException(
+        "CREATE INDEX on column tables is an experimental unsupported feature")
+    }
+    val parameters = new CaseInsensitiveMutableHashMap(options)
     val parser = session.snappyParser
     val indexCols = indexColumns.keys.map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
     val catalog = session.sessionCatalog

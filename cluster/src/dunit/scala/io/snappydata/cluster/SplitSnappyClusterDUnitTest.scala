@@ -435,7 +435,7 @@ object SplitSnappyClusterDUnitTest
     snc.dropTable("splitModeTable1", ifExists = true)
 
     // recreate the dropped table
-    var expected = Seq.empty[ComplexData]
+    var expected: Seq[ComplexData] = Nil
     if (isComplex) {
       expected = createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
         tableType, props)

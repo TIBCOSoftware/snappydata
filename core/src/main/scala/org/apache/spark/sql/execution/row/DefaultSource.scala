@@ -97,7 +97,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     val fullTableName = ExternalStoreUtils.removeInternalProps(parameters)
     ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true, forColumnTable = false)
-    StoreUtils.getAndSetPartitioningAndKeyColumns(session, parameters)
+    StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)
     val tableOptions = new CaseInsensitiveMap(parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)

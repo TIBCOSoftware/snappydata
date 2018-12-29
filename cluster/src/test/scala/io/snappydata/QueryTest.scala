@@ -67,8 +67,7 @@ class QueryTest extends SnappyFunSuite {
 
     val df = snContext.sql("SELECT  title, price FROM titles WHERE EXISTS (" +
         "SELECT * FROM sales WHERE sales.title_id = titles.title_id AND qty >30)")
-
-    df.show()
+    df.collect()
   }
 
   test("SNAP-1159_1482") {
@@ -139,49 +138,49 @@ class QueryTest extends SnappyFunSuite {
         "PARTITION_BY 'col2'," +
         "BUCKETS '1')")
     snc.sql("insert into ColumnTable(\"a/b\",col2,col3) values(1,2,3)")
-    snc.sql("select col2,col3 from columnTable").show()
-    snc.sql("select col2, col3, `a/b` from columnTable").show()
-    snc.sql("select col2, col3, \"a/b\" from columnTable").show()
-    snc.sql("select col2, col3, \"A/B\" from columnTable").show()
-    snc.sql("select col2, col3, `A/B` from columnTable").show()
+    snc.sql("select col2,col3 from columnTable").collect()
+    snc.sql("select col2, col3, `a/b` from columnTable").collect()
+    snc.sql("select col2, col3, \"a/b\" from columnTable").collect()
+    snc.sql("select col2, col3, \"A/B\" from columnTable").collect()
+    snc.sql("select col2, col3, `A/B` from columnTable").collect()
 
-    snc.sql("select col2,col3 from columnTable").show()
-    snc.table("columnTable").select("col3", "col2", "a/b").show()
-    snc.table("columnTable").select("col3", "Col2", "A/b").show()
-    snc.table("columnTable").select("COL3", "Col2", "A/B").show()
-    snc.table("columnTable").select("COL3", "Col2", "`A/B`").show()
-    snc.table("columnTable").select("COL3", "Col2", "`a/b`").show()
+    snc.sql("select col2,col3 from columnTable").collect()
+    snc.table("columnTable").select("col3", "col2", "a/b").collect()
+    snc.table("columnTable").select("col3", "Col2", "A/b").collect()
+    snc.table("columnTable").select("COL3", "Col2", "A/B").collect()
+    snc.table("columnTable").select("COL3", "Col2", "`A/B`").collect()
+    snc.table("columnTable").select("COL3", "Col2", "`a/b`").collect()
 
     snc.conf.set("spark.sql.caseSensitive", "true")
     try {
-      snc.table("columnTable").select("col3", "col2", "a/b").show()
+      snc.table("columnTable").select("col3", "col2", "a/b").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     try {
-      snc.table("columnTable").select("COL3", "COL2", "A/B").show()
+      snc.table("columnTable").select("COL3", "COL2", "A/B").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     try {
-      snc.sql("select col2, col3, \"A/B\" from columnTable").show()
+      snc.sql("select col2, col3, \"A/B\" from columnTable").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     try {
-      snc.sql("select COL2, COL3, `A/B` from columnTable").show()
+      snc.sql("select COL2, COL3, `A/B` from columnTable").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     // hive meta-store is case-insensitive so column table names are not
-    snc.sql("select COL2, COL3, \"a/b\" from columnTable").show()
-    snc.sql("select COL2, COL3, `a/b` from ColumnTable").show()
-    snc.table("columnTable").select("COL3", "COL2", "a/b").show()
-    snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").show()
+    snc.sql("select COL2, COL3, \"a/b\" from columnTable").collect()
+    snc.sql("select COL2, COL3, `a/b` from ColumnTable").collect()
+    snc.table("columnTable").select("COL3", "COL2", "a/b").collect()
+    snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").collect()
   }
 
   private def setupTestData(session: SnappySession): Unit = {
