@@ -245,7 +245,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var stmt = user1Conn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"), false)
+      Map("COLUMN_BATCH_SIZE" -> "1k"), false)
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
       Map.empty, false)
 
@@ -273,7 +273,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     try {
       // Create row and column tables in embedded mode
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
-        Map("COLUMN_BATCH_SIZE" -> "50"), false)
+        Map("COLUMN_BATCH_SIZE" -> "1k"), false)
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
         Map.empty, false)
 
@@ -449,7 +449,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"))
+      Map("COLUMN_BATCH_SIZE" -> "1k"))
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, user1Stmt)
 
     // All DMLs from another user should fail
@@ -604,8 +604,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     val col3 = "COL3"
     val col4 = "COL4"
 
-    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "5"), false)
-    sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "10k"))
+    sns.createTable(smartRowTab1, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
     sns.catalog.refreshTable(smartColTab1)
     sns.catalog.refreshTable(smartRowTab1)
 
@@ -834,7 +834,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     user2Conn = getConn(jdbcUser2, setSNC = true)
     val stmt = user2Conn.createStatement()
     SplitClusterDUnitTest.createTableUsingJDBC(colTab, "column", user2Conn, stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"))
+      Map("COLUMN_BATCH_SIZE" -> "1k"))
     SplitClusterDUnitTest.createTableUsingJDBC(rowTab, "row", user2Conn, stmt)
 
     submitJob("nogrant") // tells job to verify DMLs without any explicit grant
