@@ -54,12 +54,12 @@ class RowTableTest
     dataDF.write.format("row").saveAsTable("MY_SCHEMA.MY_TABLE")
     var result = snc.sql("SELECT * FROM MY_SCHEMA.MY_TABLE" )
     var r = result.collect
-    println(r.length)
+    logInfo(r.length.toString)
 
     snc.sql("drop table MY_SCHEMA.MY_TABLE" )
     snc.sql("drop schema MY_SCHEMA")
 
-    println("Successful")
+    logInfo("Successful")
   }
 
 
@@ -72,7 +72,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the fetch first n row only test. with and without n parameter") {
@@ -88,7 +88,7 @@ class RowTableTest
     result = snc.sql("SELECT * FROM " + tableName + " fetch first row only")
     r = result.collect
     assert(r.length == 0)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation of table using DataSource API") {
@@ -102,7 +102,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation of table using DataSource API(PUT)") {
@@ -115,14 +115,14 @@ class RowTableTest
     }
     dataDF.write.format("row").options(props).saveAsTable(tableName)
 
-    //Again do putInto, as there is no primary key, all will be appended
+    // Again do putInto, as there is no primary key, all will be appended
     dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).putInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     // no primary key
     assert(r.length == 10)
-    println("Successful")
+    logInfo("Successful")
   }
 
 
@@ -174,7 +174,7 @@ class RowTableTest
     r = result.collect
     assert(r.length == 6)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   val options = "OPTIONS (PARTITION_BY 'Col1')"
@@ -188,7 +188,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
@@ -199,7 +199,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation using SQL and insert a DF in append/overwrite/errorifexists mode") {
@@ -220,7 +220,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation using SQL and put a DF in append/overwrite/errorifexists mode") {
@@ -237,7 +237,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation using SQL and put a seq of rows in append/overwrite/errorifexists mode") {
@@ -252,7 +252,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   // should throw exception if primary key is getting updated?
@@ -270,14 +270,14 @@ class RowTableTest
     val r = result.collect
     assert(r.length == 5)
 
-    //check if the row against primary key 1 is 1, 200, 300
+    // check if the row against primary key 1 is 1, 200, 300
 
-    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'")
-    assert(row1.collect.length == 1)
+    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'").collect()
+    assert(row1.length == 1)
 
-    println(row1.show)
+    logInfo(row1.mkString("\n"))
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test Creation using SQL with Primary Key and PUT INTO SELECT AS ") {
@@ -309,15 +309,15 @@ class RowTableTest
     val r = result.collect
     assert(r.length == 5)
 
-    //check if the row against primary key 1 is 1, 200, 300
+    // check if the row against primary key 1 is 1, 200, 300
 
-    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'")
-    assert(row1.collect.length == 1)
+    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'").collect()
+    assert(row1.length == 1)
 
-    println(row1.show)
+    logInfo(row1.mkString("\n"))
     snc.dropTable("tempTable")
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("PUT INTO TABLE USING SQL"){
@@ -368,7 +368,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation of table using CREATE TABLE AS STATEMENT ") {
@@ -393,7 +393,7 @@ class RowTableTest
     assert(r.length == 10)
 
     snc.dropTable(tableName2)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test alter table SQL syntax") {
@@ -479,7 +479,7 @@ class RowTableTest
     r = result.collect
     assert(r.length == 0)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the drop syntax SnappyContext and SQL ") {
@@ -501,7 +501,7 @@ class RowTableTest
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the drop syntax SQL and SnappyContext ") {
@@ -523,7 +523,7 @@ class RowTableTest
 
     snc.dropTable(tableName, true)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the update table ") {
@@ -556,7 +556,7 @@ class RowTableTest
 
     snc.dropTable("RowTableUpdate")
     snc.dropTable("RowTableUpdate2")
-    println("Successful")
+    logInfo("Successful")
   }
 
 
@@ -684,7 +684,7 @@ class RowTableTest
     assert(r.length == 10)
 
     snc.dropTable(tableName2)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test create table from CSV without header- SNAP-1442") {

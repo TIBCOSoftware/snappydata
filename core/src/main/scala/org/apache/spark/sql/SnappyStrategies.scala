@@ -803,7 +803,7 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
-      case _ => CodegenSparkFallback(plan)
+      case _ => CodegenSparkFallback(plan, session)
     }
   }
 

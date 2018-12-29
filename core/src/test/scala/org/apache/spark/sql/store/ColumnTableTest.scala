@@ -489,7 +489,7 @@ class ColumnTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.registerDataFrameAsTable(dataDF, "tempTable")
-    snc.sql("select * from tempTable").show
+    snc.sql("select * from tempTable").collect()
     intercept[AnalysisException] {
       // not supported
       snc.sql("alter table tempTable add column age int")
@@ -1235,7 +1235,7 @@ class ColumnTableTest
 
     snc.sql("create table t1(a int,b int) using column options()")
     snc.sql("insert into t1 values(1,2)")
-    snc.sql("select * from t1").show
+    snc.sql("select * from t1").collect()
     snc.sql("create table t2(c int,d int) using column options() as (select * from t1)")
 
     snc.sql("create table t3 using column options() as (select * from t1)")
@@ -1262,21 +1262,19 @@ class ColumnTableTest
     }', header 'false', inferschema 'true')")
     snc.sql("create table test2 using column options() as (select * from test1)")
     val df2 = snc.sql("select * from test2")
-    df2.show()
+    df2.collect()
 
     snc.sql("drop table test2")
     snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
     snc.sql("insert into test2 values(1,2)")
     snc.sql("insert into test2 values(2,3)")
     val df3 = snc.sql("select _col1,__col2 from test2")
-    df3.show()
+    df3.collect()
     val struct = (new StructType())
         .add(StructField("_COL1", IntegerType, true))
         .add(StructField("__COL2", IntegerType, true))
 
-    df3.printSchema()
     assert(struct == df3.schema)
-
   }
 
   test("Test loading json data to column table") {
@@ -1305,7 +1303,7 @@ class ColumnTableTest
         "address.district, " +
         "address.lane " +
         "FROM people")
-    nameAndAddress.toJSON.show(truncate = false)
+    logInfo(nameAndAddress.toJSON.collect().mkString("\n"))
     assert(nameAndAddress.count() == 2)
     val rows: Array[String] = nameAndAddress.toJSON.collect()
 
@@ -1368,7 +1366,7 @@ class ColumnTableTest
     snc.sql(s"insert into t1 values(2,'test2')")
     snc.sql(s"insert into t1 values(3,'test3')")
     val df = snc.sql("select * from t1")
-    df.show
+    df.collect()
     val tempPath = "/tmp/" + System.currentTimeMillis()
 
     assert(df.count() == 3)
@@ -1377,7 +1375,7 @@ class ColumnTableTest
       Map("path" -> tempPath, "header" -> "true", "inferSchema" -> "true"))
     val dataDF = snc.sql("select * from TEST_EXTERNAL order by c1")
 
-    snc.sql("select * from TEST_EXTERNAL").show
+    snc.sql("select * from TEST_EXTERNAL").collect()
 
     assert(dataDF.count == 3)
 
@@ -1403,8 +1401,9 @@ class ColumnTableTest
 
     snc.sql("drop table if exists test")
   }
+
   test("Test method for getting key columns of the column tables") {
-    var session = new SnappySession(snc.sparkContext)
+    val session = new SnappySession(snc.sparkContext)
     session.sql("drop table if exists temp1")
     session.sql("drop table if exists temp2")
     session.sql("drop table if exists temp3")
@@ -1419,6 +1418,40 @@ class ColumnTableTest
     session.sql("create table temp4(id1 bigint not null , name1 varchar(10), " +
         "id2 bigint not null, id3 bigint not null) USING column " +
         "OPTIONS(key_columns 'id2,id1,id3' ) ")
+
+    // if key_columns are not present, then CREATE TABLE should fail (SNAP-2790)
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id1', key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    // key_columns with row tables should fail
+    try {
+      session.sql("create table rt1(id1 bigint not null , name1 varchar(10)) " +
+          "USING row OPTIONS(key_columns 'id1')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+        "USING column OPTIONS(partition_by 'id1', key_columns 'id1')")
+    session.sql("drop table ct1")
 
     val res1 = session.sessionCatalog.getKeyColumns("temp1")
     assert(res1.size == 1)
@@ -1462,7 +1495,7 @@ class ColumnTableTest
     snc.sql(s"insert into t1 values(2,'test2')")
     snc.sql(s"insert into t1 values(3,'test3')")
     val df = snc.sql("select * from t1")
-    df.show
+    df.collect()
     val tempPath = System.getProperty("user.dir") + System.currentTimeMillis()
 
     assert(df.count() == 3)

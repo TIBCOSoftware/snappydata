@@ -324,9 +324,10 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
       Nil
     } else {
       val sessionState = session.snappySessionState
+      val queryShortString = CachedDataFrame.queryStringShortForm(queryString)
       val localProperties = session.sparkContext.getLocalProperties
       val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)
-      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryString)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortString)
       try {
         sessionState.enableExecutionCache = true
         // Get the actual QueryExecution used by InMemoryRelation so that
@@ -343,7 +344,7 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         }.get
         val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
         Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
-          CachedDataFrame.withNewExecutionId(session, queryString, queryString,
+          CachedDataFrame.withNewExecutionId(session, queryShortString, queryString,
             cachedExecution.toString(), planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
@@ -481,7 +482,7 @@ case class DeployCommand(
         val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
         ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
       }
-      Seq.empty[Row]
+      Nil
     } catch {
       case ex: Throwable =>
         ex match {
@@ -501,7 +502,7 @@ case class DeployCommand(
           if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
             throw ex
           }
-          Seq.empty[Row]
+          Nil
         } else {
           throw ex
         }
@@ -536,7 +537,7 @@ case class DeployJarCommand(
       RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
       ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
     }
-    Seq.empty[Row]
+    Nil
   }
 }
 
@@ -548,7 +549,7 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet()
+    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
@@ -583,6 +584,6 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     ToolsCallbackInit.toolsCallback.removePackage(alias)
-    Seq.empty[Row]
+    Nil
   }
 }
