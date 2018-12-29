@@ -550,6 +550,7 @@ subprojects {
       "org.apache.hadoop:hadoop-yarn-server-common:${hadoopVersion}",
       "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVersion}",
       "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
+    exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
   }
   configurations.testRuntime {
     // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
