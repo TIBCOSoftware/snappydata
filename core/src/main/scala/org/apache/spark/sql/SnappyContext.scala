@@ -1094,23 +1094,23 @@ object SnappyContext extends Logging {
             SnappyContext.getClusterMode(sc) match {
               case _: SnappyEmbeddedMode =>
                 val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds
-                if (deployCmds.nonEmpty) {
+                val nonEmpty = deployCmds.length > 0
+                if (nonEmpty) {
                   logInfo(s"Deploy commands size = ${deployCmds.length}")
-                  deployCmds.foreach(d => {
-                    logDebug(s"Deploying: $d")
-                    val cmdFields = d.split('|')
-                    if (cmdFields.length > 1) {
-                      val coordinate = cmdFields(0)
-                      val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
-                      val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-                      DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
-                    }
-                    else {
-                      // Jars we have
-                      DeployJarCommand(null, cmdFields(0), restart = true).run(session)
-                    }
-                  })
                 }
+                if (nonEmpty) deployCmds.foreach(d => {
+                  logDebug(s"Deploying: $d")
+                  val cmdFields = d.split('|')
+                  if (cmdFields.length > 1) {
+                    val coordinate = cmdFields(0)
+                    val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
+                    val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+                    DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
+                  } else {
+                    // Jars we have
+                    DeployJarCommand(null, cmdFields(0), restart = true).run(session)
+                  }
+                })
               case _ => // Nothing
             }
           }

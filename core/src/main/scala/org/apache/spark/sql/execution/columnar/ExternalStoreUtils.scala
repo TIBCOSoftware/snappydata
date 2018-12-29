@@ -492,11 +492,11 @@ object ExternalStoreUtils {
    * @return A Catalyst schema corresponding to columns in the given order.
    */
   def pruneSchema(fieldMap: scala.collection.Map[String, StructField],
-      columns: Array[String]): StructType = {
+      columns: Array[String], columnType: String): StructType = {
     new StructType(columns.map { col =>
       fieldMap.get(col) match {
         case None => throw new AnalysisException("Cannot resolve " +
-            s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
+            s"""$columnType column name "$col" among (${fieldMap.keys.mkString(", ")})""")
         case Some(f) => f
       }
     })

@@ -114,7 +114,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 //    }
 
 //    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-//      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+//      CreateIndexTest.validateIndex(Nil, tableName)(_)
 //    }
 
     executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ") {
@@ -164,7 +164,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //    }
 
     //    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-    //      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+    //      CreateIndexTest.validateIndex(Nil, tableName)(_)
     //    }
 
     System.setProperty("LOG-NOW", "xxx")
@@ -228,7 +228,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //    }
 
     //    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-    //      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+    //      CreateIndexTest.validateIndex(Nil, tableName)(_)
     //    }
 
     System.setProperty("LOG-NOW", "xxx")

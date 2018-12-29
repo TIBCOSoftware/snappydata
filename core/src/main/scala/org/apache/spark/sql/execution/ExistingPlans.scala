@@ -213,7 +213,7 @@ private[sql] object PartitionedPhysicalScan {
   def getSparkPlanInfo(fullPlan: SparkPlan, paramLiterals: Array[ParamLiteral] = EMPTY_PARAMS,
       paramsId: Int = -1): SparkPlanInfo = {
     val plan = fullPlan match {
-      case CodegenSparkFallback(child) => child
+      case CodegenSparkFallback(child, _) => child
       case _ => fullPlan
     }
     val children = plan match {

@@ -53,7 +53,6 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     snc.sql("create table checko (col1 Integer primary key, col2 Integer) using row options " +
         "(partition_by 'col1') ")
 
-    // scalastyle:off println
     val data = sc.parallelize(Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5),
       Row(6, 6)))
 
@@ -74,7 +73,6 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     df.filter("b < 2").selectExpr("i as col1").write.deleteFrom("APP.CHECKO")
 
     assert(snc.sql("select * from checko").count() == 3)
-    // scalastyle:on println
   }
 
   test("check varchar index") {
@@ -115,12 +113,11 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     snc.sql("update ods.organizations set descr = 'EL                                            " +
         "                                                                      " +
         "  ' where client_id = 8006")
-    snc.sql("select * from ods.organizations").show()
-    snc.sql("select client_id, descr from ods.organizations where client_id = 8006").show()
+    snc.sql("select * from ods.organizations").collect()
+    snc.sql("select client_id, descr from ods.organizations where client_id = 8006").collect()
   }
 
   test("tpch queries") {
-    // scalastyle:off println
     val qryProvider = new TPCH with SnappyAdapter
 
     val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
@@ -151,7 +148,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
            |$results
        """.stripMargin
       }
-      println(s"Done $qNum")
+      logInfo(s"Done $qNum")
     }
     snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, existing)
 
@@ -185,7 +182,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
         (tableName, snc.table(tableName).count())
       }.toMap
 
-      tableSizes.foreach(println)
+      logInfo(tableSizes.mkString("\n"))
       runBenchmark("select o_orderkey from orders where o_orderkey = 1", tableSizes, 2)
       runBenchmark("select o_orderkey from orders where o_orderkey = 32", tableSizes)
       runBenchmark("select o_orderkey from orders where o_orderkey = 801", tableSizes)
@@ -247,7 +244,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     def executor(str: String) = snc.sql(str)
 
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
-    println(s"$qNum size $size")
+    logInfo(s"$qNum size $size")
     val b = new Benchmark(s"JoinOrder optimization", size, minNumIters = 10)
 
     def case1(): Unit = snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name,
@@ -287,12 +284,11 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
   }
 
   test("northwind queries") {
-    println("")
     //    val sctx = sc(c => c.set("spark.sql.inMemoryColumnarStorage.batchSize", "40000"))
     //    val snc = getOrCreate(sctx)
     //    NorthWindDUnitTest.createAndLoadColumnTables(snc)
     //    val s = "select distinct shipcountry from orders"
-    //    snc.sql(s).show()
+    //    snc.sql(s).collect()
     //    NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, 1, classOf[LocalJoin])
     /*
         Thread.sleep(1000 * 60 * 60)
