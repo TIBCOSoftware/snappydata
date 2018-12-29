@@ -41,6 +41,7 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
     val outputFile = "ValidateArraysOfStringInMaptype" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+    val printContent : Boolean = false
 
     val Q1 = "SELECT * FROM FamousPeopleView"
     val Q2 = "SELECT country, value[0],value[1],value[2],value[3],value[4] FROM " +
@@ -82,11 +83,14 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
       "SELECT country, explode(celebrities) FROM FP.FamousPeople")
 
     snc.sql(Q1)
-    println("snc : Q1 " + snc.sql(Q1).show)
     snc.sql(Q2)
-    println("snc : Q2 " + snc.sql(Q2).show)
     snc.sql(Q3)
-    println("snc : Q3 " + snc.sql(Q3).show)
+
+    if(printContent) {
+      println("snc : Q1 " + snc.sql(Q1).show)
+      println("snc : Q2 " + snc.sql(Q2).show)
+      println("snc : Q3 " + snc.sql(Q3).show)
+    }
 
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA FP")
@@ -122,11 +126,14 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
       "SELECT country, explode(celebrities) FROM FP.FamousPeople")
 
     spark.sql(Q1)
-    println("spark : Q1 " + spark.sql(Q1).show)
     spark.sql(Q2)
-    println("spark : Q2 " + spark.sql(Q2).show)
     spark.sql(Q3)
-    println("spark : Q3 " + spark.sql(Q2).show)
+
+    if(printContent) {
+      println("spark : Q1 " + spark.sql(Q1).show)
+      println("spark : Q2 " + spark.sql(Q2).show)
+      println("spark : Q3 " + spark.sql(Q2).show)
+    }
 
     /* --- Verification --- */
 
@@ -140,7 +147,7 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
     snc.sql("DROP VIEW IF EXISTS FamousPeopleView")
     spark.sql("DROP TABLE IF EXISTS FP.FamousPeople")
     spark.sql("DROP VIEW IF EXISTS FamousPeopleView")
-    snc.sql("DROP SCHEMA FP")
-    spark.sql("DROP SCHEMA FP")
+    snc.sql("DROP SCHEMA IF EXISTS FP")
+    spark.sql("DROP SCHEMA IF EXISTS FP")
   }
 }

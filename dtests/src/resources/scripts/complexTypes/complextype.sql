@@ -1,4 +1,9 @@
 -- ####################################################################################################################################################################################################################################
+-- Clean up -> Array Type
+DROP TABLE IF EXISTS ST.Student;
+DROP VIEW IF EXISTS StudentMark;
+DROP SCHEMA IF EXISTS ST;
+
 -- Create Schema -> Array Type
 CREATE SCHEMA ST;
 
@@ -30,9 +35,12 @@ SELECT name,MAX(Marks),MIN(Marks) FROM StudentMark GROUP BY name;
 -- Clean up -> Array Type
 DROP TABLE IF EXISTS ST.Student;
 DROP VIEW IF EXISTS StudentMark;
-DROP SCHEMA ST;
+DROP SCHEMA IF EXISTS ST;
 
 -- ####################################################################################################################################################################################################################################
+-- Clean up -> Map Type
+DROP TABLE IF EXISTS ST.StudentMarksRecord;
+DROP SCHEMA IF EXISTS ST;
 
 -- Create Schema -> Map Type
 CREATE SCHEMA ST;
@@ -64,6 +72,9 @@ SELECT name, MAX(marks) AS Max, MIN(marks) AS Min FROM (SELECT name, Maths['math
 DROP TABLE IF EXISTS ST.StudentMarksRecord;
 DROP SCHEMA IF EXISTS ST;
 -- ####################################################################################################################################################################################################################################
+-- Clean up -> Struct Type
+DROP TABLE IF EXISTS CR.CricketRecord;
+DROP SCHEMA IF EXISTS CR;
 
 -- Create Schema -> Struct Type
 CREATE SCHEMA CR;
@@ -93,8 +104,12 @@ SELECT name, TestRecord.batStyle,TestRecord.Matches,TestRecord.Runs,TestRecord.A
 
 -- Clean up -> Struct Type
 DROP TABLE IF EXISTS CR.CricketRecord;
-DROP SCHEMA CR;
+DROP SCHEMA IF EXISTS CR;
 -- ####################################################################################################################################################################################################################################
+-- Clean up -> All types Mixed
+
+DROP TABLE IF EXISTS T20.TwentyTwenty;
+DROP SCHEMA IF EXISTS T20;
 
 -- Create Schema -> All types Mixed
 CREATE SCHEMA T20;
@@ -130,9 +145,12 @@ SELECT name, Profile.SR,Profile.Runs FROM T20.TwentyTwenty ORDER BY Profile.SR D
 -- Clean up -> All types Mixed
 
 DROP TABLE IF EXISTS T20.TwentyTwenty;
-DROP SCHEMA T20;
+DROP SCHEMA IF EXISTS T20;
 
 -- ####################################################################################################################################################################################################################################
+-- Clean up -> Arrays of Struct
+DROP TABLE IF EXISTS TW.TwoWheeler;
+DROP SCHEMA IF EXISTS TW;
 
 -- Create Schema -> Arrays of Struct
 CREATE SCHEMA TW;
@@ -162,9 +180,13 @@ SELECT brand, BikeInfo[0].type AS Style, BikeInfo[0].instock AS Available FROM T
 
 -- Clean up -> Arrays of Struct
 DROP TABLE IF EXISTS TW.TwoWheeler;
-DROP SCHEMA TW;
+DROP SCHEMA IF EXISTS TW;
 
 -- ####################################################################################################################################################################################################################################
+-- Clean up -> Map(String,Array(String))
+DROP TABLE IF EXISTS FP.FamousPeople;
+DROP VIEW IF EXISTS FamousPeopleView;
+DROP SCHEMA IF EXISTS FP;
 
 -- Create Schema -> Map(String,Array(String))
 CREATE SCHEMA FP;
@@ -189,4 +211,4 @@ SELECT country,value FROM FamousPeopleView WHERE key = 'Authors';
 -- Clean up -> Map(String,Array(String))
 DROP TABLE IF EXISTS FP.FamousPeople;
 DROP VIEW IF EXISTS FamousPeopleView;
-DROP SCHEMA FP;
+DROP SCHEMA IF EXISTS FP;

@@ -1,4 +1,4 @@
-io/snappydata/hydra/complexdatatypes/arraytypes.conf
+io/snappydata/hydra/complexdatatypes/arrayTypes.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -7,7 +7,7 @@ io/snappydata/hydra/complexdatatypes/arraytypes.conf
   fullResultSetValidation = true
   isSmokeRun = false
 
-io/snappydata/hydra/complexdatatypes/maptypes.conf
+io/snappydata/hydra/complexdatatypes/mapTypes.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -16,7 +16,7 @@ io/snappydata/hydra/complexdatatypes/maptypes.conf
   fullResultSetValidation = true
   isSmokeRun = false
 
-io/snappydata/hydra/complexdatatypes/structtypes.conf
+io/snappydata/hydra/complexdatatypes/structTypes.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -25,7 +25,7 @@ io/snappydata/hydra/complexdatatypes/structtypes.conf
   fullResultSetValidation = true
   isSmokeRun = false
 
-io/snappydata/hydra/complexdatatypes/arrayofstructtypes.conf
+io/snappydata/hydra/complexdatatypes/arrayOfStructTypes.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -34,7 +34,7 @@ io/snappydata/hydra/complexdatatypes/arrayofstructtypes.conf
   fullResultSetValidation = true
   isSmokeRun = false
 
-io/snappydata/hydra/complexdatatypes/allmixedtypes.conf
+io/snappydata/hydra/complexdatatypes/allMixedTypes.conf
     A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
     B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
     C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -43,7 +43,7 @@ io/snappydata/hydra/complexdatatypes/allmixedtypes.conf
     fullResultSetValidation = true
     isSmokeRun = false
 
-io/snappydata/hydra/complexdatatypes/arraysofstringinmapasvalue.conf
+io/snappydata/hydra/complexdatatypes/arraysOfStringInMapAsValue.conf
     A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
     B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
     C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1

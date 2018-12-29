@@ -32,14 +32,14 @@ class ArrayType extends SnappySQLJob {
     // scalastyle:off println
     println("ArraysType Job started...")
 
-    val Q1 : String = "SELECT * FROM ST.Student ORDER BY rollno"
-    val Q2 : String = "SELECT rollno, marks[0] AS Maths, marks[1] AS Science," +
+    val Array_Q1 : String = "SELECT * FROM ST.Student ORDER BY rollno"
+    val Array_Q2 : String = "SELECT rollno, marks[0] AS Maths, marks[1] AS Science," +
                       "marks[2] AS English,marks[3] AS Computer, marks[4] AS Music, marks[5] " +
                       "FROM ST.Student WHERE name = 'Salman Khan'"
-    val Q3 : String = "SELECT rollno, name, explode(marks) as Marks FROM ST.Student"
-    val Q4 : String = "SELECT name,SUM(Marks) AS Total FROM StudentMark " +
+    val Array_Q3 : String = "SELECT rollno, name, explode(marks) as Marks FROM ST.Student"
+    val Array_Q4 : String = "SELECT name,SUM(Marks) AS Total FROM StudentMark " +
                        "GROUP BY name ORDER BY Total DESC"
-    val Q5 : String = "SELECT name,MAX(Marks),MIN(Marks) FROM StudentMark GROUP BY name"
+    val Array_Q5 : String = "SELECT name,MAX(Marks),MIN(Marks) FROM StudentMark GROUP BY name"
 
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().getOrCreate()
@@ -77,13 +77,13 @@ class ArrayType extends SnappySQLJob {
     snc.sql("INSERT INTO ST.Student " +
       "SELECT 10,'Dheeraj Sen',Array(62.1,50.7,52.3,67.9,69.9,66.8)")
 
-    snc.sql(Q1)
-    snc.sql(Q2)
-    snc.sql(Q3)
+    snc.sql(Array_Q1)
+    snc.sql(Array_Q2)
+    snc.sql(Array_Q3)
     snc.sql("CREATE TEMPORARY VIEW StudentMark AS " +
       "SELECT rollno,name,explode(marks) AS Marks FROM ST.Student")
-    snc.sql(Q4)
-    snc.sql(Q5)
+    snc.sql(Array_Q4)
+    snc.sql(Array_Q5)
 
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA ST")
@@ -112,21 +112,21 @@ class ArrayType extends SnappySQLJob {
     spark.sql("INSERT INTO ST.Student " +
       "SELECT 10,'Dheeraj Sen',Array(62.1,50.7,52.3,67.9,69.9,66.8)")
 
-    spark.sql(Q1)
-    spark.sql(Q2)
-    spark.sql(Q3)
+    spark.sql(Array_Q1)
+    spark.sql(Array_Q2)
+    spark.sql(Array_Q3)
     spark.sql("CREATE TEMPORARY VIEW StudentMark AS " +
       "SELECT rollno,name,explode(marks) AS Marks FROM ST.Student")
-    spark.sql(Q4)
-    spark.sql(Q5)
+    spark.sql(Array_Q4)
+    spark.sql(Array_Q5)
 
     /* --- Verification --- */
 
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q2, "Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q3, "Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q4, "Q4", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q5, "Q5", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Q1, "Array_Q1", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Q2, "Array_Q2", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Q3, "Array_Q3", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Q4, "Array_Q4", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Q5, "Array_Q5", "column", pw, sqlContext)
 
     /* --- Clean up --- */
 
@@ -134,7 +134,7 @@ class ArrayType extends SnappySQLJob {
     snc.sql("DROP VIEW IF EXISTS StudentMark")
     spark.sql("DROP TABLE IF EXISTS ST.Student")
     spark.sql("DROP VIEW IF EXISTS StudentMark")
-    snc.sql("DROP SCHEMA ST")
-    spark.sql("DROP SCHEMA ST")
+    snc.sql("DROP SCHEMA IF EXISTS ST")
+    spark.sql("DROP SCHEMA IF EXISTS ST")
   }
 }

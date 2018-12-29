@@ -39,15 +39,17 @@ class ArraysOfStructType extends SnappySQLJob{
     val outputFile : String = "ValidateArraysOfStructType" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+    val printContent : Boolean = false
 
-    val Q1 = "SELECT * FROM TW.TwoWheeler"
-    val Q2 = "SELECT brand FROM TW.TwoWheeler " +
+    val ArraysOfStruct_Q1 = "SELECT * FROM TW.TwoWheeler"
+    val ArraysOfStruct_Q2 = "SELECT brand FROM TW.TwoWheeler " +
       "WHERE BikeInfo[0].type = 'Scooter'"
-    val Q3 = "SELECT brand,BikeInfo[0].cc FROM TW.TwoWheeler " +
+    val ArraysOfStruct_Q3 = "SELECT brand,BikeInfo[0].cc FROM TW.TwoWheeler " +
       "WHERE BikeInfo[0].cc >= 149.0 ORDER BY BikeInfo[0].cc DESC"
-    val Q4 = "SELECT brand,COUNT(BikeInfo[0].type) FROM TW.TwoWheeler " +
+    val ArraysOfStruct_Q4 = "SELECT brand,COUNT(BikeInfo[0].type) FROM TW.TwoWheeler " +
       "WHERE BikeInfo[0].type = 'Cruiser' GROUP BY brand"
-    val Q5 = "SELECT brand, BikeInfo[0].type AS Style, BikeInfo[0].instock AS Available " +
+    val ArraysOfStruct_Q5 = "SELECT brand, BikeInfo[0].type AS Style, " +
+      "BikeInfo[0].instock AS Available " +
       "FROM TW.TwoWheeler"
 
     /* --- Snappy Job --- */
@@ -79,15 +81,18 @@ class ArraysOfStructType extends SnappySQLJob{
     snc.sql("INSERT INTO TW.TwoWheeler " +
       "SELECT 'Mahindra',ARRAY(STRUCT('Scooter',109.0,0,false))")
 
-    snc.sql(Q1)
-    snc.sql(Q2)
-    println("snc : Q2  " + (snc.sql(Q2).show()))
-    snc.sql(Q3)
-    println("snc : Q3  " + (snc.sql(Q3).show()))
-    snc.sql(Q4)
-    println("snc : Q4  " + (snc.sql(Q4).show()))
-    snc.sql(Q5)
-    println("snc : Q5  " + (snc.sql(Q5).show()))
+    snc.sql(ArraysOfStruct_Q1)
+    snc.sql(ArraysOfStruct_Q2)
+    snc.sql(ArraysOfStruct_Q3)
+    snc.sql(ArraysOfStruct_Q4)
+    snc.sql(ArraysOfStruct_Q5)
+
+    if(printContent) {
+      println("snc : ArraysOfStruct_Q2  " + (snc.sql(ArraysOfStruct_Q2).show()))
+      println("snc : ArraysOfStruct_Q3  " + (snc.sql(ArraysOfStruct_Q3).show()))
+      println("snc : ArraysOfStruct_Q4  " + (snc.sql(ArraysOfStruct_Q4).show()))
+      println("snc : ArraysOfStruct_Q5  " + (snc.sql(ArraysOfStruct_Q5).show()))
+    }
 
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA TW")
@@ -118,30 +123,38 @@ class ArraysOfStructType extends SnappySQLJob{
     spark.sql("INSERT INTO TW.TwoWheeler " +
       "SELECT 'Mahindra',ARRAY(STRUCT('Scooter',109.0,0,false))")
 
-    spark.sql(Q1)
-    spark.sql(Q2)
-    println("spark : Q2  " + (snc.sql(Q2).show()))
-    spark.sql(Q3)
-    println("spark : Q3  " + (snc.sql(Q3).show()))
-    spark.sql(Q4)
-    println("spark : Q4  " + (snc.sql(Q4).show()))
-    spark.sql(Q5)
-    println("spark : Q5  " + (snc.sql(Q5).show()))
+    spark.sql(ArraysOfStruct_Q1)
+    spark.sql(ArraysOfStruct_Q2)
+    spark.sql(ArraysOfStruct_Q3)
+    spark.sql(ArraysOfStruct_Q4)
+    spark.sql(ArraysOfStruct_Q5)
+
+    if(printContent) {
+      println("spark : ArraysOfStruct_Q2  " + (snc.sql(ArraysOfStruct_Q2).show()))
+      println("spark : ArraysOfStruct_Q3  " + (snc.sql(ArraysOfStruct_Q3).show()))
+      println("spark : ArraysOfStruct_Q4  " + (snc.sql(ArraysOfStruct_Q4).show()))
+      println("spark : ArraysOfStruct_Q5  " + (snc.sql(ArraysOfStruct_Q5).show()))
+    }
 
     /* --- Verification --- */
 
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q2, "Q2", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, ArraysOfStruct_Q1, "ArraysOfStruct_Q1",
+      "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, ArraysOfStruct_Q2, "ArraysOfStruct_Q2",
+      "column", pw, sqlContext)
     // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
-//    SnappyTestUtils.assertQueryFullResultSet(snc, Q3, "Q3", "column", pw, sqlContext)
-//    SnappyTestUtils.assertQueryFullResultSet(snc, Q4, "Q4", "column", pw, sqlContext)
-//    SnappyTestUtils.assertQueryFullResultSet(snc, Q5, "Q5", "column", pw, sqlContext)
+//    SnappyTestUtils.assertQueryFullResultSet(snc, ArraysOfStruct_Q3, "ArraysOfStruct_Q3",
+//    "column", pw, sqlContext)
+//    SnappyTestUtils.assertQueryFullResultSet(snc, ArraysOfStruct_Q4, "ArraysOfStruct_Q4",
+//    "column", pw, sqlContext)
+//    SnappyTestUtils.assertQueryFullResultSet(snc, ArraysOfStruct_Q5, "ArraysOfStruct_Q5",
+//    "column", pw, sqlContext)
 
     /* --- Clean up --- */
 
     snc.sql("DROP TABLE IF EXISTS TW.TwoWheeler")
     spark.sql("DROP TABLE IF EXISTS TW.TwoWheeler")
-    snc.sql("DROP SCHEMA TW")
-    spark.sql("DROP SCHEMA TW")
+    snc.sql("DROP SCHEMA IF EXISTS TW")
+    spark.sql("DROP SCHEMA IF EXISTS TW")
   }
 }

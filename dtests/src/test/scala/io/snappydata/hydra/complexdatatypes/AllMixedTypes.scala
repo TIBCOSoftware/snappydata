@@ -36,6 +36,7 @@ class AllMixedTypes extends SnappySQLJob{
     val spark : SparkSession = SparkSession.builder().getOrCreate()
     val sc : SparkContext = SparkContext.getOrCreate()
     val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
+    val printContent : Boolean = false
 
     def getCurrentDirectory : String = new File(".").getCanonicalPath
     val outputFile : String = "ValidateAllMixedTypes" + "_" + "column" +
@@ -102,15 +103,18 @@ class AllMixedTypes extends SnappySQLJob{
                      "STRUCT(24,172,119.44,false)")
 
     snc.sql(Q1)
-    println("snc : Q1 " + (snc.sql(Q1).show))
     snc.sql(Q2)
-    println("snc : Q2 " + (snc.sql(Q2).show))
     snc.sql(Q3)
-    println("snc : Q3 " + (snc.sql(Q3).show))
     snc.sql(Q4)
-    println("snc : Q4 " + (snc.sql(Q4).show))
     snc.sql(Q5)
-    println("snc : Q5 " + (snc.sql(Q5).show))
+
+    if(printContent) {
+      println("snc : Q1 " + (snc.sql(Q1).show))
+      println("snc : Q2 " + (snc.sql(Q2).show))
+      println("snc : Q3 " + (snc.sql(Q3).show))
+      println("snc : Q4 " + (snc.sql(Q4).show))
+      println("snc : Q5 " + (snc.sql(Q5).show))
+    }
 
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA T20")
@@ -161,15 +165,19 @@ class AllMixedTypes extends SnappySQLJob{
       "STRUCT(24,172,119.44,false)")
 
     spark.sql(Q1)
-    println("spark : Q1 " + (spark.sql(Q1).show))
     spark.sql(Q2)
-    println("spark : Q2 " + (spark.sql(Q2).show))
     spark.sql(Q3)
-    println("spark : Q3 " + (spark.sql(Q3).show))
     spark.sql(Q4)
-    println("spark : Q4 " + (spark.sql(Q4).show))
     spark.sql(Q5)
-    println("spark : Q5 " + (spark.sql(Q5).show))
+
+    if(printContent) {
+      println("spark : Q1 " + (spark.sql(Q1).show))
+      println("spark : Q2 " + (spark.sql(Q2).show))
+      println("spark : Q3 " + (spark.sql(Q3).show))
+      println("spark : Q4 " + (spark.sql(Q4).show))
+      println("spark : Q5 " + (spark.sql(Q5).show))
+    }
+
 
 
     /* --- Verification --- */
@@ -185,7 +193,7 @@ class AllMixedTypes extends SnappySQLJob{
 
     snc.sql("DROP TABLE IF EXISTS T20.TwentyTwenty")
     spark.sql("DROP TABLE IF EXISTS T20.TwentyTwenty")
-    snc.sql("DROP SCHEMA T20")
-    spark.sql("DROP SCHEMA T20")
+    snc.sql("DROP SCHEMA IF EXISTS T20")
+    spark.sql("DROP SCHEMA IF EXISTS T20")
   }
 }

@@ -32,11 +32,12 @@ class StructType extends SnappySQLJob{
     // scalastyle:off println
     println("Struct Type Job started...")
 
-    val Q1 = "SELECT name, TestRecord.Runs, TestRecord.Avg FROM CR.CricketRecord " +
+    val Struct_Q1 = "SELECT name, TestRecord.Runs, TestRecord.Avg FROM CR.CricketRecord " +
       "ORDER BY TestRecord.Runs DESC"
-    val Q2 = "SELECT SUM(TestRecord.Runs) AS TotalRuns FROM CR.CricketRecord"
-    val Q3 = "SELECT name FROM CR.CricketRecord WHERE TestRecord.batStyle = 'Left Hand'"
-    val Q4 = "SELECT name, TestRecord.batStyle,TestRecord.Matches,TestRecord.Runs,TestRecord.Avg " +
+    val Struct_Q2 = "SELECT SUM(TestRecord.Runs) AS TotalRuns FROM CR.CricketRecord"
+    val Struct_Q3 = "SELECT name FROM CR.CricketRecord WHERE TestRecord.batStyle = 'Left Hand'"
+    val Struct_Q4 = "SELECT name, TestRecord.batStyle,TestRecord.Matches," +
+      "TestRecord.Runs,TestRecord.Avg " +
       "FROM CR.CricketRecord " +
       "ORDER BY TestRecord.Matches DESC"
 
@@ -81,10 +82,10 @@ class StructType extends SnappySQLJob{
     snc.sql("INSERT INTO CR.CricketRecord " +
       "SELECT 'Anil Kumble',STRUCT('Right Hand',132,2506,17.65)")
 
-    snc.sql(Q1)
-    snc.sql(Q2)
-    snc.sql(Q3)
-    snc.sql(Q4)
+    snc.sql(Struct_Q1)
+    snc.sql(Struct_Q2)
+    snc.sql(Struct_Q3)
+    snc.sql(Struct_Q4)
 
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA CR")
@@ -117,24 +118,23 @@ class StructType extends SnappySQLJob{
     spark.sql("INSERT INTO CR.CricketRecord " +
       "SELECT 'Anil Kumble',STRUCT('Right Hand',132,2506,17.65)")
 
-    spark.sql(Q1)
-    spark.sql(Q2)
-    spark.sql(Q3)
-    spark.sql(Q4)
+    spark.sql(Struct_Q1)
+    spark.sql(Struct_Q2)
+    spark.sql(Struct_Q3)
+    spark.sql(Struct_Q4)
 
     /* --- Verification --- */
 
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q2, "Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q3, "Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q4, "Q4", "column", pw, sqlContext)
-
+    SnappyTestUtils.assertQueryFullResultSet(snc, Struct_Q1, "Struct_Q1", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Struct_Q2, "Struct_Q2", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Struct_Q3, "Struct_Q3", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Struct_Q4, "Struct_Q4", "column", pw, sqlContext)
 
     /* --- Clean up --- */
 
     snc.sql("DROP TABLE IF EXISTS CR.CricketRecord")
     spark.sql("DROP TABLE IF EXISTS CR.CricketRecord")
-    snc.sql("DROP SCHEMA CR")
-    spark.sql("DROP SCHEMA CR")
+    snc.sql("DROP SCHEMA IF EXISTS CR")
+    spark.sql("DROP SCHEMA IF EXISTS CR")
   }
 }

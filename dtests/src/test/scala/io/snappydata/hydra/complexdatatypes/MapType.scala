@@ -40,21 +40,22 @@ class MapType extends SnappySQLJob{
     val outputFile = "ValidateMapType" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+    val printContent : Boolean = false
 
-    val Q1 = "SELECT * FROM ST.StudentMarksRecord ORDER BY rollno"
+    val Map_Q1 = "SELECT * FROM ST.StudentMarksRecord ORDER BY rollno"
 
-    val Q2 = "SELECT rollno, name, " +
+    val Map_Q2 = "SELECT rollno, name, " +
              "Maths['maths'],Science['science'] AS SCI ,English['english'] AS ENG," +
              "Computer['computer'],Music['music'],History['history'] " +
              "FROM ST.StudentMarksRecord " +
              "WHERE name = 'Salman Khan'"
 
-    val Q3 = "SELECT name, SUM(Maths['maths'] + Science['science'] + English['english'] + " +
+    val Map_Q3 = "SELECT name, SUM(Maths['maths'] + Science['science'] + English['english'] + " +
              "Computer['computer'] + Music['music'] + History['history']) AS Total " +
              "FROM ST.StudentMarksRecord " +
              "GROUP BY name ORDER BY Total DESC"
 
-    val Q4 = "SELECT name, " +
+    val Map_Q4 = "SELECT name, " +
              "SUM(Maths['maths'] + Science['science'] + English['english'] + " +
              "Computer['computer'] + Music['music'] + History['history']) AS Total, " +
              "CASE " +
@@ -72,14 +73,14 @@ class MapType extends SnappySQLJob{
              "FROM ST.StudentMarksRecord " +
              "GROUP BY name ORDER BY Total DESC"
 
-    val Q5 = "SELECT name, " +
+    val Map_Q5 = "SELECT name, " +
              "(SUM(Maths['maths'] + Science['science'] + English['english'] + " +
                    "Computer['computer'] + Music['music'] + " +
                    "History['history'])*100.0/600.0) AS Percentage " +
              "FROM ST.StudentMarksRecord " +
              "GROUP BY name ORDER BY Percentage DESC"
 
-    val Q6 = "SELECT name, MAX(marks) AS Max, MIN(marks) AS Min FROM " +
+    val Map_Q6 = "SELECT name, MAX(marks) AS Max, MIN(marks) AS Min FROM " +
              "(SELECT name, Maths['maths'] AS marks FROM ST.StudentMarksRecord " +
              "UNION ALL " +
              "SELECT name, Science['science'] AS marks FROM ST.StudentMarksRecord " +
@@ -132,14 +133,17 @@ class MapType extends SnappySQLJob{
       "SELECT 10,'Dheeraj Sen',MAP('maths',62.1),MAP('science',50.7)," +
       "MAP('english',52.3),MAP('computer',67.9),MAP('music',69.9),MAP('history',66.8)")
 
-    snc.sql(Q1)
-    println("snc Q1:" + snc.sql(Q1).show)
-    snc.sql(Q2)
-    snc.sql(Q3)
-    snc.sql(Q4)
-    snc.sql(Q5)
-    println("snc Q5: " + snc.sql(Q5).show)
-    snc.sql(Q6)
+    snc.sql(Map_Q1)
+    snc.sql(Map_Q2)
+    snc.sql(Map_Q3)
+    snc.sql(Map_Q4)
+    snc.sql(Map_Q5)
+    snc.sql(Map_Q6)
+
+    if(printContent) {
+      println("snc Map_Q1:" + snc.sql(Map_Q1).show)
+      println("snc Map_Q5: " + snc.sql(Map_Q5).show)
+    }
 
     /* --- Spark Job --- */
     spark.sql("CREATE SCHEMA ST")
@@ -180,30 +184,32 @@ class MapType extends SnappySQLJob{
       "SELECT 10,'Dheeraj Sen',MAP('maths',62.1),MAP('science',50.7)," +
       "MAP('english',52.3),MAP('computer',67.9),MAP('music',69.9),MAP('history',66.8)")
 
-    spark.sql(Q1)
-    println("spark : Q1" + spark.sql(Q1).show)
-    spark.sql(Q2)
-    spark.sql(Q3)
-    spark.sql(Q4)
-    spark.sql(Q5)
-    println("spark : Q5" + spark.sql(Q5).show)
-    spark.sql(Q6)
+    spark.sql(Map_Q1)
+    spark.sql(Map_Q2)
+    spark.sql(Map_Q3)
+    spark.sql(Map_Q4)
+    spark.sql(Map_Q5)
+    spark.sql(Map_Q6)
 
+    if(printContent) {
+      println("spark : Map_Q1" + spark.sql(Map_Q1).show)
+      println("spark : Map_Q5" + spark.sql(Map_Q5).show)
+    }
     /* --- Verification --- */
 
     // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
-    // SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q2, "Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q3, "Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q4, "Q4", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q5, "Q5", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q6, "Q6", "column", pw, sqlContext)
+    // SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q1, "Map_Q1", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q2, "Map_Q2", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q3, "Map_Q3", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q4, "Map_Q4", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q5, "Map_Q5", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q6, "Map_Q6", "column", pw, sqlContext)
 
     /* --- Clean Up --- */
 
-    snc.sql("DROP TABLE ST.StudentMarksRecord")
-    spark.sql("DROP TABLE ST.StudentMarksRecord")
-    snc.sql("DROP SCHEMA ST")
-    spark.sql("DROP SCHEMA ST")
+    snc.sql("DROP TABLE IF EXISTS ST.StudentMarksRecord")
+    spark.sql("DROP TABLE IF EXISTS ST.StudentMarksRecord")
+    snc.sql("DROP SCHEMA IF EXISTS ST")
+    spark.sql("DROP SCHEMA IF EXISTS ST")
   }
 }
