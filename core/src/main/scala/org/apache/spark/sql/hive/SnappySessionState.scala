@@ -28,7 +28,6 @@ import io.snappydata.Property.HashAggregateSize
 
 import org.apache.spark.Partition
 import org.apache.spark.sql._
-import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
@@ -720,11 +719,11 @@ class SnappySessionState(val snappySession: SnappySession)
   protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {
     new QueryExecution(snappySession, plan) {
 
-      snappySession.addContextObject(SnappySession.ExecutionKey,
-        () => newQueryExecution(plan))
-
-      override protected def preparations: Seq[Rule[SparkPlan]] =
+      override protected def preparations: Seq[Rule[SparkPlan]] = {
+        snappySession.addContextObject(SnappySession.ExecutionKey,
+          () => newQueryExecution(plan))
         queryPreparations(topLevel = true)
+      }
     }
   }
 

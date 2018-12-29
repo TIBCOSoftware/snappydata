@@ -35,13 +35,17 @@ import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMo
  * Catch exceptions in code generation of SnappyData plans and fallback
  * to Spark plans as last resort (including non-code generated paths).
  */
-case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
+case class CodegenSparkFallback(var child: SparkPlan,
+    @transient session: SnappySession) extends UnaryExecNode {
 
   override def output: Seq[Attribute] = child.output
 
   override def outputPartitioning: Partitioning = child.outputPartitioning
 
   override def outputOrdering: Seq[SortOrder] = child.outputOrdering
+
+  @transient private[this] val execution =
+    session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey)
 
   protected[sql] def isCodeGenerationException(t: Throwable): Boolean = {
     // search for any janino or code generation exception
@@ -116,8 +120,6 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         // is still usable:
         SystemFailure.checkFailure()
 
-        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-
         val isCatalogStale = isConnectorCatalogStaleException(t, session)
         if (isCatalogStale) {
           session.externalCatalog.invalidateAll()
@@ -131,7 +133,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         }
         if (isCatalogStale || isCodeGenerationException(t)) {
           // fallback to Spark plan for code-generation exception
-          session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
+          execution match {
             case Some(exec) =>
               val sessionState = session.snappySessionState
               if (!isCatalogStale) {
@@ -148,7 +150,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
               }
               try {
                 val plan = exec().executedPlan.transform {
-                  case CodegenSparkFallback(p) => p
+                  case CodegenSparkFallback(p, _) => p
                 }
                 val result = f(plan)
                 // update child for future executions
@@ -162,7 +164,7 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
               } finally if (!isCatalogStale) {
                 sessionState.disableStoreOptimizations = false
               }
-            case None => throw t
+            case _ => throw t
           }
         } else {
           throw t

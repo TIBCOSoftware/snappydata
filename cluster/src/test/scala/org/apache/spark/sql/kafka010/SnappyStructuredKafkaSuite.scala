@@ -21,14 +21,13 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import io.snappydata.SnappyFunSuite
 import org.apache.kafka.common.TopicPartition
-
-import org.apache.spark.sql.functions.{count, window}
-import org.apache.spark.sql.streaming.ProcessingTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.functions.{count, window}
+import org.apache.spark.sql.streaming.ProcessingTime
 
 case class Account(accountName: String)
 
@@ -236,7 +235,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
       .start()
 
     streamingQuery.processAllAvailable()
-    session.sql("select * from snappyWindowAggrTable").show(200)
+    logInfo(session.sql("select * from snappyWindowAggrTable").limit(200).collect().mkString("\n"))
     streamingQuery.stop()
   }
 

@@ -278,7 +278,6 @@ class TokenizationTest
     res = snc.sql(s"select quartile, avg(c) as avgC, max(c) as maxC" +
         s" from (select c, ntile(4) over (order by c) as quartile from $table ) x " +
         s"group by quartile order by quartile").collect()
-    // res.foreach(println)
 
     // Unix timestamp
     val df = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01 12:00:00') > a")
@@ -480,20 +479,18 @@ class TokenizationTest
         s"select * from $table where a = $x"
       }
       val start = System.currentTimeMillis()
-      // scalastyle:off println
       q.zipWithIndex.foreach  { case (x, i) =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
         result.foreach( r => {
-          println(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, ${i}")
+          logInfo(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, $i")
           assert(r.get(0) == r.get(1) && r.get(2) == i)
         })
       }
       val end = System.currentTimeMillis()
 
       // snc.sql(s"select * from $table where a = 1200").collect()
-      println("Time taken = " + (end - start))
-      // scalastyle:on println
+      logInfo("Time taken = " + (end - start))
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
@@ -672,9 +669,8 @@ class TokenizationTest
     var query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 5 limit 2"
     // snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
     val result1 = snc.sql(query).collect()
-    // scalastyle:off println
     result1.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+      logInfo(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
           ", " + r.get(5))
     })
     val cacheMap = SnappySession.getPlanCache.asMap()
@@ -684,10 +680,9 @@ class TokenizationTest
     query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 7 limit 2"
     val result2 = snc.sql(query).collect()
     result2.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+      logInfo(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
           ", " + r.get(5))
     })
-    // scalastyle:on println
     assert( cacheMap.size() == 1)
     assert(!result1.sameElements(result2))
     assert(result1.length > 0)
@@ -854,7 +849,6 @@ class TokenizationTest
 
       val rows1 = rs1.collect()
       assert(rows0.sameElements(rows1))
-      // rows1.foreach(println)
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 0)

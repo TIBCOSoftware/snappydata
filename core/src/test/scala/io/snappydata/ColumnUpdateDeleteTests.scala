@@ -73,10 +73,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
 
     session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
     assert(session.table("checkTable1").count() === numElements)
@@ -106,7 +106,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable2")
 
     session.sql(s"update updateTable set addr = concat(addr, '_update') where id <> 32")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
     assert(session.table("checkTable2").count() === numElements)
@@ -134,7 +134,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "case when (id % 2) = 1 then true else false end").write.insertInto("checkTable3")
 
     session.sql(s"update updateTable set status = not status where id <> 87")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
     assert(session.table("checkTable3").count() === numElements)
@@ -314,10 +314,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable2")
 
     session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === (numElements * 9) / 10)
     assert(session.table("updateTable").collect().length === (numElements * 9) / 10)
@@ -377,7 +377,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     var result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.0) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.0) === Nil)
 
     result = session.sql("select UnitPrice from order_details where tid = 6").collect()
     assert(result.length === 1)
@@ -390,10 +390,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(result(0).getDouble(0) == 1.1)
     result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
     result = session.sql("select UnitPrice, tid from order_details").collect()
     assert(result.length === numElements)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
 
 
     session.sql("UPDATE order_details SET UnitPrice = 1.1 WHERE tid <> 11")
@@ -403,10 +403,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(result(0).getDouble(0) == 1.1)
     result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
     result = session.sql("select UnitPrice, tid from order_details").collect()
     assert(result.length === numElements)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
 
     session.sql("drop table order_details")
     session.conf.unset(Property.ColumnBatchSize.name)
@@ -542,7 +542,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
 
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     var res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable1").collect()

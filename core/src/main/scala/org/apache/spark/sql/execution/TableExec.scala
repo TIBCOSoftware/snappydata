@@ -114,7 +114,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
                 .region.asInstanceOf[PartitionedRegion]
             // if the two are different then its partition pruning case
             if (numBuckets == rdd.getNumPartitions) {
-              new DelegateRDD(sparkContext, rdd, Seq.empty[RDD[InternalRow]],
+              new DelegateRDD(sparkContext, rdd, Nil,
                 Array.tabulate(numBuckets)(
                   StoreUtils.getBucketPreferredLocations(region, _, forWrite = true)))
             } else rdd
@@ -146,7 +146,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       // if the two are different then its partition pruning case
       if (numBuckets == rdd.getNumPartitions) {
         val table = relation.get.asInstanceOf[PartitionedDataSourceScan].table
-        new DelegateRDD(sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations(table))
+        new DelegateRDD(sparkContext, rdd, Nil, preferredLocations(table))
       } else rdd
     }
   }
