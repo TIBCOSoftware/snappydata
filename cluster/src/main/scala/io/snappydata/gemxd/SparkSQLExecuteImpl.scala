@@ -74,7 +74,7 @@ class SparkSQLExecuteImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setSchema(schema)
+  session.setCurrentSchema(schema)
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
@@ -196,7 +196,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private def getColumnTypes: Array[(Int, Int, Int)] =
     querySchema.map(f => {
       SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-        f.metadata, f.name, allAsClob, columnsAsClob)
+        f.metadata, Utils.toUpperCase(f.name), allAsClob, columnsAsClob)
     }).toArray
 
   private def getColumnDataTypes: Array[DataType] =
@@ -214,7 +214,7 @@ object SparkSQLExecuteImpl {
   def getClobProperties(session: SnappySession): (Boolean, Set[String]) =
     session.getPreviousQueryHints.get(QueryHint.ColumnsAsClob.toString) match {
     case null => (false, Set.empty[String])
-    case v => Utils.parseColumnsAsClob(v)
+    case v => Utils.parseColumnsAsClob(v, session)
   }
 
   def getSQLType(dataType: DataType, complexTypeAsJson: Boolean,

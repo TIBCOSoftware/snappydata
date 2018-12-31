@@ -19,10 +19,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyMetadataCacheSuite extends MetadataCacheSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "SPARK-16337 temporary view refresh",
-    "case sensitivity support in temporary view refresh"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

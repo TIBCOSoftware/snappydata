@@ -20,7 +20,7 @@ import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, AttributeSet, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
@@ -45,12 +45,12 @@ object ColumnTableBulkOps {
 
     table.collectFirst {
       case LogicalRelation(mutable: BulkPutRelation, _, _) =>
-        val putKeys = mutable.getPutKeys
-        if (putKeys.isEmpty) {
-          throw new AnalysisException(
+        val putKeys = mutable.getPutKeys match {
+          case None => throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
+          case Some(k) => k
         }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys.get)
+        val condition = prepareCondition(sparkSession, table, subQuery, putKeys)
 
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
@@ -66,18 +66,29 @@ object ColumnTableBulkOps {
           Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
 
-        val updatePlan = Update(table, updateSubQuery, Seq.empty,
+        val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
         val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
-        val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+        var analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
-        val doInsertJoin = sparkSession.asInstanceOf[SnappySession].cachePutInto(
-          if (subQuery.statistics.sizeInBytes <= cacheSize) Some(updateSubQuery) else None,
-          mutable.table)
-        val insertChild = if (doInsertJoin) {
-          Join(subQuery, updateSubQuery, LeftAnti, condition)
-        } else subQuery
+        // explicitly project out only the updated expression references and key columns
+        // from the sub-query to minimize cache (if it is selected to be done)
+        val analyzer = sparkSession.sessionState.analyzer
+        val updateReferences = AttributeSet(updateExpressions.flatMap(_.references))
+        updateSubQuery = Project(updateSubQuery.output.filter(a =>
+          updateReferences.contains(a) || keyColumns.contains(a.name) ||
+              putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
+
+        val insertChild = sparkSession.asInstanceOf[SnappySession].cachePutInto(
+          subQuery.statistics.sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
+          case None => subQuery
+          case Some(newUpdateSubQuery) =>
+            if (updateSubQuery ne newUpdateSubQuery) {
+              analyzedUpdate = analyzedUpdate.copy(child = newUpdateSubQuery)
+            }
+            Join(subQuery, newUpdateSubQuery, LeftAnti, condition)
+        }
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
           OverwriteOptions(enabled = false), ifNotExists = false)
@@ -132,12 +143,14 @@ object ColumnTableBulkOps {
     newCondition
   }
 
-  def getKeyColumns(table: LogicalPlan): Seq[String] = {
+  def getKeyColumns(table: LogicalPlan): Set[String] = {
     table.collectFirst {
-      case LogicalRelation(mutable: MutableRelation, _, _) => mutable.getKeyColumns
-    }.getOrElse(throw new AnalysisException(
-      s"Update/Delete requires a MutableRelation but got $table"))
-
+      case LogicalRelation(mutable: MutableRelation, _, _) => mutable.getKeyColumns.toSet
+    } match {
+      case None => throw new AnalysisException(
+        s"Update/Delete requires a MutableRelation but got $table")
+      case Some(k) => k
+    }
   }
 
   def transformDeletePlan(sparkSession: SparkSession,
@@ -147,7 +160,7 @@ object ColumnTableBulkOps {
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
-      case lr@LogicalRelation(mutable: MutableRelation, _, _) =>
+      case LogicalRelation(mutable: MutableRelation, _, _) =>
         val ks = mutable.getPrimaryKeyColumns
         if (ks.isEmpty) {
           throw new AnalysisException(
@@ -165,8 +178,7 @@ object ColumnTableBulkOps {
   def bulkInsertOrPut(rows: Seq[Row], sparkSession: SparkSession,
       schema: StructType, resolvedName: String, putInto: Boolean): Int = {
     val session = sparkSession.asInstanceOf[SnappySession]
-    val sessionState = session.sessionState
-    val tableIdent = sessionState.sqlParser.parseTableIdentifier(resolvedName)
+    val tableIdent = session.tableIdentifier(resolvedName)
     val encoder = RowEncoder(schema)
     val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
       rows.map(encoder.toRow)), schema)

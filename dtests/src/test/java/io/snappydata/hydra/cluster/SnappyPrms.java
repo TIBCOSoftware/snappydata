@@ -567,6 +567,11 @@ public class SnappyPrms extends BasePrms {
   public static Long useJDBCConnInSnappyJob;
 
   /**
+   * (Boolean) parameter to pass maxResultWaitSec in APP_PROPS required for long running job termination.
+   */
+  public static Long isLongRunningJob;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
@@ -720,12 +725,12 @@ public class SnappyPrms extends BasePrms {
 
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
-    return tasktab().intAt(key, tab().intAt(key, 120));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static int getSleepTimeSecsForMemberStatus() {
     Long key = sleepTimeSecsForMemberStatus;
-    return tasktab().intAt(key, tab().intAt(key, 30));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static String getExecutorCores() {
@@ -1093,6 +1098,11 @@ public class SnappyPrms extends BasePrms {
 
   public static boolean useJDBCConnInSnappyJob() {
     Long key = useJDBCConnInSnappyJob;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean isLongRunningJob() {
+    Long key = isLongRunningJob;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
