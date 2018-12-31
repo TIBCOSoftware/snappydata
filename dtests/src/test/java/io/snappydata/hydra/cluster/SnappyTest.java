@@ -2443,93 +2443,90 @@ public class SnappyTest implements Serializable {
     File logFile = null;
     String Parameters;
     String confString = "";
+    String[] confParameter = null;
     userAppJar = SnappyPrms.getUserAppJar();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
     String leadPort = getLeadPort();
+    boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    String passFilePath = SnappySecurityPrms.getPassFile();
     if (SnappyPrms.getCommaSepAPPProps() != null) {
       Parameters = SnappyPrms.getCommaSepAPPProps();
       Log.getLogWriter().info("Parameters : " + Parameters);
-      String[] confParameter = Parameters.split(",");
-
-      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      confParameter = Parameters.split(",");
       for (int i = 0; i < confParameter.length; i++) {
         Log.getLogWriter().info("ConfParameter : " + confParameter[i].toString());
-        confString = confString + " --conf " + confParameter[i].toString();
+        confString += " --conf " + confParameter[i].toString();
       }
-
-      if (isSecurityEnabled) {
+    }
+    /*      if (isSecurityEnabled) {
         String passFilePath = SnappySecurityPrms.getPassFile();
         confString = confString + " --passfile " + passFilePath;
         Log.getLogWriter().info("SP: confString for security: " + confString.toString());
-      }
-      if (SnappyPrms.useJDBCConnInSnappyJob()) {
-        String primaryLocatorHost = getPrimaryLocatorHost();
-        String primaryLocatorPort = getPrimaryLocatorPort();
-        confString = "\"" + confString + "--conf primaryLocatorHost " + primaryLocatorHost + " --conf primaryLocatorPort " + primaryLocatorPort + "\"";
-        Log.getLogWriter().info("SP: confString for useJDBCConnInSnappyJob : " + confString.toString());
-      }
-      if (SnappyPrms.isLongRunningJob()) {
-        confString =  confString + " --conf maxResultWaitSec " + maxResultWaitSecs ;
-      }
-      if (SnappyPrms.hasDynamicAppProps()) {
-        String dmlProps = dynamicAppProps.get(getMyTid());
-        if (dmlProps == null) {
-          dmlProps = dynamicAppProps.get(getMyTid());
-          if (dmlProps == null) throw new TestException("Test issue: dml statement for " +
-              getMyTid() + " is null");
-        }
-        String[] confDmlProps = dmlProps.split(",");
-        for (int i = 0; i < confDmlProps.length; i++) {
-          Log.getLogWriter().info("ConfParameter : " + confDmlProps[i].toString());
-          confString = confString + " --conf " + confDmlProps[i].toString() ;
-        }
-        Log.getLogWriter().info("SP: confString for hasDynamicAppProps : " + confString.toString());
-      }
-
-      confString = confString + " --conf logFileName=" + logFileName;
-
-      try {
-        String cmd;
-        for (int i = 0; i < jobClassNames.size(); i++) {
-          String userJob = (String) jobClassNames.elementAt(i);
-
-          cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-              " --app-name " + userAppName + " --class " + userJob + " --app-jar " +
-              snappyTest.getUserAppJarLocation(userAppJar, jarPath);
-
-          if (!(SnappyPrms.getCommaSepAPPProps().isEmpty())) {
-            cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-                " --app-name " + userAppName + " --class " + userJob + " --app-jar " +
-                snappyTest.getUserAppJarLocation(userAppJar, jarPath) + confString;
-          }
-
-          pb = new ProcessBuilder("/bin/bash", "-c", cmd);
-          Log.getLogWriter().info("Command is : " + pb.command());
-
-
-          log = new File(".");
-          String dest = log.getCanonicalPath() + File.separator + logFileName;
-          logFile = new File(dest);
-          snappyTest.executeProcess(pb, logFile);
-        }
-        boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
-        if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
-          jobSubmissionCount++;
-          Thread.sleep(180000);
-          Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
-              " the job to new primary lead node.....");
-          retrievePrimaryLeadHost();
-          HydraTask_executeSnappyJob();
-        }
-      } catch (IOException e) {
-        throw new TestException("IOException occurred while retriving destination logFile path " +
-            log + "\nError Message:" + e.getMessage());
-      } catch (InterruptedException e) {
-        throw new TestException("Exception occurred while waiting for the snappy streaming job  " +
-            "process re-execution." + "\nError Message:" + e.getMessage());
-      }
+      }*/
+    if (SnappyPrms.useJDBCConnInSnappyJob()) {
+      String primaryLocatorHost = getPrimaryLocatorHost();
+      String primaryLocatorPort = getPrimaryLocatorPort();
+      confString += "--conf primaryLocatorHost=" + primaryLocatorHost + " --conf primaryLocatorPort=" + primaryLocatorPort;
+      Log.getLogWriter().info("SP: confString for useJDBCConnInSnappyJob : " + confString.toString());
     }
+    if (SnappyPrms.isLongRunningJob()) {
+      confString += " --conf maxResultWaitSec=" + maxResultWaitSecs;
+    }
+    if (SnappyPrms.hasDynamicAppProps()) {
+      String dmlProps = dynamicAppProps.get(getMyTid());
+      if (dmlProps == null) {
+        dmlProps = dynamicAppProps.get(getMyTid());
+        if (dmlProps == null) throw new TestException("Test issue: dml statement for " +
+            getMyTid() + " is null");
+      }
+      String[] confDmlProps = dmlProps.split(",");
+      for (int i = 0; i < confDmlProps.length; i++) {
+        Log.getLogWriter().info("ConfParameter : " + confDmlProps[i].toString());
+        confString += " --conf " + confDmlProps[i].toString();
+      }
+      Log.getLogWriter().info("SP: confString for hasDynamicAppProps : " + confString.toString());
+    }
+    if (isSecurityEnabled)
+      confString += " --passfile " + passFilePath + " --conf logFileName=" + logFileName;
+
+    Log.getLogWriter().info("SP: confString for security: " + confString.toString());
+
+    try {
+      String cmd;
+      for (int i = 0; i < jobClassNames.size(); i++) {
+        String userJob = (String) jobClassNames.elementAt(i);
+        cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+            " --app-name " + userAppName + " --class " + userJob + " --app-jar " +
+            snappyTest.getUserAppJarLocation(userAppJar, jarPath);
+        if (!confString.isEmpty())
+          cmd += confString;
+
+        pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+        Log.getLogWriter().info("Command is : " + pb.command());
+
+        log = new File(".");
+        String dest = log.getCanonicalPath() + File.separator + logFileName;
+        logFile = new File(dest);
+        snappyTest.executeProcess(pb, logFile);
+      }
+      boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
+      if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
+        jobSubmissionCount++;
+        Thread.sleep(180000);
+        Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
+            " the job to new primary lead node.....");
+        retrievePrimaryLeadHost();
+        HydraTask_executeSnappyJob();
+      }
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while retriving destination logFile path " +
+          log + "\nError Message:" + e.getMessage());
+    } catch (InterruptedException e) {
+      throw new TestException("Exception occurred while waiting for the snappy streaming job  " +
+          "process re-execution." + "\nError Message:" + e.getMessage());
+    }
+    //  }
   }
 
 
