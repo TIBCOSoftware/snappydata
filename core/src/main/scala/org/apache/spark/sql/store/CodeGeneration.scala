@@ -281,7 +281,7 @@ object CodeGeneration extends Logging {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(defaultImports)
+    evaluator.setDefaultImports(defaultImports: _*)
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
@@ -329,7 +329,7 @@ object CodeGeneration extends Logging {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedIndexEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(defaultImports)
+    evaluator.setDefaultImports(defaultImports: _*)
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
@@ -428,7 +428,7 @@ object CodeGeneration extends Logging {
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
       classOf[MapData].getName,
-      classOf[InternalDataSerializer].getName))
+      classOf[InternalDataSerializer].getName): _*)
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
@@ -453,7 +453,7 @@ object CodeGeneration extends Logging {
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
       dialect: JdbcDialect): Int = {
-    val iterator = new java.util.Iterator[InternalRow] {
+    val iterator: java.util.Iterator[InternalRow] = new java.util.Iterator[InternalRow] {
 
       private val baseIterator = rows.iterator
       private val encoder = RowEncoder(StructType(schema))

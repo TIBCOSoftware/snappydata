@@ -15,42 +15,42 @@
  * LICENSE file.
  */
 
-import groovy.json.JsonSlurper
 import org.gradle.api.tasks.testing.logging.*
 import org.gradle.internal.logging.*
 
-apply plugin: 'wrapper'
-apply plugin: 'distribution'
-
-if (JavaVersion.current().isJava8Compatible()) {
-  allprojects {
-    tasks.withType(Javadoc) {
-      options.addStringOption('Xdoclint:none', '-quiet')
-      /*
-      if (javax.tools.ToolProvider.getSystemDocumentationTool().isSupportedOption("--allow-script-in-comments") == 0) {
-        options.addBooleanOption("-allow-script-in-comments", true)
-      }
-      */
-    }
-  }
-}
 buildscript {
   repositories {
     maven { url 'https://plugins.gradle.org/m2' }
     mavenCentral()
   }
   dependencies {
-    classpath 'io.snappydata:gradle-scalatest:0.16'
+    classpath 'io.snappydata:gradle-scalatest:0.23'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
-    classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
-    classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.+'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
+    classpath 'de.undercouch:gradle-download-task:3.4.3'
+    classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.+'
+    classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.2.+'
   }
 }
+
+apply plugin: 'wrapper'
+apply plugin: 'distribution'
+apply plugin: 'nebula.ospackage-base'
+apply plugin: "nebula.ospackage"
 
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
   gradle.startParameter.continueOnFailure = true
+
+  tasks.withType(Javadoc) {
+    options.addStringOption('Xdoclint:none', '-quiet')
+    /*
+    if (javax.tools.ToolProvider.getSystemDocumentationTool().isSupportedOption("--allow-script-in-comments") == 0) {
+      options.addBooleanOption("-allow-script-in-comments", true)
+    }
+    */
+  }
 
   repositories {
     mavenCentral()
@@ -65,10 +65,9 @@ allprojects {
   apply plugin: 'java'
   apply plugin: 'maven'
   apply plugin: 'scalaStyle'
+  apply plugin: 'com.github.johnrengelman.shadow'
   apply plugin: 'idea'
   apply plugin: "build-time-tracker"
-  apply plugin: "nebula.ospackage"
-  apply plugin: 'nebula.ospackage-base'
 
   group = 'io.snappydata'
   version = '1.0.2.1'
@@ -84,9 +83,10 @@ allprojects {
     options.forkOptions.jvmArgs = [ '-J-Xmx2g', '-J-Xms2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
   }
   tasks.withType(ScalaCompile) {
+    options.fork = true
+    options.forkOptions.jvmArgs = [ '-Xmx2g', '-Xms2g', '-XX:ReservedCodeCacheSize=512m', '-Djava.net.preferIPv4Stack=true' ]
     // scalaCompileOptions.optimize = true
     // scalaCompileOptions.useAnt = false
-    // scalaCompileOptions.fork = false
     scalaCompileOptions.deprecation = false
     scalaCompileOptions.additionalParameters = [ '-feature' ]
     options.encoding = 'UTF-8'
@@ -95,13 +95,6 @@ allprojects {
   jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
   javadoc.options.charSet = 'UTF-8'
-
-  gradle.taskGraph.whenReady( { graph ->
-    tasks.withType(Tar).each { tar ->
-      tar.compression = Compression.GZIP
-      tar.extension = 'tar.gz'
-    }
-  })
 
   ext {
     productName = 'SnappyData'
@@ -116,20 +109,47 @@ allprojects {
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
-    hadoopVersion = '2.7.3'
+    mockitoVersion = '1.10.19'
+    hadoopVersion = '2.7.7'
     scalatestVersion = '2.2.6'
-    jettyVersion = '9.2.22.v20170606'
+    jettyVersion = '9.2.26.v20180806'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
-    metricsVersion = '3.2.5'
-    janinoVersion = '3.0.8'
-    derbyVersion = '10.12.1.1'
+    metricsVersion = '4.0.3'
+    metrics2Version = '2.2.0'
+    janinoVersion = '3.0.11'
+    derbyVersion = '10.14.2.0'
+    parboiledVersion = '2.1.5'
+    tomcatJdbcVersion = '8.5.37'
+    hikariCPVersion = '2.7.9'
+    twitter4jVersion = '4.0.7'
+    objenesisVersion = '3.0.1'
+    rabbitMqVersion = '4.9.1'
+    akkaVersion = '2.3.16'
+    sprayVersion = '1.3.4'
+    sprayJsonVersion = '1.3.5'
+    sprayShapelessVersion = '1.3.3'
+    sprayTestkitVersion = '1.3.4'
+    jodaVersion = '2.1.2'
+    jodaTimeVersion = '2.10.1'
+    slickVersion = '2.1.0'
+    h2Version = '1.3.176'
+    commonsIoVersion = '2.6'
+    commonsPoolVersion = '1.6'
+    dbcpVersion = '1.4'
+    shiroVersion = '1.2.6'
+    flywayVersion = '3.2.1'
+    typesafeConfigVersion = '1.3.3'
+    mssqlVersion = '7.0.0.jre8'
+    antlr2Version = '2.7.7'
+
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.6.2.1'
     snappydataVersion = version
     pulseVersion = '1.5.1'
     zeppelinInterpreterVersion = '0.7.3.4'
+
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
@@ -140,6 +160,7 @@ allprojects {
     jdkVersion = System.getProperty('java.version')
     sparkJobServerVersion = '0.6.2.8'
     eclipseCollectionsVersion = '9.2.0'
+    fastutilVersion = '8.2.2'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -175,8 +196,14 @@ allprojects {
   // force same output directory for IDEA and gradle
   idea {
     module {
-      outputDir file("${project.buildDir}/classes/main")
-      testOutputDir file("${project.buildDir}/classes/test")
+      def projOutDir = file("${projectDir}/src/main/scala").exists()
+        ? "${project.sourceSets.main.java.outputDir}/../../scala/main"
+        : project.sourceSets.main.java.outputDir
+      def projTestOutDir = file("${projectDir}/src/test/scala").exists()
+        ? "${project.sourceSets.test.java.outputDir}/../../scala/test"
+        : project.sourceSets.test.java.outputDir
+      outputDir file(projOutDir)
+      testOutputDir file(projTestOutDir)
     }
   }
 }
@@ -294,7 +321,8 @@ subprojects {
   }
 
   task scalaTest(type: Test) {
-    actions = [ new com.github.maiflai.ScalaTestAction() ]
+    def factory = new com.github.maiflai.BackwardsCompatibleJavaExecActionFactory(gradle.gradleVersion)
+    actions = [ new com.github.maiflai.ScalaTestAction(factory) ]
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
@@ -311,6 +339,7 @@ subprojects {
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.events = TestLogEvent.values() as Set
 
+    extensions.add(com.github.maiflai.ScalaTestAction.TAGS, new org.gradle.api.tasks.util.PatternSet())
     List<String> suites = []
     extensions.add(com.github.maiflai.ScalaTestAction.SUITES, suites)
     extensions.add('suite', { String name -> suites.add(name) } )
@@ -322,11 +351,11 @@ subprojects {
 
     def output = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
-    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) } )
+    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) })
 
     def errorOutput = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
-    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) } )
+    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) })
 
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
@@ -334,7 +363,7 @@ subprojects {
     }
     workingDir = "${testResultsBase}/scalatest"
 
-    testResult '/dev/tty'
+    // testResult '/dev/tty'
     testOutput "${workingDir}/output.txt"
     testError "${workingDir}/error.txt"
     binResultsDir = file("${workingDir}/binary/${project.name}")
@@ -397,35 +426,6 @@ subprojects {
                "-Dio.netty.allocator.numHeapArenas=${numArenas}",
                "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
 
-    String single = System.getProperty('dunit.single')
-    if (single == null || single.length() == 0) {
-      single = rootProject.hasProperty('dunit.single') ?
-          rootProject.property('dunit.single') : null
-    }
-    if (single == null || single.length() == 0) {
-      def dunitTests = fileTree(dir: testClassesDir,
-          includes: ['**/*DUnitTest.class', '**/*DUnit.class'],
-          excludes: ['**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class'])
-      FileTree includeTestFiles = dunitTests
-      int dunitFrom = rootProject.hasProperty('dunit.from') ?
-          getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-      int dunitTo = rootProject.hasProperty('dunit.to') ?
-          getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
-
-      int begin = dunitFrom != -1 ? dunitFrom : 0
-      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
-      if (begin != 0 || end != includeTestFiles.size()) {
-        println("Picking tests :")
-        filteredSet.each { a -> println(a) }
-      }
-      include filteredSet
-    } else {
-      include single
-    }
-    exclude '**/*Suite.class'
-    exclude '**/*DUnitSecurityTest.class'
-
     workingDir = "${testResultsBase}/dunit"
 
     binResultsDir = file("${workingDir}/binary/${project.name}")
@@ -481,36 +481,6 @@ subprojects {
                "-Dio.netty.allocator.numHeapArenas=${numArenas}",
                "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
 
-    def single = rootProject.hasProperty('dunitSecurity.single') ?
-        rootProject.property('dunitSecurity.single') : null
-    if (single == null || single.length() == 0) {
-      def dunitSecurityTests = fileTree(dir: testClassesDir,
-          includes: ['**/*DUnitSecurityTest.class'],
-          excludes: ['**/*DUnitTest.class', '**/NCJ*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class'])
-      FileTree includeTestFiles = dunitSecurityTests
-      int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
-          getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
-      int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
-          getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
-
-      int begin = dunitFrom != -1 ? dunitFrom : 0
-      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
-      if (begin != 0 || end != includeTestFiles.size()) {
-        println("Picking tests :")
-        filteredSet.each { a -> println(a) }
-      }
-      include filteredSet
-    } else {
-      include single
-    }
-    exclude '**/*Suite.class'
-    exclude '**/*DUnitTest.class'
-    exclude '**/*DUnit.class'
-    if (!rootProject.hasProperty('snappydata.enterprise')) {
-      exclude '**/*DUnitSecurityTest.class'
-    }
-
     workingDir = "${testResultsBase}/dunit-security"
 
     binResultsDir = file("${workingDir}/binary/${project.name}")
@@ -527,87 +497,6 @@ subprojects {
       progress << "${eol}${now} ========== STARTING SECURITY DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
     }
   }
-
-  gradle.taskGraph.whenReady({ graph ->
-    tasks.withType(Jar).each { pack ->
-      if (pack.name == 'packageTests') {
-        pack.from(pack.project.sourceSets.test.output.classesDir, sourceSets.test.resources.srcDirs)
-      }
-    }
-    tasks.withType(Test).each { test ->
-      test.configure {
-
-        String logLevel = System.getProperty('logLevel')
-        if (logLevel != null && logLevel.length() > 0) {
-          systemProperties 'gemfire.log-level'           : logLevel,
-                           'logLevel'                    : logLevel
-        }
-        logLevel = System.getProperty('securityLogLevel')
-        if (logLevel != null && logLevel.length() > 0) {
-          systemProperties 'gemfire.security-log-level'  : logLevel,
-                           'securityLogLevel'            : logLevel
-        }
-
-        environment 'SNAPPY_HOME': snappyProductDir,
-          'APACHE_SPARK_HOME': sparkProductDir,
-          'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
-          'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
-
-        def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
-        def progress = new File(workingDir, 'progress.txt')
-        def output = new File(workingDir, 'output.txt')
-
-        String eol = System.getProperty('line.separator')
-        beforeTest { desc ->
-          String now = now()
-          progress << "${now} Starting test ${desc.className} ${desc.name}${eol}"
-          output << "${now} STARTING TEST ${desc.className} ${desc.name}${eol}${eol}"
-        }
-        onOutput { desc, event ->
-          String msg = event.message
-          if (event.destination.toString() == 'StdErr') {
-            msg = msg.replace(eol, "${eol}[error]  ")
-          }
-          output << msg
-        }
-        afterTest { desc, result ->
-          String now = now()
-          progress << "${now} Completed test ${desc.className} ${desc.name} with result: ${result.resultType}${eol}"
-          output << "${eol}${now} COMPLETED TEST ${desc.className} ${desc.name} with result: ${result.resultType}${eol}${eol}"
-          def exceptions = result.exceptions
-          if (exceptions.size() > 0) {
-            exceptions.each { t ->
-              progress << "  EXCEPTION: ${getStackTrace(t)}${eol}"
-              output << "${getStackTrace(t)}${eol}"
-            }
-            failureCount.incrementAndGet()
-          }
-        }
-        doLast {
-          def report = "${test.reports.html.destination}/index.html"
-          boolean hasProgress = progress.exists()
-          if (failureCount.get() > 0) {
-            println()
-            def failureMsg = "FAILED: There were ${failureCount.get()} failures.${eol}"
-            if (hasProgress) {
-              failureMsg    += "        See the progress report in: file://$progress${eol}"
-            }
-            failureMsg    += "        HTML report in: file://$report"
-            throw new GradleException(failureMsg)
-          } else if (hasProgress) {
-            println()
-            println("SUCCESS: See the progress report in: file://$progress")
-            println("         HTML report in: file://$report")
-            println()
-          } else {
-            println()
-            println("SUCCESS: See the HTML report in: file://$report")
-            println()
-          }
-        }
-      }
-    }
-  })
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
@@ -661,6 +550,11 @@ subprojects {
       "org.apache.hadoop:hadoop-yarn-server-common:${hadoopVersion}",
       "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVersion}",
       "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
+    exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
+  }
+  configurations.testRuntime {
+    // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
   }
 
   task packageTests(type: Jar, dependsOn: testClasses) {
@@ -744,6 +638,165 @@ subprojects {
   }
 }
 
+// apply common test and misc configuration
+gradle.taskGraph.whenReady { graph ->
+
+  String dunitSingle = System.getProperty('dunit.single')
+  if (dunitSingle == null || dunitSingle.length() == 0) {
+    dunitSingle = rootProject.hasProperty('dunit.single') ?
+        rootProject.property('dunit.single') : null
+  }
+  String dunitSecSingle = System.getProperty('dunitSecurity.single')
+  if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
+    dunitSecSingle = rootProject.hasProperty('dunitSecurity.single') ?
+        rootProject.property('dunitSecurity.single') : null
+  }
+
+  def allTasks = subprojects.collect { it.tasks }.flatten()
+  allTasks.each { task ->
+    if (task instanceof Tar) {
+      def tar = (Tar)task
+      tar.compression = Compression.GZIP
+      tar.extension = 'tar.gz'
+    } else if (task instanceof Jar) {
+      def pack = (Jar)task
+      if (pack.name == 'packageTests') {
+        pack.from(pack.project.sourceSets.test.output.classesDirs, pack.project.sourceSets.test.resources.srcDirs)
+      }
+    } else if (task instanceof Test) {
+      def test = (Test)task
+      test.configure {
+
+        if (test.name == 'dunitTest') {
+          includes.clear()
+          excludes.clear()
+          if (dunitSingle == null || dunitSingle.length() == 0) {
+            def dunitTests = testClassesDirs.asFileTree.matching {
+              includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
+              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class',
+                  '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
+                  '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class' ]
+            }
+            FileTree includeTestFiles = dunitTests
+            int dunitFrom = rootProject.hasProperty('dunit.from') ?
+                getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
+            int dunitTo = rootProject.hasProperty('dunit.to') ?
+                getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
+
+            int begin = dunitFrom != -1 ? dunitFrom : 0
+            int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            if (begin != 0 || end != includeTestFiles.size()) {
+              println("Picking tests :")
+              filteredSet.each { a -> println(a) }
+            }
+            include filteredSet
+          } else {
+            include dunitSingle
+          }
+        } else if (test.name == 'dunitSecurityTest') {
+          includes.clear()
+          excludes.clear()
+          if (!rootProject.hasProperty('snappydata.enterprise')) {
+            excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+          } else if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
+            def dunitSecurityTests = testClassesDirs.asFileTree.matching {
+              includes = [ '**/*DUnitSecurityTest.class' ]
+              excludes = [ '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+            }
+            FileTree includeTestFiles = dunitSecurityTests
+            int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
+                getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
+            int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
+                getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
+
+            int begin = dunitFrom != -1 ? dunitFrom : 0
+            int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            if (begin != 0 || end != includeTestFiles.size()) {
+              println("Picking tests :")
+              filteredSet.each { a -> println(a) }
+            }
+            include filteredSet
+          } else {
+            include dunitSecSingle
+          }
+        }
+
+        String logLevel = System.getProperty('logLevel')
+        if (logLevel != null && logLevel.length() > 0) {
+          systemProperties 'gemfire.log-level'           : logLevel,
+                           'logLevel'                    : logLevel
+        }
+        logLevel = System.getProperty('securityLogLevel')
+        if (logLevel != null && logLevel.length() > 0) {
+          systemProperties 'gemfire.security-log-level'  : logLevel,
+                           'securityLogLevel'            : logLevel
+        }
+
+        environment 'SNAPPY_HOME': snappyProductDir,
+          'APACHE_SPARK_HOME': sparkProductDir,
+          'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
+          'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
+
+        def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
+        def progress = new File(workingDir, 'progress.txt')
+        def output = new File(workingDir, 'output.txt')
+
+        String eol = System.getProperty('line.separator')
+        beforeTest { desc ->
+          String now = now()
+          progress << "${now} Starting test ${desc.className} ${desc.name}${eol}"
+          output << "${now} STARTING TEST ${desc.className} ${desc.name}${eol}${eol}"
+        }
+        onOutput { desc, event ->
+          String msg = event.message
+          if (event.destination.toString() == 'StdErr') {
+            msg = msg.replace(eol, "${eol}[error]  ")
+          }
+          output << msg
+        }
+        afterTest { desc, result ->
+          String now = now()
+          progress << "${now} Completed test ${desc.className} ${desc.name} with result: ${result.resultType}${eol}"
+          output << "${eol}${now} COMPLETED TEST ${desc.className} ${desc.name} with result: ${result.resultType}${eol}${eol}"
+          def exceptions = result.exceptions
+          if (exceptions.size() > 0) {
+            exceptions.each { t ->
+              progress << "  EXCEPTION: ${getStackTrace(t)}${eol}"
+              output << "${getStackTrace(t)}${eol}"
+            }
+            failureCount.incrementAndGet()
+          }
+        }
+        doLast {
+          def report = "${test.reports.html.destination}/index.html"
+          boolean hasProgress = progress.exists()
+          if (failureCount.get() > 0) {
+            println()
+            def failureMsg = "FAILED: There were ${failureCount.get()} failures.${eol}"
+            if (hasProgress) {
+              failureMsg    += "        See the progress report in: file://$progress${eol}"
+            }
+            failureMsg    += "        HTML report in: file://$report"
+            throw new GradleException(failureMsg)
+          } else if (hasProgress) {
+            println()
+            println("SUCCESS: See the progress report in: file://$progress")
+            println("         HTML report in: file://$report")
+            println()
+          } else {
+            println()
+            println("SUCCESS: See the HTML report in: file://$report")
+            println()
+          }
+        }
+      }
+    }
+  }
+}
+
+
 task publishLocal {
   dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
     p.name != 'snappydata-store-prebuild' && p.name != 'snappydata-store' }.collect {
@@ -762,7 +815,7 @@ task publishMaven {
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
-  dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
+  dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
   dependsOn ':jdbcJar'
 
@@ -1029,12 +1082,12 @@ ospackage {
 }
 
 buildRpm {
+  dependsOn ':packageVSD'
+  dependsOn ':packageZeppelinInterpreter'
   requires('glibc')
   requires('bash')
   requires('perl')
   requires('curl')
-  dependsOn ':packageVSD'
-  dependsOn ':packageZeppelinInterpreter'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without_hadoop'
   }
@@ -1043,13 +1096,13 @@ buildRpm {
 }
 
 buildDeb {
+  dependsOn ':packageVSD'
+  dependsOn ':packageZeppelinInterpreter'
   requires('libc6')
   requires('bash')
   requires('perl')
   requires('curl')
   recommends('java8-sdk')
-  dependsOn ':packageVSD'
-  dependsOn ':packageZeppelinInterpreter'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop'
   }
@@ -1142,19 +1195,25 @@ task generateSources {
   // copy all resource files into build classes path because new versions of IDEA
   // do not include separate resources path in CLASSPATH if output path has been customized
   doLast {
-    getSubprojects().collect { proj ->
+    subprojects.collect { proj ->
       String resourcesDir = proj.sourceSets.main.output.resourcesDir
       if (file(resourcesDir).exists()) {
+        def projOutDir = file("${proj.projectDir}/src/main/scala").exists()
+          ? "${proj.sourceSets.main.java.outputDir}/../../scala/main"
+          : proj.sourceSets.main.java.outputDir
         copy {
           from resourcesDir
-          into "${proj.buildDir}/classes/main"
+          into projOutDir
         }
       }
       resourcesDir = proj.sourceSets.test.output.resourcesDir
       if (file(resourcesDir).exists()) {
+        def projOutDir = file("${proj.projectDir}/src/test/scala").exists()
+          ? "${proj.sourceSets.test.java.outputDir}/../../scala/test"
+          : proj.sourceSets.test.java.outputDir
         copy {
           from resourcesDir
-          into "${proj.buildDir}/classes/test"
+          into projOutDir
         }
       }
     }
@@ -1204,9 +1263,9 @@ task allReports(type: TestReport) {
   destinationDir = file("${testResultsBase}/combined-reports")
   mustRunAfter checkAll
 }
-gradle.taskGraph.whenReady({ graph ->
+gradle.taskGraph.whenReady { graph ->
   tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
-})
+}
 
 def writeProperties(def parent, def name, def comment, def propsMap) {
   parent.exists() || parent.mkdirs()
@@ -1409,26 +1468,21 @@ if (rootProject.hasProperty('trackBuildTime') ) {
   }
 }
 
-// log build output to buildOutput.log
+// log build output to buildOutput.log in addition to console output
 
 def buildOutput = new File("${rootDir}/buildOutput.log")
-
 // delete build output file if it has become large
 if (buildOutput.length() > 1000000) {
   delete buildOutput
 }
-
-gradle.services.get(LoggingOutputInternal).addStandardOutputListener (new StandardOutputListener () {
+def gradleLogger = new org.gradle.api.logging.StandardOutputListener() {
   void onOutput(CharSequence output) {
     buildOutput << output
   }
-})
-
-gradle.services.get(LoggingOutputInternal).addStandardErrorListener (new StandardOutputListener () {
-  void onOutput(CharSequence output) {
-    buildOutput << output
-  }
-})
+}
+def loggerService = gradle.services.get(LoggingOutputInternal)
+loggerService.addStandardOutputListener(gradleLogger)
+loggerService.addStandardErrorListener(gradleLogger)
 
 println()
 println('-------------------------------------------------')

@@ -762,6 +762,7 @@ class QueryRoutingDUnitTest(val s: String)
 
       TPCHUtils.createAndLoadTables(snc, true)
 
+      snc.setConf(Property.EnableExperimentalFeatures.name, "true")
       snc.sql(
         s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
              options (COLOCATE_WITH 'customer')
