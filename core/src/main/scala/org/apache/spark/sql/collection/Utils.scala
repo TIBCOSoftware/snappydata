@@ -20,7 +20,7 @@ import java.io.ObjectOutputStream
 import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
-import java.sql.DriverManager
+import java.sql.{DriverManager, ResultSet}
 import java.util.TimeZone
 
 import scala.annotation.tailrec
@@ -41,6 +41,7 @@ import org.apache.commons.math3.distribution.NormalDistribution
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark._
+import org.apache.spark.executor.InputMetrics
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
@@ -56,7 +57,7 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.SQLExecution
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper, JdbcUtils}
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
@@ -659,6 +660,11 @@ object Utils {
   def createCatalystConverter(dataType: DataType): Any => Any =
     CatalystTypeConverters.createToCatalystConverter(dataType)
 
+  def resultSetToSparkInternalRows(resultSet: ResultSet, schema: StructType,
+      inputMetrics: InputMetrics = new InputMetrics): Iterator[InternalRow] = {
+    JdbcUtils.resultSetToSparkInternalRows(resultSet, schema, inputMetrics)
+  }
+
   // we should use the exact day as Int, for example, (year, month, day) -> day
   def millisToDays(millisUtc: Long, tz: TimeZone): Int = {
     // SPARK-6785: use Math.floor so negative number of days (dates before 1970)
@@ -697,10 +703,8 @@ object Utils {
     conf
   }
 
-  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader = {
-    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    new MutableURLClassLoader(urls, parentLoader)
-  }
+  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader =
+    SharedUtils.newMutableURLClassLoader(urls)
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {

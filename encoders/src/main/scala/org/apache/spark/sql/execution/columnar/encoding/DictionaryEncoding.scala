@@ -23,8 +23,8 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{DictionaryMap, LongKey, ObjectHashSet}
 
-import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 

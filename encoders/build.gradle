@@ -14,11 +14,6 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
-  id 'de.undercouch.download' version '3.4.3'
-}
-
 apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
