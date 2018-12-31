@@ -1141,19 +1141,21 @@ task generateSources {
   dependsOn ':snappy-spark:generateSources', ':snappy-store:generateSources'
   // copy all resource files into build classes path because new versions of IDEA
   // do not include separate resources path in CLASSPATH if output path has been customized
-  getSubprojects().collect { proj ->
-    String resourcesDir = "${proj.projectDir}/src/main/resources"
-    if (file(resourcesDir).exists()) {
-      copy {
-        from resourcesDir
-        into "${proj.buildDir}/classes/main"
+  doLast {
+    getSubprojects().collect { proj ->
+      String resourcesDir = proj.sourceSets.main.output.resourcesDir
+      if (file(resourcesDir).exists()) {
+        copy {
+          from resourcesDir
+          into "${proj.buildDir}/classes/main"
+        }
       }
-    }
-    resourcesDir = "${proj.projectDir}/src/test/resources"
-    if (file(resourcesDir).exists()) {
-      copy {
-        from resourcesDir
-        into "${proj.buildDir}/classes/test"
+      resourcesDir = proj.sourceSets.test.output.resourcesDir
+      if (file(resourcesDir).exists()) {
+        copy {
+          from resourcesDir
+          into "${proj.buildDir}/classes/test"
+        }
       }
     }
   }

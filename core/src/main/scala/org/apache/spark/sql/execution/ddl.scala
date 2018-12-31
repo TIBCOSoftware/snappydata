@@ -29,17 +29,22 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, SnappyTableStatsProviderService}
+import org.parboiled2.ParserInput
 
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -48,7 +53,7 @@ import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
-import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.sources.{DestroyRelation, PutIntoTable}
 import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
@@ -200,6 +205,22 @@ case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     snc.alterTable(tableIdent, isAddColumn = true, addColumn)
+    Nil
+  }
+}
+
+case class PutIntoValues(tableIdentifier: TableIdentifier,
+    input: ParserInput) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
+      snc.getCurrentSchema, tableIdentifier.identifier)).toString
+    if (tableType == "COLUMN") {
+      throw StandardException.newException(SQLState.PUTINTO_OP_DISALLOWED_ON_COLUMN_TABLES)
+    }
+    DMLExternalTable(tableIdentifier,
+      UnresolvedRelation(tableIdentifier), input.sliceString(0, input.length))
     Nil
   }
 }
