@@ -51,10 +51,15 @@ public class SnappyColocationAndEvictionTest {
      * Task to verify PR bucket local destroy eviction.
      */
     public static synchronized void verifyEvictionLocalDestroy() throws SQLException {
+        boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
         Properties locatorProps = new Properties();
         String locatorsList = SnappyTest.getLocatorsList("locators");
         locatorProps.setProperty("locators", locatorsList);
         locatorProps.setProperty("mcast-port", "0");
+        if (isSecurityEnabled) {
+            locatorProps.setProperty("user", "gemfire1");
+            locatorProps.setProperty("password", "gemfire1");
+        }
         Server server = ServerManager.getServerInstance();
         server.start(locatorProps);
         Set<LocalRegion> regions = Misc.getGemFireCache().getAllRegions();

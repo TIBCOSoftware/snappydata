@@ -46,7 +46,7 @@ INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMet
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 hydra.Prms-totalTaskTimeSec           = 900;
-hydra.Prms-maxResultWaitSec           = 600;
+hydra.Prms-maxResultWaitSec           = 900;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-testUniqueKeys = true;
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-largeDataSet = true;
