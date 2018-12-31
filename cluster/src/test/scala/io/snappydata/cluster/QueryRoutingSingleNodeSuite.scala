@@ -25,7 +25,7 @@ import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.store.{ColumnTableBatchInsertTest, MetadataTest}
+import org.apache.spark.sql.store.ColumnTableBatchInsertTest
 
 class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -39,17 +39,13 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     // results in multiple batches
     setDMLMaxChunkSize(50L)
     serverHostPort = TestUtil.startNetServer()
-    // scalastyle:off println
-    println("network server started")
-    // scalastyle:on println
+    logInfo("network server started")
   }
 
   override def afterAll(): Unit = {
     setDMLMaxChunkSize(default_chunk_size)
     TestUtil.stopNetServer()
-    // scalastyle:off println
-    println("network server stopped")
-    // scalastyle:on println
+    logInfo("network server stopped")
     super.afterAll()
   }
 
@@ -75,9 +71,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         }
       })
       stmt.executeBatch()
-      // scalastyle:off println
-      println(s"committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"committed $numRows rows")
     } finally {
       stmt.close()
       conn.close()
@@ -97,9 +91,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         rs.getInt(1)
         index += 1
       }
-      // scalastyle:off println
-      println("Number of rows read " + index)
-      // scalastyle:on println
+      logInfo("Number of rows read " + index)
       rs.close()
     } finally {
       stmt.close()
@@ -134,9 +126,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         }
       })
       stmt.executeBatch()
-      // scalastyle:off println
-      println(s"committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"committed $numRows rows")
     } finally {
       stmt.close()
       conn.close()
@@ -153,17 +143,13 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       val i = rs.getInt(1)
       val j = rs.getInt(2)
       val s = rs.getString(3)
-      // scalastyle:off println
-      println(s"$qry row($index) $i $j $s ")
-      // scalastyle:on println
+      logInfo(s"$qry row($index) $i $j $s")
       index += 1
 
       assert(results.contains(i))
     }
 
-    // scalastyle:off println
-    println(s"$qry Number of rows read " + index)
-    // scalastyle:on println
+    logInfo(s"$qry Number of rows read " + index)
     assert(index == results.length)
     rs.close()
   }
@@ -240,16 +226,12 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         s") " +
         s" limit 20" +
         s""
-    // scalastyle:off println
-    println(s"Iter ${iter} QUERY = ${qry}")
-    // scalastyle:on println
+    logInfo(s"Iter $iter QUERY = $qry")
     val df1 = snc.sql(qry)
     val res1 = df1.collect()
-    // scalastyle:off println
-    println(s"Iter ${iter} with query = ${qry}")
-    res1.foreach(println)
-    println(s"Iter ${iter} query end and res1 size = ${res1.length}")
-    // scalastyle:on println
+    logInfo(s"Iter $iter with query = $qry")
+    logInfo(res1.mkString("\n"))
+    logInfo(s"Iter $iter query end and res1 size = ${res1.length}")
     assert(res1.length == 3)
 
     val qry2 = s"select ol_1_int_id, ol_1_int2_id, ol_1_str_id " +
@@ -264,12 +246,10 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         s""
     val df2 = snc.sql(qry2)
     val res2 = df2.collect()
-    // scalastyle:off println
-    println(s"Iter ${iter} with query2 = ${qry2}")
-    res2.foreach(println)
-    println(s"Iter ${iter} query2 end with res size = ${res2.length}")
-    // scalastyle:on println
-    assert(!(res1.sameElements(res2)))
+    logInfo(s"Iter $iter with query2 = $qry2")
+    logInfo(res2.mkString("\n"))
+    logInfo(s"Iter $iter query2 end with res size = ${res2.length}")
+    assert(!res1.sameElements(res2))
     assert(res2.length == 3)
   }
 
@@ -313,9 +293,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       stmt.addBatch(s"insert into $tName values(5,null,'ddd')")
       stmt.addBatch(s"insert into $tName values(6,10.6,'ddd')")
       stmt.executeBatch()
-      // scalastyle:off println
-      println(s"inserted rows")
-      // scalastyle:on println
+      logInfo(s"inserted rows")
     } finally {
       stmt.close()
       conn.close()
@@ -336,9 +314,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         assert(rs.getString(2) != null)
         index += 1
       }
-      // scalastyle:off println
-      println(s"Number of rows read $index sum=$sum")
-      // scalastyle:on println
+      logInfo(s"Number of rows read $index sum=$sum")
       assert(index == 5, index)
       assert(sum - 18138.2 == 0, sum)
       rs.close()
@@ -366,9 +342,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         }
       })
       stmt.executeBatch()
-      // scalastyle:off println
-      println(s"committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"committed $numRows rows")
     } finally {
       stmt.close()
       conn.close()
@@ -382,13 +356,9 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     val stmt = conn.createStatement()
     try {
       val query = s"select distinct ol_w_id  from order_line_row_bool"
-
-      snc.sql(query).show()
-      val count = snc.sql(query).count()
+      val count = snc.sql(query).collect().length
       assert(count == 2)
-      // scalastyle:off println
-      println("snc: Number of rows read " + count)
-      // scalastyle:on println
+      logInfo("snc: Number of rows read " + count)
 
       val rs = stmt.executeQuery(query)
       var index = 0
@@ -396,9 +366,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         rs.getInt(1)
         index += 1
       }
-      // scalastyle:off println
-      println("jdbc: Number of rows read " + index)
-      // scalastyle:on println
+      logInfo("jdbc: Number of rows read " + index)
       assert(index == 2)
       rs.close()
     } finally {
@@ -458,25 +426,18 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
           s" (p.ds_class_id = 'C' AND p.property = 'DOUBLE_PROP' AND p.double_value > 0.2) OR " +
           s" (p.ds_class_id = 'C' AND p.property = 'DOUBLE_PROP' AND p.double_value < 0.2)"
 
-      snc.sql(query).show()
-      val count = snc.sql(query).count()
+      val count = snc.sql(query).collect().length
       assert(count == 2)
-      // scalastyle:off println
-      println("snc: Number of rows read " + count)
-      // scalastyle:on println
+      logInfo("snc: Number of rows read " + count)
 
       val rs = stmt.executeQuery(query)
       var index = 0
       while (rs.next()) {
         index += 1
-        // scalastyle:off println
-        println(s"$index: ${rs.getString(1)} ${rs.getString(2)} ${rs.getString(3)} " +
+        logInfo(s"$index: ${rs.getString(1)} ${rs.getString(2)} ${rs.getString(3)} " +
             s"${rs.getString(4)} ${rs.getString(5)} ${rs.getLong(6)} ${rs.getBigDecimal(7)}")
-        // scalastyle:on println
       }
-      // scalastyle:off println
-      println("jdbc: Number of rows read " + index)
-      // scalastyle:on println
+      logInfo("jdbc: Number of rows read " + index)
       assert(index == 2)
       rs.close()
     } finally {
@@ -503,9 +464,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         }
       })
       stmt.executeBatch()
-      // scalastyle:off println
-      println(s"committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"committed $numRows rows")
     } finally {
       stmt.close()
       conn.close()
@@ -650,9 +609,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         }
       })
       stmt.executeBatch()
-      // scalastyle:off println
-      println(s"insertRows2: committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"insertRows2: committed $numRows rows")
     } finally {
       stmt.close()
       conn.close()
@@ -664,9 +621,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     val stmt = conn.createStatement()
     try {
       val numRows = stmt.executeUpdate(s"insert into $tableName1 select * from $tableName2")
-      // scalastyle:off println
-      println(s"insertInto $numRows rows")
-      // scalastyle:on println
+      logInfo(s"insertInto $numRows rows")
       assert(numRows == rowsExpected)
     } finally {
       stmt.close()
@@ -679,9 +634,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     val stmt = conn.createStatement()
     try {
       val numRows = stmt.executeUpdate(s"put into $tableName1 select * from $tableName2")
-      // scalastyle:off println
-      println(s"putInto $numRows rows")
-      // scalastyle:on println
+      logInfo(s"putInto $numRows rows")
       assert(numRows == rowsExpected)
     } finally {
       stmt.close()
@@ -722,11 +675,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       df.foreach(r => {
         val col1 = r.getInt(0)
         val col2 = r.getInt(1)
-
-        // scalastyle:off println
-        println(s"select row $r")
-        // scalastyle:on println
-
         if (col1 < 6) {
           assertionNotFailed = assertionNotFailed && (col1 + 1 == col2)
         } else {
@@ -758,7 +706,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       val connSession = allSessions.head
       // skip the "isCached" checks with JDBC since session is different for JDBC connection
       ColumnTableBatchInsertTest.testSparkCachingUsingSQL(sc,
-        MetadataTest.resultSetToDataset(connSession, stmt), connSession.catalog.isCached,
+        SnappyFunSuite.resultSetToDataset(connSession, stmt), connSession.catalog.isCached,
         df => connSession.sharedState.cacheManager.lookupCachedData(df).isDefined)
       stmt.close()
     } finally {

@@ -308,7 +308,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("row_table", Row(4, "4", "3", 3))
 
     val df = snc.sql("update row_table set col3 = '5' where col2 in (select col2 from col_table)")
-    df.show
+    df.collect()
 
     val resultdf = snc.table("row_table").collect()
     assert(resultdf.length == 4)
@@ -1151,7 +1151,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     SnappyContext.globalSparkContext.stop()
 
     snc = new SnappySession(sc)
-    snc.sql("select count(1) from t1").show
+    snc.sql("select count(1) from t1").collect()
   }
 
   test("Bug-2348 : Invalid stats bitmap") {
