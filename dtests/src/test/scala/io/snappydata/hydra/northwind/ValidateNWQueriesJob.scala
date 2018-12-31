@@ -78,9 +78,11 @@ class ValidateNWQueriesJob extends SnappySQLJob {
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${getCurrentDirectory}/${outputFile}"
-      case Failure(e) => pw.close();
-        throw e;
+        s"Validation passed. See ${getCurrentDirectory}/${outputFile}"
+        throw new Exception()
+      case Failure(e) =>
+        pw.close();
+        throw new TestException(s"Validation failed. See ${getCurrentDirectory}/${outputFile}");
     }
   }
 

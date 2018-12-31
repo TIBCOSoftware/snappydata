@@ -307,16 +307,33 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         }
         Log.getLogWriter().info("JobID is : " + jobID);
         for (int j = 0; j < 3; j++) {
-          if(!getJobStatus(jobID)){
-            throw new TestException("Got Exception while executing streaming job. Please check " +
-                "the job status output.");
+          try {
+            Thread.sleep(10 * 1000);
+          } catch (InterruptedException ie) {
           }
+          getJobStatus(jobID);
+        }
+        if(!checkJobStatus(jobID)){
+          throw new TestException("Got Exception while executing streaming job. Please check " +
+              "the job status output.");
         }
       }
-
     } catch (IOException e) {
       throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
     }
+  }
+
+  public void getJobStatus(String jobID) {
+    String snappyJobScript = getScriptLocation("snappy-job.sh");
+    leadHost = getLeadHost();
+    String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+    String dest = getCurrentDirPath() + File.separator + "jobStatus_" + getMyTid() + "_" + jobID +
+        ".log";
+    File commandOutput = new File(dest);
+    String command = snappyJobScript + " status --lead " + leadHost + ":" + leadPort + " " +
+        "--job-id " + jobID + " > " + commandOutput;
+    ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
+    executeProcess(pb, null);
   }
 
   public static void HydraTask_executeSQLScriptsWithSleep() {
@@ -342,33 +359,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
    HydraTask_stopSnappyCluster();
    HydraTask_startSnappyCluster();
    HydraTask_executeSnappyStreamingJob();
-  }
-
-  public boolean getJobStatus(String jobID){
-    String snappyJobScript = getScriptLocation("snappy-job.sh");
-    leadHost = getLeadHost();
-    String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
-    try {
-      String dest = getCurrentDirPath() + File.separator + "jobStatus_" + RemoteTestModule
-          .getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
-      File commandOutput = new File(dest);
-      String command = snappyJobScript + " status --lead " + leadHost + ":" + leadPort + " " +
-          "--job-id " + jobID + " > " + commandOutput;
-      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
-      executeProcess(pb, null);
-      String line = null;
-      BufferedReader inputFile = new BufferedReader(new FileReader(commandOutput));
-      while ((line = inputFile.readLine()) != null) {
-        if(line.contains("status") ){
-          if (line.contains("ERROR"))
-              return false;
-          break;
-        }
-      } try { Thread.sleep(10*1000);} catch(InterruptedException ie) { }
-    } catch (IOException ie){
-      Log.getLogWriter().info("Got exception while accessing current dir");
-    }
-    return true;
   }
 
   /* Generator and Publisher for StringMessageProducer
