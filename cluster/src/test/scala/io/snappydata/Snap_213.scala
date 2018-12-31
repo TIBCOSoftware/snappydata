@@ -30,7 +30,7 @@ class Snap_213
   override def beforeAll(): Unit = {
     super.beforeAll()
     // force boot GemFireXD if not booted; just getting SnappyContext should do
-    println(s"Using SnappyContext $snc")
+    logInfo(s"Using SnappyContext $snc")
   }
 
   override def afterAll(): Unit = {
@@ -42,7 +42,7 @@ class Snap_213
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val hostPort = TestUtil.startNetServer()
 
-    println("server  started ")
+    logInfo("server  started")
     val conn: Connection = DriverManager.getConnection(
       "jdbc:snappydata://" + hostPort)
 

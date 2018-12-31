@@ -367,9 +367,10 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
       if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
       Nil
     } else {
+      val queryShortString = CachedDataFrame.queryStringShortForm(queryString)
       val localProperties = session.sparkContext.getLocalProperties
       val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)
-      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryString)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortString)
       try {
         session.sessionState.enableExecutionCache = true
         // Get the actual QueryExecution used by InMemoryRelation so that
@@ -386,7 +387,7 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         }.get
         val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
         Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
-          CachedDataFrame.withNewExecutionId(session, queryString, queryString,
+          CachedDataFrame.withNewExecutionId(session, queryShortString, queryString,
             cachedExecution.toString(), planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
