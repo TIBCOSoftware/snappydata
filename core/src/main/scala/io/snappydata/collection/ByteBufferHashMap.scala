@@ -21,6 +21,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -64,7 +65,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
 
   // round to word size adding 8 bytes for header (offset + hashcode)
   private val fixedKeySize = ((keySize + 15) >>> 3) << 3
-  private var _capacity = OpenHashSet.nextPowerOf2(initialCapacity)
+  private var _capacity = Utils.nextPowerOf2(initialCapacity)
   private var _size = 0
   private var growThreshold = (loadFactor * _capacity).toInt
 
@@ -73,7 +74,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   if (keyData eq null) {
     val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
     // clear the key data
-    allocator.clearPostAllocate(buffer)
+    allocator.clearPostAllocate(buffer, 0)
     keyData = new ByteBufferData(buffer, allocator)
   }
   if (valueData eq null) {
@@ -200,10 +201,10 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     if (_size <= growThreshold) return
 
     val fixedKeySize = this.fixedKeySize
-    val newCapacity = OpenHashSet.checkCapacity(_capacity << 1)
+    val newCapacity = Utils.checkCapacity(_capacity << 1)
     val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
     // clear the key data
-    allocator.clearPostAllocate(newKeyBuffer)
+    allocator.clearPostAllocate(newKeyBuffer, 0)
     val newKeyData = new ByteBufferData(newKeyBuffer, allocator)
     val newKeyObject = newKeyData.baseObject
     val newKeyBaseOffset = newKeyData.baseOffset

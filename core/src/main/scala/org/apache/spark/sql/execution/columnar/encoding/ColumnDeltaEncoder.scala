@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.execution.columnar.encoding
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
@@ -117,7 +117,12 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
      SparkRadixSort            0 /    0         82.3          12.2      15.6X
      RadixSort                 1 /    1         16.6          60.1       3.2X
    */
-  private[this] var positionsArray: Array[Int] = _
+  /**
+   * The position array is maintained as a raw ByteBuffer with native ByteOrder so
+   * that ByteBuffer.get/put and Unsafe access via Platform class are equivalent.
+   */
+  private[this] var positionsArray: ByteBuffer = _
+
   /**
    * Relative index of the current delta i.e. 1st delta is 0, 2nd delta is 1 and so on.
    * so on. Initialized to -1 so that pre-increment in write initializes to 0 and the
@@ -127,6 +132,8 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   private[this] var realEncoder: ColumnEncoder = _
   private[this] var dataOffset: Long = _
   private[this] var maxSize: Int = _
+
+  private[this] def bufferOwner: String = "DELTA_ENCODER"
 
   override def typeId: Int = realEncoder.typeId
 
@@ -141,6 +148,11 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int): Long = realEncoder.writeNulls(columnBytes, cursor, numWords)
 
+  private[this] def allocatePositions(size: Int): Unit = {
+    positionsArray = allocator.allocate(size, bufferOwner).order(ByteOrder.nativeOrder())
+    allocator.clearPostAllocate(positionsArray, 0)
+  }
+
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int = -1): Long = {
     if (initSize < 4 || (initSize < ColumnDelta.INIT_SIZE && hierarchyDepth > 0)) {
@@ -150,7 +162,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     this.dataType = dataType
     this.allocator = allocator
     this.maxSize = initSize
-    positionsArray = new Array[Int](initSize)
+    allocatePositions(initSize << 2)
     realEncoder = ColumnEncoding.getColumnEncoder(dataType, nullable)
     val cursor = realEncoder.initialize(dataType, nullable,
       initSize, withHeader, allocator, minBufferSize)
@@ -185,16 +197,24 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   override protected[sql] def initializeNulls(initSize: Int): Int =
     realEncoder.initializeNulls(initSize)
 
+  private[this] def baseSetPosition(index: Int, value: Int): Unit = {
+    positionsArray.putInt(index << 2, value)
+  }
+
   def setUpdatePosition(position: Int): Unit = {
     // sorted on LSB so position goes in LSB
     positionIndex += 1
-    if (positionIndex == maxSize) {
-      val newPositionsArray = new Array[Int](maxSize << 1)
-      System.arraycopy(positionsArray, 0, newPositionsArray, 0, maxSize)
-      maxSize <<= 1
-      positionsArray = newPositionsArray
+    if (positionIndex >= maxSize) {
+      // expand by currentSize / 2
+      val expandBy = maxSize >> 1
+      val limit = positionsArray.limit()
+      // expand will ensure ByteOrder to be same
+      positionsArray = allocator.expand(positionsArray, expandBy << 2, bufferOwner)
+      assert(positionsArray.order() == ByteOrder.nativeOrder())
+      allocator.clearPostAllocate(positionsArray, limit)
+      maxSize += expandBy
     }
-    positionsArray(positionIndex) = position
+    baseSetPosition(positionIndex, position)
   }
 
   def getRealEncoder: ColumnEncoder = realEncoder
@@ -255,6 +275,16 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override def flushWithoutFinish(cursor: Long): Long = realEncoder.flushWithoutFinish(cursor)
 
+  override private[sql] def close(releaseData: Boolean): Unit = {
+    realEncoder.close(releaseData)
+    /*
+    if (positionsArray ne null) {
+      BufferAllocator.releaseBuffer(positionsArray)
+      positionsArray = null
+    }
+    */
+  }
+
   private def consumeDecoder(decoder: ColumnDecoder, decoderNullPosition: Int,
       decoderBytes: AnyRef, writer: DeltaWriter, encoderCursor: Long,
       encoderPosition: Int, doWrite: Boolean = true): Long = {
@@ -271,7 +301,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
   }
 
   private def writeHeader(columnBytes: AnyRef, cursor: Long, numNullWords: Int,
-      numBaseRows: Int, positions: Array[Int], numDeltas: Int): Long = {
+      numBaseRows: Int, positions: ByteBuffer, numDeltas: Int): Long = {
     var deltaCursor = cursor
     // typeId
     ColumnEncoding.writeInt(columnBytes, deltaCursor, typeId)
@@ -290,11 +320,14 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // write the positions next
     ColumnEncoding.writeInt(columnBytes, deltaCursor, numDeltas)
     deltaCursor += 4
-    var i = 0
-    while (i < numDeltas) {
-      ColumnEncoding.writeInt(columnBytes, deltaCursor, positions(i))
+    positions.rewind()
+    val positionsObj = allocator.baseObject(positions)
+    var posCursor = allocator.baseOffset(positions)
+    val posCursorEnd = posCursor + (numDeltas << 2)
+    while (posCursor < posCursorEnd) {
+      ColumnEncoding.writeInt(columnBytes, deltaCursor, Platform.getInt(positionsObj, posCursor))
       deltaCursor += 4
-      i += 1
+      posCursor += 4
     }
     // pad to nearest word boundary before writing encoded data
     ((deltaCursor + 7) >> 3) << 3
@@ -380,7 +413,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       numPositions2 = tmpNumPositions
       positionCursor2 = tmpPositionCursor
       maxSize = numPositions1 + numPositions2
-      positionsArray = new Array[Int](maxSize)
+      allocatePositions(maxSize << 2)
     } else {
       positionIndex = 0
       maxSize = 0
@@ -405,7 +438,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       val isGreater = position1 > position2
       if (isGreater || areEqual) {
         // set next update position to be from second
-        if (existingIsDelta && !areEqual) positionsArray(encoderPosition) = position2
+        if (existingIsDelta && !areEqual) baseSetPosition(encoderPosition, position2)
         // consume data at position2 and move it if position2 is smaller
         // else if they are equal then newValue gets precedence
         cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
@@ -426,7 +459,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       // write for the second was skipped in the first block above
       if (!isGreater) {
         // set next update position to be from first
-        if (existingIsDelta) positionsArray(encoderPosition) = position1
+        if (existingIsDelta) baseSetPosition(encoderPosition, position1)
         // consume data at position1 and move it
         cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
           columnBytes1, writer, cursor, encoderPosition)
@@ -446,7 +479,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // set next update position to be from first
       if (existingIsDelta) {
-        positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes1, positionCursor1)
+        baseSetPosition(encoderPosition, ColumnEncoding.readInt(columnBytes1, positionCursor1))
         positionCursor1 += 4
       }
       cursor = consumeDecoder(decoder1, if (nullable1) relativePosition1 else -1,
@@ -458,7 +491,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
       encoderPosition += 1
       // set next update position to be from second
       if (existingIsDelta) {
-        positionsArray(encoderPosition) = ColumnEncoding.readInt(columnBytes2, positionCursor2)
+        baseSetPosition(encoderPosition, ColumnEncoding.readInt(columnBytes2, positionCursor2))
         positionCursor2 += 4
       }
       cursor = consumeDecoder(decoder2, if (nullable2) relativePosition2 else -1,
@@ -519,7 +552,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
     // release the intermediate buffer
     allocator.release(encodedData)
-    realEncoder.clearSource(0, releaseData = false)
+    close(releaseData = false)
 
     buffer
   }
@@ -562,13 +595,18 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     cursor = realEncoder.columnBeginPosition + cursorOffset
 
     // copy the encoded data
-    assert(cursor + dataSize == realEncoder.columnEndPosition)
+    if (cursor + dataSize != realEncoder.columnEndPosition) {
+      throw new AssertionError("Unexpected data size mismatch." +
+          s"Begin position = ${realEncoder.columnBeginPosition}, " +
+          s"End position = ${realEncoder.columnEndPosition}, " +
+          s"Data size = $dataSize, Cursor offset = $cursorOffset")
+    }
     Platform.copyMemory(dataBuffer, dataBeginPosition, columnBytes, cursor, dataSize)
 
     // release the old buffer
     dataAllocator.release(dataColumnBytes)
     // clear the encoder
-    realEncoder.clearSource(0, releaseData = false)
+    close(releaseData = false)
     buffer
   }
 }
@@ -637,7 +675,7 @@ object DeltaWriter {
         val evaluator = new CompilerFactory().newScriptEvaluator()
         evaluator.setClassName("io.snappydata.execute.GeneratedDeltaWriterFactory")
         evaluator.setParentClassLoader(getClass.getClassLoader)
-        evaluator.setDefaultImports(defaultImports)
+        evaluator.setDefaultImports(defaultImports: _*)
 
         val (name, complexType) = dataType match {
           case BooleanType => ("Boolean", "")
@@ -693,7 +731,7 @@ object DeltaWriter {
         CodeGeneration.logDebug(
           s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
-          Array.empty[String]).asInstanceOf[DeltaWriterFactory]
+          Utils.EMPTY_STRING_ARRAY).asInstanceOf[DeltaWriterFactory]
       }
     })
 

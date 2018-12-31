@@ -3,7 +3,7 @@
 This guide gives details of Spark extension APIs that are provided by SnappyData. The following APIs are included:
 
 
-| SnappySession APIs | DataFrameWriter APIs |SnappyStoreHiveCatalog APIs|
+| SnappySession APIs | DataFrameWriter APIs |SnappySessionCatalog APIs|
 |--------|--------|--------|
 |  [**sql**](#sqlapi)   </br> Query Using Cached Plan   |  [**putInto**](#putintoapi)</br>Put Dataframe Content into Table  | [**getKeyColumns**](#getkeycolumapi) </br>Get Key Columns of SnappyData table|
 |  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getTableType**](#gettabletypeapi) </br>Get Table Type |
@@ -519,8 +519,8 @@ df.write.deleteFrom(“snappy_table”)
 
 ```
 
-## SnappyStoreHiveCatalog APIs
-The following APIs are available for SnappyStoreHiveCatalog:
+## SnappySessionCatalog APIs
+The following APIs are available for SnappySessionCatalog:
 
 *	[**getKeyColumns**](#getkeycolumapi)
 *	[**getTableType**](#gettabletypeapi) 
