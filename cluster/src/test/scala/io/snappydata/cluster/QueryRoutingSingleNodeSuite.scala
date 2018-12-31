@@ -116,7 +116,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
     (1 to 5).foreach(d => query())
   }
-
   def insertRows(tableName: String, numRows: Int, serverHostPort: String): Unit = {
 
     val conn: java.sql.Connection = DriverManager.getConnection(
@@ -765,5 +764,30 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     } finally {
       conn.close()
     }
+  }
+
+  test("Test Bug SNAP-2707") {
+    snc.sql("drop table if exists t1")
+    snc.sql("drop table if exists t2")
+    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
+    snc.sql("create table t2(id integer, str string) using row")
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    stmt.execute("put into t2 values(100, 'aa')")
+    val df = snc.sql("select * from t2")
+    df.show()
+    stmt.execute("put into t1 values(100, 'aa')")
+    conn.close()
+  }
+
+  test("Test Bug SNAP-2707 with snappysession") {
+    snc.sql("drop table if exists t")
+    snc.sql("create table t(id integer, str string) using row")
+    snc.sql("put into t values(100, 'aa')")
+    val df = snc.sql("select * from t")
+    df.show()
+    snc.sql("drop table if exists t1")
+    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
+    snc.sql("put into t1 values(100, 'aa')")
   }
 }
