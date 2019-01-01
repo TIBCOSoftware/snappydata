@@ -236,13 +236,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def listDatabases(): Seq[String] = {
-    (withHiveExceptionHandling(super.listDatabases().map(toUpperCase).toSet) + SYS_SCHEMA)
-        .toSeq.sorted
+    withHiveExceptionHandling(super.listDatabases().map(toUpperCase)) :+ SYS_SCHEMA
   }
 
   override def listDatabases(pattern: String): Seq[String] = {
-    (withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase).toSet) ++
-        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)).toSeq.sorted
+    withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase)) ++
+        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)
   }
 
   override def setCurrentDatabase(schema: String): Unit = {
@@ -554,8 +553,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
   def refreshPolicies(ldapGroup: String): Unit = {
     val qualifiedLdapGroup = Constants.LDAP_GROUP_PREFIX + ldapGroup
-    getAllTables().filter(_.provider.map(_.equalsIgnoreCase("policy")).
-        getOrElse(false)).foreach { table =>
+    getAllTables().filter(_.provider.exists(_.equalsIgnoreCase("policy"))).foreach { table =>
       val applyToStr = table.properties(PolicyProperties.policyApplyTo)
       if (applyToStr.nonEmpty) {
         val applyTo = applyToStr.split(",")

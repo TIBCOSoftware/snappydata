@@ -45,7 +45,7 @@ import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
 import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.catalog.{CatalogTable, CatalogTableType}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -67,7 +67,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SessionBase, SnappySessionCatalog}
-import org.apache.spark.sql.row.SnappyStoreDialect
+import org.apache.spark.sql.row.{JDBCMutableRelation, SnappyStoreDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
@@ -234,6 +234,10 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
 
   @transient
   private[sql] var enableHiveSupport: Boolean = Property.EnableHiveSupport.get(sessionState.conf)
+
+  /** hive compatibility level which can be 0 (default), 1 (hive) or 2 (spark) */
+  @transient
+  private[sql] var hiveCompatibility: Int = 0
 
   @transient
   private var sqlWarnings: SQLWarning = _
@@ -1130,11 +1134,19 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       mode: SaveMode,
       options: Map[String, String],
       isBuiltIn: Boolean,
-      query: Option[LogicalPlan] = None): DataFrame = {
+      query: Option[LogicalPlan] = None,
+      partitionSpec: Seq[String] = Nil,
+      bucketSpec: Option[BucketSpec] = None): DataFrame = {
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
     if (!isBuiltIn && providerIsBuiltIn) {
       throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
-          s"used for inbuilt provider '$provider'")
+          s"used for builtin provider '$provider'")
+    }
+    // for builtin tables, never use partitionSpec since that has different semantics and
+    // implies support for add/drop/recover partitions which is not possible
+    if (providerIsBuiltIn && (partitionSpec.nonEmpty || bucketSpec.isDefined)) {
+      throw new AnalysisException(s"PARTITIONED BY or bucket specification used for builtin " +
+          s"provider '$provider'. Use PARTITION_BY option for column/row tables instead.")
     }
     // check for permissions in the schema which should be done before the session catalog
     // createTable call since store table will be created by that time
@@ -1178,7 +1190,9 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       tableType = CatalogTableType.EXTERNAL,
       storage = DataSource.buildStorageFormatFromOptions(fullOptions),
       schema = schema,
-      provider = Some(provider))
+      provider = Some(provider),
+      partitionColumnNames = partitionSpec,
+      bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
     val df = table(resolvedName)
@@ -1269,8 +1283,8 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
         ar.alterTable(tableIdent, isAddColumn, column)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
-      case _ =>
-        throw new AnalysisException(s"ALTER TABLE not supported for ${tableIdent.unquotedString}")
+      case _ => throw new AnalysisException(
+        s"ALTER TABLE ${tableIdent.unquotedString} supported only for row tables")
     }
   }
 
@@ -1299,6 +1313,17 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     }
   }
 
+  private[sql] def alterTableMisc(tableIdent: TableIdentifier, sql: String): Unit = {
+    if (sessionCatalog.isTemporaryTable(tableIdent)) {
+      throw new AnalysisException("ALTER TABLE not supported for temporary tables")
+    }
+    sessionCatalog.resolveRelation(tableIdent) match {
+      case LogicalRelation(r: JDBCMutableRelation, _, _) => r.executeUpdate(sql, getCurrentSchema)
+      case _ => throw new AnalysisException(
+        s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
+    }
+  }
+
   /**
    * Set current schema for the session.
    *
@@ -1316,26 +1341,35 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
    * @param indexName    Index name which goes in the catalog
    * @param baseTable    Fully qualified name of table on which the index is created.
    * @param indexColumns Columns on which the index has to be created along with the
-   *                     sorting direction.The direction of index will be ascending
-   *                     if value is true and descending when value is false.
-   *                     Direction can be specified as null
+   *                     sorting direction.
+   * @param sortOrders   Sorting direction for indexColumns. The direction of index will be
+   *                     ascending if value is true and descending when value is false.
+   *                     The values in this list must exactly match indexColumns list.
+   *                     Direction can be specified as null in which case ascending is used.
    * @param options      Options for indexes. For e.g.
    *                     column table index - ("COLOCATE_WITH"->"CUSTOMER").
    *                     row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
    */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, java.lang.Boolean],
+      indexColumns: java.util.List[String],
+      sortOrders: java.util.List[java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
 
-
-    val indexCol = indexColumns.asScala.mapValues {
-      case null => None
-      case java.lang.Boolean.TRUE => Some(Ascending)
-      case java.lang.Boolean.FALSE => Some(Descending)
+    val numIndexes = indexColumns.size()
+    if (numIndexes != sortOrders.size()) {
+      throw new IllegalArgumentException("Number of index columns should match the sorting orders")
+    }
+    val indexCols = for (i <- 0 until numIndexes) yield {
+      val sortDirection = sortOrders.get(i) match {
+        case null => None
+        case java.lang.Boolean.TRUE => Some(Ascending)
+        case java.lang.Boolean.FALSE => Some(Descending)
+      }
+      indexColumns.get(i) -> sortDirection
     }
 
-    createIndex(indexName, baseTable, indexCol.toMap, options.asScala.toMap)
+    createIndex(indexName, baseTable, indexCols, options.asScala.toMap)
   }
 
   /**
@@ -1351,7 +1385,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
    */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
 
     // normalize index column names for API calls
@@ -1427,7 +1461,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
    */
   private[sql] def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
 
     if (indexIdent.database != tableIdent.database) {

@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.eclipse.collections.impl.set.mutable.UnifiedSet
 import org.parboiled2._
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
@@ -220,9 +221,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   final def VARCHAR: Rule0 = newDataType(Consts.VARCHAR)
 
   protected final def fixedDecimalType: Rule1[DataType] = rule {
-    (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ commaSep ~ digits ~ ')' ~ ws ~>
-        ((precision: String, scale: String) =>
-          DecimalType(precision.toInt, scale.toInt))
+    (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ (commaSep ~ digits).? ~ ')' ~ ws ~>
+        ((precision: String, scale: Any) => DecimalType(precision.toInt,
+          if (scale == None) 0 else scale.asInstanceOf[Option[String]].get.toInt))
   }
 
   protected final def primitiveType: Rule1[DataType] = rule {
@@ -312,7 +313,7 @@ final class Keyword private[sql] (s: String) {
 final class ParseException(msg: String, cause: Option[Throwable] = None)
     extends AnalysisException(msg, None, None, None, cause)
 
-object SnappyParserConsts {
+object SnappyParserConsts extends Logging {
   final val space: CharPredicate = CharPredicate(' ', '\t')
   final val whitespace: CharPredicate = CharPredicate(
     ' ', '\t', '\n', '\r', '\f')
@@ -330,7 +331,8 @@ object SnappyParserConsts {
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
       CharPredicate('.')
-  final val numericSuffix: CharPredicate = CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b')
+  final val numericSuffix: CharPredicate =
+    CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b', 'S', 's', 'Y', 'y')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
   final val reservedKeywords: UnifiedSet[String] = new UnifiedSet[String]
@@ -454,7 +456,6 @@ object SnappyParserConsts {
   final val TO: Keyword = reservedKeyword("to")
   final val TRUE: Keyword = reservedKeyword("true")
   final val UNION: Keyword = reservedKeyword("union")
-  final val UNIQUE: Keyword = reservedKeyword("unique")
   final val UPDATE: Keyword = reservedKeyword("update")
   final val WHEN: Keyword = reservedKeyword("when")
   final val WHERE: Keyword = reservedKeyword("where")
@@ -484,7 +485,7 @@ object SnappyParserConsts {
   final val DEPLOY: Keyword = nonReservedKeyword("deploy")
   final val DESCRIBE: Keyword = nonReservedKeyword("describe")
   final val DISABLE: Keyword = nonReservedKeyword("disable")
-  final val DISK_STORE: Keyword = nonReservedKeyword("diskstore")
+  final val DISKSTORE: Keyword = nonReservedKeyword("diskstore")
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
   final val ENABLE: Keyword = nonReservedKeyword("enable")
   final val END: Keyword = nonReservedKeyword("end")
@@ -545,7 +546,6 @@ object SnappyParserConsts {
   final val STREAM: Keyword = nonReservedKeyword("stream")
   final val STREAMING: Keyword = nonReservedKeyword("streaming")
   final val TABLES: Keyword = nonReservedKeyword("tables")
-  final val TBLPROPERTIES: Keyword = nonReservedKeyword("tblproperties")
   final val TEMPORARY: Keyword = nonReservedKeyword("temporary")
   final val TRUNCATE: Keyword = nonReservedKeyword("truncate")
   final val UNDEPLOY: Keyword = nonReservedKeyword("undeploy")
@@ -626,11 +626,28 @@ object SnappyParserConsts {
 
   // keywords that are neither reserved nor non-reserved and can be freely
   // used as named strictIdentifier
+  final val ANALYZE: Keyword = new Keyword("analyze")
+  final val BUCKETS: Keyword = new Keyword("buckets")
   final val CASCADE: Keyword = new Keyword("cascade")
+  final val CHECK: Keyword = new Keyword("check")
+  final val CONSTRAINT: Keyword = new Keyword("constraint")
+  final val CLUSTERED: Keyword = new Keyword("clustered")
   final val DATABASE: Keyword = new Keyword("database")
   final val DATABASES: Keyword = new Keyword("databases")
-  final val DBPROPERTIES: Keyword = new Keyword("dbproperties")
-  final val LOCATION: Keyword = new Keyword("location")
+  final val FOREIGN: Keyword = new Keyword("foreign")
+  final val FORMATTED: Keyword = new Keyword("formatted")
+  final val LOAD: Keyword = new Keyword("load")
+  final val MSCK: Keyword = new Keyword("msck")
+  final val PARTITIONED: Keyword = nonReservedKeyword("partitioned")
+  final val PURGE: Keyword = nonReservedKeyword("purge")
   final val RETURNS: Keyword = new Keyword("returns")
+  final val SORTED: Keyword = new Keyword("sorted")
+  final val TBLPROPERTIES: Keyword = new Keyword("tblproperties")
   final val TEMP: Keyword = new Keyword("temp")
+  final val TRIGGER: Keyword = new Keyword("trigger")
+  final val UNIQUE: Keyword = new Keyword("unique")
+
+  override def logWarning(msg: => String): Unit = super.logWarning(msg)
+
+  override def logError(msg: => String): Unit = super.logError(msg)
 }

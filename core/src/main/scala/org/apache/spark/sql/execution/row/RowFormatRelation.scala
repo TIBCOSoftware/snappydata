@@ -211,14 +211,13 @@ class RowFormatRelation(
 
   override protected def constructSQL(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): String = {
 
     val parameters = new CaseInsensitiveMap(options)
     val columns = indexColumns.tail.foldLeft[String](
       getColumnStr(indexColumns.head))((cumulative, colsWithDirection) =>
       cumulative + "," + getColumnStr(colsWithDirection))
-
 
     val indexType = parameters.get(ExternalStoreUtils.INDEX_TYPE) match {
       case Some(x) => x

@@ -405,7 +405,7 @@ object MetadataTest extends Assertions {
     assert(rs.sortBy(_.getString(1)) === filtered.map(n => Row("SYS", n, false)))
 
     // also check hive compatible output
-    executeSQL("set snappydata.sql.hiveCompatible=true")
+    executeSQL("set snappydata.sql.hiveCompatibility=enabled")
 
     rs = executeSQL("show tables from sys").collect()
     assert(rs.length === allSYSTables.length)
@@ -415,7 +415,7 @@ object MetadataTest extends Assertions {
     assert(rs.length === filtered.length)
     assert(rs.sortBy(_.getString(0)) === filtered.map(Row(_)))
 
-    executeSQL("set snappydata.sql.hiveCompatible=false")
+    executeSQL("set snappydata.sql.hiveCompatibility=default")
 
     // system schemas other than SYS should not be visible
     try {
@@ -575,7 +575,7 @@ object MetadataTest extends Assertions {
       Row("APP", "COLUMNTABLE2", false), Row("APP", "ROWTABLE1", false)))
 
     // also check hive compatible output
-    executeSQL("set snappydata.sql.hiveCompatible=true")
+    executeSQL("set snappydata.sql.hiveCompatibility=enabled")
 
     rs = executeSQL("show tables").collect()
     assert(rs.length === 2)
@@ -587,7 +587,7 @@ object MetadataTest extends Assertions {
     assert(rs.sortBy(_.getString(0)) === Array(
       Row("COLUMNTABLE2"), Row("ROWTABLE1")))
 
-    executeSQL("set snappydata.sql.hiveCompatible=false")
+    executeSQL("set snappydata.sql.hiveCompatibility=default")
 
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 
@@ -754,7 +754,7 @@ object MetadataTest extends Assertions {
     assert(rs(0) === Row("SCHEMA2", "ROWTABLE2", false))
 
     // also check hive compatible output
-    executeSQL("set snappydata.sql.hiveCompatible=true")
+    executeSQL("set snappydata.sql.hiveCompatibility=enabled")
 
     rs = executeSQL("show tables in schema1").collect()
     assert(rs.length === 1)
@@ -763,7 +763,7 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     assert(rs(0) === Row("ROWTABLE2"))
 
-    executeSQL("set snappydata.sql.hiveCompatible=false")
+    executeSQL("set snappydata.sql.hiveCompatibility=default")
 
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 

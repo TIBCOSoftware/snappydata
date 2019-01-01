@@ -37,8 +37,8 @@ import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.CatalogTableType
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -48,7 +48,7 @@ import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCo
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
-import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{BooleanType, LongType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 import org.apache.spark.{SparkContext, SparkEnv}
@@ -62,13 +62,15 @@ case class CreateTableUsingCommand(
     mode: SaveMode,
     options: Map[String, String],
     query: Option[LogicalPlan],
-    isBuiltIn: Boolean) extends RunnableCommand {
+    isBuiltIn: Boolean,
+    partitionSpec: Seq[String] = Nil,
+    bucketSpec: Option[BucketSpec] = None) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isBuiltIn, query)
+      schemaDDL, mode, allOptions, isBuiltIn, query, partitionSpec, bucketSpec)
     Nil
   }
 }
@@ -125,8 +127,8 @@ case class DropPolicyCommand(ifExists: Boolean,
     policyIdentifer: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.dropPolicy(policyIdentifer, ifExists)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.dropPolicy(policyIdentifer, ifExists)
     Nil
   }
 }
@@ -150,12 +152,12 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
   }
 }
 
-case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
-    addColumn: StructField) extends RunnableCommand {
+case class AlterTableAddDropColumnCommand(tableIdent: TableIdentifier,
+    column: StructField, isAdd: Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.alterTable(tableIdent, isAddColumn = true, addColumn)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTable(tableIdent, isAdd, column)
     Nil
   }
 }
@@ -164,31 +166,30 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
     enableRls: Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.alterTableToggleRLS(tableIdent, enableRls)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTableToggleRLS(tableIdent, enableRls)
     Nil
   }
 }
 
-case class AlterTableDropColumnCommand(
-    tableIdent: TableIdentifier, column: String) extends RunnableCommand {
+case class AlterTableMiscCommand(tableIdent: TableIdentifier, sql: String)
+    extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    // drop column doesn't need anything apart from name so fill dummy values
-    snc.alterTable(tableIdent, isAddColumn = false, StructField(column, NullType))
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTableMisc(tableIdent, sql)
     Nil
   }
 }
 
 case class CreateIndexCommand(indexName: TableIdentifier,
     baseTable: TableIdentifier,
-    indexColumns: Map[String, Option[SortDirection]],
+    indexColumns: Seq[(String, Option[SortDirection])],
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.createIndex(indexName, baseTable, indexColumns, options)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.createIndex(indexName, baseTable, indexColumns, options)
     Nil
   }
 }
@@ -210,9 +211,9 @@ case class CreatePolicyCommand(policyIdent: TableIdentifier,
         null, new IllegalStateException("CREATE POLICY failed: Row level security (" +
             GemXDProperty.SNAPPY_ENABLE_RLS + ") not enabled in the system"))
     }
-    val snc = session.asInstanceOf[SnappySession]
-    SparkSession.setActiveSession(snc)
-    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
+    val snappySession = session.asInstanceOf[SnappySession]
+    SparkSession.setActiveSession(snappySession)
+    snappySession.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
       currentUser, filterStr, filter)
     Nil
   }
@@ -222,8 +223,8 @@ case class DropIndexCommand(ifExists: Boolean,
     indexName: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.dropIndex(indexName, ifExists)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.dropIndex(indexName, ifExists)
     Nil
   }
 }
@@ -372,7 +373,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
 class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
     tablePattern: Option[String]) extends ShowTablesCommand(schemaOpt, tablePattern) {
 
-  private val hiveCompatible = Property.HiveCompatible.get(session.sessionState.conf)
+  private val hiveCompatible = Property.HiveCompatibility.get(
+    session.sessionState.conf).equalsIgnoreCase("enabled")
 
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("name", StringType, nullable = false)() :: Nil
@@ -402,7 +404,8 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
 case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     viewPattern: Option[String]) extends RunnableCommand {
 
-  private val hiveCompatible = Property.HiveCompatible.get(session.sessionState.conf)
+  private val hiveCompatible = Property.HiveCompatibility.get(
+    session.sessionState.conf).equalsIgnoreCase("enabled")
 
   // The result of SHOW VIEWS has four columns: schemaName, tableName, isTemporary and isGlobal.
   override val output: Seq[Attribute] = {

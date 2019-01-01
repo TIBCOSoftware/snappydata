@@ -28,7 +28,7 @@ import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
@@ -515,7 +515,7 @@ class ColumnFormatRelation(
   private def createIndexTable(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
       tableRelation: BaseColumnFormatRelation,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): DataFrame = {
 
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -525,8 +525,21 @@ class ColumnFormatRelation(
         "CREATE INDEX on column tables is an experimental unsupported feature")
     }
     val parameters = new CaseInsensitiveMutableHashMap(options)
+    // no index_type support for column indexes
+    parameters.get(ExternalStoreUtils.INDEX_TYPE) match {
+      case None =>
+      case Some(t) => throw new UnsupportedOperationException(
+        s"CREATE INDEX of type '$t' is not supported for column tables")
+    }
     val parser = session.snappyParser
-    val indexCols = indexColumns.keys.map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
+    val indexCols = indexColumns.map { p =>
+      p._2 match {
+        case Some(Descending) => throw new UnsupportedOperationException(s"Cannot create index " +
+            s"'${indexIdent.unquotedString}' with DESC sort specification for column ${p._1}")
+        case _ =>
+      }
+      parser.parseSQLOnly(p._1, parser.parseIdentifier.run())
+    }
     val catalog = session.sessionCatalog
     val baseTable = catalog.resolveTableIdentifier(tableIdent).unquotedString
     val indexTblName = session.getIndexTable(indexIdent).unquotedString
@@ -569,7 +582,7 @@ class ColumnFormatRelation(
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]

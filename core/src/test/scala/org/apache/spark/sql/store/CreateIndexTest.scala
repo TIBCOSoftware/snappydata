@@ -191,13 +191,13 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql("drop index test1")
 
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> None)), Map("colocate_with" -> tableName))
+      Seq("col1" -> None), Map("colocate_with" -> tableName))
     snContext.dropIndex("test1", false)
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
+    snContext.createIndex("test1", tableName, Seq("col1" -> None),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
-    snContext.createIndex("test1", tableName, Map(("col1" -> Some(Ascending))),
+    snContext.createIndex("test1", tableName, Seq("col1" -> Some(Ascending)),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
@@ -250,13 +250,13 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       Map.empty[String, String], allowExisting = false)
     // fail index creation with incorrect case
     try {
-      snContext.createIndex(indexName, tableName, Map("Version" -> None),
+      snContext.createIndex(indexName, tableName, Seq("Version" -> None),
         Map("INDEX_TYPE" -> "UNIQUE"))
       fail("expected exception with incorrect case")
     } catch {
       case sqle: SQLException if sqle.getSQLState == "42X14" => // expected
     }
-    snContext.createIndex(indexName, tableName, Map("version" -> None),
+    snContext.createIndex(indexName, tableName, Seq("version" -> None),
       Map("INDEX_TYPE" -> "UNIQUE"))
 
     ds.write.insertInto(tableName)
@@ -745,17 +745,17 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql("drop index test1")
 
 
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)), Map("index_type" -> "unique"))
+    snContext.createIndex("test1", tableName, Seq("col1" -> None), Map("index_type" -> "unique"))
     snContext.dropIndex("test1", false)
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> None)), Map("index_type" -> "global hash"))
+      Seq("col1" -> None), Map("index_type" -> "global hash"))
     snContext.dropIndex("test1", false)
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
+    snContext.createIndex("test1", tableName, Seq("col1" -> None),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> Some(Descending))), Map("index_type" -> "unique"))
+      Seq("col1" -> Some(Descending)), Map("index_type" -> "unique"))
     snContext.dropIndex("test1", false)
 
     // drop non-existent indexes with if exist clause

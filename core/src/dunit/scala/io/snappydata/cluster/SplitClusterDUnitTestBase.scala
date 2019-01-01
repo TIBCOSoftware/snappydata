@@ -418,7 +418,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
         if ("row".equalsIgnoreCase(tableType)) {
-          snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
+          snc.createIndex("tableName" + "_index", tableName, Seq("COL1" -> None),
             Map.empty[String, String])
         }
       case _ =>

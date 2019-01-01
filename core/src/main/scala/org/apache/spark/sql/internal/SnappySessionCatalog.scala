@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import io.snappydata.Constant
+import io.snappydata.{Constant, Property}
 import io.snappydata.sql.catalog.CatalogObjectType.getTableType
 import io.snappydata.sql.catalog.SnappyExternalCatalog.{DBTABLE_PROPERTY, getTableWithSchema}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
@@ -114,8 +114,21 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
    * Fallback session state to lookup from external hive catalog in case
    * "snappydata.sql.enableHiveSupport" is set on the session.
    */
-  private def hiveSessionCatalog: HiveSessionCatalog =
+  protected final def hiveSessionCatalog: HiveSessionCatalog =
     snappySession.snappySessionState.hiveSessionCatalog
+
+  protected final def hiveSessionCatalogForWrite: HiveSessionCatalog = {
+    if (snappySession.enableHiveSupport) hiveSessionCatalog
+    else throw Utils.analysisException(s"Hive support (${Property.EnableHiveSupport.name}) " +
+        "is required to write to external hive catalog")
+  }
+
+  protected final def isHiveTable(tableIdent: TableIdentifier): Boolean = {
+    getTableMetadataOption(tableIdent) match {
+      case Some(t) if t.provider.isDefined && t.provider.get == DDLUtils.HIVE_PROVIDER => true
+      case _ => false
+    }
+  }
 
   def formatName(name: String): String = {
     if (caseSensitiveAnalysis) name else Utils.toUpperCase(name)
@@ -336,7 +349,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
     // create schema in catalog first
     if (externalCatalog.databaseExists(schemaName)) {
-      if (!ignoreIfExists) throw new AnalysisException(s"Schema '$schemaName' already exists")
+      if (ignoreIfExists) return
+      else throw new AnalysisException(s"Schema '$schemaName' already exists")
     } else {
       super.createDatabase(CatalogDatabase(schemaName, s"User $schemaName schema",
         getDefaultDBPath(schemaName), Map.empty), ignoreIfExists)
@@ -356,6 +370,15 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val conn = snappySession.defaultPooledConnection(schema)
     try {
       val stmt = conn.createStatement()
+      // check for existing schema
+      if (ignoreIfExists) {
+        val rs = stmt.executeQuery(s"select 1 from sys.sysschemas where schemaname='$schema'")
+        if (rs.next()) {
+          rs.close()
+          stmt.close()
+          return
+        }
+      }
       stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
       stmt.close()
     } catch {
@@ -461,10 +484,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
     // drop the schema from store (no cascade required since catalog drop will take care)
     val checkIfExists = if (ignoreIfNotExists) " IF EXISTS" else ""
-    val conn = snappySession.defaultPooledConnection(schema)
+    val conn = snappySession.defaultPooledConnection(schemaName)
     try {
       val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schemaName" RESTRICT""")
       stmt.close()
     } finally {
       conn.close()
@@ -523,25 +546,30 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   private def listAllDatabases(): Seq[String] = {
     if (snappySession.enableHiveSupport) {
-      (super.listDatabases().toSet ++
-          hiveSessionCatalog.listDatabases().map(formatDatabaseName).toSet).toSeq
-    } else super.listDatabases()
+      (super.listDatabases() ++
+          hiveSessionCatalog.listDatabases().map(formatDatabaseName)).distinct.sorted
+    } else super.listDatabases().distinct.sorted
   }
 
   override def listDatabases(pattern: String): Seq[String] = {
     if (snappySession.enableHiveSupport) {
-      (super.listDatabases(pattern).toSet ++
-          hiveSessionCatalog.listDatabases(pattern).map(formatDatabaseName).toSet).toSeq
-    } else super.listDatabases(pattern)
+      (super.listDatabases(pattern) ++
+          hiveSessionCatalog.listDatabases(pattern).map(formatDatabaseName)).distinct.sorted
+    } else super.listDatabases(pattern).distinct.sorted
   }
 
   override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
     // first check required permission to create objects in a schema
     val schemaName = getSchemaName(table.identifier)
     checkSchemaPermission(schemaName, table.identifier.table, defaultUser = null)
-    createSchema(schemaName, ignoreIfExists = true)
 
-    super.createTable(table, ignoreIfExists)
+    table.provider match {
+      case Some(DDLUtils.HIVE_PROVIDER) =>
+        hiveSessionCatalogForWrite.createTable(table, ignoreIfExists)
+      case _ =>
+        createSchema(schemaName, ignoreIfExists = true)
+        super.createTable(table, ignoreIfExists)
+    }
   }
 
   /**
@@ -619,6 +647,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       // resolve the table and destroy underlying storage if possible
       externalCatalog.getTableOption(schema, table) match {
         case None =>
+          // check in external hive catalog
+          if (snappySession.enableHiveSupport && databaseExists(schema)) {
+            hiveSessionCatalog.dropTable(name, ignoreIfNotExists, purge)
+            return
+          }
           if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
         case Some(metadata) =>
           // fail if there are any existing dependents except policies
@@ -660,7 +693,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(table.identifier)
     checkSchemaPermission(schemaName, table.identifier.table, defaultUser = null)
 
-    super.alterTable(table)
+    table.provider match {
+      case Some(DDLUtils.HIVE_PROVIDER) => hiveSessionCatalogForWrite.alterTable(table)
+      case _ => super.alterTable(table)
+    }
   }
 
   override def alterTempViewDefinition(name: TableIdentifier,
@@ -671,22 +707,31 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def getTempViewOrPermanentTableMetadata(name: TableIdentifier): CatalogTable =
     convertCharTypes(super.getTempViewOrPermanentTableMetadata(addMissingGlobalTempSchema(name)))
 
-  override def renameTable(oldName: TableIdentifier, newName: TableIdentifier): Unit = {
-    // first check required permission to alter objects in a schema
-    val oldSchemaName = getSchemaName(oldName)
-    checkSchemaPermission(oldSchemaName, oldName.table, defaultUser = null)
-    val newSchemaName = getSchemaName(newName)
-    checkSchemaPermission(newSchemaName, newName.table, defaultUser = null)
+  override def renameTable(old: TableIdentifier, newName: TableIdentifier): Unit = {
+    val oldName = addMissingGlobalTempSchema(old)
+    if (isTemporaryTable(oldName)) {
+      if (newName.database.isEmpty && oldName.database.contains(globalTempViewManager.database)) {
+        super.renameTable(oldName, newName.copy(database = Some(globalTempViewManager.database)))
+      } else super.renameTable(oldName, newName)
+    } else {
+      // first check required permission to alter objects in a schema
+      val oldSchemaName = getSchemaName(oldName)
+      checkSchemaPermission(oldSchemaName, oldName.table, defaultUser = null)
+      val newSchemaName = getSchemaName(newName)
+      if (oldSchemaName != newSchemaName) {
+        checkSchemaPermission(newSchemaName, newName.table, defaultUser = null)
+      }
 
-    // in-built tables don't support rename yet
-    super.getTableMetadataOption(oldName) match {
-      case Some(table) if DDLUtils.isDatasourceTable(table) &&
-          SnappyContext.isBuiltInProvider(table.provider.get) =>
-        throw new UnsupportedOperationException(
-          s"Table $oldName having provider '${table.provider.get}' does not support rename")
-      case _ =>
+      getTableMetadataOption(oldName).flatMap(_.provider) match {
+        case Some(DDLUtils.HIVE_PROVIDER) =>
+          hiveSessionCatalogForWrite.renameTable(oldName, newName)
+        // in-built tables don't support rename yet
+        case Some(p) if SnappyContext.isBuiltInProvider(p) =>
+          throw new UnsupportedOperationException(
+            s"Table $oldName having provider '$p' does not support rename")
+        case _ => super.renameTable(oldName, newName)
+      }
     }
-    super.renameTable(addMissingGlobalTempSchema(oldName), newName)
   }
 
   override def loadTable(table: TableIdentifier, loadPath: String, isOverwrite: Boolean,
@@ -695,7 +740,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(table)
     checkSchemaPermission(schemaName, table.table, defaultUser = null)
 
-    super.loadTable(table, loadPath, isOverwrite, holdDDLTime)
+    if (isHiveTable(table)) {
+      hiveSessionCatalogForWrite.loadTable(table, loadPath, isOverwrite, holdDDLTime)
+    } else super.loadTable(table, loadPath, isOverwrite, holdDDLTime)
   }
 
   def createPolicy(
@@ -826,6 +873,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     } else {
       val resolved = resolveTableIdentifier(table)
       externalCatalog.invalidate(resolved.database.get -> resolved.table)
+      if (snappySession.enableHiveSupport) {
+        hiveSessionCatalog.refreshTable(table)
+      }
     }
   }
 
@@ -854,7 +904,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(tableName)
     checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
 
-    super.createPartitions(tableName, parts, ignoreIfExists)
+    if (isHiveTable(tableName)) {
+      hiveSessionCatalogForWrite.createPartitions(tableName, parts, ignoreIfExists)
+    } else super.createPartitions(tableName, parts, ignoreIfExists)
   }
 
   override def dropPartitions(tableName: TableIdentifier, specs: Seq[TablePartitionSpec],
@@ -863,7 +915,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(tableName)
     checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
 
-    super.dropPartitions(tableName, specs, ignoreIfNotExists, purge, retainData)
+    if (isHiveTable(tableName)) {
+      hiveSessionCatalogForWrite.dropPartitions(tableName, specs,
+        ignoreIfNotExists, purge, retainData)
+    } else super.dropPartitions(tableName, specs, ignoreIfNotExists, purge, retainData)
   }
 
   override def alterPartitions(tableName: TableIdentifier,
@@ -872,7 +927,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(tableName)
     checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
 
-    super.alterPartitions(tableName, parts)
+    if (isHiveTable(tableName)) {
+      hiveSessionCatalogForWrite.alterPartitions(tableName, parts)
+    } else super.alterPartitions(tableName, parts)
   }
 
   override def renamePartitions(tableName: TableIdentifier, specs: Seq[TablePartitionSpec],
@@ -881,7 +938,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(tableName)
     checkSchemaPermission(schemaName, tableName.table, defaultUser = null)
 
-    super.renamePartitions(tableName, specs, newSpecs)
+    if (isHiveTable(tableName)) {
+      hiveSessionCatalogForWrite.renamePartitions(tableName, specs, newSpecs)
+    } else super.renamePartitions(tableName, specs, newSpecs)
   }
 
   override def loadPartition(table: TableIdentifier, loadPath: String, spec: TablePartitionSpec,
@@ -890,7 +949,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = getSchemaName(table)
     checkSchemaPermission(schemaName, table.table, defaultUser = null)
 
-    super.loadPartition(table, loadPath, spec, isOverwrite, holdDDLTime, inheritTableSpecs)
+    if (isHiveTable(table)) {
+      hiveSessionCatalogForWrite.loadPartition(table, loadPath, spec, isOverwrite,
+        holdDDLTime, inheritTableSpecs)
+    } else super.loadPartition(table, loadPath, spec, isOverwrite, holdDDLTime, inheritTableSpecs)
   }
 
   override def getPartition(tableName: TableIdentifier,
@@ -1116,6 +1178,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     skipDefaultSchemas = true
     try {
       super.reset()
+      if (snappySession.enableHiveSupport) hiveSessionCatalog.reset()
     } finally {
       skipDefaultSchemas = false
     }
