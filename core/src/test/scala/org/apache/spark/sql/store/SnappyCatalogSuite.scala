@@ -202,7 +202,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
     val e = intercept[AnalysisException] {
       snappySession.catalog.listTables("unknown_db")
     }
-    assert(e.getMessage.contains("UNKNOWN_DB"))
+    assert(e.getMessage.contains("unknown_db"))
   }
 
   test("list functions") {

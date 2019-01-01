@@ -29,7 +29,6 @@ import io.snappydata.core.{Data, TestData, TestData2}
 import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite}
 import org.apache.commons.io.FileUtils
-import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -1070,7 +1069,7 @@ class ColumnTableTest
     try {
 
       val pi = new ParserImpl(cc)
-      val pd = new ParseDriver
+      // val pd = new ParseDriver
 
       // timed runs for the parsers
       var start: Double = 0.0
@@ -1129,6 +1128,7 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by Spark parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
+      /*
       println()
 
       println(s"Warmup runs for Hive parser ...")
@@ -1144,7 +1144,7 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by Hive parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
-
+      */
     } finally {
       conn.getLanguageConnection.popCompilerContext(cc)
       conn.restoreContextStack()

@@ -332,15 +332,12 @@ abstract case class JDBCMutableRelation(
 
   protected def constructSQL(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
-      options: Map[String, String]): String = {
-
-    ""
-  }
+      indexColumns: Seq[(String, Option[SortDirection])],
+      options: Map[String, String]): String = ""
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {

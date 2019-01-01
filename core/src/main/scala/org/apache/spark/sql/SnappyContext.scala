@@ -595,18 +595,21 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param indexName Index name which goes in the catalog
    * @param baseTable Fully qualified name of table on which the index is created.
    * @param indexColumns Columns on which the index has to be created along with the
-   *                     sorting direction.The direction of index will be ascending
-   *                     if value is true and descending when value is false.
-   *                     Direction can be specified as null
+   *                     sorting direction.
+   * @param sortOrders   Sorting direction for indexColumns. The direction of index will be
+   *                     ascending if value is true and descending when value is false.
+   *                     The values in this list must exactly match indexColumns list.
+   *                     Direction can be specified as null in which case ascending is used.
    * @param options Options for indexes. For e.g.
    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
    */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, java.lang.Boolean],
+      indexColumns: java.util.List[String],
+      sortOrders: java.util.List[java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
-    snappySession.createIndex(indexName, baseTable, indexColumns, options)
+    snappySession.createIndex(indexName, baseTable, indexColumns, sortOrders, options)
   }
 
   /**
@@ -630,7 +633,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
     snappySession.createIndex(indexName, baseTable, indexColumns, options)
   }
