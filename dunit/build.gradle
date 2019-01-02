@@ -23,7 +23,7 @@ version = '1.0.3.6'
 compileJava.options.encoding = 'UTF-8'
 
 dependencies {
-  compile 'commons-io:commons-io:2.5'
+  compile "commons-io:commons-io:${commonsIoVersion}"
   compile "junit:junit:${junitVersion}"
   if (new File(rootDir, 'store/build.gradle').exists()) {
     compile project(':snappy-store:snappydata-store-core')
