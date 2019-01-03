@@ -17,6 +17,7 @@
 package io.snappydata
 
 import java.io.File
+import java.sql.Statement
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -27,10 +28,15 @@ import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterio
 import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
 import org.apache.spark.sql.catalyst.util.{sideBySide, stackTraceToString}
-import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.row.SnappyStoreDialect
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row, SnappySession}
 // scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome, Retries}
 // scalastyle:on
@@ -67,7 +73,7 @@ abstract class SnappyFunSuite
     }
   }
 
-  protected def sc(addOn: (SparkConf) => SparkConf): SparkContext = {
+  protected def sc(addOn: SparkConf => SparkConf): SparkContext = {
     val ctx = SnappyContext.globalSparkContext
     if (ctx != null && !ctx.isStopped) {
       ctx
@@ -78,7 +84,7 @@ abstract class SnappyFunSuite
     }
   }
 
-  protected def scWithConf(addOn: (SparkConf) => SparkConf): SparkContext = {
+  protected def scWithConf(addOn: SparkConf => SparkConf): SparkContext = {
     new SparkContext(newSparkConf(addOn))
   }
 
@@ -86,10 +92,10 @@ abstract class SnappyFunSuite
 
   def getOrCreate(sc: SparkContext): SnappyContext = {
     val gnc = cachedContext
-    if (gnc != null) gnc
+    if (gnc ne null) gnc
     else synchronized {
       val gnc = cachedContext
-      if (gnc != null) gnc
+      if (gnc ne null) gnc
       else {
         cachedContext = SnappyContext(sc)
         cachedContext
@@ -140,7 +146,6 @@ abstract class SnappyFunSuite
   protected def baseCleanup(clearStoreToBlockMap: Boolean = true): Unit = {
     try {
       val session = this.snc.snappySession
-      TestUtils.dropAllTables(session)
       TestUtils.dropAllSchemas(session)
     } finally {
       dirCleanup()
@@ -197,12 +202,6 @@ abstract class SnappyFunSuite
     fileName
   }
 
-  protected def logStdOut(msg: String): Unit = {
-    // scalastyle:off
-    println(msg)
-    // scalastyle:on
-  }
-
   def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit =
     SnappyFunSuite.checkAnswer(df, expectedAnswer)
 }
@@ -242,6 +241,22 @@ object SnappyFunSuite extends Assertions {
       s"The optimized logical plan has missing inputs:\n${query.queryExecution.optimizedPlan}")
     assert(query.queryExecution.executedPlan.missingInput.isEmpty,
       s"The physical plan has missing inputs:\n${query.queryExecution.executedPlan}")
+  }
+
+  /**
+   * Converts a JDBC ResultSet to a DataFrame.
+   */
+  def resultSetToDataset(session: SnappySession, stmt: Statement)
+      (sql: String): Dataset[Row] = {
+    if (stmt.execute(sql)) {
+      val rs = stmt.getResultSet
+      val schema = JdbcUtils.getSchema(rs, SnappyStoreDialect)
+      val rows = Utils.resultSetToSparkInternalRows(rs, schema).map(_.copy()).toSeq
+      session.internalCreateDataFrame(session.sparkContext.makeRDD(rows), schema)
+    } else {
+      implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
+      session.createDataset[Row](Nil)
+    }
   }
 }
 

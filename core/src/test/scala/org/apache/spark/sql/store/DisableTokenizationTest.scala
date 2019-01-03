@@ -25,8 +25,8 @@ import org.apache.spark.Logging
 import org.apache.spark.sql._
 
 /**
-  * Tests for column tables in GFXD.
-  */
+ * Tests to check for tokenization disabled/enabled using session property.
+ */
 class DisableTokenizationTest
     extends SnappyFunSuite
         with Logging
@@ -77,12 +77,12 @@ class DisableTokenizationTest
       dosleep: Boolean = false) = {
     val data = ((0 to numRows), (0 to numRows), (0 to numRows)).zipped.toArray
     val rdd = sc.parallelize(data, data.length)
-      .map(s => Data(s._1, s._2, s._3))
+        .map(s => Data(s._1, s._2, s._3))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.sql(s"Drop Table if exists $name")
     snc.sql(s"Create Table $name (a INT, b INT, c INT) " +
-      "using column options()")
+        "using column options()")
     dataDF.write.insertInto(s"$name")
     // This sleep was necessary as it has some dependency on the region size
     // collector thread frequency. Can't remember right now.

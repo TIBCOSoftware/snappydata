@@ -310,8 +310,8 @@ object ClusterManagerTestBase extends Logging {
     if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
-      TestUtils.dropAllTables(snc.snappySession)
-      TestUtils.dropAllFunctions(snc.snappySession)
+      TestUtils.resetAllFunctions(snc.snappySession)
+      TestUtils.dropAllSchemas(snc.snappySession)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
