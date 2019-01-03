@@ -675,7 +675,7 @@ object DeltaWriter {
         val evaluator = new CompilerFactory().newScriptEvaluator()
         evaluator.setClassName("io.snappydata.execute.GeneratedDeltaWriterFactory")
         evaluator.setParentClassLoader(getClass.getClassLoader)
-        evaluator.setDefaultImports(defaultImports)
+        evaluator.setDefaultImports(defaultImports: _*)
 
         val (name, complexType) = dataType match {
           case BooleanType => ("Boolean", "")
@@ -731,7 +731,7 @@ object DeltaWriter {
         CodeGeneration.logDebug(
           s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
-          Array.empty[String]).asInstanceOf[DeltaWriterFactory]
+          Utils.EMPTY_STRING_ARRAY).asInstanceOf[DeltaWriterFactory]
       }
     })
 

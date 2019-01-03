@@ -77,6 +77,7 @@ object SmartConnectorFunctions {
 
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
+    snc.snappySession.externalCatalog.invalidateAll()
     val sqlContext = new SparkSession(sc).sqlContext
     val pw = new PrintWriter(new FileOutputStream(
       new File(s"ValidateNWQueries_$tableType.out"), true))

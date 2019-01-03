@@ -52,25 +52,23 @@ trait ToolsCallback {
   }
 
   def addURIs(alias: String, jars: Array[String],
-    deploySql: String, isPackage: Boolean = true): Unit
+      deploySql: String, isPackage: Boolean = true): Unit
 
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
 
-  def getAllGlobalCmnds(): Array[String]
+  def getAllGlobalCmnds: Array[String]
 
-  def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]]
+  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]]
 
   def removePackage(alias: String): Unit
 
   def setLeadClassLoader(): Unit
 
-  def getLeadClassLoader(): URLClassLoader
+  def getLeadClassLoader: URLClassLoader
 
   /**
-   *
-   * @param schema
-   * @param currentOwner
-   * @return the schema owner, can be ldap group
+   * Check permission to write to given schema for a user. Returns the normalized user or
+   * LDAP group name of the schema owner (or passed user itself if security is disabled).
    */
-  def checkSchemaPermission(schema: String, currentOwner: String): String
+  def checkSchemaPermission(schema: String, currentUser: String): String
 }

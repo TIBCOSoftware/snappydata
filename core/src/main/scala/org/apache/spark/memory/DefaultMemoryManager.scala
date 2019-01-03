@@ -20,7 +20,7 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
-import io.snappydata.collection.ObjectLongHashMap
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
 
 import org.apache.spark.storage.BlockId
 import org.apache.spark.{Logging, SparkEnv}
@@ -29,7 +29,7 @@ import org.apache.spark.{Logging, SparkEnv}
 class DefaultMemoryManager extends StoreUnifiedManager with Logging {
 
   private val memoryForObject: ObjectLongHashMap[MemoryOwner] =
-    ObjectLongHashMap.withExpectedSize[MemoryOwner](16)
+    new ObjectLongHashMap[MemoryOwner](16)
 
   private val managerId = "DefaultMemoryManager"
 
@@ -44,7 +44,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     if (env ne null) {
       env.memoryManager.synchronized {
         val success = env.memoryManager.acquireStorageMemory(blockId, numBytes, memoryMode)
-        memoryForObject.addValue(new MemoryOwner(objectName, memoryMode), numBytes)
+        memoryForObject.addToValue(new MemoryOwner(objectName, memoryMode), numBytes)
         success
       }
     } else {
@@ -62,13 +62,13 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     if (env ne null) {
       env.memoryManager.synchronized {
         val key = new MemoryOwner(objectName, memoryMode)
-        val bytesToBeFreed = memoryForObject.getLong(key)
+        val bytesToBeFreed = memoryForObject.get(key)
         val numBytes = Math.max(0, bytesToBeFreed - ignoreNumBytes)
         logDebug(s"Dropping $managerId memory for $objectName =" +
             s" $numBytes (registered=$bytesToBeFreed)")
         if (numBytes > 0) {
           env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
-          memoryForObject.removeAsLong(key)
+          memoryForObject.removeKey(key)
         }
       }
     }
@@ -86,8 +86,8 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
         env.memoryManager.releaseStorageMemory(numBytes, memoryMode)
         val key = new MemoryOwner(objectName, memoryMode)
         if (memoryForObject.containsKey(key)) {
-          if (memoryForObject.addValue(key, -numBytes) <= 0) {
-            memoryForObject.removeAsLong(key)
+          if (memoryForObject.addToValue(key, -numBytes) <= 0) {
+            memoryForObject.removeKey(key)
           }
         }
       }
@@ -106,7 +106,7 @@ class DefaultMemoryManager extends StoreUnifiedManager with Logging {
     val env = SparkEnv.get
     if (env ne null) {
       env.memoryManager.synchronized {
-        memoryForObject.getLong(MemoryOwner(objectName, offHeap = true))
+        memoryForObject.get(MemoryOwner(objectName, offHeap = true))
       }
     }
     0L
