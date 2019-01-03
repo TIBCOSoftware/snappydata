@@ -1,5 +1,18 @@
 /*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
  */
 package org.apache.spark.sql.execution.columnar
 
@@ -24,9 +37,9 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.{Logging, TaskContext, TaskContextImpl, TaskKilledException}
 
 abstract class ResultSetIterator[A](conn: Connection,
-    stmt: Statement, rs: ResultSet, context: TaskContext,
-    closeConnectionOnResultsClose: Boolean = true)
-    extends Iterator[A] with Logging {
+                                    stmt: Statement, rs: ResultSet, context: TaskContext,
+                                    closeConnectionOnResultsClose: Boolean = true)
+  extends Iterator[A] with Logging {
 
   protected[this] final var doMove = true
 
@@ -99,11 +112,10 @@ abstract class ResultSetIterator[A](conn: Connection,
   }
 }
 
-
 final class ColumnBatchIteratorOnRS(conn: Connection,
-    projection: Array[Int], stmt: Statement, rs: ResultSet,
-    context: TaskContext, partitionId: Int)
-    extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
+                                    projection: Array[Int], stmt: Statement, rs: ResultSet,
+                                    context: TaskContext, partitionId: Int)
+  extends ResultSetIterator[ByteBuffer](conn, stmt, rs, context) {
   private var currentUUID: Long = _
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (projection.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
@@ -150,14 +162,14 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     else {
       // empty buffer indicates value removed from region
       throw new EntryDestroyedException(s"Iteration on column=${columnIndex + 1} " +
-          s"bucket=$partitionId uuid=$currentUUID failed due to missing value")
+        s"bucket=$partitionId uuid=$currentUUID failed due to missing value")
     }
   }
 
   def getCurrentDeltaStats: ByteBuffer = currentDeltaStats
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
-      columnIndex: Int): UpdatedColumnDecoderBase = {
+                              columnIndex: Int): UpdatedColumnDecoderBase = {
     if (currentDeltaStats eq null) return null
     val buffers = colBuffers
     val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
@@ -195,7 +207,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
           if (buffer ne null) {
             // release from accounting if decompressed buffer
             if (!BufferAllocator.releaseBuffer(buffer) &&
-                (buffer.order() eq ByteOrder.LITTLE_ENDIAN)) {
+              (buffer.order() eq ByteOrder.LITTLE_ENDIAN)) {
               releaseExecutionMemory(buffer, CompressionUtils.DECOMPRESSION_OWNER)
             }
           }

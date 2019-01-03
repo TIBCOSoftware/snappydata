@@ -1,19 +1,33 @@
 /*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
  */
 package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, PreparedStatement, SQLException, Types}
 import java.util.Properties
 
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import com.pivotal.gemfirexd.jdbc.ClientAttribute
+
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
-
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.{AnalysisException, SnappyStoreClientDialect}
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.{Decimal, StructType}
 
@@ -37,33 +51,20 @@ object SharedExternalStoreUtils {
 
   private def createConnection(connProperties: ConnectionProperties,
       hostList: ArrayBuffer[(String, String)]): Connection = {
-    // TODO CHECK THIS SOCKETCREATOR DEPENDENCY RESOLUTION
-    // val localhost = SocketCreator.getLocalHost
+    val localhost = ClientSharedUtils.getLocalHost
     var index = -1
 
     val jdbcUrl = if (useLocatorURL) {
       connProperties.url
     } else {
-      // TODO NEEDS TO BE HANDLED=
-      // if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
+      if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
       if (index < 0) index = Random.nextInt(hostList.size)
       hostList(index)._2
     }
 
-    // TODO : REMOVE THIS AND ADD DEPENDENCY TO ACCESS ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS
-    /**
-     * Use direct ByteBuffers when reading BLOBs. This will provide higher
-     * performance avoiding a copy but caller must take care to free the BLOB
-     * after use else cleanup may happen only in a GC cycle which may be delayed
-     * due to no particular GC pressure due to direct ByteBuffers.
-     */
-    val THRIFT_LOB_DIRECT_BUFFERS = "lob-direct-buffers"
-    // -
-
     // enable direct ByteBuffers for best performance
     val executorProps = connProperties.executorConnProps
-    // executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
-    executorProps.setProperty(THRIFT_LOB_DIRECT_BUFFERS, "true")
+    executorProps.setProperty(ClientAttribute.THRIFT_LOB_DIRECT_BUFFERS, "true")
 
     // setup pool properties
     val props = getAllPoolProperties(jdbcUrl, null,
@@ -80,29 +81,6 @@ object SharedExternalStoreUtils {
         createConnection(connProperties, hostList)
       }
     }
-  }
-
-  def connectionProperties(hostList: ArrayBuffer[(String, String)]): ConnectionProperties = {
-
-    // TODO: Check how to make properties Dynamic
-    val map: Map[String, String] = HashMap[String, String](("maxActive", "256"),
-      ("testOnBorrow", "true"), ("maxIdle", "256"), ("validationInterval", "10000"),
-      ("initialSize", "4"), ("driverClassName", "io.snappydata.jdbc.ClientDriver"))
-
-    val poolProperties = new Properties
-    poolProperties.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
-    poolProperties.setProperty("route-query", "false")
-
-    val executorConnProps = new Properties
-    executorConnProps.setProperty("lob-chunk-size", "33554432")
-    executorConnProps.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
-    executorConnProps.setProperty("route-query", "false")
-    executorConnProps.setProperty("lob-direct-buffers", "true")
-
-    ConnectionProperties(hostList(0)._2,
-      "io.snappydata.jdbc.ClientDriver", SnappyStoreClientDialect, map,
-      poolProperties, executorConnProps, false)
-
   }
 
   private def addProperty(props: mutable.Map[String, String], key: String,

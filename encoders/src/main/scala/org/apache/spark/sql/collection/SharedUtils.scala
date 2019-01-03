@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -126,16 +126,6 @@ object SharedUtils {
   /** for testing only (a long convoluted name chosen deliberately) */
   var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = java.lang.Boolean.getBoolean(
     "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT")
-
-  /**
-   * TODO: check SmartConnectorRDDHelper for implementation
-   * NOTE: JavaDoc for DataReaderFactory.preferredLocations says
-   * that preferredLocations should return host name, so currently
-   * this returns true
-   */
-  def preferHostName(): Boolean = {
-    true
-  }
 
   /**
    * For V2 connector filters are pushed in java serialized format

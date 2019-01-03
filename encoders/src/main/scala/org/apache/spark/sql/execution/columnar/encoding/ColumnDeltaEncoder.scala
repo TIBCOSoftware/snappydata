@@ -22,8 +22,8 @@ import java.nio.{ByteBuffer, ByteOrder}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import org.apache.spark.Logging
 import org.codehaus.janino.CompilerFactory
-
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
@@ -105,6 +105,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
      SparkRadixSort            0 /    0         40.6          24.6       1.6X
      RadixSort                 0 /    0         53.8          18.6       2.2X
      numEntries = 10000, iterations = 1000
+
      sort comparison     Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
      ----------------------------------------------------------------------------
      AVL                       2 /    2          5.3         189.4       1.0X
@@ -647,7 +648,7 @@ trait DeltaWriterFactory {
   def create(): DeltaWriter
 }
 
-object DeltaWriter {
+object DeltaWriter extends Logging {
 
   private[this] val defaultImports = Array(
     classOf[UTF8String].getName,
@@ -671,6 +672,7 @@ object DeltaWriter {
         evaluator.setClassName("io.snappydata.execute.GeneratedDeltaWriterFactory")
         evaluator.setParentClassLoader(getClass.getClassLoader)
         evaluator.setDefaultImports(defaultImports)
+        // evaluator.setDefaultImports(defaultImports: _*)
 
         val (name, complexType) = dataType match {
           case BooleanType => ("Boolean", "")
@@ -723,10 +725,9 @@ object DeltaWriter {
              |};
           """.stripMargin
         }
-        /* // Commented as [[Pradeep]], should be replaced by some other logger class.
-        CodeGeneration.logDebug(
+
+        logDebug(
           s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
-          */
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
           SharedUtils.EMPTY_STRING_ARRAY).asInstanceOf[DeltaWriterFactory]
       }

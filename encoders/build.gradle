@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,36 +27,33 @@ sourceSets.test.java.srcDirs = []
 dependencies {
 
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
-  compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-  testCompile("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:${parboiledVersion}") {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
 
-  //compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+  compile "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}"
+  compile "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}"
+  compile "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}"
+  compile "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
+
+  compile project(":snappy-jdbc_${scalaBinaryVersion}")
   if (new File(rootDir, 'store/build.gradle').exists()) {
     compile project(':snappy-store:snappydata-store-core')
   } else {
     compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
   }
 
-  compile project(":snappy-jdbc_${scalaBinaryVersion}")
-
-  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.4") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-
-  compile 'org.apache.tomcat:tomcat-jdbc:8.5.23'
-  compile group: 'com.zaxxer', name: 'HikariCP', version: '2.7.2'
+  compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
+  compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
+  compile 'org.apache.tomcat:tomcat-jdbc:8.5.37'
+  compile group: 'com.zaxxer', name: 'HikariCP', version:'2.7.9'
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
-
-  compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
-  compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
-
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
 }
 
@@ -75,25 +72,3 @@ scalaTest {
 test.dependsOn ':cleanJUnit'
 
 archivesBaseName = 'snappydata-encoders_' + scalaBinaryVersion
-shadowJar {
-  // avoid conflict with the 0.9.2 version in stock Spark
-  relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-
-  mergeServiceFiles()
-  exclude 'log4j.properties'
-
-  if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'SnappyData Build Team'
-  } else {
-    createdBy = System.getProperty('user.name')
-  }
-  manifest {
-    attributes(
-        'Manifest-Version'  : '1.0',
-        'Created-By'        : createdBy,
-        'Title'             : "snappydata-shared1_${scalaBinaryVersion}",
-        'Version'           : version,
-        'Vendor'            : vendorName
-    )
-  }
-}

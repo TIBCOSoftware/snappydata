@@ -21,10 +21,9 @@ import java.util.regex.Pattern
 
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.Constant
-
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.{SnappyDataBaseDialect, SnappyDataPoolDialect}
+import org.apache.spark.sql.{SnappyDataBaseDialect, SnappyDataPoolDialect, SnappyStoreClientDialect}
 
 /**
  * Default dialect for GemFireXD >= 1.4.0.
