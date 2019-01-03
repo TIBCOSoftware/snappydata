@@ -314,11 +314,8 @@ abstract class SnappyDDLParser(session: SparkSession)
         applyTo: Seq[String], filterExp: Expression, filterStr: String) => {
       val applyToAll = applyTo.exists(_.equalsIgnoreCase(
         SnappyParserConsts.CURRENT_USER.upper))
-      val expandedApplyTo = if (applyToAll) {
-        Seq.empty[String]
-      } else {
-        ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
-      }
+      val expandedApplyTo = if (applyToAll) Nil
+      else ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       /*
       val targetRelation = snappySession.sessionState.catalog.lookupRelation(tableIdent)
       val isTargetExternalRelation =  targetRelation.find(x => x match {

@@ -19,16 +19,15 @@ package org.apache.spark.sql.streaming
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.reflect.io.Path
-
 import io.snappydata.{SnappyFunSuite, StreamingConstants}
 import org.apache.log4j.LogManager
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import scala.reflect.io.Path
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     with BeforeAndAfter with BeforeAndAfterAll {

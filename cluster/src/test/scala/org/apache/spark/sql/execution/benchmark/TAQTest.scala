@@ -258,9 +258,6 @@ object TAQTest extends Logging with Assertions {
   private def collect(df: Dataset[Row], expectedNumResults: Int): Unit = {
     val result = df.collect()
     assert(result.length === expectedNumResults)
-    // scalastyle:off
-    println(s"Count = ${result.length}")
-    // scalastyle:on
   }
 
   private def doGC(): Unit = {

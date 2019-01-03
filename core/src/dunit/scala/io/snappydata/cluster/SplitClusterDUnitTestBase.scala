@@ -32,7 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
-import io.snappydata.{ColumnUpdateDeleteTests, Constant}
+import io.snappydata.{ColumnUpdateDeleteTests, Constant, SnappyFunSuite}
 import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.InternalRow
@@ -296,11 +296,11 @@ trait SplitClusterDUnitTestObject extends Logging {
       netServers, locatorId, locatorNetServer, servers, leadId)
     // next test metadata using JDBC connection
     stmt = jdbcConn.createStatement()
-    MetadataTest.testSYSTablesAndVTIs(MetadataTest.resultSetToDataset(session, stmt),
+    MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
-    MetadataTest.testDescribeShowAndExplain(MetadataTest.resultSetToDataset(session, stmt),
+    MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
       usingJDBC = true)
-    MetadataTest.testDSIDWithSYSTables(MetadataTest.resultSetToDataset(session, stmt),
+    MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
       netServers, locatorId, locatorNetServer, servers, leadId)
 
     stmt.close()
@@ -341,7 +341,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     // select the data from table created in embedded mode
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
-    var expected = Seq.empty[ComplexData]
+    var expected: Seq[ComplexData] = Nil
     // create a table in split mode
     if (isComplex) {
       expected = createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
@@ -417,8 +417,10 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
-        snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
-          Map.empty[String, String])
+        if ("row".equalsIgnoreCase(tableType)) {
+          snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
+            Map.empty[String, String])
+        }
       case _ =>
     }
 
@@ -427,14 +429,15 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index drop op
-        snc.dropIndex("tableName" + "_index", ifExists = false)
+        if ("row".equalsIgnoreCase(tableType)) {
+          snc.dropIndex("tableName" + "_index", ifExists = false)
+        }
       case _ =>
     }
   }
 
   def selectFromTable(snc: SnappyContext, tableName: String,
-      expectedLength: Int,
-      expected: Seq[ComplexData] = Seq.empty[ComplexData]): Unit = {
+      expectedLength: Int, expected: Seq[ComplexData] = Nil): Unit = {
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
     assert(r.length == expectedLength,

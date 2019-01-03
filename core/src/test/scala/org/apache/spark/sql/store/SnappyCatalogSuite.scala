@@ -421,7 +421,7 @@ abstract class CatalogTestUtils {
   }
 
   def newFunc(name: String, database: Option[String] = None): CatalogFunction = {
-    CatalogFunction(FunctionIdentifier(name, database), funcClass, Seq.empty[FunctionResource])
+    CatalogFunction(FunctionIdentifier(name, database), funcClass, Nil)
   }
 
   /**

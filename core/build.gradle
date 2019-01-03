@@ -15,12 +15,8 @@
  * LICENSE file.
  */
 
-plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
-  id 'de.undercouch.download' version '3.4.3'
-}
-
 apply plugin: 'scala'
+apply plugin: 'de.undercouch.download'
 
 compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
@@ -94,21 +90,21 @@ dependencies {
   }
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
 
-  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.4") {
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:${parboiledVersion}") {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
-  compile 'org.apache.tomcat:tomcat-jdbc:8.5.23'
-  compile 'com.zaxxer:HikariCP:2.7.1'
-  // compile 'org.spark-project:dstream-twitter_2.11:0.1.0'
-  compile 'org.twitter4j:twitter4j-stream:4.0.6'
-  compile 'org.objenesis:objenesis:2.6'
+  compile "org.apache.tomcat:tomcat-juli:${tomcatJdbcVersion}"
+  compile "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
+  compile "com.zaxxer:HikariCP:${hikariCPVersion}"
+  compile "org.twitter4j:twitter4j-stream:${twitter4jVersion}"
+  compile "org.objenesis:objenesis:${objenesisVersion}"
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
   compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
   compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
 
-  compileOnly 'com.rabbitmq:amqp-client:3.5.7'
+  compileOnly "com.rabbitmq:amqp-client:${rabbitMqVersion}"
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
@@ -148,7 +144,7 @@ scalaTest {
 
 def downloadApacheSparkDist(String ver, String distName, String prodDir) {
   return tasks.create("downloadApache${ver}SparkDist", Download) {
-    outputs.files "${prodDir}.tgz"
+    outputs.files "${prodDir}.tgz", "${prodDir}/README.md"
 
     src "http://archive.apache.org/dist/spark/spark-${ver}/${distName}.tgz"
     dest sparkDistDir

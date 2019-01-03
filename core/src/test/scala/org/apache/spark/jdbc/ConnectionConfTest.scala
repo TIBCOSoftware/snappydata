@@ -206,7 +206,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
       })
 
       val result = snc.sql("SELECT col1 from TEST_JDBC_TABLE_1")
-      result.show()
+      result.collect()
       // result.collect().foreach(v => assert(v(0) == 9))
 
       snc.sql("drop table TEST_JDBC_TABLE_1")
