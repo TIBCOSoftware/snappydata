@@ -48,8 +48,8 @@ dependencies {
 
   compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
   compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
-  compile 'org.apache.tomcat:tomcat-jdbc:8.5.37'
-  compile group: 'com.zaxxer', name: 'HikariCP', version:'2.7.9'
+  compile "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
+  compile "com.zaxxer:HikariCP:${hikariCPVersion}"
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
