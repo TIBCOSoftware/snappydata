@@ -43,16 +43,18 @@ class AllMixedTypes extends SnappySQLJob{
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
 
-    val Q1 = "SELECT * FROM T20.TwentyTwenty ORDER BY name"
-    val Q2 = "SELECT name, " +
+    val Mixed_Q1 = "SELECT * FROM T20.TwentyTwenty ORDER BY name"
+    val Mixed_Q2 = "SELECT name, " +
              "SUM(LastThreeMatchPerformance[0] + LastThreeMatchPerformance[1] + " +
              "LastThreeMatchPerformance[2]) AS RunsScored " +
              "FROM T20.TwentyTwenty WHERE Roll[1] = 'WicketKeeper' GROUP BY name"
-    val Q3 = "SELECT name, LastThreeMatchPerformance[2] AS RunsScoredinLastMatch, " +
+    val Mixed_Q3 = "SELECT name, LastThreeMatchPerformance[2] AS RunsScoredinLastMatch, " +
              "Profile.Matches,Profile.SR,Profile.Runs " +
              "FROM T20.TwentyTwenty WHERE Profile.Runs >= 1000 ORDER BY Profile.Runs DESC"
-    val Q4 = "SELECT COUNT(*) AS AllRounder FROM T20.TwentyTwenty WHERE Roll[2] = 'AllRounder'"
-    val Q5 = "SELECT name, Profile.SR,Profile.Runs FROM T20.TwentyTwenty ORDER BY Profile.SR DESC"
+    val Mixed_Q4 = "SELECT COUNT(*) AS AllRounder FROM " +
+      "T20.TwentyTwenty WHERE Roll[2] = 'AllRounder'"
+    val Mixed_Q5 = "SELECT name, Profile.SR,Profile.Runs " +
+      "FROM T20.TwentyTwenty ORDER BY Profile.SR DESC"
 
     /* --- Snappy Job --- */
     snc.sql("CREATE SCHEMA T20")
@@ -102,18 +104,18 @@ class AllMixedTypes extends SnappySQLJob{
                      "'Irfan Pathan',ARRAY(17,23,18),MAP(2,'AllRounder')," +
                      "STRUCT(24,172,119.44,false)")
 
-    snc.sql(Q1)
-    snc.sql(Q2)
-    snc.sql(Q3)
-    snc.sql(Q4)
-    snc.sql(Q5)
+    snc.sql(Mixed_Q1)
+    snc.sql(Mixed_Q2)
+    snc.sql(Mixed_Q3)
+    snc.sql(Mixed_Q4)
+    snc.sql(Mixed_Q5)
 
     if(printContent) {
-      println("snc : Q1 " + (snc.sql(Q1).show))
-      println("snc : Q2 " + (snc.sql(Q2).show))
-      println("snc : Q3 " + (snc.sql(Q3).show))
-      println("snc : Q4 " + (snc.sql(Q4).show))
-      println("snc : Q5 " + (snc.sql(Q5).show))
+      println("snc : Mixed_Q1 " + (snc.sql(Mixed_Q1).show))
+      println("snc : Mixed_Q2 " + (snc.sql(Mixed_Q2).show))
+      println("snc : Mixed_Q3 " + (snc.sql(Mixed_Q3).show))
+      println("snc : Mixed_Q4 " + (snc.sql(Mixed_Q4).show))
+      println("snc : Mixed_Q5 " + (snc.sql(Mixed_Q5).show))
     }
 
     /* --- Spark Job --- */
@@ -164,18 +166,18 @@ class AllMixedTypes extends SnappySQLJob{
       "'Irfan Pathan',ARRAY(17,23,18),MAP(2,'AllRounder')," +
       "STRUCT(24,172,119.44,false)")
 
-    spark.sql(Q1)
-    spark.sql(Q2)
-    spark.sql(Q3)
-    spark.sql(Q4)
-    spark.sql(Q5)
+    spark.sql(Mixed_Q1)
+    spark.sql(Mixed_Q2)
+    spark.sql(Mixed_Q3)
+    spark.sql(Mixed_Q4)
+    spark.sql(Mixed_Q5)
 
     if(printContent) {
-      println("spark : Q1 " + (spark.sql(Q1).show))
-      println("spark : Q2 " + (spark.sql(Q2).show))
-      println("spark : Q3 " + (spark.sql(Q3).show))
-      println("spark : Q4 " + (spark.sql(Q4).show))
-      println("spark : Q5 " + (spark.sql(Q5).show))
+      println("spark : Mixed_Q1 " + (spark.sql(Mixed_Q1).show))
+      println("spark : Mixed_Q2 " + (spark.sql(Mixed_Q2).show))
+      println("spark : Mixed_Q3 " + (spark.sql(Mixed_Q3).show))
+      println("spark : Mixed_Q4 " + (spark.sql(Mixed_Q4).show))
+      println("spark : Mixed_Q5 " + (spark.sql(Mixed_Q5).show))
     }
 
 
@@ -183,11 +185,11 @@ class AllMixedTypes extends SnappySQLJob{
     /* --- Verification --- */
 
     // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
-    // SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q2, "Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q3, "Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q4, "Q4", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q5, "Q5", "column", pw, sqlContext)
+    // SnappyTestUtils.assertQueryFullResultSet(snc, Mixed_Q1, "Mixed_Q1", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Mixed_Q2, "Mixed_Q2", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Mixed_Q3, "Mixed_Q3", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Mixed_Q4, "Mixed_Q4", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Mixed_Q5, "Mixed_Q5", "column", pw, sqlContext)
 
     /* --- Clean up --- */
 

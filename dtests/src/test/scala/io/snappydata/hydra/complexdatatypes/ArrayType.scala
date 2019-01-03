@@ -100,7 +100,7 @@ class ArrayType extends SnappySQLJob {
     spark.sql("INSERT INTO ST.Student " +
       "SELECT 4,'Salman Khan',Array(99.9,89.2,85.3,90.2,83.9,96.1)")
     spark.sql("INSERT INTO ST.Student " +
-      "SELECT 5,'Aranv Goswami',Array(90.1,80.1,70.1,60.1,50.1,40.1)")
+      "SELECT 5,'Aranav Goswami',Array(90.1,80.1,70.1,60.1,50.1,40.1)")
     spark.sql("INSERT INTO ST.Student " +
       "SELECT 6,'Sudhir Chudhari',Array(81.1,81.2,81.3,81.4,81.5,81.6)")
     spark.sql("INSERT INTO ST.Student " +

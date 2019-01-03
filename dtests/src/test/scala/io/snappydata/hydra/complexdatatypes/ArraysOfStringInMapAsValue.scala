@@ -43,10 +43,10 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val printContent : Boolean = false
 
-    val Q1 = "SELECT * FROM FamousPeopleView"
-    val Q2 = "SELECT country, value[0],value[1],value[2],value[3],value[4] FROM " +
+    val Array_Map_Q1 = "SELECT * FROM FamousPeopleView"
+    val Array_Map_Q2 = "SELECT country, value[0],value[1],value[2],value[3],value[4] FROM " +
       "FamousPeopleView WHERE key = 'Prime Ministers'"
-    val Q3 = "SELECT country, value FROM FamousPeopleView WHERE key = 'Authors'"
+    val Array_Map_Q3 = "SELECT country, value FROM FamousPeopleView WHERE key = 'Authors'"
 
     /* --- Snappy Job --- */
     snc.sql("CREATE SCHEMA FP")
@@ -78,18 +78,17 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
       "MAP('Authors',ARRAY('Mark Twain','Walt Whitman','J.D. Salinger'," +
       "'Emily Dickinson','Willa Cather','William Faulkner'))")
 
-
     snc.sql("CREATE TEMPORARY VIEW FamousPeopleView AS " +
       "SELECT country, explode(celebrities) FROM FP.FamousPeople")
 
-    snc.sql(Q1)
-    snc.sql(Q2)
-    snc.sql(Q3)
+    snc.sql(Array_Map_Q1)
+    snc.sql(Array_Map_Q2)
+    snc.sql(Array_Map_Q3)
 
     if(printContent) {
-      println("snc : Q1 " + snc.sql(Q1).show)
-      println("snc : Q2 " + snc.sql(Q2).show)
-      println("snc : Q3 " + snc.sql(Q3).show)
+      println("snc : Array_Map_Q1 " + snc.sql(Array_Map_Q1).show)
+      println("snc : Array_Map_Q2 " + snc.sql(Array_Map_Q2).show)
+      println("snc : Array_Map_Q3 " + snc.sql(Array_Map_Q3).show)
     }
 
     /* --- Spark Job --- */
@@ -125,21 +124,24 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
     spark.sql("CREATE TEMPORARY VIEW FamousPeopleView AS " +
       "SELECT country, explode(celebrities) FROM FP.FamousPeople")
 
-    spark.sql(Q1)
-    spark.sql(Q2)
-    spark.sql(Q3)
+    spark.sql(Array_Map_Q1)
+    spark.sql(Array_Map_Q2)
+    spark.sql(Array_Map_Q3)
 
     if(printContent) {
-      println("spark : Q1 " + spark.sql(Q1).show)
-      println("spark : Q2 " + spark.sql(Q2).show)
-      println("spark : Q3 " + spark.sql(Q2).show)
+      println("spark : Array_Map_Q1 " + spark.sql(Array_Map_Q1).show)
+      println("spark : Array_Map_Q2 " + spark.sql(Array_Map_Q2).show)
+      println("spark : Array_Map_Q3 " + spark.sql(Array_Map_Q2).show)
     }
 
     /* --- Verification --- */
 
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q1, "Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q2, "Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, Q3, "Q3", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Map_Q1, "Array_Map_Q1",
+      "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Map_Q2, "Array_Map_Q2",
+      "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, Array_Map_Q3, "Array_Map_Q3",
+      "column", pw, sqlContext)
 
     /* --- Clean up --- */
 
