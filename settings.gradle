@@ -26,7 +26,6 @@ include ':snappy-examples_' + scalaBinaryVersion
 include 'dunit'
 include ':snappy-dtests_' + scalaBinaryVersion
 include ':snappy-compatibility-tests_' + scalaBinaryVersion
-include ':snappy-encoders_' + scalaBinaryVersion
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
@@ -35,7 +34,6 @@ project(':snappy-launcher').projectDir = "$rootDir/launcher" as File
 project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
 project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" as File
 project(':snappy-compatibility-tests_' + scalaBinaryVersion).projectDir = "$rootDir/compatibilityTests" as File
-project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoders" as File
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'
