@@ -16,10 +16,9 @@
  */
 package io.snappydata.util
 
+import java.lang.management.ManagementFactory
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.io.File
-import java.lang.management.ManagementFactory
 
 /**
   *  This can be mixed into a class (but not an object?) to get the right method
@@ -46,7 +45,7 @@ object DebugUtils {
   // http://stackoverflow.com/questions/35842/how-can-a-java-program-get-its-own-process-id
   //
   // This should probably be in a OS-specific class?
-  //lazy val myPid: Int = Integer.parseInt(new File("/proc/self").getCanonicalFile().getName())
+  // lazy val myPid: Int = Integer.parseInt(new File("/proc/self").getCanonicalFile().getName())
 
   lazy val myInfo: String = ManagementFactory.getRuntimeMXBean().getName()
 

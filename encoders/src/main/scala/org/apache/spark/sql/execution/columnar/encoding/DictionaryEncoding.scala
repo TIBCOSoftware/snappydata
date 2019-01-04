@@ -23,8 +23,8 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{DictionaryMap, LongKey, ObjectHashSet}
 
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -94,7 +94,7 @@ abstract class DictionaryDecoderBase(columnDataRef: AnyRef, startCursor: Long,
       numElements: Int, dictionaryLen: Int, dataType: DataType): Long = {
     var position = cursor
     var index = 0
-    Utils.getSQLDataType(dataType) match {
+    JdbcExtendedUtils.getSQLDataType(dataType) match {
       case StringType =>
         stringDictionary = new StringDictionary(cursor, numElements,
           GemFireCacheImpl.getCurrentBufferAllocator)

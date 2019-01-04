@@ -43,7 +43,7 @@ import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer
 
 import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.storage.TaskResultBlockId
 import org.apache.spark.{SparkEnv, TaskContext}
 
@@ -68,7 +68,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] val taskContext = TaskContext.get()
 
   private[this] val consumer = if (taskContext ne null) {
-    new ObjectHashSetMemoryConsumer(Utils.taskMemoryManager(taskContext))
+    new ObjectHashSetMemoryConsumer(SharedUtils.taskMemoryManager(taskContext))
   } else null
 
   if (!longLived && (taskContext ne null)) {
@@ -78,7 +78,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   private[this] var objectSize = -1L
   private[this] var totalSize = 0L
 
-  private[this] var _capacity = Utils.nextPowerOf2(initialCapacity)
+  private[this] var _capacity = SharedUtils.nextPowerOf2(initialCapacity)
   private[this] var _size = 0
   private[this] var _growThreshold = (loadFactor * _capacity).toInt
 
@@ -246,7 +246,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     acquireMemory(valSize)
     totalSize += valSize
 
-    val newCapacity = Utils.checkCapacity(capacity << 1)
+    val newCapacity = SharedUtils.checkCapacity(capacity << 1)
     val newData = newArray(newCapacity)
     val newMask = newCapacity - 1
 

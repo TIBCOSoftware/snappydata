@@ -22,12 +22,12 @@ import java.nio.{ByteBuffer, ByteOrder}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import org.apache.spark.Logging
 import org.codehaus.janino.CompilerFactory
-
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -95,19 +95,15 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
    * Below are some numbers comparing alternatives (last one is FastUtil's RadixSort
    * which is not really an alternative since it can't have associated non-sorted
    * integer value but listed here for comparison.
-
      numEntries = 100, iterations = 10000
-
      Java HotSpot(TM) 64-Bit Server VM 1.8.0_131-b11 on Linux 4.4.0-21-generic
      Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz
-
      sort comparison     Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
      -----------------------------------------------------------------------------
      AVL                       0 /    0         24.9          40.2       1.0X
      RB                        0 /    0         17.4          57.6       0.7X
      SparkRadixSort            0 /    0         40.6          24.6       1.6X
      RadixSort                 0 /    0         53.8          18.6       2.2X
-
      numEntries = 10000, iterations = 1000
 
      sort comparison     Best/Avg Time(ms)    Rate(M/s)   Per Row(ns)   Relative
@@ -362,7 +358,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // to be useful for even range filters.
     // Also during delta merges, can merge dictionaries separately then rewrite only indexes.
 
-    dataType = Utils.getSQLDataType(field.dataType)
+    dataType = JdbcExtendedUtils.getSQLDataType(field.dataType)
     setAllocator(GemFireCacheImpl.getCurrentBufferAllocator)
 
     // Simple two-way merge with duplicate elimination. If current delta has small number
@@ -652,7 +648,7 @@ trait DeltaWriterFactory {
   def create(): DeltaWriter
 }
 
-object DeltaWriter {
+object DeltaWriter extends Logging {
 
   private[this] val defaultImports = Array(
     classOf[UTF8String].getName,
@@ -675,7 +671,7 @@ object DeltaWriter {
         val evaluator = new CompilerFactory().newScriptEvaluator()
         evaluator.setClassName("io.snappydata.execute.GeneratedDeltaWriterFactory")
         evaluator.setParentClassLoader(getClass.getClassLoader)
-        evaluator.setDefaultImports(defaultImports: _*)
+        evaluator.setDefaultImports(defaultImports)
 
         val (name, complexType) = dataType match {
           case BooleanType => ("Boolean", "")
@@ -728,14 +724,15 @@ object DeltaWriter {
              |};
           """.stripMargin
         }
-        CodeGeneration.logDebug(
+
+        logDebug(
           s"DEBUG: Generated DeltaWriter for type $dataType, code=$expression")
         evaluator.createFastEvaluator(expression, classOf[DeltaWriterFactory],
-          Utils.EMPTY_STRING_ARRAY).asInstanceOf[DeltaWriterFactory]
+          SharedUtils.EMPTY_STRING_ARRAY).asInstanceOf[DeltaWriterFactory]
       }
     })
 
-  def apply(dataType: DataType): DeltaWriter = Utils.getSQLDataType(dataType) match {
+  def apply(dataType: DataType): DeltaWriter = JdbcExtendedUtils.getSQLDataType(dataType) match {
     case StringType => new DeltaWriter {
       override def readAndEncode(srcDecoder: ColumnDecoder, srcColumnBytes: AnyRef,
           destEncoder: ColumnEncoder, destCursor: Long, encoderPosition: Int,

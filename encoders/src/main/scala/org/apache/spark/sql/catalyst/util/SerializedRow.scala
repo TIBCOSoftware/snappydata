@@ -84,13 +84,7 @@ final class SerializedRow extends InternalRow with SerializedRowData {
     copy
   }
 
-  override def setNullAt(i: Int): Unit = {
-    throw new UnsupportedOperationException("not implemented")
-  }
-
-  override def update(i: Int, value: Any): Unit = {
-    throw new UnsupportedOperationException("not implemented")
-  }
+  override def anyNull: Boolean = isAnyNull
 }
 
 /**
@@ -326,7 +320,7 @@ trait SerializedRowData extends SpecializedGetters
     }
   }
 
-  final def anyNull: Boolean = {
+  final def isAnyNull: Boolean = {
     if (skipBytes == 0) {
       BitSet.anySet(baseObject, baseOffset, bitSetWidthInBytes >> 3)
     } else {
@@ -433,5 +427,13 @@ trait SerializedRowData extends SpecializedGetters
     val bytes = new Array[Byte](sizeInBytes)
     in.read(bytes)
     this.baseObject = bytes
+  }
+
+  def setNullAt(i: Int): Unit = {
+    throw new UnsupportedOperationException("not implemented")
+  }
+
+  def update(i: Int, value: Any): Unit = {
+    throw new UnsupportedOperationException("not implemented")
   }
 }
