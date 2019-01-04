@@ -94,13 +94,18 @@ class ColumnTableTest
       df.write.insertInto(tableName)
       fail("expected TableNotFoundException")
     } catch {
-      case _: TableNotFoundException => // expected
-        assert(result.collect().length === count)
+      case _:TableNotFoundException =>
     }
     // check that write using qualified name should work
     df.write.insertInto(s"$schemaName.$tableName")
     count += size
-    assert(result.collect().length === count)
+
+    try{
+      result.collect()
+      fail("expected TableNotFoundException")
+    } catch {
+      case _:TableNotFoundException =>
+    }
 
     result = snc.sql(s"SELECT 1 FROM $schemaName.$tableName")
     assert(result.count() === count)
