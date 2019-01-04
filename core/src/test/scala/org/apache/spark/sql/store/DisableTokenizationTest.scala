@@ -16,12 +16,12 @@
  */
 package org.apache.spark.sql.store
 
-import io.snappydata.Property.PlanCaching
-import io.snappydata.core.Data
+
+import io.snappydata.core.{Data, LocalSparkConf}
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.Logging
+import org.apache.spark.{Logging, SparkConf}
 import org.apache.spark.sql._
 
 /**
@@ -37,13 +37,17 @@ class DisableTokenizationTest
 
   override def beforeAll(): Unit = {
     snc.sql(s"set snappydata.sql.tokenize = false")
-    PlanCaching.set(snc.sessionState.conf, true)
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
     snc.sql(s"set snappydata.sql.tokenize = true")
     super.afterAll()
+  }
+
+  override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
+    val newConf = LocalSparkConf.newConf(addOn)
+    newConf.set("snappydata.sql.planCaching", "true")
   }
 
   after {
