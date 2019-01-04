@@ -216,6 +216,7 @@ public class SnappyTest implements Serializable {
 
   protected String getStoreTestsJar() {
     String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
+        hd.getFileSep() + ".." +
         hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
         ProductVersionHelper.getInfo().getProperty(ProductVersionHelper.SNAPPYRELEASEVERSION) +
         "-all.jar";
@@ -2443,7 +2444,7 @@ public class SnappyTest implements Serializable {
     File logFile = null;
     String Parameters;
     String confString = "";
-    String[] confParameter = null;
+    String[] confParameter,confDmlProps = null;
     userAppJar = SnappyPrms.getUserAppJar();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
@@ -2459,12 +2460,7 @@ public class SnappyTest implements Serializable {
         confString += " --conf " + confParameter[i].toString();
       }
     }
-    /*      if (isSecurityEnabled) {
-        String passFilePath = SnappySecurityPrms.getPassFile();
-        confString = confString + " --passfile " + passFilePath;
-        Log.getLogWriter().info("SP: confString for security: " + confString.toString());
-      }*/
-    if (SnappyPrms.useJDBCConnInSnappyJob()) {
+     if (SnappyPrms.useJDBCConnInSnappyJob()) {
       String primaryLocatorHost = getPrimaryLocatorHost();
       String primaryLocatorPort = getPrimaryLocatorPort();
       confString += "--conf primaryLocatorHost=" + primaryLocatorHost + " --conf primaryLocatorPort=" + primaryLocatorPort;
@@ -2480,17 +2476,49 @@ public class SnappyTest implements Serializable {
         if (dmlProps == null) throw new TestException("Test issue: dml statement for " +
             getMyTid() + " is null");
       }
-      String[] confDmlProps = dmlProps.split(",");
-      for (int i = 0; i < confDmlProps.length; i++) {
-        Log.getLogWriter().info("ConfParameter : " + confDmlProps[i].toString());
-        confString += " --conf " + confDmlProps[i].toString();
+      ArrayList<String> columnValues = new ArrayList<>();
+    if (dmlProps.contains("\"")) {
+        String str3 = dmlProps;
+        while (str3.contains("\"")) {
+          int beginIndex = str3.indexOf("\"");
+          int endIndex = str3.indexOf("\"", beginIndex + 2);
+          String str1 = str3.substring(0, beginIndex);
+          columnValues.addAll(new ArrayList<>(Arrays.asList(str1.split(","))));
+          String str2 = str3.substring(beginIndex, endIndex + 1);
+          str2 = columnValues.get((columnValues.size()) - 1) + str2;
+          columnValues.set((columnValues.size()) - 1, str2);
+          if (endIndex < str3.length())
+            str3 = str3.substring(endIndex + 2, str3.length());
+          else str3 = "";
+          //columnValues.add(str2);
+        }
+        if (str3.length() > 0) {
+          columnValues.addAll(new ArrayList<>(Arrays.asList(str3.split(","))));
+        }
+      } else {
+        columnValues = new ArrayList<>(Arrays.asList(dmlProps.split(",")));
       }
-      Log.getLogWriter().info("SP: confString for hasDynamicAppProps : " + confString.toString());
+      if(columnValues.size() != 0){
+        for (int i = 0; i < columnValues.size(); i++) {
+          String confValue = columnValues.get(i);
+          if(confValue.contains(" ") || confValue.contains("(") || confValue.contains(")") || confValue.contains("<") || confValue.contains("'") || confValue.contains(">")){
+            confValue = confValue.replace(" ","\\ ");
+            confValue = confValue.replace("(","\\(");
+            confValue = confValue.replace(")","\\)");
+            confValue = confValue.replace("<","\\<");
+            confValue = confValue.replace(">","\\>");
+            confValue = confValue.replace("'","\\'");
+          }
+          Log.getLogWriter().info("SP: each config is " + confValue);
+          confString += " --conf " + confValue;
+        }
+      }
+      Log.getLogWriter().info("SP: confString for hasDynamicAppProps : " + confString);
     }
     if (isSecurityEnabled)
       confString += " --passfile " + passFilePath + " --conf logFileName=" + logFileName;
 
-    Log.getLogWriter().info("SP: confString for security: " + confString.toString());
+    Log.getLogWriter().info("SP: confString for security: " + confString);
 
     try {
       String cmd;

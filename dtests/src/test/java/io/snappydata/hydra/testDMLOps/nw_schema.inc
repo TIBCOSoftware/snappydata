@@ -94,9 +94,9 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmts =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
-"UPDATE gemfire1.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = (SELECT max(CategoryID) from products where tid=$tid)"
+"UPDATE gemfire1.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = (SELECT max(CategoryID) from gemfire1.products where tid=$tid)"
 "UPDATE gemfire1.products SET UnitPrice = UnitPrice * 0.9"
-"UPDATE gemfire1.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = (SELECT min(CategoryID) from products where tid=$tid)"
+"UPDATE gemfire1.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = (SELECT min(CategoryID) from gemfire1.products where tid=$tid)"
 "UPDATE gemfire1.products SET Discontinued=-1 where Discontinued=1"
 "UPDATE gemfire1.products SET Discontinued=1 WHERE Discontinued=-1"
 "UPDATE gemfire1.order_details SET UnitPrice = UnitPrice * 1.1"
@@ -104,25 +104,25 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 "UPDATE gemfire1.order_details SET Quantity = 0 WHERE ProductID = 11"
 "UPDATE gemfire1.employees SET TitleOfCourtesy='Mr.' WHERE FIRSTNAME LIKE '%3%'"
 "UPDATE gemfire1.employees SET TitleOfCourtesy='Mrs.' WHERE FIRSTNAME LIKE '%3%'"
-"UPDATE gemfire1.orders SET ShipVia = ShipVia + 1 WHERE OrderID IN (SELECT max(orderID) from orders where tid=$tid)"
+"UPDATE gemfire1.orders SET ShipVia = ShipVia + 1 WHERE OrderID IN (SELECT max(orderID) from gemfire1.orders where tid=$tid)"
 "UPDATE gemfire1.orders SET Freight = Freight * 1.1 WHERE Freight >= 100"
 "UPDATE gemfire1.customers SET CompanyName='abc_$tid'"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
-"select ProductID,CategoryID,UnitPrice from products"
-"select ProductID,UnitPrice from products"
-"select ProductID,CategoryID,UnitPrice, ReorderLevel from products"
-"select ProductID,Discontinued from products where Discontinued=-1"
-"select ProductID,Discontinued from products where ReorderLevel=1"
-"select orderID,UnitPrice from order_details"
-"select orderID,UnitPrice from order_details"
-"select orderID,Quantity from order_details where Quantity=0"
-"select EmployeeID,TitleOfCourtesy from employees where TitleOfCourtesy='Mr.'"
-"select EmployeeID,TitleOfCourtesy from employees where TitleOfCourtesy='Mrs.'"
-"select OrderID,ShipVia from orders"
-"select OrderID,Freight from orders"
-"select customerID,companyname from customers"
+"select ProductID,CategoryID,UnitPrice from gemfire1.products"
+"select ProductID,UnitPrice from gemfire1.products"
+"select ProductID,CategoryID,UnitPrice, ReorderLevel from gemfire1.products"
+"select ProductID,Discontinued from gemfire1.products where Discontinued=-1"
+"select ProductID,Discontinued from gemfire1.products where ReorderLevel=1"
+"select orderID,UnitPrice from gemfire1.order_details"
+"select orderID,UnitPrice from gemfire1.order_details"
+"select orderID,Quantity from gemfire1.order_details where Quantity=0"
+"select EmployeeID,TitleOfCourtesy from gemfire1.employees where TitleOfCourtesy='Mr.'"
+"select EmployeeID,TitleOfCourtesy from gemfire1.employees where TitleOfCourtesy='Mrs.'"
+"select OrderID,ShipVia from gemfire1.orders"
+"select OrderID,Freight from gemfire1.orders"
+"select customerID,companyname from gemfire1.customers"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
@@ -142,11 +142,11 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
-"delete from gemfire1.orders where orderid IN (SELECT max(orderID) from orders where tid=$tid)"
+"delete from gemfire1.orders where orderid IN (SELECT max(orderID) from gemfire1.orders where tid=$tid)"
 "delete from gemfire1.order_details where Quantity < 1 "
-"delete from gemfire1.orders where orderid IN (SELECT min(orderID) from orders where tid=$tid)"
-"delete from gemfire1.customers where CustomerID IN (SELECT min(CustomerID) from customers where tid=$tid)"
-"delete from gemfire1.customers where CustomerID IN (SELECT max(CustomerID) from customers where tid=$tid)"
+"delete from gemfire1.orders where orderid IN (SELECT min(orderID) from gemfire1.orders where tid=$tid)"
+"delete from gemfire1.customers where CustomerID IN (SELECT min(CustomerID) from gemfire1.customers where tid=$tid)"
+"delete from gemfire1.customers where CustomerID IN (SELECT max(CustomerID) from gemfire1.customers where tid=$tid)"
 "delete from gemfire1.employees where EmployeeID = 6"
 "delete from gemfire1.employees where EmployeeID < 5"
 "delete from gemfire1.employees where FIRSTNAME LIKE '%2'"
