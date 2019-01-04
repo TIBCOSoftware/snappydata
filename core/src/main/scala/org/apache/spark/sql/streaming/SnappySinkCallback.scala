@@ -229,7 +229,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     } else StorageLevel.MEMORY_AND_DISK
 
     def processDataWithEventType(dataFrame: DataFrame) = {
-      val hasUpdateOrDeleteEvents = dataFrame.cache()
+      val hasUpdateOrDeleteEvents = dataFrame.persist(storageLevel)
           .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
           .count() > 0
       if (hasUpdateOrDeleteEvents) {
