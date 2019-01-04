@@ -171,7 +171,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       if (eventTypeColumnAvailable) {
         processDataWithEventType(dataFrame)
       } else {
-        dataFrame.persist(storageLevel).count()  // this is done as a workaround for SNAP-2824
+        persist(dataFrame).count()  // this is done as a workaround for SNAP-2824
         dataFrame.write.putInto(tableName)
       }
     }
@@ -224,12 +224,12 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       conflatedDf.cache()
     }
 
-    lazy val storageLevel = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)) {
-      StorageLevel.OFF_HEAP
-    } else StorageLevel.MEMORY_AND_DISK
+    def persist(df: DataFrame) = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)){
+      df.persist(StorageLevel.OFF_HEAP)
+    } else df.persist()
 
     def processDataWithEventType(dataFrame: DataFrame) = {
-      val hasUpdateOrDeleteEvents = dataFrame.persist(storageLevel)
+      val hasUpdateOrDeleteEvents = persist(dataFrame)
           .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
           .count() > 0
       if (hasUpdateOrDeleteEvents) {
