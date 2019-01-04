@@ -224,12 +224,9 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       conflatedDf.cache()
     }
 
-    lazy val storageLevel = {
-      if (ServiceUtils.isOffHeapStorageAvailable(snappySession)) {
-        StorageLevel.OFF_HEAP
-      } else StorageLevel.MEMORY_AND_DISK
-    }
-
+    lazy val storageLevel = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)) {
+      StorageLevel.OFF_HEAP
+    } else StorageLevel.MEMORY_AND_DISK
 
     def processDataWithEventType(dataFrame: DataFrame) = {
       val hasUpdateOrDeleteEvents = dataFrame.cache()
