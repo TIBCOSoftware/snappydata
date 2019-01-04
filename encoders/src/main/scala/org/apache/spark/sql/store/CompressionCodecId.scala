@@ -19,7 +19,8 @@ package org.apache.spark.sql.store
 
 import io.snappydata.Constant
 
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.SharedUtils
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 
 /**
  * Compression schemes supported by snappy-store.
@@ -53,7 +54,7 @@ object CompressionCodecId extends Enumeration {
 
   def fromName(name: String): CompressionCodecId.Type =
     if (name eq null) DEFAULT
-    else Utils.toLowerCase(name) match {
+    else JdbcExtendedUtils.toLowerCase(name) match {
       case "lz4" => LZ4
       case "snappy" => Snappy
       case "none" | "uncompressed" => None

@@ -28,8 +28,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow.calculateBitSetWidthInBytes
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.checkBufferSize
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
@@ -258,7 +258,7 @@ trait ColumnEncoder extends ColumnEncoding {
 
   final def initialize(field: StructField, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator): Long =
-    initialize(Utils.getSQLDataType(field.dataType), field.nullable,
+    initialize(JdbcExtendedUtils.getSQLDataType(field.dataType), field.nullable,
       initSize, withHeader, allocator)
 
   /**
@@ -808,7 +808,7 @@ object ColumnEncoding {
             s"buffer=0x${ClientSharedUtils.toHexString(buffer)}: $t")
     }
     val cursor = allocator.baseOffset(buffer) + buffer.position() + 4
-    val dataType = Utils.getSQLDataType(field.dataType)
+    val dataType = JdbcExtendedUtils.getSQLDataType(field.dataType)
     if (typeId >= allDecoders.length) {
       throw new IllegalStateException(s"Unknown encoding typeId = $typeId " +
           s"for $dataType($field) bytes=0x${ClientSharedUtils.toHexString(buffer)}")
@@ -832,7 +832,7 @@ object ColumnEncoding {
   }
 
   def getColumnEncoder(field: StructField): ColumnEncoder =
-    getColumnEncoder(Utils.getSQLDataType(field.dataType), field.nullable)
+    getColumnEncoder(JdbcExtendedUtils.getSQLDataType(field.dataType), field.nullable)
 
   def getColumnEncoder(dataType: DataType, nullable: Boolean): ColumnEncoder = {
     // TODO: SW: add RunLength by default

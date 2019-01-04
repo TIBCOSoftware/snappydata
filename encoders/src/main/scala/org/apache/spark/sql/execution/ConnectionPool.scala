@@ -20,16 +20,16 @@ import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
-import com.pivotal.gemfirexd.Attribute
-import com.zaxxer.hikari.util.PropertyElf
-import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-
-import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.pivotal.gemfirexd.Attribute
+import com.zaxxer.hikari.util.PropertyElf
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import org.apache.tomcat.jdbc.pool.{PoolProperties, DataSource => TDataSource}
+
 import org.apache.spark.sql.SnappyDataBaseDialect
+import org.apache.spark.sql.jdbc.JdbcDialect
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
@@ -70,13 +70,13 @@ object ConnectionPool {
    * properties (and whether tomcat or hikari pool is to be used) are provided
    * as identical for the same ID.
    *
-   * @param id an ID for a pool that will shared by all requests against the
-   *           same id (e.g. the table name can be the ID for an external table)
-   * @param props map of pool properties to their values; the key can be either
-   *              `PoolProperty.Type` or a string (as in Tomcat or Hikari)
+   * @param id              an ID for a pool that will shared by all requests against the
+   *                        same id (e.g. the table name can be the ID for an external table)
+   * @param props           map of pool properties to their values; the key can be either
+   *                        `PoolProperty.Type` or a string (as in Tomcat or Hikari)
    * @param connectionProps set of any additional connection properties
-   * @param hikariCP if true then use HikariCP else Tomcat-JDBC pool
-   *                 implementation; default is false i.e. Tomcat pool
+   * @param hikariCP        if true then use HikariCP else Tomcat-JDBC pool
+   *                        implementation; default is false i.e. Tomcat pool
    */
   def getPoolDataSource(id: String, props: Map[String, String],
       connectionProps: Properties, hikariCP: Boolean): DataSource = {
@@ -109,7 +109,7 @@ object ConnectionPool {
               if (connectionProps != null) {
                 hconf.setDataSourceProperties(connectionProps)
               }
-              new HDataSource(hconf)
+              new HikariDataSource(hconf)
             } else {
               val tconf = new PoolProperties()
               PropertyElf.setTargetFromProperties(tconf, poolProps)
@@ -158,7 +158,7 @@ object ConnectionPool {
     if (ids.isEmpty) {
       pools -= poolKey
       if (poolKey._3) {
-        dsKey._1.asInstanceOf[HDataSource].close()
+        dsKey._1.asInstanceOf[HikariDataSource].close()
       } else {
         dsKey._1.asInstanceOf[TDataSource].close(true)
       }
