@@ -144,7 +144,21 @@ class SecurityEnabledPolicyTest extends PolicyTestBase {
 
     rs = ownerContext.sql(s"select * from $colTableName")
     assertEquals(numElements, rs.collect().length)
+  }
 
+  test("test sql function CURRENT_USER_LDAP_GROUPS()") {
+    val snc3 = snc.newSession()
+    snc3.snappySession.conf.set(Attribute.USERNAME_ATTR, "gemfire3")
+    snc3.snappySession.conf.set(Attribute.PASSWORD_ATTR, "gemfire3")
+    snc3.sql(s"CREATE TABLE temp (grp String) " +
+        s" USING row ")
+    snc3.sql("insert into temp values ('gemGroup1')," +
+        "('gemGroup2'), ('gemGroup3')")
+
+    val rs = snc3.sql("select * from temp where " +
+        "array_contains(current_user_ldap_groups(), upper(grp))")
+    assertEquals(3, rs.collect().length)
+    snc3.sql("drop table if exists temp")
 
   }
 
