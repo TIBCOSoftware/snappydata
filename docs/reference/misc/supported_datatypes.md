@@ -62,7 +62,11 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 <a id="array"></a>
 ## ARRAY
 
-A column of ARRAY datatype can contain a collection of elements. 
+A column of ARRAY datatype can contain a collection of elements. A column of type Array can store array of Java objects (Object[]), typed arrays, java.util.Collection and scala.collection.Seq. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the array data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
+
+!!! Note
+	Supported only for column tables
+
 
 **SQL Example**
 ```
@@ -70,11 +74,6 @@ A column of ARRAY datatype can contain a collection of elements.
 CREATE TABLE IF NOT EXISTS Student(rollno Int, name String, marks Array<Double>) USING column;
 INSERT INTO Student SELECT 1,'John', Array(97.8,85.2,63.9,45.2,75.2,96.5);
 ```
-
-A column of type Array can store array of Java objects (Object[]), typed arrays, java.util.Collection and scala.collection.Seq. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the array data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
-
-!!! Note
-	Supported only for column tables
 
 <a id="bigint"></a>
 ## BIGINT
@@ -132,12 +131,12 @@ The data type representing `Byte` values. It is an 8-bit signed integer (equival
 <a id="char"></a>
 ## CHAR
 
-Provides for fixed-length strings. If a string value is shorter than the expected length, then spaces are inserted to pad the string to the expected length. If a string value is longer than the expected length, then any trailing blanks are trimmed to make the length same as the expected length, while an exception is raised if characters other than spaces are required to be truncated. For comparision operations, the shorter CHAR string is padded with spaces to the longer value. Similarly when mixing CHARs and VARCHARs in expressions , the shorter value is padded with spaces to the length of longer string.
+Provides for fixed-length strings. If a string value is shorter than the expected length, then spaces are inserted to pad the string to the expected length. If a string value is longer than the expected length, then any trailing blanks are trimmed to make the length same as the expected length, while an exception is raised if characters other than spaces are required to be truncated. For comparison operations, the shorter CHAR string is padded with spaces to the longer value. Similarly when mixing CHARs and VARCHARs in expressions, the shorter value is padded with spaces to the length of the longer string.
 
 To represent a single quotation mark within a string, use two quotation marks:
 
 ```pre
-VALUES 'going to Chandra''s place' 
+VALUES 'going to Chandra's place' 
 ```
 
 The length of CHAR is an unsigned integer constant.
@@ -355,7 +354,7 @@ A column of type Map can store **java.util.Map** or **scala.collection.Map**. Yo
 
 ## NUMERIC
 
-Synonym for DECIMAL data type.
+Synonym for the DECIMAL data type.
 
 The meta-data differences from DECIMAL are listed below. Otherwise, NUMERIC behaves identically to DECIMAL.
 
@@ -422,7 +421,7 @@ class to serialize the data in order to insert it into column tables. Refer [How
 <a id="timestamp"></a>
 ## TIMESTAMP
 
-Provides for storage of both DATE and TIME as a combined value. In addition it allows for fractional seconds having up to six digits. Supported formats are:
+Provides for storage of both DATE and TIME as a combined value. In addition, it allows for fractional seconds having up to six digits. Supported formats are:
 
 ```pre
 yyyy-MM-dd hh:mm:ss[.nnnnnn] 
@@ -456,7 +455,7 @@ The latter examples use the TIMESTAMP() function described in the section Built-
 <a id="varchar"></a>
 ## VARCHAR
 
-Provides for variable-length strings with a maximum limit for length. If a string value is longer than the maximum length, then any trailing blanks are trimmed to make the length same as the maximum length, while an exception is raised if characters other than spaces are required to be truncated. When mixing CHARs and VARCHARs in expressions, the shorter value is padded with spaces to the length of longer string.
+Provides for variable-length strings with a maximum limit for length. If a string value is longer than the maximum length, then any trailing blanks are trimmed to make the length same as the maximum length, while an exception is raised if characters other than spaces are required to be truncated. When mixing CHARs and VARCHARs in expressions, the shorter value is padded with spaces to the length of the longer string.
 
 The type of a string constant is CHAR, not VARCHAR. To represent a single quotation mark within a string, use two quotation marks:
 
