@@ -91,7 +91,6 @@ shadowJar {
 
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-  // relocate 'org.apache.spark.unsafe', 'io.snappydata.org.apache.spark.unsafe'
 
   mergeServiceFiles()
   exclude 'log4j.properties'
