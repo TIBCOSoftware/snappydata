@@ -71,7 +71,7 @@ allprojects {
   apply plugin: 'nebula.ospackage-base'
 
   group = 'io.snappydata'
-  version = '1.0.2.1'
+  version = '1.0.2.2'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
