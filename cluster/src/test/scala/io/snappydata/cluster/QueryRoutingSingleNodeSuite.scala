@@ -27,6 +27,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.store.ColumnTableBatchInsertTest
 import org.junit.Assert._
+import org.apache.spark.SnappyJavaUtils.snappyJavaUtil
 
 class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -715,6 +716,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
+
   test("Test Bug SNAP-2707 with jdbc connection") {
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
@@ -754,7 +756,11 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("put into t select 11, 'abc'")
     snc.sql("put into t select * from t")
     val df1 = snc.sql("select * from t")
-    df1.show()
+    snc.createTable("ttt", "column", df1.schema,
+      Map("key_columns" -> "id"))
+    // snappyJavaUtil(df1.write).putInto("APP.ttt")
+    df1.write.insertInto("ttt")
+    // df1.show()
     assertEquals(6, snc.sql("select * from t").count())
     snc.sql("drop table if exists t1")
     snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
@@ -772,6 +778,8 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("put into t2 select * from t1")
     assertEquals(1, snc.sql("select * from t2").count())
     val df3 = snc.sql("select * from t2")
-    df3.show()
+    snc.createTable("xxx", "column", df1.schema,
+      Map.empty[String, String])
+    df1.write.insertInto("xxx")
   }
 }
