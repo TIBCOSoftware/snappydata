@@ -29,22 +29,17 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.sql.catalog.CatalogObjectType
-import io.snappydata.{Property, SnappyTableStatsProviderService}
-import org.parboiled2.ParserInput
+import io.snappydata.util.ServiceUtils
+import io.snappydata.Property
 
 import org.apache.spark.deploy.SparkSubmitUtils
-import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -53,11 +48,11 @@ import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
-import org.apache.spark.sql.sources.{DestroyRelation, PutIntoTable}
+import org.apache.spark.sql.sources.{DestroyRelation}
 import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
-import org.apache.spark.{SparkContext, SparkEnv}
+import org.apache.spark.{SparkContext}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -350,23 +345,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         df.createTempView(tableIdent.quotedString)
         df
     }
-    val isOffHeap = {
-      { // avoids indentation change
-        SnappyContext.getClusterMode(sparkSession.sparkContext) match {
-          case _: ThinClientConnectorMode =>
-            SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
-          case _ =>
-            try {
-              SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-                  values.forall(member => !member.isDataServer ||
-                  (member.getOffHeapMemorySize > 0))
-            }
-            catch {
-              case _: Throwable => false
-            }
-        }
-      }
-    }
+
+    val isOffHeap = ServiceUtils.isOffHeapStorageAvailable(session)
 
     if (isLazy) {
       if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()

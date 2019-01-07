@@ -21,12 +21,11 @@ import java.sql.Types
 
 import com.esotericsoftware.kryo.io.{Input, KryoObjectInput, KryoObjectOutput, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoException, Serializer => KryoClassSerializer}
-
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{PartitionResult, SnappyDataPoolDialect}
+import org.apache.spark.sql.{PartitionResult, SnappyDataPoolDialect, SnappyStoreClientDialect}
 
 
 private[spark] class ExternalizableOnlySerializer[T <: Externalizable]
