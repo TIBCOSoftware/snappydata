@@ -1,7 +1,7 @@
 # SnappyData Pulse
 
 SnappyData Pulse is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigage easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
-All the usage details can be set to automatically refresh after every five seconds.
+All the usage details are automatically refreshed after every five seconds.
 
 
 To access SnappyData Pulse, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
@@ -39,7 +39,7 @@ On the top-right side of the SnappyData Pulse page, you can view the version det
 
 <a id="dashboard"></a>
 ## Dashboard
-The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to automatically update after every five seconds.  If you want to turn on the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner.
+The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to automatically update after every five seconds.  If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner.
 ![](../Images/AutoRefresh-is-ON.png)
 
 You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
@@ -73,7 +73,7 @@ In the **Cluster** section, you can view the following graphs which are automati
 
 <a id="member"></a>
 ### Members
-In the **Members** section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details can be set to automatically refresh after every five seconds.
+In the **Members** section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every five seconds.
 ![Members](../Images/Dashboard-MembersList.png)
 
 This table provides member details in the following columns:
@@ -99,7 +99,7 @@ This table provides member details in the following columns:
 
 <a id="table"></a>
 ### Tables
-The **Tables** section lists all the tables in the cluster along with their corresponding statistical details. All these details can be set to automatically refresh after every five seconds.
+The **Tables** section lists all the tables in the cluster along with their corresponding statistical details. All these details are automatically refreshed after every five seconds.
 
 ![Tables](../Images/Dashboard-TablesList.png)
 
@@ -116,7 +116,7 @@ The following columns are displayed in this section:
 |      **Buckets**  |  Displays the total number of buckets in the data table.|
 
 ### External Tables
-The **External Tables** section lists all the external tables present in the cluster along with their various statistical details. The displayed details can be set to automatically refresh after every five seconds.
+The **External Tables** section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after every five seconds.
 
 ![External Tables](../Images/Dashboard-Ext-Tables.png)
 
@@ -132,6 +132,7 @@ The following columns are displayed in this section:
 ## Member Details
 
 The **Member Details** view shows the usage trend and [statistics](#memberstat) of a specific cluster member. To check the **Member** **Details** view,  go to the [Members](#member) section and click the link in the **Member** column. Here you can also view the [Member Logs](#memberlogs) generated for a cluster member.
+The usage trends and the statistics of a specific member are auto updated periodically after every five seconds. If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner. You can view, on demand, the latest logs by clicking on the **Load New** button provided at the bottom of the logs. You can also click the **Load More** button to view the older logs.
 
 ![Member Detail View](../Images/memberdetailview.png)
 
