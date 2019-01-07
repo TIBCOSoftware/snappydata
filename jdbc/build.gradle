@@ -35,7 +35,6 @@ dependencies {
     exclude(group: 'org.slf4j', module: 'slf4j-api')
   }
 
-
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-jdbc code.
   if (System.properties.containsKey('ideaBuild') && new File(rootDir, 'spark/build.gradle').exists()) {
@@ -43,7 +42,6 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-
   } else {
     compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
@@ -61,7 +59,6 @@ dependencies {
     }
   }
 }
-
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
   classifier = 'javadoc'
