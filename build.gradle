@@ -118,7 +118,7 @@ allprojects {
     thriftVersion = '0.9.3'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'
-    janinoVersion = '3.0.11'
+    janinoVersion = '3.0.8'
     derbyVersion = '10.14.2.0'
     parboiledVersion = '2.1.5'
     tomcatJdbcVersion = '8.5.37'

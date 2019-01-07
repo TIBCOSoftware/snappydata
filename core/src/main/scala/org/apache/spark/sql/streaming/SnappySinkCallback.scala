@@ -21,15 +21,20 @@ import java.sql.SQLException
 import java.util.NoSuchElementException
 
 import io.snappydata.Property._
-import io.snappydata.StreamingConstants.EventType._
 import io.snappydata.StreamingConstants._
+import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
+
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
+import io.snappydata.StreamingConstants.EventType._
+import io.snappydata.util.ServiceUtils
+import org.apache.spark.storage.StorageLevel
 
 /**
  * Should be implemented by clients who wants to override default behavior provided by
@@ -166,7 +171,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       if (eventTypeColumnAvailable) {
         processDataWithEventType(dataFrame)
       } else {
-        dataFrame.cache().count()  // this is done as a workaround for SNAP-2824
+        persist(dataFrame).count()  // this is done as a workaround for SNAP-2824
         dataFrame.write.putInto(tableName)
       }
     }
@@ -219,8 +224,12 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       conflatedDf.cache()
     }
 
+    def persist(df: DataFrame) = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)){
+      df.persist(StorageLevel.OFF_HEAP)
+    } else df.persist()
+
     def processDataWithEventType(dataFrame: DataFrame) = {
-      val hasUpdateOrDeleteEvents = dataFrame.cache()
+      val hasUpdateOrDeleteEvents = persist(dataFrame)
           .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
           .count() > 0
       if (hasUpdateOrDeleteEvents) {
