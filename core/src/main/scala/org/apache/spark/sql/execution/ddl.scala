@@ -209,22 +209,6 @@ case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
   }
 }
 
-case class PutIntoValues(tableIdentifier: TableIdentifier,
-    input: ParserInput) extends RunnableCommand {
-
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
-      snc.getCurrentSchema, tableIdentifier.identifier)).toString
-    if (tableType == "COLUMN") {
-      throw StandardException.newException(SQLState.PUTINTO_OP_DISALLOWED_ON_COLUMN_TABLES)
-    }
-    DMLExternalTable(tableIdentifier,
-      UnresolvedRelation(tableIdentifier), input.sliceString(0, input.length))
-    Nil
-  }
-}
-
 case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
     enableRls: Boolean) extends RunnableCommand {
 

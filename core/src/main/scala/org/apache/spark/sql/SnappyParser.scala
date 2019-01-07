@@ -23,6 +23,9 @@ import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.primitives.Ints
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
@@ -1123,10 +1126,11 @@ class SnappyParser(session: SnappySession)
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     INSERT ~ INTO ~ tableIdentifier ~ ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
       UnresolvedRelation(r), input.sliceString(0, input.length))) |
-    PUT ~ INTO ~ tableIdentifier ~ VALUES ~ ANY.* ~> ((tableName: TableIdentifier) =>
-      PutIntoValues(tableName, input)) |
-    PUT ~ INTO ~ tableIdentifier ~ ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
-      UnresolvedRelation(r), input.sliceString(0, input.length)))
+    PUT ~ INTO ~ tableIdentifier ~ VALUES ~ ANY.* ~>
+        ((r: TableIdentifier) => {
+          checkTableType(r)
+          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length))
+        })
   }
 
   // It can be the following patterns:
@@ -1252,4 +1256,13 @@ class SnappyParser(session: SnappySession)
   }
 
   def newInstance(): SnappyParser = new SnappyParser(session)
+
+  def checkTableType(identifier: TableIdentifier) {
+    val snc = session.asInstanceOf[SnappySession]
+    val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
+      snc.getCurrentSchema, identifier.identifier)).toString
+    if (tableType == "COLUMN") {
+      throw StandardException.newException(SQLState.PUTINTO_OP_DISALLOWED_ON_COLUMN_TABLES)
+    }
+  }
 }
