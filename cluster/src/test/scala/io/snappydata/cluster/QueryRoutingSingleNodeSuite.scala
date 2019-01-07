@@ -26,6 +26,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.store.ColumnTableBatchInsertTest
+import org.junit.Assert._
 
 class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -714,28 +715,63 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
-  test("Test Bug SNAP-2707") {
-    snc.sql("drop table if exists t1")
-    snc.sql("drop table if exists t2")
-    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
-    snc.sql("create table t2(id integer, str string) using row")
+  test("Test Bug SNAP-2707 with jdbc connection") {
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
-    stmt.execute("put into t2 values(100, 'aa')")
-    val df = snc.sql("select * from t2")
-    df.show()
-    stmt.execute("put into t1 values(100, 'aa')")
-    conn.close()
-  }
-
-  test("Test Bug SNAP-2707 with snappysession") {
     snc.sql("drop table if exists t")
     snc.sql("create table t(id integer, str string) using row")
-    snc.sql("put into t values(100, 'aa')")
-    val df = snc.sql("select * from t")
-    df.show()
+    stmt.execute("insert into t values(55, 'rt')")
+    stmt.execute("put into t values(100, 'aa')")
+    stmt.execute("put into t select 11, 'abc'")
+    stmt.execute("put into t select * from t")
+    val df1 = snc.sql("select * from t")
+    df1.show()
+    assertEquals(6, snc.sql("select * from t").count())
     snc.sql("drop table if exists t1")
     snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
-    snc.sql("put into t1 values(100, 'aa')")
+    stmt.execute("insert into t1 values(55, 'rt')")
+    // stmt.execute("put into t1 select * from t1")
+    // stmt.execute("put into t1 select 11, 'abc'")
+    val df2 = snc.sql("select * from t1")
+    df2.show()
+    assertEquals(1, snc.sql("select * from t1").count())
+    val message = intercept[Exception] {
+      stmt.execute("put into t1 values(100, 'aa')")
+    }.getMessage
+    assert(message.contains("PutInto operation on column table is not supported"))
+    snc.sql("create table t2(id integer, str string) using column options(key_columns 'id')")
+    stmt.execute("put into t2 select * from t1")
+    assertEquals(1, snc.sql("select * from t2").count())
+    val df3 = snc.sql("select * from t2")
+    df3.show()
+  }
+
+  test("Test Bug SNAP-2707 with snappy session") {
+    snc.sql("drop table if exists t")
+    snc.sql("create table t(id integer, str string) using row")
+    snc.sql("insert into t values(55, 'rt')")
+    snc.sql("put into t values(100, 'aa')")
+    snc.sql("put into t select 11, 'abc'")
+    snc.sql("put into t select * from t")
+    val df1 = snc.sql("select * from t")
+    df1.show()
+    assertEquals(6, snc.sql("select * from t").count())
+    snc.sql("drop table if exists t1")
+    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
+    snc.sql("insert into t1 values(55, 'rt')")
+    // snc.sql("put into t1 select * from t1")
+    // snc.sql("put into t1 select 11, 'abc'")
+    val df2 = snc.sql("select * from t1")
+    df2.show()
+    assertEquals(1, snc.sql("select * from t1").count())
+    val message = intercept[Exception] {
+      snc.sql("put into t1 values(100, 'aa')")
+    }.getMessage
+    assert(message.contains("PutInto operation on column table is not supported"))
+    snc.sql("create table t2(id integer, str string) using column options(key_columns 'id')")
+    snc.sql("put into t2 select * from t1")
+    assertEquals(1, snc.sql("select * from t2").count())
+    val df3 = snc.sql("select * from t2")
+    df3.show()
   }
 }
