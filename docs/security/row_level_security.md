@@ -57,6 +57,7 @@ $ SELECT * FROM clients;
   1 | ABC          | tom
   2 | PQR          | harris
   3 | XYZ          | greg
+
 (3 rows)
 ```
 
@@ -115,6 +116,7 @@ $ SELECT * FROM clients;
  id | account_name | account_manager 
 ----+--------------+-----------------
   2 | PQR          | tom
+
 (1 row)
 
 ```
@@ -156,6 +158,7 @@ SELECT * FROM mytable
 WHERE user_col = current_user() # current_user is  <table owner>
 AND id<4
 AND account_name = ‘XYZ’;
+
 
 $ select * from mytable;
  id | account_name | account_manager 

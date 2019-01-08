@@ -48,7 +48,7 @@ val conf = new SparkConf()
     .setMaster(s"spark://$hostName:7077")
     .set("spark.executor.cores", TestUtils.defaultCores.toString)
     .set("spark.executor.extraClassPath",
-      getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+      getEnvironmentVariable("SNAPPY_HOME") + "/jars/*" )
     .set("snappydata.connection", snappydataLocatorURL)
     .set("spark.snappydata.store.user", username)
     .set("spark.snappydata.store.password", password)

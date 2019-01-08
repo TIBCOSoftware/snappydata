@@ -17,185 +17,229 @@
 
 package org.apache.spark.sql.execution
 
-import scala.util.control.NonFatal
+import java.io.File
+import java.lang
+import java.nio.file.{Files, Paths}
+import java.sql.SQLException
+import java.util.Map.Entry
+import java.util.function.Consumer
 
+import scala.collection.mutable.ArrayBuffer
+
+import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.{Constant, Property}
+import io.snappydata.util.ServiceUtils
+import io.snappydata.{Property, SnappyTableStatsProviderService}
 
+import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.{SQLBuilder, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{CreateViewCommand, DescribeTableCommand, PersistedView, RunnableCommand, ShowTablesCommand, ViewType}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
-import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.types.{BooleanType, MetadataBuilder, StringType, StructField, StructType}
+import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
+import org.apache.spark.{SparkContext, SparkEnv}
 
-
-private[sql] case class CreateMetastoreTableUsing(
+case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
     baseTable: Option[TableIdentifier],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
-    allowExisting: Boolean,
-    options: Map[String, String],
-    isBuiltIn: Boolean) extends RunnableCommand {
-
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    snc.createTable(snc.sessionState.catalog
-        .newQualifiedTableName(tableIdent), provider, userSpecifiedSchema,
-      schemaDDL, mode, snc.addBaseTableOption(baseTable, options), isBuiltIn)
-    Nil
-  }
-}
-
-private[sql] case class CreateMetastoreTableUsingSelect(
-    tableIdent: TableIdentifier,
-    baseTable: Option[TableIdentifier],
-    userSpecifiedSchema: Option[StructType],
-    schemaDDL: Option[String],
-    provider: String,
-    partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
-    query: LogicalPlan,
+    query: Option[LogicalPlan],
     isBuiltIn: Boolean) extends RunnableCommand {
 
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-      userSpecifiedSchema, schemaDDL, partitionColumns, mode,
-      snc.addBaseTableOption(baseTable, options), query, isBuiltIn)
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val allOptions = session.addBaseTableOption(baseTable, options)
+    session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
+      schemaDDL, mode, allOptions, isBuiltIn, query)
     Nil
   }
 }
 
-private[sql] case class DropTableOrViewCommand(isView: Boolean, ifExists: Boolean,
-    tableIdent: TableIdentifier) extends RunnableCommand {
+/**
+ * Like Spark's DropTableCommand but checks for non-existent table case upfront to avoid
+ * unnecessary warning logs from Spark's DropTableCommand.
+ */
+case class DropTableOrViewCommand(
+    tableIdent: TableIdentifier,
+    ifExists: Boolean,
+    isView: Boolean,
+    purge: Boolean) extends RunnableCommand {
 
-  override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    // check for table/view
-    val qualifiedName = catalog.newQualifiedTableName(tableIdent)
-    if (isView) {
-      if (!catalog.isView(qualifiedName) && !catalog.isLocalTemporaryView(qualifiedName)) {
-        throw new AnalysisException(
-          s"Cannot drop a table with DROP VIEW. Please use DROP TABLE instead")
-      }
-    } else if (catalog.isView(qualifiedName)) {
-      throw new AnalysisException(
-        "Cannot drop a view with DROP TABLE. Please use DROP VIEW instead")
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
+
+    if (!catalog.isTemporaryTable(tableIdent) && !catalog.tableExists(tableIdent)) {
+      val resolved = catalog.resolveTableIdentifier(tableIdent)
+      if (ifExists) return Nil
+      else throw new TableNotFoundException(resolved.database.get, resolved.table)
     }
-    snc.dropTable(qualifiedName, ifExists, resolveRelation = true)
+
+    DropTableCommand(tableIdent, ifExists, isView, purge).run(sparkSession)
+  }
+}
+
+case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
+    authId: Option[(String, Boolean)]) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val catalog = session.sessionCatalog
+    val schema = catalog.formatDatabaseName(schemaName)
+
+    // create schema in catalog first
+    catalog.createSchema(schema, ifNotExists)
+
+    // next in store if catalog was successful
+    val authClause = authId match {
+      case None => ""
+      case Some((id, false)) => s""" AUTHORIZATION "$id""""
+      case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
+    }
+    val conn = session.defaultPooledConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
+      stmt.close()
+    } catch {
+      case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
+      case err: Error if SystemFailure.isJVMFailureError(err) =>
+        SystemFailure.initiateFailure(err)
+        // If this ever returns, rethrow the error. We're poisoned
+        // now, so don't let this thread continue.
+        throw err
+      case t: Throwable =>
+        // drop from catalog
+        catalog.dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
+        // Whenever you catch Error or Throwable, you must also
+        // check for fatal JVM error (see above).  However, there is
+        // _still_ a possibility that you are dealing with a cascading
+        // error condition, so you also need to check to see if the JVM
+        // is still usable:
+        SystemFailure.checkFailure()
+        throw t
+    } finally {
+      conn.close()
+    }
     Nil
   }
 }
 
-private[sql] case class DropPolicyCommand(ifExists: Boolean,
+case class DropSchemaCommand(schemaName: String, ifExists: Boolean, cascade: Boolean)
+    extends RunnableCommand {
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val catalog = session.sessionCatalog
+    val schema = catalog.formatDatabaseName(schemaName)
+    // drop from catalog first to cascade drop all objects if required
+    catalog.dropDatabase(schema, ifExists, cascade)
+    // drop the schema from store (no cascade required since catalog drop will take care)
+    val checkIfExists = if (ifExists) " IF EXISTS" else ""
+    val conn = session.defaultPooledConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
+      stmt.close()
+    } finally {
+      conn.close()
+    }
+    Nil
+  }
+}
+
+case class DropPolicyCommand(ifExists: Boolean,
     policyIdentifer: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    // check for table/view
-    val qualifiedName = catalog.newQualifiedTableName(policyIdentifer)
-
-    snc.dropPolicy(qualifiedName, ifExists)
+    snc.dropPolicy(policyIdentifer, ifExists)
     Nil
   }
 }
 
-private[sql] case class TruncateManagedTableCommand(ifExists: Boolean,
-    tableIdent: TableIdentifier) extends RunnableCommand {
+case class TruncateManagedTableCommand(ifExists: Boolean,
+    table: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.truncateTable(catalog.newQualifiedTableName(tableIdent),
-      ifExists, ignoreIfUnsupported = false)
+    val catalog = session.asInstanceOf[SnappySession].sessionCatalog
+    // skip if "ifExists" is true and table does not exist
+    if (!(ifExists && !catalog.tableExists(table))) {
+      catalog.resolveRelation(table) match {
+        case lr: LogicalRelation if lr.relation.isInstanceOf[DestroyRelation] =>
+          lr.relation.asInstanceOf[DestroyRelation].truncate()
+        case plan => throw new AnalysisException(
+          s"Table '$table' must be a DestroyRelation for truncate. Found plan: $plan")
+      }
+      session.sharedState.cacheManager.uncacheQuery(session.table(table))
+    }
     Nil
   }
 }
 
-private[sql] case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
+case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
     addColumn: StructField) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.alterTable(catalog.newQualifiedTableName(tableIdent), isAddColumn = true, addColumn)
+    snc.alterTable(tableIdent, isAddColumn = true, addColumn)
     Nil
   }
 }
 
-private[sql] case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
+case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
     enableRls: Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    snc.alterTableToggleRLS(catalog.newQualifiedTableName(tableIdent), enableRls)
+    snc.alterTableToggleRLS(tableIdent, enableRls)
     Nil
   }
 }
 
-private[sql] case class AlterTableDropColumnCommand(
+case class AlterTableDropColumnCommand(
     tableIdent: TableIdentifier, column: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    val plan = try {
-      snc.sessionCatalog.lookupRelation(tableIdent)
-    } catch {
-      case tnfe: TableNotFoundException =>
-        throw tnfe
-    }
-    val structField: StructField =
-      plan.schema.find(_.name.equalsIgnoreCase(column)) match {
-        case None => throw Utils.analysisException(s"$column column" +
-            s" doesn't exist in table ${tableIdent.table}")
-        case Some(field) => field
-      }
-    val table = catalog.newQualifiedTableName(tableIdent)
-    snc.alterTable(table, isAddColumn = false, structField)
+    // drop column doesn't need anything apart from name so fill dummy values
+    snc.alterTable(tableIdent, isAddColumn = false, StructField(column, NullType))
     Nil
   }
 }
 
-private[sql] case class CreateIndexCommand(indexName: TableIdentifier,
+case class CreateIndexCommand(indexName: TableIdentifier,
     baseTable: TableIdentifier,
     indexColumns: Map[String, Option[SortDirection]],
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    val tableIdent = catalog.newQualifiedTableName(baseTable)
-    val indexIdent = catalog.newQualifiedTableName(indexName)
-    snc.createIndex(indexIdent, tableIdent, indexColumns, options)
+    snc.createIndex(indexName, baseTable, indexColumns, options)
     Nil
   }
 }
 
-private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
-    tableIdent: QualifiedTableName,
+case class CreatePolicyCommand(policyIdent: TableIdentifier,
+    tableIdent: TableIdentifier,
     policyFor: String, applyTo: Seq[String], expandedPolicyApplyTo: Seq[String],
     currentUser: String, filterStr: String,
     filter: BypassRowLevelSecurity) extends RunnableCommand {
@@ -219,28 +263,25 @@ private[sql] case class CreatePolicyCommand(policyIdent: QualifiedTableName,
   }
 }
 
-private[sql] case class DropIndexCommand(
-    indexName: TableIdentifier,
-    ifExists: Boolean) extends RunnableCommand {
+case class DropIndexCommand(ifExists: Boolean,
+    indexName: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    val catalog = snc.sessionState.catalog
-    val indexIdent = catalog.newQualifiedTableName(indexName)
-    snc.dropIndex(indexIdent, ifExists)
+    snc.dropIndex(indexName, ifExists)
     Nil
   }
 }
 
-private[sql] case class SetSchemaCommand(schemaName: String) extends RunnableCommand {
+case class SetSchemaCommand(schemaName: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    sparkSession.asInstanceOf[SnappySession].setSchema(schemaName)
+    sparkSession.asInstanceOf[SnappySession].setCurrentSchema(schemaName)
     Nil
   }
 }
 
-private[sql] case class SnappyStreamingActionsCommand(action: Int,
+case class SnappyStreamingActionsCommand(action: Int,
     batchInterval: Option[Duration]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
@@ -278,83 +319,18 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
   }
 }
 
-case class CreateSnappyViewCommand(name: TableIdentifier,
-    userSpecifiedColumns: Seq[(String, Option[String])],
-    comment: Option[String],
-    properties: Map[String, String],
-    originalText: Option[String],
-    child: LogicalPlan,
-    allowExisting: Boolean,
-    replace: Boolean,
-    viewType: ViewType)
-    extends RunnableCommand {
-
-  override def run(sparkSession: SparkSession): Seq[Row] = {
-    if (viewType != PersistedView) {
-      return CreateViewCommand(name, userSpecifiedColumns, comment, properties, originalText,
-        child, allowExisting, replace, viewType).run(sparkSession)
-    }
-    // If the plan cannot be analyzed, throw an exception and don't proceed.
-    val qe = sparkSession.sessionState.executePlan(child)
-    qe.assertAnalyzed()
-    val analyzedPlan = qe.analyzed
-
-    if (userSpecifiedColumns.nonEmpty &&
-        userSpecifiedColumns.length != analyzedPlan.output.length) {
-      throw new AnalysisException(s"The number of columns produced by the SELECT clause " +
-          s"(num: `${analyzedPlan.output.length}`) does not match the number of column names " +
-          s"specified by CREATE VIEW (num: `${userSpecifiedColumns.length}`).")
-    }
-
-    val aliasedPlan = if (userSpecifiedColumns.isEmpty) {
-      analyzedPlan
-    } else {
-      val projectList = analyzedPlan.output.zip(userSpecifiedColumns).map {
-        case (attr, (colName, None)) => Alias(attr, colName)()
-        case (attr, (colName, Some(colComment))) =>
-          val meta = new MetadataBuilder().putString("comment", colComment).build()
-          Alias(attr, colName)(explicitMetadata = Some(meta))
-      }
-      sparkSession.sessionState.executePlan(Project(projectList, analyzedPlan)).analyzed
-    }
-
-    val actualSchemaJson = aliasedPlan.schema.json
-
-    val viewSQL: String = new SQLBuilder(aliasedPlan).toSQL
-
-    // Validate the view SQL - make sure we can parse it and analyze it.
-    // If we cannot analyze the generated query, there is probably a bug in SQL generation.
-    try {
-      sparkSession.sql(viewSQL).queryExecution.assertAnalyzed()
-    } catch {
-      case NonFatal(e) =>
-        throw new RuntimeException(s"Failed to analyze the canonicalized SQL: $viewSQL", e)
-    }
-    var opts = JdbcExtendedUtils.addSplitProperty(viewSQL, Constant.SPLIT_VIEW_TEXT_PROPERTY,
-      properties)
-    opts = JdbcExtendedUtils.addSplitProperty(originalText.getOrElse(viewSQL),
-      Constant.SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY, opts)
-
-    opts = JdbcExtendedUtils.addSplitProperty(actualSchemaJson,
-      SnappyStoreHiveCatalog.HIVE_SCHEMA_PROP, opts)
-
-    val dummyText = "select 1"
-    val dummyPlan = sparkSession.sessionState.sqlParser.parsePlan(dummyText)
-    val cmd = CreateViewCommand(name, Nil, comment, opts.toMap, Some(dummyText),
-      dummyPlan, allowExisting, replace, viewType)
-    cmd.run(sparkSession)
-  }
-}
-
 /**
  * Alternative to Spark's CacheTableCommand that shows the plan being cached
  * in the GUI rather than count() plan for InMemoryRelation.
  */
-case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
+case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: String,
     plan: Option[LogicalPlan], isLazy: Boolean) extends RunnableCommand {
 
   require(plan.isEmpty || tableIdent.database.isEmpty,
     "Schema name is not allowed in CACHE TABLE AS SELECT")
+
+  override def output: Seq[Attribute] = AttributeReference(
+    "batchCount", LongType)() :: Nil
 
   override protected def innerChildren: Seq[QueryPlan[_]] = plan match {
     case None => Nil
@@ -363,40 +339,57 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier,
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
-    plan match {
-      case None => session.catalog.cacheTable(tableIdent.quotedString)
+    val df = plan match {
+      case None => session.table(tableIdent)
       case Some(lp) =>
         val df = Dataset.ofRows(session, lp)
-        if (isLazy) {
-          df.createTempView(tableIdent.quotedString)
-          df.persist()
-        } else {
-          session.sessionState.enableExecutionCache = true
-          // Get the actual QueryExecution used by InMemoryRelation so that
-          // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
-          val cachedExecution = try {
-            df.createTempView(tableIdent.quotedString)
-            df.persist()
-            session.sessionState.getExecution(df.logicalPlan)
-          } finally {
-            session.sessionState.enableExecutionCache = false
-            session.sessionState.clearExecutionCache()
-          }
-          val memoryPlan = df.queryExecution.executedPlan.collectFirst {
-            case plan: InMemoryTableScanExec => plan.relation
-          }.get
-          val cached = new Dataset[Row](session, cachedExecution, df.exprEnc)
-          CachedDataFrame.withCallback(sparkSession, cached, "cache")(_.withNewExecutionId {
+        df.createTempView(tableIdent.quotedString)
+        df
+    }
+
+    val isOffHeap = ServiceUtils.isOffHeapStorageAvailable(session)
+
+    if (isLazy) {
+      if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
+      Nil
+    } else {
+      val queryShortString = CachedDataFrame.queryStringShortForm(queryString)
+      val localProperties = session.sparkContext.getLocalProperties
+      val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortString)
+      try {
+        session.sessionState.enableExecutionCache = true
+        // Get the actual QueryExecution used by InMemoryRelation so that
+        // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
+        val cachedExecution = try {
+          if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
+          session.sessionState.getExecution(df.logicalPlan)
+        } finally {
+          session.sessionState.enableExecutionCache = false
+          session.sessionState.clearExecutionCache()
+        }
+        val memoryPlan = df.queryExecution.executedPlan.collectFirst {
+          case plan: InMemoryTableScanExec => plan.relation
+        }.get
+        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
+        Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
+          CachedDataFrame.withNewExecutionId(session, queryShortString, queryString,
+            cachedExecution.toString(), planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
             // while avoiding creation of any new SparkPlan.
             memoryPlan.cachedColumnBuffers.count()
             (Unit, System.nanoTime() - start)
-          })
+          }))._2) :: Nil
+      } finally {
+        if (previousJobDescription ne null) {
+          localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, previousJobDescription)
+        } else {
+          localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
         }
+      }
     }
-    Nil
   }
 }
 
@@ -496,5 +489,130 @@ class DescribeSnappyTableCommand(table: TableIdentifier,
         catalog.convertCharTypesInMetadata = false
       }
     }
+  }
+}
+
+case class DeployCommand(
+    coordinates: String,
+    alias: String,
+    repos: Option[String],
+    jarCache: Option[String],
+    restart: Boolean) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    try {
+      val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+      if (jarsstr.nonEmpty) {
+        val jars = jarsstr.split(",")
+        val sc = sparkSession.sparkContext
+        val uris = jars.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+        SnappySession.addJarURIs(uris)
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
+        val deployCmd = s"$coordinates|${repos.getOrElse("")}|${jarCache.getOrElse("")}"
+        ToolsCallbackInit.toolsCallback.addURIs(alias, jars, deployCmd)
+      }
+      Nil
+    } catch {
+      case ex: Throwable =>
+        ex match {
+          case err: Error =>
+            if (SystemFailure.isJVMFailureError(err)) {
+              SystemFailure.initiateFailure(err)
+              // If this ever returns, rethrow the error. We're poisoned
+              // now, so don't let this thread continue.
+              throw err
+            }
+          case _ =>
+        }
+        Misc.checkIfCacheClosing(ex)
+        if (restart) {
+          logWarning(s"Following mvn coordinate" +
+              s" could not be resolved during restart: $coordinates", ex)
+          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+            throw ex
+          }
+          Nil
+        } else {
+          throw ex
+        }
+    }
+  }
+}
+
+case class DeployJarCommand(
+    alias: String,
+    paths: String,
+    restart: Boolean) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    if (paths.nonEmpty) {
+      val jars = paths.split(",")
+      val (availableUris, unavailableUris) = jars.partition(f => Files.isReadable(Paths.get(f)))
+      if (unavailableUris.nonEmpty) {
+        logWarning(s"Following jars are unavailable" +
+            s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
+        if (restart && lang.Boolean.parseBoolean(
+          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+          throw new IllegalStateException(
+            s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
+        }
+        if (!restart) {
+          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
+        }
+      }
+      val sc = sparkSession.sparkContext
+      val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
+      SnappySession.addJarURIs(uris)
+      RefreshMetadata.executeOnAll(sc, RefreshMetadata.ADD_URIS_TO_CLASSLOADER, uris)
+      ToolsCallbackInit.toolsCallback.addURIs(alias, jars, paths, isPackage = false)
+    }
+    Nil
+  }
+}
+
+case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
+  override val output: Seq[Attribute] = {
+    AttributeReference("alias", StringType, nullable = false)() ::
+        AttributeReference("coordinate", StringType, nullable = false)() ::
+        AttributeReference("isPackage", BooleanType, nullable = false)() :: Nil
+  }
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
+    val rows = new ArrayBuffer[Row]
+    commands.forEach(new Consumer[Entry[String, String]] {
+      override def accept(t: Entry[String, String]): Unit = {
+        val alias = t.getKey
+        val value = t.getValue
+        val indexOf = value.indexOf('|')
+        if (indexOf > 0) {
+          // It is a package
+          val pkg = value.substring(0, indexOf)
+          rows += Row(alias, pkg, true)
+        }
+        else {
+          // It is a jar
+          val jars = value.split(',')
+          val jarfiles = jars.map(f => {
+            val lastIndexOf = f.lastIndexOf('/')
+            val length = f.length
+            if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
+            else {
+              f
+            }
+          })
+          rows += Row(alias, jarfiles.mkString(","), false)
+        }
+      }
+    })
+    rows
+  }
+}
+
+case class UnDeployCommand(alias: String) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    ToolsCallbackInit.toolsCallback.removePackage(alias)
+    Nil
   }
 }

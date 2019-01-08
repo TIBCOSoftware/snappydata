@@ -38,29 +38,29 @@ import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.internal.iapi.error.{PublicAPI, StandardException}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, Util}
+import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import com.pivotal.gemfirexd.internal.snappy.LeadNodeSmartConnectorOpContext
 import io.snappydata.SnappyTableStatsProviderService
+import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 
+import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.catalog.{CatalogFunction, FunctionResource, JarResource}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, SortDirection, TokenLiteral, UnsafeRow}
-import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, expressions}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
-import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Logging, SparkContext}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -110,27 +110,35 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             TransactionController.ISOLATION_NOLOCK /* not used */ ,
             null, null, 0, null, null, 0, null)
 
-          val dependents = if (catalogEntry.dependents != null) {
-            val tables = Misc.getMemStore.getAllContainers.asScala.
-                map(x => (x.getSchemaName + "." + x.getTableName, x.fetchHiveMetaData(false)))
-            catalogEntry.dependents.toSeq.map(x => tables.find(
-              c => x == c._1 && (c._2 ne null)).get._2)
+          // find the dependent indexes
+          val dependents = catalogEntry.dependents
+          // noinspection EmptyCheck
+          val indexes = if ((dependents ne null) && dependents.length != 0) {
+            val catalog = Misc.getMemStoreBooting.getExistingExternalCatalog
+            dependents.toSeq.flatMap { dep =>
+              val (depSchema, depTable) = SnappyExternalCatalog.getTableWithSchema(
+                dep, container.getSchemaName)
+              val metadata = catalog.getCatalogTableMetadata(depSchema, depTable)
+              if ((metadata ne null) && metadata.tableType == CatalogObjectType.Index.toString) {
+                Some(metadata)
+              } else None
+            }
           } else Nil
 
           val tableName = container.getQualifiedTableName
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
-          if (catalogEntry.tableType == ExternalTableType.Sample.name &&
+          if (catalogEntry.tableType == CatalogObjectType.Sample.toString &&
               schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
           }
-          val batchCreator = new ColumnBatchCreator(pr,
-            ColumnFormatRelation.columnBatchTableName(tableName, None), schema,
+          val batchCreator = new ColumnBatchCreator(pr, tableName,
+            ColumnFormatRelation.columnBatchTableName(tableName), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)
           batchCreator.createAndStoreBatch(sc, row,
-            batchID, bucketID, dependents)
+            batchID, bucketID, indexes)
         } finally {
           lcc.clearExecuteLocally()
           if (txStateSet) tc.clearActiveTXState(false, true)
@@ -183,7 +191,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def columnBatchTableName(table: String): String = {
-    ColumnFormatRelation.columnBatchTableName(table, None)
+    ColumnFormatRelation.columnBatchTableName(table)
   }
 
   @throws(classOf[SQLException])
@@ -267,6 +275,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       fullScan = (batchFilters eq null) || batchFilters.isEmpty, context = null)
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(schemaAttrs.length)
 
+    // noinspection TypeAnnotation
     val entriesIter = new Iterator[ArrayBuffer[ColumnTableEntry]] {
       private var numColumns = (projection.length + 1) << 1
 
@@ -419,8 +428,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     case _ => throw new IllegalStateException(s"translateFilter: unexpected filter = $filter")
   }
 
-  override def registerRelationDestroyForHiveStore(): Unit = {
-    SnappyStoreHiveCatalog.registerRelationDestroy(None)
+  override def registerCatalogSchemaChange(): Unit = {
+    val catalog = SnappyHiveExternalCatalog.getInstance
+    if (catalog ne null) catalog.registerCatalogSchemaChange(Nil)
   }
 
   def getSnappyTableStats: AnyRef = {
@@ -429,105 +439,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val list: java.util.List[SnappyRegionStats] = new java.util.ArrayList(c.size())
     list.addAll(c)
     list
-  }
-
-  override def performConnectorOp(ctx: Object): Unit = {
-
-    val context = ctx.asInstanceOf[LeadNodeSmartConnectorOpContext]
-
-    val session = SnappyContext(null: SparkContext).snappySession
-    if (context.getUserName != null && !context.getUserName.isEmpty) {
-      session.conf.set(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, context.getUserName)
-      session.conf.set(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, context.getAuthToken)
-    }
-
-    context.getType match {
-      case LeadNodeSmartConnectorOpContext.OpType.CREATE_TABLE =>
-
-        val tableIdent = context.getTableIdentifier
-        val userSpecifiedJsonSchema = Option(context.getUserSpecifiedJsonSchema)
-        val userSpecifiedSchema = if (userSpecifiedJsonSchema.isDefined) {
-          Option(DataType.fromJson(userSpecifiedJsonSchema.get).asInstanceOf[StructType])
-        } else {
-          None
-        }
-        val schemaDDL = Option(context.getSchemaDDL)
-        val provider = context.getProvider
-        val mode = SmartConnectorHelper.deserialize(context.getMode).asInstanceOf[SaveMode]
-        val options = SmartConnectorHelper
-            .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
-        val isBuiltIn = context.getIsBuiltIn
-
-        logDebug(s"StoreCallbacksImpl.performConnectorOp creating table $tableIdent")
-        // don't attempt resolution for external tables
-        session.createTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
-          provider, userSpecifiedSchema, schemaDDL, mode, options,
-          isBuiltIn, resolveRelation = isBuiltIn)
-
-      case LeadNodeSmartConnectorOpContext.OpType.DROP_TABLE =>
-        val tableIdent = context.getTableIdentifier
-        val ifExists = context.getIfExists
-        val isBuiltIn = context.getIsBuiltIn
-
-        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping table $tableIdent")
-        // don't attempt resolution for external tables
-        session.dropTable(session.sessionCatalog.newQualifiedTableName(tableIdent),
-          ifExists, resolveRelation = isBuiltIn)
-
-      case LeadNodeSmartConnectorOpContext.OpType.CREATE_INDEX =>
-        val tableIdent = context.getTableIdentifier
-        val indexIdent = context.getIndexIdentifier
-        val indexColumns = SmartConnectorHelper
-            .deserialize(context.getIndexColumns).asInstanceOf[Map[String, Option[SortDirection]]]
-        val options = SmartConnectorHelper
-            .deserialize(context.getOptions).asInstanceOf[Map[String, String]]
-
-        logDebug(s"StoreCallbacksImpl.performConnectorOp creating index $indexIdent")
-        session.createIndex(
-          session.sessionCatalog.newQualifiedTableName(indexIdent),
-          session.sessionCatalog.newQualifiedTableName(tableIdent),
-          indexColumns, options)
-
-      case LeadNodeSmartConnectorOpContext.OpType.DROP_INDEX =>
-        val indexIdent = context.getIndexIdentifier
-        val ifExists = context.getIfExists
-
-        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping index $indexIdent")
-        session.dropIndex(session.sessionCatalog.newQualifiedTableName(indexIdent), ifExists)
-
-      case LeadNodeSmartConnectorOpContext.OpType.CREATE_UDF =>
-        val db = context.getDb
-        val className = context.getClassName
-        val functionName = context.getFunctionName
-        val jarURI = context.getjarURI()
-        val resources: Seq[FunctionResource] = Seq(FunctionResource(JarResource, jarURI))
-
-        logDebug(s"StoreCallbacksImpl.performConnectorOp creating udf $functionName")
-        val functionDefinition = CatalogFunction(new FunctionIdentifier(
-          functionName, Option(db)), className, resources)
-        session.sharedState.externalCatalog.createFunction(db, functionDefinition)
-
-      case LeadNodeSmartConnectorOpContext.OpType.DROP_UDF =>
-        val db = context.getDb
-        val functionName = context.getFunctionName
-
-        logDebug(s"StoreCallbacksImpl.performConnectorOp dropping udf $functionName")
-        session.sharedState.externalCatalog.dropFunction(db, functionName)
-
-      case LeadNodeSmartConnectorOpContext.OpType.ALTER_TABLE =>
-        val tableName = context.getTableIdentifier
-        val addOrDropCol = context.getAddOrDropCol
-        val columnName = context.getColumnName
-        val columnDataType = context.getColumnDataType
-        val columnNullable = context.getColumnNullable
-        logDebug(s"StoreCallbacksImpl.performConnectorOp alter table ")
-        session.alterTable(tableName, addOrDropCol, StructField(columnName,
-          CatalystSqlParser.parseDataType(columnDataType), columnNullable))
-        SnappySession.clearAllCache()
-      case _ =>
-        throw new AnalysisException("StoreCallbacksImpl.performConnectorOp unknown option")
-    }
-
   }
 
   override def getLastIndexOfRow(o: Object): Int = {
@@ -560,9 +471,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
-    // off-heap will be cleared via ManagedDirectBufferAllocator
+  // off-heap will be cleared via ManagedDirectBufferAllocator
     MemoryManagerCallback.memoryManager.
-      dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
+        dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
 
   override def waitForRuntimeManager(maxWaitMillis: Long): Unit = {
     val memoryManager = MemoryManagerCallback.memoryManager
@@ -625,15 +536,49 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def getLeadClassLoader: URLClassLoader =
-    ToolsCallbackInit.toolsCallback.getLeadClassLoader()
+    ToolsCallbackInit.toolsCallback.getLeadClassLoader
 
   override def clearSessionCache(onlyQueryPlanCache: Boolean = false): Unit = {
     SnappySession.clearAllCache(onlyQueryPlanCache)
   }
 
   override def refreshPolicies(ldapGroup: String): Unit = {
-    val session = new SnappySession(SparkContext.getActive.get)
-    session.sessionCatalog.refreshPolicies(ldapGroup)
+    SnappyHiveExternalCatalog.getExistingInstance.refreshPolicies(ldapGroup)
+  }
+
+  override def checkSchemaPermission(schema: String, currentUser: String): String = {
+    val ms = Misc.getMemStoreBootingNoThrow
+    val userId = IdUtil.getUserAuthorizationId(currentUser)
+    if (ms ne null) {
+      var conn: EmbedConnection = null
+      if (ms.isSnappyStore && Misc.isSecurityEnabled) {
+        var contextSet = false
+        try {
+          val dd = ms.getDatabase.getDataDictionary
+          conn = GemFireXDUtils.getTSSConnection(false, true, false)
+          conn.getTR.setupContextStack()
+          contextSet = true
+          val sd = dd.getSchemaDescriptor(
+            schema, conn.getLanguageConnection.getTransactionExecute, false)
+          if (sd eq null) {
+            if (schema.equalsIgnoreCase(userId) ||
+                schema.equalsIgnoreCase(userId.replace('-', '_'))) {
+              if (ms.tableCreationAllowed()) return userId
+              throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
+                schema, schema)
+            } else {
+              throw StandardException.newException(SQLState.LANG_SCHEMA_DOES_NOT_EXIST, schema)
+            }
+          }
+          PrivilegeInfo.checkOwnership(userId, sd, sd, dd)
+          sd.getAuthorizationId
+        } catch {
+          case se: StandardException => throw Util.generateCsSQLException(se)
+        } finally {
+          if (contextSet) conn.getTR.restoreContextStack()
+        }
+      } else userId
+    } else userId
   }
 }
 
