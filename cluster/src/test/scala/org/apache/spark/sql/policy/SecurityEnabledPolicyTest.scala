@@ -156,7 +156,14 @@ class SecurityEnabledPolicyTest extends PolicyTestBase {
         "('gemGroup2'), ('gemGroup4'), ('gemGroup6')")
 
     val rs = snc3.sql("select * from temp where " +
-        "array_contains(current_user_ldap_groups(), upper(grp))")
+        "array_contains(current_user_ldap_groups(), upper(grp)) " +
+      " and array_contains(current_user_ldap_groups(), 'GEMGROUP3') == false " +
+      " and array_contains(current_user_ldap_groups(), 'GEMGROUP5') == false " +
+      " and array_contains(current_user_ldap_groups(), 'GEMGROUP7') == false " +
+      " and array_contains(current_user_ldap_groups(), 'GEMGROUP8') == false " +
+      " and array_contains(current_user_ldap_groups(), 'GEMGROUP9') == false " +
+      " and array_contains(current_user_ldap_groups(), 'GEMGROUP10') == false "
+    )
     assertEquals(4, rs.collect().length)
     snc3.sql("drop table if exists temp")
 
