@@ -407,7 +407,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val lock = SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode => null
       case _ =>
-        PartitionedRegion.getRegionLock("PUTINTO_" + table, GemFireCacheImpl.getExisting)
+        PartitionedRegion.getRegionLock("BULKWRITE_" + table, GemFireCacheImpl.getExisting)
     }
     if (lock ne null) lock.lock()
     var newUpdateSubQuery: Option[LogicalPlan] = None
@@ -449,7 +449,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     dropTable(tableIdent, ifExists = false, isView = false)
   }
 
-  private[sql] def clearPutInto(): Unit = {
+  private[sql] def clearWriteLockOnTable(): Unit = {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
       case (cachedTable: Option[_], lock) =>
@@ -461,7 +461,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def clearContext(): Unit = synchronized {
-    clearPutInto()
+    clearWriteLockOnTable()
     contextObjects.clear()
     planCaching = Property.PlanCaching.get(sessionState.conf)
     sqlWarnings = null
@@ -1783,6 +1783,8 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
+  private[sql] val BULKWRITE_PLAN = "bulkwrite_plan"
+
 
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)

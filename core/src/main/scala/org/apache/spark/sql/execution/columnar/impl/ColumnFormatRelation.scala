@@ -20,7 +20,7 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.{Constant, Property}
@@ -261,9 +261,24 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
-      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val lock = SnappyContext.getClusterMode(snc.sparkContext) match {
+      case _: ThinClientConnectorMode => {
+        null
+      }
+      case _ =>
+        PartitionedRegion.getRegionLock("BULKWRITE_" + table, GemFireCacheImpl.getExisting)
+    }
+    if (lock ne null) lock.lock()
+    try {
+      ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
+        updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    }
+    finally {
+      snc.addContextObject(
+        SnappySession.BULKWRITE_PLAN, table -> lock)
+    }
   }
 
   /**
@@ -272,9 +287,22 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-      this, keyColumns, connProperties, onExecutor = false)
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val lock = SnappyContext.getClusterMode(snc.sparkContext) match {
+      case _: ThinClientConnectorMode => null
+      case _ =>
+        PartitionedRegion.getRegionLock("BULKWRITE_" + table, GemFireCacheImpl.getExisting)
+    }
+    if (lock ne null) lock.lock()
+    try {
+      ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
+        this, keyColumns, connProperties, onExecutor = false)
+    }
+    finally {
+      snc.addContextObject(
+        SnappySession.BULKWRITE_PLAN, table -> lock)
+    }
   }
 
   /**
