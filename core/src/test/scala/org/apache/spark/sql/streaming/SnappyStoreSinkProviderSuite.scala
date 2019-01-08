@@ -19,16 +19,15 @@ package org.apache.spark.sql.streaming
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.reflect.io.Path
-
 import io.snappydata.{SnappyFunSuite, StreamingConstants}
 import org.apache.log4j.LogManager
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import scala.reflect.io.Path
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     with BeforeAndAfter with BeforeAndAfterAll {
@@ -276,6 +275,24 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assertData(Array(Row(1, "name999", 999, "lname1")))
   }
 
+  test("[SNAP-2745]-conflation: delete,insert") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch1 = Seq(Seq(1, "name1", 30, "lname1", 0))
+    kafkaTestUtils.sendMessages(topic, batch1.map(r => r.mkString(",")).toArray)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true)
+
+    waitTillTheBatchIsPickedForProcessing(0, testId)
+    val batch2 = Seq(Seq(1, "name1", 30, "lname1", 2), Seq(1, "name1", 30, "lname1", 0))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name1", 30, "lname1")))
+  }
 
   test("test conflation disabled") {
     val testId = testIdGenerator.getAndIncrement()

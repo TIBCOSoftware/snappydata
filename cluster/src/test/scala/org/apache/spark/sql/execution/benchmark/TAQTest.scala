@@ -87,10 +87,8 @@ class TAQTest extends SnappyFunSuite {
     for (_ <- 1 to numRuns) {
       val start = System.nanoTime()
       for (_ <- 1 to numIters) {
-        // val rs = stmt.executeQuery("select * from citi_order where id=1000 " +
-        //    "--GEMFIREXD-PROPERTIES executionEngine=Spark")
-        val rs = stmt.executeQuery("select count(*) from citi_order " +
-            "--GEMFIREXD-PROPERTIES executionEngine=Spark")
+        // val rs = stmt.executeQuery("select * from citi_order where id=1000")
+        val rs = stmt.executeQuery("select count(*) from citi_order")
         var count = 0
         while (rs.next()) {
           count += 1
@@ -260,9 +258,6 @@ object TAQTest extends Logging with Assertions {
   private def collect(df: Dataset[Row], expectedNumResults: Int): Unit = {
     val result = df.collect()
     assert(result.length === expectedNumResults)
-    // scalastyle:off
-    println(s"Count = ${result.length}")
-    // scalastyle:on
   }
 
   private def doGC(): Unit = {

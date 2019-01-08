@@ -17,13 +17,13 @@
 
 package io.snappydata.benchmark
 
-import scala.util.Random
+import org.apache.spark.Logging
 
-object TPCH_Queries {
+object TPCH_Queries extends Logging {
 
   private var random = new scala.util.Random(42)
 
-  def setRandomSeed(randomSeed : Integer = 42): Unit ={
+  def setRandomSeed(randomSeed: Integer = 42): Unit = {
     this.random = new scala.util.Random(randomSeed)
   }
 
@@ -112,13 +112,12 @@ object TPCH_Queries {
   }
 
   def createQuery(query: String, paramters: Array[String]): String = {
-    // scalastyle:off println
     var generatedQuery = query
     for (s <- paramters) {
-      println(s"KBKBKB : createQuery : $s")
+      logInfo(s"KBKBKB : createQuery : $s")
       generatedQuery = generatedQuery.replaceFirst("\\?", s)
     }
-    println(s"KBKBKB : My query : $generatedQuery")
+    logInfo(s"KBKBKB : My query : $generatedQuery")
     generatedQuery
   }
 
@@ -298,7 +297,7 @@ object TPCH_Queries {
       val fromDate = java.time.LocalDate.of(1995, 3, 1)
       val toDate = java.time.LocalDate.of(1995, 3, 31)
       val diff = java.time.temporal.ChronoUnit.DAYS.between(fromDate, toDate)
-      //val random = new random(System.nanoTime)
+      // val random = new random(System.nanoTime)
       // You may want a different seed
       val selectedDate = fromDate.plusDays(random.nextInt(diff.toInt))
       Array(segment, selectedDate.toString, selectedDate.toString)
