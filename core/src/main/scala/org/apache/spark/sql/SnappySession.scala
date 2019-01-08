@@ -449,6 +449,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     dropTable(tableIdent, ifExists = false, isView = false)
   }
 
+  private[sql] def clearPutInto(): Unit = {
+    clearWriteLockOnTable()
+  }
+
   private[sql] def clearWriteLockOnTable(): Unit = {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
