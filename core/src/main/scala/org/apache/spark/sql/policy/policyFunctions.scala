@@ -54,12 +54,8 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
 }
 
 
-case class LdapGroupsOfCurrentUser(includeParentGroups: Expression) extends LeafExpression
+case class  LdapGroupsOfCurrentUser() extends LeafExpression
     with CodegenFallback {
-
-  def this() = this(Literal.create(false, BooleanType))
-
-  assert(includeParentGroups.dataType == BooleanType)
   override def foldable: Boolean = true
   override def nullable: Boolean = false
 
@@ -74,9 +70,7 @@ case class LdapGroupsOfCurrentUser(includeParentGroups: Expression) extends Leaf
       if (owner.isEmpty) Constant.DEFAULT_SCHEMA
       else snappySession.sessionState.catalog.formatDatabaseName(owner))
 
-
-   val includeParents = includeParentGroups.eval().asInstanceOf[Boolean]
-   val array = ExternalStoreUtils.getLdapGroupsForUser(owner, includeParents).
+    val array = ExternalStoreUtils.getLdapGroupsForUser(owner).
        map(UTF8String.fromString(_))
     ArrayData.toArrayData(array)
   }

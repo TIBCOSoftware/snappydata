@@ -38,31 +38,29 @@ class SnappyContextFunctions {
   def registerSnappyFunctions(session: SnappySession): Unit = {
     val registry = session.sessionState.functionRegistry
     val usageStr1 = "_FUNC_() - Returns the User's UserName who is executing the " +
-        "current SQL statement."
+      "current SQL statement."
     val info1 = new ExpressionInfo(CurrentUser.getClass.getCanonicalName, null,
       "CURRENT_USER", usageStr1, "")
     registry.registerFunction("CURRENT_USER", info1,
       e => {
         if (e.nonEmpty) {
           throw new AnalysisException("Argument(s)  passed for zero arg function " +
-              s"CURRENT_USER")
+            s"CURRENT_USER")
         }
         CurrentUser()
       })
 
-    val usageStr2 = "_FUNC_() - Returns the ldap groups of, which the user who is executing the " +
-        "current SQL statement, is a member of."
-    val info2 = new ExpressionInfo(LdapGroupsOfCurrentUser.getClass.getCanonicalName, null,
-      "CURRENT_USER_LDAP_GROUPS", usageStr2, "")
+    val usageStr2 = "_FUNC_() - Returns the ldap groups of, which the user " +
+      "who is executing the current SQL statement, is a member of."
+    val info2 = new ExpressionInfo(LdapGroupsOfCurrentUser.getClass.getCanonicalName,
+      null, "CURRENT_USER_LDAP_GROUPS", usageStr2, "")
     registry.registerFunction("CURRENT_USER_LDAP_GROUPS", info2,
       e => {
-        if (e.nonEmpty && e.size == 1) {
-          LdapGroupsOfCurrentUser(e(0))
-        } else if (e.isEmpty) {
-          new LdapGroupsOfCurrentUser()
-        } else {
+        if (e.nonEmpty) {
           throw new AnalysisException("Incorrect arguments passed for function " +
-              s"CURRENT_USER_LDAP_GROUPS")
+            s"CURRENT_USER_LDAP_GROUPS")
+        } else {
+          LdapGroupsOfCurrentUser()
         }
       })
   }

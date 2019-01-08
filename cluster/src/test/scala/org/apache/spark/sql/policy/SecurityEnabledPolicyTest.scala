@@ -153,7 +153,7 @@ class SecurityEnabledPolicyTest extends PolicyTestBase {
     snc3.sql(s"CREATE TABLE temp (grp String) " +
         s" USING row ")
     snc3.sql("insert into temp values ('gemGroup1')," +
-        "('gemGroup2'), ('gemGroup3')")
+        "('gemGroup2'), ('gemGroup4')")
 
     val rs = snc3.sql("select * from temp where " +
         "array_contains(current_user_ldap_groups(), upper(grp))")
