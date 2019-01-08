@@ -68,13 +68,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private[sql] final def isCached: Boolean = cachedRDD ne null
 
   private def getExecRDD: RDD[InternalRow] =
-    if (isCached) {
-      cachedRDD
-    } else {
-      snappySession.sessionState.
-          executePlan(queryExecution.logical).executedPlan.execute()
-    }
-
+    if (isCached) cachedRDD else queryExecution.executedPlan.execute()
 
   @transient
   private var _boundEnc: ExpressionEncoder[Row] = _
