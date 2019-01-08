@@ -95,7 +95,7 @@ return reader.writeStream()
         .format("snappystore")
         .option("sink", Mysink.class.getName())
         .option("checkpointLocation",
-            Utils.createTempDir("/data/wrk/w/snappydata/tmg-temp", "tmg-spark")
+            Utils.createTempDir("/data/wrk/w/snappydata/abc-temp", "abc-spark")
                 .getCanonicalPath())
         .option("tableName", tableName)
         .start();
