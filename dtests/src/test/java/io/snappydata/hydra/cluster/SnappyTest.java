@@ -2174,19 +2174,33 @@ public class SnappyTest implements Serializable {
     ProcessBuilder pb = null;
     File log = null;
     File logFile = null;
+    String confString=null;
     userAppJar = SnappyPrms.getUserAppJar();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
     String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+    boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    String passFilePath = SnappySecurityPrms.getPassFile();
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
         pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + leadPort, "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--stream");
         java.util.Map<String, String> env = pb.environment();
-        if (SnappyPrms.getCommaSepAPPProps() == null) {
-          env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
-        } else {
-          env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
+        if (SnappyPrms.getCommaSepAPPProps() != null)
+          confString = getConfForJobScripts(confString);
+        if (!isSecurityEnabled) {
+          if (SnappyPrms.getCommaSepAPPProps() == null) {
+            env.put("APP_PROPS", " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions());
+          } else {
+            env.put("APP_PROPS", confString + " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions());
+          }
+        }
+        else {
+          if (SnappyPrms.getCommaSepAPPProps() == null) {
+            env.put("APP_PROPS", " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions() + " --passfile " + passFilePath);
+          } else {
+            env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions() + " --passfile " + passFilePath);
+          }
         }
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -2357,85 +2371,6 @@ public class SnappyTest implements Serializable {
     return command;
   }
 
-  /*protected void executeSnappyJobUsingJobScript(Vector jobClassNames, String userAppName, String logFileName) {
-    String snappyJobScript = getScriptLocation("snappy-job.sh");
-    ProcessBuilder pb = null;
-    File log = null;
-    File logFile = null;
-    String Parameters;
-    String confString = "";
-    userAppJar = SnappyPrms.getUserAppJar();
-    snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
-    leadHost = getLeadHost();
-    String leadPort = getLeadPort();
-    if(SnappyPrms.getCommaSepAPPProps() != null) {
-      Parameters = SnappyPrms.getCommaSepAPPProps();
-      Log.getLogWriter().info("Parameters : " + Parameters);
-      String[] confParameter = Parameters.split(",");
-
-      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
-      if (isSecurityEnabled){
-        String passFilePath = SnappySecurityPrms.getPassFile();
-        for (int i = 0; i < confParameter.length; i++) {
-          Log.getLogWriter().info("ConfParameter : " + confParameter[i].toString());
-          confString = confString + " --conf " + confParameter[i].toString();
-        }
-        confString = confString + " --passfile " + passFilePath;
-      Log.getLogWriter().info("SP: confString : " + confString.toString());
-    }
-    else
-      {
-        for (int i = 0; i < confParameter.length; i++) {
-          Log.getLogWriter().info("ConfParameter : " + confParameter[i].toString());
-          confString = confString + " --conf " + confParameter[i].toString();
-        }
-        Log.getLogWriter().info("confString : " + confString.toString());
-      }
-    }
-    confString = confString + " --conf logFileName=" + logFileName;
-
-    try {
-      String cmd;
-      for (int i = 0; i < jobClassNames.size(); i++) {
-        String userJob = (String) jobClassNames.elementAt(i);
-
-        cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-            " --app-name " +  userAppName + " --class " + userJob + " --app-jar " +
-            snappyTest.getUserAppJarLocation(userAppJar, jarPath);
-
-        if(!(SnappyPrms.getCommaSepAPPProps().isEmpty())) {
-          cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-              " --app-name " +  userAppName + " --class " + userJob + " --app-jar " +
-              snappyTest.getUserAppJarLocation(userAppJar, jarPath) + confString;
-        }
-
-        pb = new ProcessBuilder("/bin/bash", "-c", cmd);
-        Log.getLogWriter().info("Command is : " + pb.command());
-
-
-        log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + logFileName;
-        logFile = new File(dest);
-        snappyTest.executeProcess(pb, logFile);
-      }
-      boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
-      if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
-        jobSubmissionCount++;
-        Thread.sleep(180000);
-        Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
-            " the job to new primary lead node.....");
-        retrievePrimaryLeadHost();
-        HydraTask_executeSnappyJob();
-      }
-    } catch (IOException e) {
-      throw new TestException("IOException occurred while retriving destination logFile path " +
-          log + "\nError Message:" + e.getMessage());
-    } catch (InterruptedException e) {
-      throw new TestException("Exception occurred while waiting for the snappy streaming job  " +
-          "process re-execution." + "\nError Message:" + e.getMessage());
-    }
-  }*/
-
   public void executeSnappyJobUsingJobScript(Vector jobClassNames, String userAppName, String logFileName) {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     if (userAppName == null) userAppName = SnappyPrms.getUserAppName() + "_" + System.currentTimeMillis();
@@ -2444,23 +2379,16 @@ public class SnappyTest implements Serializable {
     File logFile = null;
     String Parameters;
     String confString = "";
-    String[] confParameter,confDmlProps = null;
+    String[] confParameter = null;
     userAppJar = SnappyPrms.getUserAppJar();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
     String leadPort = getLeadPort();
     boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     String passFilePath = SnappySecurityPrms.getPassFile();
-    if (SnappyPrms.getCommaSepAPPProps() != null) {
-      Parameters = SnappyPrms.getCommaSepAPPProps();
-      Log.getLogWriter().info("Parameters : " + Parameters);
-      confParameter = Parameters.split(",");
-      for (int i = 0; i < confParameter.length; i++) {
-        Log.getLogWriter().info("ConfParameter : " + confParameter[i].toString());
-        confString += " --conf " + confParameter[i].toString();
-      }
-    }
-     if (SnappyPrms.useJDBCConnInSnappyJob()) {
+    if (SnappyPrms.getCommaSepAPPProps() != null)
+      confString = getConfForJobScripts(confString);
+    if (SnappyPrms.useJDBCConnInSnappyJob()) {
       String primaryLocatorHost = getPrimaryLocatorHost();
       String primaryLocatorPort = getPrimaryLocatorPort();
       confString += "--conf primaryLocatorHost=" + primaryLocatorHost + " --conf primaryLocatorPort=" + primaryLocatorPort;
@@ -2515,8 +2443,12 @@ public class SnappyTest implements Serializable {
       }
       Log.getLogWriter().info("SP: confString for hasDynamicAppProps : " + confString);
     }
-    if (isSecurityEnabled)
-      confString += " --passfile " + passFilePath + " --conf logFileName=" + logFileName;
+    if (isSecurityEnabled){
+      if(!confString.contains("--passfile")) // check for security related tests
+        confString += " --passfile " + passFilePath + " --conf logFileName=" + logFileName;
+      else
+        confString += " --conf logFileName=" + logFileName;
+     }
 
     Log.getLogWriter().info("SP: confString for security: " + confString);
 
@@ -2557,6 +2489,19 @@ public class SnappyTest implements Serializable {
     //  }
   }
 
+  public String getConfForJobScripts(String confString) {
+    String Parameters;
+    String[] confParameter = null;
+    Parameters = SnappyPrms.getCommaSepAPPProps();
+    Log.getLogWriter().info("Parameters : " + Parameters);
+    confParameter = Parameters.split(",");
+    for (int i = 0; i < confParameter.length; i++) {
+      Log.getLogWriter().info("ConfParameter : " + confParameter[i].toString());
+      confString += " --conf " + confParameter[i].toString();
+    }
+    return confString;
+  }
+
 
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
@@ -2581,7 +2526,7 @@ public class SnappyTest implements Serializable {
             " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort;
         if (isSecurityEnabled) {
           String sparkSubmitExtraPrms = SnappyPrms.getSparkSubmitExtraPrms();
-          if (!sparkSubmitExtraPrms.contains("spark.snappydata.store.user"))
+          if (!sparkSubmitExtraPrms.contains("spark.snappydata.store.user")) //check for security tests
             commonArgs = " --conf spark.snappydata.store.user=gemfire1 --conf spark.snappydata.store.password=gemfire1 " + commonArgs;
         }
         Log.getLogWriter().info("SP: The commonArgs are " + commonArgs);
