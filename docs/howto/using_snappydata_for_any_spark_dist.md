@@ -1,7 +1,6 @@
 ## How to use SnappyData for any Spark Distribution
 
 The **snappydata-jdbc Spark **package adds extensions to Spark’s inbuilt JDBC data source provider to work better with SnappyData. This allows SnappyData to be treated as a regular JDBC data source with all versions of Spark which are greater or equal to 2.1, while also providing speed to direct SnappyData embedded cluster for many types of queries.
-For more details refer to [Using SnappyData for any Spark Distribution](../programming_guide/spark_jdbc_connector.md).
 
 Following is a sample of Spark JDBC extension setup and usage: 
 

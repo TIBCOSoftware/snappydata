@@ -24,8 +24,6 @@ The following topics are covered in this section:
 
 * [Using JDBC with SnappyData](programming_guide/using_jdbc_with_snappydata.md)
 
-* [Using SnappyData for any Spark Distribution](/programming_guide/spark_jdbc_connector.md)
-
 * [Multiple Language Binding using Thrift Protocol](programming_guide/multiple_language_binding_using_thrift_protocol.md)
 
 * [Building SnappyData Applications using Spark API](programming_guide/building_snappydata_applications_using_spark_api.md)
