@@ -30,21 +30,23 @@ class AlterTablesJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val pw = new PrintWriter(new FileOutputStream(new File("AlterTablesJob.out"), true));
     Try {
+
       val snc = snSession.sqlContext
       // scalastyle:off println
       pw.println(s"Alter tables Test started at : " + System.currentTimeMillis)
+    //  snc.setSchema("gemfire1")
       snc.alterTable("orders", true, StructField("FirstName", StringType, true))
       var query = "SELECT * FROM orders"
       var result = snc.sql(query).schema.fields.length
       pw.println("schema fields length for orders" + "\nResults : " + result)
       assert(snc.sql("SELECT * FROM " + "orders").schema.fields.length == 15)
-      snc.sql("insert into app.orders values(10251,'AROUT',4,'1996-07-08 00:00:00.000'," +
+      snc.sql("insert into orders values(10251,'AROUT',4,'1996-07-08 00:00:00.000'," +
           "'1996-08-05 00:00:00.000','1996-07-15 00:00:00.000',4,41.34,'Victuailles en stock 2', " +
           "'rue du Commerce','Lyon',NULL,'69004','France','empFirstName2')");
-      snc.sql("insert into app.orders values(10260,'CENTC',13,'1996-07-19 00:00:00.000'," +
+      snc.sql("insert into orders values(10260,'CENTC',13,'1996-07-19 00:00:00.000'," +
           "'1996-08-16 00:00:00.000','1996-07-29 00:00:00.000',13,55.09,'Ottilies Kaoseladen'," +
           "'Mehrheimerstr. 369','Kaqln',NULL,'50739','Germany','empFirstName4')");
-      snc.sql("insert into app.orders values(10265,'DUMON',18,'1996-07-25 00:00:00.000'," +
+      snc.sql("insert into orders values(10265,'DUMON',18,'1996-07-25 00:00:00.000'," +
           "'1996-08-22 00:00:00.000','1996-08-12 00:00:00.000',18,55.28," +
           "'Blondel pare et fils 24', 'place Klacber','Strasbourg',NULL," +
           "'67000','France','empFirstName5')");
@@ -68,9 +70,9 @@ class AlterTablesJob extends SnappySQLJob {
       result = snc.sql(query).schema.fields.length
       pw.println("Query : " + query + "\nResults : " + result)
       assert(result == 6)
-      snc.sql("insert into app.order_details values(10250,72,34.8,5,0,'custID4')");
-      snc.sql("insert into app.order_details values(10249,42,9.8,10,0,'custID14')");
-      snc.sql("insert into app.order_details values(10253,41,7.7,10,0,'custID7')");
+      snc.sql("insert into order_details values(10250,72,34.8,5,0,'custID4')");
+      snc.sql("insert into order_details values(10249,42,9.8,10,0,'custID14')");
+      snc.sql("insert into order_details values(10253,41,7.7,10,0,'custID7')");
       query1 = "SELECT * FROM order_details where CustomerID='custID4'";
       result1 = snc.sql(query1);
       pw.println("Query : " + query1 + "\nResult : " + result1.collect() + "\n " + result1.show())
