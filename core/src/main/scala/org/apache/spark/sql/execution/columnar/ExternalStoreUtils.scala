@@ -24,7 +24,6 @@ import javax.naming.NameNotFoundException
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.auth.callback.UserAuthenticator
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -37,7 +36,6 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
-
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
@@ -52,7 +50,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources.{ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
