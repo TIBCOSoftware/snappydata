@@ -22,6 +22,7 @@ import java.util.NoSuchElementException
 
 import io.snappydata.Property._
 import io.snappydata.StreamingConstants._
+import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.streaming.Sink
@@ -29,7 +30,11 @@ import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
+import io.snappydata.StreamingConstants.EventType._
+import io.snappydata.util.ServiceUtils
+import org.apache.spark.storage.StorageLevel
 
 /**
  * Should be implemented by clients who wants to override default behavior provided by
@@ -162,27 +167,11 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {
-      df.cache().count()
       val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df
       if (eventTypeColumnAvailable) {
-        val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.DELETE)
-            .drop(EVENT_TYPE_COLUMN)
-        deleteDf.write.deleteFrom(tableName)
-        if (posDup) {
-          val upsertEventTypes = List(EventType.INSERT, EventType.UPDATE)
-          val upsertDf = dataFrame
-              .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
-              .drop(EVENT_TYPE_COLUMN)
-          upsertDf.write.putInto(tableName)
-        } else {
-          val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.INSERT)
-              .drop(EVENT_TYPE_COLUMN)
-          insertDf.write.insertInto(tableName)
-          val updateDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.UPDATE)
-              .drop(EVENT_TYPE_COLUMN)
-          updateDf.write.putInto(tableName)
-        }
+        processDataWithEventType(dataFrame)
       } else {
+        persist(dataFrame).count()  // this is done as a workaround for SNAP-2824
         dataFrame.write.putInto(tableName)
       }
     }
@@ -225,14 +214,45 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         // if event type of the last event for a key is insert and there are more than one
         // events for the same key, then convert inserts to put into
         val columns = df.columns.filter(_ != EVENT_TYPE_COLUMN).map(col) ++
-            Seq(when(col(EVENT_TYPE_COLUMN) === EventType.INSERT && col(EVENT_COUNT_COLUMN) > 1,
-              EventType.UPDATE).otherwise(col(EVENT_TYPE_COLUMN)).alias(EVENT_TYPE_COLUMN))
+            Seq(when(col(EVENT_TYPE_COLUMN) === INSERT && col(EVENT_COUNT_COLUMN) > 1,
+              UPDATE).otherwise(col(EVENT_TYPE_COLUMN)).alias(EVENT_TYPE_COLUMN))
 
         df.groupBy(keyCols.head, keyCols.tail: _*)
             .agg(exprs.head, exprs.tail: _*)
             .select(columns: _*)
       }
       conflatedDf.cache()
+    }
+
+    def persist(df: DataFrame) = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)){
+      df.persist(StorageLevel.OFF_HEAP)
+    } else df.persist()
+
+    def processDataWithEventType(dataFrame: DataFrame) = {
+      val hasUpdateOrDeleteEvents = persist(dataFrame)
+          .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
+          .count() > 0
+      if (hasUpdateOrDeleteEvents) {
+        val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === DELETE)
+            .drop(EVENT_TYPE_COLUMN)
+        deleteDf.write.deleteFrom(tableName)
+      }
+      if (posDup) {
+        val upsertEventTypes = List(INSERT, UPDATE)
+        val upsertDf = dataFrame
+            .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
+            .drop(EVENT_TYPE_COLUMN)
+        upsertDf.write.putInto(tableName)
+      } else {
+        val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === INSERT)
+            .drop(EVENT_TYPE_COLUMN)
+        insertDf.write.insertInto(tableName)
+        if (hasUpdateOrDeleteEvents) {
+          val updateDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === UPDATE)
+              .drop(EVENT_TYPE_COLUMN)
+          updateDf.write.putInto(tableName)
+        }
+      }
     }
   }
 }
