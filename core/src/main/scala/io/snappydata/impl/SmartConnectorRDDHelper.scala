@@ -21,17 +21,15 @@ import java.util.Collections
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
-
 import com.gemstone.gemfire.internal.SocketCreator
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SmartConnectorHelper
 import io.snappydata.thrift.internal.ClientPreparedStatement
-
+import org.apache.spark.sql.SnappyStoreClientDialect
 import org.apache.spark.sql.collection.SmartExecutorBucketPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 
 final class SmartConnectorRDDHelper {
