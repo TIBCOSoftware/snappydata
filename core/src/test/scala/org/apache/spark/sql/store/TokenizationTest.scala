@@ -419,8 +419,7 @@ class TokenizationTest
       var res2 = newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
-      newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
-      assert(cacheMap.size() == 0)
+      cacheMap.clear()
 
       q.zipWithIndex.foreach { case (x, i) =>
         var result = newSession.sql(x).collect()

@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import io.snappydata.Property.PlanCaching
 import io.snappydata.SnappyFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -59,25 +60,30 @@ class NorthWindTest
 
   // enable if transformations are supported in plan-caching.
   test("SNAP-2451"){
-    createAndLoadColumnTables(snc)
+    val planCaching = PlanCaching.get(snc.sessionState.conf)
+    PlanCaching.set(snc.sessionState.conf, false)
+    try {
+      createAndLoadColumnTables(snc)
 
-    val df1 = snc.sql("SELECT ShipCountry, Sum(Order_Details.UnitPrice * Quantity * Discount)" +
-        " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
-        " Orders.OrderID = Order_Details.OrderID" +
-        " where orders.OrderID > 11000 GROUP BY ShipCountry")
+      val df1 = snc.sql("SELECT ShipCountry, Sum(Order_Details.UnitPrice * Quantity * Discount)" +
+          " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
+          " Orders.OrderID = Order_Details.OrderID" +
+          " where orders.OrderID > 11000 GROUP BY ShipCountry")
 
-    val result1 = df1.repartition(1).collect()
-    assert(result1.length == 22)
+      val result1 = df1.repartition(1).collect()
+      assert(result1.length == 22)
 
 
-    val df2 = snc.sql("SELECT ShipCountry, Sum(Order_Details.UnitPrice * Quantity * Discount)" +
-        " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
-        " Orders.OrderID = Order_Details.OrderID" +
-        " where orders.OrderID > 11070 GROUP BY ShipCountry")
+      val df2 = snc.sql("SELECT ShipCountry, Sum(Order_Details.UnitPrice * Quantity * Discount)" +
+          " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
+          " Orders.OrderID = Order_Details.OrderID" +
+          " where orders.OrderID > 11070 GROUP BY ShipCountry")
 
-    val result2 = df2.repartition(1).collect()
-    assert(result2.length == 7)
-
+      val result2 = df2.repartition(1).collect()
+      assert(result2.length == 7)
+    } finally {
+      PlanCaching.set(snc.sessionState.conf, planCaching)
+    }
 
   }
 
