@@ -2369,8 +2369,8 @@ public class SnappyTest implements Serializable {
       int endR = SnappyCDCPrms.getInitEndRange();
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", startR);
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", endR);
-      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 5000000000L);
-      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 1000 + (startR + 5000000000L));
+      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 500000000);
+      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 1000 + (startR + 500000000));
       Log.getLogWriter().info("Finished HydraTask_InitializeBB ");
     } catch (Exception e) {
       Log.getLogWriter().info("HydraTask_InitializeBB exception " + e.getMessage());

@@ -98,6 +98,7 @@ public class CDCIngestionApp implements Runnable {
     try {
       final int batchSize = 1000;
       int count = 0;
+      long st = System.currentTimeMillis();
       for (int i = 0; i < queryArray.size(); i++) {
         String qStr = queryArray.get(i);
         System.out.println("Query = " + qStr);
@@ -115,6 +116,7 @@ public class CDCIngestionApp implements Runnable {
           }
         } else {
           ps = conn.prepareStatement(qStr);
+          long startTime = System.currentTimeMillis();
           for (int j = startRange; j <= endRange; j++) {
             int KEY_ID = j;
             ps.setInt(1, KEY_ID);
@@ -124,10 +126,14 @@ public class CDCIngestionApp implements Runnable {
               ps.executeBatch();
             }
           }
-          System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
+          long endTime = System.currentTimeMillis();
+          System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table \n" +
+              " Time taken per table is  "+ (endTime - startTime) + " ms");
         }
       }
-      System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables");
+      long ed = System.currentTimeMillis();
+      System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables \n" +
+          "Time Taken is : " + (ed-st) + " ms");
     } catch (Exception e) {
       System.out.println("Caught exception " + e.getMessage());
     } finally {

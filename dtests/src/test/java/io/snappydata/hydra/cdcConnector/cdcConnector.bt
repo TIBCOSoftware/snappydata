@@ -4,8 +4,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-  dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
-  queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/selectOps.sql"
+  dataFilesLocation="/export/shared/QA_DATA/cdcData_20G"
   deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDeleteTemp.sql"
   insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector"
   dataBaseName = testdatabase20G
@@ -17,14 +16,14 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2.1.jar"
   driverJar="/export/shared/QA_DATA/sqlServerJar/mssql-jdbc-6.1.0.jre8.jar"
   pocJar="$GEMFIRE/../../../snappy-poc/cdc/target/cdc-test-0.0.1.jar"
-  connectionPropFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/cdc_source_connection.properties"
+  connectionPropFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/cdc_source_connection.properties"
   sourceDestFile="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/source_destination.properties"
   tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableListTemp.txt"
   initStartRange=1000001
   initEndRange=1000050
   numVMsToStop=1
 
- io/snappydata/hydra/cdcConnector/cdcHATest.conf
+/* io/snappydata/hydra/cdcConnector/cdcHATest.conf
    A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
    B=lead leadHosts=1 leadVMsPerHost=2 leadThreadsPerVM=2
    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -100,3 +99,4 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableNameList.txt"
    initStartRange=65000000
    initEndRange=65000010
+*/
