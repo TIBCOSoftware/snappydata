@@ -46,22 +46,23 @@ object RecoveryService {
      7. Security related ddls not required as the recovery mode is supposed
         to come up using only admin/su credentials.
   */
-  def getHiveDDLs() : Array[String] = {
+  def getHiveDDLs: Array[String] = {
     null
   }
 
   /* This should dump the real ddls into the o/p file */
-  def dumpAllDDLs(path: URI) : Unit = {
+  def dumpAllDDLs(path: URI): Unit = {
 
   }
 
   /* fqtn and bucket number for PR r Column table, -1 indicates replicated row table */
-  def getExecutorHost(tableName: String, bucketId: Int = -1) : String = {
+  def getExecutorHost(tableName: String, bucketId: Int = -1): String = {
     null
   }
 
   /* Table type, PR or replicated, DStore name, numBuckets */
-  def getTableDiskInfo() : Tuple4[CatalogObjectType.Type , Boolean, String, Int] = {
+  def getTableDiskInfo(fqtn: String):
+  Tuple4[CatalogObjectType.Type, Boolean, String, Int] = {
     null
   }
 }
