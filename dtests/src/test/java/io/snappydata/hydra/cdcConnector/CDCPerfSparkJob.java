@@ -96,9 +96,9 @@ public class CDCPerfSparkJob {
 
         // warm up task loop:
         for (int i = 0; i < 100; i++) {  // iterrate each query 100 times.
-          ps.setInt(1, val);
-          // conn.createStatement().executeQuery(qlist.get(queryPos));
-          ps.executeQuery();
+       //   ps.setInt(1, val);
+          conn.createStatement().executeQuery(qlist.get(queryPos));
+       //   ps.executeQuery();
         }
 
         threadname.add(ThreadId);

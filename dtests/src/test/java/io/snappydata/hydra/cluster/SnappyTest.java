@@ -2274,7 +2274,7 @@ public class SnappyTest implements Serializable {
       userAppArgs = finalStart2 + " " + finalEnd2 + " " + userAppArgs;
       Log.getLogWriter().info("For CDCIngestionApp2 app New Start range and end range : " + finalStart2 + " & " + finalEnd2 + " and args = " + userAppArgs);
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
-      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 100);
+      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 1000);
     } else if (appName.equals("CDCIngestionApp1")) {
       userAppArgs = finalStart + " " + finalEnd + " " + userAppArgs;
       SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
@@ -2369,8 +2369,8 @@ public class SnappyTest implements Serializable {
       int endR = SnappyCDCPrms.getInitEndRange();
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", startR);
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", endR);
-      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 5000000);
-      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 10 + (startR + 5000000));
+      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", startR + 5000000000L);
+      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", 1000 + (startR + 5000000000L));
       Log.getLogWriter().info("Finished HydraTask_InitializeBB ");
     } catch (Exception e) {
       Log.getLogWriter().info("HydraTask_InitializeBB exception " + e.getMessage());

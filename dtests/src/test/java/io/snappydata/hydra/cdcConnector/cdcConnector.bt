@@ -71,7 +71,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    connectionPropFile2="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2/cdc_source_connection.properties"
    tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableNameList.txt"
    initStartRange=65000000
-   initEndRange=65000010
+   initEndRange=65001000
 
  io/snappydata/hydra/cdcConnector/cdcConnectorLongRunningHAWithMultiSqlServer.conf
    A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
