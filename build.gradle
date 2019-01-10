@@ -819,12 +819,10 @@ task product(type: Zip) {
   dependsOn ':snappy-launcher:jar'
   dependsOn ':jdbcJar'
   dependsOn ":snappy-v2connector_${scalaBinaryVersion}:jar"
-  dependsOn ":snappy-encoders_${scalaBinaryVersion}:jar"
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
   def v2connectorProject = project(":snappy-v2connector_${scalaBinaryVersion}")
-  def encodersProject = project(":snappy-encoders_${scalaBinaryVersion}")
   def targetProject = clusterProject
 
   if (isEnterpriseProduct) {
@@ -893,12 +891,6 @@ task product(type: Zip) {
       from v2connectorProject.jar.destinationDir
       into "${snappyProductDir}/jars"
       include v2connectorProject.jar.archiveName
-    }
-
-    copy {
-      from encodersProject.jar.destinationDir
-      into "${snappyProductDir}/jars"
-      include encodersProject.jar.archiveName
     }
 
     // create the RELEASE file
@@ -1194,26 +1186,9 @@ task v2ConnectorJar {
   }
 }
 
-task encodersJar {
-  dependsOn ":snappy-encoders_${scalaBinaryVersion}:shadowJar"
-
-  doLast {
-    def encodersProject = project(":snappy-encoders_${scalaBinaryVersion}")
-    String encodersName = "snappydata-encoders_${scalaBinaryVersion}-${version}.jar"
-    // copy the snappy-encoders shadow jar into distributions
-    copy {
-      from encodersProject.shadowJar.destinationDir
-      into "${rootProject.buildDir}/distributions"
-      include encodersProject.shadowJar.archiveName
-      rename { filename -> encodersName }
-    }
-  }
-}
-
 task copyShadowJars {
   dependsOn jdbcJar
   dependsOn v2ConnectorJar
-  dependsOn encodersJar
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {

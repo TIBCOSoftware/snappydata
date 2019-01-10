@@ -1,22 +1,37 @@
 /*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
  */
 package io.snappydata.datasource.v2.partition
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet}
-import java.util.Collections
+import java.util.{Collections, Properties}
 
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import io.snappydata.Constant
 import io.snappydata.thrift.internal.ClientPreparedStatement
-import org.apache.spark.sql.SnappyColumnVector
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.{ColumnBatchIteratorOnRS, SharedExternalStoreUtils}
-import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.vectorized.{ColumnVector, ColumnarBatch}
+import org.apache.spark.sql.{SnappyColumnVector, SnappyStoreClientDialect}
 
+import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -49,7 +64,7 @@ class SnappyColumnTableReader(tableName: String, projection: StructType,
    */
   def initialize: Unit = {
     setProjectedColumnOrdinals
-    val connProperties = SharedExternalStoreUtils.connectionProperties(hostList)
+    val connProperties = connectionProperties(hostList)
     conn = SharedExternalStoreUtils.getConnection(connProperties, hostList)
     val txId = null
     // fetch all the column blobs pushing down the filters
@@ -182,6 +197,38 @@ class SnappyColumnTableReader(tableName: String, projection: StructType,
     } else {
       null
     }
+  }
+
+  /**
+    * Connection Properties.
+    * @param hostList
+    * @return
+    */
+  private def connectionProperties(hostList: ArrayBuffer[(String, String)]):
+        ConnectionProperties = {
+
+    // TODO: Check how to make properties Dynamic [Pradeep]
+    // Hard-coded properties should be made dynamic. It should be
+    // passed as a property bag to this method which will be obtained
+    // rom the original create statement options.
+    val map: Map[String, String] = HashMap[String, String](("maxActive", "256"),
+      ("testOnBorrow", "true"), ("maxIdle", "256"), ("validationInterval", "10000"),
+      ("initialSize", "4"), ("driverClassName", "io.snappydata.jdbc.ClientDriver"))
+
+    val poolProperties = new Properties
+    poolProperties.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
+    poolProperties.setProperty("route-query", "false")
+
+    val executorConnProps = new Properties
+    executorConnProps.setProperty("lob-chunk-size", "33554432")
+    executorConnProps.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
+    executorConnProps.setProperty("route-query", "false")
+    executorConnProps.setProperty("lob-direct-buffers", "true")
+
+    ConnectionProperties(hostList(0)._2,
+      "io.snappydata.jdbc.ClientDriver", SnappyStoreClientDialect, map,
+      poolProperties, executorConnProps, false)
+
   }
 }
 

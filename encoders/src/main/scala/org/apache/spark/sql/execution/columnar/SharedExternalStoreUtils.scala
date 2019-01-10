@@ -44,13 +44,13 @@ object SharedExternalStoreUtils {
   def getTableSchema(schemaAsJson: String): StructType = StructType.fromString(schemaAsJson)
 
   def getConnection(connectionProperties: ConnectionProperties,
-      hostList: ArrayBuffer[(String, String)]): Connection = {
+                    hostList: ArrayBuffer[(String, String)]): Connection = {
     useLocatorURL = useLocatorUrl(hostList)
     createConnection(connectionProperties, hostList)
   }
 
   private def createConnection(connProperties: ConnectionProperties,
-      hostList: ArrayBuffer[(String, String)]): Connection = {
+                               hostList: ArrayBuffer[(String, String)]): Connection = {
     val localhost = ClientSharedUtils.getLocalHost
     var index = -1
 
@@ -84,7 +84,7 @@ object SharedExternalStoreUtils {
   }
 
   private def addProperty(props: mutable.Map[String, String], key: String,
-      default: String): Unit = {
+                          default: String): Unit = {
     if (!props.contains(key)) props.put(key, default)
   }
 
@@ -95,8 +95,8 @@ object SharedExternalStoreUtils {
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
   def getAllPoolProperties(url: String, driver: String,
-      poolProps: Map[String, String], hikariCP: Boolean,
-      isEmbedded: Boolean): Map[String, String] = {
+                           poolProps: Map[String, String], hikariCP: Boolean,
+                           isEmbedded: Boolean): Map[String, String] = {
     // setup default pool properties
     val props = new mutable.HashMap[String, String]()
     if (poolProps.nonEmpty) props ++= poolProps
@@ -124,7 +124,7 @@ object SharedExternalStoreUtils {
   }
 
   def setStatementParameters(stmt: PreparedStatement,
-      row: mutable.ArrayBuffer[Any]): Unit = {
+                             row: mutable.ArrayBuffer[Any]): Unit = {
     var col = 1
     val len = row.length
     while (col <= len) {
@@ -153,35 +153,9 @@ object SharedExternalStoreUtils {
       col += 1
     }
   }
-
-  /*
- *
- */
-  def connectionProperties(hostList: ArrayBuffer[(String, String)]): ConnectionProperties = {
-
-    // TODO: Check how to make properties Dynamic
-    val map: Map[String, String] = HashMap[String, String](("maxActive", "256"),
-      ("testOnBorrow", "true"), ("maxIdle", "256"), ("validationInterval", "10000"),
-      ("initialSize", "4"), ("driverClassName", "io.snappydata.jdbc.ClientDriver"))
-
-    val poolProperties = new Properties
-    poolProperties.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
-    poolProperties.setProperty("route-query", "false")
-
-    val executorConnProps = new Properties
-    executorConnProps.setProperty("lob-chunk-size", "33554432")
-    executorConnProps.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
-    executorConnProps.setProperty("route-query", "false")
-    executorConnProps.setProperty("lob-direct-buffers", "true")
-
-    ConnectionProperties(hostList(0)._2,
-      "io.snappydata.jdbc.ClientDriver", SnappyStoreClientDialect, map,
-      poolProperties, executorConnProps, false)
-
-  }
 }
 
 class TableNotFoundException(schema: String, table: String, cause: Option[Throwable] = None)
-    extends AnalysisException(s"Table or view '$table' not found in schema '$schema'",
-      cause = cause)
+  extends AnalysisException(s"Table or view '$table' not found in schema '$schema'",
+    cause = cause)
 
