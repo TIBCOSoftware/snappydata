@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.{SQLException, Statement}
+import java.sql.SQLException
 import java.util.regex.Pattern
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
@@ -25,14 +25,10 @@ import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
-import org.apache.spark.executor.InputMetrics
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException}
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, execution}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row}
 
 /**
  * Tests for meta-data queries using Spark SQL.
@@ -86,15 +82,11 @@ object MetadataTest extends Assertions {
   }
 
   private def checkTableProperties(rs: Array[Row], isRowTable: Boolean): Unit = {
-    val (tableType, provider) = if (isRowTable) {
-      "ROW" -> classOf[execution.row.DefaultSource].getName
-    } else {
-      "COLUMN" -> classOf[execution.columnar.impl.DefaultSource].getName
-    }
     val rsMap = rs.map(r => r.getString(0) -> r.getString(1)).toMap
-    assert(rsMap("EXTERNAL_SNAPPY") === tableType)
-    assert(rsMap("spark.sql.sources.provider") === provider)
-    assert(rsMap("spark.sql.sources.schema.numParts") === "1")
+    assert(!rsMap.contains("EXTERNAL_SNAPPY")) // obsolete property
+    // spark.sql internal properties should all be removed in final display
+    assert(!rsMap.contains("spark.sql.sources.provider"))
+    assert(!rsMap.contains("spark.sql.sources.schema.numParts"))
   }
 
   private val expectedSYSTables = Array("ASYNCEVENTLISTENERS", "GATEWAYRECEIVERS",
@@ -106,8 +98,9 @@ object MetadataTest extends Assertions {
     "SYSPOLICIES", "TABLESTATS", "VTIS")
   private val localVTIs = Array("MEMORYANALYTICS", "QUERYSTATS", "SESSIONS", "STATEMENTPLANS")
 
-  private val sysSchemasColumns = List("SCHEMAID" -> 36, "SCHEMANAME" -> 128,
-    "AUTHORIZATIONID" -> 128, "DEFAULTSERVERGROUPS" -> 32672)
+  private val sysSchemasColumns = List(("SCHEMAID", 36, "CHAR"),
+    ("SCHEMANAME", 128, "VARCHAR"), ("AUTHORIZATIONID", 128, "VARCHAR"),
+    ("DEFAULTSERVERGROUPS", 32672, "VARCHAR"))
   private val sysTablesColumns: List[(String, Long, String, Boolean)] = List(
     ("TABLEID", 36, "CHAR", false), ("TABLENAME", 128, "VARCHAR", false),
     ("TABLETYPE", 1, "CHAR", false), ("SCHEMAID", 36, "CHAR", false),
@@ -120,21 +113,6 @@ object MetadataTest extends Assertions {
     getLongVarcharTuple("ASYNCLISTENERS"), ("GATEWAYENABLED", 0, "BOOLEAN", false),
     getLongVarcharTuple("GATEWAYSENDERS"), ("OFFHEAPENABLED", 0, "BOOLEAN", false),
     ("ROWLEVELSECURITYENABLED", 0, "BOOLEAN", false))
-
-  def resultSetToDataset(session: SnappySession, stmt: Statement)
-      (sql: String): Dataset[Row] = {
-    if (stmt.execute(sql)) {
-      val rs = stmt.getResultSet
-      val schema = JdbcUtils.getSchema(rs, SnappyStoreDialect)
-      val dummyMetrics = new InputMetrics
-      val rows = JdbcUtils.resultSetToSparkInternalRows(rs, schema, dummyMetrics)
-          .map(_.copy()).toSeq
-      session.internalCreateDataFrame(session.sparkContext.makeRDD(rows), schema)
-    } else {
-      implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
-      session.createDataset[Row](Nil)
-    }
-  }
 
   def testSYSTablesAndVTIs(executeSQL: String => Dataset[Row],
       hostName: String = ClientSharedUtils.getLocalHost.getCanonicalHostName,
@@ -197,11 +175,11 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     // check schema of the returned Dataset
     assert(ds.schema === StructType(sysSchemasColumns.map(p =>
-      StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2,
-        if (p._1 == "SCHEMAID") "CHAR" else "VARCHAR")))))
+      StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2, p._3)))))
     val expectedDefaultSchemas = List("APP", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
       "SYS", "SYSCAT", "SYSCS_DIAG", "SYSCS_UTIL", "SYSFUN", "SYSIBM", "SYSPROC", "SYSSTAT")
-    assert(rs.length === expectedDefaultSchemas.length)
+    assert(rs.length === expectedDefaultSchemas.length,
+      s"Got ${rs.map(_.getString(1)).mkString(", ")}")
     assert(rs.map(_.getString(1)).sorted === expectedDefaultSchemas)
 
     ds = executeSQL("select * from sys.sysTables where tableSchemaName = 'SYS'")
@@ -403,11 +381,11 @@ object MetadataTest extends Assertions {
     // ----- check DESCRIBE for schema-----
 
     rs = executeSQL("describe schema sys").collect()
-    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System Schema"),
-      Row("Location", "")))
+    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System schema"),
+      Row("Location", "SYS")))
     rs = executeSQL("desc schema extended sys").collect()
-    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System Schema"),
-      Row("Location", ""), Row("Properties", "")))
+    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System schema"),
+      Row("Location", "SYS"), Row("Properties", "")))
 
     // ----- check SHOW TABLES variants -----
     val allSYSTables = (expectedSYSTables ++ expectedVTIs).sorted
@@ -487,7 +465,8 @@ object MetadataTest extends Assertions {
     // check schema of the returned Dataset
     assert(ds.schema.map(_.copy(metadata = Metadata.empty)) === expectedColumns.zip(nullability)
         .map(p => StructField(p._1, StringType, p._2)))
-    assert(rs.toSeq === sysSchemasColumns.map(p => Row(p._1, StringType.simpleString, null)))
+    assert(rs.toSeq === sysSchemasColumns.map(p =>
+      Row(p._1, s"${p._3.toLowerCase}(${p._2})", null)))
 
     ds = executeSQL("desc extended sys.sysSchemas")
     rs = ds.collect()
@@ -497,7 +476,7 @@ object MetadataTest extends Assertions {
     // last row is detailed information and an empty row before that (no partitioning information)
     assert(rs.length === sysSchemasColumns.length + 2)
     assert(rs.take(sysSchemasColumns.length).toSeq === sysSchemasColumns.map(
-      p => Row(p._1, StringType.simpleString, null)))
+      p => Row(p._1, s"${p._3.toLowerCase}(${p._2})", null)))
     assert(rs(sysSchemasColumns.length + 1).getString(0) === "# Detailed Table Information")
 
     ds = executeSQL("desc sys.sysTables")
@@ -507,7 +486,8 @@ object MetadataTest extends Assertions {
         .map(p => StructField(p._1, StringType, p._2)))
     assert(rs.toSeq === sysTablesColumns.map {
       case (name, _, "BOOLEAN", _) => Row(name, BooleanType.simpleString, null)
-      case (name, _, _, _) => Row(name, StringType.simpleString, null)
+      case (name, _, "LONGVARCHAR", _) => Row(name, StringType.simpleString, null)
+      case (name, size, typeName, _) => Row(name, s"${typeName.toLowerCase}($size)", null)
     })
 
     ds = executeSQL("describe extended sys.sysTables")
@@ -519,7 +499,8 @@ object MetadataTest extends Assertions {
     assert(rs.length === sysTablesColumns.length + 2)
     assert(rs.take(sysTablesColumns.length).toSeq === sysTablesColumns.map {
       case (name, _, "BOOLEAN", _) => Row(name, BooleanType.simpleString, null)
-      case (name, _, _, _) => Row(name, StringType.simpleString, null)
+      case (name, _, "LONGVARCHAR", _) => Row(name, StringType.simpleString, null)
+      case (name, size, typeName, _) => Row(name, s"${typeName.toLowerCase}($size)", null)
     })
     assert(rs(sysTablesColumns.length + 1).getString(0) === "# Detailed Table Information")
 
@@ -748,7 +729,7 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*ExecutedCommand.*CreateMetastoreTableUsing" +
+    assert(matches(plan, ".*Physical Plan.*ExecutedCommand.*CreateTableUsingCommand" +
         ".*ROWTABLE2.*\\(id int primary key, id2 int\\), row.*"))
 
     // create more tables and repeat the checks

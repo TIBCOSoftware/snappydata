@@ -103,7 +103,7 @@ object SingleNodeTest {
         case zp: ZippedPartitionsPartition => zp.partitionValues.map {
           case mb: MultiBucketExecutorPartition => mb.bucketsString
         }
-        case _ => Seq.empty
+        case _ => Nil
       }
 
       // each BucketExecutor must have only one bucket.

@@ -56,7 +56,7 @@ object TableDetails {
       SnappyTableStatsProviderService.getService.getAllExternalTableStatsFromService
 
     externalTableBuff.mapValues(table => {
-      new ExternalTableSummary(table.getTableName, table.getProvider,
+      new ExternalTableSummary(table.getTableFullyQualifiedName, table.getProvider,
         table.getDataSourcePath)
     }).values.toList
   }

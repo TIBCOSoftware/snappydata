@@ -23,24 +23,33 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 class CreateTableInSnappyJob extends SnappySQLJob{
+
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
     val isRowTable: Boolean = jobConfig.getBoolean("isRowTable")
     val withKeyColumn: Boolean = jobConfig.getBoolean("withKeyColumn")
     val outputFile = "CreateTablesJob_output.txt"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
+    var isPartitioned: Boolean = false
+    if(jobConfig.getBoolean("isPartitioned") != null ) {
+      isPartitioned = jobConfig.getBoolean("isPartitioned")
+    }
     // scalastyle:off println
     pw.println("dropping tables...")
     snc.sql("drop table if exists persoon")
     pw.println("dropped tables. now creating table in snappy...")
     pw.flush()
     def provider = if (isRowTable) "row" else "column"
-    def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id', redundancy '1'," +
-        "PERSISTENT 'sync')"
+    var options: String = "options( PERSISTENT 'sync'"
+    if (!isRowTable && withKeyColumn) {
+      options = options + ",redundancy '1',key_columns 'id'"
+    }
+    if (isPartitioned) {
+      options = options + ",partition_by 'id', redundancy '1'"
+    }
+    def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id)"
     else ""
-    def primaryKey = if (isRowTable && withKeyColumn) "options(primary_key 'id', redundancy '1', " +
-        "PERSISTENT 'sync')"
-    else ""
+    options = options + ")"
     val s = s"create table persoon (" +
         s"id long, " +
         s"firstName varchar(30), " +
@@ -56,8 +65,10 @@ class CreateTableInSnappyJob extends SnappySQLJob{
         s"email varchar(30), " +
         s"education varchar(20), " +
         s"occupation varchar(15) " +
+        s" $primaryKey" +
         s") using $provider $options"
     pw.println(s"Creating table $s")
+    pw.flush()
     snc.sql(s)
     pw.println("created table.")
     pw.flush()

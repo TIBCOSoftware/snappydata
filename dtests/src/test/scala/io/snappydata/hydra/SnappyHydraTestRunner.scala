@@ -42,7 +42,7 @@ class SnappyHydraTestRunner extends SnappyTestRunner {
   def searchExceptions(logDir: File): Unit = {
     val c1 = s"grep -r Exception $logDir"
     val c2 = "grep -v  java.net.BindException"
-    val c3 = "egrep -v (NoSuchObjectException|NucleusObjectNotFoundException)"
+    val c3 = "egrep -v (NoSuchObjectException|NucleusObjectNotFoundException|StateManager)"
     val c4 = "grep -v RegionDestroyedException"
     val c5 = "grep -v statArchive.gfs"
     val c6 = "grep -v DistributedSystemDisconnectedException"

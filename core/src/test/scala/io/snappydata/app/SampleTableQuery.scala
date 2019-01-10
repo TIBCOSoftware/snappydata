@@ -41,7 +41,7 @@ object SampleTableQuery  extends Serializable {
       conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
       conf.set("spark.sql.unsafe.enabled", "false")
       val sc = new SparkContext(conf)
-      sc.addJar("/Users/ashahid/workspace/snappy/snappy-commons/snappy-core/build-artifacts/scala-2.10/classes/test/app.jar")
+      sc.addJar("/Users/ashahid/workspace/snappy/snappy-commons/snappy-core/build-artifacts/scala-2.10/classes/scala/test/app.jar")
       val spc = SnappyContext(sc)
      // val hiveContext = new HiveContext(spc)
 

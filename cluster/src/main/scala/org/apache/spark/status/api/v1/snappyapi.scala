@@ -94,7 +94,7 @@ class TableSummary private[spark](
 )
 
 class ExternalTableSummary private[spark](
-    val tableName: String,
+    val tableFQName: String,
     val provider: String,
     val source: String
 )

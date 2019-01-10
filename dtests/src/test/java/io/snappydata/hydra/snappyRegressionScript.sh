@@ -1,4 +1,4 @@
-export JTESTS=$SNAPPY_HOME/store/tests/sql/build-artifacts/linux/classes/main
+export JTESTS=$SNAPPY_HOME/store/tests/sql/build-artifacts/linux/classes/java/main
 
 $SNAPPY_HOME/store/tests/core/src/main/java/bin/sample-runbt.sh $OUTPUT_DIR/snappyHydraLogs $SNAPPY_HOME -l $JTESTS/io/snappydata/hydra/local.smartConnectorMode.conf -d false io/snappydata/hydra/northwind/northWind.bt
 sleep 30;

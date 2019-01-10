@@ -18,19 +18,24 @@ package org.apache.spark.sql.sources
 
 import java.sql.Connection
 
+import scala.collection.JavaConverters._
+
+import com.gemstone.gemfire.internal.cache.LocalRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
+
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JDBCRDD}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
-import org.apache.spark.sql.types.StructField
+import org.apache.spark.sql.types.{StructField, StructType}
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -45,7 +50,7 @@ trait RowInsertableRelation extends SingleRowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
-trait PlanInsertableRelation extends InsertableRelation with DestroyRelation {
+trait PlanInsertableRelation extends DestroyRelation with InsertableRelation {
 
   /**
    * Get a spark plan for insert. The result of SparkPlan execution should
@@ -75,6 +80,8 @@ trait RowPutRelation extends DestroyRelation {
 }
 
 trait BulkPutRelation extends DestroyRelation {
+
+  def table: String
 
   def getPutKeys: Option[Seq[String]]
 
@@ -164,47 +171,8 @@ trait SchemaInsertableRelation extends InsertableRelation {
   def append(rows: RDD[Row], time: Long = -1): Unit
 }
 
-/**
- * A relation having a parent-child relationship with a base relation.
- */
 @DeveloperApi
-trait DependentRelation extends BaseRelation {
-
-  /** Base table of this relation. */
-  def baseTable: Option[String]
-
-  /** Name of this relation in the catalog. */
-  def name: String
-}
-
-/**
- * A relation having a parent-child relationship with one or more
- * <code>DependentRelation</code>s as children.
- */
-@DeveloperApi
-trait ParentRelation extends BaseRelation {
-
-  /** Used by <code>DependentRelation</code>s to register with parent */
-  def addDependent(dependent: DependentRelation,
-      catalog: SnappyStoreHiveCatalog): Boolean
-
-  /** Used by <code>DependentRelation</code>s to unregister with parent */
-  def removeDependent(dependent: DependentRelation,
-      catalog: SnappyStoreHiveCatalog): Boolean
-
-  /** Get the dependent child. */
-  def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String]
-
-  /**
-   * Recover/Re-create the dependent child relations. This callback
-   * is to recreate Dependent relations when the ParentRelation is
-   * being created.
-   */
-  def recoverDependentRelations(properties: Map[String, String]): Unit
-}
-
-@DeveloperApi
-trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
+trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
 
   /**
    * Options set for this sampling relation.
@@ -215,6 +183,9 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
    * The QCS columns for the sample.
    */
   def qcs: Array[String]
+
+  /** Base table of this relation. */
+  def baseTable: Option[String]
 
   /**
    * The underlying column table used to store data.
@@ -234,7 +205,7 @@ trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
 }
 
 @DeveloperApi
-trait UpdatableRelation extends SingleRowInsertableRelation with MutableRelation {
+trait UpdatableRelation extends MutableRelation with SingleRowInsertableRelation {
 
   /**
    * Update a set of rows matching given criteria.
@@ -264,18 +235,7 @@ trait DeletableRelation extends MutableRelation {
 }
 
 @DeveloperApi
-trait DestroyRelation {
-
-  /**
-   * Return true if table already existed when the relation object was created.
-   */
-  def tableExists: Boolean
-
-  /**
-    * Return true if table is created by the relation. This will be used to check
-    * while destroying the table incase of a failure while creating the table
-    */
-  def tableCreated: Boolean
+trait DestroyRelation extends BaseRelation {
 
   /**
    * Truncate the table represented by this relation.
@@ -302,8 +262,8 @@ trait IndexableRelation {
     *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or
     *                ("INDEX_TYPE"->"UNIQUE")
     */
-  def createIndex(indexIdent: QualifiedTableName,
-      tableIdent: QualifiedTableName,
+  def createIndex(indexIdent: TableIdentifier,
+      tableIdent: TableIdentifier,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit
 
@@ -313,70 +273,80 @@ trait IndexableRelation {
     * @param tableIdent Table identifier
     * @param ifExists Drop if exists
     */
-  def dropIndex(indexIdent: QualifiedTableName,
-      tableIdent: QualifiedTableName,
+  def dropIndex(indexIdent: TableIdentifier,
+      tableIdent: TableIdentifier,
       ifExists: Boolean): Unit
 
 }
 
 @DeveloperApi
 trait AlterableRelation {
+
   /**
-    * Alter's table schema by adding or dropping a provided column
-    * @param tableIdent
-    * @param isAddColumn
-    * @param column
-    */
-  def alterTable(tableIdent: QualifiedTableName,
-                 isAddColumn: Boolean, column: StructField): Unit
+   * Alter's table schema by adding or dropping a provided column.
+   * The schema of this instance must reflect the updated one after alter.
+   *
+   * @param tableIdent  Table identifier
+   * @param isAddColumn True if column is to be added else it is to be dropped
+   * @param column      Column to be added or dropped
+   */
+  def alterTable(tableIdent: TableIdentifier,
+      isAddColumn: Boolean, column: StructField): Unit
 }
 
 trait RowLevelSecurityRelation {
   def isRowLevelSecurityEnabled: Boolean
+  def schemaName: String
+  def tableName: String
   def resolvedName: String
-  def enableOrDisableRowLevelSecurity(tableIdent: QualifiedTableName,
+  def enableOrDisableRowLevelSecurity(tableIdent: TableIdentifier,
       enableRowLevelSecurity: Boolean)
 }
 
 @DeveloperApi
-trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation {
+trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelSecurityRelation {
 
   protected val connFactory: () => Connection
 
   protected def dialect: JdbcDialect
 
+  def connProperties: ConnectionProperties
+
+  protected def isRowTable: Boolean
+
   val sqlContext: SQLContext
   val table: String
-  override def enableOrDisableRowLevelSecurity(tableIdent: QualifiedTableName,
+
+  override def enableOrDisableRowLevelSecurity(tableIdent: TableIdentifier,
       enableRowLevelSecurity: Boolean): Unit = {
-      val conn = connFactory()
-      try {
-        val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
-          conn, dialect, sqlContext)
-        val sql = if (enableRowLevelSecurity) {
-          s"""alter table ${quotedName(table)} enable row level security"""
-        } else {
-          s"""alter table ${quotedName(table)} disable row level security"""
-        }
-        if (tableExists) {
-          JdbcExtendedUtils.executeUpdate(sql, conn)
-        } else {
-          throw new AnalysisException(s"table $table does not exist.")
-        }
-      } catch {
-        case se: java.sql.SQLException =>
-          if (se.getMessage.contains("No suitable driver found")) {
-            throw new AnalysisException(s"${se.getMessage}\n" +
-                "Ensure that the 'driver' option is set appropriately and " +
-                "the driver jars available (--jars option in spark-submit).")
-          } else {
-            throw se
-          }
-      } finally {
-        conn.commit()
-        conn.close()
+    val conn = connFactory()
+    try {
+      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.unquotedString,
+        conn, dialect, sqlContext)
+      val sql = if (enableRowLevelSecurity) {
+        s"""alter table ${quotedName(table)} enable row level security"""
+      } else {
+        s"""alter table ${quotedName(table)} disable row level security"""
       }
+      if (tableExists) {
+        JdbcExtendedUtils.executeUpdate(sql, conn)
+      } else {
+        throw new AnalysisException(s"table $table does not exist.")
+      }
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw se
+        }
+    } finally {
+      conn.commit()
+      conn.close()
     }
+  }
 
   def isRowLevelSecurityEnabled: Boolean = {
     val conn = connFactory()
@@ -398,48 +368,107 @@ trait NativeTableRowLevelSecurityRelation extends RowLevelSecurityRelation {
     }
   }
 
+  protected[this] var _schema: StructType = _
+  @transient protected[this] var _relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = _
 
+  protected def refreshTableSchema(invalidateCached: Boolean, fetchFromStore: Boolean): Unit = {
+    // Schema here must match the RelationInfo obtained from catalog.
+    // If the schema has changed (in smart connector) then execution should throw an exception
+    // leading to a retry or a CatalogStaleException to fail the operation.
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    if (invalidateCached) session.externalCatalog.invalidate(schemaName -> tableName)
+    _relationInfoAndRegion = null
+    if (fetchFromStore) {
+      _schema = JDBCRDD.resolveTable(new JDBCOptions(
+        connProperties.url, table, connProperties.connProps.asScala.toMap))
+    } else {
+      session.externalCatalog.getTableOption(schemaName, tableName) match {
+        case None => _schema = SnappyExternalCatalog.EMPTY_SCHEMA
+        case Some(t) => _schema = t.schema; assert(relationInfoAndRegion ne null)
+      }
+    }
+  }
+
+  override def schema: StructType = _schema
+
+  protected def relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = {
+    if (((_relationInfoAndRegion eq null) || _relationInfoAndRegion._1.invalid) &&
+        (sqlContext ne null)) {
+      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      _relationInfoAndRegion = session.externalCatalog.getRelationInfo(
+        schemaName, tableName, isRowTable)
+    }
+    _relationInfoAndRegion
+  }
+
+  protected def withoutUserSchema: Boolean
+
+  def relationInfo: RelationInfo = relationInfoAndRegion._1
+
+  @transient lazy val region: LocalRegion = {
+    val relationInfoAndRegion = this.relationInfoAndRegion
+    var lr = if (relationInfoAndRegion ne null) relationInfoAndRegion._2 match {
+      case None => null
+      case Some(r) => r
+    } else null
+    if (lr eq null) {
+      lr = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
+    }
+    lr
+  }
+
+  protected def createActualTables(connection: Connection): Unit
+
+  def createTable(mode: SaveMode): Unit = {
+    var tableExists = true
+    var conn: Connection = null
+    try {
+      // if no user-schema has been provided then expect the table to exist
+      if (withoutUserSchema) {
+        if (schema.isEmpty) {
+          // refresh schema and try again
+          refreshTableSchema(invalidateCached = true, fetchFromStore = false)
+          if (schema.isEmpty) throw new TableNotFoundException(schemaName, tableName)
+        }
+      } else {
+        conn = connFactory()
+        tableExists = JdbcExtendedUtils.tableExists(resolvedName, conn, dialect, sqlContext)
+      }
+      if (tableExists) mode match {
+        case SaveMode.ErrorIfExists => throw new AnalysisException(
+          s"Table '$resolvedName' already exists. SaveMode: ErrorIfExists.")
+        case SaveMode.Overwrite =>
+          // truncate the table and return
+          truncate()
+        case _ =>
+      } else createActualTables(conn)
+    } catch {
+      case se: java.sql.SQLException =>
+        if (se.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${se.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and the driver jars " +
+              "available (deploy jars in SnappyData cluster or --jars option in spark-submit).")
+        } else throw se
+    } finally {
+      if ((conn ne null) && !conn.isClosed) {
+        conn.commit()
+        conn.close()
+      }
+    }
+  }
 }
-
 
 /**
  * ::DeveloperApi::
- * Implemented by objects that produce relations for a specific kind of data
- * source with a given schema.  When Spark SQL is given a DDL operation with
- * a USING clause specified (to specify the implemented SchemaRelationProvider)
- * and a user defined schema, this interface is used to pass in the parameters
- * specified by a user.
- *
- * Users may specify the fully qualified class name of a given data source.
- * When that class is not found Spark SQL will append the class name
- * `DefaultSource` to the path, allowing for less verbose invocation.
- * For example, 'org.apache.spark.sql.json' would resolve to the data source
- * 'org.apache.spark.sql.json.DefaultSource'.
- *
- * A new instance of this class with be instantiated each time a DDL call is made.
- *
- * The difference between a [[SchemaRelationProvider]] and an
- * [[ExternalSchemaRelationProvider]] is that latter accepts schema and other
- * clauses in DDL string and passes over to the backend as is, while the schema
- * specified for former is parsed by Spark SQL.
- * A relation provider can inherit both [[SchemaRelationProvider]] and
- * [[ExternalSchemaRelationProvider]] if it can support both Spark SQL schema
- * and backend-specific schema.
+ * Marker interface for data sources that allow for extended schema specification
+ * in CREATE TABLE (like constraints in RDBMS databases). The schema string is passed
+ * as [[SnappyExternalCatalog.SCHEMADDL_PROPERTY]] in the relation provider parameters.
  */
 @DeveloperApi
-trait ExternalSchemaRelationProvider {
-  /**
-   * Returns a new base relation with the given parameters and user defined
-   * schema (and possibly other backend-specific clauses).
-   * Note: the parameters' keywords are case insensitive and this insensitivity
-   * is enforced by the Map that is passed to the function.
-   */
-  def createRelation(
-      sqlContext: SQLContext,
-      mode: SaveMode,
-      parameters: Map[String, String],
-      schema: String,
-      data: Option[LogicalPlan]): BaseRelation
+trait ExternalSchemaRelationProvider extends RelationProvider {
+
+  def getSchemaString(options: Map[String, String]): Option[String] =
+    JdbcExtendedUtils.readSplitProperty(SnappyExternalCatalog.SCHEMADDL_PROPERTY, options)
 }
 
 /**
