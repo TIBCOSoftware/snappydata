@@ -70,7 +70,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def createColumnBatch(region: BucketRegion, batchID: Long,
-      bucketID: Int): java.util.Set[AnyRef] = {
+                                 bucketID: Int): java.util.Set[AnyRef] = {
     val pr = region.getPartitionedRegion
     val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
     val catalogEntry: ExternalTableMetaData = container.fetchHiveMetaData(false)
@@ -93,7 +93,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           }
         }
         val row: AbstractCompactExecRow = container.newTemplateRow()
-            .asInstanceOf[AbstractCompactExecRow]
+          .asInstanceOf[AbstractCompactExecRow]
         val tc = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
         lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
         try {
@@ -127,7 +127,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
           if (catalogEntry.tableType == CatalogObjectType.Sample.toString &&
-              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+            schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
           }
@@ -154,9 +154,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def invokeColumnStorePutCallbacks(bucket: BucketRegion,
-      events: Array[EntryEventImpl]): Unit = {
+                                             events: Array[EntryEventImpl]): Unit = {
     val container = bucket.getPartitionedRegion.getUserAttribute
-        .asInstanceOf[GemFireContainer]
+      .asInstanceOf[GemFireContainer]
     if ((container ne null) && container.isObjectStore) {
       container.getRowEncoder.afterColumnStorePuts(bucket, events)
     }
@@ -184,7 +184,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def getHashCodeSnappy(dvds: scala.Array[Object],
-      numPartitions: Int): Int = {
+                                 numPartitions: Int): Int = {
     partitioner.computeHash(dvds, numPartitions)
   }
 
@@ -298,8 +298,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             // check the delta stats after full stats (null columns will be treated as failure
             // which is what is required since it means that only full stats check should be done)
             if (filterPredicate.check(statsRow, deltaStatsRow eq null, isDelta = false) ||
-                ((deltaStatsRow ne null) && filterPredicate.check(deltaStatsRow,
-                  isLastStatsRow = true, isDelta = true))) {
+              ((deltaStatsRow ne null) && filterPredicate.check(deltaStatsRow,
+                isLastStatsRow = true, isDelta = true))) {
               return
             }
             batchIterator.moveNext()
@@ -337,14 +337,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       }
 
       private def addColumnValue(columnPosition: Int, uuid: Long, bucketId: Int,
-          entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
+                                 entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
         val value = batchIterator.itr.getBucketEntriesIterator
-            .asInstanceOf[ClusteredColumnIterator].getColumnValue(columnPosition)
+          .asInstanceOf[ClusteredColumnIterator].getColumnValue(columnPosition)
         addColumnValue(value, columnPosition, uuid, bucketId, entries, throwIfMissing)
       }
 
       private def addColumnValue(value: AnyRef, columnPosition: Int, uuid: Long, bucketId: Int,
-          entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
+                                 entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
         if (value ne null) {
           val columnValue = value.asInstanceOf[ColumnFormatValue].getValueRetain(
             FetchRequest.ORIGINAL)
@@ -356,7 +356,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         if (throwIfMissing) {
           // empty buffer indicates value removed from region
           val ede = new EntryDestroyedException(s"Iteration on column=$columnPosition " +
-              s"partition=$bucketId batchUUID=$uuid failed due to missing value")
+            s"partition=$bucketId batchUUID=$uuid failed due to missing value")
           throw PublicAPI.wrapStandardException(StandardException.newException(
             SQLState.DATA_UNEXPECTED_EXCEPTION, ede))
         }
@@ -377,17 +377,17 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     // filter passed should have same case as in schema and not be qualified which
     // should be true since these have been created from resolved Expression by sender
     // TODO: [shirish] converted to uppercase to make v2 connector work
-    schema.find( x => x.name == a || x.name == a.toUpperCase) match {
+    schema.find(x => x.name == a || x.name == a.toUpperCase) match {
       case Some(attr) => attr
       case _ => throw Utils.analysisException(s"Could not find $a in ${schema.mkString(", ")}")
     }
   }
 
   /**
-   * Translate a data source [[Filter]] into Catalyst [[Expression]].
-   */
+    * Translate a data source [[Filter]] into Catalyst [[Expression]].
+    */
   private[sql] def translateFilter(filter: Filter,
-      schema: Seq[AttributeReference]): Expression = filter match {
+                                   schema: Seq[AttributeReference]): Expression = filter match {
     case sources.EqualTo(a, v) =>
       expressions.EqualTo(attr(a, schema), TokenLiteral.newToken(v))
     case sources.EqualNullSafe(a, v) =>
@@ -440,7 +440,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   def getSnappyTableStats: AnyRef = {
     val c = SnappyTableStatsProviderService.getService
-        .refreshAndGetTableSizeStats.values.asJavaCollection
+      .refreshAndGetTableSizeStats.values.asJavaCollection
     val list: java.util.List[SnappyRegionStats] = new java.util.ArrayList(c.size())
     list.addAll(c)
     list
@@ -456,7 +456,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def acquireStorageMemory(objectName: String, numBytes: Long,
-      buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
+                                    buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
     val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
     if (numBytes > 0) {
       return MemoryManagerCallback.memoryManager.acquireStorageMemoryForObject(objectName,
@@ -469,16 +469,16 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def releaseStorageMemory(objectName: String, numBytes: Long,
-      offHeap: Boolean): Unit = {
+                                    offHeap: Boolean): Unit = {
     val mode = if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP
     MemoryManagerCallback.memoryManager.
-        releaseStorageMemoryForObject(objectName, numBytes, mode)
+      releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
 
   override def dropStorageMemory(objectName: String, ignoreBytes: Long): Unit =
   // off-heap will be cleared via ManagedDirectBufferAllocator
     MemoryManagerCallback.memoryManager.
-        dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
+      dropStorageMemoryForObject(objectName, MemoryMode.ON_HEAP, ignoreBytes)
 
   override def waitForRuntimeManager(maxWaitMillis: Long): Unit = {
     val memoryManager = MemoryManagerCallback.memoryManager
@@ -497,7 +497,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           if (interrupt ne null) Thread.currentThread().interrupt()
         }
       } while (MemoryManagerCallback.memoryManager.bootManager &&
-          System.currentTimeMillis() < endWait)
+        System.currentTimeMillis() < endWait)
     }
   }
 
@@ -567,7 +567,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             schema, conn.getLanguageConnection.getTransactionExecute, false)
           if (sd eq null) {
             if (schema.equalsIgnoreCase(userId) ||
-                schema.equalsIgnoreCase(userId.replace('-', '_'))) {
+              schema.equalsIgnoreCase(userId.replace('-', '_'))) {
               if (ms.tableCreationAllowed()) return userId
               throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
                 schema, schema)
@@ -592,10 +592,10 @@ trait StoreCallback extends Serializable {
 }
 
 /**
- * The type of the generated class used by column stats check for a column batch.
- * Since there can be up-to two stats rows (full stats and delta stats), this has
- * an additional argument for the same to determine whether to update metrics or not.
- */
+  * The type of the generated class used by column stats check for a column batch.
+  * Since there can be up-to two stats rows (full stats and delta stats), this has
+  * an additional argument for the same to determine whether to update metrics or not.
+  */
 trait StatsPredicate {
   def check(row: UnsafeRow, isLastStatsRow: Boolean, isDelta: Boolean): Boolean
 }

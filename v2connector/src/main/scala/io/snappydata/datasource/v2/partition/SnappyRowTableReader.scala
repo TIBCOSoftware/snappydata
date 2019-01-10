@@ -59,8 +59,11 @@ class SnappyRowTableReader(val bucketId: Int,
   private def jdbcConnection(): Connection = {
     // from bucketToServerMapping get the collection of hosts where the bucket exists
     // (each element in hostsAndURLs ArrayBuffer is in the form of a tuple (host, jdbcURL))
-    val hostsAndURLs: ArrayBuffer[(String, String)] = tableMetaData.
-        bucketToServerMapping.get(bucketId)
+    val hostsAndURLs: ArrayBuffer[(String, String)] = if (tableMetaData.bucketCount == 0) {
+      tableMetaData.bucketToServerMapping.head.apply(0)
+    } else {
+      tableMetaData.bucketToServerMapping.get(bucketId)
+    }
     val connectionURL = hostsAndURLs(0)._2
     DriverManager.getConnection(connectionURL)
   }

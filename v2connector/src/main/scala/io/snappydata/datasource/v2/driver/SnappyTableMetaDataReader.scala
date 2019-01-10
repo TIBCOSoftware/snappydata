@@ -25,6 +25,7 @@ import io.snappydata.Constant
 import io.snappydata.datasource.v2.V2Constants
 import io.snappydata.sql.catalog.SmartConnectorHelper
 import io.snappydata.thrift.{CatalogMetadataDetails, CatalogMetadataRequest, snappydataConstants}
+import org.apache.spark.sql.execution.columnar.TableNotFoundException
 import org.apache.spark.sql.sources.v2.DataSourceOptions
 import org.apache.spark.sql.types.{DataType, StructType}
 
@@ -71,7 +72,10 @@ final class SnappyTableMetaDataReader {
       request.setSchemaName(schemaAndTableName(0)).setNameOrPattern(schemaAndTableName(1))
       val result = getCatalogInformation(request)
 
-      val partColumns = result.catalogTable.partitionColumns
+      if (result == null){
+        throw new TableNotFoundException(schemaAndTableName(0), schemaAndTableName(1))
+      }
+
       val tblSchema = result.catalogTable.tableSchema
       val tblType = result.catalogTable.provider
       val tblBucketCount = result.catalogTable.numBuckets
@@ -87,13 +91,12 @@ final class SnappyTableMetaDataReader {
 
       // even though the name below is bucketToServerMapping; for replicated tables
       // this returns list of all servers on which replicated table exists
-      val bucketToServerMappingString = new util.ArrayList[String]()
       val bucketToServerMapping = if (tblBucketCount > 0) {
         Option(SmartConnectorHelper.setBucketToServerMappingInfo(tblBucketCount, tblBucketOwner,
           true, true))
       } else {
-        Option(SmartConnectorHelper.setReplicasToServerMappingInfo(bucketToServerMappingString,
-          true))
+        Option(SmartConnectorHelper.setReplicasToServerMappingInfo(
+          tblBucketOwner.get(0).getSecondaries, true))
       }
       SnappyTableMetaData(tableName, schema1, tblType, tblBucketCount,
         partitioningCols1, bucketToServerMapping)
