@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -114,7 +114,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 //    }
 
 //    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-//      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+//      CreateIndexTest.validateIndex(Nil, tableName)(_)
 //    }
 
     executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ") {
@@ -164,7 +164,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //    }
 
     //    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-    //      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+    //      CreateIndexTest.validateIndex(Nil, tableName)(_)
     //    }
 
     System.setProperty("LOG-NOW", "xxx")
@@ -228,7 +228,7 @@ class DistributedIndexDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //    }
 
     //    executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-    //      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+    //      CreateIndexTest.validateIndex(Nil, tableName)(_)
     //    }
 
     System.setProperty("LOG-NOW", "xxx")

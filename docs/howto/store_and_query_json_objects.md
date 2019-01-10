@@ -10,7 +10,7 @@ The source code for JSON example is located at [WorkingWithJson.scala](https://g
 
 **Get a SnappySession**:
 
-```no-highlight
+```pre
 val spark: SparkSession = SparkSession
     .builder
     .appName("WorkingWithJson")
@@ -22,7 +22,7 @@ val snSession = new SnappySession(spark.sparkContext)
 
 **Create a DataFrame from the JSON file**:
 
-```no-highlight
+```pre
 val some_people_path = s"quickstart/src/main/resources/some_people.json"
 // Read a JSON file using Spark API
 val people = snSession.read.json(some_people_path)
@@ -31,7 +31,7 @@ people.printSchema()
 
 **Create a SnappyData table and insert the JSON data in it using the DataFrame**:
 
-```no-highlight
+```pre
 //Drop the table if it exists
 snSession.dropTable("people", ifExists = true)
 
@@ -48,7 +48,7 @@ people.write.insertInto("people")
 
 **Append more data from a second JSON file**:
 
-```no-highlight
+```pre
 // Append more people to the column table
 val more_people_path = s"quickstart/src/main/resources/more_people.json"
 
@@ -63,7 +63,7 @@ println(snSession.table("people").schema)
 ```
 
 **Execute queries and return the results**
-```no-highlight
+```pre
 // Query it like any other table
 val nameAndAddress = snSession.sql("SELECT " +
     "name, " +

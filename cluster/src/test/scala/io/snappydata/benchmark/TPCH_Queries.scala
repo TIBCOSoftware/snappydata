@@ -17,9 +17,15 @@
 
 package io.snappydata.benchmark
 
-import scala.util.Random
+import org.apache.spark.Logging
 
-object TPCH_Queries {
+object TPCH_Queries extends Logging {
+
+  private var random = new scala.util.Random(42)
+
+  def setRandomSeed(randomSeed: Integer = 42): Unit = {
+    this.random = new scala.util.Random(randomSeed)
+  }
 
   def getQuery(query: String, isDynamic: Boolean, isSnappy: Boolean): String = query match {
     case "1" =>
@@ -106,13 +112,12 @@ object TPCH_Queries {
   }
 
   def createQuery(query: String, paramters: Array[String]): String = {
-    // scalastyle:off println
     var generatedQuery = query
     for (s <- paramters) {
-      println(s"KBKBKB : createQuery : $s")
+      logInfo(s"KBKBKB : createQuery : $s")
       generatedQuery = generatedQuery.replaceFirst("\\?", s)
     }
-    println(s"KBKBKB : My query : $generatedQuery")
+    logInfo(s"KBKBKB : My query : $generatedQuery")
     generatedQuery
   }
 
@@ -173,7 +178,7 @@ object TPCH_Queries {
     if (isDynamic) {
       val min = 60
       val max = 120
-      Array(s"${min + Random.nextInt((max - min) + 1)}")
+      Array(s"${min + random.nextInt((max - min) + 1)}")
     } else {
       Array("90")
     }
@@ -238,12 +243,12 @@ object TPCH_Queries {
       // region AFRICA AMERICA ASIA EUROPE MIDDLE EAST
       val min = 1
       val max = 50
-      val size = s"${min + Random.nextInt((max - min) + 1)}"
+      val size = s"${min + random.nextInt((max - min) + 1)}"
       val syllable3 = Array("TIN", "NICKEL", "BRASS", "STEEL", "COPPER")
-      val syllableIndex = Random.nextInt(syllable3.length)
+      val syllableIndex = random.nextInt(syllable3.length)
       val syllableType = syllable3(syllableIndex)
       val regions = Array("AFRICA", "AMERICA", "ASIA", "EUROPE", "MIDDLE EAST")
-      val regionIndex = Random.nextInt(regions.length)
+      val regionIndex = random.nextInt(regions.length)
       val region = regions(regionIndex)
       Array(region, size, syllableType, region)
     }
@@ -286,13 +291,13 @@ object TPCH_Queries {
     // date1  randomly selected day within [1995-03-01 .. 1995-03-31]
     if (isDynamic) {
       val segments = Array("AUTOMOBILE", "BUILDING", "FURNITURE", "MACHINERY", "HOUSEHOLD")
-      val segmentIndex = Random.nextInt(segments.length)
+      val segmentIndex = random.nextInt(segments.length)
       val segment = segments(segmentIndex)
 
       val fromDate = java.time.LocalDate.of(1995, 3, 1)
       val toDate = java.time.LocalDate.of(1995, 3, 31)
       val diff = java.time.temporal.ChronoUnit.DAYS.between(fromDate, toDate)
-      val random = new Random(System.nanoTime)
+      // val random = new random(System.nanoTime)
       // You may want a different seed
       val selectedDate = fromDate.plusDays(random.nextInt(diff.toInt))
       Array(segment, selectedDate.toString, selectedDate.toString)
@@ -362,13 +367,13 @@ object TPCH_Queries {
       val min = 1
       val max = 10
       val month = {
-        min + Random.nextInt((max - min) + 1)
+        min + random.nextInt((max - min) + 1)
       }
 
       val minYear = 1993
       val maxYear = 1997
       val year = {
-        minYear + Random.nextInt((maxYear - minYear) + 1)
+        minYear + random.nextInt((maxYear - minYear) + 1)
       }
       val date = java.time.LocalDate.of(year, month, 1)
       Array(date.toString, date.toString)
@@ -447,13 +452,13 @@ object TPCH_Queries {
     2. DATE is the first of January of a randomly selected year within [1993 .. 1997] */
 
       val regions = Array("AFRICA", "AMERICA", "ASIA", "EUROPE", "MIDDLE EAST")
-      val regionIndex = Random.nextInt(regions.length)
+      val regionIndex = random.nextInt(regions.length)
       val region = regions(regionIndex)
 
       val minYear = 1993
       val maxYear = 1997
       val year = {
-        minYear + Random.nextInt((maxYear - minYear) + 1)
+        minYear + random.nextInt((maxYear - minYear) + 1)
       }
 
       val date = java.time.LocalDate.of(year, 1, 1)
@@ -507,17 +512,17 @@ object TPCH_Queries {
       val minYear = 1993
       val maxYear = 1997
       val year = {
-        minYear + Random.nextInt((maxYear - minYear) + 1)
+        minYear + random.nextInt((maxYear - minYear) + 1)
       }
       val date = java.time.LocalDate.of(year, 1, 1)
 
       val discounts = Array("0.02", "0.03", "0.04", "0.05", "0.06", "0.07", "0.08", "0.09")
-      val discountIndex = Random.nextInt(discounts.length)
+      val discountIndex = random.nextInt(discounts.length)
       val discount = discounts(discountIndex)
 
       val minQuantity = 24
       val maxQuantity = 25
-      val quantity = s"${minQuantity + Random.nextInt((maxQuantity - minQuantity) + 1)}"
+      val quantity = s"${minQuantity + random.nextInt((maxQuantity - minQuantity) + 1)}"
 
       Array(date.toString, date.toString, discount, discount, quantity)
     } else {
@@ -585,7 +590,7 @@ object TPCH_Queries {
         "MOROCCO", "MOZAMBIQUE", "PERU", "CHINA", "ROMANIA", "SAUDI ARABIA", "VIETNAM",
         "RUSSIA", "UNITED KINGDOM", "UNITED STATES")
 
-      val nation1Index = Random.nextInt(nations.length)
+      val nation1Index = random.nextInt(nations.length)
       val nation1 = nations(nation1Index)
 
       val nation2Index = if (nation1Index > (nations.length / 2)) nation1Index - 1
@@ -663,24 +668,24 @@ object TPCH_Queries {
           "MIDDLE EAST" -> Array("EGYPT", "IRAN", "IRAQ", "JORDAN", "SAUDI ARABIA"))
 
       val regionKeys = nationsMap.keySet.toArray
-      val regionIndex = Random.nextInt(regionKeys.length)
+      val regionIndex = random.nextInt(regionKeys.length)
       val region = regionKeys(regionIndex)
 
       val nations: Array[String] = nationsMap(region)
-      val nationIndex = Random.nextInt(nations.length)
+      val nationIndex = random.nextInt(nations.length)
       val nation = nations(nationIndex)
 
       val syllables1 = Array("STANDARD", "SMALL", "MEDIUM", "LARGE", "ECONOMY", "PROMO")
       val syllables2 = Array("ANODIZED", "BURNISHED", "PLATED", "POLISHED", "BRUSHED")
       val syllables3 = Array("TIN", "NICKEL", "BRASS", "STEEL", "COPPER")
 
-      val syllable1Index = Random.nextInt(syllables1.length)
+      val syllable1Index = random.nextInt(syllables1.length)
       val syllable1 = syllables1(syllable1Index)
 
-      val syllable2Index = Random.nextInt(syllables2.length)
+      val syllable2Index = random.nextInt(syllables2.length)
       val syllable2 = syllables2(syllable2Index)
 
-      val syllable3Index = Random.nextInt(syllables3.length)
+      val syllable3Index = random.nextInt(syllables3.length)
       val syllable3 = syllables3(syllable3Index)
 
       val pType = s"$syllable1 $syllable2 $syllable3"
@@ -749,7 +754,7 @@ object TPCH_Queries {
         "salmon", "sandy", "seashell", "sienna", "sky", "slate", "smoke", "snow", "spring",
         "steel", "tan", "thistle", "tomato", "turquoise", "violet", "wheat", "white", "yellow")
 
-      val pnameIndex = Random.nextInt(pnames.length)
+      val pnameIndex = random.nextInt(pnames.length)
       val pname = pnames(pnameIndex)
 
       Array(pname)
@@ -877,11 +882,11 @@ object TPCH_Queries {
     month of 1993 to the first month of 1995. */
       val min = 2
       val max = 12
-      val month = min + Random.nextInt((max - min) + 1)
+      val month = min + random.nextInt((max - min) + 1)
 
       val minYear = 1993
       val maxYear = 1994
-      val year = minYear + Random.nextInt((maxYear - minYear) + 1)
+      val year = minYear + random.nextInt((maxYear - minYear) + 1)
 
 
       val date = java.time.LocalDate.of(year, month, 1)
@@ -938,7 +943,7 @@ object TPCH_Queries {
         "MOROCCO", "MOZAMBIQUE", "PERU", "CHINA", "ROMANIA", "SAUDI ARABIA", "VIETNAM",
         "RUSSIA", "UNITED KINGDOM", "UNITED STATES")
 
-      val nation1Index = Random.nextInt(nations.length)
+      val nation1Index = random.nextInt(nations.length)
       val nation = nations(nation1Index)
 
       Array(nation, nation)
@@ -1034,7 +1039,7 @@ object TPCH_Queries {
 
       val shipmodes = Array("REG AIR", "AIR", "RAIL", "SHIP", "TRUCK", "MAIL", "FOB")
 
-      val shipmode1Index = Random.nextInt(shipmodes.length)
+      val shipmode1Index = random.nextInt(shipmodes.length)
       val shipmode1 = shipmodes(shipmode1Index)
 
       val shipmode2Index = if (shipmode1Index > (shipmodes.length / 2)) shipmode1Index - 1
@@ -1044,7 +1049,7 @@ object TPCH_Queries {
       val minYear = 1993
       val maxYear = 1997
       val year = {
-        minYear + Random.nextInt((maxYear - minYear) + 1)
+        minYear + random.nextInt((maxYear - minYear) + 1)
       }
       val date = java.time.LocalDate.of(year, 1, 1)
 
@@ -1092,10 +1097,10 @@ object TPCH_Queries {
       val words1 = Array("special", "pending", "unusual", "express")
       val words2 = Array("packages", "requests", "accounts", "deposits")
 
-      val word1Index = Random.nextInt(words1.length)
+      val word1Index = random.nextInt(words1.length)
       val word1 = words1(word1Index)
 
-      val word2Index = Random.nextInt(words2.length)
+      val word2Index = random.nextInt(words2.length)
       val word2 = words2(word2Index)
 
       Array(word1, word2)
@@ -1154,7 +1159,7 @@ object TPCH_Queries {
       val minYear = 1993
       val maxYear = 1997
       val year = {
-        minYear + Random.nextInt((maxYear - minYear) + 1)
+        minYear + random.nextInt((maxYear - minYear) + 1)
       }
       val date = java.time.LocalDate.of(year, 1, 1)
 
@@ -1241,11 +1246,11 @@ object TPCH_Queries {
 
       val min = 2
       val max = 10
-      val month = min + Random.nextInt((max - min) + 1)
+      val month = min + random.nextInt((max - min) + 1)
 
       val minYear = 1993
       val maxYear = 1997
-      val year = minYear + Random.nextInt((maxYear - minYear) + 1)
+      val year = minYear + random.nextInt((maxYear - minYear) + 1)
 
 
       val date = java.time.LocalDate.of(year, month, 1)
@@ -1342,29 +1347,29 @@ object TPCH_Queries {
         10. SIZE8 is randomly selected as a set of eight different values within [1 .. 50] */
 
       val brands = Array("1", "2", "3", "4", "5")
-      val mIndex = Random.nextInt(brands.length)
-      val nIndex = Random.nextInt(brands.length)
+      val mIndex = random.nextInt(brands.length)
+      val nIndex = random.nextInt(brands.length)
       val m = brands(mIndex)
       val n = brands(nIndex)
 
       val syllables1 = Array("STANDARD", "SMALL", "MEDIUM", "LARGE", "ECONOMY", "PROMO")
       val syllables2 = Array("ANODIZED", "BURNISHED", "PLATED", "POLISHED", "BRUSHED")
-      val syllable1Index = Random.nextInt(syllables1.length)
+      val syllable1Index = random.nextInt(syllables1.length)
       val syllable1 = syllables1(syllable1Index)
-      val syllable2Index = Random.nextInt(syllables2.length)
+      val syllable2Index = random.nextInt(syllables2.length)
       val syllable2 = syllables2(syllable2Index)
       val pType = s"$syllable1 $syllable2"
 
       val min = 1
       val max = 50
-      val size1 = (min + Random.nextInt(max - min)).toString
-      val size2 = (min + Random.nextInt(max - min)).toString
-      val size3 = (min + Random.nextInt(max - min)).toString
-      val size4 = (min + Random.nextInt(max - min)).toString
-      val size5 = (min + Random.nextInt(max - min)).toString
-      val size6 = (min + Random.nextInt(max - min)).toString
-      val size7 = (min + Random.nextInt(max - min)).toString
-      val size8 = (min + Random.nextInt(max - min)).toString
+      val size1 = (min + random.nextInt(max - min)).toString
+      val size2 = (min + random.nextInt(max - min)).toString
+      val size3 = (min + random.nextInt(max - min)).toString
+      val size4 = (min + random.nextInt(max - min)).toString
+      val size5 = (min + random.nextInt(max - min)).toString
+      val size6 = (min + random.nextInt(max - min)).toString
+      val size7 = (min + random.nextInt(max - min)).toString
+      val size8 = (min + random.nextInt(max - min)).toString
 
       Array(m, n, pType, size1, size2, size3, size4, size5, size6, size7, size8)
     } else {
@@ -1406,16 +1411,16 @@ object TPCH_Queries {
         Containers in Clause 4.2.2.13. */
 
       val brands = Array("1", "2", "3", "4", "5")
-      val mIndex = Random.nextInt(brands.length)
-      val nIndex = Random.nextInt(brands.length)
+      val mIndex = random.nextInt(brands.length)
+      val nIndex = random.nextInt(brands.length)
       val m = brands(mIndex)
       val n = brands(nIndex)
 
       val syllables1 = Array("SM", "LG", "MED", "JUMBO", "WRAP")
       val syllables2 = Array("CASE", "BOX", "BAG", "JAR", "PKG", "PACK", "CAN", "DRUM")
-      val syllable1Index = Random.nextInt(syllables1.length)
+      val syllable1Index = random.nextInt(syllables1.length)
       val syllable1 = syllables1(syllable1Index)
-      val syllable2Index = Random.nextInt(syllables2.length)
+      val syllable2Index = random.nextInt(syllables2.length)
       val syllable2 = syllables2(syllable2Index)
       val pContainer = s"$syllable1 $syllable2"
       Array(m, n, pContainer)
@@ -1507,7 +1512,7 @@ object TPCH_Queries {
 
       val min = 312
       val max = 315
-      val quantity = min + Random.nextInt(max - min)
+      val quantity = min + random.nextInt(max - min)
       Array(quantity.toString)
     } else {
       Array("300")
@@ -1573,29 +1578,29 @@ object TPCH_Queries {
 
       var min = 1
       var max = 10
-      val quantity1 = (min + Random.nextInt(max - min)).toString
+      val quantity1 = (min + random.nextInt(max - min)).toString
       min = 10
       max = 20
-      val quantity2 = (min + Random.nextInt(max - min)).toString
+      val quantity2 = (min + random.nextInt(max - min)).toString
       min = 20
       max = 30
-      val quantity3 = (min + Random.nextInt(max - min)).toString
+      val quantity3 = (min + random.nextInt(max - min)).toString
 
       val brands = Array("1", "2", "3", "4", "5")
-      var mIndex = Random.nextInt(brands.length)
-      var nIndex = Random.nextInt(brands.length)
+      var mIndex = random.nextInt(brands.length)
+      var nIndex = random.nextInt(brands.length)
       var m = brands(mIndex)
       var n = brands(nIndex)
       val mn1 = m + n
 
-      mIndex = Random.nextInt(brands.length)
-      nIndex = Random.nextInt(brands.length)
+      mIndex = random.nextInt(brands.length)
+      nIndex = random.nextInt(brands.length)
       m = brands(mIndex)
       n = brands(nIndex)
       val mn2 = m + n
 
-      mIndex = Random.nextInt(brands.length)
-      nIndex = Random.nextInt(brands.length)
+      mIndex = random.nextInt(brands.length)
+      nIndex = random.nextInt(brands.length)
       m = brands(mIndex)
       n = brands(nIndex)
       val mn3 = m + n
@@ -1715,12 +1720,12 @@ object TPCH_Queries {
         "salmon", "sandy", "seashell", "sienna", "sky", "slate", "smoke", "snow", "spring",
         "steel", "tan", "thistle", "tomato", "turquoise", "violet", "wheat", "white", "yellow")
 
-      val colorIndex = Random.nextInt(pnames.length)
+      val colorIndex = random.nextInt(pnames.length)
       val color = pnames(colorIndex)
 
       val minYear = 1993
       val maxYear = 1997
-      val year = minYear + Random.nextInt((maxYear - minYear) + 1)
+      val year = minYear + random.nextInt((maxYear - minYear) + 1)
 
       val date = java.time.LocalDate.of(year, 1, 1)
 
@@ -1729,7 +1734,7 @@ object TPCH_Queries {
         "MOROCCO", "MOZAMBIQUE", "PERU", "CHINA", "ROMANIA", "SAUDI ARABIA", "VIETNAM",
         "RUSSIA", "UNITED KINGDOM", "UNITED STATES")
 
-      val nationIndex = Random.nextInt(nations.length)
+      val nationIndex = random.nextInt(nations.length)
       val nation = nations(nationIndex)
 
       Array(color, date.toString, date.toString, nation)
@@ -1795,7 +1800,7 @@ object TPCH_Queries {
         "MOROCCO", "MOZAMBIQUE", "PERU", "CHINA", "ROMANIA", "SAUDI ARABIA", "VIETNAM",
         "RUSSIA", "UNITED KINGDOM", "UNITED STATES")
 
-      val nationIndex = Random.nextInt(nations.length)
+      val nationIndex = random.nextInt(nations.length)
       val nation = nations(nationIndex)
 
       Array(nation)
@@ -1925,7 +1930,7 @@ object TPCH_Queries {
       do {
         val min = 1
         val max = 25
-        val code = (10 + (min + Random.nextInt(max - min))).toString
+        val code = (10 + (min + random.nextInt(max - min))).toString
         if (x == 0) {
           countryCodes(x) = code
           x = x + 1

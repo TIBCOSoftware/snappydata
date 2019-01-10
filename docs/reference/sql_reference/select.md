@@ -1,6 +1,6 @@
 # SELECT
 
-```no-highlight
+```pre
 SELECT [DISTINCT] named_expression[, named_expression, ...]
     FROM relation[, relation, ...]
     [WHERE boolean_expression]
@@ -63,7 +63,7 @@ Limit the number of rows returned.
 
 ## Example
 
-```no-highlight
+```pre
     SELECT * FROM boxes
     SELECT width, length FROM boxes WHERE height=3
     SELECT DISTINCT width, length FROM boxes WHERE height=3 LIMIT 2
@@ -77,7 +77,7 @@ Limit the number of rows returned.
 JOINS
 -----------
 
-```no-highlight
+```pre
     join_relation:
         | relation join_type JOIN relation (ON boolean_expression | USING (column_name[, column_name, ...]))
         : relation NATURAL join_type JOIN relation
@@ -102,7 +102,7 @@ Select only rows from the left side that match no rows on the right side.
 
 **Example**:
 
-```no-highlight
+```pre
     SELECT * FROM boxes INNER JOIN rectangles ON boxes.width = rectangles.width
     SELECT * FROM boxes FULL OUTER JOIN rectangles USING (width, length)
     SELECT * FROM boxes NATURAL JOIN rectangles
@@ -111,7 +111,7 @@ Select only rows from the left side that match no rows on the right side.
 AGGREGATION
 ------------
 
-```no-highlight
+```pre
     aggregation:
         : GROUP BY expressions [(WITH ROLLUP | WITH CUBE | GROUPING SETS (expressions))]
 ```
@@ -129,7 +129,7 @@ Perform a group by for each subset of the group expressions specified in the gro
 
 **Example**:
 
-```no-highlight
+```pre
     SELECT height, COUNT(*) AS num_rows FROM boxes GROUP BY height
     SELECT width, AVG(length) AS average_length FROM boxes GROUP BY width
     SELECT width, length, height FROM boxes GROUP BY width, length, height WITH ROLLUP
@@ -139,7 +139,7 @@ Perform a group by for each subset of the group expressions specified in the gro
 Window Functions
 --------------
 
-```no-highlight
+```pre
 window_expression:
     : expression OVER window_spec
 

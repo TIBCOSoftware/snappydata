@@ -8,7 +8,7 @@ Turn statistics timing on by calling this procedure with a non-zero argument. Tu
 
 ## Syntax
 
-```no-highlight
+```pre
 SYSCS_UTIL.SET_STATISTICS_TIMING(IN SMALLINT ENABLE)
 ```
 
@@ -16,6 +16,6 @@ SYSCS_UTIL.SET_STATISTICS_TIMING(IN SMALLINT ENABLE)
 
 To enable statistics timing:
 
-```no-highlight
+```pre
 CALL SYSCS_UTIL.SET_STATISTICS_TIMING(1);
 ```

@@ -13,7 +13,7 @@ You can prevent disk file errors using the following techniques:
 
     -   **Disk store metadata files**— set the `gemfire.preAllocateIF` system property to true (the default).
 
-!!! Note: 
+!!! Note
 	SnappyData recommends using ext4 filesystems on Linux platforms, because ext4 supports pre-allocation which speeds disk startup performance. If you are using ext3 filesystems in latency-sensitive environments with high write throughput, you can improve disk startup performance by setting the `MAXLOGSIZE` property of a disk store to a value lower than the default 1 GB. See [CREATE DISKSTORE](../reference/sql_reference/create-diskstore.md).
 
 -   Monitor SnappyData logs for low disk space warnings. SnappyData logs disk space warnings in the following situations:

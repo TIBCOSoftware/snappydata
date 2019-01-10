@@ -2,7 +2,7 @@
 
 Set or change the default schema for a connection's session.
 
-```no-highlight
+```pre
 SET SCHEMA schema-name
 ```
 
@@ -13,7 +13,7 @@ The default schema is APP.
 
 ## Example
 
-```no-highlight
+```pre
 -- below are equivalent assuming a TRADE schema
 SET SCHEMA TRADE;
 SET SCHEMA trade;

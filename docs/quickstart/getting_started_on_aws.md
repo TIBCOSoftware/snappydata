@@ -21,7 +21,7 @@ Before you begin:
  
 2. The **Select Template page** is displayed. The URL for the template (JSON format) is pre-populated. Click **Next** to continue.<br/>
 
-    !!! Note:
+    !!! Note
         You are placed in your default region. You can either continue in the selected region or change it in the console. 
 ![STEP](../Images/cluster_selecttemplate.png)
 <br>
@@ -50,7 +50,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 ![Refresh](../Images/cluster_refresh.png)
 <a id="Stack"></a>
 
-    !!! Note: 
+    !!! Note
 	    If the status of the stack displays as **ROLLBACK_IN_PROGRESS** or **DELETE_COMPLETE**, the stack creation may have failed. Some common causes of the failure are:
 
 	    * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
@@ -65,7 +65,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 For more information, refer to the [Apache Zeppelin](../isight/quick_start_steps.md#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 
-!!! Note:
+!!! Note
 
     * Multi-node cluster set up on AWS via CloudFormation will be supported in future releases. However, users can set it up using the [EC2 scripts](../install/setting_up_cluster_on_amazon_web_services.md#EC2).
 

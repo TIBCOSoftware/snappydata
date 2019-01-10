@@ -3,7 +3,7 @@
 SnappyData supports transaction characteristics of isolation and atomicity. Transactions are supported using JDBC/ODBC through statements such as SET [autocommit](../reference/interactive_commands/autocommit.md), [SET Isolation](../reference/sql_reference/set-isolation.md), [COMMIT](../reference/interactive_commands/commit.md), and [ROLLBACK](../reference/interactive_commands/rollback.md).  
 
 
-!!! Note:
+!!! Note
     - Full distributed transactions (that is, multiple update SQL statements in one logical transaction) is currently supported only for row tables.
 
     - Column tables only support single statement implicit transactions. That is, every DML (insert/update/delete) statement is executed in a implicit transaction. The DML statement can in-fact be a multi-row statement and is executed with "all or nothing" semantics.

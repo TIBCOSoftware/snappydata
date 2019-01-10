@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,20 +32,24 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   /** Creates/Resolves DataType for a given SQL string. */
   override def parseDataType(sqlText: String): DataType = {
-    sqlParser.parse(sqlText, sqlParser.parsedDataType.run())
+    sqlParser.parse(sqlText, sqlParser.parseDataType.run())
   }
 
   /** Creates Expression for a given SQL string. */
   override def parseExpression(sqlText: String): Expression = {
-    sqlParser.parse(sqlText, sqlParser.parsedExpression.run())
+    sqlParser.parse(sqlText, sqlParser.parseExpression.run())
   }
 
   /** Creates TableIdentifier for a given SQL string. */
   override def parseTableIdentifier(sqlText: String): TableIdentifier = {
-    sqlParser.parse(sqlText, sqlParser.parsedTableIdentifier.run())
+    sqlParser.parse(sqlText, sqlParser.parseTableIdentifier.run())
   }
 
   override def parsePlan(sqlText: String): LogicalPlan = {
     sqlParser.parse(sqlText, sqlParser.sql.run())
+  }
+
+  def parsePlan(sqlText: String, clearExecutionData: Boolean): LogicalPlan = {
+    sqlParser.parse(sqlText, sqlParser.sql.run(), clearExecutionData)
   }
 }

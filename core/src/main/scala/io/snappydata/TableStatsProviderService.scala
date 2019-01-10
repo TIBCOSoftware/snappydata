@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -88,12 +88,13 @@ trait TableStatsProviderService extends Logging {
       }
     } catch {
       case _: CancelException => // ignore
-      case e: Exception => if (!e.getMessage.contains(
-        "com.gemstone.gemfire.cache.CacheClosedException")) {
-        logWarning(e.getMessage, e)
-      } else {
-        logError(e.getMessage, e)
-      }
+      case e: Exception =>
+        val msg = if (e.getMessage ne null) e.getMessage else e.toString
+        if (!msg.contains("com.gemstone.gemfire.cache.CacheClosedException")) {
+          logWarning(msg, e)
+        } else {
+          logError(msg, e)
+        }
     }
   }
 
@@ -157,17 +158,28 @@ trait TableStatsProviderService extends Logging {
 
   def getTableStatsFromService(
       fullyQualifiedTableName: String): Option[SnappyRegionStats] = {
-    val tableSizes = this.tableSizeInfo
-    if (tableSizes.isEmpty || !tableSizes.contains(fullyQualifiedTableName)) {
+    if (!this.tableSizeInfo.contains(fullyQualifiedTableName)) {
       // force run
       aggregateStats()
     }
     tableSizeInfo.get(fullyQualifiedTableName)
   }
 
+  def getAllTableStatsFromService: Map[String, SnappyRegionStats] = {
+    this.tableSizeInfo
+  }
+
   def getExternalTableStatsFromService(
       fullyQualifiedTableName: String): Option[SnappyExternalTableStats] = {
+    if (!this.externalTableSizeInfo.contains(fullyQualifiedTableName)) {
+      // force run
+      aggregateStats()
+    }
     externalTableSizeInfo.get(fullyQualifiedTableName)
+  }
+
+  def getAllExternalTableStatsFromService: Map[String, SnappyExternalTableStats] = {
+    this.externalTableSizeInfo
   }
 
   def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],

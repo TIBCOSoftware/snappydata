@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,7 +26,7 @@ import scala.util.{Failure, Success, Try}
 
 object InstallJarTestSparkApp {
   val conf = new SparkConf().
-      setAppName("InstallJarTest Application")
+      setAppName("InstallJarTest Application_" + System.currentTimeMillis())
   val sc = new SparkContext(conf)
   val snc = SnappyContext(sc)
 

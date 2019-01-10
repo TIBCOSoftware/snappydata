@@ -1,7 +1,7 @@
 # CREATE SYNONYM
 Provide an alternate name for a table or view.
 
-``` no-highlight
+```pre
 snappy> CREATE SYNONYM [synonym-name] FOR [view-name | table-name];
 ```
 
@@ -22,7 +22,7 @@ A synonym cannot be defined on a temporary table. Attempting to define a synonym
 
 ## Example
 
-``` no-highlight
+```pre
 snappy> CREATE SYNONYM myairline FOR airlineREF;
 ```
 

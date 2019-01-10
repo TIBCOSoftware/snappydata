@@ -13,7 +13,7 @@ Creates a virtual table that displays statistics for all the tables that exist i
 |BUCKETS|BIGINT|10|NO|Number of buckets|
 
 **Example** </br>
-```no-highlight
+```pre
 snappy> select * from SYS.TABLESTATS;
 TABLE         |IS_COLUMN_TABLE|IS_REPLICATED_TABLE|ROW_COUNT|SIZE_IN_MEMORY|TOTAL_SIZE|BUCKETS
 ----------------------------------------------------------------------------------------------- 

@@ -1,4 +1,4 @@
-<a id="markdown_link_row_and_column_tables"></a>
+
 # Tables in SnappyData
 ## Row and Column Tables
 Column tables organize and manage data in memory in a compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
@@ -11,7 +11,7 @@ Row tables, unlike column tables, are laid out one row at a time in contiguous m
 Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 
 ### DDL and DML Syntax for Tables
-```no-highlight
+```pre
 CREATE TABLE [IF NOT EXISTS] table_name 
     ( column-definition	[ , column-definition  ] * )	
     USING [row | column]
@@ -39,7 +39,7 @@ DDL extensions are required to [configure a table](../reference/sql_reference/cr
 
 You can also define complex types (Map, Array and StructType) as columns for column tables. 
 
-```no-highlight
+```pre
 snappy.sql("CREATE TABLE tableName (
 col1 INT , 
 col2 Array<Decimal>, 
@@ -61,7 +61,7 @@ To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://
 
 Create a SnappyStore table using Spark APIs
 
-```no-highlight
+```pre
     val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
     case class Data(col1: Int, col2: Int, col3: Int)
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -91,7 +91,7 @@ Create a SnappyStore table using Spark APIs
 
 ### DML Operations on Tables
 
-```no-highlight
+```pre
 INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
@@ -104,7 +104,7 @@ TRUNCATE TABLE tablename1;
 ### API Extensions Provided in SnappyContext
 Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
 
-```no-highlight
+```pre
 //  Applicable for both row and column tables
 def insert(tableName: String, rows: Row*): Int .
 
@@ -117,7 +117,7 @@ def delete(tableName: String, filterExpr: String): Int
 
 **Usage SnappySession.insert()**: Insert one or more [[org.apache.spark.sql.Row]] into an existing table
 
-```no-highlight
+```pre
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =>
@@ -127,7 +127,7 @@ data.map { r =>
 
 **Usage SnappySession.put()**: Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
 
-```no-highlight
+```pre
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
                Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =>
@@ -137,14 +137,14 @@ data.map { r =>
 
 Usage SnappySession.update(): Update all rows in table that match passed filter expression
 
-```no-highlight
+```pre
 snappy.update(tableName, "ITEMREF = 3" , Row(99) , "ITEMREF" )
 ```
 
 
 **Usage SnappySession.delete()**: Delete all rows in table that match passed filter expression
 
-```no-highlight
+```pre
 snappy.delete(tableName, "ITEMREF = 3")
 ```
 

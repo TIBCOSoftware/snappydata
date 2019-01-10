@@ -6,7 +6,7 @@ In the current release, SnappyData only supports LDAP authentication which allow
 
 SnappyData uses mutual authentication between the SnappyData locator and subsequent SnappyData members that boot and join the distributed system. 
 
-!!! Note:
+!!! Note
 	
 	* Currently, only LDAP based authentication and authorization is supported
 
@@ -19,9 +19,13 @@ Refer to [User Names for Authentication, Authorization, and Membership](user_nam
 
 * [Launching the Cluster in Secure Mode](launching_the_cluster_in_secure_mode.md)
 
+* [Specifying Encrypted Passwords in Conf Files or in Client Connections](specify_encrypt_passwords_conf_client.md)
+
 * [Authentication - Connecting to a Secure Cluster](authentication_connecting_to_a_secure_cluster.md)
  
 * [Authorization](authorization.md)
+
+* [Implementing Row Level Security](row_level_security.md)
 
 * [Configuring Network Encryption and Authentication using SSL](configuring_network_encryption_and_authentication_using_ssl.md)
 

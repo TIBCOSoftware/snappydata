@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -39,20 +39,24 @@ object SparkAppUsingJob  extends SnappySQLJob {
   var warmUp: Integer = _
   var runsForAverage: Integer = _
   var threadNumber: Integer = _
+  var randomSeed : Integer = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
-    snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000");
+    snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000")
 
     val isSnappy = false
     val usingOptionString = null
     var loadPerfFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"${threadNumber}_Spark_LoadPerf.out"))
+      new File(s"${threadNumber}_Spark_LoadPerf.csv"))
     var loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
+    loadPerfPrintStream.println(s"Table, CreationTime")
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"${threadNumber}_Spark_Average.out"))
+      new File(s"${threadNumber}_Spark_Average.csv"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+    avgPrintStream.println(s"Query,AverageResponseTime")
+
 
     snc.dropTable("NATION", ifExists = true)
     snc.dropTable("REGION", ifExists = true)
@@ -63,6 +67,12 @@ object SparkAppUsingJob  extends SnappySQLJob {
     snc.dropTable("LINEITEM", ifExists = true)
     snc.dropTable("ORDERS", ifExists = true)
 
+    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath,
+      isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath,
+      isSnappy, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
+      isSnappy, loadPerfPrintStream, numberOfLoadStages)
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath, isSnappy,
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
@@ -80,24 +90,16 @@ object SparkAppUsingJob  extends SnappySQLJob {
       loadPerfPrintStream = loadPerfPrintStream, numberOfLoadingStages = numberOfLoadStages,
       isParquet = isParquet)
 
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath,
-      isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath,
-      isSnappy, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
-      isSnappy, loadPerfPrintStream, numberOfLoadStages)
-
     for(prop <- sqlSparkProperties) {
       // scalastyle:off println
       println(prop)
       snc.sql(s"set $prop")
     }
 
-    for (i <- 1 to 1) {
-      for (query <- queries) {
-        QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
-          threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
-      }
+    QueryExecutor.setRandomSeed(randomSeed)
+    for (query <- queries) {
+      QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
+        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
     }
     QueryExecutor.close
 
@@ -170,6 +172,12 @@ object SparkAppUsingJob  extends SnappySQLJob {
       config.getInt("threadNumber")
     } else {
       1
+    }
+
+    randomSeed = if (config.hasPath("randomSeed")) {
+      config.getInt("randomSeed")
+    } else {
+      42
     }
 
     SnappyJobValid()

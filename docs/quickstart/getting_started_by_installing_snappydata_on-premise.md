@@ -1,10 +1,10 @@
 <a id="getting-started-by-installing-snappydata-on-premise"></a>
 # Getting Started by Installing SnappyData On-Premise
-Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/) page, which lists the latest and previous releases of SnappyData.
+Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/), which lists the latest and previous releases of SnappyData.
 
-```no-highlight
-$ tar -xzf snappydata-1.0.1-bin.tar.gz
-$ cd snappydata-1.0.1-bin/
+```pre
+$ tar -xzf snappydata-1.0.2.1-bin.tar.gz
+$ cd snappydata-1.0.2.1-bin/
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log

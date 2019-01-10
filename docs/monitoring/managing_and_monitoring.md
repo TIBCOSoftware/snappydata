@@ -12,5 +12,6 @@ The following topics are covered in this section:
 
 * [Configuring Logging](configure_logging.md)
 
-* [Getting Information from SnappyData System Tables
-](monitor-manage.md)
+* [Securing SnappyData Pulse UI Connections](../configuring_cluster/securinguiconnection.md)
+
+* [Getting Information from SnappyData System Tables](monitor-manage.md)

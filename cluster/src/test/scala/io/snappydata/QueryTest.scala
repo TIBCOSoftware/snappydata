@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,9 +17,14 @@
 
 package io.snappydata
 
+import java.io.File
+
 import scala.collection.JavaConverters._
 
+import com.pivotal.gemfirexd.TestUtil
+
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
+import org.apache.spark.sql.execution.exchange.{BroadcastExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession, SparkSession}
 
@@ -62,8 +67,7 @@ class QueryTest extends SnappyFunSuite {
 
     val df = snContext.sql("SELECT  title, price FROM titles WHERE EXISTS (" +
         "SELECT * FROM sales WHERE sales.title_id = titles.title_id AND qty >30)")
-
-    df.show()
+    df.collect()
   }
 
   test("SNAP-1159_1482") {
@@ -126,49 +130,49 @@ class QueryTest extends SnappyFunSuite {
         "PARTITION_BY 'col2'," +
         "BUCKETS '1')")
     snc.sql("insert into ColumnTable(\"a/b\",col2,col3) values(1,2,3)")
-    snc.sql("select col2,col3 from columnTable").show()
-    snc.sql("select col2, col3, `a/b` from columnTable").show()
-    snc.sql("select col2, col3, \"a/b\" from columnTable").show()
-    snc.sql("select col2, col3, \"A/B\" from columnTable").show()
-    snc.sql("select col2, col3, `A/B` from columnTable").show()
+    snc.sql("select col2,col3 from columnTable").collect()
+    snc.sql("select col2, col3, `a/b` from columnTable").collect()
+    snc.sql("select col2, col3, \"a/b\" from columnTable").collect()
+    snc.sql("select col2, col3, \"A/B\" from columnTable").collect()
+    snc.sql("select col2, col3, `A/B` from columnTable").collect()
 
-    snc.sql("select col2,col3 from columnTable").show()
-    snc.table("columnTable").select("col3", "col2", "a/b").show()
-    snc.table("columnTable").select("col3", "Col2", "A/b").show()
-    snc.table("columnTable").select("COL3", "Col2", "A/B").show()
-    snc.table("columnTable").select("COL3", "Col2", "`A/B`").show()
-    snc.table("columnTable").select("COL3", "Col2", "`a/b`").show()
+    snc.sql("select col2,col3 from columnTable").collect()
+    snc.table("columnTable").select("col3", "col2", "a/b").collect()
+    snc.table("columnTable").select("col3", "Col2", "A/b").collect()
+    snc.table("columnTable").select("COL3", "Col2", "A/B").collect()
+    snc.table("columnTable").select("COL3", "Col2", "`A/B`").collect()
+    snc.table("columnTable").select("COL3", "Col2", "`a/b`").collect()
 
     snc.conf.set("spark.sql.caseSensitive", "true")
     try {
-      snc.table("columnTable").select("col3", "col2", "a/b").show()
+      snc.table("columnTable").select("col3", "col2", "a/b").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     try {
-      snc.table("columnTable").select("COL3", "COL2", "A/B").show()
+      snc.table("columnTable").select("COL3", "COL2", "A/B").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     try {
-      snc.sql("select col2, col3, \"A/B\" from columnTable").show()
+      snc.sql("select col2, col3, \"A/B\" from columnTable").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     try {
-      snc.sql("select COL2, COL3, `A/B` from columnTable").show()
+      snc.sql("select COL2, COL3, `A/B` from columnTable").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
     }
     // hive meta-store is case-insensitive so column table names are not
-    snc.sql("select COL2, COL3, \"a/b\" from columnTable").show()
-    snc.sql("select COL2, COL3, `a/b` from ColumnTable").show()
-    snc.table("columnTable").select("COL3", "COL2", "a/b").show()
-    snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").show()
+    snc.sql("select COL2, COL3, \"a/b\" from columnTable").collect()
+    snc.sql("select COL2, COL3, `a/b` from ColumnTable").collect()
+    snc.table("columnTable").select("COL3", "COL2", "a/b").collect()
+    snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").collect()
   }
 
   private def setupTestData(session: SnappySession): Unit = {
@@ -317,8 +321,72 @@ class QueryTest extends SnappyFunSuite {
     snc.sql(s"create index APP.X_TEST_COL3 on APP.TEST (col3)")
     snc.sql(s"insert into TEST values ('one', 'vone', 'cone'), ('two', 'vtwo', 'ctwo')")
     val r = snc.sql(s"select count(*) from TEST").collect()
-    assert (1 === r.size)
-    assert (2 === r.head.get(0))
+    assert(1 === r.length)
+    assert(2 === r.head.get(0))
     snc.sql(s"ALTER TABLE APP.TEST ADD COLUMN COL5 blob")
+  }
+
+  /** check exchange and broadcast plan reuse for row, column and parquet */
+  test("SNAP-2789: check broadcast/exchange reuse") {
+    val session = this.snc.snappySession
+
+    val query = "select count(t1.data), count(*) from test1 t1 join test2 t2 on (t1.id = t2.id) " +
+        "union all " +
+        "select count(*), count(t1.data) from test1 t1 join test2 t2 on (t1.id = t2.id)"
+    for (tableType <- Seq("column", "row", "parquet")) {
+      val (declaration, options) = if (tableType == "parquet") {
+        "external " -> ((table: String) => s"options (path '${table}_pq')")
+      } else "" -> ((_: String) => "options (partition_by 'data')")
+
+      def tableDeclaration(table: String, size: Int): String = {
+        s"create ${declaration}table $table using $tableType ${options(table)} as " +
+            s"select id, case when id % 100 = 0 then null else 'data' || id end as data " +
+            s"from range($size)"
+      }
+
+      session.sql(tableDeclaration("test1", 50000))
+      session.sql(tableDeclaration("test2", 20000))
+
+      // with exchange
+      session.sessionState.conf.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, -1L)
+      var df = session.sql(query)
+      var plan = df.queryExecution.executedPlan
+      // exactly one exchange of test1 and test2 is expected
+      val exchanges = plan.collect {
+        case e: ShuffleExchange if e.outputPartitioning.numPartitions > 1 => e
+      }
+      assert(exchanges.length === 2)
+      assert(exchanges.head.treeString.contains("TEST1"))
+      assert(exchanges(1).treeString.contains("TEST2"))
+
+      var result = df.collect()
+      assert(result.length === 2)
+      assert(result(0).getLong(0) === 19800)
+      assert(result(1).getLong(0) === 20000)
+
+      // with broadcast
+      session.sessionState.conf.setConf(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD,
+        SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValue.get)
+      df = session.sql(query)
+      plan = df.queryExecution.executedPlan
+      // exactly one broadcast of test1 or test2 is expected
+      val broadcasts = plan.collect {
+        case e: BroadcastExchangeExec => e
+      }
+      assert(broadcasts.length === 1)
+      // both sides are small enough to be broadcast
+      val broadcastString = broadcasts.head.treeString
+      assert(broadcastString.contains("TEST2") || broadcastString.contains("TEST1"))
+      result = df.collect()
+      assert(result.length === 2)
+      assert(result(0).getLong(0) === 19800)
+      assert(result(1).getLong(0) === 20000)
+
+      session.sql("drop table test1")
+      session.sql("drop table test2")
+    }
+    // delete the directories created for parquet
+    TestUtil.deleteDir(new File("test1_pq"))
+    TestUtil.deleteDir(new File("test2_pq"))
   }
 }

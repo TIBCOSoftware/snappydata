@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,17 +16,19 @@
  */
 package org.apache.spark.sql
 
-import scala.annotation.tailrec
+import java.sql.SQLWarning
+
 import scala.util.control.NonFatal
 
-import io.snappydata.Property
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, ReturnAnswer}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
 import org.apache.spark.sql.catalyst.plans.{ExistenceJoin, Inner, JoinType, LeftAnti, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -36,9 +38,8 @@ import org.apache.spark.sql.execution.aggregate.{AggUtils, CollectAggregateExec,
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
-import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{DefaultPlanner, JoinQueryPlanning, SQLConf}
+import org.apache.spark.sql.internal.{JoinQueryPlanning, LogicalPlanWithHints, SQLConf, SnappySessionState}
 import org.apache.spark.sql.streaming._
 
 /**
@@ -47,7 +48,7 @@ import org.apache.spark.sql.streaming._
  */
 private[sql] trait SnappyStrategies {
 
-  self: DefaultPlanner =>
+  self: SnappySessionState =>
 
   object SnappyStrategies extends Strategy {
 
@@ -56,9 +57,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  def isDisabled: Boolean = {
-    snappySession.sessionState.disableStoreOptimizations
-  }
+  def isDisabled: Boolean = disableStoreOptimizations
 
   /** Stream related strategies to map stream specific logical plan to physical plan */
   object StreamQueryStrategy extends Strategy {
@@ -76,69 +75,150 @@ private[sql] trait SnappyStrategies {
   }
 
   object HashJoinStrategies extends Strategy with JoinQueryPlanning {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
-      Nil
-    } else {
-      plan match {
-        case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right) =>
-          // check for hash join with replicated table first
-          if (canBuildRight(joinType) && canLocalJoin(right)) {
-            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-              joinType, joins.BuildRight, replicatedTableJoin = true)
-          } else if (canBuildLeft(joinType) && canLocalJoin(left)) {
-            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-              joinType, joins.BuildLeft, replicatedTableJoin = true)
+
+    /** Try to apply a given join hint. Returns Nil if apply failed else the resulting plan. */
+    private def applyJoinHint(joinHint: String, joinType: JoinType, leftKeys: Seq[Expression],
+        rightKeys: Seq[Expression], condition: Option[Expression],
+        left: LogicalPlan, right: LogicalPlan, buildSide: joins.BuildSide,
+        buildPlan: LogicalPlan, canBuild: JoinType => Boolean): Seq[SparkPlan] = joinHint match {
+      case Constant.JOIN_TYPE_HASH =>
+        if (canBuild(joinType)) {
+          // don't hash join beyond 10GB estimated size because that is likely a mistake
+          val buildSize = buildPlan.statistics.sizeInBytes
+          if (buildSize > math.max(JoinStrategy.getMaxHashJoinSize(conf),
+            10L * 1024L * 1024L * 1024L)) {
+            snappySession.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
+                s"$joinHint for ${right.simpleString} skipped for ${joinType.sql} " +
+                s"JOIN on columns=$rightKeys due to large estimated buildSize=$buildSize. " +
+                s"Increase session property ${Property.HashJoinSize.name} to force.",
+              SQLState.LANG_INVALID_JOIN_STRATEGY))
+            return Nil
           }
-          // check for collocated joins before going for broadcast
-          else if (isCollocatedJoin(joinType, left, leftKeys, right, rightKeys)) {
-            val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
-            if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joinType,
+            buildSide, replicatedTableJoin = allowsReplicatedJoin(buildPlan))
+        } else Nil
+      case Constant.JOIN_TYPE_BROADCAST =>
+        if (canBuild(joinType)) {
+          // don't broadcast beyond 1GB estimated size because that is likely a mistake
+          val buildSize = buildPlan.statistics.sizeInBytes
+          if (buildSize > math.max(conf.autoBroadcastJoinThreshold, 1L * 1024L * 1024L * 1024L)) {
+            snappySession.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
+                s"$joinHint for ${right.simpleString} skipped for ${joinType.sql} " +
+                s"JOIN on columns=$rightKeys due to large estimated buildSize=$buildSize. " +
+                s"Increase session property ${SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key} to force.",
+              SQLState.LANG_INVALID_JOIN_STRATEGY))
+            return Nil
+          }
+          joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+            buildSide, condition, planLater(left), planLater(right)) :: Nil
+        } else Nil
+      case Constant.JOIN_TYPE_SORT =>
+        if (RowOrdering.isOrderable(leftKeys)) {
+          new joins.SnappySortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
+            planLater(left), planLater(right), left.statistics.sizeInBytes,
+            right.statistics.sizeInBytes) :: Nil
+        } else Nil
+      case _ => throw new ParseException(s"Unknown joinType hint '$joinHint'. " +
+          s"Expected one of ${Constant.ALLOWED_JOIN_TYPE_HINTS}")
+    }
+
+    def apply(plan: LogicalPlan): Seq[SparkPlan] =
+      if (isDisabled || snappySession.disableHashJoin) {
+        Nil
+      } else {
+        plan match {
+          case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, condition, left, right) =>
+            // check for explicit hints first and whether it is possible to apply them
+            val rightHint = JoinStrategy.getJoinHint(right)
+            rightHint match {
+              case None =>
+              case Some(joinHint) =>
+                applyJoinHint(joinHint, joinType, leftKeys, rightKeys, condition,
+                  left, right, joins.BuildRight, right, canBuildRight) match {
+                  case Nil => snappySession.addWarning(new SQLWarning(s"Plan hint " +
+                      s"${QueryHint.JoinType}=$joinHint for ${right.simpleString} cannot be " +
+                      s"applied for ${joinType.sql} JOIN on columns=$rightKeys. " +
+                      s"Will try on the other side of join: " +
+                      s"${left.simpleString}.", SQLState.LANG_INVALID_JOIN_STRATEGY))
+                  case result => return result
+                }
+            }
+            (if (rightHint.isEmpty) JoinStrategy.getJoinHint(left) else rightHint) match {
+              case None =>
+              case Some(joinHint) =>
+                applyJoinHint(joinHint, joinType, leftKeys, rightKeys, condition,
+                  left, right, joins.BuildLeft, left, canBuildLeft) match {
+                  case Nil => snappySession.addWarning(new SQLWarning(s"Plan hint " +
+                      s"${QueryHint.JoinType}=$joinHint for ${left.simpleString} cannot be " +
+                      s"applied for ${joinType.sql} " +
+                      s"JOIN on columns=$leftKeys", SQLState.LANG_INVALID_JOIN_STRATEGY))
+                  case result => return result
+                }
+            }
+
+            // check for hash join with replicated table first
+            if (canBuildRight(joinType) && allowsReplicatedJoin(right)) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-                joinType, joins.BuildLeft, replicatedTableJoin = false)
-            } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
+                joinType, joins.BuildRight, replicatedTableJoin = true)
+            } else if (canBuildLeft(joinType) && allowsReplicatedJoin(left)) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-                joinType, joins.BuildRight, replicatedTableJoin = false)
-            } else if (buildLeft) {
+                joinType, joins.BuildLeft, replicatedTableJoin = true)
+            }
+            // check for collocated joins before going for broadcast
+            else if (isCollocatedJoin(joinType, left, leftKeys, right, rightKeys)) {
+              val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
+              if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+                makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+                  joinType, joins.BuildLeft, replicatedTableJoin = false)
+              } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
+                makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+                  joinType, joins.BuildRight, replicatedTableJoin = false)
+              } else if (buildLeft) {
+                makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+                  joinType, joins.BuildLeft, replicatedTableJoin = false)
+              } else if (RowOrdering.isOrderable(leftKeys)) {
+                new joins.SnappySortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
+                  planLater(left), planLater(right), left.statistics.sizeInBytes,
+                  right.statistics.sizeInBytes) :: Nil
+              } else Nil
+            }
+            // broadcast joins preferred over exchange+local hash join or SMJ
+            else if (canBuildRight(joinType) && canBroadcast(right, conf)) {
+              if (skipBroadcastRight(joinType, left, right, conf)) {
+                joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+                  joins.BuildLeft, condition, planLater(left), planLater(right)) :: Nil
+              } else {
+                joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+                  joins.BuildRight, condition, planLater(left), planLater(right)) :: Nil
+              }
+            } else if (canBuildLeft(joinType) && canBroadcast(left, conf)) {
+              joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
+                joins.BuildLeft, condition, planLater(left), planLater(right)) :: Nil
+            }
+            // prefer local hash join after exchange over sort merge join if size is small enough
+            else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
+                !RowOrdering.isOrderable(leftKeys)) {
+              if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
+                  left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+                makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+                  joinType, joins.BuildLeft, replicatedTableJoin = false)
+              } else {
+                makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
+                  joinType, joins.BuildRight, replicatedTableJoin = false)
+              }
+            } else if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) ||
+                !RowOrdering.isOrderable(leftKeys)) {
               makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                 joinType, joins.BuildLeft, replicatedTableJoin = false)
             } else if (RowOrdering.isOrderable(leftKeys)) {
-              joins.SortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
-                planLater(left), planLater(right)) :: Nil
+              new joins.SnappySortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
+                planLater(left), planLater(right), left.statistics.sizeInBytes,
+                right.statistics.sizeInBytes) :: Nil
             } else Nil
-          }
-          // broadcast joins preferred over exchange+local hash join or SMJ
-          else if (canBuildRight(joinType) && canBroadcast(right, conf)) {
-            if (skipBroadcastRight(joinType, left, right, conf)) {
-              Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
-                BuildLeft, condition, planLater(left), planLater(right)))
-            } else {
-              Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
-                BuildRight, condition, planLater(left), planLater(right)))
-            }
-          } else if (canBuildLeft(joinType) && canBroadcast(left, conf)) {
-            Seq(joins.BroadcastHashJoinExec(leftKeys, rightKeys, joinType,
-              BuildLeft, condition, planLater(left), planLater(right)))
-          }
-          // prefer local hash join after exchange over sort merge join if size is small enough
-          else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
-              !RowOrdering.isOrderable(leftKeys)) {
-            if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
-                left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
-              makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-                joinType, joins.BuildLeft, replicatedTableJoin = false)
-            } else {
-              makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-                joinType, joins.BuildRight, replicatedTableJoin = false)
-            }
-          } else if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) ||
-              !RowOrdering.isOrderable(leftKeys)) {
-            makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
-              joinType, joins.BuildLeft, replicatedTableJoin = false)
-          } else Nil
 
-        case _ => Nil
+          case _ => Nil
+        }
       }
-    }
 
     private def getCollocatedPartitioning(joinType: JoinType,
         leftPlan: LogicalPlan, leftKeys: Seq[Expression],
@@ -245,7 +325,7 @@ private[sql] trait SnappyStrategies {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = if (isDisabled) {
       Nil
     } else {
-      new SnappyAggregationStrategy(self).apply(plan)
+      new SnappyAggregationStrategy(planner).apply(plan)
     }
   }
 }
@@ -259,6 +339,28 @@ private[sql] object JoinStrategy {
   }
 
   /**
+   * Check for joinType query hint. A return value of Some(hint) indicates the query hint
+   * for the join operation, if any, else this returns None.
+   */
+  private[sql] def getJoinHint(plan: LogicalPlan): Option[String] = plan match {
+    case l: LogicalPlanWithHints => l.hints.get(QueryHint.JoinType.toString) match {
+      case Some(v) =>
+        val specifiedJoinHint = v.toLowerCase()
+        if (Constant.ALLOWED_JOIN_TYPE_HINTS.contains(specifiedJoinHint)) {
+          Some(specifiedJoinHint)
+        } else {
+          throw new ParseException(s"Unknown joinType hint '$v'. " +
+              s"Expected one of ${Constant.ALLOWED_JOIN_TYPE_HINTS}")
+        }
+      case None => None
+    }
+    case _: BroadcastHint => Some(Constant.JOIN_TYPE_BROADCAST)
+    case _: Filter | _: Project | _: LocalLimit =>
+      getJoinHint(plan.asInstanceOf[UnaryNode].child)
+    case _ => None
+  }
+
+  /**
    * Matches a plan whose output should be small enough to be used in broadcast join.
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
@@ -266,30 +368,34 @@ private[sql] object JoinStrategy {
         plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
   }
 
+  def getMaxHashJoinSize(conf: SQLConf): Long = {
+    ExternalStoreUtils.sizeAsBytes(Property.HashJoinSize.get(conf),
+      Property.HashJoinSize.name, -1, Long.MaxValue)
+  }
+
   /**
    * Matches a plan whose size is small enough to build a hash table.
    */
   def canBuildLocalHashMap(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.statistics.sizeInBytes <= ExternalStoreUtils.sizeAsBytes(
-      Property.HashJoinSize.get(conf), Property.HashJoinSize.name, -1, Long.MaxValue)
+    plan.statistics.sizeInBytes <= getMaxHashJoinSize(conf)
   }
 
-  def isLocalJoin(plan: LogicalPlan): Boolean = plan match {
+  def isReplicatedJoin(plan: LogicalPlan): Boolean = plan match {
     case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
-      (canBuildRight(joinType) && canLocalJoin(right)) ||
-          (canBuildLeft(joinType) && canLocalJoin(left))
+      (canBuildRight(joinType) && allowsReplicatedJoin(right)) ||
+          (canBuildLeft(joinType) && allowsReplicatedJoin(left))
     case _ => false
   }
 
-  def canLocalJoin(plan: LogicalPlan): Boolean = {
+  def allowsReplicatedJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
         case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
-        case Join(left, right, _, _) =>
-          // If join is a result of join of replicated tables, this
-          // join result should also be a local join with any other table
-          canLocalJoin(left) && canLocalJoin(right)
-        case node => if (node.children.size == 1) canLocalJoin(node.children.head) else false
+        case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
+        case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
+          allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
+              (canBuildLeft(joinType) || canBuildRight(joinType))
+        case _ => false
       }
       case _ => false
     }
@@ -313,7 +419,7 @@ private[sql] object JoinStrategy {
  *
  * Adapted from Spark's Aggregation strategy.
  */
-class SnappyAggregationStrategy(planner: DefaultPlanner)
+class SnappyAggregationStrategy(planner: SparkPlanner)
     extends Strategy {
 
   private val maxAggregateInputSize = {
@@ -608,6 +714,16 @@ class SnappyAggregationStrategy(planner: DefaultPlanner)
 }
 
 /**
+ * Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
+ */
+object OptimizeSortPlans extends Rule[SparkPlan] {
+  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
+    case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
+      join.copy(right = SnappySortExec(sort, child))
+  }
+}
+
+/**
  * Rule to collapse the partial and final aggregates if the grouping keys
  * match or are superset of the child distribution. Also introduces exchange
  * when inserting into a partitioned table if number of partitions don't match.
@@ -686,7 +802,7 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
-      case _ => CodegenSparkFallback(plan)
+      case _ => CodegenSparkFallback(plan, session)
     }
   }
 

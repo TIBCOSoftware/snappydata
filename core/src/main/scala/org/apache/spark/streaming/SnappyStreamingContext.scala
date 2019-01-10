@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,20 +18,19 @@ package org.apache.spark.streaming
 
 import java.util.concurrent.atomic.AtomicReference
 
-import com.pivotal.gemfirexd.Attribute
-import io.snappydata.Constant
-
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
+
+import com.pivotal.gemfirexd.Attribute
+import io.snappydata.Constant
+import io.snappydata.sql.catalog.CatalogObjectType
 import org.apache.hadoop.conf.Configuration
+
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
-import org.apache.spark.sql.hive.ExternalTableType
-import org.apache.spark.sql.internal.{SQLConf, SnappyConf}
-import org.apache.spark.sql.streaming.StreamBaseRelation
+import org.apache.spark.sql.streaming.{SchemaDStream, StreamBaseRelation, StreamSqlHelper}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SnappySession}
+import org.apache.spark.sql.{DataFrame, Row, SnappyContext, SnappySession}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -59,7 +58,7 @@ class SnappyStreamingContext protected[spark](
         "both SparkContext and checkpoint as null")
   }
 
-  val snappySession = reuseSnappySession.getOrElse(new SnappySession(sc))
+  val snappySession: SnappySession = reuseSnappySession.getOrElse(new SnappySession(sc))
   currentSnappySession.foreach(csn => {
     val attrs = Attribute.USERNAME_ATTR -> Attribute.PASSWORD_ATTR
     val smartAttrs = (Constant.SPARK_STORE_PREFIX + attrs._1) ->
@@ -74,7 +73,7 @@ class SnappyStreamingContext protected[spark](
     }
   })
 
-  val snappyContext = snappySession.snappyContext
+  val snappyContext: SnappyContext = snappySession.snappyContext
 
   SnappyStreamingContext.setInstanceContext(self)
 
@@ -138,7 +137,7 @@ class SnappyStreamingContext protected[spark](
    */
   override def start(): Unit = synchronized {
     if (getState() == StreamingContextState.INITIALIZED) {
-      registerStreamTables
+      registerStreamTables()
       // register population of AQP tables from stream tables
       snappySession.snappyContextFunctions.aqpTablePopulator(snappySession)
     }
@@ -146,11 +145,11 @@ class SnappyStreamingContext protected[spark](
     super.start()
   }
 
-  def registerStreamTables: Unit = {
+  def registerStreamTables(): Unit = {
     // register dummy output transformations for the stream tables
     // so that the streaming context starts
-    snappySession.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](Seq(
-                 ExternalTableType.Stream), None).foreach(_.rowStream.foreachRDD(_ => Unit))
+    snappySession.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](
+      CatalogObjectType.Stream).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 
   override def stop(stopSparkContext: Boolean,
@@ -163,7 +162,6 @@ class SnappyStreamingContext protected[spark](
       // snappySession.clearCache()
       if (stopSparkContext) {
         snappySession.clear()
-        StreamSqlHelper.registerRelationDestroy() // Not sure why we need this @TODO
       }
 
       StreamSqlHelper.clearStreams()
@@ -188,7 +186,7 @@ class SnappyStreamingContext protected[spark](
     // register a dummy task so that the DStream gets started
     // TODO: need to remove once we add proper registration of registerCQ
     // streams in catalog and possible AQP structures on top
-    dStream.foreachRDD((rdd, t) => Unit)
+    dStream.foreachRDD((_, _) => Unit)
     dStream
   }
 

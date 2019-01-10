@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -42,14 +42,15 @@ class SnappyHydraTestRunner extends SnappyTestRunner {
   def searchExceptions(logDir: File): Unit = {
     val c1 = s"grep -r Exception $logDir"
     val c2 = "grep -v  java.net.BindException"
-    val c3 = "grep -v NoSuchObjectException"
+    val c3 = "egrep -v (NoSuchObjectException|NucleusObjectNotFoundException|StateManager)"
     val c4 = "grep -v RegionDestroyedException"
     val c5 = "grep -v statArchive.gfs"
     val c6 = "grep -v DistributedSystemDisconnectedException"
     val c7 = "grep -v newDisconnectedException"
     val c8 = "grep -v CacheClosedException"
     val c12 = "grep -v java.io.FileNotFoundException"
-    val c13 = "grep -v org.apache.spark.shuffle.FetchFailedException"
+    val c13 = "egrep -v (org.apache.spark.shuffle.FetchFailedException|" +
+        "org.glassfish.jersey.server.internal.MappableExceptionWrapperInterceptor)"
     val c14 = "grep -v java.lang.reflect.InvocationTargetException"
     val c15 = "grep -v org.apache.spark.storage.ShuffleBlockFetcherIterator." +
         "throwFetchFailedException"

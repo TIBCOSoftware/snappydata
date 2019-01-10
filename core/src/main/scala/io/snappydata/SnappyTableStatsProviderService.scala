@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,10 +19,11 @@
 
 package io.snappydata
 
-import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+import java.util.concurrent.TimeUnit
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
@@ -30,7 +31,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, ExternalTableMetaData, LocalRegion, PartitionedRegion, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion, RegionEntry}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
@@ -38,9 +39,11 @@ import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
-import io.snappydata.collection.ObjectObjectHashMap
+import io.snappydata.sql.catalog.CatalogObjectType
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
@@ -77,7 +80,8 @@ object SnappyTableStatsProviderService {
     service
   }
 
-  var suspendCacheInvalidation = false
+  // only for testing
+  var TEST_SUSPEND_CACHE_INVALIDATION = false
 }
 
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
@@ -86,7 +90,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     if (!doRun) {
       this.synchronized {
         if (!doRun) {
-          val delay = sc.getConf.getLong(SPARK_SNAPPY_PREFIX +
+          val delay = sc.getConf.getLong(PROPERTY_PREFIX +
               "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
           Misc.getGemFireCache.getCCPTimer.schedule(
@@ -132,8 +136,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val itr = memStats.iterator()
 
-      val members = ObjectObjectHashMap.withExpectedSize[String,
-          MemberStatistics](8)
+      val members = new UnifiedMap[String, MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
@@ -142,9 +145,9 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         val id = memMap.get("id").toString
 
         var memberStats: MemberStatistics = {
-          if(dssUUID != null && membersInfo.contains(dssUUID.toString)) {
+          if (dssUUID != null && membersInfo.contains(dssUUID.toString)) {
             membersInfo(dssUUID.toString)
-          } else if(membersInfo.contains(id)) {
+          } else if (membersInfo.contains(id)) {
             membersInfo(id)
           } else {
             null
@@ -155,17 +158,17 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           memberStats = new MemberStatistics(memMap)
           if (dssUUID != null) {
             members.put(dssUUID.toString, memberStats)
-          } else {
-            members.put(id, memberStats)
           }
         } else {
           memberStats.updateMemberStatistics(memMap)
-          members.put(dssUUID.toString, memberStats)
+          if (dssUUID != null) {
+            members.put(dssUUID.toString, memberStats)
+          }
         }
 
         memberStats.setStatus("Running")
       }
-      membersInfo ++= members.asScala
+      membersInfo ++= mapAsScalaMapConverter(members).asScala
       // mark members no longer running as stopped
       existingMembers.filterNot(members.containsKey).foreach(m =>
         membersInfo(m).setStatus("Stopped"))
@@ -181,8 +184,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    var externalTables = scala.collection.mutable.Buffer.empty[SnappyExternalTableStats]
     val dataServers = GfxdMessage.getAllDataStores
+    var resultObtained: Boolean = false
     try {
       if (dataServers != null && dataServers.size() > 0) {
         result = FunctionService.onMembers(dataServers)
@@ -190,36 +193,64 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             .execute(SnappyRegionStatsCollectorFunction.ID).getResult(5, TimeUnit.SECONDS).
             asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
             .asScala
+        resultObtained = true
       }
     }
     catch {
-      case NonFatal(e) => log.warn(e.getMessage, e)
+      case NonFatal(e) =>
+        log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
+        log.debug(e.getMessage, e)
     }
 
-    try {
-      // External Tables
-      val hiveTables: java.util.List[ExternalTableMetaData] =
-        Misc.getMemStore.getExternalCatalog.getHiveTables(true)
-      externalTables = hiveTables.asScala.collect {
-        case table if table.tableType.equalsIgnoreCase("EXTERNAL") =>
-          new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-            table.externalStore, table.dataSourcePath, table.driverClass)
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables.asScala
+
+    val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
+      try {
+        // External Tables
+        hiveTables.collect {
+          case table if table.tableType == CatalogObjectType.External.toString =>
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.schema,
+              table.shortProvider, table.externalStore, table.dataSourcePath, table.driverClass)
+        }
+      }
+      catch {
+        case NonFatal(e) =>
+          log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
+          log.debug(e.getMessage, e)
+          mutable.Buffer.empty[SnappyExternalTableStats]
       }
     }
-    catch {
-      case NonFatal(e) => log.warn(e.getMessage, e)
-    }
 
-    if(result.flatMap(_.getRegionStats.asScala).size == 0) {
-      // Return last updated tableSizeInfo
-      (tableSizeInfo.values.toSeq,
-       result.flatMap(_.getIndexStats.asScala),
-       externalTables)
-    } else {
+    if (resultObtained) {
       // Return updated tableSizeInfo
-      (result.flatMap(_.getRegionStats.asScala),
-       result.flatMap(_.getIndexStats.asScala),
-       externalTables)
+      // Map to hold hive table type against table names as keys
+      val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
+      hiveTables.foreach(ht => {
+        val key = ht.schema.toString + "." + ht.entityName
+        tableTypesMap.put(key, ht.tableType)
+      })
+
+      val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
+        val tableName = rs.getTableName
+        try tableTypesMap.get(tableName) match {
+          case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
+            Utils.toUpperCase(t))) => rs.setColumnTable(true)
+          case _ => rs.setColumnTable(false)
+        } catch {
+          case _: Exception => rs.setColumnTable(false)
+        }
+        rs
+      })
+
+      // Return updated details
+      (regionStats,
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
+    } else {
+      // Return last successfully updated tableSizeInfo
+      (tableSizeInfo.values.toSeq,
+          result.flatMap(_.getIndexStats.asScala),
+          externalTables)
     }
   }
 
@@ -257,18 +288,21 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
             // TODO: this should use a transactional iterator to get a consistent
             // snapshot (also pass the same transaction to getNumColumnsInTable
             //   for reading value and delete count)
-            val itr = new pr.PRLocalScanIterator(true /* primaryOnly */ , null /* no TX */ ,
+            val itr = new pr.PRLocalScanIterator(false /* primaryOnly */ , null /* no TX */ ,
               null /* not required since includeValues is false */ ,
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
             // using direct region operations
             while (itr.hasNext) {
               val re = itr.next().asInstanceOf[AbstractRegionEntry]
               val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-              if (numColumnsInTable < 0) {
-                numColumnsInTable = key.getNumColumnsInTable(table)
+              val bucketRegion = itr.getHostedBucketRegion
+              if (bucketRegion.getBucketAdvisor.isPrimary) {
+                if (numColumnsInTable < 0) {
+                  numColumnsInTable = key.getNumColumnsInTable(table)
+                }
+                rowsInColumnBatch += key.getColumnBatchRowCount(bucketRegion, re,
+                  numColumnsInTable)
               }
-              rowsInColumnBatch += key.getColumnBatchRowCount(itr, re,
-                numColumnsInTable)
               re._getValue() match {
                 case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
                 case _ =>

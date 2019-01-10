@@ -8,7 +8,8 @@ Setting this property to **true** prevents this and requires different machines 
 ## Usage
 
 In the **conf/servers** file you can set this as:
-```no-highlight
+
+```pre
 localhost -locators=localhost:3241,localhost:3242 -gemfire.enforce-unique-host=true
 ```
 

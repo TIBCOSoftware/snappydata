@@ -5,10 +5,10 @@ Internally, it uses JDBC to interact with the cluster. You can also use tools li
 
 [Start the SnappyData cluster]() and enter the following:
 
-```no-highlight
+```pre
 // From the SnappyData base directory  
 $ ./bin/snappy-sql
-SnappyData version 1.0.1
+SnappyData version 1.0.2.1
 snappy-sql> 
 
 //Connect to the cluster as a client  

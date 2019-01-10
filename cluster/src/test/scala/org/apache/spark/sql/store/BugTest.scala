@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,312 +16,464 @@
  */
 package org.apache.spark.sql.store
 
-import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.{Constant, SnappyFunSuite}
-import org.junit.Assert.assertEquals
+import java.io.{BufferedReader, FileReader}
+import java.sql.{DriverManager, SQLException}
+
+import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.SparkConf
-
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
-  private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
-    this.stopAll()
-  }
-
-  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
-    val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
-      getClass.getResource("/auth.ldif").getPath)
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.setProperty(k, ldapProperties.getProperty(k))
-    }
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-    val conf = new org.apache.spark.SparkConf()
-        .setAppName("BugTest")
-        .setMaster("local[3]")
-        .set(Attribute.AUTH_PROVIDER, ldapProperties.getProperty(Attribute.AUTH_PROVIDER))
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-
-    if (addOn != null) {
-      addOn(conf)
-    } else {
-      conf
-    }
+    super.beforeAll()
   }
 
   override def afterAll(): Unit = {
-    this.stopAll()
-    val ldapServer = LdapTestServer.getInstance()
-    if (ldapServer.isServerStarted) {
-      ldapServer.stopService()
-    }
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.clearProperty(k)
-      System.clearProperty("gemfirexd." + k)
-      System.clearProperty(Constant.STORE_PROPERTY_PREFIX + k)
-    }
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
-    System.setProperty("gemfirexd.authentication.required", "false")
-  }
-
-  test("Bug SNAP-2255 connection pool exhaustion") {
-    val user1 = "gemfire1"
-    val user2 = "gemfire2"
-
-    val snc1 = snc.newSession()
-    snc1.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
-    snc1.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
-
-    snc1.sql(s"create table test (id  integer," +
-        s" name STRING) using column")
-    snc1.sql("insert into test values (1, 'name1')")
-    snc1.sql(s"GRANT select ON TABLE  test TO  $user2")
-
-    // TODO : Use the actual connection pool limit
-    val limit = 500
-    for (_ <- 1 to limit) {
-      val snc2 = snc.newSession()
-      snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
-      snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
-
-
-      val rs = snc2.sql(s"select * from $user1.test").collect()
-      assertEquals(1, rs.length)
-    }
+    super.afterAll()
   }
 
   test("SNAP-2342 nested query involving joins & union throws Exception") {
-    val user1 = "gemfire1"
-    val session = snc.newSession()
-    session.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
-    session.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
+    snc.sql(s"create table tab1 ( " +
+        "field1   string," +
+        "field2   string," +
+        "field3   string," +
+        "field4   string," +
+        "field5   string," +
+        "field6   string," +
+        "field7   string," +
+        "field8   string," +
+        "field9   string," +
+        "field10   string," +
+        "field11   string," +
+        "field12   string," +
+        "field13   string," +
+        "field14   string," +
+        "field15   string," +
+        "field16   string," +
+        "field17   string," +
+        "localfield8   string," +
+        "localfield9   string," +
+        "localfield10   string," +
+        "localfield11   string," +
+        "localfield15   string," +
+        "localfield16   string," +
+        "field18   string," +
+         "field19   string," +
+        "sfield13   string," +
+        "field20   string," +
+        "field21   string," +
+        "field22   string," +
+        "field23   string )")
 
-    session.sql(s"create table ujli ( " +
-        "aagmaterial   string," +
-        "accountassignmentgroup   string," +
-        "accounttype   string," +
-        "allocationcycle   string," +
-        "allocationsegment   string," +
-        "asset   string," +
-        "billingdocument   string," +
-        "billingdocumentitem   string," +
-        "bravoequitycode   string," +
-        "bravominorcode   string," +
-        "bsegdocumentlinenumber   string," +
-        "businessplace   string," +
-        "businesstransaction   string," +
-        "controllingarea   string," +
-        "copadocumentnumber   string," +
-        "copaobjectnumber   string," +
-        "costcenter   string," +
-        "costelement   string," +
-        "countryofshiptocustomer   string," +
-        "createdby   string," +
-        "creationtime   string," +
-        "customer   string," +
-        "customergroup   string," +
-        "debitcreditindicator   string," +
-        "distributionchannel   string," +
-        "division   string," +
-        "documentdate   string," +
-        "documentheadertext   string," +
-        "documentlinenumberinsourcesystem   string," +
-        "documentnumberinsourcesystem   string," +
-        "documenttype   string," +
-        "edgcreateditemindoc   string," +
-        "entrydate   string," +
-        "errorstatus   string," +
-        "fidocumentquantity   string," +
-        "fiscalperiod   string," +
-        "fiscalyear   string," +
-        "fsid   string," +
-        "functionalareacode   string," +
-        "glaccountcode   string," +
-        "hleamount   string," +
-        "indexfromcopa   string," +
-        "itemcategory   string," +
-        "itemtext   string," +
-        "kitmaterial   string," +
-        "kittype   string," +
-        "leamount   string," +
-        "lebillingtype   string," +
-        "lecode   string," +
-        "lecurrencycode   string," +
-        "lesalesqty   string," +
-        "lesalesqtyuom   string," +
-        "ledgercode   string," +
-        "localcompanycode   string," +
-        "localdocumenttype   string," +
-        "localfiscalperiod   string," +
-        "localfiscalyear   string," +
-        "localfunctionalareacode   string," +
-        "localglaccountcode   string," +
-        "locallecurrencycode   string," +
-        "localledgercode   string," +
-        "localmrccode   string," +
-        "localprofitcenter   string," +
-        "localsku   string," +
-        "localversioncode   string," +
-        "mrccode   string," +
-        "parentdocumentnumberinsourcesystem   string," +
-        "partnercostcenter   string," +
-        "partnerfunctionalarea   string," +
-        "partnerprofitcenter   string," +
-        "partnersegment   string," +
-        "payer   string," +
-        "pcadocnumber   string," +
-        "pcaitemnumber   string," +
-        "plant   string," +
-        "postingdate   string," +
-        "postingkey   string," +
-        "producthierarchy   string," +
-        "psegment   string," +
-        "rclnt   string," +
-        "reference   string," +
-        "referencedocument   string," +
-        "referencetransaction   string," +
-        "regionofshiptocustomer   string," +
-        "salesdoctype   string," +
-        "salesgroup   string," +
-        "salesoffice   string," +
-        "salesorder   string," +
-        "salesorderitem   string," +
-        "salesorganization   string," +
-        "sectorproductgroup   string," +
-        "shipto   string," +
-        "sleamount   string," +
-        "sourcesystemid   string," +
-        "tradingpartner   string," +
-        "transactioncode   string," +
-        "transactioncurrencyamount   string," +
-        "transactioncurrencycode   string," +
-        "transactiontype   string," +
-        "ujlkey   string," +
-        "valuefieldfromcopa   string," +
-        "vendor   string," +
-        "versioncode   string )")
+    snc.sql("create table tab2 (" +
+        "field24   string," +
+        "field9   string," +
+        "field25   string," +
+        "field10   string," +
+        "field11   string," +
+        "field12   string," +
+        "field13   string," +
+        "field14   string," +
+        "field15   string," +
+        "field16   string," +
+        "field17   string," +
+        "localfield9   string," +
+        "localfield10   string," +
+        "localfield11   string," +
+        "localfield15   string," +
+        "localfield16   string," +
+        "field18   string," +
+        "localfield23   string," +
+        "field19   string," +
+        "sfield13   string," +
+        "field26   string," +
+        "field20   string," +
+         "field23   string)")
 
-    session.sql("create table ujs (" +
-        "uuid   string," +
-        "bravoequitycode   string," +
-        "controllingarea   string," +
-        "costcenter   string," +
-        "creationtime   string," +
-        "debitcreditindicator   string," +
-        "errstatus   string," +
-        "fiscalyear   string," +
-        "fsid   string," +
-        "functionalareacode   string," +
-        "glaccountcode   string," +
-        "hleamount   string," +
-        "leamount   string," +
-        "lecode   string," +
-        "lecostelement   string," +
-        "lecurrencycode   string," +
-        "leplant   string," +
-        "ledgercode   string," +
-        "localcompanycode   string," +
-        "localfiscalyear   string," +
-        "localfunctionalareacode   string," +
-        "localglaccountcode   string," +
-        "locallecurrencycode   string," +
-        "localledgercode   string," +
-        "localmrccode   string," +
-        "localprofitcenter   string," +
-        "localversioncode   string," +
-        "mrccode   string," +
-        "partnerfunctionalarea   string," +
-        "partnerprofitcenter   string," +
-        "partnersegment   string," +
-        "referencetransaction   string," +
-        "sleamount   string," +
-        "sourceadditionalkey   string," +
-        "sourcesystemid   string," +
-        "tradingpartner   string," +
-        "transactioncurrencyamount   string," +
-        "transactioncurrencycode   string," +
-        "transactiontype   string," +
-        "versioncode   string)")
+    snc.sql("create table tab3 (" +
+        "field27 string, " +
+        " field27description string, " +
+        " field28 string )")
 
-    session.sql("create table gfs (" +
-        "gfs string, " +
-        " gfsdescription string, " +
-        " globalfunctionalarea string )")
+    snc.sql("create table tab4 (" +
+        " field29  string," +
+        "field29description  string," +
+        " field27 string, " +
+        " field27description string)")
 
-    session.sql("create table bravo (" +
-        " bravo  string," +
-        "bravodescription  string," +
-        " gfs string, " +
-        " gfsdescription string)")
+    snc.sql("create table tab5 (" +
+        "field27 string," +
+        "field27description  string," +
+        "field30  string," +
+        "field30description  string)")
 
-    session.sql("create table gtw (" +
-        "gfs string," +
-        "gfsdescription  string," +
-        "gtw  string," +
-        "gtwdescription  string)")
+    snc.sql("create table tab6 (" +
+        "field1   string," +
+        "field27   string," +
+        "field27description   string," +
+        "field28   string," +
+        "field31   string," +
+        "field32   string," +
+        "field32description   string)")
 
-    session.sql("create table coa (" +
-        "accounttype   string," +
-        "errorcode   string," +
-        "errormessage   string," +
-        "errorstatus   string," +
-        "gfs   string," +
-        "gfsdescription   string," +
-        "globalfunctionalarea   string," +
-        "indicevalue   string," +
-        "localfunctionalarea   string," +
-        "localgl   string," +
-        "localgldescription   string)")
+    snc.sql(s"create or replace view view1 as " +
+        s"( select  field33,field27,first(field27Description) as field27Description, " +
+        s"first(field29) as field29, " +
+        s"first(field29Description) as field29Description,  first(field30) as field30, " +
+        s"first(field30Description) as field30Description, " +
+        s"first(field28) as field28," +
+        s"format_number(sum(field34),2) as field34," +
+        s" format_number(sum(field34),2) as field35,format_number(sum(total),2) as total from" +
+        s" ( select a.field14 as field33,a.field17 as leLocal," +
+        s" a.field19 as field36," +
+        s" a.field20 as field37,a.field11 as field27," +
+        s"a.localfield11 as field32," +
+        s" SUM(field12) as field35,SUM(sfield13) as field34,SUM(field13) as total," +
+        s" first(b.field27Description) as field27Description," +
+        s" first(b.field28) as field28," +
+        s" first((case when a.field20='x1' then e.field32Description " +
+        s" when a.field20='b1' then b.field27Description else '' end)) " +
+        s" as field32Description ," +
+        s" first(c.field29Description) as field29Description," +
+        s"first(d.field30Description) as field30Description, " +
+        s" first(c.field29) as field29, first(d.field30) as field30 from ( select field16," +
+        s"field14," +
+        s" field17,field19,field9,field20,localfield11," +
+        s" field11,last(localfield10),SUM(field13) as field13," +
+        s" SUM(field12) as field12,SUM(sfield13) as sfield13, field11 ," +
+        s" 'Y1' as field1,localfield11 as field32 from " +
+        s" ( select field16,field14,field17,field19,field9,field20," +
+        s" localfield11,field11,localfield10,field13,field12,sfield13" +
+        s"  from tab1  where field16='0L' and field14='7600' " +
+        s" AND field9='2017' and field8<=3 AND field20='b1'  union all" +
+        s" select field16,field14,field17,field19,field9,field20," +
+        s" localfield11,field11,localfield10,field13,field12," +
+        s" sfield13  from tab2  where field16='0L' and field14='7600'" +
+        s" AND field9='2017' AND field20='btb_latam' )  group by field16," +
+        s" field14,field17,field19,field9,field20," +
+        s" localfield11,field11 ) a" +
+        s" left join tab3 b on (a.field11=b.field27) left join " +
+        s" tab4 c " +
+        s" on (a.field11=c.field27)  left join tab5 d on (a.field11=d.field27)" +
+        s" left join tab6 e on(a.field1=e.field1 and " +
+        s"  a.field11 = e.field27 and a.field32 = e.field32 ) group by a.field14," +
+        s"a.field17," +
+        s" a.field19,a.field20,a.field11,a.localfield11," +
+        s"c.field29,d.field30) group by field33,field27)")
 
-    session.sql(s"create or replace view TrialBalance as " +
-        s"( select  leUniversal,gfs,first(gfsDescription) as gfsDescription, " +
-        s"first(bravo) as bravo, " +
-        s"first(bravoDescription) as bravoDescription,  first(gtw) as gtw, " +
-        s"first(gtwDescription) as gtwDescription, " +
-        s"first(globalFunctionalArea) as globalFunctionalArea," +
-        s"format_number(sum(credit),2) as credit," +
-        s" format_number(sum(debit),2) as debit,format_number(sum(total),2) as total from" +
-        s" ( select a.leCode as leUniversal,a.localCompanyCode as leLocal," +
-        s" a.mrcCode as mrcUniversal," +
-        s" a.sourceSystemId as sourceSystem,a.glAccountCode as gfs," +
-        s"a.localGlAccountCode as localGl," +
-        s" SUM(hleAmount) as debit,SUM(sleAmount) as credit,SUM(leAmount) as total," +
-        s" first(b.gfsDescription) as gfsDescription," +
-        s" first(b.globalFunctionalArea) as globalFunctionalArea," +
-        s" first((case when a.sourceSystemId='project_one' then e.localGlDescription " +
-        s" when a.sourceSystemId='btb_latam' then b.gfsDescription else '' end)) " +
-        s" as localGlDescription ," +
-        s" first(c.bravoDescription) as bravoDescription," +
-        s"first(d.gtwDescription) as gtwDescription, " +
-        s" first(c.bravo) as bravo, first(d.gtw) as gtw from ( select ledgerCode,leCode," +
-        s" localCompanyCode,mrcCode,fiscalYear,sourceSystemId,localGlAccountCode," +
-        s" glAccountCode,last(localFunctionalAreaCode),SUM(leAmount) as leAmount," +
-        s" SUM(hleAmount) as hleAmount,SUM(sleAmount) as sleAmount, glAccountCode ," +
-        s" 'Local GL' as accountType,localGlAccountCode as localGl from " +
-        s" ( select ledgerCode,leCode,localCompanyCode,mrcCode,fiscalYear,sourceSystemId," +
-        s" localGlAccountCode,glAccountCode,localFunctionalAreaCode,leAmount,hleAmount,sleAmount" +
-        s"  from ujli  where ledgerCode='0L' and leCode='7600' " +
-        s" AND fiscalYear='2017' and fiscalPeriod<=3 AND sourceSystemId='btb_latam'  union all" +
-        s" select ledgerCode,leCode,localCompanyCode,mrcCode,fiscalYear,sourceSystemId," +
-        s" localGlAccountCode,glAccountCode,localFunctionalAreaCode,leAmount,hleAmount," +
-        s" sleAmount  from ujs  where ledgerCode='0L' and leCode='7600'" +
-        s" AND fiscalYear='2017' AND sourceSystemId='btb_latam' )  group by ledgerCode," +
-        s" leCode,localCompanyCode,mrcCode,fiscalYear,sourceSystemId," +
-        s" localGlAccountCode,glAccountCode ) a" +
-        s" left join gfs b on (a.glAccountCode=b.gfs) left join " +
-        s" bravo c " +
-        s" on (a.glAccountCode=c.gfs)  left join gtw d on (a.glAccountCode=d.gfs)" +
-        s" left join coa e on(a.accountType=e.accountType and " +
-        s"  a.glAccountCode = e.gfs and a.localGl = e.localGl ) group by a.leCode," +
-        s"a.localCompanyCode," +
-        s" a.mrcCode,a.sourceSystemId,a.glAccountCode,a.localGlAccountCode," +
-        s"c.bravo,d.gtw) group by leUniversal,gfs)")
+    snc.sql("drop view view1")
+    snc.sql("drop table if exists tab1")
+    snc.sql("drop table if exists tab2")
+    snc.sql("drop table if exists tab3")
+    snc.sql("drop table if exists tab4")
+    snc.sql("drop table if exists tab5")
+    snc.sql("drop table if exists tab6")
+
   }
+/////////
+  test("Bug SNAP-2332 . ParamLiteral found in First/Last Aggregate Function") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+
+    val insertDF = snappy.range(50).selectExpr("id", "(id * 12) as k",
+      "concat('val', cast(100 as string)) as s")
+
+    snappy.sql("drop table if exists test")
+    snappy.sql("create table test (id bigint, k bigint, s varchar(10)) " +
+        "using column options(buckets '8')")
+    insertDF.write.insertInto("test")
+    val query1 = "select sum(id) as summ, first(s, true) as firstt, last(s, true) as lastt" +
+        " from test having (first(s, true) = 'val100' or last(s, true) = 'val100' )"
+
+
+    var ps = conn.prepareStatement(query1)
+    var resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    var rs = snappy.sql(query1)
+    rs.collect()
+    rs = snappy.sql(query1)
+    rs.collect()
+
+    resultset = stmt.executeQuery(query1)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    val query2 = "select sum(id) summ , first(s) firstt, last(s) lastt " +
+        " from test having (first(s) = 'val100' or last(s) = 'val100' )"
+
+    ps = conn.prepareStatement(query2)
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    resultset = stmt.executeQuery(query2)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    rs = snappy.sql(query2)
+    rs.collect()
+
+
+    stmt.execute(s"create or replace view X as ($query2)")
+    val query3 = "select * from X where summ > 0"
+    ps = conn.prepareStatement(query3)
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    rs = snappy.sql(query3)
+    rs.collect()
+    rs = snappy.sql(query3)
+    rs.collect()
+    resultset = stmt.executeQuery(query3)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    val table1 = s"create table tab1 ( " +
+        "field1   string," +
+        "field2   string," +
+        "field3   string," +
+        "field4   string," +
+        "field5   string," +
+        "field6   string," +
+        "field7   string," +
+        "field8   string," +
+        "field9   string," +
+        "field10   string," +
+        "field11   string," +
+        "field12   string," +
+        "field13   string," +
+        "field14   string," +
+        "field15   string," +
+        "field16   string," +
+        "field17   string," +
+        "localfield8   string," +
+        "localfield9   string," +
+        "localfield10   string," +
+        "localfield11   string," +
+        "localfield15   string," +
+        "localfield16   string," +
+        "field18   string," +
+        "field19   string," +
+        "sfield13   string," +
+        "field20   string," +
+        "field21   string," +
+        "field22   string," +
+        "field23   string )"
+
+    val table2 = "create table tab7 (" +
+        "globalfield16 string," +
+        "globalfield16description string," +
+        "localfield16 string, " +
+        "localfield16description string," +
+        "field20 string)"
+
+    val table3 = "create table field29_hier (" +
+        "field38 string," +
+        "field39 string," +
+        "field40 string," +
+        "field41 string," +
+        "field42 string," +
+        "field43 string," +
+        "subfield38 string," +
+        "subfield39 string," +
+        "field44 string," +
+        "field45 string," +
+        "field46 string)"
+
+    stmt.execute(table1)
+    stmt.execute(table2)
+    stmt.execute(table3)
+
+    val view = "CREATE or replace view view2 as (SELECT " +
+        "A.field9,first(A.field8) as field8,A.field14, A.localfield16," +
+        "A.field20,  A.field11,A.field3, A.field19, " +
+        " first(A.field15) as field15," +
+        " first(A.field23) as field23, first(A.field10) as field10," +
+        "SUM(A.field13 ) as field13,  " +
+        "first(B.globalfield16Description) as globalfield16Description," +
+        " first(C.field44) as field44," +
+        " first(C.field38) as field38,  " +
+        "first(C.field45) as field45," +
+        " first(C.subfield38) as subfield38, " +
+        "first(C.field40) as field40" +
+        " FROM tab1 A  LEFT JOIN tab7 B " +
+        " ON A.field20 = B.field20 AND " +
+        " B.globalfield16 = A.localfield16 LEFT JOIN field29_hier C ON " +
+        " A.field3 = field42 WHERE A.localfield16 ='0L' " +
+        " GROUP BY A.field14, A.field19, " +
+        "A.field9, A.field20, A.field11, A.field3, A.localfield16 " +
+        "having ( SUM(A.field13 ) > 0.001F or SUM(A.field13 ) < -0.001F) );"
+
+    stmt.execute(view)
+
+    val q = "SELECT field14 FROM view2 GROUP BY 1"
+    ps = conn.prepareStatement(q)
+
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getString(1)
+    }
+    stmt.execute("drop view view2")
+    snc.sql("drop table if exists tab1")
+    snc.sql("drop table if exists tab7")
+    snc.sql("drop table if exists field29_hier")
+    conn.close()
+    TestUtil.stopNetServer()
+
+  }
+
+  test("big view") {
+    val snc = this.snc
+    val serverHostPort2 = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    val session = this.snc.snappySession
+
+    // check temporary view with USING and its meta-data
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val stagingDF = snc.read.load(hfile)
+    snc.createTable("airline", "column", stagingDF.schema,
+      Map.empty[String, String])
+
+
+    // create a big view on it
+    val viewFile = getClass.getResource("/bigviewcase.sql")
+    val br = new BufferedReader(new FileReader(viewFile.getFile))
+    var viewSql = ""
+    var keepGoing = true
+    while(keepGoing) {
+      val x = br.readLine()
+      if (x != null) {
+        viewSql += x
+      } else {
+        keepGoing = false
+      }
+    }
+    val viewname = "AIRLINEBOGUSVIEW"
+
+    // check catalog cache is cleared for VIEWs
+    val cstmt = conn.prepareCall(s"call SYS.GET_COLUMN_TABLE_SCHEMA(?, ?, ?)")
+    cstmt.setString(1, "APP")
+    cstmt.setString(2, viewname)
+    cstmt.registerOutParameter(3, java.sql.Types.CLOB)
+    try {
+      cstmt.execute()
+      assert(cstmt.getString(3) === "")
+      fail("expected to fail")
+    } catch {
+      case se: SQLException if se.getSQLState == "XIE0M" =>
+    }
+
+    // create view
+    session.sql(viewSql)
+
+    // meta-data lookup should not fail now
+    cstmt.execute()
+    assert(cstmt.getString(3).contains(
+      "CASE WHEN (YEARI > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
+
+    // query on view
+    session.sql(s"select count(*) from $viewname").collect()
+    // check column names
+    val rs = conn.getMetaData.getColumns(null, null, viewname, "%")
+    var foundValidColumnName = false
+    while(rs.next() && !foundValidColumnName) {
+      val colName = rs.getString("COLUMN_NAME")
+      if  (colName == "YEARI") {
+        foundValidColumnName = true
+      }
+    }
+    assert(foundValidColumnName)
+
+    snc.sql(s"drop view $viewname")
+    snc.sql("drop table airline")
+    conn.close()
+    TestUtil.stopNetServer()
+  }
+
+  test("Column table creation test - SNAP-2577") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val session = this.snc.snappySession
+    stmt.execute(s"CREATE TABLE temp (username String, id Int) " +
+        s" USING column ")
+    val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
+      "USERY" -> 8, "USERY" -> 9)
+    val rdd = sc.parallelize(seq)
+
+    val dataDF = session.createDataFrame(rdd)
+
+    dataDF.write.insertInto("temp")
+    snc.sql("drop table temp")
+    conn.close()
+    TestUtil.stopNetServer()
+  }
+
+  test("Bug SNAP-2758 . view containing aggregate function & join throws error") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    snappy.sql("drop table if exists test1")
+    snappy.sql("create table test1 (col1_1 int, col1_2 int, col1_3 int, col1_4 string) " +
+        "using column ")
+
+    snappy.sql("create table test2 (col2_1 int, col2_2 int,  col2_3 int, col2_5 string) " +
+        "using column ")
+
+    snappy.sql(" CREATE OR REPLACE VIEW v1 as select col2_1, col2_2, " +
+        "col2_5 as longtext from test2 where col2_3 > 10")
+
+    val q1 = "select a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4 = '' THEN '#' ELSE a.col1_4 END functionalAreaCode," +
+        "b.longtext as name, " +
+        " sum(a.col1_3)" +
+        "from test1 a left outer join v1 as b on a.col1_1 = b.col2_1" +
+        " group by a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4  = '' THEN '#' ELSE a.col1_4  END," +
+        " b.longtext "
+    snappy.sql(q1)
+    snappy.sql(s" CREATE OR REPLACE VIEW v3 as $q1")
+
+    val q = "select a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4 = '' THEN '#' ELSE a.col1_4 END functionalAreaCode," +
+        "'#' as fsid,  " +
+        "b.longtext as name, " +
+        " sum(a.col1_3)" +
+        "from test1 a left outer join v1 as b on a.col1_1 = b.col2_1" +
+        " group by a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4  = '' THEN '#' ELSE a.col1_4  END," +
+        " '#'," +
+        " b.longtext "
+    snappy.sql(q)
+    snappy.sql(s" CREATE OR REPLACE VIEW v2 as $q")
+    snappy.sql("select count(*) from v2").collect()
+
+    stmt.execute("drop view v3")
+    stmt.execute("drop view v2")
+    stmt.execute("drop view v1")
+    snc.sql("drop table if exists test1")
+    snc.sql("drop table if exists test2")
+
+    conn.close()
+    TestUtil.stopNetServer()
+
+  }
+
+
 }

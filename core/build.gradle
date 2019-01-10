@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,12 +15,8 @@
  * LICENSE file.
  */
 
-plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.1'
-  id 'de.undercouch.download' version '3.3.0'
-}
-
 apply plugin: 'scala'
+apply plugin: 'de.undercouch.download'
 
 compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
@@ -28,7 +24,7 @@ sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
                                   'src/dunit/java', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
-sourceSets.test.java.srcDirs = [ ]
+sourceSets.test.java.srcDirs = []
 
 def osName = org.gradle.internal.os.OperatingSystem.current()
 
@@ -53,7 +49,8 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   } else {
@@ -62,7 +59,8 @@ dependencies {
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
 
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
@@ -72,7 +70,8 @@ dependencies {
     testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     testCompile("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-streaming-kafka-0-8_${scalaBinaryVersion}:${sparkVersion}")
+    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
+    testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
 
     testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
@@ -89,22 +88,24 @@ dependencies {
     compile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion
     testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
   }
+  compile project(":snappy-jdbc_${scalaBinaryVersion}")
+  compile project(":snappy-encoders_${scalaBinaryVersion}")
 
-  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.4") {
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:${parboiledVersion}") {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
-  compile 'org.apache.tomcat:tomcat-jdbc:8.5.23'
-  compile 'com.zaxxer:HikariCP:2.7.1'
-  // compile 'org.spark-project:dstream-twitter_2.11:0.1.0'
-  compile 'org.twitter4j:twitter4j-stream:4.0.6'
-  compile 'org.objenesis:objenesis:2.6'
+  compile "org.apache.tomcat:tomcat-juli:${tomcatJdbcVersion}"
+  compile "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
+  compile "com.zaxxer:HikariCP:${hikariCPVersion}"
+  compile "org.twitter4j:twitter4j-stream:${twitter4jVersion}"
+  compile "org.objenesis:objenesis:${objenesisVersion}"
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
-  compile "com.koloboke:koloboke-api-jdk8:${kolobokeVersion}"
-  compile "com.koloboke:koloboke-impl-common-jdk8:${kolobokeVersion}"
+  compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
+  compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
 
-  compileOnly 'com.rabbitmq:amqp-client:3.5.7'
+  compileOnly "com.rabbitmq:amqp-client:${rabbitMqVersion}"
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
@@ -112,8 +113,11 @@ dependencies {
 
   testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
   testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
 
+  testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -125,10 +129,6 @@ if (rootProject.hasProperty('enablePublish')) {
   artifacts {
     archives packageScalaDocs, packageSources
   }
-}
-
-testClasses.doLast {
-  copyTestsCommonResources(buildDir)
 }
 
 scalaTest {
@@ -143,43 +143,54 @@ scalaTest {
   }
 }
 
-task downloadApacheSparkDist(type: de.undercouch.gradle.tasks.download.Download) {
-  outputs.files "${sparkProductDir}.tgz"
+def downloadApacheSparkDist(String ver, String distName, String prodDir) {
+  return tasks.create("downloadApache${ver}SparkDist", Download) {
+    outputs.files "${prodDir}.tgz", "${prodDir}/README.md"
 
-  src "http://archive.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
-  dest sparkDistDir
-  onlyIfNewer true
+    src "http://archive.apache.org/dist/spark/spark-${ver}/${distName}.tgz"
+    dest sparkDistDir
+    onlyIfNewer true
 
-  doFirst {
-    mkdir(sparkDistDir)
+    doFirst {
+      mkdir(sparkDistDir)
+    }
   }
 }
 
-task getApacheSparkDist {
-  dependsOn downloadApacheSparkDist
+def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
+  return tasks.create("getApacheSpark${ver}Dist") {
+    dependsOn downloadApacheSparkDist(ver, distName, prodDir)
 
-  outputs.files "${sparkProductDir}.tgz", "${sparkProductDir}/README.md"
+    outputs.files "${prodDir}.tgz", "${prodDir}/README.md"
 
-  doLast {
-    if (osName.isWindows()) {
-      copy {
-        from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
-        into sparkDistDir
-      }
-    } else {
-      // gradle tarTree does not preserve symlinks (GRADLE-2844)
-      exec {
-        executable 'tar'
-        args 'xzf', "${sparkDistName}.tgz"
-        workingDir = sparkDistDir
+    doLast {
+      if (osName.isWindows()) {
+        copy {
+          from tarTree(resources.gzip("${sparkDistDir}/${distName}.tgz"))
+          into sparkDistDir
+        }
+      } else {
+        // gradle tarTree does not preserve symlinks (GRADLE-2844)
+        exec {
+          executable 'tar'
+          args 'xzf', "${distName}.tgz"
+          workingDir = sparkDistDir
+        }
       }
     }
   }
 }
 
+task getApacheSparkDist {
+  dependsOn taskGetApacheSparkDist(sparkVersion, sparkDistName, sparkProductDir)
+  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
+}
+
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
+// SplitClusterDUnitSecurityTest.testSnappyStreamingJob needs cluster tests
+dunitSecurityTest.dependsOn ":snappy-cluster_${scalaBinaryVersion}:testClasses"
 check.dependsOn test, scalaTest, dunitTest
 if (rootProject.hasProperty('snappydata.enterprise')) {
   check.dependsOn dunitSecurityTest
@@ -191,8 +202,8 @@ shadowJar {
   zip64 = true
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-  // relocate koloboke for possible conflicts with user dependencies
-  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
+  // relocate eclipse collections for possible conflicts with user dependencies
+  relocate 'org.eclipse.collections', 'io.snappydata.org.eclipse.collections'
   // relocate the guava's com.google packages
   relocate 'com.google.common', 'io.snappydata.com.google.common'
 

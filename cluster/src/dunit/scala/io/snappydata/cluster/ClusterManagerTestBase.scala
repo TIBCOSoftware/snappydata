@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -68,6 +68,8 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("spark.memory.manager",
     "org.apache.spark.memory.SnappyUnifiedMemoryManager")
   bootProps.setProperty("critical-heap-percentage", "95")
+  bootProps.setProperty("gemfirexd.max-lock-wait", "60000")
+  bootProps.setProperty("member-timeout", "5000")
 
   // reduce startup time
   // sysProps.setProperty("p2p.discoveryTimeout", "1000")
@@ -78,6 +80,8 @@ abstract class ClusterManagerTestBase(s: String)
   sysProps.setProperty("spark.memory.debugFill", "true")
   // reduce minimum compression size so that it happens for all the values for testing
   sysProps.setProperty(Constant.COMPRESSION_MIN_SIZE, "128")
+
+  sysProps.setProperty("gemfire.DISALLOW_CLUSTER_RESTART_CHECK", "true")
 
   var host: Host = _
   var vm0: VM = _
@@ -300,8 +304,8 @@ object ClusterManagerTestBase extends Logging {
     if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
-      TestUtils.dropAllTables(snc)
-      TestUtils.dropAllFunctions(snc)
+      TestUtils.resetAllFunctions(snc.snappySession)
+      TestUtils.dropAllSchemas(snc.snappySession)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")

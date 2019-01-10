@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -33,6 +33,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
@@ -58,7 +59,7 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setSchema(schema)
+  session.setCurrentSchema(schema)
 
   session.setPreparedQuery(preparePhase = true, None)
 
@@ -69,11 +70,26 @@ class SparkSQLPrepareImpl(val sql: String,
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
   protected[this] val hdos = new GfxdHeapDataOutputStream(
-    thresholdListener, sql, true, senderVersion)
+    thresholdListener, sql, false, senderVersion)
+
+  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
+      getTableNamesAndNullability(session, analyzedPlan.output)
+
+  private lazy val (columnNames, columnDataTypes) = SparkSQLPrepareImpl.
+      getTableNamesAndDatatype(analyzedPlan.output)
+
+  // check for query hint to serialize complex types as JSON strings
+  private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
+
+  private def getColumnTypes: Array[(Int, Int, Int)] =
+    columnDataTypes.map(d => SparkSQLExecuteImpl.getSQLType(d, complexTypeAsJson))
 
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
+    SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, columnNames,
+      getColumnTypes, columnDataTypes, session.getWarnings)
+
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
@@ -223,6 +239,12 @@ class SparkSQLPrepareImpl(val sql: String,
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
   }
+}
+
+object SparkSQLPrepareImpl{
+  def getTableNamesAndDatatype(
+      output: Seq[expressions.Attribute]): (Array[String], Array[DataType]) =
+    output.toArray.map(o => o.name -> o.dataType).unzip
 }
 
 object QuestionMark {

@@ -81,7 +81,7 @@ At the start, each of the two pools is assigned a portion of the available memor
 
 **Example**: Configuration for memory (typically configured in **conf/leads** or **conf/servers**) 
 ```scala
--heap-size = 20g -critical-heap-percentage=90 -eviction-heap-percentage=81
+-heap-size=20g -critical-heap-percentage=90 -eviction-heap-percentage=81
 ```
 
 **Example**: Depicts how SnappyData derives different memory region sizes
@@ -129,7 +129,7 @@ Off-Heap Execution_Pool_Size => 16g * (0.5) = 8g
 Max_Off_Heap_Storage_pool_Size => 16g * 0.9 = 14.4 ( 0.9 System default)
 ```
 
-!!! Note:
+!!! Note
 
 	* For row tables: According to the requirements of your row table size, configure the heap size. Row tables in SnappyData do not use off-heap memory.
 

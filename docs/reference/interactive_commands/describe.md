@@ -4,7 +4,7 @@ Provides a description of the specified table or view.
 
 ## Syntax
 
-```no-highlight
+```pre
 DESCRIBE { table-Name | view-Name }
 ```
 
@@ -16,7 +16,7 @@ If the table or view is in a particular schema, qualify it with the schema name.
 
 ## Example
 
-```no-highlight
+```pre
 snappy> describe maps;
 COLUMN_NAME         |TYPE_NAME|DEC&|NUM&|COLUM&|COLUMN_DEF|CHAR_OCTE&|IS_NULL&
 ------------------------------------------------------------------------------

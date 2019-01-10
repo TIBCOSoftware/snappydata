@@ -4,7 +4,7 @@ Support for hive compatible LATERAL VIEW. It works with a table generating funct
 
 ## Syntax
 
-``` no-highlight
+```pre
 FROM baseTable (lateralView)*
 lateralView: LATERAL VIEW function([expressions]) tableAlias [AS columnAlias (',' columnAlias)*]
 
@@ -12,7 +12,7 @@ lateralView: LATERAL VIEW function([expressions]) tableAlias [AS columnAlias (',
 
 ## Example
 
-``` no-highlight
+```pre
 "id": 1
 "purpose": "business"
 "type": sales

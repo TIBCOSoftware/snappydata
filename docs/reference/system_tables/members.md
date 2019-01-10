@@ -27,7 +27,7 @@ A SnappyData virtual table that contains information about each distributed syst
 
 **Example** </br>
 
-```
+```pre
 snappy> select * from SYS.MEMBERS;
 ID                           |KIND             |STATUS |HOSTDATA|ISELDER|IPADDRESS |HOST     |PID        |PORT       |ROLES|NETSERVERS               |THRIFTSERVERS            |LOCATOR         |SERVERGROUPS               |MANAGERINFO              |SYSTEMPROPS    |GEMFIREPROPS   |BOOTPROPS      
 ---------------------------------------------------------------------------------------------------------------- 

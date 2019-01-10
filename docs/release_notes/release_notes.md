@@ -1,171 +1,86 @@
-# Release Notes 
-The SnappyData team is pleased to announce the availability of version 1.0.1 of the platform.
-[**Download the Enterprise Edition here**](https://www.snappydata.io/download).
+# Release Notes
+The SnappyData team is pleased to announce the availability of version 1.0.2.1 of the platform. You can find the release artifacts of its Community Edition towards the end of this page.
 
-## New Features
+You can also download the Enterprise Edition [here](https://www.snappydata.io/download). The following table summarizes the features available in Enterprise and OSS (Community) editions.
 
-- putInto and deleteFrom bulk operations support for column tables (SNAP-2092, SNAP-2093, SNAP-2094):
+| Feature | Community | Enterprise|
+| ------------- |:-------------:| :-----:|
+|Mutable Row & Column Store| X | X |
+|Compatibility with Spark     | X | X |
+| Shared Nothing Persistence and HA | X | X |
+| REST API for Spark Job Submission | X | X |
+| Fault Tolerance for Driver | X | X |
+| Access to the system using JDBC Driver | X | X |
+| CLI for backup, restore, and export data | X | X |
+| Spark console extensions | X | X |
+| System Perf/Behavior statistics | X | X |
+| Support for transactions in Row tables | X | X |
+| Support for indexing in Row Tables | X | X |
+| SQL extensions for stream processing | X | X |
+| Runtime deployment of packages and jars | X  | X |
+| Synopsis Data Engine for Approximate Querying |  | X |
+| ODBC Driver with High Concurrency |  | X |
+| Off-heap data storage for column tables |  | X |
+| CDC Stream receiver for SQL Server into SnappyData |  | X |
+| GemFire/Apache Geode connector |  | X |
+|Row Level Security|  | X |
+| Use encrypted password instead of clear text password |  | X |
+| Restrict Table, View, Function creation even in user’s own schema|  | X |
+| LDAP security interface |  | X |
 
-  - Ability to specify "key columns" in the table DDL to use for putInto and deleteFrom APIs
+## New Features 
 
-  - "PUT INTO" SQL or putInto API extension to overwrite existing rows and insert non-existing ones
+SnappyData 1.0.2.1 version includes the following new features:
 
-  - "DELETE FROM" SQL or deleteFrom API extension to delete a set of matching rows
-
-  - UPDATE SQL now supports using expressions with column references of another table in RHS of SET
-
-- Improvements in cluster restart with off-line, failed nodes or with corrupt meta-data (SNAP-2096)
-
-  - New admin command "unblock" to allow the initialization of a table even if it is waiting for offline members
-
-  - No discard of data (unlike revoke) with the new approach and initialize with the latest online working copy
-    (SNAP-2143)
-
-  - Parallel recovery of data regions to break any cyclic dependencies between the nodes, and allow reporting
-    on all off-line nodes that may have more recent copy of data
-
-  - Many bug-fixes related to startup issues due to meta-data inconsistencies:
-
-    - Incorrect ConflictingPersistentDataExeption at restart due to disk-store meta-data corruption
-      (SNAP-2097, SNAP-2098)
-
-    - Metadata corruption issues causing GII to fail (SNAP-2140)
-
-- Compression of column batches in disk storage and over the network (SNAP-1743)
-
-  - Support for LZ4 and SNAPPY compression codecs in persistent storage and transport for column table data
-
-  - Smart connector uses compression when pulling from remote hosts while using uncompressed
-    for same host for best performance
-
-  - New SOURCEPATH and COMPRESSION columns in SYS.HIVETABLES virtual table
-- Support for temporary, global temporary and persistent VIEWs (SNAP-2072):
-
-  - CREATE VIEW, CREATE TEMPORARY VIEW and CREATE GLOBAL TEMPORARY VIEW DDLs
-
-  - SQL from JDBC/ODBC for VIEWs routed to Spark execution engine
-
-- External connectors (like cassandra) used from smart connector no longer require any jars in the
-  snappydata cluster (SNAP-2072)
-
-- External tables display in dashboard and snappy command-line (SNAP-2086)
-
-- Auto-configuration of SPARK_PUBLIC_DNS, hostname-for-clients etc in AWS environment (SNAP-2116)
-
-- Out-of-the-box support for AWS URLs/APIs in the product
-
-- GRANT/REVOKE SQL support in SnappySession.sql() earlier only allowed from JDBC/ODBC (SNAP-2042)
-
-- LATERAL VIEW support in SnappySession.sql() (SNAP-1283)
-
-- FETCH FIRST syntax as an alternative to LIMIT to support some SQL tools that use former
-
-- Addition of IndexStats in for local row table index lookup and range scans
-
-- SYS.DISKSTOREIDS virtual table to disk-store IDs being used in the cluster by all members (SNAP-2113)
-
-- Show ARRAY/MAP/STRUCT complex types in JDBC/ODBC metadata as part of SNAP-2141
+*	Support Spark's HiveServer2 in SnappyData cluster. Enables starting an embedded Spark HiveServer2 on leads in embedded mode.
+*	Provided a default [Structured Streaming Sink implementation](/howto/use_stream_processing_with_snappydata.md#structuredstreaming) for SnappyData column and row tables. A Sink property can enable conflation of events with the same key columns. 
+*	Added a **-agent **JVM argument in the launch commands to kill the JVM as soon as Out-of-Memory(OOM) occurs. This is important because the VM sometimes used to crash in unexpected ways later as a side effect of this corrupting internal metadata which later gave restart troubles. [Handling Out-of-Memory Error](../best_practices/important_settings.md#oomerrorhandle)
+*	Allow **NONE** as a valid policy for `server-auth-provider`. Essentially, the cluster can now be configured only for user authentication, and mutual peer to peer authentication of cluster members can be disabled by specifying this property as NONE.
+*	Add support for query hints to force a join type. This may be useful for cases where the result is known to be small, for example, but plan rules cannot determine it.
+*	Allow **deleteFrom** API to work as long as the dataframe contains key columns.
 
 ## Performance Enhancements
 
-- Major performance improvements in smart connector mode (SNAP-2101, SNAP-2084)
+The following performance enhancements are included in SnappyData 1.0.2.1 version:
 
-  - Minimized buffer copying especially when connector executors are colocated with store data nodes
+*	Avoid shuffle when join key columns are a superset of child partitioning.
 
-  - Intelligent connector query handling to use key lookups into column table rather than full scan
-    for cases of heavily filtered scan queries
+*	Added a pooled version of SnappyData JDBC driver for Spark to connect to SnappyData cluster as JDBC data source. [Connecting with JDBC Client Pool Driver](../howto/connect_using_jdbc_driver.md#jdbcpooldriverconnect) 
 
-  - Reduced round-trips for operations (transactions, bucket pruning)
+*	Added caching for hive catalog lookups. Meta-data queries with large number of tables take quite long because of nested loop joins between **SYSTABLES** and **HIVETABLES** for most meta-data queries. Even if the table numbers were in hundreds, it used to take much time. [SNAP-2657]
 
-  - Allow using SnappyUnifiedMemoryManager with smart connector (SNAP-2084)
 
-- New memory and disk iterator to minimize faultins and do serial disk reads across concurrent
-  iterators (SNAP-2102):
+## Select Fixes and Performance Related Fixes
 
-  - New iterator to substantially reduce faultins in case all data is not in memory
+The following defect fixes are included in SnappyData 1.0.2.1 version:
 
-  - Cross-iterator serial disk reads per diskstore to minimize random reads from disk
+*	Reset the pool at the end of collect to avoid spillover of low latency pool setting to the latter operations that may not use the CachedDataFrame execution paths. [SNAP-2659]
 
-  - New remote iterator that substantially reduces the memory overhead and caches only current batch
+*	Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through SnappyData shell does not reflect in spark-shell. [SNAP-2491]  
 
-- Startup performance improvements to cut down on locator/server/lead start and restart times (SNAP-338)
+*	Fixed the occasional failures in serialization using **CachedDataFrame**, if the node is just starting/stopping. Also, fixed a hang in shutdown for cases where hive client close is trying to boot up the node again, waiting on the locks that are taken during the shutdown.
 
-- Improve performance of reads of variable length data for some queries (SNAP-2118)
+*	Lead and Lag window functions were failing due to incorrect analysis error. [SNAP-2566]
 
-- Use colocated joins with VIEWs when possible (SNAP-2204)
+*	Fixed the **validate-disk-store** tool. It was not getting initialized with registered types. This was required to deserialize byte arrays being read from persisted files.
 
-- Separate disk store for delta buffer regions  to substantially improve column table compaction (SNAP-2121)
+*	Fix schema in ResultSet metadata. It used to show the default schema **APP** always.
 
-- Projection push-down to scan layer for non-deterministic expressions like spark_partition_id() (SNAP-2036)
+*	Sometimes a false unique constraint violation happened due to removed or destroyed AbstractRegionEntry. Now an attempt is made to remove it from the index and another try is made to put the new value against the index key. [SNAP-2627]
 
-- Parser performance improvements (by ~50%)
+*	Fix for memory leak in oldEntrieMap leading to **LowMemoryException** and **OutOfMemoryException**. [SNAP-2654]
 
-- code-generation cache is larger by default and configurable (SNAP-2120)
 
-## Select bug fixes and performance related fixes
+## Description of Download Artifacts
 
-A sample of bug fixes done as part of this release are noted below. For a more comprehensive list, see [ReleaseNotes.txt](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
+The following table describes the download artifacts included in SnappyData 1.0.2.1 version:
 
-- Now only overflow-to-disk is allowed as eviction action for tables (SNAP-1501):
+| Artifact Name | Description | 
+| ------------- |:-------------:| 
+|snappydata-1.0.2.1-bin.tar.gz| Full product binary (includes Hadoop 2.7) |
+|snappydata-1.0.2.1-without-hadoop-bin.tar.gz| Product without the Hadoop dependency JARs |
+|snappydata-jdbc_2.11-1.0.2.1.jar|Client (JDBC) JAR|
+|[snappydata-zeppelin_2.11-0.7.3.4.jar](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/download/v0.7.3.4/snappydata-zeppelin_2.11-0.7.3.4.jar)| The Zeppelin interpreter jar for SnappyData, compatible with Apache Zeppelin 0.7.3 |
+|[snappydata-ec2-0.8.2.tar.gz](https://github.com/SnappyDataInc/snappy-cloud-tools/releases/download/v0.8.2/snappydata-ec2-0.8.2.tar.gz)|Script to Launch SnappyData cluster on AWS EC2 instances
 
-  - Only overflow-to-disk is allowed as a valid eviction action and cannot be explicitly specified
-    (LOCAL_DESTROY removed due to possible data inconsistencies)
 
-  - OVERFLOW=false property can be used to disable eviction which is true by default
-
-- Memory accounting fixes:
-
-  - Incorrect initial memory accounting causing insert failure even with memory available (SNAP-2084)
-
-  - Zero usage shown in UI on restart (SNAP-2180)
-
-- Disable embedded Zeppelin interpreter in a secure cluster which can bypass security (SNAP-2191)
-
-- JSON conversion for complex types ARRAY/STRUCT/MAP (SNAP-2056)
-
-- Fix import of JSON data (SNAP-2087)
-
-- CREATE TABLE ... AS SELECT * fails without explicit schema (SNAP-2047)
-
-- Selects missing results or failing during node failures (SNAP-889, SNAP-1547)
-
-- Incorrect results with joins/anti-joins for some cases having more than one match for a key (SNAP-2212)
-
-- Fixes and improvements to server and lead status in both the launcher status and SYS.MEMBERS table
-  (SNAP-1960, SNAP-2060, SNAP-1645)
-
-- Fix global temporary tables/views with SnappySession (SNAP-2072)
-
-- Fix updates on complex types (SNAP-2141)
-
-- Column table scan fixes related to null value reads (SNAP-2088)
-
-- Incorrect reads of column table statistics rows in some cases (SNAP-2124)
-
-- Disable tokenization for external tables and session flag to disable it and plan caching
-  (SNAP-2114, SNAP-2124)
-
-- Table meta-data issues with squirrel client and otherwise (SNAP-2083)
-
-- Case-sensitive column names now work correctly with all operations (GITHUB-900 and other related fixes)
-
-- Allow for hyphens in schema names
-
-- Deadlock in transactional operations with GII (SNAP-1950)
-
-- Couple of fixes in UPDATE SQL:
-
-  - Failure due to rollover during update operation (SNAP-2192)
-
-  - Subquery updates shown as ResultSet rather than update count (SNAP-2156)
-
-- Correct mismatch between executor and DistributedMember names in some configurations that caused
-  Remote routing of partitions (SNAP-2122)
-
-- Fixes ported from Apache Geode (GEODE-2109, GEODE-2240)
-
-- Fixes to all failures in snappy-spark test suite which includes both product and test changes
-
-- Fixes related to ODBC driver calls to thrift server
-
-- More comprehensive python API testing (SNAP-2044)

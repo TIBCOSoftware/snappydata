@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,15 +18,15 @@ package org.apache.spark.sql.store
 
 import java.sql.SQLException
 
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
+import scala.util.{Failure, Success, Try}
+
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TRIPDATA}
-import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{AnalysisException, Row, SaveMode, TableNotFoundException}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import scala.util.{Failure, Success, Try}
+import org.apache.spark.sql._
+import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.{IntegerType, StructField}
 
 /**
  * Tests for ROW tables.
@@ -50,16 +50,16 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-
-
-    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
+    snc.sql("create schema my_schema")
+    dataDF.write.format("row").saveAsTable("MY_SCHEMA.MY_TABLE")
     var result = snc.sql("SELECT * FROM MY_SCHEMA.MY_TABLE" )
     var r = result.collect
-    println(r.length)
+    logInfo(r.length.toString)
 
     snc.sql("drop table MY_SCHEMA.MY_TABLE" )
+    snc.sql("drop schema MY_SCHEMA")
 
-    println("Successful")
+    logInfo("Successful")
   }
 
 
@@ -72,7 +72,23 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
-    println("Successful")
+    logInfo("Successful")
+  }
+
+  test("Test the fetch first n row only test. with and without n parameter") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.createTable(tableName, "row", dataDF.schema, props)
+    var result = snc.sql("SELECT * FROM " + tableName + " fetch first 4 row only ")
+    var r = result.collect
+    assert(r.length == 0)
+
+    result = snc.sql("SELECT * FROM " + tableName + " fetch first row only")
+    r = result.collect
+    assert(r.length == 0)
+    logInfo("Successful")
   }
 
   test("Test the creation of table using DataSource API") {
@@ -81,12 +97,12 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").options(props).saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation of table using DataSource API(PUT)") {
@@ -97,16 +113,16 @@ class RowTableTest
     intercept[AnalysisException] {
       dataDF.write.putInto(tableName)
     }
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").options(props).saveAsTable(tableName)
 
-    //Again do putInto, as there is no primary key, all will be appended
+    // Again do putInto, as there is no primary key, all will be appended
     dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).putInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     // no primary key
     assert(r.length == 10)
-    println("Successful")
+    logInfo("Successful")
   }
 
 
@@ -158,7 +174,7 @@ class RowTableTest
     r = result.collect
     assert(r.length == 6)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   val options = "OPTIONS (PARTITION_BY 'Col1')"
@@ -172,7 +188,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
@@ -183,7 +199,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation using SQL and insert a DF in append/overwrite/errorifexists mode") {
@@ -204,7 +220,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation using SQL and put a DF in append/overwrite/errorifexists mode") {
@@ -221,7 +237,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation using SQL and put a seq of rows in append/overwrite/errorifexists mode") {
@@ -236,7 +252,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   // should throw exception if primary key is getting updated?
@@ -254,14 +270,14 @@ class RowTableTest
     val r = result.collect
     assert(r.length == 5)
 
-    //check if the row against primary key 1 is 1, 200, 300
+    // check if the row against primary key 1 is 1, 200, 300
 
-    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'")
-    assert(row1.collect.length == 1)
+    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'").collect()
+    assert(row1.length == 1)
 
-    println(row1.show)
+    logInfo(row1.mkString("\n"))
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test Creation using SQL with Primary Key and PUT INTO SELECT AS ") {
@@ -293,15 +309,15 @@ class RowTableTest
     val r = result.collect
     assert(r.length == 5)
 
-    //check if the row against primary key 1 is 1, 200, 300
+    // check if the row against primary key 1 is 1, 200, 300
 
-    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'")
-    assert(row1.collect.length == 1)
+    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'").collect()
+    assert(row1.length == 1)
 
-    println(row1.show)
+    logInfo(row1.mkString("\n"))
     snc.dropTable("tempTable")
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("PUT INTO TABLE USING SQL"){
@@ -352,7 +368,7 @@ class RowTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the creation of table using CREATE TABLE AS STATEMENT ") {
@@ -377,7 +393,7 @@ class RowTableTest
     assert(r.length == 10)
 
     snc.dropTable(tableName2)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test alter table SQL syntax") {
@@ -393,10 +409,10 @@ class RowTableTest
     intercept[TableNotFoundException] {
       snc.sql("alter table non_employee add column age int")
     }
-    intercept[EmbedSQLException] {  // existing column 'age'
+    intercept[SQLException] {  // existing column 'age'
       snc.sql("alter table employee add column age int")
     }
-    intercept[AnalysisException] { // non-existing column
+    intercept[SQLException] { // non-existing column
       snc.sql("alter table employee drop column surname")
     }
     snc.sql("alter table employee add column dateCol date")
@@ -463,7 +479,7 @@ class RowTableTest
     r = result.collect
     assert(r.length == 0)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the drop syntax SnappyContext and SQL ") {
@@ -485,7 +501,7 @@ class RowTableTest
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the drop syntax SQL and SnappyContext ") {
@@ -507,7 +523,7 @@ class RowTableTest
 
     snc.dropTable(tableName, true)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test the update table ") {
@@ -540,7 +556,7 @@ class RowTableTest
 
     snc.dropTable("RowTableUpdate")
     snc.dropTable("RowTableUpdate2")
-    println("Successful")
+    logInfo("Successful")
   }
 
 
@@ -668,11 +684,11 @@ class RowTableTest
     assert(r.length == 10)
 
     snc.dropTable(tableName2)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("Test create table from CSV without header- SNAP-1442") {
-    snc.sql(s"create table t1 using com.databricks.spark.csv options(path '${(getClass.getResource("/northwind/regions"+
+    snc.sql(s"create external table t1 using csv options(path '${(getClass.getResource("/northwind/regions"+
       ".csv").getPath)}', header 'true', inferschema 'true')")
     snc.sql("CREATE TABLE t2 (RegionID int, RegionDescription string) USING row OPTIONS(PERSISTENT 'async') AS " +
       "(SELECT RegionID, RegionDescription FROM t1)")
@@ -706,4 +722,31 @@ class RowTableTest
 
     session.sql("drop table airline")
   }
+
+    test("Test method for getting primary keys of row tables") {
+        var session = new SnappySession(snc.sparkContext)
+        session.sql("drop table if exists temp1")
+        session.sql("drop table if exists temp2")
+        session.sql("drop table if exists temp3")
+
+        session.sql("create table temp1(id1 bigint not null primary key , name1 varchar(10)) ")
+        session.sql("create table temp2(id1 bigint not null , name1 varchar(10)) ")
+        session.sql("create table temp3(id1 bigint not null , name1 varchar(10), " +
+            "id3 bigint not null, id2 bigint not null, constraint netw_pk primary key (id2, id1)) ")
+
+        val res1 = session.sessionCatalog.getKeyColumns("temp1")
+        assert(res1.size == 1)
+
+        val res2 = session.sessionCatalog.getKeyColumns("temp2")
+        assert(res2.size == 0)
+
+        val res3 = session.sessionCatalog.getKeyColumns("temp3")
+        assert(res3.size == 2)
+
+        Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+            case Success(_) => throw new AssertionError(
+                "Should not have succedded with incorrect options")
+            case Failure(_) => // Do nothing
+        }
+    }
 }

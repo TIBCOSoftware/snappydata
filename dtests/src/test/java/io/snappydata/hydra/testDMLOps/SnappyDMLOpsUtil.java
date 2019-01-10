@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -261,7 +261,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       //loadTables(conn);
       closeConnection(conn);
     } catch (SQLException se) {
-      throw new TestException("Got exception while executing select query.", se);
+      throw new TestException("Got exception while creating tables in snappy.", se);
     }
   }
 
@@ -314,7 +314,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         destLocDir.mkdirs();
       }
     } catch (IOException ie) {
-      throw new TestException("Got exception while creating new csv file.");
+      throw new TestException("Got exception while creating new csv file.", ie);
     }
 
     for (int i = 0; i < tableNames.length; i++) {
@@ -357,11 +357,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
               sb = new StringBuilder();
             }
           } catch (IOException ie) {
-            throw new TestException("Got exception while creating new csv file.");
+            throw new TestException("Got exception while creating new csv file.", ie);
           }
         }
       } catch (FileNotFoundException fe) {
-        throw new TestException("Got exception while creating new csv file.");
+        throw new TestException("Got exception while creating new csv file.", fe);
       }
     }
     return destLoc;
@@ -934,14 +934,28 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     String[] tables = SnappySchemaPrms.getTableNames();
     StringBuffer mismatchString = new StringBuffer();
     for (String table : tables) {
-      mismatchString.append(verifyResultsForTable(query + table, table, "", false));
+      mismatchString.append(verifyResultsForTable(query + table, table, "", false,true));
     }
-    if (mismatchString.length() > 0)
+    if (mismatchString.length() > 0) {
+      Log.getLogWriter().info(mismatchString.toString());
+      if(!query.contains("select * ")) {
+        mismatchString.setLength(0);
+        query = "select * from ";
+        for (String table : tables) {
+          mismatchString.append(verifyResultsForTable(query + table, table, "", false, true));
+        }
+      }
       throw new TestException(mismatchString.toString());
+    }
   }
 
   public String verifyResultsForTable(String selectStmt, String table, String orderByClause,
-                                      boolean useTid) {
+      boolean useTid) {
+    return verifyResultsForTable(selectStmt, table, "", useTid,false);
+  }
+
+  public String verifyResultsForTable(String selectStmt, String table, String orderByClause,
+      boolean useTid,boolean isCloseTask) {
     StringBuffer mismatchString = new StringBuffer();
     Connection conn, dConn;
     try {
@@ -990,10 +1004,10 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         } catch (IOException ie) {
           throw new TestException("Got Exception while creating directory for queryResults", ie);
         }
-        String snappyRSFileName = queryResultDirPath + File.separator + "snappyRS_" + getMyTid()
-            + ".out";
-        String derbyRSFileName = queryResultDirPath + File.separator + "derbyRS_" + getMyTid() +
-            ".out";
+        String snappyRSFileName = queryResultDirPath + File.separator + "snappyRS_" +
+            ((isCloseTask)? table +"_":"") + getMyTid() + ".out";
+        String derbyRSFileName = queryResultDirPath + File.separator + "derbyRS_" +
+            ((isCloseTask)? table +"_":"") + getMyTid() + ".out";
         File queryResultDir = new File(queryResultDirPath);
         if (!queryResultDir.exists())
           queryResultDir.mkdirs();
@@ -1001,10 +1015,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         listToFile(derbyList, derbyRSFileName);
         snappyList.clear();
         derbyList.clear();
-        mismatchString.append(compareFiles(queryResultDirPath, snappyRSFileName, derbyRSFileName));
+        mismatchString.append(compareFiles(queryResultDirPath, snappyRSFileName, derbyRSFileName,
+         isCloseTask,table));
         if (mismatchString.length() > 0)
-          Log.getLogWriter().info("Got resultset mismtach. For query results please check : \n "
-              + snappyRSFileName + " and \n " + derbyRSFileName);
+          Log.getLogWriter().info("Got resultset mismtach for " + table  + ".For query results " +
+              "please check : \n " + snappyRSFileName + " and \n " + derbyRSFileName);
         Log.getLogWriter().info(mismatchString.toString());
       }
     } catch (SQLException se) {
@@ -1013,13 +1028,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     return mismatchString.toString();
   }
 
-  public String compareFiles(String dir, String snappyFileName, String derbyFileName) {
+  public String compareFiles(String dir, String snappyFileName, String derbyFileName, boolean
+      isCloseTask,String table) {
     StringBuilder aStr = new StringBuilder();
     ProcessBuilder pb = null;
     int tid = getMyTid();
     String command;
-    String missingFileName = dir + File.separator + "missing_" + tid + ".txt";
-    String upexpectedFileName = dir + File.separator + "unexpected_" + tid + ".txt";
+    String missingFileName = dir + File.separator + "missing_" +
+    ((isCloseTask)? table +"_":"") + tid + ".txt";
+    String upexpectedFileName = dir + File.separator + "unexpected_" +
+    ((isCloseTask)? table +"_":"") + tid + ".txt";
     try {
       PrintWriter writer = new PrintWriter(missingFileName);
       writer.print("");
@@ -1037,13 +1055,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     pb = new ProcessBuilder("/bin/bash", "-c", command);
     Log.getLogWriter().info("Executing command : " + command);
     //get the unexpected rows in snappy
-    testInstance.executeProcess(pb, unexpectedResultsFile);
+    executeProcess(pb, unexpectedResultsFile);
 
     command = "grep -v -F -x -f " + snappyFileName + " " + derbyFileName;
     pb = new ProcessBuilder("/bin/bash", "-c", command);
     Log.getLogWriter().info("Executing command : " + command);
     //get the missing rows in snappy
-    testInstance.executeProcess(pb, missingResultsFile);
+    executeProcess(pb, missingResultsFile);
 
     BufferedReader unexpectedRsReader, missingRsReader;
     try {
@@ -1065,16 +1083,26 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       throw new TestException("Got exception while reading resultset files", ie);
     }
     if (missing.size() > 0) {
-      aStr.append("\nThe following rows are missing in snappy, but exists in derby resultset:");
-      aStr.append(missing.toString());
+      if(missing.size() <20) {
+        aStr.append("\nThe following " + missing.size() + " rows are missing from snappy resultset:");
+        aStr.append(missing.toString());
+      } else
+        aStr.append("There are " + missing.size() + " rows missing in snappy for " + table + ". " +
+          "Please check " + missingFileName);
       aStr.append("\n");
     }
     if (unexpected.size() > 0) {
-      aStr.append("\nThe following rows are unexpected in snappy, but missing in derby resultset:");
-      aStr.append(unexpected.toString());
+      if(unexpected.size() <20) {
+        aStr.append("\nThe following " + unexpected.size() + " rows from snappy resultset are unexpected: ");
+        aStr.append(unexpected.toString());
+      } else
+        aStr.append("There are " + unexpected.size() + " rows unexpected in snappy for " +
+          table + ". Please check " + upexpectedFileName);
       aStr.append("\n");
     }
-    return aStr.toString();
+   /* if(missing.size() == 0 && unexpected.size() == 0)
+      Log.getLogWriter().info("Verified that the resulst are correct.");
+*/    return aStr.toString();
   }
 
   public PreparedStatement getPreparedStatement(Connection conn, PreparedStatement ps, String

@@ -1,6 +1,6 @@
 # Lock-free Queries using MVCC (multi-version concurrency control) and Snapshot Isolation for Column Tables
 
-!!!Note:
+!!! Note
 	Snapshot isolation is supported only for column tables.
 
 As the term suggests, all queries in the system operate on a snapshot view of the database. This is, even if concurrent updates are in progress, the querying system gets a non-changing view of the state of the database at the moment in time when the query is executed. The snapshot is partition wise. The snapshot of the partition is taken the moment the query accesses the partition. This behavior is set by default for column tables and cannot be modified.
@@ -26,7 +26,7 @@ By default, all individual operations (read/write) on column table have snapshot
 You cannot set [autocommit](../reference/interactive_commands/autocommit.md) to `Off`. Snapshot isolation ensures that changes made, after the ongoing operation has taken a snapshot is not visible partially or totally.</br>
 If there are concurrent updates in a row, then the last commit is used.
 
-!!! Note:
+!!! Note
 	To get per statement transactional behavior, all the write operations can span only one partition.
 
 	However, if you have operations that span multiple partitions, then, ensure that:

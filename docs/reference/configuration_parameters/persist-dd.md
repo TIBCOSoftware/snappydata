@@ -7,7 +7,7 @@ Enables or disables disk persistence for the data dictionary. By default, all da
 When persistence is enabled, if all data stores in a cluster are down, then clients cannot execute DDL statements in the cluster until a data store becomes available. This ensures that the persisent data dictionary can be recovered when the final data store rejoins the cluster.
 
 
-!!!Note 
+!!! Note 
 	You cannot enable persistence for SnappyData accessors (members that booted with host-data=false). </p>
 
 When persist-dd is set to "false," then no tables can be declared as persistent. However, overflow can still be configured if you explicitly define the `sys-disk-dir` attribute.

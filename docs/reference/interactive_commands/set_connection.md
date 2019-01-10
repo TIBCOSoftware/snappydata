@@ -4,7 +4,7 @@ Specifies which connection to make current when more than one connection is open
 
 ## Syntax
 
-``` no-highlight
+``` pre
 SET CONNECTION Identifier;
 ```
 
@@ -16,7 +16,7 @@ If there is no such connection, an error results and the current connection is u
 
 ## Example
 
-``` no-highlight
+``` pre
 snappy(CONNECTION0)> set connection CONNECTION1;
 snappy(CONNECTION1)> show connections;
 CONNECTION0 - 	jdbc:snappydata:thrift://127.0.0.1[1527]

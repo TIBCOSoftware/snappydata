@@ -2,7 +2,7 @@
 
 ## Syntax
 
-```no-highlight
+```pre
 AUTOCOMMIT { ON | OFF }
 ```
 
@@ -15,7 +15,7 @@ If auto-commit mode is changed from **off** to **on** when a transaction is outs
 
 ## Example
 
-```no-highlight
+```pre
 snappy> AUTOCOMMIT off;
 snappy> INSERT INTO greetings values (DEFAULT, 'hello');
 1 row inserted/updated/deleted

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -67,7 +67,7 @@ class DynamicJarInstallationDUnitTest(val s: String)
     var testJar = DynamicJarInstallationDUnitTest.createJarWithClasses(
       classNames = Seq("FakeJobClass", "FakeJobClass1"),
       toStringValue = "1",
-      Seq.empty, Seq.empty,
+      Nil, Nil,
       "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
 
     var jobCompleted = false
@@ -106,7 +106,7 @@ class DynamicJarInstallationDUnitTest(val s: String)
     testJar = DynamicJarInstallationDUnitTest.createJarWithClasses(
       classNames = Seq("FakeJobClass", "FakeJobClass1"),
       toStringValue = "2",
-      Seq.empty, Seq.empty,
+      Nil, Nil,
       "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
 
     localProperty = (Seq("app1", DateTime.now) ++ Array[URL](testJar)).mkString(",")

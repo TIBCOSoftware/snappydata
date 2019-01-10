@@ -13,7 +13,7 @@ A SnappyData log message contains:
 
 The following shows an example log entry.
 
-``` pre
+```pre
 [config 2011/05/24 17:19:45.705 IST <main> tid=0x1] This VM is setup with SnappyData datastore role.
 ```
 

@@ -9,7 +9,7 @@ TopK queries are used to rank attributes to answer "best, most interesting, most
  
 ### SQL API for creating a TopK table in SnappyData
  
-``` 
+```pre
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets')")
 ``` 
@@ -54,7 +54,7 @@ If time is an attribute in the incoming data set, it can be used instead of the 
 
 In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
  
-```scala
+```pre
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
 ``` 
@@ -62,7 +62,7 @@ The example above create a TopK table called MostPopularTweets, the base table f
 
 ### Scala API for creating a TopK table 
 
-```scala
+```pre
     val topKOptionMap = Map(
         "epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "1000ms",
