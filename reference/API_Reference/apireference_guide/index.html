@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../howto/using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -521,6 +535,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -800,13 +821,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -1887,7 +1901,7 @@
                 
                     <li><a class="toctree-l4" href="#dataframewriter-apis">DataFrameWriter APIs</a></li>
                 
-                    <li><a class="toctree-l4" href="#snappystorehivecatalog-apis">SnappyStoreHiveCatalog APIs</a></li>
+                    <li><a class="toctree-l4" href="#snappysessioncatalog-apis">SnappySessionCatalog APIs</a></li>
                 
             
             </ul>
@@ -2089,7 +2103,7 @@
 <tr>
 <th>SnappySession APIs</th>
 <th>DataFrameWriter APIs</th>
-<th>SnappyStoreHiveCatalog APIs</th>
+<th>SnappySessionCatalog APIs</th>
 </tr>
 </thead>
 <tbody>
@@ -2727,6 +2741,7 @@ snappySession.insert(&quot;t1&quot;, row)
 <pre><code class="pre">snappySession.queryApproxTSTopK(&quot;topktable&quot;)
 </code></pre>
 
+<p><a id= dataframewriter> </a></p>
 <h2 id="dataframewriter-apis">DataFrameWriter APIs</h2>
 <p>The following APIs are available for DataFrameWriter:</p>
 <ul>
@@ -2792,8 +2807,8 @@ df.write.deleteFrom(“snappy_table”)
 
 </code></pre>
 
-<h2 id="snappystorehivecatalog-apis">SnappyStoreHiveCatalog APIs</h2>
-<p>The following APIs are available for SnappyStoreHiveCatalog:</p>
+<h2 id="snappysessioncatalog-apis">SnappySessionCatalog APIs</h2>
+<p>The following APIs are available for SnappySessionCatalog:</p>
 <ul>
 <li><a href="#getkeycolumapi"><strong>getKeyColumns</strong></a></li>
 <li><a href="#gettabletypeapi"><strong>getTableType</strong></a> </li>

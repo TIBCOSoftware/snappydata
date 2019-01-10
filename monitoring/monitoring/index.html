@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -521,6 +535,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -800,13 +821,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -2093,8 +2107,8 @@
             <div class="section">
               
                 <h1 id="snappydata-pulse">SnappyData Pulse</h1>
-<p>SnappyData Pulse is a dashboard that provides a real time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to easily navigate, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
-All the usage details are automatically refreshed after every 5 seconds.</p>
+<p>SnappyData Pulse is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigage easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+All the usage details are automatically refreshed after every five seconds.</p>
 <p>To access SnappyData Pulse, start your cluster and open <a href="http:&lt;leadhost&gt;:5050/dashboard/">http:<code>&lt;leadhost&gt;</code>:5050/dashboard/</a> in the web browser.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2136,7 +2150,8 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 <p><img alt="" src="../../Images/snapshot.png" /></p>
 <p><a id="dashboard"></a></p>
 <h2 id="dashboard">Dashboard</h2>
-<p>The Dashboard page graphically presents various cluster level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page are automatically updated after every 5 seconds.</p>
+<p>The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to automatically update after every five seconds.  If you want to turn off the auto-refresh, use the <strong>Auto Refresh</strong> switch that is provided on the upper-right corner.
+<img alt="" src="../../Images/AutoRefresh-is-ON.png" /></p>
 <p>You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
 <img alt="" src="../../Images/CPU_cores.png" /></p>
 <p>The <strong>Dashboard</strong> page displays the following sections:</p>
@@ -2154,7 +2169,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 <p><a href="#external-table">External Tables</a></p>
 </li>
 </ul>
-<p>You can use the search and sort functionalities in any of the sections, except for the <strong>Cluster</strong> section.  Sorting is enabled to sort items in an ascending and descending order. Further you can also set the number of items that must be listed in each of these sections.</p>
+<p>You can use the search and sort functionalities in any of the sections, except for the <strong>Cluster</strong> section.  Sorting is enabled to sort items in an ascending and descending order. Further, you can also set the number of items that must be listed in each of these sections.</p>
 <p><a id="cluster"></a></p>
 <h3 id="cluster">Cluster</h3>
 <p>In the <strong>Cluster</strong> section, you can view the following graphs which are automatically refreshed:</p>
@@ -2187,7 +2202,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 </table>
 <p><a id="member"></a></p>
 <h3 id="members">Members</h3>
-<p>In the <strong>Members</strong> section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every 5 seconds.
+<p>In the <strong>Members</strong> section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every five seconds.
 <img alt="Members" src="../../Images/Dashboard-MembersList.png" /></p>
 <p>This table provides member details in the following columns:</p>
 <table>
@@ -2249,7 +2264,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 </table>
 <p><a id="table"></a></p>
 <h3 id="tables">Tables</h3>
-<p>The <strong>Tables</strong> section lists all the tables in the cluster along with their corresponding statistical details. All these details are automatically refreshed after every 5 seconds.</p>
+<p>The <strong>Tables</strong> section lists all the tables in the cluster along with their corresponding statistical details. All these details are automatically refreshed after every five seconds.</p>
 <p><img alt="Tables" src="../../Images/Dashboard-TablesList.png" /></p>
 <p>The following columns are displayed in this section:</p>
 <table>
@@ -2291,7 +2306,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 </tbody>
 </table>
 <h3 id="external-tables">External Tables</h3>
-<p>The <strong>External Tables</strong> section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after each 5 seconds.</p>
+<p>The <strong>External Tables</strong> section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after every five seconds.</p>
 <p><img alt="External Tables" src="../../Images/Dashboard-Ext-Tables.png" /></p>
 <p>The following columns are displayed in this section:</p>
 <table>
@@ -2308,7 +2323,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 </tr>
 <tr>
 <td><strong>Provider</strong></td>
-<td>Displays the data store provider that is used when the external table was created. For example, Parquet, CSV, JDBC etc.</td>
+<td>Displays the data store provider that is used when the external table was created. For example, Parquet, CSV, JDBC, etc.</td>
 </tr>
 <tr>
 <td><strong>Source</strong></td>
@@ -2318,7 +2333,8 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 </table>
 <p><a id="memberdetails"></a></p>
 <h2 id="member-details">Member Details</h2>
-<p>The <strong>Member Details</strong> view shows the usage trend and <a href="#memberstat">statistics</a> of a specific cluster member. To check the <strong>Member</strong> <strong>Details</strong> view,  go to the <a href="#member">Members</a> section and click the link in the <strong>Member</strong> column. Here you can also view the <a href="#memberlogs">Member Logs</a> generated for a cluster member.</p>
+<p>The <strong>Member Details</strong> view shows the usage trend and <a href="#memberstat">statistics</a> of a specific cluster member. To check the <strong>Member</strong> <strong>Details</strong> view,  go to the <a href="#member">Members</a> section and click the link in the <strong>Member</strong> column. Here you can also view the <a href="#memberlogs">Member Logs</a> generated for a cluster member.
+The usage trends and the statistics of a specific member are auto updated periodically after every five seconds. If you want to turn off the auto-refresh, use the <strong>Auto Refresh</strong> switch that is provided on the upper-right corner. You can view, on demand, the latest logs by clicking on the <strong>Load New</strong> button provided at the bottom of the logs. You can also click the <strong>Load More</strong> button to view the older logs.</p>
 <p><img alt="Member Detail View" src="../../Images/memberdetailview.png" /></p>
 <p><a id="memberstat"></a></p>
 <h3 id="member-statistics">Member Statistics</h3>
@@ -2357,7 +2373,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 </tr>
 </tbody>
 </table>
-<p>The usage trends of the member is represented in the following graphs:</p>
+<p>The usage trends of the member are represented in the following graphs:</p>
 <table>
 <thead>
 <tr>
@@ -2471,7 +2487,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 <p>The Environment page provides detailed configurations for Spark environment including JVM, SparkContext, and SparkSession.</p>
 <p><a id="executors"></a></p>
 <h2 id="executors">Executors</h2>
-<p>Executors are the entities that performs the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.</p>
+<p>Executors are the entities that perform the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.</p>
 <p><a id="jobs"></a></p>
 <h2 id="jobs">Jobs</h2>
 <p>The <strong>Jobs</strong> page lists all the Spark jobs. Each Spark action is translated as a Spark job. A job encapsulates the whole execution of an API or SQL. For example, <code>dataSet.count()</code> triggers a job.</p>
@@ -2481,7 +2497,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 <p><strong>Status</strong>: Displays the status of the job.</p>
 </li>
 <li>
-<p><strong>Stages</strong>: Click on the stage to view its details. The table displays the time taken for completion of each stage. </p>
+<p><strong>Stages</strong>: Click on the stage to view its details. The table displays the time taken for the completion of each stage. </p>
 </li>
 </ul>
 <div class="admonition tip">
@@ -2495,7 +2511,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 <p><img alt="" src="../../Images/query_analysis_stage.png" /></p>
 <ul>
 <li>
-<p><strong>Scheduler Delay</strong> indicates the waiting period for the task. Delays can  be caused if there are too many concurrent jobs.</p>
+<p><strong>Scheduler Delay</strong> indicates the waiting period for the task. Delays can be caused if there are too many concurrent jobs.</p>
 </li>
 <li>
 <p><strong>Shuffle reads and writes</strong>: Shuffles are written to disk and can take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle time.</p>
@@ -2504,7 +2520,7 @@ All the usage details are automatically refreshed after every 5 seconds.</p>
 <p><strong>Number of parallel tasks</strong>: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and <a href="../../best_practices/setup_cluster/">assign appropriate cores to it</a>.</p>
 </li>
 <li>
-<p><strong>GC time</strong>: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables).</p>
+<p><strong>GC time</strong>: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.</p>
 </li>
 </ul>
               

@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -521,6 +535,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -807,13 +828,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -2074,12 +2088,12 @@
               
                 <h1 id="working-with-external-data-sources">Working with External Data Sources</h1>
 <p>SnappyData relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. Any data source or database that supports Spark to load or save state can be accessed from within SnappyData. </p>
-<p>There is built-in support for many data sources as well as data formats. Data can be accessed from S3, file system, HDFS, Hive, RDB, etc. And the loaders have built-in support to handle CSV, Parquet, ORC, Avro, JSON, Java/Scala Objects, etc as the data formats.</p>
+<p>There is built-in support for many data sources as well as data formats. You can access data from sources such as S3, file system, HDFS, Hive, and RDB. The loaders have built-in support to handle data formats such as CSV, Parquet, ORC, Avro, JSON, and Java/Scala Objects.</p>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
-<p>This section currently only details the advanced connectors that SnappyData introduced. Please refer to the <a href="../../howto/">howto</a> section for a brief description about working with <a href="../../howto/load_data_into_snappydata_tables/">external data sources</a> and <a href="../../howto/load_data_from_external_data_stores/">some examples</a>. </p>
+<p>This section currently only details the advanced connectors that SnappyData introduced. Refer to the <a href="../../howto/">howto</a> section for a brief description about working with <a href="../../howto/load_data_into_snappydata_tables/">external data sources</a> and <a href="../../howto/load_data_from_external_data_stores/">some examples</a>. </p>
 </div>
-<p>SnappyData 1.0.2.1 provides a utility to deploy third party connectors using the SQL 'Deploy' command. Refer <a href="../deployment_dependency_jar/">Deployment of Third Party Connectors</a></p>
+<p>SnappyData provides a utility to deploy third-party connectors using the SQL <code>Deploy</code> command. Refer <a href="../deployment_dependency_jar/">Deployment of Third Party Connectors</a></p>
 <p>For more information see:</p>
 <ul>
 <li><a href="../../howto/load_data_into_snappydata_tables/">START HERE - How to load data into SnappyData Tables</a></li>

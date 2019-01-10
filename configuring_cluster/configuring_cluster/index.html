@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -542,6 +556,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -821,13 +842,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -2107,12 +2121,12 @@ These files should contain the hostnames of the nodes (one per line) where you i
 </div>
 <p><a id="locator"></a></p>
 <h2 id="configuring-locators">Configuring Locators</h2>
-<p>Locators provide discovery service for the cluster. Clients (e.g. JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the <a href="../../architecture/">Architecture</a> section for more information on the core components.</p>
+<p>Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the <a href="../../architecture/">Architecture</a> section for more information on the core components.</p>
 <p>It is recommended to configure two locators (for HA) in production using the <strong>conf/locators</strong> file located in the <strong>&lt;<em>SnappyData_home</em>&gt;/conf</strong> directory. </p>
 <p>In this file, you can specify:</p>
 <ul>
 <li>
-<p>The host name on which a SnappyData locator is started.</p>
+<p>The hostname on which a SnappyData locator is started.</p>
 </li>
 <li>
 <p>The startup directory where the logs and configuration files for that locator instance are located.</p>
@@ -2150,7 +2164,7 @@ These files should contain the hostnames of the nodes (one per line) where you i
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85.5% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them.</td>
 </tr>
 <tr>
 <td>-J</td>
@@ -2166,15 +2180,15 @@ These files should contain the hostnames of the nodes (one per line) where you i
 </tr>
 <tr>
 <td>-log-file</td>
-<td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
+<td>Path of the file to which this member writes log messages. Default is <strong>snappylocator.log</strong> in the working directory. In case logging is set via log4j, the default log file is <strong>snappydata.log</strong>.</td>
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
-<td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
+<td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
 </tr>
 <tr>
 <td>-peer-discovery-address</td>
-<td>Use this as value for port in the "host:port" value of "-locators" property</td>
+<td>Use this as value for the port in the "host:port" value of "-locators" property</td>
 </tr>
 <tr>
 <td>-peer-discovery-port</td>
@@ -2195,7 +2209,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <p>Create the configuration file (<strong>leads</strong>) for leads in the <strong>&lt;<em>SnappyData_home</em>&gt;/conf</strong> directory.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>In the <strong>conf/spark-env.sh</strong> file, set the <code>SPARK_PUBLIC_DNS</code> property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.</p>
+<p>In the <strong>conf/spark-env.sh</strong> file set the <code>SPARK_PUBLIC_DNS</code> property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.</p>
 </div>
 <h3 id="list-of-lead-properties">List of Lead Properties</h3>
 <p>Refer to the <a href="../property_description/">SnappyData properties</a> for the complete list of SnappyData properties.</p>
@@ -2209,7 +2223,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <tbody>
 <tr>
 <td>-bind-address</td>
-<td>IP address on which the locator is bound. The default behaviour is to bind to all local addresses.</td>
+<td>IP address on which the lead is bound. The default behavior is to bind to all local addresses.</td>
 </tr>
 <tr>
 <td>-classpath</td>
@@ -2221,27 +2235,27 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-dir</td>
-<td>The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
+<td>The working directory of the lead that contains the SnappyData Lead status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
 </tr>
 <tr>
 <td>-eviction-heap-percentage</td>
-<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
+<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85.5% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85.5% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them.</td>
 </tr>
 <tr>
 <td>-memory-size</td>
-<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
+<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default)</td>
 </tr>
 <tr>
 <td>-J</td>
-<td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
+<td>JVM option passed to the spawned SnappyData Lead JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
 </tr>
 <tr>
 <td>-J-Dsnappydata.enable-rls</td>
-<td>Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
+<td>Enables the system for row level security when set to true.  By default, this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
 </tr>
 <tr>
 <td>-locators</td>
@@ -2249,11 +2263,11 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-log-file</td>
-<td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
+<td>Path of the file to which this member writes log messages. Default is <strong>snappyleader.log</strong> in the working directory. In case logging is set via log4j, the default log file is <strong>snappydata.log</strong>.</td>
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
-<td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
+<td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
 </tr>
 <tr>
 <td>-snappydata.column.batchSize</td>
@@ -2261,7 +2275,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-spark.driver.maxResultSize</td>
-<td>Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M, or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead.</td>
+<td>Limit of the total size of serialized results of all partitions for each action (for example, collect). The value should be at least 1MB or 0 for unlimited. Jobs will be aborted if the total size of the results is above this limit. Having a high limit may cause out-of-memory errors in the lead. The default max size is 1GB</td>
 </tr>
 <tr>
 <td>-spark.executor.cores</td>
@@ -2277,11 +2291,11 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-spark.sql.codegen.cacheSize<a id="codegencache"></a></td>
-<td>Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. Default is 2000.</td>
+<td>Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. The default is 2000.</td>
 </tr>
 <tr>
 <td>-spark.ui.port</td>
-<td>Port for your SnappyData Pulse, which shows tables, memory and workload data. Default is 5050</td>
+<td>Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050</td>
 </tr>
 </tbody>
 </table>
@@ -2300,10 +2314,10 @@ node-l2 -heap-size=4096m -locators=node-b:8888,node-a:9999
 
 </code></pre>
 
-<p>In this example two leads (one on node-l1 and another on node-l2) are configured. Using <code>sbin/snappy-start-all.sh</code>, when you launch the cluster, one of them becomes the primary lead and the other becomes the secondary lead.</p>
+<p>In this example, two leads (one on node-l1 and another on node-l2) are configured. Using <code>sbin/snappy-start-all.sh</code>, when you launch the cluster, one of them becomes the primary lead and the other becomes the secondary lead.</p>
 <p><a id="dataserver"></a></p>
 <h2 id="configuring-data-servers">Configuring Data Servers</h2>
-<p>Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the <strong>conf/servers.template</strong> file for some examples. </p>
+<p>Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than the Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the <strong>conf/servers.template</strong> file for some examples. </p>
 <p>Create the configuration file (<strong>servers</strong>) for data servers in the <strong>&lt;<em>SnappyData_home</em>&gt;/conf</strong> directory. </p>
 <h3 id="list-of-server-properties">List of Server Properties</h3>
 <p>Refer to the <a href="../property_description/">SnappyData properties</a> for the complete list of SnappyData properties.</p>
@@ -2332,20 +2346,28 @@ node-l2 -heap-size=4096m -locators=node-b:8888,node-a:9999
 <td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
 </tr>
 <tr>
+<td>-critical-off-heap-percentage</td>
+<td>Sets the critical threshold for off-heap memory usage in percentage, 0-100. </br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of off-heap memory.</td>
+</tr>
+<tr>
 <td>-dir</td>
 <td>The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). <strong>work</strong> is the default current working directory.</td>
 </tr>
 <tr>
 <td>-eviction-heap-percentage</td>
-<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
+<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85.5% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</br></td>
+</tr>
+<tr>
+<td>-eviction-off-heap-percentage</td>
+<td>Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 85.5% of the value that is set for <code>-critical-off-heap-percentage</code>. </br>Use this switch to override the default.</td>
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85.5% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them.</td>
 </tr>
 <tr>
 <td>-memory-size</td>
-<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. Default value is 0 (OFF_HEAP is not used by default)</td>
+<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default)</td>
 </tr>
 <tr>
 <td>-J</td>
@@ -2353,19 +2375,19 @@ node-l2 -heap-size=4096m -locators=node-b:8888,node-a:9999
 </tr>
 <tr>
 <td>-J-Dgemfirexd.hostname-for-clients</td>
-<td>The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the <code>client-bind-address</code> to be given to clients. </br> This value can be different from <code>client-bind-address</code> for cases where the servers/locators are behind a NAT firewall (AWS for example) where <code>client-bind-address</code> needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by the hostname translation itself, that is, the hostname used in <code>client-bind-address</code> resolves to internal IP address from inside and to the public IP address from outside, but for other cases, this property is required</td>
+<td>The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the <code>client-bind-address</code> to be given to clients. </br> This value can be different from <code>client-bind-address</code> for cases where the servers/locators are behind a NAT firewall (AWS for example) where <code>client-bind-address</code> needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by the hostname translation itself, that is, the hostname used in <code>client-bind-address</code> resolves to the internal IP address from inside and to the public IP address from outside, but for other cases, this property is required</td>
 </tr>
 <tr>
 <td>-J-Dsnappydata.enable-rls</td>
-<td>Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
+<td>Enables the system for row level security when set to true.  By default, this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
 </tr>
 <tr>
 <td>-log-file</td>
-<td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
+<td>Path of the file to which this member writes log messages. Default is <strong>snappyserver.log</strong> in the working directory. In case logging is set via log4j, the default log file is <strong>snappydata.log</strong>.</td>
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
-<td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
+<td>Uses the <a href="../../best_practices/important_settings/#member-timeout">member-timeout</a> server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
 </tr>
 <tr>
 <td>-rebalance<a id="rebalance"></a></td>
@@ -2388,7 +2410,7 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 </code></pre>
 
 <h2 id="specifying-configuration-properties-using-environment-variables">Specifying Configuration Properties using Environment Variables</h2>
-<p>SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS and LEAD_STARTUP_OPTIONS respectivley for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in <strong>conf/spark-env.sh</strong> file. This file is sourced when SnappyData system is started. A template file <strong>conf/spark-env.sh.template</strong> is provided in <strong>conf</strong> directory for reference. You can copy this file and use it to configure properties. </p>
+<p>SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, and LEAD_STARTUP_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in <strong>conf/spark-env.sh</strong> file. This file is sourced when SnappyData system is started. A template file <strong>conf/spark-env.sh.template</strong> is provided in <strong>conf</strong> directory for reference. You can copy this file and use it to configure properties. </p>
 <p>For example:</p>
 <pre><code class="pre"># create a spark-env.sh from the template file
 $cp conf/spark-env.sh.template conf/spark-env.sh 
@@ -2410,7 +2432,7 @@ LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
 
 <p><a id="configure-smart-connector"></a></p>
 <h2 id="configuring-snappydata-smart-connector">Configuring SnappyData Smart Connector</h2>
-<p>Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to SnappyData cluster to store and process data. SnappyData currently works with Spark version 2.1.1. To work with SnappyData cluster, a Spark application has to set the snappydata.connection property while starting.   </p>
+<p>Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to SnappyData cluster to store and process data. SnappyData currently works with Spark version 2.1.1. To work with SnappyData cluster, a Spark application has to set the <code>snappydata.connection</code> property while starting.   </p>
 <table>
 <thead>
 <tr>
@@ -2428,7 +2450,7 @@ LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
 <p><strong>Example</strong>:</p>
 <pre><code class="pre">$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
     --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-    --packages &quot;SnappyDataInc:snappydata:1.0.2.1-s_2.11&quot; 
+    --packages 'SnappyDataInc:snappydata:1.0.2.1-s_2.11'
 </code></pre>
 
 <p><a id="environment"></a></p>
@@ -2437,7 +2459,7 @@ LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
 <p><a id="hadoop-setting"></a></p>
 <h3 id="hadoop-provided-settings">Hadoop Provided Settings</h3>
 <p>If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.</p>
-<p>To do this you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:</p>
+<p>To do this, you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:</p>
 <pre><code class="pre">export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 </code></pre>
 

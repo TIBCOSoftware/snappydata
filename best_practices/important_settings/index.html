@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -521,6 +535,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -819,13 +840,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -2113,8 +2127,8 @@
 </ul>
 <p><a id="buckets"></a></p>
 <h2 id="buckets">Buckets</h2>
-<p>A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around in order to ensure that data is balanced across the nodes where the table is defined.</p>
-<p>The default number of buckets in the SnappyData cluster mode is 128. In the local mode it is cores*2, subject to a maximum of 64 buckets and a minumum of 8 buckets.</p>
+<p>A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around to ensure that the data is balanced across the nodes where the table is defined.</p>
+<p>The default number of buckets in the SnappyData cluster mode is 128. In the local mode, it is cores*2, subject to a maximum of 64 buckets and a minimum of 8 buckets.</p>
 <p>The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.</p>
 <p>If there are more buckets in a table than required, it means there is less data per bucket. For column tables, this may result in reduced compression that SnappyData achieves with various encodings. Similarly, if there are not enough buckets in a table, not enough partitions are created while running a query and hence cluster resources are not used efficiently. Also, if the cluster is scaled at a later point of time rebalancing may not be optimal.</p>
 <p>For column tables, it is recommended to set a number of buckets such that each bucket has at least 100-150 MB of data. This attribute is set when <a href="../../reference/sql_reference/create-table/">creating a table</a>.</p>
@@ -2160,7 +2174,7 @@ vm.dirty_writeback_centisecs=300
 </code></pre>
 
 <p>Then apply to current session using the command <code>sudo sysctl -p</code></p>
-<p>These settings lower the OS cache buffer sizes which reduces long GC pauses during disk flush but can decrease overall disk write throughput. This is especially true for slower magnetic disks where the bulk insert throughput can see a noticeable drop (such as 20%), while the duration of GC pauses should reduce significantly (such as 50% or more). If long GC pauses, for example in the range of 10s of seconds, during bulk inserts, updates, or deletes is not a problem then these settings can be skipped.</p>
+<p>These settings lower the OS cache buffer sizes which reduce the long GC pauses during disk flush but can decrease overall disk write throughput. This is especially true for slower magnetic disks where the bulk insert throughput can see a noticeable drop (such as 20%), while the duration of GC pauses should reduce significantly (such as 50% or more). If long GC pauses, for example in the range of 10s of seconds, during bulk inserts, updates, or deletes is not a problem then these settings can be skipped.</p>
 <p><strong>Swap File</strong> </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting <code>-Xmx</code> and <code>-Xms</code> settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
 It is recommended to set swap space on your system using the following commands.</p>
@@ -2175,8 +2189,8 @@ sudo swapon /var/swapfile.1
 <h2 id="snappydata-smart-connector-mode-and-local-mode-settings">SnappyData Smart Connector Mode and Local Mode Settings</h2>
 <h3 id="managing-executor-memory">Managing Executor Memory</h3>
 <p>For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. Further, to have better ingestion speed, small internal columnar storage structures are created in the Spark application's cluster itself, which is then directly inserted into the required buckets of the column table in the SnappyData cluster.
-These internal structures are in encoded form and for efficient encoding, some memory space is acquired upfront, which is independent of the amount of data to be loaded into the tables. </br>
-For example, if there are 32 cores for the Smart Connector application and the number of buckets of the column table is equal or more than that, then, each of the 32 executor threads can take around 32MB of memory. This indicates that 32MB * 32MB (1 GB) of memory is required. Thus, the default of 1GB for executor memory is not sufficient and therefore a default of at least 2 GB is recommended in this case.</p>
+These internal structures are in encoded form, and for efficient encoding, some memory space is acquired upfront which is independent of the amount of data to be loaded into the tables. </br>
+For example, if there are 32 cores for the Smart Connector application and the number of buckets of the column table is equal or more than that, then, each of the 32 executor threads can take around 32MB of memory. This indicates that 32MB * 32MB (1 GB) of memory is required. Thus, the default of 1GB for executor memory is not sufficient, and therefore a default of at least 2 GB is recommended in this case.</p>
 <p>You can modify this setting in the <code>spark.executor.memory</code> property. For more information, refer to the <a href="https://spark.apache.org/docs/latest/configuration.html#available-properties">Spark documentation</a>.</p>
 <h3 id="jvm-settings-for-optimal-performance">JVM settings for optimal performance</h3>
 <p>The following JVM settings are set by default on the server nodes of SnappyData cluster. You can use these as guidelines for smart connector and local modes:</p>
@@ -2199,11 +2213,11 @@ For example, if there are 32 cores for the Smart Connector application and the n
 <p>Set in the <strong>conf/locators</strong>, <strong>conf/leads</strong>, and <strong>conf/servers</strong> file.</p>
 <p><a id=oomerrorhandle> </a></p>
 <h3 id="handling-out-of-memory-error-in-snappydata-cluster">Handling Out-of-Memory Error in SnappyData Cluster</h3>
-<p>When the SnappyData cluster faces an Out-Of-Memory (OOM) situation, it may not function appropriately, and the JVM cannot create a new process to execute the kill command upon OOM. See <a href="https://bugs.openjdk.java.net/browse/JDK-8027434">JDK-8027434</a>.</br> However, JVM uses the <strong>fork()</strong> system call to execute the kill command. This system call can fail for large JVMs due to memory overcommit limits in the operating system. </br>Therefore, to solve such issues in SnappyData, <code>JVMKill</code> is used which has much smaller memory requirements.</p>
-<p><code>jvmkill</code> is a simple JVMTI agent that forcibly terminates the JVM when it is unable to allocate memory or create a thread. It is also essential for reliability purposes because an OOM error can often leave the JVM in an inconsistent state. Whereas, terminating the JVM will allow it to be restarted by an external process manager.</p>
-<p>A common alternative to this agent is to use the <code>-XX:OnOutOfMemoryError</code> JVM argument to execute a <code>kill -9</code> command.</p>
-<p><code>jvmkill</code> is applied by default to all the nodes in a SnappyData cluster, that is the server, lead, and locator nodes.</p>
-<p><code>jvmkill</code> is verified on centos6 and Mac OSX versions. For running SnappyData on any other versions, you can recompile the <strong>lib</strong> files by running the <code>snappyHome/aqp/src/main/cpp/io/snappydata/build.sh</code> script. This script replaces the lib file located at the following path:</p>
+<p>When the SnappyData cluster faces an Out-Of-Memory (OOM) situation, it may not function appropriately, and the JVM cannot create a new process to execute the kill command upon OOM. See <a href="https://bugs.openjdk.java.net/browse/JDK-8027434">JDK-8027434</a>.</br> However, JVM uses the <strong>fork()</strong> system call to execute the kill command. This system call can fail for large JVMs due to memory overcommit limits in the operating system. Therefore, to solve such issues in SnappyData, <strong>jvmkill</strong> is used which has much smaller memory requirements.</p>
+<p><strong>jvmkill</strong> is a simple JVMTI agent that forcibly terminates the JVM when it is unable to allocate memory or create a thread. It is also essential for reliability purposes because an OOM error can often leave the JVM in an inconsistent state. Whereas, terminating the JVM allows it to be restarted by an external process manager. </br>A common alternative to this agent is to use the <code>-XX:OnOutOfMemoryError</code> JVM argument to execute a <code>kill -9</code> command. <strong>jvmkill</strong> is applied by default to all the nodes in a SnappyData cluster, that is the server, lead, and locator nodes. The <strong>jvmkill</strong> agent is useful in a smart connector as well as in a local mode too.</p>
+<p>Optionally when using the <code>-XX:+HeapDumpOnOutOfMemoryError</code> option, you can specify the timeout period for scenarios when the heap dump takes an unusually long time or hangs up. This option can be specified in the configuration file for leads, locators, or servers respectively. For example:<code>-snappydata.onCriticalHeapDumpTimeoutSeconds=10</code></p>
+<p><strong>jvmkill</strong> agent issues a <strong>SIGTERM</strong> signal initially and waits for a default period of 30 seconds. Thereby allowing for graceful shutdown before issuing a <strong>SIGKILL</strong> if the PID is still running. You can also set the environment variable JVMKILL_SLEEP_SECONDS to set the timeout period. For example: <code>export JVMKILL_SLEEP_SECONDS=10</code></p>
+<p><strong>jvmkill</strong> is verified on centos6 and Mac OSX versions. For running SnappyData on any other versions, you can recompile the <strong>lib</strong> files by running the <code>snappyHome/aqp/src/main/cpp/io/snappydata/build.sh</code> script. This script replaces the <strong>lib</strong> file located at the following path:</p>
 <ul>
 <li>
 <p><strong>For Linux </strong>
@@ -2214,19 +2228,18 @@ For example, if there are 32 cores for the Smart Connector application and the n
     <em>agentPath snappyHome/jars/libgemfirexd.dylib</em></p>
 </li>
 </ul>
-<p>The <code>jvmkill</code> agent is useful in a smart connector as well as in a local mode too.</p>
 <p><a id="codegenerationtokenization"></a></p>
 <h2 id="code-generation-and-tokenization">Code Generation and Tokenization</h2>
-<p>SnappyData uses generated code for best performance for most of the queries and internal operations. This is done for both Spark-side whole-stage code generation for queries, for example,<a href="https://databricks.com/blog/2016/05/11/apache-spark-2-0-technical-preview-easier-faster-and-smarter.html">Technical Preview of Apache Spark 2.0 blog</a>, and internally by SnappyData for many operations. For example, rolling over data from row buffer to column store or merging batches among others. </br>The point key lookup queries on row tables and JDBC inserts bypasses this and performs direct operations. However, for all other operations the product uses code generation for best performance.</p>
+<p>SnappyData uses generated code for best performance for most of the queries and internal operations. This is done for both Spark-side whole-stage code generation for queries, for example,<a href="https://databricks.com/blog/2016/05/11/apache-spark-2-0-technical-preview-easier-faster-and-smarter.html">Technical Preview of Apache Spark 2.0 blog</a>, and internally by SnappyData for many operations. For example, rolling over data from row buffer to column store or merging batches among others. </br>The point key lookup queries on row tables, and JDBC inserts bypass this and perform direct operations. However, for all other operations, the product uses code generation for best performance.</p>
 <p>In many cases, the first query execution is slightly slower than subsequent query executions. This is primarily due to the overhead of compilation of generated code for the query plan and optimized machine code generation by JVM's hotspot JIT.
-Each distinct piece of generated code is a separate class which is loaded using its own ClassLoader. To reduce these overheads in multiple runs, this class is reused using a cache whose size is controlled by<strong> spark.sql.codegen.cacheSize</strong> property (default is 2000). Thus when the size limit of the cache is breached, the older classes that are used for a while gets removed from the cache.</p>
+Each distinct piece of generated code is a separate class which is loaded using its own ClassLoader. To reduce these overheads in multiple runs, this class is reused using a cache whose size is controlled by <strong>spark.sql.codegen.cacheSize</strong> property (default is 2000). Thus when the size limit of the cache is breached, the older classes that are used for a while gets removed from the cache.</p>
 <p>Further to minimize the generated plans, SnappyData performs tokenization of the values that are most constant in queries by default. Therefore the queries that differ only in constants can still create the same generated code plan.
 Thus if an application has a fixed number of query patterns that are used repeatedly, then the effect of the slack during the first execution, due to compilation and JIT, is minimized.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>A single query pattern constitues of queries that differ only in constant values that are embedded in the query string.</p>
+<p>A single query pattern constitutes of queries that differ only in constant values that are embedded in the query string.</p>
 </div>
-<p>For cases where application has many query patterns, you can increase the value of <strong>spark.sql.codegen.cacheSize</strong> property from the default size of <strong>2000</strong>. </p>
+<p>For cases where the application has many query patterns, you can increase the value of <strong>spark.sql.codegen.cacheSize</strong> property from the default size of <strong>2000</strong>. </p>
 <p>You can also increase the value for JVM's <strong>ReservedCodeCacheSize</strong> property and add additional RAM capacity accordingly. </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

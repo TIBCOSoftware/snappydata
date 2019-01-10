@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../howto/using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -532,6 +546,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -811,13 +832,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -2093,7 +2107,7 @@
 <tbody>
 <tr>
 <td>-bind-address</td>
-<td>IP address on which the locator is bound. The default behavior is to bind to all local addresses.</td>
+<td>IP address on which the member is bound. The default behavior is to bind to all local addresses.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
@@ -2103,7 +2117,7 @@
 </tr>
 <tr>
 <td>-critical-heap-percentage<a id="critical-heap-percentage"></a></td>
-<td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 90% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
+<td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
 <td>Server</br>Lead</td>
 </tr>
 <tr>
@@ -2113,27 +2127,27 @@
 </tr>
 <tr>
 <td>-dir</td>
-<td>Working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
+<td>Working directory of the member that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).</td>
 <td>Server</br>Lead</br>Locator</br></td>
 </tr>
 <tr>
 <td>-eviction-heap-percentage</td>
-<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 81% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</td>
+<td>Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85.5% of whatever is set for <code>-critical-heap-percentage</code>.</br>Use this switch to override the default.</td>
 <td>Server</br>Lead</br></td>
 </tr>
 <tr>
 <td>-eviction-off-heap-percentage</td>
-<td>Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 81% of whatever is set for <code>-critical-off-heap-percentage</code>. </br>Use this switch to override the default.</td>
+<td>Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 85.5% of whatever is set for <code>-critical-off-heap-percentage</code>. </br>Use this switch to override the default.</td>
 <td>Server</td>
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 90% of the heap size, and the <code>eviction-heap-percentage</code> to 81% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1GB. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85.5% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if they are supported by the JVM.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
 <td>-J</td>
-<td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.</td>
+<td>JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1GB to set the JVM heap to 1GB.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
@@ -2152,13 +2166,18 @@
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
+<td>jobserver.waitForInitialization</td>
+<td>When this property is set to <strong>true</strong>, the cluster startup waits for the Spark jobserver to be fully initialized before marking the lead node as <strong>RUNNING</strong>. The default is <strong>false</strong>.</td>
+<td></td>
+</tr>
+<tr>
 <td>-locators</td>
 <td>List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
 <td>-log-file</td>
-<td>Path of the file to which this member writes log messages (default is snappyserver.log in the working directory)</td>
+<td>Path of the file to which this member writes log messages (default is snappy[member].log in the working directory. For example, <strong>snappylocator.log</strong>, <strong>snappyleader.log</strong>,<strong>snappyserver.log</strong>. In case logging is set via log4j, the default log file is <strong>snappydata.log</strong> for each of the SnappyData member.)</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
@@ -2168,7 +2187,7 @@
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
-<td>Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.</td>
+<td>Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000-600000 milliseconds.</td>
 <td>Server</br>Locator</br>Lead</td>
 </tr>
 <tr>
@@ -2192,13 +2211,28 @@
 <td>Lead</td>
 </tr>
 <tr>
-<td>-snappydata.column.batchSize</td>
-<td>The default size of blocks to use for storage in the SnappyData column store (in bytes or k/m/g suffixes for the unit). The default value is 24M.</td>
-<td>Lead</td>
+<td>-spark.jobserver.port</td>
+<td>The port on which to run the jobserver. Default port is 8090.</td>
+<td></td>
 </tr>
 <tr>
-<td>-spark.driver.maxResultSize</td>
-<td>Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1M or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead. The default max size is 1g.</td>
+<td>-spark.jobserver.bind-address</td>
+<td>The address on which the jobserver listens. Default address is 0.0.0.</td>
+<td></td>
+</tr>
+<tr>
+<td>-spark.jobserver.job-result-cache-size</td>
+<td>The number of job results to keep per JobResultActor/context. The default is 5000.</td>
+<td></td>
+</tr>
+<tr>
+<td>-spark.jobserver.max-jobs-per-context</td>
+<td>The number of jobs that can be run simultaneously in the context. The Default is 8.</td>
+<td></td>
+</tr>
+<tr>
+<td><a id="sparkdrivermaxresult"></a>-spark.driver.maxResultSize</td>
+<td>Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1MB or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead. The default max size is 1GB.</td>
 <td>Lead</td>
 </tr>
 <tr>
@@ -2226,14 +2260,14 @@
 <p>Other than the above properties, you can also refer the <a href="../../reference/configuration_parameters/config_parameters/#property-names">Configuration Parameters section</a> for properties that are used in special cases.</p>
 <p><a id="sql-properties"></a></p>
 <h2 id="sql-properties">SQL Properties</h2>
-<p>These properties can be set using a <code>SET SQL</code> command or using the configuration properties in the <em>conf/leads</em> file. The <code>SET SQL</code> command sets the property for the current SnappySession while setting it in <em>conf/leads</em> file sets the property for all SnappySession.</p>
+<p>These properties can be set using a <code>SET SQL</code> command or using the configuration properties in the <strong>conf/leads</strong> file. The <code>SET SQL</code> command sets the property for the current SnappySession while setting it in <strong>conf/leads</strong> file sets the property for all SnappySession.</p>
 <p>For example: Set in the snappy SQL shell</p>
 <pre><code class="pre">snappy&gt; connect client 'localhost:1527';
 snappy&gt; set snappydata.column.batchSize=100k;
 </code></pre>
 
 <p>This sets the property for the snappy SQL shell's session.</p>
-<p>Set in the <em>conf/leads</em> file</p>
+<p>Set in the <strong>conf/leads</strong> file</p>
 <pre><code class="pre">$ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
 </code></pre>
@@ -2248,7 +2282,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tbody>
 <tr>
 <td>-snappydata.column.batchSize</td>
-<td>The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the <code>create table</code> DDL.</td>
+<td>The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the <code>create table</code> DDL. Maximum allowed size is 2GB. Default is 24m.</td>
 </tr>
 <tr>
 <td>-snappydata.column.maxDeltaRows</td>
@@ -2270,6 +2304,38 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <td>-spark.sql.autoBroadcastJoinThreshold</td>
 <td>Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to <strong>-1</strong> broadcasting can be disabled.</td>
 </tr>
+<tr>
+<td>-snappydata.sql.hashJoinSize</td>
+<td>The join would be converted into a hash join if the table is of a size that is less than the <strong>hashJoinSize</strong>. The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for a unit). The default value is 100MB.</td>
+</tr>
+<tr>
+<td>-snappydata.linkPartitionsToBuckets</td>
+<td>When this property is set to <strong>true</strong>, each bucket is always treated as a separate partition in column/row table scans. When this is set to <strong>false</strong>, SnappyData creates only as many partitions as executor cores by clubbing multiple buckets into each partition when possible. The default is <strong>false</strong>.</td>
+</tr>
+<tr>
+<td>-snappydata.preferPrimaries</td>
+<td>Use this property to configure your preference to use primary buckets in queries. This reduces the scalability of queries in the interest of reduced memory usage for secondary buckets. The default is <strong>false</strong>.</td>
+</tr>
+<tr>
+<td>-snappydata.sql.partitionPruning</td>
+<td>Use this property to set/unset the partition pruning of queries.</td>
+</tr>
+<tr>
+<td>-snappydata.sql.tokenize</td>
+<td>Use this property to enable/disable tokenization.</td>
+</tr>
+<tr>
+<td>snappydata.cache.putIntoInnerJoinResultSize</td>
+<td>Use this property with extreme limits such as 1K and 10GB. The default is 100 MB.</td>
+</tr>
+<tr>
+<td>-snappydata.scheduler.pool</td>
+<td>Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.</td>
+</tr>
+<tr>
+<td>-snappydata.enable-experimental-features</td>
+<td>Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.</td>
+</tr>
 </tbody>
 </table>
 <p><a id="sde-properties"></a></p>
@@ -2281,7 +2347,7 @@ The command sets the property for the current SnappySession while setting it in 
 snappy&gt; set snappydata.flushReservoirThreshold=20000;
 </code></pre>
 
-<p>Set in the <em>conf/leads</em> file</p>
+<p>Set in the <strong>conf/leads</strong> file</p>
 <pre><code class="pre">$ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k -spark.sql.aqp.error=0.5
 </code></pre>
@@ -2297,11 +2363,11 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tbody>
 <tr>
 <td>-snappydata.flushReservoirThreshold</td>
-<td>Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on the base table of size more than flushReservoirThreshold. The default value is10,000.</br> This property must be set in the <em>conf/servers</em> and <em>conf/leads</em> file.</td>
+<td>Reservoirs of sample table will be flushed and stored in columnar format if sampling is done on the base table of size more than flushReservoirThreshold. The default value is10,000.</br> This property must be set in the <strong>conf/servers</strong> and <strong>conf/leads</strong> file.</td>
 </tr>
 <tr>
 <td>-spark.sql.aqp.numBootStrapTrials</td>
-<td>Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>This property must be set in the <em>conf/leads</em> file.</td>
+<td>Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>This property must be set in the <strong>conf/leads</strong> file.</td>
 </tr>
 <tr>
 <td>-spark.sql.aqp.error</td>

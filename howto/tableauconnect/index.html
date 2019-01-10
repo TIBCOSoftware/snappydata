@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -532,6 +546,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -811,13 +832,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -2096,7 +2110,7 @@
 <li>In the <a href="../../configuring_cluster/configuring_cluster/#configuring-leads">Lead node configuration</a>, set the following property:</br><code>snappydata.hiveServer.enabled=true</code></li>
 <li>Launch the SnappyData cluster. </br><code>./sbin/snappy-start-all.sh</code></li>
 </ol>
-<h3 id="step-2-connect-to-tableau-desktop">Step 2: Connect to Tableau Desktop</h3>
+<h3 id="step-2-connect-tableau-desktop-to-snappydata">Step 2: Connect Tableau Desktop to SnappyData</h3>
 <ol>
 <li>Download and install <strong>Tableau Desktop v2018.3.x</strong> from the <a href="https://www.tableau.com/support/releases/online/2018.3">Tableau Download page</a>. You may also need to register your product.</li>
 <li>Open the Tableau Desktop application, on the left panel, from the <strong>To A Server </strong>section, select <strong>Spark SQL connector</strong> option. 
@@ -2120,13 +2134,20 @@
 <p>Click the <strong>Sign In </strong>button to connect to SnappyData. Tableau displays the page where you can browse and select Schema and Tables as per your requirements to create data visualizations.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The <strong>Sign In</strong> button is disabled if Simba Spark ODBC Driver is not already installed on your system.  To enable it, click the <strong>Download and Install the drivers </strong>link and install Simba Spark ODBC Driver. Now the <strong>Sign in</strong> button is enabled.</p>
+<p>If you have not installed the Simba Spark ODBC Driver on your system already, the <strong>Sign In</strong> button is disabled. To enable it, click the <strong>Download and Install the drivers </strong>link and install the Simba Spark ODBC Driver. After this, the <strong>Sign in</strong> button is enabled.</p>
 </div>
 </li>
 </ol>
+<h3 id="handling-large-size-tableau-extracts-in-snappydata">Handling Large Size Tableau Extracts in SnappyData</h3>
+<p>When you are using the <strong>Tableau extract</strong> feature and if your extracted data set will be large, you may need to do the following:</p>
+<ul>
+<li><strong>Set the max result size allowed by SnappyData</strong></br> By default, SnappyData will terminate a query whose result exceeds 1GB. You can set the <a href="../../configuring_cluster/property_description/#sparkdrivermaxresult"><strong>spark.driver.MaxResultSize</strong></a> property on the Lead node and bounce your cluster.</li>
+<li><strong>Configure streaming of the result set to Tableau from SnappyData Hive server</strong></br>Tableau permits <strong>Initial SQL</strong> to be sent to the server when creating a data source connection as described <a href="https://onlinehelp.tableau.com/current/pro/desktop/en-us/connect_basic_initialsql.htm">here</a>.</br> 
+In the <strong>Initial SQL</strong> dialog box, type the following: </br><code>set spark.sql.thriftServer.incrementalCollect=true</code></li>
+</ul>
 <p><a id=odbcdritab></a></p>
 <h2 id="connect-tableau-using-snappydata-odbc-driver">Connect Tableau using SnappyData ODBC Driver</h2>
-<p>Get latest version of SnappyData and SnappyData ODBC driver from <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>. </p>
+<p>Get the latest version of SnappyData and SnappyData ODBC driver from <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData Release page</a>. </p>
 <p>Use the following instructions to connect Tableau using SnappyData ODBC driver:</p>
 <h3 id="step-1-setup-snappydata-odbc-driver">Step 1: Setup SnappyData ODBC Driver</h3>
 <p>Follow the instructions provided <a href="../../setting_up_odbc_driver-tableau_desktop/">here</a> to setup SnappyData ODBC Driver.</p>

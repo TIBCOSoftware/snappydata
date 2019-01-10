@@ -293,6 +293,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../howto/using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/store_retrieve_complex_datatypes_JDBC/">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
@@ -521,6 +535,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -800,13 +821,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../connectors/spark_jdbc_connector/">Using the Spark JDBC Connector</a>
         
     </li>
 
@@ -2098,7 +2112,7 @@ snappy&gt; CREATE VIEW [view-name] (column_name, column_name) AS SELECT column_n
 </code></pre>
 
 <h2 id="description">Description</h2>
-<p>View can be described as a virtual table that contains a set of definitions, built on top of table(s) or other view(s), but it does not physically store the data like a table.
+<p>The View can be described as a virtual table that contains a set of definitions, built on top of the table(s) or the other view(s), but it does not physically store the data like a table.
 View is persistent and visible in system catalog and therefore shared between all connections.</p>
 <h2 id="examples">Examples </br></h2>
 <pre><code class="pre">snappy&gt; CREATE VIEW TRADE.ORDERS1 AS SELECT ORDERID, ITEMID FROM TRADE.ORDERS;
@@ -2113,7 +2127,7 @@ snappy&gt; CREATE TEMPORARY VIEW [temporary-view-name] USING PARQUET OPTIONS(PAT
 </code></pre>
 
 <h3 id="description_1">Description</h3>
-<p>Creates a session-specific temporary view, when is dropped when the session ends.
+<p>Creates a session-specific temporary view, which is dropped when the session ends.
 Temporary views have the same restrictions as permanent views, so you cannot perform insert, update, delete, or copy operations on these views.</p>
 <p>Local temporary views are session-scoped; the view drops automatically when the session ends. </p>
 <h3 id="examples_1">Examples</h3>
@@ -2139,7 +2153,7 @@ snappy&gt; CREATE GLOBAL TEMPORARY VIEW AIRLINEVIEW USING PARQUET OPTIONS(PATH '
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions.</p>
+<p>Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with the former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions.</p>
 </div>
               
             </div>

@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Using the Spark JDBC Connector - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>How to Store and Retrieve Complex Data Types in JDBC Programs - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -24,9 +24,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Using the Spark JDBC Connector";
-    var mkdocs_page_input_path = "connectors/spark_jdbc_connector.md";
-    var mkdocs_page_url = "/connectors/spark_jdbc_connector/";
+    var mkdocs_page_name = "How to Store and Retrieve Complex Data Types in JDBC Programs";
+    var mkdocs_page_input_path = "howto/store_retrieve_complex_datatypes_JDBC.md";
+    var mkdocs_page_url = "/howto/store_retrieve_complex_datatypes_JDBC/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
@@ -197,7 +197,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/">How Tos</a>
+        <a class="" href="../">How Tos</a>
         
     </li>
 <li>
@@ -209,175 +209,198 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/start_snappy_cluster/">How to Start a SnappyData Cluster</a>
+        <a class="" href="../start_snappy_cluster/">How to Start a SnappyData Cluster</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
+        <a class="" href="../check_status_cluster/">How to Check the Status of a SnappyData Cluster</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/stop_snappy_cluster/">How to Stop a SnappyData Cluster</a>
+        <a class="" href="../stop_snappy_cluster/">How to Stop a SnappyData Cluster</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/run_spark_job_inside_cluster/">How to Run Spark Job inside the Cluster</a>
+        <a class="" href="../run_spark_job_inside_cluster/">How to Run Spark Job inside the Cluster</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/spark_installation_using_smart_connector/">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a>
+        <a class="" href="../spark_installation_using_smart_connector/">How to Access SnappyData Store from existing Spark Installation using Smart Connector</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_snappy_shell/">How to Use Snappy SQL shell (snappy-sql)</a>
+        <a class="" href="../use_snappy_shell/">How to Use Snappy SQL shell (snappy-sql)</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/create_row_tables_and_run_queries/">How to Create Row Tables and Run Queries</a>
+        <a class="" href="../create_row_tables_and_run_queries/">How to Create Row Tables and Run Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/create_column_tables_and_run_queries/">How to Create Column Tables and Run Queries</a>
+        <a class="" href="../create_column_tables_and_run_queries/">How to Create Column Tables and Run Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/load_data_into_snappydata_tables/">How to Load Data into SnappyData Tables</a>
+        <a class="" href="../load_data_into_snappydata_tables/">How to Load Data into SnappyData Tables</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/load_data_from_external_data_stores/">How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)</a>
+        <a class="" href="../load_data_from_external_data_stores/">How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/perform_a_colocated_join/">How to Perform a Colocated Join</a>
+        <a class="" href="../perform_a_colocated_join/">How to Perform a Colocated Join</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_using_jdbc_driver/">How to Connect using JDBC Driver</a>
+        <a class="" href="../connect_using_jdbc_driver/">How to Connect using JDBC Driver</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
+        <a class="" href="../using_snappydata_for_any_spark_dist/">How to use SnappyData for any Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">How to Store and Retrieve Complex Data Types in JDBC Programs</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#how-to-store-and-retrieve-complex-data-types-in-jdbc-programs">How to Store and Retrieve Complex Data Types in JDBC Programs</a></li>
+                
+                    <li><a class="toctree-l4" href="#code-example-storing-and-retrieving-array-data-in-a-jdbc-program">Code Example: Storing and Retrieving Array Data in a JDBC program</a></li>
+                
+            
+            </ul>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/store_and_query_objects/">How to Store and Query Objects</a>
+        <a class="" href="../store_and_query_json_objects/">How to Store and Query JSON Objects</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
+        <a class="" href="../store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_transactions_isolation_levels/">How to use Transactions Isolation Levels</a>
+        <a class="" href="../use_stream_processing_with_snappydata/">How to use Stream Processing with SnappyData</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../use_transactions_isolation_levels/">How to use Transactions Isolation Levels</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
+        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_using_odbc_driver/">How to Connect using ODBC Driver</a>
+        <a class="" href="../use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
+        <a class="" href="../connect_using_odbc_driver/">How to Connect using ODBC Driver</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
+        <a class="" href="../connect_to_the_cluster_from_external_clients/">How to Connect to the Cluster from External Network</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/export_hdfs/">How to Export and Restore Table Data using HDFS</a>
+        <a class="" href="../import_from_hive_table/">How to Import Data from Hive Table into SnappyData Table</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/tableauconnect/">How to Connect Tableau to SnappyData</a>
+        <a class="" href="../export_hdfs/">How to Export and Restore Table Data using HDFS</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_apache_zeppelin_with_snappydata/">How to Use Apache Zeppelin with SnappyData</a>
+        <a class="" href="../tableauconnect/">How to Connect Tableau to SnappyData</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
+        <a class="" href="../use_apache_zeppelin_with_snappydata/">How to Use Apache Zeppelin with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>
         
     </li>
 
@@ -521,6 +544,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_jdbc_with_snappydata/">Using JDBC with SnappyData</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/spark_jdbc_connector/">Accessing SnappyData Tables from any Spark (2.1+) Cluster</a>
         
     </li>
 
@@ -773,7 +803,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../connector/">Working with External Data Sources</a>
+        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
         
     </li>
 <li>
@@ -785,41 +815,21 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../gemfire_connector/">Using the SnappyData GemFire Connector</a>
+        <a class="" href="../../connectors/gemfire_connector/">Using the SnappyData GemFire Connector</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Using the Spark JDBC Connector</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#spark-jdbc-connector-extensions">Spark JDBC Connector Extensions</a></li>
-                
-                    <li><a class="toctree-l4" href="#extensions-of-spark-jdbc-connector">Extensions of Spark JDBC Connector</a></li>
-                
-                    <li><a class="toctree-l4" href="#spark-jdbc-extension-setup-and-usage">Spark JDBC Extension Setup and Usage</a></li>
-                
-                    <li><a class="toctree-l4" href="#spark-jdbc-extension-versus-current-spark-apis">Spark JDBC Extension Versus Current Spark APIs</a></li>
-                
-            
-            </ul>
+        <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
         
     </li>
 
@@ -2062,11 +2072,11 @@
     
       
         
-          <li>Working with External Data Sources &raquo;</li>
+          <li>How Tos &raquo;</li>
         
       
     
-    <li>Using the Spark JDBC Connector</li>
+    <li>How to Store and Retrieve Complex Data Types in JDBC Programs</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -2082,125 +2092,96 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="spark-jdbc-connector-extensions">Spark JDBC Connector Extensions</h1>
-<p>The <strong>snappydata-jdbc Spark </strong>package adds extensions to Spark’s inbuilt JDBC data source provider to work better with SnappyData. This allows SnappyData to be treated as a regular JDBC data source with all versions of Spark which are greater or equal to 2.1, while also providing speed to direct SnappyData embedded cluster for many types of queries.</p>
-<p>The Spark JDBC connector gives the following advantages:</p>
+                <h1 id="how-to-store-and-retrieve-complex-data-types-in-jdbc-programs">How to Store and Retrieve Complex Data Types in JDBC Programs</h1>
+<p>If you want to store/retrieve objects for complex data types (Array, Map and Struct) using JDBC programs, SnappyData provides <strong>com.pivotal.gemfirexd.snappy.ComplexTypeSerializer</strong> utility class to serialize/deserialize those objects:</p>
 <ul>
-<li>Transparent push down of queries to the SnappyData cluster such as Spark’s JDBC connection.</li>
-<li>Avoids the double execution problem with the Spark's JDBC connection.</li>
-<li>Provides better usability and the ability to execute DML statements using SparkSession, which is missing in Spark’s JDBC connector.</li>
-<li>Compatibility with all versions of Spark which are greater or equal to version 2.1.</li>
-<li>Good performance of shorter queries using the new <a href="../../howto/connect_using_jdbc_driver/#jdbcpooldriverconnect">ClientDriver with an in-built pool implementation</a>.</li>
+<li>A column of type <strong>ARRAY</strong> can store array of Java objects (Object[]), typed arrays, java.util.Collection, and scala.collection.Seq.</li>
+<li>A column of type <strong>MAP</strong> can store java.util.Map or scala.collection.Map.</li>
+<li>A column of type <strong>STRUCT</strong> can store array of Java objects (Object[]), typed arrays, java.util.Collection, scala.collection.Seq, or scala.Product</li>
 </ul>
-<h2 id="extensions-of-spark-jdbc-connector">Extensions of Spark JDBC Connector</h2>
-<p>The extensions for Spark JDBC Connector are provided in the form of Scala implicits that is wrapped into a SparkSession. For other languages such as Java and Python,  you must create the wrapper explicitly. </p>
-<p>The following extensions are used to implement the Spark JDBC Connector:</p>
-<ul>
-<li>
-<p><strong>SparkSession.snappyQuery()</strong> </br>This method creates a wrapper over SparkSession and is similar to <strong>SparkSession.sql()</strong> API. The only difference between the both is that the entire query is pushed down to the SnappyData cluster. Hence, a query cannot have any temporary or external tables/views that are not visible in the SnappyData cluster.</p>
-</li>
-<li>
-<p><strong>SparkSession.snappyExecute()</strong> </br>Similarly with this method the SQL (assuming it to be a DML) is pushed to SnappyData, using the JDBC API, and returns the update count.</p>
-</li>
-<li>
-<p><strong>snappy</strong></br>An implicit for DataFrameWriter named <strong>snappy</strong> simplifies the bulk writes.Therefore a write operation such as <strong>session.write.jdbc()</strong> becomes <strong>session.write.snappy()</strong> with the difference that JDBC URL, driver, and connection properties are auto-configured using session properties if possible.</p>
-</li>
-</ul>
-<h2 id="spark-jdbc-extension-setup-and-usage">Spark JDBC Extension Setup and Usage</h2>
-<p>Following is an example of setting up the Spark JDBC Extension and usage: </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Complex data types are supported only for column tables.</p>
+</div>
+<h2 id="code-example-storing-and-retrieving-array-data-in-a-jdbc-program">Code Example: Storing and Retrieving Array Data in a JDBC program</h2>
+<p>The following scala code snippets show how to perform insert and select operations on columns of complex data types. Complete source code for example is available at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala">JDBCWithComplexTypes.scala</a> </p>
+<pre><code>// create a JDBC connection
+val url: String = s&quot;jdbc:snappydata://localhost:1527/&quot;
+val conn = DriverManager.getConnection(url)
+
+val stmt = conn.createStatement()
+// create a table with a column of type array
+stmt.execute(&quot;CREATE TABLE TABLE_WITH_COMPLEX_TYPES (col1 Int, col2 Array&lt;Decimal&gt;) USING column options()&quot;&quot;&quot;)
+</code></pre>
+
+<h3 id="inserting-data">Inserting Data</h3>
 <ol>
 <li>
-<p>Include the <strong>snappydata-jdbc</strong> package in the Spark job with spark-submit or spark-shell:</p>
-<pre><code>$SPARK_HOME/bin/spark-shell --packages SnappyDataInc:snappydata-jdbc:1.0.2.1-s_2.11
+<p>Insert a single row having a complex type (array)</p>
+<pre><code>val arrDecimal = Array(Decimal("4.92"), Decimal("51.98"))
+val pstmt = conn.prepareStatement("insert into TABLE_WITH_COMPLEX_TYPE values (?, ?)")
 </code></pre>
 </li>
 <li>
-<p>Set the session properties.</br>The SnappyData connection properties (to enable auto-configuration of JDBC URL) and credentials can be provided in Spark configuration itself, or set later in SparkSession to avoid passing them in all the method calls. These properties can also be provided in <strong>spark-defaults.conf </strong> along with all the other Spark properties.</br> Following is a sample code of configuring the properties in <strong>SparkConf</strong>:</p>
-<pre><code>$SPARK_HOME/bin/spark-shell --packages SnappyDataInc:snappydata-jdbc:1.0.2.1-s_2.11 --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=&lt;user&gt; --conf spark.snappydata.password=&lt;password&gt;
-</code></pre>
-<p>Overloads of the above methods accepting <em>user+password</em> and <em>host+port</em> is also provided in case those properties are not set in the session or needs to be overridden. You can optionally pass additional connection properties similarly as in the <strong>DataFrameReader.jdbc</strong> method.</p>
-</li>
-<li>
-<p>Import the required implicits in the job/shell code as follows:</p>
-<pre><code>import io.snappydata.sql.implicits._
-</code></pre>
-</li>
-<li>
-<p>After the required session properties are set (connection and user/password etc.), you can run the queries/DMLs without any other configuration as shown here:</p>
-<pre><code>// execute DDL
-spark.snappyExecute("create table testTable1 (id long, data string) using column")
-// DML
-spark.snappyExecute("insert into testTable1 values (1, ‘data1’)")
-// bulk insert from external table in embedded mode
-spark.snappyExecute("insert into testTable1 select * from externalTable1")
-// query
-val dataSet = spark.snappyQuery(“select count(*) from testTable1”)
-</code></pre>
-<p><strong>For Java</strong></br>
-When using Java, the wrapper must be created explicitly as shown in the following sample:</p>
-<pre><code>import org.apache.spark.sql.*;
-
-JdbcExecute exec = new JdbcExecute(spark);
-exec.snappyExecute(“create table testTable1 (id long, data string) using column”);
-exec.snappyExecute("insert into testTable1 values (1, ‘data1’)");
-DataFrame df = exec.snappyQuery(...);
-...
+<p>Create a serializer that can be used to serialize array data and insert into the table.</p>
+<pre><code>val serializer1 = ComplexTypeSerializer.create(tableName, "col2", conn)
+pstmt.setInt(1, 1)
+pstmt.setBytes(2, serializer1.serialize(arrDecimal))
+pstmt.execute
+pstmt.close()
 </code></pre>
 </li>
 </ol>
-<h2 id="spark-jdbc-extension-versus-current-spark-apis">Spark JDBC Extension Versus Current Spark APIs</h2>
-<p>In the following points, a comparison is provided for scenarios where you use Spark JDBC Connector without the SnappyData extensions: </p>
-<ul>
-<li>
-<p>You must JDBC API, since there is nothing equivalent to <strong>snappyExecute</strong>.</p>
-</li>
-<li>
-<p>when you use Spark’s JDBC connector directly instead of <strong>snappyQuery</strong>, then the equivalent code (assuming snappyExecute equivalent was done beforehand using JDBC API or otherwise) is as follows:</p>
-<pre><code>val jdbcUrl = "jdbc:snappydata:pool://localhost:1527"
-val connProps = new java.util.Properties()
-connProps.setProperty("driver", "io.snappydata.jdbc.ClientPoolDriver")
-connProps.setProperty("user", userName)
-connProps.setProperty("password", password)
+<h3 id="selecting-data">Selecting Data</h3>
+<pre><code>// Select array data as a JSON string
 
- val df = spark.read.jdbc(jdbcUrl, “(select count(*) from testTable1) q”, connProps)
+var rs = stmt.executeQuery(s&quot;SELECT * FROM $tableName&quot;)
+while (rs.next()) {
+ // read the column as a String
+ val res1 = rs.getString(&quot;col2&quot;)
+ println(s&quot;res1 = $res1&quot;)
+ // Alternate way, read the same column as a Clob
+ val res2 = rs.getClob(&quot;col2&quot;)
+ println(s&quot;res2 = &quot; + res2.getSubString(1, res2.length.asInstanceOf[Int]))
+}
+
+// Reading array data as  BLOB and Bytes and then forming a Scala array
+val serializer = ComplexTypeSerializer.create(tableName, &quot;col2&quot;, conn)
+rs = stmt.executeQuery(s&quot;SELECT * FROM $tableName --+ complexTypeAsJson(0)&quot;)
+while (rs.next()) {
+  // Read the same column as a byte[] and then deserialize it into an Array
+  val res1 = serializer.deserialize(rs.getBytes(&quot;col2&quot;))
+  println(s&quot;res1 = $res1&quot;)
+  // alternate way, read the same column as a Blob an then deserialize it into an Array
+  val res2 = serializer.deserialize(rs.getBlob(&quot;col2&quot;))
+  println(s&quot;res2 = $res2&quot;)
+}
+
+
+var rs = stmt.executeQuery(s&quot;SELECT * FROM $tableName&quot;)
+while (rs.next()) {
+ // read the column as a String
+ val res1 = rs.getString(&quot;col2&quot;)
+ println(s&quot;res1 = $res1&quot;)
+ // alternate way, read the same column as a Clob
+ val res2 = rs.getClob(&quot;col2&quot;)
+ println(s&quot;res2 = &quot; + res2.getSubString(1, res2.length.asInstanceOf[Int]))
+}
+
+// reading array data as  BLOB and Bytes and then forming a Scala array
+val serializer = ComplexTypeSerializer.create(tableName, &quot;col2&quot;, conn)
+rs = stmt.executeQuery(s&quot;SELECT * FROM $tableName --+ complexTypeAsJson(0)&quot;)
+while (rs.next()) {
+  // read the same column as a byte[] and then deserialize it into an Array
+  val res1 = serializer.deserialize(rs.getBytes(&quot;col2&quot;))
+  println(s&quot;res1 = $res1&quot;)
+  // alternate way, read the same column as a Blob an then deserialize it into an Array
+  val res2 = serializer.deserialize(rs.getBlob(&quot;col2&quot;))
+  println(s&quot;res2 = $res2&quot;)
+}
+
+
 </code></pre>
-<p>This code has verbosity and also presents the problem of double query execution (one with LIMIT 1 for schema, and one without) thereby increasing the execution time for many types of queries.</p>
-</li>
-<li>
-<p>Inserting a Dataset from the job can also use the <strong>snappy</strong> extension to avoid passing in URL and credentials explicitly:</p>
-<pre><code>df.write.snappy(“testTable1”)
-Or using explicit wrapper in Java: new JdbcWriter(spark.write).snappy(“testTable”)
-</code></pre>
-<p>Using the Spark’s JDBC connector for the same is as follows:</p>
-<pre><code>df.write.jdbc(jdbcUrl, “testTable1”, connProps)
-</code></pre>
-<p>However, both of these are much slower as compared to SnappyData embedded job or smart connector. If the DataFrame to be written is medium or large sized, then it is better to ingest directly in an embedded mode.
-In case writing an embedded job is not an option, the incoming DataFrame can be dumped to an external table in a location accessible to both Spark and SnappyData clusters. After this, it can be ingested in an embedded mode using <strong>snappyExecute</strong>. </br>The most efficient inbuilt format in Spark is Parquet, so for large DataFrames a much better option is as follows:</p>
-<pre><code>df.write.parquet(“&lt;path&gt;”)
-spark.snappyExecute(“create external table stagingTable1 using parquet options (path ‘&lt;path&gt;’)”)
-spark.snappyExecute(“insert into testTable1 select * from stagingTable1”)
-spark.snappyExecute(“drop table stagingTable1”)
-// delete staging &lt;path&gt; if required e.g using hadoop API
-// FileSystem.get(sc.hadoopConfiguration).delete(new Path(“&lt;path&gt;”), true)
-</code></pre>
-</li>
-<li>
-<p>Similarly, you can address the lack of <strong>putInto</strong> or <strong>deleteFrom</strong> APIs in Spark. For this, you must dump the incoming DataFrames into a temporary staging area. Then create external tables in an embedded cluster to point to those DataFrames. After this, invoke the <strong> PUT INTO / DELETE FROM</strong> SQL in the embedded cluster by using <strong>snappyExecute</strong> in the Spark cluster. The <strong>PUT INTO</strong> flow is similar to the <strong>insert</strong> example that is shown above.</p>
-<p>df.write.parquet(“<path>”)
-        spark.snappyExecute(“create external table stagingTable1 using parquet options (path ‘<path>’)”)
-        spark.snappyExecute(“put into testTable1 select * from stagingTable1”)
-        spark.snappyExecute(“drop table stagingTable1”)
-        // delete staging <path> if required e.g using hadoop API
-        // FileSystem.get(sc.hadoopConfiguration).delete(new Path(“<path>”), true)</p>
-<p><strong>DELETE FROM </strong>is also identical except that you must rename the key columns to match those in the target table before doing the operation. </br>Alternatively you can alias the key column names, if different, when selecting from the temporary staging table (in third step below).</p>
-<pre><code>    df.selectExpr(“keyColumn1 as …”).write.parquet(“&lt;path&gt;”)
-    spark.snappyExecute(“create external table stagingTable1 using parquet options (path ‘&lt;path&gt;’)”)
-    spark.snappyExecute(“delete from testTable1 select * from stagingTable1”)
-    spark.snappyExecute(“drop table stagingTable1”)
-    // delete staging &lt;path&gt; if required
-</code></pre>
-</li>
-</ul>
               
             </div>
           </div>
@@ -2208,10 +2189,10 @@ spark.snappyExecute(“drop table stagingTable1”)
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../monitoring/managing_and_monitoring/" class="btn btn-neutral float-right" title="Managing and Monitoring">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../store_and_query_json_objects/" class="btn btn-neutral float-right" title="How to Store and Query JSON Objects">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../cdc_connector/" class="btn btn-neutral" title="Using the SnappyData CDC (Change Data Capture) Connector"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../using_snappydata_for_any_spark_dist/" class="btn btn-neutral" title="How to use SnappyData for any Spark Distribution"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -2245,10 +2226,10 @@ spark.snappyExecute(“drop table stagingTable1”)
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../cdc_connector/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../using_snappydata_for_any_spark_dist/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../monitoring/managing_and_monitoring/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../store_and_query_json_objects/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
