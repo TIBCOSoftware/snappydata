@@ -165,6 +165,16 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     quotedIdentifier
   }
 
+  /** allow for first character of unquoted identifier to be a numeric */
+  protected final def identifierAs: Rule1[String] = rule {
+    atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
+      val ucase = Utils.toUpperCase(s)
+      test(!Consts.reservedKeywords.contains(ucase)) ~
+          push(if (caseSensitive) s else ucase)
+    } |
+    quotedIdentifier
+  }
+
   protected final def quotedIdentifier: Rule1[String] = rule {
     atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
       if (s.indexOf("``") >= 0) s.replace("``", "`") else s
