@@ -9,7 +9,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
     PARTITION_BY 'column-name', // If not specified, replicated table for row tables, and partitioned internally for column tables.
-    BUCKETS  'num-partitions', // Default 128. Must be an integer.
+    BUCKETS  'num-partitions', // Default 8. Must be an integer.
     REDUNDANCY        'num-of-copies' , // Must be an integer
     EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
