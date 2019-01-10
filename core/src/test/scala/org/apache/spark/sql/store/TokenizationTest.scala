@@ -410,10 +410,10 @@ class TokenizationTest
       assert(cacheMap.size() == 1)
 
       query = s"select * from $table where b = 1"
-      var res2 = newSession.sql(query).collect()
+      newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
-      newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
+      SnappySession.getPlanCache.invalidateAll()
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -428,7 +428,6 @@ class TokenizationTest
       cacheMap.clear()
 
       val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession2.sql(s"set snappydata.sql.planCachingAll=true").collect()
 
       assert(cacheMap.size() == 0)
 
