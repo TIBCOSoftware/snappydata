@@ -235,10 +235,6 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
   @transient
   private[sql] var enableHiveSupport: Boolean = Property.EnableHiveSupport.get(sessionState.conf)
 
-  /** hive compatibility level which can be 0 (default), 1 (hive) or 2 (spark) */
-  @transient
-  private[sql] var hiveCompatibility: Int = 0
-
   @transient
   private var sqlWarnings: SQLWarning = _
 

@@ -139,19 +139,6 @@ class SnappyConf(@transient val session: SnappySession)
       }
       session.clearPlanCache()
 
-    case Property.HiveCompatibility.name =>
-      value match {
-        case Some(level) => Utils.toLowerCase(level.toString) match {
-          case "default" => session.hiveCompatibility = 0
-          case "enabled" => session.hiveCompatibility = 1
-          case "spark" => session.hiveCompatibility = 2
-          case _ => throw new IllegalArgumentException(
-            s"Unexpected value '$level' for ${Property.HiveCompatibility.name}. " +
-                s"Allowed values are: default, enabled and spark")
-        }
-        case None => session.hiveCompatibility = 0
-      }
-
     case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
 
     case Constant.TRIGGER_AUTHENTICATION => value match {
