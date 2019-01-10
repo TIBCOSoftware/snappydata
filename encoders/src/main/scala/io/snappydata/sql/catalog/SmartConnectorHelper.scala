@@ -21,23 +21,21 @@ import java.nio.file.{Files, Paths}
 import java.sql.{CallableStatement, Connection, SQLException}
 import java.util.Collections
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
-import io.snappydata.thrift.{BucketOwners, CatalogMetadataDetails, CatalogMetadataRequest}
 import io.snappydata.{Constant, Property}
+import io.snappydata.thrift.{BucketOwners, CatalogMetadataDetails, CatalogMetadataRequest}
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.collection.{SharedUtils, SmartExecutorBucketPartition}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCOptions, JdbcUtils}
+import org.apache.spark.{Logging, Partition, SparkContext}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCOptions, JdbcUtils}
-import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.{Logging, Partition, SparkContext}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Logging {
 
@@ -61,7 +59,7 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
         executeGetJarsStmt(sc, stmt)
       } catch {
         case sqle: SQLException => logWarning(s"could not get jar and" +
-            s" package information from SnappyData cluster", sqle)
+          s" package information from SnappyData cluster", sqle)
       }
     }
   }
@@ -69,10 +67,10 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
   private def getSecurePart: String = {
     var securePart = ""
     val user = session.conf.get(Constant.SPARK_STORE_PREFIX + Attribute
-        .USERNAME_ATTR, "")
+      .USERNAME_ATTR, "")
     if (!user.isEmpty) {
       val pass = session.conf.get(Constant.SPARK_STORE_PREFIX + Attribute
-          .PASSWORD_ATTR, "")
+        .PASSWORD_ATTR, "")
       securePart = s";user=$user;password=$pass"
       logInfo(s"Using $user credentials to securely connect to SnappyData cluster")
     }
@@ -106,13 +104,13 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
           logWarning(s"could not add path $jarpath to SparkContext as the file is not readable")
         }
       })
-      val newClassLoader = Utils.newMutableURLClassLoader(mutableList.toArray)
+      val newClassLoader = SharedUtils.newMutableURLClassLoader(mutableList.toArray)
       Thread.currentThread().setContextClassLoader(newClassLoader)
     }
   }
 
   def getCatalogMetadata(operation: Int,
-      request: CatalogMetadataRequest): CatalogMetadataDetails = {
+                         request: CatalogMetadataRequest): CatalogMetadataDetails = {
     getCatalogMetaDataStmt.setInt(1, operation)
     val requestBytes = GemFireXDUtils.writeThriftObject(request)
     getCatalogMetaDataStmt.setBlob(2, new HarmonySerialBlob(requestBytes))
@@ -158,11 +156,11 @@ object SmartConnectorHelper {
   private[this] val urlPrefix: String = Constant.DEFAULT_THIN_CLIENT_URL
   // no query routing or load-balancing
   private[this] val urlSuffix: String = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-      ClientAttribute.LOAD_BALANCE + "=false"
+    ClientAttribute.LOAD_BALANCE + "=false"
 
   /**
-   * Get pair of TXId and (host, network server URL) pair.
-   */
+    * Get pair of TXId and (host, network server URL) pair.
+    */
   def getTxIdAndHostUrl(txIdAndHost: String, preferHost: Boolean): (String, (String, String)) = {
     val index = txIdAndHost.indexOf('@')
     if (index < 0) {
@@ -182,7 +180,7 @@ object SmartConnectorHelper {
     val numServers = bucketToServerList(0).length
     val chosenServerIndex = if (numServers > 1) scala.util.Random.nextInt(numServers) else 0
     for (p <- 0 until numPartitions) {
-      if (StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT) {
+      if (SharedUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT) {
         partitions(p) = new SmartExecutorBucketPartition(p, p,
           bucketToServerList(scala.util.Random.nextInt(numPartitions)))
       } else {
@@ -198,7 +196,7 @@ object SmartConnectorHelper {
 
   def preferHostName(session: SparkSession): Boolean = {
     // check if Spark executors are using IP addresses or host names
-    Utils.executorsListener(session.sparkContext) match {
+    SharedUtils.executorsListener(session.sparkContext) match {
       case Some(l) =>
         val preferHost = l.activeStorageStatusList.collectFirst {
           case status if status.blockManagerId.executorId != "driver" =>
@@ -211,7 +209,8 @@ object SmartConnectorHelper {
   }
 
   private def getNetUrl(server: String, preferHost: Boolean, urlPrefix: String,
-      urlSuffix: String, availableNetUrls: UnifiedMap[String, String]): (String, String) = {
+                        urlSuffix: String,
+                        availableNetUrls: UnifiedMap[String, String]): (String, String) = {
     val hostAddressPort = returnHostPortFromServerString(server)
     val hostName = hostAddressPort._1
     val host = if (preferHost) hostName else hostAddressPort._2
@@ -223,14 +222,9 @@ object SmartConnectorHelper {
   }
 
   def setBucketToServerMappingInfo(numBuckets: Int, buckets: java.util.List[BucketOwners],
-      session: SparkSession): Array[ArrayBuffer[(String, String)]] = {
+                                   preferHost: Boolean, preferPrimaries: Boolean):
+  Array[ArrayBuffer[(String, String)]] = {
     if (!buckets.isEmpty) {
-      // check if Spark executors are using IP addresses or host names
-      val preferHost = preferHostName(session)
-      val preferPrimaries = session.conf.getOption(Property.PreferPrimariesInQuery.name) match {
-        case None => Property.PreferPrimariesInQuery.defaultValue.get
-        case Some(p) => p.toBoolean
-      }
       var orphanBuckets: ArrayBuffer[Int] = null
       val allNetUrls = new Array[ArrayBuffer[(String, String)]](numBuckets)
       val availableNetUrls = new UnifiedMap[String, String](4)
@@ -276,20 +270,19 @@ object SmartConnectorHelper {
   }
 
   def setReplicasToServerMappingInfo(replicaNodes: java.util.List[String],
-      session: SparkSession): Array[ArrayBuffer[(String, String)]] = {
-    // check if Spark executors are using IP addresses or host names
-    val preferHost = preferHostName(session)
-    val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
+                                     preferHost: Boolean):
+  Array[ArrayBuffer[(String, String)]] = {
+     val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-        ClientAttribute.LOAD_BALANCE + "=false"
+      ClientAttribute.LOAD_BALANCE + "=false"
     val netUrls = ArrayBuffer.empty[(String, String)]
     for (host <- replicaNodes.asScala) {
       val hostAddressPort = returnHostPortFromServerString(host)
       val hostName = hostAddressPort._1
       val h = if (preferHost) hostName else hostAddressPort._2
       netUrls += h ->
-          (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
+        (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
     }
     Array(netUrls)
   }

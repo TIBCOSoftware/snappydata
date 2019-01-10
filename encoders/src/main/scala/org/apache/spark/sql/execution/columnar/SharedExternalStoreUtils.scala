@@ -153,6 +153,32 @@ object SharedExternalStoreUtils {
       col += 1
     }
   }
+
+  /*
+ *
+ */
+  def connectionProperties(hostList: ArrayBuffer[(String, String)]): ConnectionProperties = {
+
+    // TODO: Check how to make properties Dynamic
+    val map: Map[String, String] = HashMap[String, String](("maxActive", "256"),
+      ("testOnBorrow", "true"), ("maxIdle", "256"), ("validationInterval", "10000"),
+      ("initialSize", "4"), ("driverClassName", "io.snappydata.jdbc.ClientDriver"))
+
+    val poolProperties = new Properties
+    poolProperties.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
+    poolProperties.setProperty("route-query", "false")
+
+    val executorConnProps = new Properties
+    executorConnProps.setProperty("lob-chunk-size", "33554432")
+    executorConnProps.setProperty("driver", "io.snappydata.jdbc.ClientDriver")
+    executorConnProps.setProperty("route-query", "false")
+    executorConnProps.setProperty("lob-direct-buffers", "true")
+
+    ConnectionProperties(hostList(0)._2,
+      "io.snappydata.jdbc.ClientDriver", SnappyStoreClientDialect, map,
+      poolProperties, executorConnProps, false)
+
+  }
 }
 
 class TableNotFoundException(schema: String, table: String, cause: Option[Throwable] = None)
