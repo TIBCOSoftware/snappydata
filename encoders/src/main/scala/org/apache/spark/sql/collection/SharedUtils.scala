@@ -138,11 +138,9 @@ object SharedUtils {
    * @return
    */
   def deserialize(value: Array[Byte]): Any = {
-    val bais: ByteArrayInputStream = new ByteArrayInputStream(value)
-    val os: ObjectInputStream = new ObjectInputStream(bais)
-    val filters = os.read()
-    os.close()
-    filters
+    val baip = new ByteArrayInputStream(value)
+    val ois = new ObjectInputStream(baip)
+    ois.readObject()
   }
 }
 
