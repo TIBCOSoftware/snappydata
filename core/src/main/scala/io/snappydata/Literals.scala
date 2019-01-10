@@ -114,14 +114,10 @@ object Property extends Enumeration {
         "enable external hive meta-store support as configured using SparkConf and hive-site.xml",
     Some(false))
 
-  val HiveCompatibility: SQLValue[String] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatibility", "Property on SnappySession to make " +
-        "alter the hive compatibility level. The 'default' level is Spark compatible except for " +
-        "CREATE TABLE which defaults to row tables. When set to 'enabled' then it makes the " +
-        "behavior hive compatible for statements like SHOW TABLES rather than being compatible " +
-        "with Spark SQL. A value of 'spark' makes it fully Spark compatible where CREATE TABLE " +
-        s"defaults to hive tables when ${EnableHiveSupport.name} is enabled on the session. " +
-        " Default is 'default'.", Some("default"), prefix = null)
+  val HiveCompatible: SQLValue[Boolean] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
+        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
+    Some(false), prefix = null)
 
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +

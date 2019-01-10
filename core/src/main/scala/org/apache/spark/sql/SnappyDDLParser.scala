@@ -279,12 +279,11 @@ abstract class SnappyDDLParser(session: SnappySession)
       }
       val provider = remaining._1 match {
         case None =>
-          // check if hive compatibility is non-default (one of 'spark' or 'hive')
-          // in which case default table type will be hive
-          if (session.hiveCompatibility == 2) DDLUtils.HIVE_PROVIDER else Consts.DEFAULT_SOURCE
+          // behave like SparkSession in case hive support has been enabled
+          if (session.enableHiveSupport) DDLUtils.HIVE_PROVIDER else Consts.DEFAULT_SOURCE
         case Some(p) => p
       }
-      // check if hive provider can be used
+      // check if hive provider is being used
       if (provider.equalsIgnoreCase(DDLUtils.HIVE_PROVIDER)) {
         if (session.enableHiveSupport) {
           sparkParser.parsePlan(input.sliceString(0, input.length))
