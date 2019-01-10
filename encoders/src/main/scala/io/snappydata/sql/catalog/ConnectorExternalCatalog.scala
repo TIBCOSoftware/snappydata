@@ -18,23 +18,21 @@ package io.snappydata.sql.catalog
 
 import java.sql.SQLException
 import java.util.Collections
-import javax.annotation.concurrent.GuardedBy
-
-import scala.collection.JavaConverters._
 
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.thrift._
-
+import javax.annotation.concurrent.GuardedBy
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.collection.Utils.EMPTY_STRING_ARRAY
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.{SparkSession, TableNotFoundException}
+import org.apache.spark.sql.collection.SharedUtils
+import org.apache.spark.sql.execution.columnar.{SharedExternalStoreUtils, TableNotFoundException}
 import org.apache.spark.{Logging, Partition, SparkEnv}
+
+import scala.collection.JavaConverters._
 
 /**
  * Base class for catalog implementations for connector modes. This is either used as basis
@@ -85,6 +83,8 @@ trait ConnectorExternalCatalog {
 
 object ConnectorExternalCatalog extends Logging {
 
+  final val EMPTY_STRING_ARRAY = Array.empty[String]
+
   def cacheSize: Int = {
     SparkEnv.get match {
       case null => Property.CatalogCacheSize.defaultValue.get
@@ -119,7 +119,7 @@ object ConnectorExternalCatalog extends Logging {
     val tableProps = tableObj.getProperties.asScala.toMap
     val storage = tableObj.getStorage
     val storageProps = storage.properties.asScala.toMap
-    val schema = ExternalStoreUtils.getTableSchema(tableObj.getTableSchema)
+    val schema = SharedExternalStoreUtils.getTableSchema(tableObj.getTableSchema)
     // SnappyData tables have bucketOwners while hive managed tables have bucketColumns
     // The bucketSpec below is only for hive managed tables.
     val bucketSpec = if (tableObj.getBucketColumns.isEmpty) None
@@ -144,7 +144,7 @@ object ConnectorExternalCatalog extends Logging {
     } else None
     val bucketOwners = tableObj.getBucketOwners
     // remove partitioning columns from CatalogTable for row/column tables
-    val partitionCols = if (bucketOwners.isEmpty) Utils.EMPTY_STRING_ARRAY
+    val partitionCols = if (bucketOwners.isEmpty) SharedUtils.EMPTY_STRING_ARRAY
     else {
       val cols = tableObj.getPartitionColumns
       tableObj.setPartitionColumns(Collections.emptyList())
@@ -172,15 +172,20 @@ object ConnectorExternalCatalog extends Logging {
       val bucketCount = tableObj.getNumBuckets
       val indexCols = toArray(tableObj.getIndexColumns)
       val pkCols = toArray(tableObj.getPrimaryKeyColumns)
+      val preferHost = SmartConnectorHelper.preferHostName(session)
+      val preferPrimaries = session.conf.getOption(Property.PreferPrimariesInQuery.name) match {
+        case None => Property.PreferPrimariesInQuery.defaultValue.get
+        case Some(p) => p.toBoolean
+      }
       if (bucketCount > 0) {
         val allNetUrls = SmartConnectorHelper.setBucketToServerMappingInfo(
-          bucketCount, bucketOwners, session)
+          bucketCount, bucketOwners, preferHost, preferPrimaries)
         val partitions = SmartConnectorHelper.getPartitions(allNetUrls)
         table -> Some(RelationInfo(bucketCount, isPartitioned = true, partitionCols,
           indexCols, pkCols, partitions, catalogSchemaVersion))
       } else {
         val allNetUrls = SmartConnectorHelper.setReplicasToServerMappingInfo(
-          tableObj.getBucketOwners.get(0).getSecondaries, session)
+          tableObj.getBucketOwners.get(0).getSecondaries, preferHost)
         val partitions = SmartConnectorHelper.getPartitions(allNetUrls)
         table -> Some(RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY, indexCols,
           pkCols, partitions, catalogSchemaVersion))
@@ -319,9 +324,9 @@ object ConnectorExternalCatalog extends Logging {
 
 case class RelationInfo(numBuckets: Int,
     isPartitioned: Boolean,
-    partitioningCols: Array[String] = Utils.EMPTY_STRING_ARRAY,
-    indexCols: Array[String] = Utils.EMPTY_STRING_ARRAY,
-    pkCols: Array[String] = Utils.EMPTY_STRING_ARRAY,
+    partitioningCols: Array[String] = SharedUtils.EMPTY_STRING_ARRAY,
+    indexCols: Array[String] = SharedUtils.EMPTY_STRING_ARRAY,
+    pkCols: Array[String] = SharedUtils.EMPTY_STRING_ARRAY,
     partitions: Array[org.apache.spark.Partition] = Array.empty,
     catalogSchemaVersion: Long = -1) {
 
